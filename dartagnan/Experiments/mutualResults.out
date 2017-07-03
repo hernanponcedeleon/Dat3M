@@ -1,0 +1,651 @@
+rmbench{../benchmarks/bakery.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/bakery_Power.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/bakery_x86.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+//
+rmbench{../benchmarks/burns.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/burns_Power.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/burns_x86.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+//
+rmbench{../benchmarks/dekker.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/dekker_Power.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/dekker_x86.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+//
+rmbench{../benchmarks/lamport.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/lamport_Power.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/lamport_x86.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+//
+rmbench{../benchmarks/parker.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/parker_Power.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/parker_x86.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/peterson.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/peterson_Power.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/peterson_x86.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+//
+rmbench{../benchmarks/szymanski.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/szymanski_Power.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[92mThe program is portable[0m
+//
+rmbench{../benchmarks/szymanski_x86.pts}
+Checking portability between [94msc[0m and [94mtso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94msc[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mtso[0m and [94mpso[0m 
+[92mThe program is portable[0m
+&
+Checking portability between [94mrmo[0m and [94malpha[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mrmo[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94msc[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mtso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mpso[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94mrmo[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+&
+Checking portability between [94malpha[0m and [94mpower[0m 
+[91mThe program is not portable[0m
+//

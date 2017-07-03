@@ -1,0 +1,648 @@
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/bakery.pts', 17.711787939071655)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/bakery_Power.pts', 19.452289819717407)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/bakery_x86.pts', 16.815124988555908)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/burns.pts', 4.2296130657196045)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/burns_Power.pts', 4.9057769775390625)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/burns_x86.pts', 4.222445011138916)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/dekker.pts', 15.182631015777588)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/dekker_Power.pts', 15.218568086624146)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/dekker_x86.pts', 14.89327883720398)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/lamport.pts', 32.53489804267883)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/lamport_Power.pts', 36.726147174835205)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/lamport_x86.pts', 33.54331588745117)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/parker.pts', 1.7272579669952393)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/parker_Power.pts', 1.84458589553833)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/parker_x86.pts', 1.8788740634918213)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/peterson.pts', 9.537302017211914)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/peterson_Power.pts', 9.224287033081055)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/peterson_x86.pts', 9.417800903320312)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/szymanski.pts', 36.77258491516113)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/szymanski_Power.pts', 42.06637406349182)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mtso[0m 
+('../benchmarks/szymanski_x86.pts', 37.155718088150024)
+[92mThe program is portable[0m
+
+
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/bakery.pts', 17.71239709854126)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/bakery_Power.pts', 17.281736850738525)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/bakery_x86.pts', 17.08566689491272)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/burns.pts', 4.36043381690979)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/burns_Power.pts', 4.316703796386719)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/burns_x86.pts', 4.3241260051727295)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/dekker.pts', 17.16452407836914)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/dekker_Power.pts', 15.195696830749512)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/dekker_x86.pts', 15.287949085235596)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/lamport.pts', 34.145390033721924)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/lamport_Power.pts', 34.24053192138672)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/lamport_x86.pts', 34.20997500419617)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/parker.pts', 1.7635059356689453)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/parker_Power.pts', 1.8228280544281006)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/parker_x86.pts', 1.7368559837341309)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/peterson.pts', 9.079921007156372)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/peterson_Power.pts', 9.2201669216156)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/peterson_x86.pts', 9.876070022583008)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/szymanski.pts', 35.92042112350464)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/szymanski_Power.pts', 36.337804079055786)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpso[0m 
+('../benchmarks/szymanski_x86.pts', 36.4064040184021)
+[92mThe program is portable[0m
+
+
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/bakery.pts', 19.266618013381958)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/bakery_Power.pts', 20.279268980026245)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/bakery_x86.pts', 19.10199284553528)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/burns.pts', 4.783245086669922)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/burns_Power.pts', 4.917539119720459)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/burns_x86.pts', 4.902663946151733)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/dekker.pts', 16.422616958618164)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/dekker_Power.pts', 16.7957820892334)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/dekker_x86.pts', 16.261545181274414)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/lamport.pts', 34.526187896728516)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/lamport_Power.pts', 34.97525691986084)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/lamport_x86.pts', 34.84059500694275)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/parker.pts', 1.9176299571990967)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/parker_Power.pts', 1.9337139129638672)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/parker_x86.pts', 1.910064935684204)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/peterson.pts', 9.911800146102905)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/peterson_Power.pts', 10.15679383277893)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/peterson_x86.pts', 10.10535192489624)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/szymanski.pts', 38.586021900177)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/szymanski_Power.pts', 38.94428896903992)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpso[0m 
+('../benchmarks/szymanski_x86.pts', 38.36858797073364)
+[92mThe program is portable[0m
+
+
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/bakery.pts', 77.43256998062134)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/bakery_Power.pts', 76.4599220752716)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/bakery_x86.pts', 76.76262283325195)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/burns.pts', 13.814864158630371)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/burns_Power.pts', 13.928956985473633)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/burns_x86.pts', 13.747427940368652)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/dekker.pts', 65.30407905578613)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/dekker_Power.pts', 64.58525776863098)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/dekker_x86.pts', 64.79374814033508)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/lamport.pts', 149.76748991012573)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/lamport_Power.pts', 149.43270111083984)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/lamport_x86.pts', 148.46767115592957)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/parker.pts', 4.638587951660156)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/parker_Power.pts', 4.659434080123901)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/parker_x86.pts', 5.333816051483154)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/peterson.pts', 36.180014848709106)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/peterson_Power.pts', 36.74676299095154)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/peterson_x86.pts', 36.47496795654297)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/szymanski.pts', 207.9479649066925)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/szymanski_Power.pts', 204.21560096740723)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94malpha[0m 
+('../benchmarks/szymanski_x86.pts', 207.26525592803955)
+[91mThe program is not portable[0m
+
+
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/bakery.pts', 82.34192895889282)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/bakery_Power.pts', 80.51177191734314)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/bakery_x86.pts', 78.01531314849854)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/burns.pts', 16.663074016571045)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/burns_Power.pts', 16.046077013015747)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/burns_x86.pts', 15.101838111877441)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/dekker.pts', 67.98671388626099)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/dekker_Power.pts', 68.83069491386414)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/dekker_x86.pts', 71.88794994354248)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/lamport.pts', 167.64864993095398)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/lamport_Power.pts', 163.69334292411804)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/lamport_x86.pts', 163.22713589668274)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/parker.pts', 5.075859069824219)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/parker_Power.pts', 4.959830045700073)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/parker_x86.pts', 4.853262186050415)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/peterson.pts', 37.35984206199646)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/peterson_Power.pts', 38.16824007034302)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/peterson_x86.pts', 37.52140998840332)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/szymanski.pts', 224.83411693572998)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/szymanski_Power.pts', 216.96360301971436)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mrmo[0m 
+('../benchmarks/szymanski_x86.pts', 221.9922640323639)
+[91mThe program is not portable[0m
+
+
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/bakery.pts', 59.05555701255798)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/bakery_Power.pts', 56.916510820388794)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/bakery_x86.pts', 59.36018395423889)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/burns.pts', 12.968171119689941)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/burns_Power.pts', 14.357208013534546)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/burns_x86.pts', 12.452924013137817)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/dekker.pts', 53.6379599571228)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/dekker_Power.pts', 49.373197078704834)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/dekker_x86.pts', 50.312155961990356)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/lamport.pts', 112.31699204444885)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/lamport_Power.pts', 106.44781613349915)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/lamport_x86.pts', 111.06283402442932)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/parker.pts', 4.2793591022491455)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/parker_Power.pts', 4.3231470584869385)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/parker_x86.pts', 4.332067012786865)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/peterson.pts', 29.347244024276733)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/peterson_Power.pts', 28.929024934768677)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/peterson_x86.pts', 28.539752960205078)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/szymanski.pts', 150.4757010936737)
+[91mThe program is not portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/szymanski_Power.pts', 152.56696391105652)
+[92mThe program is portable[0m
+Checking portability between [94msc[0m and [94mpower[0m 
+('../benchmarks/szymanski_x86.pts', 148.56943702697754)
+[91mThe program is not portable[0m
+
+
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/bakery.pts', 54.40743398666382)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/bakery_Power.pts', 54.626919984817505)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/bakery_x86.pts', 56.86174511909485)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/burns.pts', 12.412890195846558)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/burns_Power.pts', 12.91234803199768)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/burns_x86.pts', 12.52488398551941)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/dekker.pts', 59.376790046691895)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/dekker_Power.pts', 47.49696111679077)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/dekker_x86.pts', 47.08935308456421)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/lamport.pts', 114.19770884513855)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/lamport_Power.pts', 106.07640600204468)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/lamport_x86.pts', 112.17199516296387)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/parker.pts', 4.84516716003418)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/parker_Power.pts', 4.536892890930176)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/parker_x86.pts', 4.509006023406982)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/peterson.pts', 28.8381130695343)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/peterson_Power.pts', 29.65829110145569)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/peterson_x86.pts', 28.47548198699951)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/szymanski.pts', 160.4891541004181)
+[91mThe program is not portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/szymanski_Power.pts', 152.01106595993042)
+[92mThe program is portable[0m
+Checking portability between [94mtso[0m and [94mpower[0m 
+('../benchmarks/szymanski_x86.pts', 148.37688899040222)
+[91mThe program is not portable[0m
+
+
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/bakery.pts', 56.07311487197876)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/bakery_Power.pts', 55.44184398651123)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/bakery_x86.pts', 54.47545790672302)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/burns.pts', 12.326245069503784)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/burns_Power.pts', 12.438342809677124)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/burns_x86.pts', 12.19865608215332)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/dekker.pts', 46.836266040802)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/dekker_Power.pts', 47.898717164993286)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/dekker_x86.pts', 47.2587411403656)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/lamport.pts', 104.5262770652771)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/lamport_Power.pts', 116.18441104888916)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/lamport_x86.pts', 120.09160900115967)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/parker.pts', 4.524386167526245)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/parker_Power.pts', 4.568542003631592)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/parker_x86.pts', 4.84607720375061)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/peterson.pts', 33.07738900184631)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/peterson_Power.pts', 29.01974582672119)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/peterson_x86.pts', 29.65832495689392)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/szymanski.pts', 158.44853115081787)
+[91mThe program is not portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/szymanski_Power.pts', 164.60874891281128)
+[92mThe program is portable[0m
+Checking portability between [94mpso[0m and [94mpower[0m 
+('../benchmarks/szymanski_x86.pts', 161.03548502922058)
+[91mThe program is not portable[0m
+
+
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/bakery.pts', 92.47750806808472)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/bakery_Power.pts', 96.11202907562256)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/bakery_x86.pts', 91.41643404960632)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/burns.pts', 19.80647087097168)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/burns_Power.pts', 19.872626066207886)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/burns_x86.pts', 20.556342840194702)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/dekker.pts', 83.11427998542786)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/dekker_Power.pts', 84.3297049999237)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/dekker_x86.pts', 82.2297899723053)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/lamport.pts', 184.48494505882263)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/lamport_Power.pts', 175.1193699836731)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/lamport_x86.pts', 172.94712710380554)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/parker.pts', 6.245426893234253)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/parker_Power.pts', 6.043774843215942)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/parker_x86.pts', 5.978340148925781)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/peterson.pts', 43.555743932724)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/peterson_Power.pts', 44.35728716850281)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/peterson_x86.pts', 44.71226382255554)
+[91mThe program is not portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/szymanski.pts', 303.1020109653473)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/szymanski_Power.pts', 242.29167008399963)
+[92mThe program is portable[0m
+Checking portability between [94mrmo[0m and [94mpower[0m 
+('../benchmarks/szymanski_x86.pts', 257.22806692123413)
+[91mThe program is not portable[0m
+
+
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/bakery.pts', 147.9792459011078)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/bakery_Power.pts', 134.53474402427673)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/bakery_x86.pts', 125.65532207489014)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/burns.pts', 24.237879037857056)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/burns_Power.pts', 24.7087562084198)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/burns_x86.pts', 24.8580539226532)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/dekker.pts', 117.00957894325256)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/dekker_Power.pts', 115.35802793502808)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/dekker_x86.pts', 109.46362400054932)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/lamport.pts', 256.9212529659271)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/lamport_Power.pts', 230.89001393318176)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/lamport_x86.pts', 178.96000790596008)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/parker.pts', 6.072597026824951)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/parker_Power.pts', 6.23146915435791)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/parker_x86.pts', 6.472984075546265)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/peterson.pts', 43.66850209236145)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/peterson_Power.pts', 44.07647895812988)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/peterson_x86.pts', 42.7906060218811)
+[91mThe program is not portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/szymanski.pts', 248.63054990768433)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/szymanski_Power.pts', 240.5077929496765)
+[92mThe program is portable[0m
+Checking portability between [94malpha[0m and [94mpower[0m 
+('../benchmarks/szymanski_x86.pts', 237.85160207748413)
+[91mThe program is not portable[0m

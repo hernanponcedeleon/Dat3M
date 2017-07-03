@@ -1,0 +1,70 @@
+{x,y}
+
+thread t0 {
+y1 <- 0;
+i <- 1;
+while (y1 != i) {
+  x.store(_sc,i);
+  y1 = y.load(_rx);
+  while (y1 != 0) {
+    x.store(_sc,i);
+    y1 = y.load(_rx)
+  };
+  y.store(_sc,i);
+  x1 = x.load(_rx);
+  if (x1 == i) {
+    y1 = y.load(_rx)
+  }
+  else {
+    y1 = y.load(_rx)
+  }
+};
+a <- 0;
+y.store(_rx,a)
+}
+
+thread t1 {
+y1 <- 0;
+i <- 2;
+while (y1 != i) {
+  x.store(_sc,i);
+  y1 = y.load(_rx);
+  while (y1 != 0) {
+    x.store(_sc,i);
+    y1 = y.load(_rx)
+  };
+  y.store(_sc,i);
+  x1 = x.load(_rx);
+  if (x1 == i) {
+    y1 = y.load(_rx)
+  }
+  else {
+    y1 = y.load(_rx)
+  }
+};
+a <- 0;
+y.store(_rx,a)
+}
+
+thread t3 {
+y1 <- 0;
+i <- 3;
+while (y1 != i) {
+  x.store(_sc,i);
+  y1 = y.load(_rx);
+  while (y1 != 0) {
+    x.store(_sc,i);
+    y1 = y.load(_rx)
+  };
+  y.store(_sc,i);
+  x1 = x.load(_rx);
+  if (x1 == i) {
+    y1 = y.load(_rx)
+  }
+  else {
+    y1 = y.load(_rx)
+  }
+};
+a <- 0;
+y.store(_rx,a)
+}
