@@ -115,43 +115,40 @@ public class Athos {
 		Integer startEId = p.getEvents().size() + 1;
 		p2.optCompile(startEId);
 		
-//		System.out.println(p);
-//		System.out.println(p2);
-		
 		Context ctx = new Context();
 		Optimize opt = ctx.mkOptimize();
 		
-//		opt.Add(p2.encodeDF(ctx, false));
-//		opt.Add(p2.encodeCF(ctx));
-//		opt.Add(p2.encodeDF_RF(ctx));
-//		opt.Add(Domain.encode(p2, ctx));
-//		opt.Add(p2.encodeConsistent(ctx, target));
+		opt.Add(p2.encodeDF(ctx, false));
+		opt.Add(p2.encodeCF(ctx));
+		opt.Add(p2.encodeDF_RF(ctx));
+		opt.Add(Domain.encode(p2, ctx));
+		opt.Add(p2.encodeConsistent(ctx, target));
 
 		opt.Add(p.encodeDF(ctx, false));
 		opt.Add(p.encodeCF(ctx));
-//		opt.Add(p.encodeDF_RF(ctx));
+		opt.Add(p.encodeDF_RF(ctx));
 		opt.Add(Domain.encode(p, ctx));
-//		opt.Add(p.encodeInconsistent(ctx, target));
+		opt.Add(p.encodeInconsistent(ctx, target));
 		
-//		opt.Add(Encodings.encodeCommonExecutions(p, p2, ctx));
+		opt.Add(Encodings.encodeCommonExecutions(p, p2, ctx));
 		for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+			opt.Add(ctx.mkImplies(e.executes(ctx), ctx.mkEq(ctx.mkIntConst(e.repr()), ctx.mkInt(1))));
+			opt.Add(ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ctx.mkIntConst(e.repr()), ctx.mkInt(0))));
+			opt.MkMaximize(ctx.mkIntConst(e.repr()));
 			//opt.AssertSoft(e.executes(ctx), 1, "");
 		}
 
-		System.out.println(opt.Check());
-		long startTime = System.currentTimeMillis();
 		if(opt.Check() == Status.SATISFIABLE) {
 			System.out.println("       0");
-//			for(Event e1 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
-//				for(Event e2 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
-//					if(s.getModel().getConstInterp(Utils.cycleEdge("hb-power", e1, e2, ctx)).isTrue()) {
-//						System.out.println(Utils.cycleEdge("hb-power", e1, e2, ctx).toString());	
-//					}
+			System.out.println(p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet()).size());
+			for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+				if(opt.getModel().getConstInterp(e.executes(ctx)).isTrue()) {
+					System.out.println(e.repr());
+				}
+			}
 		}
 		else {
 			System.out.println("       1");
 		}
-		long endTime = System.currentTimeMillis();
-//		System.out.println("Solved " + (endTime - startTime)/1000);
 	}
 }
