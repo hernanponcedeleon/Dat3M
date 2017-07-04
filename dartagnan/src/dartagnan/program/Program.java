@@ -299,45 +299,6 @@ public class Program {
 		return enc;
 	}
 
-	public BoolExpr encodeCommonExecutions(Program p,Context ctx) throws Z3Exception {
-		BoolExpr enc = ctx.mkTrue();
-		Set<Event> rEventsP1 = getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
-		Set<Event> wEventsP1 = getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
-		Set<Event> rEventsP2 = p.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
-		Set<Event> wEventsP2 = p.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
-		for(Event r1 : rEventsP1) {
-			for(Event r2 : rEventsP2) {			
-				if(((MemEvent) r1).hlId.equals(((MemEvent) r2).hlId)) {
-					for(Event w1 : wEventsP1) {
-						for(Event w2 : wEventsP2) {
-							if(w1 == w2) {continue;}
-							if(((MemEvent) w1).hlId.equals(((MemEvent) w2).hlId)) {
-								enc = ctx.mkAnd(enc, ctx.mkIff(Utils.edge("rf", w1, r1, ctx), Utils.edge("rf", w2, r2, ctx)));
-								enc = ctx.mkAnd(enc, ctx.mkIff(Utils.edge("fr", r1, w1, ctx), Utils.edge("fr", r2, w2, ctx)));
-							}
-						}	
-					}
-				}
-			}	
-		}
-		for(Event w1P1 : rEventsP1) {
-			for(Event w1P2 : rEventsP2) {			
-				if(w1P1 == w1P2) {continue;}
-				if(((MemEvent) w1P1).hlId.equals(((MemEvent) w1P2).hlId)) {
-					for(Event w2P1 : wEventsP1) {
-						for(Event w2P2 : wEventsP2) {
-							if(w2P1 == w2P2) {continue;}
-							if(((MemEvent) w2P2).hlId.equals(((MemEvent) w2P2).hlId)) {
-								enc = ctx.mkAnd(enc, ctx.mkIff(Utils.edge("co", w1P1, w1P2, ctx), Utils.edge("co", w2P2, w2P2, ctx)));
-							}
-						}	
-					}
-				}
-			}	
-		}
-		return enc;
-	}
-
 	public List<Thread> getThreads() {
 		return this.threads;
 	}

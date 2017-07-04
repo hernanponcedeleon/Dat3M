@@ -4,11 +4,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Z3Exception;
 
-import dartagnan.program.*;
-import dartagnan.utils.*;
+import dartagnan.program.Event;
+import dartagnan.program.Init;
+import dartagnan.program.Local;
+import dartagnan.program.Location;
+import dartagnan.program.MemEvent;
+import dartagnan.program.Program;
 import dartagnan.program.Thread;
+import dartagnan.utils.Utils;
 
 public class Power {
 	

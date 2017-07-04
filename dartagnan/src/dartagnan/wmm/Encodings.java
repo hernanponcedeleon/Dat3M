@@ -8,6 +8,11 @@ import java.util.stream.IntStream;
 import com.microsoft.z3.*;
 
 import dartagnan.program.Event;
+import dartagnan.program.Init;
+import dartagnan.program.Load;
+import dartagnan.program.MemEvent;
+import dartagnan.program.Program;
+import dartagnan.program.Store;
 import dartagnan.utils.Utils;
 
 public class Encodings {
@@ -220,4 +225,54 @@ public class Encodings {
 	    }
 	    return enc;
 	}
+	
+	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) throws Z3Exception {
+		BoolExpr enc = ctx.mkTrue();
+		Set<Event> memEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> memEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> rEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
+		Set<Event> wEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
+		Set<Event> rEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
+		Set<Event> wEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
+		for(Event e1 : memEventsP1) {
+			for(Event e2 : memEventsP2) {
+				if(((MemEvent) e1).hlId.equals(((MemEvent) e2).hlId)) {
+					enc = ctx.mkAnd(enc, ctx.mkEq(e1.executes(ctx), e2.executes(ctx)));
+				}	
+			}
+		}
+		for(Event r1 : rEventsP1) {
+			for(Event r2 : rEventsP2) {
+				if(((MemEvent) r1).hlId.equals(((MemEvent) r2).hlId)) {
+					for(Event w1 : wEventsP1) {
+						for(Event w2 : wEventsP2) {
+							if(r1.getLoc() != w1.getLoc()) {continue;}
+							if(r2.getLoc() != w2.getLoc()) {continue;}
+							if(((MemEvent) w1).hlId.equals(((MemEvent) w2).hlId)) {
+								enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge("rf", w1, r1, ctx), Utils.edge("rf", w2, r2, ctx)));
+							}
+						}	
+					}
+				}
+			}	
+		}
+		for(Event w1P1 : wEventsP1) {
+			for(Event w1P2 : wEventsP2) {
+				if(((MemEvent) w1P1).hlId.equals(((MemEvent) w1P2).hlId)) {
+					for(Event w2P1 : wEventsP1) {
+						for(Event w2P2 : wEventsP2) {
+							if(w1P1.getLoc() != w2P1.getLoc()) {continue;}
+							if(w1P1.getLoc() != w2P2.getLoc()) {continue;}
+							if(w1P1 == w2P1 | w1P2 == w2P2) {continue;}
+							if(((MemEvent) w2P1).hlId.equals(((MemEvent) w2P2).hlId)) {
+								enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge("co", w1P1, w2P1, ctx), Utils.edge("co", w1P2, w2P2, ctx)));
+							}
+						}	
+					}
+				}
+			}	
+		}
+		return enc;
+	}
+
 }

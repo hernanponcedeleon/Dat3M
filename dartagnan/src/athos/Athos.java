@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Optimize;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
@@ -35,18 +36,20 @@ import dartagnan.program.Load;
 import dartagnan.program.Init;
 import dartagnan.program.Local;
 import dartagnan.program.MemEvent;
+import dartagnan.program.OptLwsync;
+import dartagnan.program.OptSync;
 import dartagnan.program.Store;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
-import dartagnan.wmm.Domain2;
+import dartagnan.wmm.Encodings;
 
 @SuppressWarnings("deprecation")
 public class Athos {
 
-	public static void main(String[] args) throws Z3Exception, IOException {		
+	public static void main(String[] args) throws IOException, Z3Exception {		
 
-		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "none");
+		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power");
 		
 		Options options = new Options();
 
@@ -109,82 +112,46 @@ public class Athos {
 		p.initialize();
 		Program p2 = p.clone();
 		p.compile();
-		Integer startEId = 1;
+		Integer startEId = p.getEvents().size() + 1;
 		p2.optCompile(startEId);
 		
-		System.out.println(p);
-		System.out.println(p2);
+//		System.out.println(p);
+//		System.out.println(p2);
 		
 		Context ctx = new Context();
-		Solver s = ctx.mkSolver();
-//		s.add(p2.encodeDF(ctx, false));
-//		s.add(p2.encodeCF(ctx));
-//		s.add(p2.encodeDF_RF(ctx));
-//		s.add(Domain2.encode(p2, ctx));
-		s.add(p.encodeConsistent(ctx, target));
-		s.add(p.encodeDF(ctx, false));
-		s.add(p.encodeCF(ctx));
-		s.add(p.encodeDF_RF(ctx));
-		s.add(Domain2.encode(p, ctx));
-		s.add(p2.encodeInconsistent(ctx, target));
-//		s.add(p.encodeCommonExecutions(p2, ctx));
+		Optimize opt = ctx.mkOptimize();
+		
+//		opt.Add(p2.encodeDF(ctx, false));
+//		opt.Add(p2.encodeCF(ctx));
+//		opt.Add(p2.encodeDF_RF(ctx));
+//		opt.Add(Domain.encode(p2, ctx));
+//		opt.Add(p2.encodeConsistent(ctx, target));
 
-		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+		opt.Add(p.encodeDF(ctx, false));
+		opt.Add(p.encodeCF(ctx));
+//		opt.Add(p.encodeDF_RF(ctx));
+		opt.Add(Domain.encode(p, ctx));
+//		opt.Add(p.encodeInconsistent(ctx, target));
+		
+//		opt.Add(Encodings.encodeCommonExecutions(p, p2, ctx));
+		for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+			//opt.AssertSoft(e.executes(ctx), 1, "");
+		}
 
-		if(s.check() == Status.SATISFIABLE) {
-			//System.out.println(String.format("The program is not portable from %s to %s", source, target));
+		System.out.println(opt.Check());
+		long startTime = System.currentTimeMillis();
+		if(opt.Check() == Status.SATISFIABLE) {
 			System.out.println("       0");
 //			for(Event e1 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
 //				for(Event e2 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
-//					if(s.getModel().getConstInterp(Utils.cycleEdge("(poloc+com)", e1, e2, ctx)).isTrue()) {
-//						System.out.println(Utils.cycleEdge("(poloc+com)", e1, e2, ctx).toString());	
+//					if(s.getModel().getConstInterp(Utils.cycleEdge("hb-power", e1, e2, ctx)).isTrue()) {
+//						System.out.println(Utils.cycleEdge("hb-power", e1, e2, ctx).toString());	
 //					}
-//					if(s.getModel().getConstInterp(Utils.edge("fr", e1, e2, ctx)).isTrue()) {
-//						System.out.println(Utils.edge("fr", e1, e2, ctx).toString());	
-//					}
-//				}
-//			}
-//			for(Event e1 : p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
-//				for(Event e2 : p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
-//					if(s.getModel().getConstInterp(Utils.edge("fr", e1, e2, ctx)).isTrue()) {
-//						System.out.println(Utils.edge("fr", e1, e2, ctx).toString());	
-//					}
-//				}
-//			}
-//			
-//			for(Event r : p.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet())) {
-//				for(Event w : p.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet())) {
-//					if(s.getModel().getConstInterp(Utils.edge("rf", w, r, ctx)).isTrue()) {
-//						System.out.println("rf(" + w.repr() + "," + r.repr());	
-//					}
-//				}
-//			}
-//			for(Event r : p2.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet())) {
-//				for(Event w : p2.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet())) {
-//					if(s.getModel().getConstInterp(Utils.edge("rf", w, r, ctx)).isTrue()) {
-//						System.out.println("rf(" + w.repr() + "," + r.repr());	
-//					}
-//				}
-//			}
-//			
-//			for(Event r : p.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet())) {
-//				for(Event w : p.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet())) {
-//					if(s.getModel().getConstInterp(Utils.edge("co", w, r, ctx)).isTrue()) {
-//						System.out.println("co(" + w.repr() + "," + r.repr());	
-//					}
-//				}
-//			}
-//			for(Event r : p2.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet())) {
-//				for(Event w : p2.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet())) {
-//					if(s.getModel().getConstInterp(Utils.edge("co", w, r, ctx)).isTrue()) {
-//						System.out.println("co(" + w.repr() + "," + r.repr());	
-//					}
-//				}
-//			}
 		}
 		else {
-			//System.out.println(String.format("The program is portable from %s to %s", source, target));
 			System.out.println("       1");
 		}
+		long endTime = System.currentTimeMillis();
+//		System.out.println("Solved " + (endTime - startTime)/1000);
 	}
 }

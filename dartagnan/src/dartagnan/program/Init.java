@@ -26,6 +26,7 @@ public class Init extends MemEvent {
 		Location newLoc = loc.clone();
 		Init newInit = new Init(newLoc);
 		newInit.condLevel = condLevel;
+		newInit.hlId = hlId;
 		return newInit;
 	}
 
