@@ -74,15 +74,17 @@ public class Seq extends Thread {
 		t2 = t2.optCompile();
 		return this;
 	}
-//	public Seq optCompile() {
-//		t1 = t1.optCompile();
-//		t2 = t2.optCompile();
+
+	public Seq allCompile() {
+		t1 = t1.allCompile();
+		t2 = t2.allCompile();
 //		OptSync os = new OptSync();
 //		os.condLevel = t1.condLevel;
 //		OptLwsync olws = new OptLwsync();
 //		olws.condLevel = t1.condLevel;
 //		return new Seq(t1, new Seq(os, new Seq(olws, t2)));
-//	}
+		return this;
+	}
 	
 	public Seq clone() {
 		Thread newT1 = t1.clone();
@@ -137,4 +139,12 @@ public class Seq extends Thread {
 				t1.encodeCF(ctx),
 				t2.encodeCF(ctx));
 	}
+	
+	public BoolExpr allExecute(Context ctx) throws Z3Exception {
+		return ctx.mkAnd(
+				ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),
+				t1.allExecute(ctx),
+				t2.allExecute(ctx));
+	}
+
 }

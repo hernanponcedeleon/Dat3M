@@ -17,4 +17,8 @@ public class Skip extends Event {
 		newSkip.condLevel = condLevel;
 		return newSkip;
 	}
+	
+	public Thread allCompile() {
+		return this;
+	}
 }

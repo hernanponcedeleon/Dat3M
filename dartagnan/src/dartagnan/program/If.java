@@ -97,6 +97,12 @@ public class If extends Thread {
 		return this;
 	}
 	
+	public If allCompile() {
+		t1 = t1.allCompile();
+		t2 = t2.allCompile();
+		return this;
+	}
+	
 	public If clone() {
 		BExpr newPred = pred.clone();
 		Thread newT1 = t1.clone();
@@ -161,5 +167,11 @@ public class If extends Thread {
 				ctx.mkImplies(ctx.mkBoolConst(cfVar()), ctx.mkXor(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar()))),
 				t1.encodeCF(ctx),
 				t2.encodeCF(ctx));
+	}
+
+	public BoolExpr allExecute(Context ctx) throws Z3Exception {
+		return ctx.mkAnd(
+				ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),				t1.allExecute(ctx),
+				t2.allExecute(ctx));
 	}
 }

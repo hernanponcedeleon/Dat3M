@@ -47,6 +47,11 @@ public class Thread {
 	public Thread optCompile() {
 		return compile();
 	}
+	
+	public Thread allCompile() {
+		System.out.println("Problem all compile!");
+		return null;
+	}
 
 	public Thread clone() {
 		System.out.println("Problem with clone!");
@@ -104,5 +109,11 @@ public class Thread {
 
 	public Integer getTId() {
 		return this.tid;
+	}
+
+	public BoolExpr allExecute(Context ctx) {
+		// TODO Auto-generated method stub
+		System.out.println("Check allExecute!");
+		return null;
 	}
 }

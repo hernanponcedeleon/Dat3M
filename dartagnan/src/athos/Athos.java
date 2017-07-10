@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 import com.microsoft.z3.Optimize;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
@@ -31,6 +32,7 @@ import dartagnan.LitmusLexer;
 import dartagnan.LitmusParser;
 import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
+import dartagnan.program.Barrier;
 import dartagnan.program.Event;
 import dartagnan.program.Load;
 import dartagnan.program.Init;
@@ -114,41 +116,96 @@ public class Athos {
 		p.compile();
 		Integer startEId = p.getEvents().size() + 1;
 		p2.optCompile(startEId);
+//		System.out.println(p);
+//		System.out.println(p2);
+		
+		System.out.println(p.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet()).size());
 		
 		Context ctx = new Context();
 		Optimize opt = ctx.mkOptimize();
+
+//		opt.Add(p2.encodeDF(ctx, false));
+//		opt.Add(p2.encodeCF(ctx));
+//		opt.Add(p2.encodeDF_RF(ctx));
+		opt.Add(Domain.encode(p2, ctx));
+//		opt.Add(p2.encodeConsistent(ctx, target));
+
+//		opt.Add(p.encodeDF(ctx, false));
+//		opt.Add(p.encodeCF(ctx));
+//		opt.Add(p.encodeDF_RF(ctx));
+		opt.Add(Domain.encode(p, ctx));
+//		opt.Add(p.encodeInconsistent(ctx, target));
+		
+		opt.Add(Encodings.encodeCommonExecutions(p, p2, ctx));
+
+		for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+			opt.Add(ctx.mkIff(e.executes(ctx), ctx.mkEq(ctx.mkIntConst(e.repr()), ctx.mkInt(1))));
+			opt.Add(ctx.mkIff(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ctx.mkIntConst(e.repr()), ctx.mkInt(0))));
+		}
+
+		opt.Push();
+		opt.Add(p.allExecute(ctx));
+		opt.Add(Encodings.encodePreserveFences(p, p2, ctx));
+		for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+			opt.MkMinimize(ctx.mkIntConst(e.repr()));
+		}
+
+		if(opt.Check() == Status.SATISFIABLE) {
+//			System.out.println("       0");
+			int count = 0;
+//			for(Event e1 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
+//				for(Event e2 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
+//					if(opt.getModel().getConstInterp(Utils.edge("((((com)*;(prop-base)*);sync);(hb-power)*)", e1, e2, ctx)).isTrue()) {
+//						System.out.println(Utils.edge("((((com)*;(prop-base)*);sync);(hb-power)*)", e1, e2, ctx));
+//					}
+//				}	
+//			}
+
+			Model model = opt.getModel();
+			opt.Pop();
+			for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+				if(model.getConstInterp(e.executes(ctx)).isTrue()) {
+					count ++;
+				}
+				else {
+					opt.Add(ctx.mkNot(e.executes(ctx)));
+				}
+				
+			}
+			System.out.println(count);
+		}
+		else {
+			System.out.println("       1");
+		}
 		
 		opt.Add(p2.encodeDF(ctx, false));
 		opt.Add(p2.encodeCF(ctx));
 		opt.Add(p2.encodeDF_RF(ctx));
-		opt.Add(Domain.encode(p2, ctx));
 		opt.Add(p2.encodeConsistent(ctx, target));
 
 		opt.Add(p.encodeDF(ctx, false));
 		opt.Add(p.encodeCF(ctx));
 		opt.Add(p.encodeDF_RF(ctx));
-		opt.Add(Domain.encode(p, ctx));
 		opt.Add(p.encodeInconsistent(ctx, target));
-		
-		opt.Add(Encodings.encodeCommonExecutions(p, p2, ctx));
+				
 		for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
-			opt.Add(ctx.mkImplies(e.executes(ctx), ctx.mkEq(ctx.mkIntConst(e.repr()), ctx.mkInt(1))));
-			opt.Add(ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ctx.mkIntConst(e.repr()), ctx.mkInt(0))));
 			opt.MkMaximize(ctx.mkIntConst(e.repr()));
-			//opt.AssertSoft(e.executes(ctx), 1, "");
 		}
 
 		if(opt.Check() == Status.SATISFIABLE) {
 			System.out.println("       0");
-			System.out.println(p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet()).size());
+			int count = 0;
+			Model model = opt.getModel();
 			for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
-				if(opt.getModel().getConstInterp(e.executes(ctx)).isTrue()) {
-					System.out.println(e.repr());
+				if(model.getConstInterp(e.executes(ctx)).isTrue()) {
+					count ++;
 				}
 			}
+			System.out.println(count);
 		}
 		else {
 			System.out.println("       1");
 		}
+
 	}
 }

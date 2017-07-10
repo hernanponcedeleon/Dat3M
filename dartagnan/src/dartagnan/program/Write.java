@@ -102,4 +102,18 @@ public class Write extends MemEvent {
 		}
 		else System.out.println(String.format("Error in the atomic operation type of", this));
 		return null;
-	}}
+	}
+	
+	public Thread allCompile() {
+		Store st = new Store(loc, reg);
+		st.setHLId(hashCode());
+		st.condLevel = this.condLevel;
+		OptSync os = new OptSync();
+		os.condLevel = condLevel;
+		OptLwsync olws = new OptLwsync();
+		olws.condLevel = condLevel;
+		return new Seq(os, new Seq(olws, st));
+		//return st;
+	}
+
+}

@@ -209,39 +209,52 @@ public class Domain {
 										ctx.mkAnd(Utils.edge("ctrl", e1, e2, ctx), Utils.edge("isync", e1, e2, ctx))));	
 			}
 		}
-		
+				
 		for(Event e1 : mEvents) {
-			for(Event b : barriers) {
-				for(Event e2 : mEvents) {
+			for(Event e2 : mEvents) {
+				BoolExpr mfences = ctx.mkFalse();
+				BoolExpr syncs = ctx.mkFalse();
+				BoolExpr lwsyncs = ctx.mkFalse();
+				BoolExpr isyncs = ctx.mkFalse();
+
+				for(Event b : barriers) {
 					if(b instanceof Mfence && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
 							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-//						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-//								Utils.edge("mfence", e1, e2, ctx)));
-						enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
-													Utils.edge("mfence", e1, e2, ctx)));
+						mfences = ctx.mkOr(mfences, b.executes(ctx));
+						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
+								Utils.edge("mfence", e1, e2, ctx)));
+//						enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
+//													Utils.edge("mfence", e1, e2, ctx)));
 			        }
 					if(b instanceof Sync && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
 							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-//						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-//								Utils.edge("sync", e1, e2, ctx)));
-						enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
-													Utils.edge("sync", e1, e2, ctx)));
+						syncs = ctx.mkOr(syncs, b.executes(ctx));
+						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
+								Utils.edge("sync", e1, e2, ctx)));
+//						enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
+//													Utils.edge("sync", e1, e2, ctx)));
 			        }
 					if(b instanceof Lwsync && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
 							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-//						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-//								Utils.edge("lwsync", e1, e2, ctx)));
-						enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
-													Utils.edge("lwsync", e1, e2, ctx)));
+						lwsyncs = ctx.mkOr(lwsyncs, b.executes(ctx));
+						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
+								Utils.edge("lwsync", e1, e2, ctx)));
+//						enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
+//													Utils.edge("lwsync", e1, e2, ctx)));
 			        }
 					if(b instanceof Isync && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
 							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-//			        	enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-//								Utils.edge("isync", e1, e2, ctx)));
-			        	enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
-													Utils.edge("isync", e1, e2, ctx)));
+						isyncs = ctx.mkOr(isyncs, b.executes(ctx));
+						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
+								Utils.edge("isync", e1, e2, ctx)));
+//			        	enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAnd(e1.executes(ctx), b.executes(ctx), e2.executes(ctx)),
+//													Utils.edge("isync", e1, e2, ctx)));
 			        }
 				}
+				enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("mfence", e1, e2, ctx), mfences));
+				enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("sync", e1, e2, ctx), syncs));
+				enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("lwsync", e1, e2, ctx), lwsyncs));
+				enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("isync", e1, e2, ctx), isyncs));
 			}
 		}
 		
@@ -315,11 +328,11 @@ public class Domain {
 			enc = ctx.mkAnd(enc, ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(1)));
 		}
 
-		for(Event e : mEvents.stream().filter(e -> e instanceof Init || e instanceof Store).collect(Collectors.toSet())) {
-			int lastCoOrder = (mEvents.stream().filter(x -> (x instanceof Init || x instanceof Store) && e.getLoc() == x.getLoc()).collect(Collectors.toSet())).size();
-			enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(lastCoOrder)), ctx.mkEq(ctx.mkIntConst(e.getLoc().getName() + "_final"), ((MemEvent) e).ssaLoc)));
-		}
-		
+//		for(Event e : mEvents.stream().filter(e -> e instanceof Init || e instanceof Store).collect(Collectors.toSet())) {
+//			int lastCoOrder = (mEvents.stream().filter(x -> (x instanceof Init || x instanceof Store) && e.getLoc() == x.getLoc()).collect(Collectors.toSet())).size();
+//			enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(lastCoOrder)), ctx.mkEq(ctx.mkIntConst(e.getLoc().getName() + "_final"), ((MemEvent) e).ssaLoc)));
+//		}
+//		
 		for(Event e : mEvents.stream().filter(e -> e instanceof Load).collect(Collectors.toSet())) {
 			Set<Event> storeEventsLoc = mEvents.stream().filter(x -> (x instanceof Store || x instanceof Init) && e.getLoc() == x.getLoc()).collect(Collectors.toSet());
 			Set<BoolExpr> rfPairs = new HashSet<BoolExpr>();
