@@ -44,6 +44,14 @@ public class Event extends Thread {
 		return this;
 	}
 
+	public Thread allCompile() {
+		OptSync os = new OptSync();
+		os.condLevel = condLevel;
+		OptLwsync olws = new OptLwsync();
+		olws.condLevel = condLevel;
+		return new Seq(os, new Seq(olws, this));
+	}
+
 	public String repr() {
 		return String.format("E%s", eid);
 	}
@@ -77,6 +85,10 @@ public class Event extends Thread {
 	}
 	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
+		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
+	}
+
+	public BoolExpr allExecute(Context ctx) throws Z3Exception {
 		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
 	}
 

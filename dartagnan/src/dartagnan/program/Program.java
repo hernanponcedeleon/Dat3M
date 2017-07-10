@@ -136,6 +136,36 @@ public class Program {
 		}
 	}
 	
+	public void allCompile(Integer firstEId) {
+		List<Thread> compiledThreads = new ArrayList<Thread>();
+		
+		ListIterator<Thread> iter = threads.listIterator();
+		while (iter.hasNext()) {
+			Thread t = iter.next();
+			t = t.allCompile();
+			compiledThreads.add(t);
+		}
+		threads = compiledThreads;
+		
+		setTId();
+		setEId(firstEId);
+		setMainThread();
+		
+		// Set the thread for the registers
+		iter = threads.listIterator();
+		while (iter.hasNext()) {
+			Thread t = iter.next();
+            t.setCondRegs(new HashSet<Register>());
+            t.setLastModMap(new LastModMap());
+			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> ((Load) e).getReg()).collect(Collectors.toSet());
+			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
+			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
+			for(Register reg : regs) {
+				reg.setMainThread(t.tid);
+			}
+		}
+	}
+	
 	public BoolExpr encodeConsistent(Context ctx, String mcm) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		switch (mcm){
@@ -160,8 +190,8 @@ public class Program {
 			enc = ctx.mkAnd(enc, Alpha.Consistent(this, ctx));
 			break;
 		case "power":
-			enc = ctx.mkAnd(enc, Power.encode(this, ctx));
-			enc = ctx.mkAnd(enc, Power.Consistent(this, ctx));
+			enc = ctx.mkAnd(enc, Power2.encode(this, ctx));
+			enc = ctx.mkAnd(enc, Power2.Consistent(this, ctx));
 			break;
 		default:
 			System.out.println("Check encodeConsistent!");
@@ -194,8 +224,8 @@ public class Program {
 			enc = ctx.mkAnd(enc, Alpha.Inconsistent(this, ctx));
 			break;
 		case "power":
-			enc = ctx.mkAnd(enc, Power.encode(this, ctx));
-			enc = ctx.mkAnd(enc, Power.Inconsistent(this, ctx));
+			enc = ctx.mkAnd(enc, Power2.encode(this, ctx));
+			enc = ctx.mkAnd(enc, Power2.Inconsistent(this, ctx));
 			break;
 		default:
 			System.out.println("Check encodeInconsistent!");
@@ -279,6 +309,18 @@ public class Program {
 		while (iter.hasNext()) {
 			Thread t = iter.next();
 		    enc = ctx.mkAnd(enc, t.encodeCF(ctx));
+		    // Main threads are active
+		    enc = ctx.mkAnd(enc, ctx.mkBoolConst(t.cfVar()));
+		}
+		return enc;
+	}
+	
+	public BoolExpr allExecute(Context ctx) throws Z3Exception {
+		ListIterator<Thread> iter = threads.listIterator();
+		BoolExpr enc = ctx.mkTrue();
+		while (iter.hasNext()) {
+			Thread t = iter.next();
+		    enc = ctx.mkAnd(enc, t.allExecute(ctx));
 		    // Main threads are active
 		    enc = ctx.mkAnd(enc, ctx.mkBoolConst(t.cfVar()));
 		}

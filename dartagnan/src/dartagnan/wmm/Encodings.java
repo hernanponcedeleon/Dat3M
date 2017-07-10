@@ -275,4 +275,27 @@ public class Encodings {
 		return enc;
 	}
 
+	public static BoolExpr encodePreserveFences(Program p1, Program p2, Context ctx) {
+		BoolExpr enc = ctx.mkTrue();
+		Set<Event> memEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> memEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		for(Event e1P1 : memEventsP1) {
+			for(Event e1P2 : memEventsP2) {
+				if(((MemEvent) e1P1).hlId.equals(((MemEvent) e1P2).hlId)) {
+					for(Event e2P1 : memEventsP1) {
+						for(Event e2P2 : memEventsP2) {
+							if(e1P1.getMainThread() != e2P1.getMainThread()) {continue;}
+							if(e1P2.getMainThread() != e2P2.getMainThread()) {continue;}
+							if(e1P1.getEId() >= e2P1.getEId() | e1P2.getEId() >= e2P2.getEId()) {continue;}
+							if(((MemEvent) e2P1).hlId.equals(((MemEvent) e2P2).hlId)) {
+								enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("sync", e1P1, e2P1, ctx), Utils.edge("sync", e1P2, e2P2, ctx)));
+								enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("lwsync", e1P1, e2P1, ctx), ctx.mkOr(Utils.edge("lwsync", e1P2, e2P2, ctx), Utils.edge("sync", e1P2, e2P2, ctx))));
+							}
+						}	
+					}
+				}
+			}	
+		}
+		return enc;
+	}
 }

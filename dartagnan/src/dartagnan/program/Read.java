@@ -101,4 +101,17 @@ public class Read extends MemEvent {
 		}
 		else System.out.println(String.format("Error in the atomic operation type of %s", this));
 		return null;
-	}}
+	}
+	
+	public Thread allCompile() {
+		Load ld = new Load(reg, loc);
+		ld.setHLId(hashCode());
+		ld.condLevel = this.condLevel;
+		OptSync os = new OptSync();
+		os.condLevel = condLevel;
+		OptLwsync olws = new OptLwsync();
+		olws.condLevel = condLevel;
+		return new Seq(os, new Seq(olws, ld));
+		//return ld;
+	}
+}
