@@ -57,7 +57,7 @@ public class Read extends MemEvent {
 		return null;
 	}
 
-	public Thread compile() {
+	public Thread compile(boolean ctrl, boolean leading) {
 		Load ld = new Load(reg, loc);
 		ld.setHLId(hashCode());
 		ld.condLevel = this.condLevel;
@@ -68,7 +68,12 @@ public class Read extends MemEvent {
 		lwsync.condLevel = this.condLevel;
 		
 		if(atomic.equals("_sc")) {
-			return new Seq(sync, new Seq(ld, lwsync));
+			if(leading) {
+				return new Seq(sync, new Seq(ld, lwsync));	
+			}
+			else {
+				return new Seq(ld, lwsync);
+			}
 		}
 		if(atomic.equals("_rx") || atomic.equals("_na")) {
 			return ld;
@@ -80,7 +85,7 @@ public class Read extends MemEvent {
 		return null;
 	}
 	
-	public Thread optCompile() {
+	public Thread optCompile(boolean ctrl, boolean leading) {
 		Load ld = new Load(reg, loc);
 		ld.setHLId(hashCode());
 		ld.condLevel = this.condLevel;
@@ -91,7 +96,12 @@ public class Read extends MemEvent {
 		lwsync.condLevel = this.condLevel;
 		
 		if(atomic.equals("_sc")) {
-			return new Seq(sync, new Seq(ld, lwsync));
+			if(leading) {
+				return new Seq(sync, new Seq(ld, lwsync));	
+			}
+			else {
+				return new Seq(ld, lwsync);
+			}
 		}
 		if(atomic.equals("_rx") || atomic.equals("_na")) {
 			return ld;

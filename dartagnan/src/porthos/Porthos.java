@@ -100,7 +100,7 @@ public class Porthos {
 		}
 	
 		p.initialize();
-		p.compile();
+		p.compile(false, true);
 		
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver();

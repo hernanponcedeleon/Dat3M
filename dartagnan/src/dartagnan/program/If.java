@@ -85,15 +85,15 @@ public class If extends Thread {
 		return this;
 	}
 	
-	public If compile() {
-		t1 = t1.compile();
-		t2 = t2.compile();
+	public If compile(boolean ctrl, boolean leading) {
+		t1 = t1.compile(ctrl, leading);
+		t2 = t2.compile(ctrl, leading);
 		return this;
 	}
 	
-	public If optCompile() {
-		t1 = t1.optCompile();
-		t2 = t2.optCompile();
+	public If optCompile(boolean ctrl, boolean leading) {
+		t1 = t1.optCompile(ctrl, leading);
+		t2 = t2.optCompile(ctrl, leading);
 		return this;
 	}
 	

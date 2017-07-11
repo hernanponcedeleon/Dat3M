@@ -63,15 +63,15 @@ public class Seq extends Thread {
 		return this;
 	}
 	
-	public Seq compile() {
-		t1 = t1.compile();
-		t2 = t2.compile();
+	public Seq compile(boolean ctrl, boolean leading) {
+		t1 = t1.compile(ctrl, leading);
+		t2 = t2.compile(ctrl, leading);
 		return this;
 	}
 	
-	public Seq optCompile() {
-		t1 = t1.optCompile();
-		t2 = t2.optCompile();
+	public Seq optCompile(boolean ctrl, boolean leading) {
+		t1 = t1.optCompile(ctrl, leading);
+		t2 = t2.optCompile(ctrl, leading);
 		return this;
 	}
 
