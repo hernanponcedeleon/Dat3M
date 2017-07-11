@@ -39,13 +39,13 @@ public class Thread {
 		return this;
 	}
 	
-	public Thread compile() {
+	public Thread compile(boolean ctrl, boolean leading) {
 		System.out.println("Check compile!");
 		return this;
 	}
 	
-	public Thread optCompile() {
-		return compile();
+	public Thread optCompile(boolean ctrl, boolean leading) {
+		return compile(false, true);
 	}
 	
 	public Thread allCompile() {

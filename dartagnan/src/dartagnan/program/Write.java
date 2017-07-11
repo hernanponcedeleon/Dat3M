@@ -58,7 +58,7 @@ public class Write extends MemEvent {
 		return null;
 	}
 
-	public Thread compile() {
+	public Thread compile(boolean ctrl, boolean leading) {
 		Store st = new Store(loc, reg);
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
@@ -69,9 +69,14 @@ public class Write extends MemEvent {
 		lwsync.condLevel = this.condLevel;
 
 		if(atomic.equals("_sc")) {
-			return new Seq(sync, st);
+			if(leading) {
+				return new Seq(sync, st);	
+			}
+			else {
+				return new Seq(lwsync, new Seq(st, sync));
+			}
 		}
-		if(atomic.equals("_rx")) {
+		if(atomic.equals("_rx") || atomic.equals("_na")) {
 			return st;
 		}
 		if(atomic.equals("_rel")) {
@@ -81,7 +86,7 @@ public class Write extends MemEvent {
 		return null;
 	}
 
-	public Thread optCompile() {
+	public Thread optCompile(boolean ctrl, boolean leading) {
 		Store st = new Store(loc, reg);
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
@@ -92,9 +97,14 @@ public class Write extends MemEvent {
 		lwsync.condLevel = this.condLevel;
 
 		if(atomic.equals("_sc")) {
-			return new Seq(sync, st);
+			if(leading) {
+				return new Seq(sync, st);	
+			}
+			else {
+				return new Seq(lwsync, new Seq(st, sync));
+			}
 		}
-		if(atomic.equals("_rx")) {
+		if(atomic.equals("_rx") || atomic.equals("_na")) {
 			return st;
 		}
 		if(atomic.equals("_rel")) {

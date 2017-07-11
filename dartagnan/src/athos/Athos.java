@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -19,14 +17,11 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FileUtils;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;
 import com.microsoft.z3.Optimize;
-import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
-import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 import dartagnan.LitmusLexer;
 import dartagnan.LitmusParser;
@@ -34,13 +29,9 @@ import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
 import dartagnan.program.Barrier;
 import dartagnan.program.Event;
-import dartagnan.program.Load;
-import dartagnan.program.Init;
-import dartagnan.program.Local;
 import dartagnan.program.MemEvent;
 import dartagnan.program.OptLwsync;
 import dartagnan.program.OptSync;
-import dartagnan.program.Store;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
@@ -113,28 +104,19 @@ public class Athos {
 	
 		p.initialize();
 		Program p2 = p.clone();
-		p.compile();
+		p.compile(false, true);
 		Integer startEId = p.getEvents().size() + 1;
-		p2.optCompile(startEId);
+		p2.optCompile(startEId, false, true);
 //		System.out.println(p);
 //		System.out.println(p2);
 		
-		System.out.println(p.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet()).size());
+		System.out.println("Fences after compilation: " + p.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet()).size());
 		
 		Context ctx = new Context();
 		Optimize opt = ctx.mkOptimize();
 
-//		opt.Add(p2.encodeDF(ctx, false));
-//		opt.Add(p2.encodeCF(ctx));
-//		opt.Add(p2.encodeDF_RF(ctx));
 		opt.Add(Domain.encode(p2, ctx));
-//		opt.Add(p2.encodeConsistent(ctx, target));
-
-//		opt.Add(p.encodeDF(ctx, false));
-//		opt.Add(p.encodeCF(ctx));
-//		opt.Add(p.encodeDF_RF(ctx));
 		opt.Add(Domain.encode(p, ctx));
-//		opt.Add(p.encodeInconsistent(ctx, target));
 		
 		opt.Add(Encodings.encodeCommonExecutions(p, p2, ctx));
 
@@ -151,19 +133,11 @@ public class Athos {
 		}
 
 		if(opt.Check() == Status.SATISFIABLE) {
-//			System.out.println("       0");
 			int count = 0;
-//			for(Event e1 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
-//				for(Event e2 : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
-//					if(opt.getModel().getConstInterp(Utils.edge("((((com)*;(prop-base)*);sync);(hb-power)*)", e1, e2, ctx)).isTrue()) {
-//						System.out.println(Utils.edge("((((com)*;(prop-base)*);sync);(hb-power)*)", e1, e2, ctx));
-//					}
-//				}	
-//			}
 
 			Model model = opt.getModel();
 			opt.Pop();
-			for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+			for(Event e : p2.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet())) {
 				if(model.getConstInterp(e.executes(ctx)).isTrue()) {
 					count ++;
 				}
@@ -172,10 +146,10 @@ public class Athos {
 				}
 				
 			}
-			System.out.println(count);
+			System.out.println("Fences after first optimization: " + count);
 		}
 		else {
-			System.out.println("       1");
+			System.out.println("This should never be UNSAT");
 		}
 		
 		opt.Add(p2.encodeDF(ctx, false));
@@ -193,18 +167,24 @@ public class Athos {
 		}
 
 		if(opt.Check() == Status.SATISFIABLE) {
-			System.out.println("       0");
 			int count = 0;
 			Model model = opt.getModel();
-			for(Event e : p2.getEvents().stream().filter(e -> e instanceof OptSync | e instanceof OptLwsync).collect(Collectors.toSet())) {
+//			for(Event e1 : p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
+//				for(Event e2 : p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
+//					if(model.getConstInterp(Utils.edge("po-power", e1, e2, ctx)).isTrue()) {
+//						System.out.println(Utils.edge("po-power", e1, e2, ctx));
+//					}
+//				}
+//			}
+			for(Event e : p2.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet())) {
 				if(model.getConstInterp(e.executes(ctx)).isTrue()) {
 					count ++;
 				}
 			}
-			System.out.println(count);
+			System.out.println("Fences for adding new behaviors: " + count);
 		}
 		else {
-			System.out.println("       1");
+			System.out.println("New behaviors cannot be added by removing more fences");
 		}
 
 	}

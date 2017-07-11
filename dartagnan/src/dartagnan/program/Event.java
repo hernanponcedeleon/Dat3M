@@ -40,7 +40,7 @@ public class Event extends Thread {
 		return this;
 	}
 	
-	public Thread compile() {
+	public Thread compile(boolean ctrl, boolean leading) {
 		return this;
 	}
 

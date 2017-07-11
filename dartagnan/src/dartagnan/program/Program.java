@@ -76,13 +76,13 @@ public class Program {
 		}
 	}
 	
-	public void compile() {
+	public void compile(boolean ctrl, boolean leading) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
 		
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-			t = t.compile();
+			t = t.compile(ctrl, leading);
 			compiledThreads.add(t);
 		}
 		threads = compiledThreads;
@@ -106,13 +106,13 @@ public class Program {
 		}
 	}	
 
-	public void optCompile(Integer firstEId) {
+	public void optCompile(Integer firstEId, boolean ctrl, boolean leading) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
 		
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-			t = t.optCompile();
+			t = t.optCompile(ctrl, leading);
 			compiledThreads.add(t);
 		}
 		threads = compiledThreads;
