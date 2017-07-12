@@ -1,6 +1,5 @@
 package dartagnan.wmm;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -9,12 +8,9 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 
 import dartagnan.program.Event;
-import dartagnan.program.Init;
 import dartagnan.program.Local;
-import dartagnan.program.Location;
 import dartagnan.program.MemEvent;
 import dartagnan.program.Program;
-import dartagnan.program.Thread;
 import dartagnan.utils.Utils;
 
 public class Power {
@@ -22,27 +18,18 @@ public class Power {
 	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
-		List<Thread> threads = program.getThreads().stream().filter(t -> !(t instanceof Init)).collect(Collectors.toList());
-		Set<Location> locs = program.getThreads().stream().filter(t -> t instanceof Init).map(e -> ((Init) e).getLoc()).collect(Collectors.toSet());
 		
 		BoolExpr enc = Encodings.satUnion("co", "fr", events, ctx);
 		enc = ctx.mkAnd(enc, Encodings.satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satUnion("poloc", "com", events, ctx));
 		
-	    // Program order for Power
-	    for(Thread t : threads) {
-	    	Set<Event> eventsLPerThread = eventsL.stream().filter(e -> e.getMainThread() == t.getTId()).collect(Collectors.toSet());
-	    	enc = ctx.mkAnd(enc, Encodings.satTransFixPoint("idd", eventsLPerThread, ctx));
-	    }
+	    enc = ctx.mkAnd(enc, Encodings.satTransFixPoint("idd", eventsL, ctx));
 	    
 	    enc = ctx.mkAnd(enc, Encodings.satIntersection("data", "idd^+", "RW", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satEmpty("addr", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("dp", "addr", "data", events, ctx));
-	    for(Location l : locs) {
-	    	Set<Event> eventsPerLoc = events.stream().filter(e -> e.getLoc() == l).collect(Collectors.toSet());
-	    	enc = ctx.mkAnd(enc, Encodings.satComp("fre", "rfe", eventsPerLoc, ctx));
-	    	enc = ctx.mkAnd(enc, Encodings.satComp("coe", "rfe", eventsPerLoc, ctx));
-	    }
+	    enc = ctx.mkAnd(enc, Encodings.satComp("fre", "rfe", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satComp("coe", "rfe", events, ctx));
     	
 	    enc = ctx.mkAnd(enc, Encodings.satIntersection("rdw", "poloc", "(fre;rfe)", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satIntersection("detour", "poloc", "(coe;rfe)", events,ctx));
@@ -53,12 +40,8 @@ public class Power {
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("ci0", "ctrlisync", "detour", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("dp", "poloc", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("(dp+poloc)", "ctrl", events, ctx));
-	    for(Thread t : threads) {
-	    	Set<Event> eventsPerThread = events.stream().filter(e -> e.getMainThread() == t.getTId()).collect(Collectors.toSet());
-	    	enc = ctx.mkAnd(enc, Encodings.satComp("addr", "po", eventsPerThread, ctx));
-	    	// Recursive case for program order
-	    	enc = ctx.mkAnd(enc, satPowerPPO(eventsPerThread, ctx));
-	    }
+	    enc = ctx.mkAnd(enc, Encodings.satComp("addr", "po", events, ctx));
+	    enc = ctx.mkAnd(enc, satPowerPPO(events, ctx));
 	    
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("cc0", "((dp+poloc)+ctrl)", "(addr;po)", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satIntersection("RR", "ii", events, ctx));
@@ -76,10 +59,7 @@ public class Power {
 	    enc = ctx.mkAnd(enc, Encodings.satTransRef("hb-power", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("prop-base", "(fence-power+(rfe;fence-power))", "(hb-power)*", events, ctx));
 	    // Propagation for Power
-	    for(Location l : locs) {
-	    	Set<Event> eventsPerLoc = events.stream().filter(e -> e.getLoc() == l).collect(Collectors.toSet());
-	        enc = ctx.mkAnd(enc, Encodings.satTransRef("com", eventsPerLoc, ctx));
-	    }
+	    enc = ctx.mkAnd(enc, Encodings.satTransRef("com", events, ctx));
         
 	    enc = ctx.mkAnd(enc, Encodings.satTransRef("prop-base", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("(com)*", "(prop-base)*", events, ctx));
