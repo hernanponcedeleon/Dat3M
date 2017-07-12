@@ -4,3 +4,9 @@
 /PorthosLexer.tokens
 /PorthosListener.java
 /PorthosParser.java
+/Litmus.tokens
+/LitmusBaseListener.java
+/LitmusLexer.java
+/LitmusLexer.tokens
+/LitmusListener.java
+/LitmusParser.java

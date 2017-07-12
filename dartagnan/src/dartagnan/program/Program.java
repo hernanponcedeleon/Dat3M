@@ -238,7 +238,7 @@ public class Program {
 		BoolExpr enc = encodeDF(ctx, false);
 		enc = ctx.mkAnd(enc, encodeCF(ctx));
 		enc = ctx.mkAnd(enc, encodeDF_RF(ctx));
-		enc = ctx.mkAnd(enc, Domain.encode(this, ctx));
+		enc = ctx.mkAnd(enc, Domain.encode(this, ctx, false));
 		enc = ctx.mkAnd(enc, encodeInconsistent(ctx, source));
 		enc = ctx.mkAnd(enc, encodeConsistent(ctx, target));
 		return enc;
@@ -297,9 +297,9 @@ public class Program {
 		    enc = ctx.mkAnd(enc, recResult.getFirst());
 		    lastMap = recResult.getSecond();
 		}
-		if(reachQuery) {
-			enc = ctx.mkAnd(enc, ass.encode(ctx, lastMap));			
-		}
+		if(reachQuery){
+			enc = ctx.mkAnd(enc, ass.encode(ctx, lastMap));	
+		}			
 		return enc;
 	}
 

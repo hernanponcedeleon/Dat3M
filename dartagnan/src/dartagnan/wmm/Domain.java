@@ -26,7 +26,7 @@ import dartagnan.wmm.Encodings;
 
 public class Domain {
 	
-	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+	public static BoolExpr encode(Program program, Context ctx, boolean reachQuery) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		
 		Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
@@ -316,11 +316,13 @@ public class Domain {
 			enc = ctx.mkAnd(enc, ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(1)));
 		}
 
-//		for(Event e : mEvents.stream().filter(e -> e instanceof Init || e instanceof Store).collect(Collectors.toSet())) {
-//			int lastCoOrder = (mEvents.stream().filter(x -> (x instanceof Init || x instanceof Store) && e.getLoc() == x.getLoc()).collect(Collectors.toSet())).size();
-//			enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(lastCoOrder)), ctx.mkEq(ctx.mkIntConst(e.getLoc().getName() + "_final"), ((MemEvent) e).ssaLoc)));
-//		}
-//		
+		if(reachQuery) {
+			for(Event e : mEvents.stream().filter(e -> e instanceof Init || e instanceof Store).collect(Collectors.toSet())) {
+				int lastCoOrder = (mEvents.stream().filter(x -> (x instanceof Init || x instanceof Store) && e.getLoc() == x.getLoc()).collect(Collectors.toSet())).size();
+				enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(lastCoOrder)), ctx.mkEq(ctx.mkIntConst(e.getLoc().getName() + "_final"), ((MemEvent) e).ssaLoc)));
+			}			
+		}
+		
 		for(Event e : mEvents.stream().filter(e -> e instanceof Load).collect(Collectors.toSet())) {
 			Set<Event> storeEventsLoc = mEvents.stream().filter(x -> (x instanceof Store || x instanceof Init) && e.getLoc() == x.getLoc()).collect(Collectors.toSet());
 			Set<BoolExpr> rfPairs = new HashSet<BoolExpr>();

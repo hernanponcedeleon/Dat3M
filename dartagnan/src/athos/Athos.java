@@ -105,16 +105,14 @@ public class Athos {
 		p.compile(false, true);
 		Integer startEId = p.getEvents().size() + 1;
 		p2.optCompile(startEId, false, true);
-//		System.out.println(p);
-//		System.out.println(p2);
 		
 		System.out.println("Fences after compilation: " + p.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet()).size());
 		
 		Context ctx = new Context();
 		Optimize opt = ctx.mkOptimize();
 
-		opt.Add(Domain.encode(p2, ctx));
-		opt.Add(Domain.encode(p, ctx));
+		opt.Add(Domain.encode(p2, ctx, false));
+		opt.Add(Domain.encode(p, ctx, false));
 		
 		opt.Add(Encodings.encodeCommonExecutions(p, p2, ctx));
 
