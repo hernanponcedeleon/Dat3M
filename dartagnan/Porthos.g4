@@ -158,6 +158,7 @@ while_ [String mainThread] returns [Thread t]:
 program [String name] returns [Program p]:
 	{
 		Program p = new Program(name);
+		p.ass = new Assert();
 	} 
 	LCBRA l = location {
 		mapLocs.put($l.loc.getName(), $l.loc);
@@ -166,7 +167,22 @@ program [String name] returns [Program p]:
 		mapLocs.put($l.loc.getName(), $l.loc);
 	})* RCBRA 
 	('thread' mainThread = WORD {mapRegs.put($mainThread.getText(), new HashMap<String, Register>());} 
-		LCBRA t1=inst [$mainThread.getText()] RCBRA {p.add($t1.t);})+ {$p = p;};
+		LCBRA t1=inst [$mainThread.getText()] RCBRA {p.add($t1.t);})+ {$p = p;}
+	('exists'
+	(l = location '=' value = DIGIT ','
+	{
+		Location loc = $l.loc;
+		p.ass.addPair(loc, Integer.parseInt($value.getText()));
+	}
+	|
+	thrd = DIGIT ':' r = register '=' value = DIGIT ','
+	{
+		Register regPointer = $r.reg;
+		Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
+		p.ass.addPair(reg, Integer.parseInt($value.getText()));
+	}
+	)*
+	)*;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
