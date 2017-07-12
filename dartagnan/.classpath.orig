@@ -3,14 +3,22 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="target/generated-sources/antlr4"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+<<<<<<< HEAD
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/Java 8">
 		<attributes>
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/Users/ponceh1/Documents/workspace/dartagnan/import/antlr-4.7-complete.jar"/>
 	<classpathentry kind="lib" path="/Users/ponceh1/Documents/workspace/dartagnan/import/com.microsoft.z3.jar"/>
 	<classpathentry kind="lib" path="/Users/ponceh1/Documents/workspace/dartagnan/import/commons-cli-1.4.jar"/>
 	<classpathentry kind="lib" path="/Users/ponceh1/Documents/workspace/dartagnan/import/commons-io-2.5.jar"/>
-	<classpathentry kind="lib" path="/Users/ponceh1/Documents/tools/antlr-4.7-complete.jar"/>
+=======
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/home/ponce/workspace/dartagnan/dartagnan/import/commons-io-2.5.jar"/>
+	<classpathentry kind="lib" path="/home/ponce/workspace/dartagnan/dartagnan/import/commons-cli-1.4.jar"/>
+	<classpathentry kind="lib" path="/home/ponce/workspace/dartagnan/dartagnan/import/com.microsoft.z3.jar"/>
+	<classpathentry kind="lib" path="/tmp/antlr-4.4-complete.jar"/>
+>>>>>>> a65768cbeaa403dbe985dd722f082b6e64a133e4
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

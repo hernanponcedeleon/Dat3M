@@ -23,6 +23,7 @@ program [String name] returns [Program p]:
 	{
 		Program p = new Program(name);
 		p.ass = new Assert();
+		
 	}
 	('PPC' | 'X86') (text)* '{'
 	(

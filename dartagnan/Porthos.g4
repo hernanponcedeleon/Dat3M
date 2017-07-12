@@ -166,7 +166,7 @@ program [String name] returns [Program p]:
 	(COMMA l = location {
 		mapLocs.put($l.loc.getName(), $l.loc);
 	})* RCBRA 
-	('thread' mainThread = WORD {mapRegs.put($mainThread.getText(), new HashMap<String, Register>());} 
+	('thread t' mainThread = DIGIT {mapRegs.put($mainThread.getText(), new HashMap<String, Register>());} 
 		LCBRA t1=inst [$mainThread.getText()] RCBRA {p.add($t1.t);})+ {$p = p;}
 	('exists'
 	(l = location '=' value = DIGIT ','
