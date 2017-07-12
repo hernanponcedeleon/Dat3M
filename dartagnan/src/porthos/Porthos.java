@@ -23,7 +23,6 @@ import dartagnan.program.Program;
 
 import org.apache.commons.cli.*;
 
-@SuppressWarnings("deprecation")
 public class Porthos {
 
 	public static void main(String[] args) throws Z3Exception, IOException {		
@@ -101,6 +100,7 @@ public class Porthos {
 	
 		p.initialize();
 		p.compile(false, true);
+		System.out.println(p.ass);
 		
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver();

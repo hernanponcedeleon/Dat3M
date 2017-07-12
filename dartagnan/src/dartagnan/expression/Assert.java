@@ -16,10 +16,7 @@ public class Assert {
 	String type;
 	public boolean existsQuery;
 	
-	public Assert(String type) {
-		this.type = type;
-		this.existsQuery = true;
-	}
+	public Assert() {}
 	
 	public void addPair(Register reg, Integer value) {
 		regValue.put(reg, value);

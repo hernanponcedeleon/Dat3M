@@ -22,7 +22,7 @@ private Map<String, List<Thread>> mapThreads = new HashMap<String, List<Thread>>
 program [String name] returns [Program p]: 
 	{
 		Program p = new Program(name);
-		p.ass = new Assert("exists");
+		p.ass = new Assert();
 	}
 	('PPC' | 'X86') (text)* '{'
 	(

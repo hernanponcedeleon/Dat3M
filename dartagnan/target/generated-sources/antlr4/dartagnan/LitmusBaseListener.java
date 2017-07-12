@@ -1,4 +1,4 @@
-// Generated from Litmus.g4 by ANTLR 4.7
+// Generated from Litmus.g4 by ANTLR 4.4
 
 package dartagnan;
 import dartagnan.program.*;
@@ -11,6 +11,7 @@ import java.util.List;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -25,312 +26,312 @@ public class LitmusBaseListener implements LitmusListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterProgram(LitmusParser.ProgramContext ctx) { }
+	@Override public void enterLocalX86(@NotNull LitmusParser.LocalX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitProgram(LitmusParser.ProgramContext ctx) { }
+	@Override public void exitLocalX86(@NotNull LitmusParser.LocalX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBop(LitmusParser.BopContext ctx) { }
+	@Override public void enterLoadX86(@NotNull LitmusParser.LoadX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBop(LitmusParser.BopContext ctx) { }
+	@Override public void exitLoadX86(@NotNull LitmusParser.LoadX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterText(LitmusParser.TextContext ctx) { }
+	@Override public void enterBop(@NotNull LitmusParser.BopContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitText(LitmusParser.TextContext ctx) { }
+	@Override public void exitBop(@NotNull LitmusParser.BopContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterWord(LitmusParser.WordContext ctx) { }
+	@Override public void enterLoadPower(@NotNull LitmusParser.LoadPowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitWord(LitmusParser.WordContext ctx) { }
+	@Override public void exitLoadPower(@NotNull LitmusParser.LoadPowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLocation(LitmusParser.LocationContext ctx) { }
+	@Override public void enterLocalPower(@NotNull LitmusParser.LocalPowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLocation(LitmusParser.LocationContext ctx) { }
+	@Override public void exitLocalPower(@NotNull LitmusParser.LocalPowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLocationX86(LitmusParser.LocationX86Context ctx) { }
+	@Override public void enterAddi(@NotNull LitmusParser.AddiContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLocationX86(LitmusParser.LocationX86Context ctx) { }
+	@Override public void exitAddi(@NotNull LitmusParser.AddiContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterRegisterPower(LitmusParser.RegisterPowerContext ctx) { }
+	@Override public void enterMr(@NotNull LitmusParser.MrContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitRegisterPower(LitmusParser.RegisterPowerContext ctx) { }
+	@Override public void exitMr(@NotNull LitmusParser.MrContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterRegisterX86(LitmusParser.RegisterX86Context ctx) { }
+	@Override public void enterLwsync(@NotNull LitmusParser.LwsyncContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitRegisterX86(LitmusParser.RegisterX86Context ctx) { }
+	@Override public void exitLwsync(@NotNull LitmusParser.LwsyncContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterThreads(LitmusParser.ThreadsContext ctx) { }
+	@Override public void enterThreads(@NotNull LitmusParser.ThreadsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitThreads(LitmusParser.ThreadsContext ctx) { }
+	@Override public void exitThreads(@NotNull LitmusParser.ThreadsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterInst(LitmusParser.InstContext ctx) { }
+	@Override public void enterMfence(@NotNull LitmusParser.MfenceContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitInst(LitmusParser.InstContext ctx) { }
+	@Override public void exitMfence(@NotNull LitmusParser.MfenceContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLocalX86(LitmusParser.LocalX86Context ctx) { }
+	@Override public void enterLocationX86(@NotNull LitmusParser.LocationX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLocalX86(LitmusParser.LocalX86Context ctx) { }
+	@Override public void exitLocationX86(@NotNull LitmusParser.LocationX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLocalPower(LitmusParser.LocalPowerContext ctx) { }
+	@Override public void enterProgram(@NotNull LitmusParser.ProgramContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLocalPower(LitmusParser.LocalPowerContext ctx) { }
+	@Override public void exitProgram(@NotNull LitmusParser.ProgramContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterXor(LitmusParser.XorContext ctx) { }
+	@Override public void enterRegisterX86(@NotNull LitmusParser.RegisterX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitXor(LitmusParser.XorContext ctx) { }
+	@Override public void exitRegisterX86(@NotNull LitmusParser.RegisterX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterAddi(LitmusParser.AddiContext ctx) { }
+	@Override public void enterStoreX86(@NotNull LitmusParser.StoreX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitAddi(LitmusParser.AddiContext ctx) { }
+	@Override public void exitStoreX86(@NotNull LitmusParser.StoreX86Context ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMr(LitmusParser.MrContext ctx) { }
+	@Override public void enterSync(@NotNull LitmusParser.SyncContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMr(LitmusParser.MrContext ctx) { }
+	@Override public void exitSync(@NotNull LitmusParser.SyncContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLoadX86(LitmusParser.LoadX86Context ctx) { }
+	@Override public void enterRegisterPower(@NotNull LitmusParser.RegisterPowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLoadX86(LitmusParser.LoadX86Context ctx) { }
+	@Override public void exitRegisterPower(@NotNull LitmusParser.RegisterPowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLoadPower(LitmusParser.LoadPowerContext ctx) { }
+	@Override public void enterInst(@NotNull LitmusParser.InstContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLoadPower(LitmusParser.LoadPowerContext ctx) { }
+	@Override public void exitInst(@NotNull LitmusParser.InstContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStoreX86(LitmusParser.StoreX86Context ctx) { }
+	@Override public void enterIsync(@NotNull LitmusParser.IsyncContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStoreX86(LitmusParser.StoreX86Context ctx) { }
+	@Override public void exitIsync(@NotNull LitmusParser.IsyncContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStorePower(LitmusParser.StorePowerContext ctx) { }
+	@Override public void enterLocation(@NotNull LitmusParser.LocationContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStorePower(LitmusParser.StorePowerContext ctx) { }
+	@Override public void exitLocation(@NotNull LitmusParser.LocationContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCmpw(LitmusParser.CmpwContext ctx) { }
+	@Override public void enterXor(@NotNull LitmusParser.XorContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitCmpw(LitmusParser.CmpwContext ctx) { }
+	@Override public void exitXor(@NotNull LitmusParser.XorContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMfence(LitmusParser.MfenceContext ctx) { }
+	@Override public void enterStorePower(@NotNull LitmusParser.StorePowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMfence(LitmusParser.MfenceContext ctx) { }
+	@Override public void exitStorePower(@NotNull LitmusParser.StorePowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLwsync(LitmusParser.LwsyncContext ctx) { }
+	@Override public void enterText(@NotNull LitmusParser.TextContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLwsync(LitmusParser.LwsyncContext ctx) { }
+	@Override public void exitText(@NotNull LitmusParser.TextContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSync(LitmusParser.SyncContext ctx) { }
+	@Override public void enterWord(@NotNull LitmusParser.WordContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSync(LitmusParser.SyncContext ctx) { }
+	@Override public void exitWord(@NotNull LitmusParser.WordContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterIsync(LitmusParser.IsyncContext ctx) { }
+	@Override public void enterCmpw(@NotNull LitmusParser.CmpwContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitIsync(LitmusParser.IsyncContext ctx) { }
+	@Override public void exitCmpw(@NotNull LitmusParser.CmpwContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterEveryRule(ParserRuleContext ctx) { }
+	@Override public void enterEveryRule(@NotNull ParserRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitEveryRule(ParserRuleContext ctx) { }
+	@Override public void exitEveryRule(@NotNull ParserRuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void visitTerminal(TerminalNode node) { }
+	@Override public void visitTerminal(@NotNull TerminalNode node) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+	@Override public void visitErrorNode(@NotNull ErrorNode node) { }
 }
