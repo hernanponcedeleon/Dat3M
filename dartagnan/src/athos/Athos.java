@@ -29,11 +29,9 @@ import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
 import dartagnan.program.Barrier;
 import dartagnan.program.Event;
-import dartagnan.program.MemEvent;
 import dartagnan.program.OptLwsync;
 import dartagnan.program.OptSync;
 import dartagnan.program.Program;
-import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.Encodings;
 
