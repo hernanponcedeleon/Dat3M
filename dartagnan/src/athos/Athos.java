@@ -102,6 +102,7 @@ public class Athos {
 	
 		p.initialize();
 		Program p2 = p.clone();
+
 		p.compile(false, true);
 		Integer startEId = p.getEvents().size() + 1;
 		p2.optCompile(startEId, false, true);

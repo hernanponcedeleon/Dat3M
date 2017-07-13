@@ -9,7 +9,6 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.io.FileUtils;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
@@ -25,6 +24,7 @@ import dartagnan.wmm.Domain;
 
 import org.apache.commons.cli.*;
 
+@SuppressWarnings("deprecation")
 public class Dartagnan {
 
 	public static void main(String[] args) throws Z3Exception, IOException {		

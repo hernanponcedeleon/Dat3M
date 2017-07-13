@@ -20,9 +20,11 @@ import dartagnan.LitmusParser;
 import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
 import dartagnan.program.Program;
+import dartagnan.wmm.Domain;
 
 import org.apache.commons.cli.*;
 
+@SuppressWarnings("deprecation")
 public class Porthos {
 
 	public static void main(String[] args) throws Z3Exception, IOException {		
@@ -103,7 +105,13 @@ public class Porthos {
 		
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver();
-		s.add(p.encodePortability(ctx, source, target));
+		s.add(p.encodeDF(ctx, false));
+		s.add(p.encodeCF(ctx));
+		s.add(p.encodeDF_RF(ctx));
+		s.add(Domain.encode(p, ctx, false));
+		s.add(p.encodeInconsistent(ctx, source));
+		s.add(p.encodeConsistent(ctx, target));
+
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 
 		if(s.check() == Status.SATISFIABLE) {
