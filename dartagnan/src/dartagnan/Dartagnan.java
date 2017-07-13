@@ -29,7 +29,7 @@ public class Dartagnan {
 
 	public static void main(String[] args) throws Z3Exception, IOException {		
 
-		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power");
+		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "arm");
 		
 		Options options = new Options();
 

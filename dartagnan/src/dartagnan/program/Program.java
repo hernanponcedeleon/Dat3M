@@ -193,6 +193,10 @@ public class Program {
 			enc = ctx.mkAnd(enc, Power.encode(this, ctx));
 			enc = ctx.mkAnd(enc, Power.Consistent(this, ctx));
 			break;
+		case "arm":
+			enc = ctx.mkAnd(enc, ARM.encode(this, ctx));
+			enc = ctx.mkAnd(enc, ARM.Consistent(this, ctx));
+			break;
 		default:
 			System.out.println("Check encodeConsistent!");
 			break;
@@ -226,6 +230,10 @@ public class Program {
 		case "power":
 			enc = ctx.mkAnd(enc, Power.encode(this, ctx));
 			enc = ctx.mkAnd(enc, Power.Inconsistent(this, ctx));
+			break;
+		case "arm":
+			enc = ctx.mkAnd(enc, ARM.encode(this, ctx));
+			enc = ctx.mkAnd(enc, ARM.Inconsistent(this, ctx));
 			break;
 		default:
 			System.out.println("Check encodeInconsistent!");

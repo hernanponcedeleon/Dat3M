@@ -40,7 +40,7 @@ public class Athos {
 
 	public static void main(String[] args) throws IOException, Z3Exception {		
 
-		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power");
+		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "arm");
 		
 		Options options = new Options();
 
