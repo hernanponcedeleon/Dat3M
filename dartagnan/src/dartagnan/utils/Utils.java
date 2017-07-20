@@ -7,6 +7,7 @@ import com.microsoft.z3.*;
 import dartagnan.program.Event;
 import dartagnan.program.If;
 import dartagnan.program.Location;
+import dartagnan.program.MemEvent;
 import dartagnan.program.Register;
 
 public class Utils {
@@ -112,6 +113,10 @@ public class Utils {
 		return ctx.mkIntConst(String.format("%s(%s)", relName, e.repr()));
 	}
 	
+	public static BoolExpr lastCoOrder(Event e, Context ctx) throws Z3Exception {
+		return ctx.mkBoolConst(String.format("last_%s(%s)", ((MemEvent) e).getLoc(), e.repr()));
+	}
+
 	public static IntExpr intCount(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {
 		return ctx.mkIntConst(String.format("%s(%s,%s)", relName, e1.repr(), e2.repr()));
 	}

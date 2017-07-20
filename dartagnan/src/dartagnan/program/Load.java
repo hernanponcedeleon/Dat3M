@@ -13,6 +13,7 @@ import dartagnan.utils.Pair;
 public class Load extends MemEvent {
 
 	private Register reg;
+	public Integer ssaRegIndex;
 	
 	public Load(Register reg, Location loc) {
 		this.reg = reg;
@@ -54,6 +55,7 @@ public class Load extends MemEvent {
 			Expr z3Reg = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, reg, map.getFresh(reg)));
 			Expr z3Loc = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, loc, map.getFresh(loc)));
 			this.ssaLoc = z3Loc;
+			this.ssaRegIndex = map.get(reg);
 			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
 		}		
 	}

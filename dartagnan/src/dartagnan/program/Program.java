@@ -18,6 +18,7 @@ public class Program {
 	public String name;
 	public Assert ass; 
 	private List<Thread> threads;
+	public MapSSA lastMap;
 
 	public Program (String name) {
 		this.name = name;
@@ -285,7 +286,7 @@ public class Program {
 		}
 	}
 
-	public BoolExpr encodeDF(Context ctx, boolean reachQuery) throws Z3Exception {
+	public BoolExpr encodeDF(Context ctx) throws Z3Exception {
 		ListIterator<Thread> iter = threads.listIterator();
 		MapSSA lastMap = new MapSSA();
 		BoolExpr enc = ctx.mkTrue();
@@ -295,12 +296,14 @@ public class Program {
 		    enc = ctx.mkAnd(enc, recResult.getFirst());
 		    lastMap = recResult.getSecond();
 		}
-		if(reachQuery){
-			enc = ctx.mkAnd(enc, ass.encode(ctx, lastMap));	
-		}
+		this.lastMap = lastMap;
 		return enc;
 	}
 
+	public BoolExpr encodeAssertion(Context ctx) {
+		return ass.encode(ctx, lastMap);
+	}
+	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
 		ListIterator<Thread> iter = threads.listIterator();
 		BoolExpr enc = ctx.mkTrue();

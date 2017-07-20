@@ -28,7 +28,7 @@ import dartagnan.wmm.Encodings;
 
 public class Domain {
 	
-	public static BoolExpr encode(Program program, Context ctx, boolean reachQuery) throws Z3Exception {
+	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		
 		Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
@@ -222,7 +222,7 @@ public class Domain {
 				enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge("ctrlisync", e1, e2, ctx),
 										ctx.mkAnd(Utils.edge("ctrl", e1, e2, ctx), Utils.edge("isync", e1, e2, ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge("ctrlisb", e1, e2, ctx),
-						ctx.mkAnd(Utils.edge("ctrl", e1, e2, ctx), Utils.edge("isb", e1, e2, ctx))));
+										ctx.mkAnd(Utils.edge("ctrl", e1, e2, ctx), Utils.edge("isb", e1, e2, ctx))));
 			}
 		}
 				
@@ -266,7 +266,7 @@ public class Domain {
 						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
 								Utils.edge("ish", e1, e2, ctx)));
 			        }
-					if(b instanceof Isync && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
+					if(b instanceof Isb && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
 							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
 						isbs = ctx.mkOr(isbs, b.executes(ctx));
 						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
@@ -352,12 +352,15 @@ public class Domain {
 			enc = ctx.mkAnd(enc, ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(1)));
 		}
 
-		if(reachQuery) {
-			for(Event e : mEvents.stream().filter(e -> e instanceof Init || e instanceof Store).collect(Collectors.toSet())) {
-				int lastCoOrder = (mEvents.stream().filter(x -> (x instanceof Init || x instanceof Store) && e.getLoc() == x.getLoc()).collect(Collectors.toSet())).size();
-				enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkEq(Utils.intVar("co", e, ctx), ctx.mkInt(lastCoOrder)), ctx.mkEq(ctx.mkIntConst(e.getLoc().getName() + "_final"), ((MemEvent) e).ssaLoc)));
-			}			
-		}
+		for(Event w1 : mEvents.stream().filter(e -> e instanceof Init || e instanceof Store).collect(Collectors.toSet())) {
+			Set<Event> writeSameLoc = mEvents.stream().filter(e -> (e instanceof Init || e instanceof Store) && w1.getLoc() == e.getLoc()).collect(Collectors.toSet());
+			BoolExpr lastCoOrder = ctx.mkTrue();
+			for(Event w2 : writeSameLoc) {
+				lastCoOrder = ctx.mkAnd(lastCoOrder, ctx.mkNot(Utils.edge("co", w1, w2, ctx)));
+			}
+			enc = ctx.mkAnd(enc, ctx.mkEq(Utils.lastCoOrder(w1, ctx), ctx.mkAnd(w1.executes(ctx), lastCoOrder)));
+			enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.lastCoOrder(w1, ctx), ctx.mkEq(ctx.mkIntConst(w1.getLoc().getName() + "_final"), ((MemEvent) w1).ssaLoc)));
+		}				
 		
 		for(Event e : mEvents.stream().filter(e -> e instanceof Load).collect(Collectors.toSet())) {
 			Set<Event> storeEventsLoc = mEvents.stream().filter(x -> (x instanceof Store || x instanceof Init) && e.getLoc() == x.getLoc()).collect(Collectors.toSet());

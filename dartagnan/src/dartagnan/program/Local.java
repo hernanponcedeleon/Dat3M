@@ -15,6 +15,7 @@ public class Local extends Event {
 	
 	private Register reg;
 	private AExpr expr;
+	public Integer ssaRegIndex;
 	
 	public Local(Register reg, AExpr expr) {
 		this.reg = reg;
@@ -59,6 +60,7 @@ public class Local extends Event {
 		else {
 			Expr z3Expr = expr.toZ3(map, ctx);
 			Expr z3Reg = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, reg, map.getFresh(reg)));
+			this.ssaRegIndex = map.get(reg);
 			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
 		}		
 	}

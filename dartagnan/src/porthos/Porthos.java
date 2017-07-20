@@ -3,13 +3,19 @@ package porthos;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.io.FileUtils;
 
+import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
@@ -19,7 +25,13 @@ import dartagnan.LitmusLexer;
 import dartagnan.LitmusParser;
 import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
+import dartagnan.program.Event;
+import dartagnan.program.Load;
+import dartagnan.program.Local;
+import dartagnan.program.Location;
+import dartagnan.program.MemEvent;
 import dartagnan.program.Program;
+import dartagnan.program.Register;
 import dartagnan.wmm.Domain;
 
 import org.apache.commons.cli.*;
@@ -45,6 +57,8 @@ public class Porthos {
         inputOpt.setRequired(true);
         options.addOption(inputOpt);
 
+        options.addOption("state", false, "PORTHOS performs state portability");
+        
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
@@ -80,6 +94,8 @@ public class Porthos {
 			return;
 		}
 		File file = new File(inputFilePath);
+		
+		boolean statePortability = cmd.hasOption("sp");
 
 		String program = FileUtils.readFileToString(file, "UTF-8");		
 		ANTLRInputStream input = new ANTLRInputStream(program); 		
@@ -104,25 +120,80 @@ public class Porthos {
 		p.compile(false, true);
 		
 		Context ctx = new Context();
+		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 		Solver s = ctx.mkSolver();
-		s.add(p.encodeDF(ctx, false));
+		s.add(p.encodeDF(ctx));
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
-		s.add(Domain.encode(p, ctx, false));
-		s.add(p.encodeInconsistent(ctx, source));
+		s.add(Domain.encode(p, ctx));
 		s.add(p.encodeConsistent(ctx, target));
-
-		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-
-		if(s.check() == Status.SATISFIABLE) {
-			//System.out.println(String.format("The program is not portable from %s to %s", source, target));
-			System.out.println("       0");
+		
+		if(!statePortability) {
+			s.add(p.encodeInconsistent(ctx, source));
+			if(s.check() == Status.SATISFIABLE) {
+				System.out.println("       0");
+				return;
+			}
+			else {
+				System.out.println("       1");
+				return;
+			}
 		}
-		else {
-			//System.out.println(String.format("The program is portable from %s to %s", source, target));
-			System.out.println("       1");
-		}
+		
+		Status lastCheck = Status.SATISFIABLE;
 
+		while(lastCheck == Status.SATISFIABLE) {
+			s.push();		
+			s.add(p.encodeInconsistent(ctx, source));
+			
+			if(s.check() == Status.SATISFIABLE) {
+				Model model = s.getModel();
+				s.pop();
+				s.push();
+				s.add(p.encodeConsistent(ctx, source));
+
+				Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
+				BoolExpr reachedState = ctx.mkTrue();
+				
+				for(Location loc : locs) {
+					reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(loc.getName() + "_final"), model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final"))));
+				}
+
+				Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
+				Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+
+				for(Register reg : regs) {
+					Set<Integer> ssaRegIndexes = new HashSet<Integer>();
+					for(Event e : executedEvents) {
+						if(!(e instanceof Load | e instanceof Local)) {continue;}
+						if(e.getReg() != reg) {continue;}
+						if(e instanceof Load) {
+							ssaRegIndexes.add(((Load) e).ssaRegIndex);	
+						}
+						if(e instanceof Local) {
+							ssaRegIndexes.add(((Local) e).ssaRegIndex);	
+						}
+					}
+					Integer lastRegIndex = Collections.max(ssaRegIndexes);
+					String regVarName = String.format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
+					reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(regVarName), model.getConstInterp(ctx.mkIntConst(regVarName))));
+				}
+				
+				s.add(reachedState);
+				lastCheck = s.check();
+				if(lastCheck == Status.UNSATISFIABLE) {
+					System.out.println("       0");					
+				}
+				else {
+					s.pop();
+					s.add(ctx.mkNot(reachedState));
+				}
+			}
+			else {
+				lastCheck = s.check();
+				System.out.println("       1");
+			}
+		}
 	}	
 	
 }
