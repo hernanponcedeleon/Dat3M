@@ -173,6 +173,19 @@ public class Encodings {
 		return enc;
 	}
 	
+	public static BoolExpr satTransIDL(String name, Set<Event> events, Context ctx) throws Z3Exception {
+		BoolExpr enc = satComp(String.format("%s^+", name), String.format("%s^+", name), events, ctx);
+		for(Event e1 : events) {
+			for(Event e2 : events) {
+				enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(String.format("%s^+", name),e1,e2, ctx), ctx.mkOr(Utils.edge(name,e1,e2, ctx), Utils.edge(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx))));
+    	        enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(String.format("%s^+", name),e1,e2, ctx), ctx.mkOr(
+    	        		ctx.mkAnd(Utils.edge(name,e1,e2, ctx), ctx.mkGt(Utils.intCount(String.format("%s^+", name),e1,e2, ctx), Utils.intCount(name,e1,e2, ctx))),
+                        ctx.mkAnd(Utils.edge(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx), ctx.mkGt(Utils.intCount(String.format("%s^+", name),e1,e2, ctx), Utils.intCount(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx))))));			
+			}
+		}
+		return enc;
+	}
+	
 	public static BoolExpr encodeEO(Set<BoolExpr> set, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkFalse();
 		for(BoolExpr exp : set) {
@@ -199,7 +212,12 @@ public class Encodings {
 		return enc;
 	}
 
-
+	public static BoolExpr satTransRefIDL(String name, Set<Event> events, Context ctx) throws Z3Exception {
+		BoolExpr enc = satTransIDL(name, events, ctx);
+		enc = ctx.mkAnd(enc, satUnion(String.format("(%s)*", name), "id", String.format("%s^+", name), events, ctx));
+		return enc;
+	}
+	
 	public static BoolExpr satTransRef2(String name, Set<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e : events) {

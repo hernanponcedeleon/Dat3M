@@ -61,7 +61,7 @@ local [String mainThread] returns [Thread t]:
 		$t = new Local(pointerReg, $e.expr);
 	};
 load [String mainThread] returns [Thread t]:
-	r = register '<-' l = location {
+	r = register '<:-' l = location {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
 			mapThreadRegs.put($r.reg.getName(), $r.reg);
