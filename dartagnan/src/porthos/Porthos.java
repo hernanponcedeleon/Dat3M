@@ -3,11 +3,7 @@ package porthos;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -25,13 +21,7 @@ import dartagnan.LitmusLexer;
 import dartagnan.LitmusParser;
 import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
-import dartagnan.program.Event;
-import dartagnan.program.Load;
-import dartagnan.program.Local;
-import dartagnan.program.Location;
-import dartagnan.program.MemEvent;
 import dartagnan.program.Program;
-import dartagnan.program.Register;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.Encodings;
 
