@@ -13,8 +13,6 @@ public class Assert {
 
 	Map<Register, Integer> regValue = new HashMap<Register, Integer>();
 	Map<Location, Integer> locValue = new HashMap<Location, Integer>();
-	String type;
-	public boolean existsQuery;
 	
 	public Assert() {}
 	

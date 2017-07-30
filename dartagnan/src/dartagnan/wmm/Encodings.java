@@ -1,5 +1,6 @@
 package dartagnan.wmm;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -10,8 +11,11 @@ import com.microsoft.z3.*;
 import dartagnan.program.Event;
 import dartagnan.program.Init;
 import dartagnan.program.Load;
+import dartagnan.program.Local;
+import dartagnan.program.Location;
 import dartagnan.program.MemEvent;
 import dartagnan.program.Program;
+import dartagnan.program.Register;
 import dartagnan.program.Store;
 import dartagnan.utils.Utils;
 
@@ -315,5 +319,27 @@ public class Encodings {
 			}	
 		}
 		return enc;
+	}
+	
+	public static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
+		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
+		BoolExpr reachedState = ctx.mkTrue();
+		for(Location loc : locs) {
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(loc.getName() + "_final"), model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final"))));
+		}
+		Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
+		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+		for(Register reg : regs) {
+			Set<Integer> ssaRegIndexes = new HashSet<Integer>();
+			for(Event e : executedEvents) {
+				if(!(e instanceof Load | e instanceof Local)) {continue;}
+				if(e.getReg() != reg) {continue;}
+				ssaRegIndexes.add(e.getSsaRegIndex());
+			}
+			Integer lastRegIndex = Collections.max(ssaRegIndexes);
+			String regVarName = String.format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(regVarName), model.getConstInterp(ctx.mkIntConst(regVarName))));
+		}
+		return reachedState;
 	}
 }

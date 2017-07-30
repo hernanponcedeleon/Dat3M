@@ -59,7 +59,7 @@ program [String name] returns [Program p]:
 		}
 		$p = p;
 	}
-	(text)* ((MONIO {p.ass.existsQuery = false;})* 'exists' ('(')*
+	(text)* ((MONIO)* 'exists' ('(')*
 	(l = location '=' value = DIGIT
 	{
 		Location loc = $l.loc;

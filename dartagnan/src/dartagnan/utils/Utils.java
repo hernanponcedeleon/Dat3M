@@ -6,6 +6,8 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.Event;
 import dartagnan.program.If;
+import dartagnan.program.Load;
+import dartagnan.program.Local;
 import dartagnan.program.Location;
 import dartagnan.program.MemEvent;
 import dartagnan.program.Register;
@@ -42,6 +44,15 @@ public class Utils {
 			Integer i2 = map2.get(o);
 			if(i1 > i2) {
 				if(o instanceof Register) {
+					// If the ssa index of a register differs in the two branches
+					// I need to maintain the value when the event is not executed
+					// for testing reachability
+					for(Event e : t.getEvents()) {
+						if(!(e instanceof Load || e instanceof Local)) {continue;}
+						if(e.getSsaRegIndex() == i1) {
+							ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i1)), ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i1-1)))));
+						}
+					}
 					index = ctx.mkEq(ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i1)), ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i2)));
 				}
 				if(o instanceof Location) {
@@ -56,6 +67,12 @@ public class Utils {
 			Integer i2 = map2.get(o);
 			if(i2 > i1) {
 				if(o instanceof Register) {
+					for(Event e : t.getEvents()) {
+						if(!(e instanceof Load || e instanceof Local)) {continue;}
+						if(e.getSsaRegIndex() == i2) {
+							ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i2)), ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i2-1)))));
+						}
+					}
 					index = ctx.mkEq(ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i2)), ctx.mkIntConst(String.format("%s_t%s_%s", o, t.getMainThread(), i1)));
 				}
 				if(o instanceof Location) {

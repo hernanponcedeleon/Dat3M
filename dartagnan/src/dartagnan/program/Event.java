@@ -109,6 +109,17 @@ public class Event extends Thread {
 		return null;
 	}
 	
+	public Integer getSsaRegIndex() {
+		if(this instanceof Local) {
+			return ((Local)this).ssaRegIndex;
+		}
+		if(this instanceof Load) {
+			return ((Load)this).ssaRegIndex;
+		}
+		System.out.println(String.format("Check getSSAReg for %s", this));
+		return null;
+	}
+	
 	public Location getLoc() {
 		// This should be never executes; should match a more concrete class
 		System.out.println(String.format("Check getLoc for %s", this));

@@ -301,7 +301,16 @@ public class Program {
 	}
 
 	public BoolExpr encodeAssertion(Context ctx) {
-		return ass.encode(ctx, lastMap);
+		BoolExpr enc = ctx.mkTrue();
+//		Set<Event> regEvents = getEvents().stream().filter(e -> e instanceof Load | e instanceof Local).collect(Collectors.toSet());
+//		for(Event e : regEvents) {
+//			if(e.getSsaRegIndex() == 0) {continue;}
+//			String regVarName = String.format("T%s_%s_%s", e.getReg().getMainThread(), e.getReg().getName(), e.getSsaRegIndex());
+//			String prevRegVarName = String.format("T%s_%s_%s", e.getReg().getMainThread(), e.getReg().getName(), e.getSsaRegIndex() - 1);
+//			enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ctx.mkIntConst(regVarName), ctx.mkIntConst(prevRegVarName))));
+//		}
+		//System.out.println(ctx.mkAnd(enc, ass.encode(ctx, lastMap)));
+		return ctx.mkAnd(enc, ass.encode(ctx, lastMap));
 	}
 	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {

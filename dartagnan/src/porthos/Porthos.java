@@ -33,6 +33,7 @@ import dartagnan.program.MemEvent;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.Encodings;
 
 import org.apache.commons.cli.*;
 
@@ -95,7 +96,7 @@ public class Porthos {
 		}
 		File file = new File(inputFilePath);
 		
-		boolean statePortability = cmd.hasOption("sp");
+		boolean statePortability = cmd.hasOption("state");
 
 		String program = FileUtils.readFileToString(file, "UTF-8");		
 		ANTLRInputStream input = new ANTLRInputStream(program); 		
@@ -118,7 +119,7 @@ public class Porthos {
 	
 		p.initialize();
 		p.compile(false, true);
-		
+
 		Context ctx = new Context();
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 		Solver s = ctx.mkSolver();
@@ -150,35 +151,8 @@ public class Porthos {
 				Model model = s.getModel();
 				s.pop();
 				s.push();
-				s.add(p.encodeConsistent(ctx, source));
-
-				Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
-				BoolExpr reachedState = ctx.mkTrue();
-				
-				for(Location loc : locs) {
-					reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(loc.getName() + "_final"), model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final"))));
-				}
-
-				Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
-				Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
-
-				for(Register reg : regs) {
-					Set<Integer> ssaRegIndexes = new HashSet<Integer>();
-					for(Event e : executedEvents) {
-						if(!(e instanceof Load | e instanceof Local)) {continue;}
-						if(e.getReg() != reg) {continue;}
-						if(e instanceof Load) {
-							ssaRegIndexes.add(((Load) e).ssaRegIndex);	
-						}
-						if(e instanceof Local) {
-							ssaRegIndexes.add(((Local) e).ssaRegIndex);	
-						}
-					}
-					Integer lastRegIndex = Collections.max(ssaRegIndexes);
-					String regVarName = String.format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
-					reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(regVarName), model.getConstInterp(ctx.mkIntConst(regVarName))));
-				}
-				
+				s.add(p.encodeConsistent(ctx, source));		
+				BoolExpr reachedState = Encodings.encodeReachedState(p, model, ctx);
 				s.add(reachedState);
 				lastCheck = s.check();
 				if(lastCheck == Status.UNSATISFIABLE) {

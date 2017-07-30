@@ -94,10 +94,11 @@ public class Dartagnan {
 		
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver();
-		s.add(p.encodeDF(ctx, true));
+		s.add(p.encodeDF(ctx));
+		s.add(p.encodeAssertion(ctx));
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
-		s.add(Domain.encode(p, ctx, true));
+		s.add(Domain.encode(p, ctx));
 		s.add(p.encodeConsistent(ctx, target));
 
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);

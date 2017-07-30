@@ -23,7 +23,8 @@ public class Power {
 		enc = ctx.mkAnd(enc, Encodings.satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satUnion("poloc", "com", events, ctx));
 		
-	    enc = ctx.mkAnd(enc, Encodings.satTransFixPoint("idd", eventsL, ctx));
+	    //enc = ctx.mkAnd(enc, Encodings.satTransFixPoint("idd", eventsL, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satTransIDL("idd", eventsL, ctx));
 	    
 	    enc = ctx.mkAnd(enc, Encodings.satIntersection("data", "idd^+", "RW", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satEmpty("addr", events, ctx));
@@ -56,12 +57,15 @@ public class Power {
 	    // Prop-base
 	    enc = ctx.mkAnd(enc, Encodings.satComp("rfe", "fence-power", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("fence-power", "(rfe;fence-power)", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satTransRef("hb-power", events, ctx));
+	    //enc = ctx.mkAnd(enc, Encodings.satTransRef("hb-power", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satTransRefIDL("hb-power", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("prop-base", "(fence-power+(rfe;fence-power))", "(hb-power)*", events, ctx));
 	    // Propagation for Power
-	    enc = ctx.mkAnd(enc, Encodings.satTransRef("com", events, ctx));
-        
-	    enc = ctx.mkAnd(enc, Encodings.satTransRef("prop-base", events, ctx));
+	    //enc = ctx.mkAnd(enc, Encodings.satTransRef("com", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satTransRefIDL("com", events, ctx));
+
+	    //enc = ctx.mkAnd(enc, Encodings.satTransRef("prop-base", events, ctx));        
+	    enc = ctx.mkAnd(enc, Encodings.satTransRefIDL("prop-base", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("(com)*", "(prop-base)*", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("((com)*;(prop-base)*)", "sync", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("(((com)*;(prop-base)*);sync)", "(hb-power)*", events, ctx));
