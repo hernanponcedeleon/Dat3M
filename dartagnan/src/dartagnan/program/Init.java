@@ -13,7 +13,7 @@ import java.util.Set;
 public class Init extends MemEvent {
 	
 	public Init(Location loc) {
-		this.hlId = hashCode();
+		this.setHLId(hashCode());
 		this.loc = loc;
 		this.condLevel = 0;
 	}
@@ -26,7 +26,7 @@ public class Init extends MemEvent {
 		Location newLoc = loc.clone();
 		Init newInit = new Init(newLoc);
 		newInit.condLevel = condLevel;
-		newInit.hlId = hlId;
+		newInit.setHLId(this.getHLId());
 		return newInit;
 	}
 

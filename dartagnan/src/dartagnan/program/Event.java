@@ -13,6 +13,7 @@ import dartagnan.utils.Pair;
 public class Event extends Thread {
 	
 	protected Integer eid;
+	private Integer hlId;
 	protected Set<Register> condReg;
 	protected LastModMap lastModMap;
 	
@@ -20,6 +21,14 @@ public class Event extends Thread {
 	
 	public Integer getEId() {
 		return eid;
+	}
+
+	public void setHLId(Integer id) {
+		this.hlId = id;
+	}
+
+	public Integer getHLId() {
+		return hlId;
 	}
 	
 	public LastModMap getLastModMap() {

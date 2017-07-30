@@ -49,6 +49,8 @@ public class Local extends Event {
 		AExpr newExpr = expr.clone();
 		Local newLocal = new Local(newReg, newExpr);
 		newLocal.condLevel = condLevel;
+		this.setHLId(hashCode());
+		newLocal.setHLId(getHLId());
 		return newLocal;
 	}
 
