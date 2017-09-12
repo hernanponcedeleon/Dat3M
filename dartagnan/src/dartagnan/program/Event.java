@@ -14,6 +14,7 @@ public class Event extends Thread {
 	
 	protected Integer eid;
 	private Integer hlId;
+
 	protected Set<Register> condReg;
 	protected LastModMap lastModMap;
 	
@@ -22,7 +23,7 @@ public class Event extends Thread {
 	public Integer getEId() {
 		return eid;
 	}
-
+	
 	public void setHLId(Integer id) {
 		this.hlId = id;
 	}
@@ -49,7 +50,8 @@ public class Event extends Thread {
 		return this;
 	}
 	
-	public Thread compile(boolean ctrl, boolean leading) {
+	public Thread compile(String target, boolean ctrl, boolean leading) {
+		//setHLId(hashCode());
 		return this;
 	}
 

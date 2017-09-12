@@ -18,6 +18,5 @@ public class Location {
 	
 	public Location clone() {
 		return this;
-		//return new Location(name);
 	}
 }

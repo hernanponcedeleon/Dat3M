@@ -39,13 +39,14 @@ public class Thread {
 		return this;
 	}
 	
-	public Thread compile(boolean ctrl, boolean leading) {
+	public Thread compile(String target, boolean ctrl, boolean leading) {
 		System.out.println("Check compile!");
 		return this;
 	}
 	
 	public Thread optCompile(boolean ctrl, boolean leading) {
-		return compile(false, true);
+		// CHECK!
+		return compile("", false, true);
 	}
 	
 	public Thread allCompile() {
@@ -94,7 +95,6 @@ public class Thread {
 
 	public String cfVar() {
 		return "CF" + hashCode();
-		//return "CF" + tid.toString();
 	}
 
 	public void setCondRegs(Set<Register> setRegs) {

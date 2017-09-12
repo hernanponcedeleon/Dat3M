@@ -3,7 +3,9 @@ package porthos;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -21,7 +23,9 @@ import dartagnan.LitmusLexer;
 import dartagnan.LitmusParser;
 import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
+import dartagnan.program.Init;
 import dartagnan.program.Program;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.Encodings;
 
@@ -49,6 +53,16 @@ public class Porthos {
         options.addOption(inputOpt);
 
         options.addOption("state", false, "PORTHOS performs state portability");
+        
+        options.addOption(Option.builder("draw")
+        		.hasArg()
+        		.desc("If a buf is found, it outputs a graph \\path_to_file.dot")
+        		.build());
+        
+        options.addOption(Option.builder("rels")
+        		.hasArgs()
+        		.desc("Relations to be drawn in the graph")
+        		.build());
         
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -87,10 +101,16 @@ public class Porthos {
 		File file = new File(inputFilePath);
 		
 		boolean statePortability = cmd.hasOption("state");
+		String[] rels = new String[100];
+		if(cmd.hasOption("rels")) {
+			rels = cmd.getOptionValues("rels");	
+		}
 
 		String program = FileUtils.readFileToString(file, "UTF-8");		
 		ANTLRInputStream input = new ANTLRInputStream(program); 		
 
+		System.out.println(String.format("Checking portability between %s and %s", source, target));
+		
 		Program p = new Program(inputFilePath);
 		
 		if(inputFilePath.endsWith("litmus")) {
@@ -108,25 +128,44 @@ public class Porthos {
 		}
 	
 		p.initialize();
-		p.compile(false, true);
+		Program pSource = p.clone();
+		Program pTarget = p.clone();
+		
+		pSource.compile(source, false, true);
+		Integer startEId = Collections.max(pSource.getEvents().stream().filter(e -> e instanceof Init).map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
+		pTarget.compile(target, false, true, startEId);
 
 		Context ctx = new Context();
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 		Solver s = ctx.mkSolver();
-		s.add(p.encodeDF(ctx));
-		s.add(p.encodeCF(ctx));
-		s.add(p.encodeDF_RF(ctx));
-		s.add(Domain.encode(p, ctx));
-		s.add(p.encodeConsistent(ctx, target));
+
+		s.add(pTarget.encodeDF(ctx));
+		s.add(pTarget.encodeCF(ctx));
+		s.add(pTarget.encodeDF_RF(ctx));
+		s.add(Domain.encode(pTarget, ctx));
+		s.add(pTarget.encodeConsistent(ctx, target));
+		
+		s.add(pSource.encodeDF(ctx));
+		s.add(pSource.encodeCF(ctx));
+		s.add(pSource.encodeDF_RF(ctx));
+		s.add(Domain.encode(pSource, ctx));
+
+		s.add(Encodings.encodeCommonExecutions(pTarget, pSource, ctx));
 		
 		if(!statePortability) {
-			s.add(p.encodeInconsistent(ctx, source));
+			s.add(pSource.encodeInconsistent(ctx, source));
 			if(s.check() == Status.SATISFIABLE) {
-				System.out.println("       0");
+				System.out.println("The program is not portable");
+				//System.out.println("       0");
+				if(cmd.hasOption("draw")) {
+					String outputPath = cmd.getOptionValue("draw");
+					Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
+				}
 				return;
 			}
 			else {
-				System.out.println("       1");
+				System.out.println("The program is portable");
+				//System.out.println("       1");
 				return;
 			}
 		}
@@ -135,14 +174,14 @@ public class Porthos {
 
 		while(lastCheck == Status.SATISFIABLE) {
 			s.push();		
-			s.add(p.encodeInconsistent(ctx, source));
+			s.add(pSource.encodeInconsistent(ctx, source));
 			
 			if(s.check() == Status.SATISFIABLE) {
 				Model model = s.getModel();
 				s.pop();
 				s.push();
-				s.add(p.encodeConsistent(ctx, source));		
-				BoolExpr reachedState = Encodings.encodeReachedState(p, model, ctx);
+				s.add(pSource.encodeConsistent(ctx, source));		
+				BoolExpr reachedState = Encodings.encodeReachedState(pSource, model, ctx);
 				s.add(reachedState);
 				lastCheck = s.check();
 				if(lastCheck == Status.UNSATISFIABLE) {

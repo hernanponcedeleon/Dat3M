@@ -27,7 +27,6 @@ public class Register extends AExpr {
 	
 	public Register clone() {
 		return this;
-		//return new Register(name);
 	}
 	
 	public void setMainThread(Integer t) {
@@ -38,7 +37,6 @@ public class Register extends AExpr {
 		if(getMainThread() == null) {
 			System.out.println(String.format("Check toZ3() for %s: null pointer!", this));
 		}
-		//map.get(this);
 		return (ArithExpr) ctx.mkIntConst(String.format("T%s_%s_%s", getMainThread(), name, map.get(this)));
 	}
 	

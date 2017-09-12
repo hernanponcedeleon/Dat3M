@@ -42,6 +42,7 @@ public class Store extends MemEvent {
 		Location newLoc = loc.clone();
 		Store newStore = new Store(newLoc, newReg);
 		newStore.condLevel = condLevel;
+		newStore.setHLId(getHLId());
 		return newStore;
 	}
 

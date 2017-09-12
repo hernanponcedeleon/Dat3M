@@ -43,6 +43,7 @@ public class Load extends MemEvent {
 		Location newLoc = loc.clone();
 		Load newLoad = new Load(newReg, newLoc);
 		newLoad.condLevel = condLevel;
+		newLoad.setHLId(getHLId());
 		return newLoad;
 	}
 	

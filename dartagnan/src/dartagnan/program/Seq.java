@@ -63,9 +63,9 @@ public class Seq extends Thread {
 		return this;
 	}
 	
-	public Seq compile(boolean ctrl, boolean leading) {
-		t1 = t1.compile(ctrl, leading);
-		t2 = t2.compile(ctrl, leading);
+	public Seq compile(String target, boolean ctrl, boolean leading) {
+		t1 = t1.compile(target, ctrl, leading);
+		t2 = t2.compile(target, ctrl, leading);
 		return this;
 	}
 	
@@ -78,11 +78,6 @@ public class Seq extends Thread {
 	public Seq allCompile() {
 		t1 = t1.allCompile();
 		t2 = t2.allCompile();
-//		OptSync os = new OptSync();
-//		os.condLevel = t1.condLevel;
-//		OptLwsync olws = new OptLwsync();
-//		olws.condLevel = t1.condLevel;
-//		return new Seq(t1, new Seq(os, new Seq(olws, t2)));
 		return this;
 	}
 	
@@ -135,7 +130,6 @@ public class Seq extends Thread {
 	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
 		return ctx.mkAnd(
-				//ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),
 				ctx.mkImplies(ctx.mkOr(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),
 				ctx.mkImplies(ctx.mkBoolConst(cfVar()), ctx.mkAnd(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar()))),
 				t1.encodeCF(ctx),

@@ -77,19 +77,49 @@ public class Program {
 		}
 	}
 	
-	public void compile(boolean ctrl, boolean leading) {
+	public void compile(String target, boolean ctrl, boolean leading) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
 		
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-			t = t.compile(ctrl, leading);
+			t = t.compile(target, ctrl, leading);
 			compiledThreads.add(t);
 		}
 		threads = compiledThreads;
 
 		setTId();
 		setEId();
+		setMainThread();
+		
+		// Set the thread for the registers
+		iter = threads.listIterator();
+		while (iter.hasNext()) {
+			Thread t = iter.next();
+            t.setCondRegs(new HashSet<Register>());
+            t.setLastModMap(new LastModMap());
+			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> ((Load) e).getReg()).collect(Collectors.toSet());
+			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
+			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
+			for(Register reg : regs) {
+				reg.setMainThread(t.tid);
+			}
+		}
+	}	
+
+	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid) {
+		List<Thread> compiledThreads = new ArrayList<Thread>();
+		
+		ListIterator<Thread> iter = threads.listIterator();
+		while (iter.hasNext()) {
+			Thread t = iter.next();
+			t = t.compile(target, ctrl, leading);
+			compiledThreads.add(t);
+		}
+		threads = compiledThreads;
+
+		setTId();
+		setEId(firstEid);
 		setMainThread();
 		
 		// Set the thread for the registers
@@ -301,16 +331,7 @@ public class Program {
 	}
 
 	public BoolExpr encodeAssertion(Context ctx) {
-		BoolExpr enc = ctx.mkTrue();
-//		Set<Event> regEvents = getEvents().stream().filter(e -> e instanceof Load | e instanceof Local).collect(Collectors.toSet());
-//		for(Event e : regEvents) {
-//			if(e.getSsaRegIndex() == 0) {continue;}
-//			String regVarName = String.format("T%s_%s_%s", e.getReg().getMainThread(), e.getReg().getName(), e.getSsaRegIndex());
-//			String prevRegVarName = String.format("T%s_%s_%s", e.getReg().getMainThread(), e.getReg().getName(), e.getSsaRegIndex() - 1);
-//			enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ctx.mkIntConst(regVarName), ctx.mkIntConst(prevRegVarName))));
-//		}
-		//System.out.println(ctx.mkAnd(enc, ass.encode(ctx, lastMap)));
-		return ctx.mkAnd(enc, ass.encode(ctx, lastMap));
+		return ass.encode(ctx, lastMap);
 	}
 	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {

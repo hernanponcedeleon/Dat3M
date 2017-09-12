@@ -38,18 +38,14 @@ public class Read extends MemEvent {
 		retMap.put(reg, set);
 		return retMap;
 	}
-//	public LastModMap setLastModMap(LastModMap map) {
-//		System.out.println(String.format("Check LastModMap for %s", this));
-//		return null;
-//	}
 	
 	public Read clone() {
 		return this;
 //		Register newReg = reg.clone();
 //		Location newLoc = loc.clone();
-//		Read newStore = new Read(newReg, newLoc, atomic);
-//		newStore.condLevel = condLevel;
-//		return newStore;
+//		Read newRead = new Read(newReg, newLoc, atomic);
+//		newRead.setCondLevel(condLevel);
+//		return newRead;
 	}
 
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
@@ -57,7 +53,7 @@ public class Read extends MemEvent {
 		return null;
 	}
 
-	public Thread compile(boolean ctrl, boolean leading) {
+	public Thread compile(String target, boolean ctrl, boolean leading) {
 		Load ld = new Load(reg, loc);
 		ld.setHLId(hashCode());
 		ld.condLevel = this.condLevel;
@@ -66,6 +62,10 @@ public class Read extends MemEvent {
 		sync.condLevel = this.condLevel;
 		Lwsync lwsync = new Lwsync();
 		lwsync.condLevel = this.condLevel;
+		
+		if(!target.equals("power")) {
+			return ld;
+		}
 		
 		if(atomic.equals("_sc")) {
 			if(leading) {
@@ -122,6 +122,5 @@ public class Read extends MemEvent {
 		OptLwsync olws = new OptLwsync();
 		olws.condLevel = condLevel;
 		return new Seq(os, new Seq(olws, ld));
-		//return ld;
 	}
 }

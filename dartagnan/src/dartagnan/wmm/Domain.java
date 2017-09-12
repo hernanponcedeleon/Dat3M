@@ -286,6 +286,7 @@ public class Domain {
 			for(Event e2 : eventsL) {
 				if(e1.getMainThread() != e2.getMainThread() || e2.getEId() < e1.getEId() || e1 == e2) {
 					enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge("idd", e1, e2, ctx)));
+					enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge("data", e1, e2, ctx)));
 				}
 				if(e2 instanceof Store) {
 					if(!e2.getLastModMap().get(e2.getReg()).contains(e1)) {

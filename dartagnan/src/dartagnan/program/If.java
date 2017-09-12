@@ -85,9 +85,9 @@ public class If extends Thread {
 		return this;
 	}
 	
-	public If compile(boolean ctrl, boolean leading) {
-		t1 = t1.compile(ctrl, leading);
-		t2 = t2.compile(ctrl, leading);
+	public If compile(String target, boolean ctrl, boolean leading) {
+		t1 = t1.compile(target, ctrl, leading);
+		t2 = t2.compile(target, ctrl, leading);
 		return this;
 	}
 	
@@ -163,8 +163,6 @@ public class If extends Thread {
 	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
 		return ctx.mkAnd(
-				//ctx.mkImplies(ctx.mkOr(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),
-				//ctx.mkImplies(ctx.mkBoolConst(cfVar()), ctx.mkXor(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar()))),
 				ctx.mkEq(ctx.mkBoolConst(cfVar()), ctx.mkXor(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar()))),
 				t1.encodeCF(ctx),
 				t2.encodeCF(ctx));

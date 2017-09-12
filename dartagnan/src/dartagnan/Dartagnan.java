@@ -89,8 +89,9 @@ public class Dartagnan {
 			p = parser.program(inputFilePath).p;
 		}
 	
+		System.out.println(p.ass);
 		p.initialize();
-		p.compile(false, true);
+		p.compile(target, false, true);			
 		
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver();

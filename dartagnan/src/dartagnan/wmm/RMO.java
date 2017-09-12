@@ -18,11 +18,11 @@ public class RMO {
 		enc = ctx.mkAnd(enc, Encodings.satMinus("poloc", "RR", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satUnion("(poloc\\RR)", "com", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satUnion("com-rmo", "(co+fr)", "rfe", events, ctx));
-		enc = ctx.mkAnd(enc, Encodings.satTransIDL("idd", eventsL, ctx));
+		enc = ctx.mkAnd(enc, Encodings.satTransFixPoint("idd", eventsL, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satIntersection("data", "idd^+", "RW", eventsL, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satIntersection("poloc", "WR", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satUnion("data", "(poloc&WR)", events, ctx));
-		enc = ctx.mkAnd(enc, Encodings.satTransIDL("(data+(poloc&WR))", events, ctx));
+		enc = ctx.mkAnd(enc, Encodings.satTransFixPoint("(data+(poloc&WR))", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satIntersection("(data+(poloc&WR))^+", "RM", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satIntersection("ctrl", "RW", events, ctx));
 		enc = ctx.mkAnd(enc, Encodings.satUnion("(ctrl&RW)", "ctrlisync", events, ctx));

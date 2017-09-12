@@ -39,18 +39,13 @@ public class Write extends MemEvent {
 		return retMap;
 	}
 	
-//	public LastModMap setLastModMap(LastModMap map) {
-//		System.out.println(String.format("Check LastModMap for %s", this));
-//		return null;
-//	}
-	
 	public Write clone() {
 		return this;
 //		Register newReg = reg.clone();
 //		Location newLoc = loc.clone();
-//		Write newStore = new Write(newLoc, newReg, atomic);
-//		newStore.condLevel = condLevel;
-//		return newStore;
+//		Write newWrite = new Write(newLoc, newReg, atomic);
+//		newWrite.setCondLevel(condLevel);
+//		return newWrite;
 	}
 
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
@@ -58,16 +53,30 @@ public class Write extends MemEvent {
 		return null;
 	}
 
-	public Thread compile(boolean ctrl, boolean leading) {
+	public Thread compile(String target, boolean ctrl, boolean leading) {
 		Store st = new Store(loc, reg);
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
 		
+		Mfence mfence = new Mfence();
+		mfence.condLevel = this.condLevel;
 		Sync sync = new Sync();
 		sync.condLevel = this.condLevel;
 		Lwsync lwsync = new Lwsync();
 		lwsync.condLevel = this.condLevel;
 
+		if(target.equals("sc")) {
+			return st;
+		}
+		
+		if(target.equals("tso") && atomic.equals("_sc")) {
+			return new Seq(st, mfence);
+		}
+		
+		if(target.equals("tso")) {
+			return st;
+		}
+		
 		if(atomic.equals("_sc")) {
 			if(leading) {
 				return new Seq(sync, st);	
@@ -86,7 +95,7 @@ public class Write extends MemEvent {
 		return null;
 	}
 
-	public Thread optCompile(boolean ctrl, boolean leading) {
+	public Thread optCompile(String target, boolean ctrl, boolean leading) {
 		Store st = new Store(loc, reg);
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
@@ -123,7 +132,6 @@ public class Write extends MemEvent {
 		OptLwsync olws = new OptLwsync();
 		olws.condLevel = condLevel;
 		return new Seq(os, new Seq(olws, st));
-		//return st;
 	}
 
 }

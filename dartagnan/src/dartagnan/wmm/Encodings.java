@@ -145,7 +145,7 @@ public class Encodings {
 					source.add(Utils.cycleEdge(name, e1, e2, ctx));
 					target.add(Utils.cycleEdge(name, e2, e1, ctx));
 					enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.cycleEdge(name, e1, e2, ctx),
-							ctx.mkAnd(Utils.edge(name, e1, e2, ctx), Utils.cycleVar(name, e1, ctx), Utils.cycleVar(name, e2, ctx))));
+							ctx.mkAnd(e1.executes(ctx), e2.executes(ctx), Utils.edge(name, e1, e2, ctx), Utils.cycleVar(name, e1, ctx), Utils.cycleVar(name, e2, ctx))));
 				}
 			enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.cycleVar(name, e1, ctx), ctx.mkAnd(encodeEO(source, ctx), encodeEO(target, ctx))));
 			}
@@ -178,13 +178,20 @@ public class Encodings {
 	}
 	
 	public static BoolExpr satTransIDL(String name, Set<Event> events, Context ctx) throws Z3Exception {
-		BoolExpr enc = satComp(String.format("%s^+", name), String.format("%s^+", name), events, ctx);
+		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
-				enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(String.format("%s^+", name),e1,e2, ctx), ctx.mkOr(Utils.edge(name,e1,e2, ctx), Utils.edge(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx))));
-    	        enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(String.format("%s^+", name),e1,e2, ctx), ctx.mkOr(
+				BoolExpr orClause = ctx.mkFalse();
+				for(Event e3 : events) {
+					orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(String.format("%s^+", name), e1, e3, ctx), Utils.edge(String.format("%s^+", name), e3, e2, ctx),
+								ctx.mkGt(Utils.intCount(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx), Utils.intCount(String.format("%s^+", name),e1,e3, ctx)),
+								ctx.mkGt(Utils.intCount(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx), Utils.intCount(String.format("%s^+", name),e3,e2, ctx))));
+				}
+				enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(String.format("(%s^+;%s^+)", name, name), e1, e2, ctx), orClause));
+    	        enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(String.format("%s^+", name),e1,e2, ctx), ctx.mkOr(
     	        		ctx.mkAnd(Utils.edge(name,e1,e2, ctx), ctx.mkGt(Utils.intCount(String.format("%s^+", name),e1,e2, ctx), Utils.intCount(name,e1,e2, ctx))),
                         ctx.mkAnd(Utils.edge(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx), ctx.mkGt(Utils.intCount(String.format("%s^+", name),e1,e2, ctx), Utils.intCount(String.format("(%s^+;%s^+)", name, name),e1,e2, ctx))))));			
+
 			}
 		}
 		return enc;
@@ -250,27 +257,27 @@ public class Encodings {
 	
 	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> memEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		Set<Event> memEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> lEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent | e instanceof Local).collect(Collectors.toSet());
+		Set<Event> lEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent | e instanceof Local).collect(Collectors.toSet());
 		Set<Event> rEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
 		Set<Event> wEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
 		Set<Event> rEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
 		Set<Event> wEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
-		for(Event e1 : memEventsP1) {
-			for(Event e2 : memEventsP2) {
-				if(((MemEvent) e1).hlId.equals(((MemEvent) e2).hlId)) {
+		for(Event e1 : lEventsP1) {
+			for(Event e2 : lEventsP2) {
+				if(e1.getHLId().equals(e2.getHLId())) {
 					enc = ctx.mkAnd(enc, ctx.mkEq(e1.executes(ctx), e2.executes(ctx)));
 				}	
 			}
 		}
 		for(Event r1 : rEventsP1) {
 			for(Event r2 : rEventsP2) {
-				if(((MemEvent) r1).hlId.equals(((MemEvent) r2).hlId)) {
+				if(r1.getHLId().equals(r2.getHLId())) {
 					for(Event w1 : wEventsP1) {
 						for(Event w2 : wEventsP2) {
 							if(r1.getLoc() != w1.getLoc()) {continue;}
 							if(r2.getLoc() != w2.getLoc()) {continue;}
-							if(((MemEvent) w1).hlId.equals(((MemEvent) w2).hlId)) {
+							if(w1.getHLId().equals(w2.getHLId())) {
 								enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge("rf", w1, r1, ctx), Utils.edge("rf", w2, r2, ctx)));
 							}
 						}	
@@ -280,13 +287,13 @@ public class Encodings {
 		}
 		for(Event w1P1 : wEventsP1) {
 			for(Event w1P2 : wEventsP2) {
-				if(((MemEvent) w1P1).hlId.equals(((MemEvent) w1P2).hlId)) {
+				if(w1P1.getHLId().equals(w1P2.getHLId())) {
 					for(Event w2P1 : wEventsP1) {
 						for(Event w2P2 : wEventsP2) {
 							if(w1P1.getLoc() != w2P1.getLoc()) {continue;}
 							if(w1P1.getLoc() != w2P2.getLoc()) {continue;}
 							if(w1P1 == w2P1 | w1P2 == w2P2) {continue;}
-							if(((MemEvent) w2P1).hlId.equals(((MemEvent) w2P2).hlId)) {
+							if(w2P1.getHLId().equals(w2P2.getHLId())) {
 								enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge("co", w1P1, w2P1, ctx), Utils.edge("co", w1P2, w2P2, ctx)));
 							}
 						}	
@@ -303,13 +310,13 @@ public class Encodings {
 		Set<Event> memEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		for(Event e1P1 : memEventsP1) {
 			for(Event e1P2 : memEventsP2) {
-				if(((MemEvent) e1P1).hlId.equals(((MemEvent) e1P2).hlId)) {
+				if(e1P1.getHLId().equals(e1P2.getHLId())) {
 					for(Event e2P1 : memEventsP1) {
 						for(Event e2P2 : memEventsP2) {
 							if(e1P1.getMainThread() != e2P1.getMainThread()) {continue;}
 							if(e1P2.getMainThread() != e2P2.getMainThread()) {continue;}
 							if(e1P1.getEId() >= e2P1.getEId() | e1P2.getEId() >= e2P2.getEId()) {continue;}
-							if(((MemEvent) e2P1).hlId.equals(((MemEvent) e2P2).hlId)) {
+							if(e2P1.getHLId().equals(e2P2.getHLId())) {
 								enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("sync", e1P1, e2P1, ctx), Utils.edge("sync", e1P2, e2P2, ctx)));
 								enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge("lwsync", e1P1, e2P1, ctx), ctx.mkOr(Utils.edge("lwsync", e1P2, e2P2, ctx), Utils.edge("sync", e1P2, e2P2, ctx))));
 							}
