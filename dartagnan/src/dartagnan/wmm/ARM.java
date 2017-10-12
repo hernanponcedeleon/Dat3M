@@ -48,21 +48,21 @@ public class ARM {
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("po-arm", "(RR&ii)", "(RW&ic)", events, ctx));
 	    // Happens before
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("po-arm", "rfe", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("hb-arm", "(po-arm+rfe)", "isb", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satUnion("hb-arm", "(po-arm+rfe)", "ish", events, ctx));
 	    // Prop-base
-	    enc = ctx.mkAnd(enc, Encodings.satComp("rfe", "isb", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("isb", "(rfe;isb)", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satComp("rfe", "ish", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satUnion("ish", "(rfe;ish)", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satTransRef("hb-arm", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satComp("prop-base", "(isb+(rfe;isb))", "(hb-arm)*", events, ctx));
-	    // Propagation for Power
+	    enc = ctx.mkAnd(enc, Encodings.satComp("prop-base", "(ish+(rfe;ish))", "(hb-arm)*", events, ctx));
+	    // Propagation for ARM
 	    enc = ctx.mkAnd(enc, Encodings.satTransRef("com", events, ctx));
         
 	    enc = ctx.mkAnd(enc, Encodings.satTransRef("prop-base", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("(com)*", "(prop-base)*", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satComp("((com)*;(prop-base)*)", "isb", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satComp("(((com)*;(prop-base)*);isb)", "(hb-arm)*", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satComp("((com)*;(prop-base)*)", "ish", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satComp("(((com)*;(prop-base)*);ish)", "(hb-arm)*", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satIntersection("WW", "prop-base", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("prop", "(WW&prop-base)", "((((com)*;(prop-base)*);isb);(hb-arm)*)", events, ctx));
+	    enc = ctx.mkAnd(enc, Encodings.satUnion("prop", "(WW&prop-base)", "((((com)*;(prop-base)*);ish);(hb-arm)*)", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("fre", "prop", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satComp("(fre;prop)", "(hb-arm)*", events, ctx));
 	    enc = ctx.mkAnd(enc, Encodings.satUnion("co", "prop", events, ctx));
