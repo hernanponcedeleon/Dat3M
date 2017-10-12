@@ -59,7 +59,7 @@ public class Utils {
 					gv.addln("    " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThread() + "];");	
 				}
 				if(e instanceof Init && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("    " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", root=true];");	
+					gv.addln("    " + e.repr() + " [label=\"W_" + e.getLoc() + "_0\", shape=\"box\", color=\"blue\", root=true];");	
 				}
 				if(e instanceof Local && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
 					gv.addln("    " + e.repr() + " [style=invis];");	
@@ -143,7 +143,7 @@ public class Utils {
 					gv.addln("    " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=t" + e.getMainThread() + "];");	
 				}
 				if(e instanceof Init && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("    " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", root=true];");	
+					gv.addln("    " + e.repr() + " [label=\"W_" + e.getLoc() + "_0\", shape=\"box\", color=\"blue\", root=true];");	
 				}
 				if(e instanceof Local && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
 					gv.addln("    " + e.repr() + " [style=invis];");	
