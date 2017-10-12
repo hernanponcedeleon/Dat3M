@@ -41,11 +41,6 @@ public class Write extends MemEvent {
 	
 	public Write clone() {
 		return this;
-//		Register newReg = reg.clone();
-//		Location newLoc = loc.clone();
-//		Write newWrite = new Write(newLoc, newReg, atomic);
-//		newWrite.setCondLevel(condLevel);
-//		return newWrite;
 	}
 
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
@@ -64,33 +59,48 @@ public class Write extends MemEvent {
 		sync.condLevel = this.condLevel;
 		Lwsync lwsync = new Lwsync();
 		lwsync.condLevel = this.condLevel;
+		Ish ish1 = new Ish();
+		ish1.condLevel = this.condLevel;
+		Ish ish2 = new Ish();
+		ish2.condLevel = this.condLevel;
 
-		if(target.equals("sc")) {
-			return st;
-		}
-		
-		if(target.equals("tso") && atomic.equals("_sc")) {
+		if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
 			return new Seq(st, mfence);
 		}
 		
-		if(target.equals("tso")) {
+		if(!target.equals("power") && !target.equals("arm")) {
 			return st;
 		}
 		
-		if(atomic.equals("_sc")) {
-			if(leading) {
-				return new Seq(sync, st);	
+		if(target.equals("power")) {
+			if(atomic.equals("_sc")) {
+				if(leading) {
+					return new Seq(sync, st);	
+				}
+				else {
+					return new Seq(lwsync, new Seq(st, sync));
+				}
 			}
-			else {
-				return new Seq(lwsync, new Seq(st, sync));
+			if(atomic.equals("_rx") || atomic.equals("_na")) {
+				return st;
 			}
+			if(atomic.equals("_rel")) {
+				return new Seq(lwsync, st);
+			}			
 		}
-		if(atomic.equals("_rx") || atomic.equals("_na")) {
-			return st;
+
+		if(target.equals("arm")) {
+			if(atomic.equals("_sc")) {
+				return new Seq(ish1, new Seq(st, ish2));
+			}
+			if(atomic.equals("_rx") || atomic.equals("_na")) {
+				return st;
+			}
+			if(atomic.equals("_rel")) {
+				return new Seq(ish1, st);
+			}			
 		}
-		if(atomic.equals("_rel")) {
-			return new Seq(lwsync, st);
-		}
+
 		else System.out.println(String.format("Error in the atomic operation type of", this));
 		return null;
 	}

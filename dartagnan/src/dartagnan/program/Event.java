@@ -51,7 +51,7 @@ public class Event extends Thread {
 	}
 	
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		//setHLId(hashCode());
+		setHLId(hashCode());
 		return this;
 	}
 
