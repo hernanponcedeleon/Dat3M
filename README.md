@@ -30,6 +30,8 @@ where \<input> must be a .litmus or .pts (see below) program and \<source>, \<ta
 - power
 - arm
 
+More memory models can be defined using the CAT language. See /src/dartagnan/wmm/
+
 The .pts format
 ======
 
