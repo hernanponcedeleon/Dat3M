@@ -8,9 +8,13 @@ Requirements
 
 Usage
 ======
-
+For cheacking state inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input>
+```
+For cheacking reachability:
+```
+java dartagnan/Dartagnan -t <target> -i <input>
 ```
 
 where \<input> must be a .litmus or .pts (see below) program and \<source>, \<target> must be one of the following MCMs: 
