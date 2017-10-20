@@ -8,9 +8,13 @@ Requirements
 
 Usage
 ======
-For cheacking state inclusion:
+For cheacking execution inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input>
+```
+For cheacking state inclusion:
+```
+java porthos/Porthos -s <source> -t <target> -i <input> -state
 ```
 For cheacking reachability:
 ```
