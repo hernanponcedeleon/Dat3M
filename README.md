@@ -18,6 +18,13 @@ export LD_LIBRARY_PATH=.:path_to_libz3java
 ```
 (use DYLD_LIBRARY_PATH in MacOS)
 
+Compile the main two classes:
+```
+javac porthos/Porthos.java
+javac dartagnan/Dartagnan.java
+```
+
+
 Usage
 ======
 For cheacking execution inclusion:
