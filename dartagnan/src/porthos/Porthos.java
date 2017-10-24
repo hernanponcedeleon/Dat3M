@@ -167,8 +167,8 @@ public class Porthos {
 		if(!statePortability) {
 			s.add(pSource.encodeInconsistent(ctx, source));
 			if(s.check() == Status.SATISFIABLE) {
-				//System.out.println("The program is not portable");
-				System.out.println("       0");
+				System.out.println("The program is not portable");
+				//System.out.println("       0");
 				if(cmd.hasOption("draw")) {
 					String outputPath = cmd.getOptionValue("draw");
 					Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
@@ -176,8 +176,8 @@ public class Porthos {
 				return;
 			}
 			else {
-				//System.out.println("The program is portable");
-				System.out.println("       1");
+				System.out.println("The program is portable");
+				//System.out.println("       1");
 				return;
 			}
 		}
@@ -187,7 +187,7 @@ public class Porthos {
 		int iterations = 0;
 		while(lastCheck == Status.SATISFIABLE) {
 			iterations = iterations + 1;
-			System.out.println("Iterations: " + iterations);
+			//System.out.println("Iterations: " + iterations);
 			//s.push();		
 			//s.add(pSource.encodeInconsistent(ctx, source));
 			
@@ -201,9 +201,9 @@ public class Porthos {
 				s2.add(ass.encode(ctx, pTarget.lastMap));
 				lastCheck = s.check();
 				if(s2.check() == Status.UNSATISFIABLE) {
-					//System.out.println("The program is not state-portable");
+					System.out.println("The program is not state-portable");
 					//System.out.println("Iterations: " + iterations);
-					System.out.println("       0");
+					//System.out.println("       0");
 					return;
 				}
 
@@ -216,9 +216,9 @@ public class Porthos {
 			}
 			else {
 				lastCheck = s.check();
-				//System.out.println("The program is state-portable");
+				System.out.println("The program is state-portable");
 				//System.out.println("Iterations: " + iterations);
-				System.out.println("       1");
+				//System.out.println("       1");
 				return;
 			}
 		}
