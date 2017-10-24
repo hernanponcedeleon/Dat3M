@@ -6,6 +6,18 @@ Requirements
 ======
 - z3 (https://github.com/Z3Prover/z3)
 
+Installation
+======
+Add the following files to our CLASSPATH:
+```
+export CLASSPATH=.:/path_to_PORTHOS-master/dartagnan/import/commons-io-2.5.jar:/path_to_PORTHOS-master/dartagnan/import/commons-cli-1.4.jar:/path_to_PORTHOS-master/dartagnan/import/com.microsoft.z3.jar:/path_to_PORTHOS-master/dartagnan/import/antlr-4.7-complete.jar:/path_to_PORTHOS-master/dartagnan/target/generated-sources/antlr4
+```
+Add the libz3java file to your library path:
+```
+export LD_LIBRARY_PATH=.:path_to_libz3java
+```
+(use DYLD_LIBRARY_PATH in MacOS)
+
 Usage
 ======
 For cheacking execution inclusion:
