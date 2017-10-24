@@ -8,15 +8,4 @@ do
    echo $DIFF1
 done
 
-#for file in ../benchmarks/all_rx/*.litmus;
-#do
-#   echo $file
-#   START2=$(python -c 'import time; print time.time()')
-#   timeout 600 herd7 -model ~/Documents/Projects/Memory-Models/herd/tso.cat $file
-#   timeout 600 herd7 -model ~/Documents/Projects/Memory-Models/herd/sc.cat $file
-#   END2=$(python -c 'import time; print time.time()')
-#   DIFF2=$(echo "$END2 - $START2" | bc)
-#   echo $DIFF2
-#done
-
 
