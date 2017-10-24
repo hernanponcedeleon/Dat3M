@@ -27,15 +27,15 @@ javac dartagnan/Dartagnan.java
 
 Usage
 ======
-For cheacking execution inclusion:
+For checking execution inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input>
 ```
-For cheacking state inclusion:
+For checking state inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input> -state
 ```
-For cheacking reachability:
+For checking reachability:
 ```
 java dartagnan/Dartagnan -t <target> -i <input>
 ```
