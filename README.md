@@ -10,7 +10,7 @@ Installation
 ======
 Add the following files to our CLASSPATH:
 ```
-export CLASSPATH=.:/path_to_PORTHOS-master/dartagnan/import/commons-io-2.5.jar:/path_to_PORTHOS-master/dartagnan/import/commons-cli-1.4.jar:/path_to_PORTHOS-master/dartagnan/import/com.microsoft.z3.jar:/path_to_PORTHOS-master/dartagnan/import/antlr-4.7-complete.jar:/path_to_PORTHOS-master/dartagnan/target/generated-sources/antlr4:/path_to_PORTHOS-master/dartagnan/build/classes/:path_to_PORTHOS-master/dartagnan/src
+export CLASSPATH=.:/path_to_PORTHOS-master/dartagnan/import/commons-io-2.5.jar:/path_to_PORTHOS-master/dartagnan/import/commons-cli-1.4.jar:/path_to_PORTHOS-master/dartagnan/import/com.microsoft.z3.jar:/path_to_PORTHOS-master/dartagnan/import/antlr-4.7-complete.jar:/path_to_PORTHOS-master/dartagnan/target/generated-sources/antlr4:/path_to_PORTHOS-master/dartagnan/build/classes/:path_to_PORTHOS-master/dartagnan/src/
 ```
 Add the libz3java file to your library path:
 ```
