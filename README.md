@@ -40,7 +40,7 @@ For checking reachability:
 java dartagnan/Dartagnan -t <target> -i <input>
 ```
 
-where \<input> must be a .litmus or .pts (see below) program and \<source>, \<target> must be one of the following MCMs: 
+where \<input> must be a .pts program (see below) and \<source>, \<target> must be one of the following memory models: 
 - sc
 - tso
 - pso
