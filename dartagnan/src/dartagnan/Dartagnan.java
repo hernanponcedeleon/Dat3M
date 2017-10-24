@@ -106,10 +106,12 @@ public class Dartagnan {
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 
 		if(s.check() == Status.SATISFIABLE) {
-			System.out.println("       0");
+			//System.out.println("       0");
+			System.out.println("The state is reachable");
 		}
 		else {
-			System.out.println("       1");
+			//System.out.println("       1");
+			System.out.println("The state is not reachable");
 		}
 
 	}	
