@@ -8,7 +8,7 @@ Requirements
 
 Installation
 ======
-Add the following files to our CLASSPATH:
+Add the following files to your CLASSPATH:
 ```
 export CLASSPATH=.:/path_to_PORTHOS-master/dartagnan/import/commons-io-2.5.jar:/path_to_PORTHOS-master/dartagnan/import/commons-cli-1.4.jar:/path_to_PORTHOS-master/dartagnan/import/com.microsoft.z3.jar:/path_to_PORTHOS-master/dartagnan/import/antlr-4.7-complete.jar:/path_to_PORTHOS-master/dartagnan/target/generated-sources/antlr4:/path_to_PORTHOS-master/dartagnan/build/classes/:/path_to_PORTHOS-master/dartagnan/src/
 ```
