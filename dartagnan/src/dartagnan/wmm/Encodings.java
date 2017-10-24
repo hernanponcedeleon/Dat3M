@@ -8,6 +8,7 @@ import java.util.stream.IntStream;
 
 import com.microsoft.z3.*;
 
+import dartagnan.expression.Assert;
 import dartagnan.program.Event;
 import dartagnan.program.Init;
 import dartagnan.program.Load;
@@ -327,7 +328,29 @@ public class Encodings {
 		}
 		return enc;
 	}
-	
+
+	public static Assert AssertFromModel(Program p, Model model, Context ctx) {
+		Assert ass = new Assert();
+		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
+		for(Location loc : locs) {
+			ass.addPair(loc, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString()));
+		}
+		Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
+		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+		for(Register reg : regs) {
+			Set<Integer> ssaRegIndexes = new HashSet<Integer>();
+			for(Event e : executedEvents) {
+				if(!(e instanceof Load | e instanceof Local)) {continue;}
+				if(e.getReg() != reg) {continue;}
+				ssaRegIndexes.add(e.getSsaRegIndex());
+			}
+			Integer lastRegIndex = Collections.max(ssaRegIndexes);
+			String regVarName = String.format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
+			ass.addPair(reg, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString()));
+		}
+		return ass;
+	}
+
 	public static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
 		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
