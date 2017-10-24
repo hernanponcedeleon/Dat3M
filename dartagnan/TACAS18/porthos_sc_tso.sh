@@ -7,5 +7,3 @@ do
    DIFF1=$(echo "$END1 - $START1" | bc)
    echo $DIFF1
 done
-
-
