@@ -8,6 +8,6 @@ sh dartagnan_tso.sh
 ```
 Be sure that the directory including the timeout binary is in your PATH.
 
-The benchmarks translated from .pts format to .litmus format to be run in [HERD](http://diy.inria.fr/) and in the [benckmarks](https://github.com/hernanponcedeleon/PORTHOS/tree/master/dartagnan/benchmarks/all_rx) folder.
+The benchmarks translated from .pts format to .litmus format to be run in [HERD](http://diy.inria.fr/) and in the [benchmarks](https://github.com/hernanponcedeleon/PORTHOS/tree/master/dartagnan/benchmarks/all_rx) folder.
 
-The memory models files for running HERD are in the CAT.
+The memory models files for running HERD are in the [cat](https://github.com/hernanponcedeleon/PORTHOS/tree/master/dartagnan/cat) folder.
