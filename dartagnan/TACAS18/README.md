@@ -2,7 +2,7 @@
 
 This folder contains the scripts to reproduce the reachability and state inclusion experiments from Tables 2 and 3 in the article *"Porthos: a Memory Model-aware Verification Tool"* submitted to *TACAS 2018*.
 
-Just run the scripts in bash:
+Just run the scripts in bash, e.g.:
 ```
 sh dartagnan_tso.sh
 ```
