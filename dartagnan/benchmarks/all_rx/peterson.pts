@@ -28,3 +28,4 @@ d <- 0;
 flag1.store(_rx,d)
 }
 
+exists	flag0 = 1, flag1 = 1, turn = 1,

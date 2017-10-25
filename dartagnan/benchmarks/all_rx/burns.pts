@@ -29,3 +29,5 @@ while True {
       y.store(_rx,b)
   }
 }}
+
+exists	x = 1, y = 1,

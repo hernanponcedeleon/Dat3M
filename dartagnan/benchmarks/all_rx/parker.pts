@@ -15,3 +15,5 @@ b <- 1;
 cond.store(_rx,b);
 parkCounter.store(_rx,b)
 }
+
+exists	cond = 0, parkerCounter = 1,

@@ -68,3 +68,5 @@ while (y1 != i) {
 a <- 0;
 y.store(_rx,a)
 }
+
+exists	x = 1, y = 1,

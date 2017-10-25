@@ -40,6 +40,8 @@ while True {
     q0 = n1.load(_rx)
   };
   b2 <- 0;
-  c0.store(_rx,b2)
+  n1.store(_rx,b2)
 }
 }
+
+exists n0 = 1, n1 = 1,
