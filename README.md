@@ -18,7 +18,7 @@ This tool suite is currently composed of two tools.
 
 Requirements
 ======
-- z3 (https://github.com/Z3Prover/z3)
+z3 (https://github.com/Z3Prover/z3)
 
 Installation
 ======
