@@ -20,6 +20,7 @@ import dartagnan.LitmusParser;
 import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
 import dartagnan.program.Program;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 
 import org.apache.commons.cli.*;
@@ -40,6 +41,21 @@ public class Dartagnan {
 		Option inputOpt = new Option("i", "input", true, "input file path");
         inputOpt.setRequired(true);
         options.addOption(inputOpt);
+
+        options.addOption(Option.builder("unroll")
+        		.hasArg()
+        		.desc("Unrolling steps")
+        		.build());
+
+        options.addOption(Option.builder("draw")
+        		.hasArg()
+        		.desc("If a buf is found, it outputs a graph \\path_to_file.dot")
+        		.build());
+        
+        options.addOption(Option.builder("rels")
+        		.hasArgs()
+        		.desc("Relations to be drawn in the graph")
+        		.build());
 
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -89,14 +105,24 @@ public class Dartagnan {
 			p = parser.program(inputFilePath).p;
 		}
 	
-		p.initialize();
+		String[] rels = new String[100];
+		if(cmd.hasOption("rels")) {
+			rels = cmd.getOptionValues("rels");	
+		}
+
+		int steps = 1;
+        if(cmd.hasOption("unroll")) {
+            steps = Integer.parseInt(cmd.getOptionValue("unroll"));        	
+        }
+
+		p.initialize(steps);
 		p.compile(target, false, true);
 		
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver();
 		
 		s.add(p.encodeDF(ctx));
-		s.add(p.encodeAssertion(ctx));
+		s.add(p.getAss().encode(ctx));
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
@@ -106,14 +132,18 @@ public class Dartagnan {
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 
 		if(s.check() == Status.SATISFIABLE) {
-			//System.out.println("       0");
 			System.out.println("The state is reachable");
+			//System.out.println("       0");
+			if(cmd.hasOption("draw")) {
+				String outputPath = cmd.getOptionValue("draw");
+				Utils.drawGraph(p, ctx, s.getModel(), outputPath, rels);
+			}
 		}
 		else {
-			//System.out.println("       1");
 			System.out.println("The state is not reachable");
+			//System.out.println("       1");
 		}
-
+		return;
 	}	
 	
 }
