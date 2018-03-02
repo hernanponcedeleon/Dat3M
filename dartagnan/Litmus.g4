@@ -22,8 +22,7 @@ private Map<String, List<Thread>> mapThreads = new HashMap<String, List<Thread>>
 program [String name] returns [Program p]: 
 	{
 		Program p = new Program(name);
-		p.ass = new Assert();
-		
+		p.setAss(new Assert());
 	}
 	('PPC' | 'X86') (text)* '{'
 	(
@@ -63,27 +62,27 @@ program [String name] returns [Program p]:
 	(l = location '=' value = DIGIT
 	{
 		Location loc = $l.loc;
-		p.ass.addPair(loc, Integer.parseInt($value.getText()));
+		p.getAss().addPair(loc, Integer.parseInt($value.getText()));
 	}
 	|
 	thrd = DIGIT ':' r = registerPower '=' value = DIGIT
 	{
 		Register regPointer = $r.reg;
 		Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
-		p.ass.addPair(reg, Integer.parseInt($value.getText()));
+		p.getAss().addPair(reg, Integer.parseInt($value.getText()));
 	}
 	)
 	(bop l = location '=' value = DIGIT
 	{
 		Location loc2 = $l.loc;
-		p.ass.addPair(loc2, Integer.parseInt($value.getText()));	
+		p.getAss().addPair(loc2, Integer.parseInt($value.getText()));	
 	}
 	|
 	bop thrd = DIGIT ':' r = registerPower '=' value = DIGIT
 	{
 		Register regPointer2 = $r.reg;
 		Register reg2 = mapRegs.get($thrd.getText()).get(regPointer2.getName());
-		p.ass.addPair(reg2, Integer.parseInt($value.getText()));	
+		p.getAss().addPair(reg2, Integer.parseInt($value.getText()));	
 	}
 	)* (')')* (text)*)*;
 
@@ -264,7 +263,8 @@ loadX86 [String mainThread] returns [Thread t]:
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		Location pointerLoc = mapLocs.get($l.loc.getName());
-		$t = new Load(pointerReg, pointerLoc);
+		//$t = new Load(pointerReg, pointerLoc);
+		$t = new Read(pointerReg, pointerLoc, "_rx");
 	};
 	
 loadPower [String mainThread] returns [Thread t]:
@@ -278,7 +278,8 @@ loadPower [String mainThread] returns [Thread t]:
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		Location pointerLoc = mapRegLoc.get(mainThread).get($rl.reg.getName());
-		$t = new Load(pointerReg, pointerLoc);
+		//$t = new Load(pointerReg, pointerLoc);
+		$t = new Read(pointerReg, pointerLoc, "_rx");
 	};
 
 storeX86 [String mainThread] returns [Thread t]:
@@ -292,7 +293,8 @@ storeX86 [String mainThread] returns [Thread t]:
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		Location pointerLoc = mapLocs.get($l.loc.getName());
-		$t = new Store(pointerLoc, pointerReg);
+		//$t = new Store(pointerLoc, pointerReg);
+		$t = new Write(pointerLoc, pointerReg, "_rx");
 	};
 		
 storePower [String mainThread] returns [Thread t]:
@@ -306,7 +308,8 @@ storePower [String mainThread] returns [Thread t]:
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		Location pointerLoc = mapRegLoc.get(mainThread).get($rl.reg.getName());
-		$t = new Store(pointerLoc, pointerReg);
+		//$t = new Store(pointerLoc, pointerReg);
+		$t = new Write(pointerLoc, pointerReg, "_rx");
 	};
 	
 cmpw [String mainThread] returns [Thread t]:
