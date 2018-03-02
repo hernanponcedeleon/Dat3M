@@ -47,9 +47,15 @@ bool_atom [String mainThread] returns [BExpr expr]:
 	| LPAR be = bool_expr [mainThread] RPAR {$expr = $be.expr;};
 
 location returns [Location loc]:
-	l = WORD {$loc = new Location($l.getText());};
+	| 'H:' hl = WORD {$loc = new HighLocation($hl.getText());}
+	| l = WORD {$loc = new Location($l.getText());};
 register returns [Register reg]:
-	r = WORD {$reg = new Register($r.getText());};
+	r = WORD {
+		if(mapLocs.keySet().contains($r.getText())) {
+			System.out.println("WARNING: " + $r.getText() + " is both a global and local variable");
+		};
+		$reg = new Register($r.getText());
+	};
 
 local [String mainThread] returns [Thread t]:
 	r = register '<-' e = arith_expr [mainThread] {
@@ -158,28 +164,31 @@ while_ [String mainThread] returns [Thread t]:
 program [String name] returns [Program p]:
 	{
 		Program p = new Program(name);
-		p.ass = new Assert();
+		p.setAss(new Assert());
 	} 
-	LCBRA l = location {
-		mapLocs.put($l.loc.getName(), $l.loc);
-	} 
-	(COMMA l = location {
-		mapLocs.put($l.loc.getName(), $l.loc);
-	})* RCBRA 
+	LCBRA l = location 
+		('=' '[' min = DIGIT {$l.loc.setMin(Integer.parseInt($min.getText()));} ',' max = DIGIT {$l.loc.setMax(Integer.parseInt($max.getText()));} ']')* 
+		('=' iValue = DIGIT {$l.loc.setIValue(Integer.parseInt($iValue.getText()));})*
+		{mapLocs.put($l.loc.getName(), $l.loc);} 
+	(COMMA l = location 
+		('=' '[' min = DIGIT {$l.loc.setMin(Integer.parseInt($min.getText()));} ',' max = DIGIT {$l.loc.setMax(Integer.parseInt($max.getText()));} ']')*
+		('=' iValue = DIGIT {$l.loc.setIValue(Integer.parseInt($iValue.getText()));})*
+		{mapLocs.put($l.loc.getName(), $l.loc);}
+		)* RCBRA 
 	('thread t' mainThread = DIGIT {mapRegs.put($mainThread.getText(), new HashMap<String, Register>());} 
 		LCBRA t1=inst [$mainThread.getText()] RCBRA {p.add($t1.t);})+ {$p = p;}
 	('exists'
 	(l = location '=' value = DIGIT ','
 	{
 		Location loc = $l.loc;
-		p.ass.addPair(loc, Integer.parseInt($value.getText()));
+		p.getAss().addPair(loc, Integer.parseInt($value.getText()));
 	}
 	|
 	thrd = DIGIT ':' r = register '=' value = DIGIT ','
 	{
 		Register regPointer = $r.reg;
 		Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
-		p.ass.addPair(reg, Integer.parseInt($value.getText()));
+		p.getAss().addPair(reg, Integer.parseInt($value.getText()));
 	}
 	)*
 	)*;
@@ -196,7 +205,7 @@ COMP_OP : EQ | NEQ | LEQ | LT | GEQ | GT;
 ARITH_OP : ADD | SUB | MULT | DIV | MOD;
 BOOL_OP : AND | OR; 
 
-DIGIT : [0-9];
+DIGIT : [0-9]+;
 WORD : (LETTER | DIGIT)+;
 LETTER : 'a'..'z' | 'A'..'Z';
 
