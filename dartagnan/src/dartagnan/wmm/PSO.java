@@ -12,26 +12,25 @@ public class PSO {
 	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		
-	    BoolExpr enc = Encodings.satUnion("co", "fr", events, ctx);
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("com", "(co+fr)", "rf", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("poloc", "com", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("com-pso", "(co+fr)", "rfe", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satIntersection("po", "RM", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("fence-pso", "sync", "mfence", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("po-pso", "(po&RM)", "fence-pso", events, ctx));
-	    enc = ctx.mkAnd(enc, Encodings.satUnion("ghb-pso", "po-pso", "com-pso", events, ctx));
+	    BoolExpr enc = EncodingsCAT.satUnion("co", "fr", events, ctx);
+	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("com", "(co+fr)", "rf", events, ctx));
+	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("poloc", "com", events, ctx));
+	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("com-pso", "(co+fr)", "rfe", events, ctx));
+	    enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("po", "RM", events, ctx));
+	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("po-pso", "(po&RM)", "mfence", events, ctx));
+	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("ghb-pso", "po-pso", "com-pso", events, ctx));
 		return enc;
 	}
 	
 	public static BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		return ctx.mkAnd(Encodings.satAcyclic("(poloc+com)", events, ctx), Encodings.satAcyclic("ghb-pso", events, ctx));
+		return ctx.mkAnd(EncodingsCAT.satAcyclic("(poloc+com)", events, ctx), EncodingsCAT.satAcyclic("ghb-pso", events, ctx));
 	}
 	
 	public static BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		BoolExpr enc = ctx.mkAnd(Encodings.satCycleDef("(poloc+com)", events, ctx), Encodings.satCycleDef("ghb-pso", events, ctx));
-		enc = ctx.mkAnd(enc, ctx.mkOr(Encodings.satCycle("(poloc+com)", events, ctx), Encodings.satCycle("ghb-pso", events, ctx)));
+		BoolExpr enc = ctx.mkAnd(EncodingsCAT.satCycleDef("(poloc+com)", events, ctx), EncodingsCAT.satCycleDef("ghb-pso", events, ctx));
+		enc = ctx.mkAnd(enc, ctx.mkOr(EncodingsCAT.satCycle("(poloc+com)", events, ctx), EncodingsCAT.satCycle("ghb-pso", events, ctx)));
 		return enc;
 	}
 }
