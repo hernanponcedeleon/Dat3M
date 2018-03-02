@@ -1,6 +1,6 @@
 # Dat3M: _One_ Tool _for all_ Models
 
-The Dat3M tool suite is currently composed of two tools.
+Thhis tool suite is currently composed of two tools.
 
 **DARTAGNAN:** a tool to check state reachability under weak memory models.
 
@@ -35,6 +35,10 @@ javac dartagnan/Dartagnan.java
 
 Usage
 ======
+For checking reachability:
+```
+java dartagnan/Dartagnan -t <target> -i <input>
+```
 For checking execution inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input>
@@ -43,11 +47,6 @@ For checking state inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input> -state
 ```
-For checking reachability:
-```
-java dartagnan/Dartagnan -t <target> -i <input>
-```
-
 where \<input> must be a .pts program (see below) and \<source>, \<target> must be one of the following memory models: 
 - sc
 - tso
