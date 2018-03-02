@@ -2,13 +2,13 @@
 
 This tool suite is currently composed of two tools.
 
-**DARTAGNAN:** a tool to check state reachability under weak memory models.
+* **DARTAGNAN:** a tool to check state reachability under weak memory models.
 
 <p align="center"> 
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/dartagnan_small.jpg">
 </p>
 
-**PORTHOS:** a tool to check execution and state inclusion under weak memory models.
+* **PORTHOS:** a tool to check execution and state inclusion under weak memory models.
 
 <p align="center"> 
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/porthos_small.jpg">
