@@ -1,0 +1,24 @@
+{x, y}
+
+thread t0 {
+while True {
+  a <- 1;
+  x.store(_rx,a);
+  chk = y.load(_rx);
+  while (chk != 0) {
+    chk = y.load(_rx)
+  }
+}}
+
+thread t1 {
+while True {
+  chk = x.load(_rx);
+  while (chk != 0) {
+    chk = x.load(_rx)
+  };
+  b <- 1;
+  y.store(_rx,b);
+  chk = x.load(_rx)
+}}
+
+exists x=10,
