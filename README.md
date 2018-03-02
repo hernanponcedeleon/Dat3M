@@ -1,6 +1,6 @@
 # Dat3M: _One_ Tool _for all_ Models
 
-Thhis tool suite is currently composed of two tools.
+This tool suite is currently composed of two tools.
 
 **DARTAGNAN:** a tool to check state reachability under weak memory models.
 
