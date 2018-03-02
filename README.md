@@ -1,5 +1,7 @@
-# PORTHOS: _One_ Tool _for all_ Models
+# Dat3M: _One_ Tool _for all_ Models
 
+The Dat3M tool suite is currently composed of two tools
+![alt text](https://github.com/hernanponcedeleon/PORTHOS/blob/master/dartagnan/extras/dartagnan_small.jpg)
 ![alt text](https://github.com/hernanponcedeleon/PORTHOS/blob/master/dartagnan/extras/porthos_small.jpg)
 
 Requirements
