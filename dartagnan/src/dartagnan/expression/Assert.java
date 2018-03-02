@@ -7,12 +7,14 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
+
+import static dartagnan.utils.Utils.lastValueReg;
+import static dartagnan.utils.Utils.lastValueLoc;
 
 public class Assert {
 
-	Map<Register, Integer> regValue = new HashMap<Register, Integer>();
-	Map<Location, Integer> locValue = new HashMap<Location, Integer>();
+	private Map<Register, Integer> regValue = new HashMap<Register, Integer>();
+	private Map<Location, Integer> locValue = new HashMap<Location, Integer>();
 	
 	public Assert() {}
 	
@@ -24,13 +26,13 @@ public class Assert {
 		locValue.put(loc, value);
 	}
 	
-	public BoolExpr encode(Context ctx, MapSSA lastMap) throws Z3Exception {
+	public BoolExpr encode(Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Register reg: regValue.keySet()) {
-			enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkIntConst(String.format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastMap.get(reg))), ctx.mkInt(regValue.get(reg))));
+			enc = ctx.mkAnd(enc, ctx.mkEq(lastValueReg(reg, ctx), ctx.mkInt(regValue.get(reg))));
 		}
 		for(Location loc: locValue.keySet()) {
-			enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkIntConst(loc.getName() + "_final"), ctx.mkInt(locValue.get(loc))));
+			enc = ctx.mkAnd(enc, ctx.mkEq(lastValueLoc(loc, ctx), ctx.mkInt(locValue.get(loc))));
 		}
 		return enc;
 	}
