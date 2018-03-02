@@ -10,7 +10,10 @@ import dartagnan.expression.BExpr;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
-import dartagnan.utils.Utils;
+
+import static dartagnan.utils.Encodings.encodeMissingIndexes;
+import static dartagnan.utils.Utils.mergeMaps;
+import static dartagnan.utils.Utils.mergeMapLastMod;
 
 public class If extends Thread {
 	
@@ -56,7 +59,7 @@ public class If extends Thread {
 	public LastModMap setLastModMap(LastModMap map) {
 		LastModMap map1 = t1.setLastModMap(map.clone());
 		LastModMap map2 = t2.setLastModMap(map.clone());
-		return Utils.mergeMapLastMod(map1, map2);
+		return mergeMapLastMod(map1, map2);
 	}
 	
 	public void setCondRegs(Set<Register> setRegs) {
@@ -79,10 +82,14 @@ public class If extends Thread {
 		t2.decCondLevel();
 	}
 	
-	public If unroll(int steps) {
-		t1 = t1.unroll(steps);
-		t2 = t2.unroll(steps);
+	public If unroll(int steps, boolean obsNoTermination) {
+		t1 = t1.unroll(steps, obsNoTermination);
+		t2 = t2.unroll(steps, obsNoTermination);
 		return this;
+	}
+	
+	public If unroll(int steps) {
+		return unroll(steps, false);
 	}
 	
 	public If compile(String target, boolean ctrl, boolean leading) {
@@ -114,6 +121,11 @@ public class If extends Thread {
 		return newIf;
 	}
 	
+	public void setGuard(BoolExpr guard, Context ctx) {
+		t1.setGuard(ctx.mkAnd(guard, myGuard), ctx);
+		t2.setGuard(ctx.mkAnd(guard, ctx.mkNot(myGuard)), ctx);
+	}
+	
 	public void setMainThread(Integer t) {
 		this.mainThread = t;
 		t1.setMainThread(t);
@@ -142,6 +154,7 @@ public class If extends Thread {
 	}
 	
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
+		myGuard = pred.toZ3(map, ctx);
 		if(mainThread == null){
 			System.out.println(String.format("Check encodeDF for %s", this));
 			return null;
@@ -155,8 +168,8 @@ public class If extends Thread {
 			enc = ctx.mkAnd(enc, p1.getFirst());
 			Pair<BoolExpr, MapSSA> p2 = t2.encodeDF(map2, ctx);
 			enc = ctx.mkAnd(enc, p2.getFirst());
-			enc = ctx.mkAnd(enc, Utils.encodeMissingIndexes(this, map1, map2, ctx));
-			map = Utils.mergeMaps(map1, map2);
+			enc = ctx.mkAnd(enc, encodeMissingIndexes(this, map1, map2, ctx));
+			map = mergeMaps(map1, map2);
 			return new Pair<BoolExpr, MapSSA>(enc, map);
 		}
 	}

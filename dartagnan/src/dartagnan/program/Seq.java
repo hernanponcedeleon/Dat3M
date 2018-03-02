@@ -35,6 +35,11 @@ public class Seq extends Thread {
 		return t2;
 	}
 	
+	public void setGuard(BoolExpr guard, Context ctx) {
+		t1.setGuard(guard, ctx);
+		t2.setGuard(guard, ctx);
+	}
+	
 	public LastModMap setLastModMap(LastModMap map) {
 		LastModMap newMap = t1.setLastModMap(map);
 		return t2.setLastModMap(newMap);
@@ -57,11 +62,16 @@ public class Seq extends Thread {
 		t2.decCondLevel();
 	}
 	
-	public Seq unroll(int steps) {
-		t1 = t1.unroll(steps);
-		t2 = t2.unroll(steps);
+	public Seq unroll(int steps, boolean obsNoTermination) {
+		t1 = t1.unroll(steps, obsNoTermination);
+		t2 = t2.unroll(steps, obsNoTermination);
 		return this;
 	}
+	
+	public Seq unroll(int steps) {
+		return unroll(steps, false);
+	}
+
 	
 	public Seq compile(String target, boolean ctrl, boolean leading) {
 		t1 = t1.compile(target, ctrl, leading);

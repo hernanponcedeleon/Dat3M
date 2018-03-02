@@ -2,6 +2,7 @@ package dartagnan.program;
 
 import java.util.Collections;
 
+import dartagnan.expression.AConst;
 import dartagnan.expression.BExpr;
 
 public class While extends Thread {
@@ -29,20 +30,37 @@ public class While extends Thread {
 		t.decCondLevel();
 	}
 	
-	public Thread unroll(int steps) {
-		if(steps == 0)
+	public Thread unroll(int steps, boolean obsNoTermination) {
+		if(steps == 0) {
+			if(obsNoTermination) {
+				int oldCondLevel = condLevel;
+				Register rTerm = new Register("rTerm");
+				Local newLocal = new Local(rTerm, new AConst(1));
+				newLocal.condLevel = condLevel;
+				Location termination = new Location(String.format("termination_%s", hashCode()));
+				Store newStore = new Store(termination, rTerm);
+				newStore.condLevel = condLevel;
+				Thread newThread = new If(pred, new Seq(newLocal, newStore), new Skip());
+				newThread.condLevel = oldCondLevel;
+				return newThread;				
+			}
 			return new Skip();
+		}
 		else {
 			Thread copyT = t.clone();
 			copyT.decCondLevel();
 			copyT = copyT.unroll(steps);
 			int oldCondLevel = condLevel;
-			Thread newThread = new If(pred, new Seq(copyT, this.unroll(steps - 1)), new Skip());
+			Thread newThread = new If(pred, new Seq(copyT, unroll(steps - 1, obsNoTermination)), new Skip());
 			newThread.condLevel = oldCondLevel;
 			return newThread;
 		}
 	}
 	
+	public Thread unroll(int steps) {
+		return unroll(steps, false);
+	}
+
 	public While clone() {
 		BExpr newPred = pred.clone();
 		Thread newT = t.clone();

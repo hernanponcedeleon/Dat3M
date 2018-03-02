@@ -7,6 +7,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.expression.AExpr;
 import dartagnan.utils.MapSSA;
+import static dartagnan.utils.Utils.ssaReg;
 
 public class Register extends AExpr {
 
@@ -22,7 +23,7 @@ public class Register extends AExpr {
 	}
 	
 	public String toString() {
-		return String.format("%s", name);
+		return name;
 		}
 	
 	public Register clone() {
@@ -37,7 +38,7 @@ public class Register extends AExpr {
 		if(getMainThread() == null) {
 			System.out.println(String.format("Check toZ3() for %s: null pointer!", this));
 		}
-		return (ArithExpr) ctx.mkIntConst(String.format("T%s_%s_%s", getMainThread(), name, map.get(this)));
+		return (ArithExpr) ssaReg(this, map.get(this), ctx);
 	}
 	
 	public Set<Register> getRegs() {

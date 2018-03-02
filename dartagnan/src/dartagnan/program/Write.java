@@ -20,6 +20,7 @@ public class Write extends MemEvent {
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
+		this.memId = hashCode();
 	}
 	
 	public Register getReg() {
@@ -40,7 +41,11 @@ public class Write extends MemEvent {
 	}
 	
 	public Write clone() {
-		return this;
+		Write newWrite = new Write(loc, reg, atomic);
+		newWrite.condLevel = condLevel;
+		newWrite.memId = memId;
+		newWrite.setUnfCopy(getUnfCopy());
+		return newWrite;
 	}
 
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
@@ -50,7 +55,8 @@ public class Write extends MemEvent {
 
 	public Thread compile(String target, boolean ctrl, boolean leading) {
 		Store st = new Store(loc, reg);
-		st.setHLId(hashCode());
+		st.setHLId(memId);
+		st.setUnfCopy(getUnfCopy());
 		st.condLevel = this.condLevel;
 		
 		Mfence mfence = new Mfence();

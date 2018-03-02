@@ -12,10 +12,11 @@ import dartagnan.utils.Pair;
 
 public class Event extends Thread {
 	
-	protected Integer eid;
+	private Integer eid;
 	private Integer hlId;
+	private Integer unfCopy;
 
-	protected Set<Register> condReg;
+	private Set<Register> condReg;
 	protected LastModMap lastModMap;
 	
 	public Event() {}
@@ -32,6 +33,14 @@ public class Event extends Thread {
 		return hlId;
 	}
 	
+	public void setUnfCopy(Integer id) {
+		this.unfCopy = id;
+	}
+
+	public Integer getUnfCopy() {
+		return unfCopy;
+	}
+	
 	public LastModMap getLastModMap() {
 		assert(lastModMap.size() != 0);
 		return lastModMap;
@@ -42,14 +51,27 @@ public class Event extends Thread {
 		return map;
 	}
 	
+	public void setGuard(BoolExpr guard, Context ctx) {
+		myGuard = guard;
+	}	
+
+	public BoolExpr getGuard() {
+		return myGuard;
+	}
+	
 	public void incCondLevel() {
 		condLevel++;
 	}
 
-	public Thread unroll(int steps) {
+	public Thread unroll(int steps, boolean obsTermination) {
+		unfCopy = steps;
 		return this;
 	}
 	
+	public Thread unroll(int steps) {
+		return unroll(steps, false);
+	}
+
 	public Thread compile(String target, boolean ctrl, boolean leading) {
 		setHLId(hashCode());
 		return this;
@@ -121,12 +143,6 @@ public class Event extends Thread {
 	}
 	
 	public Integer getSsaRegIndex() {
-		if(this instanceof Local) {
-			return ((Local)this).ssaRegIndex;
-		}
-		if(this instanceof Load) {
-			return ((Load)this).ssaRegIndex;
-		}
 		System.out.println(String.format("Check getSSAReg for %s", this));
 		return null;
 	}

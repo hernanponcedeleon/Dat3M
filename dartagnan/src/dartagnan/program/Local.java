@@ -10,12 +10,13 @@ import dartagnan.expression.AExpr;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
+import static dartagnan.utils.Utils.ssaReg;
 
 public class Local extends Event {
 	
 	private Register reg;
 	private AExpr expr;
-	public Integer ssaRegIndex;
+	private Integer ssaRegIndex;
 	
 	public Local(Register reg, AExpr expr) {
 		this.reg = reg;
@@ -50,6 +51,7 @@ public class Local extends Event {
 		Local newLocal = new Local(newReg, newExpr);
 		newLocal.condLevel = condLevel;
 		newLocal.setHLId(hashCode());
+		newLocal.setUnfCopy(getUnfCopy());
 		return newLocal;
 	}
 
@@ -60,9 +62,13 @@ public class Local extends Event {
 		}
 		else {
 			Expr z3Expr = expr.toZ3(map, ctx);
-			Expr z3Reg = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, reg, map.getFresh(reg)));
+			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
 			this.ssaRegIndex = map.get(reg);
 			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
 		}		
+	}
+	
+	public Integer getSsaRegIndex() {
+			return ssaRegIndex;
 	}
 }

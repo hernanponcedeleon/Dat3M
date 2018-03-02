@@ -9,11 +9,13 @@ import com.microsoft.z3.*;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
+import static dartagnan.utils.Utils.ssaLoc;
+import static dartagnan.utils.Utils.ssaReg;
 
 public class Load extends MemEvent {
 
 	private Register reg;
-	public Integer ssaRegIndex;
+	private Integer ssaRegIndex;
 	
 	public Load(Register reg, Location loc) {
 		this.reg = reg;
@@ -44,6 +46,7 @@ public class Load extends MemEvent {
 		Load newLoad = new Load(newReg, newLoc);
 		newLoad.condLevel = condLevel;
 		newLoad.setHLId(getHLId());
+		newLoad.setUnfCopy(getUnfCopy());
 		return newLoad;
 	}
 	
@@ -53,11 +56,15 @@ public class Load extends MemEvent {
 			return null;
 		}
 		else {
-			Expr z3Reg = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, reg, map.getFresh(reg)));
-			Expr z3Loc = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, loc, map.getFresh(loc)));
+			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
+			Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
 			this.ssaLoc = z3Loc;
 			this.ssaRegIndex = map.get(reg);
 			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
 		}		
+	}
+	
+	public Integer getSsaRegIndex() {
+		return ssaRegIndex;
 	}
 }

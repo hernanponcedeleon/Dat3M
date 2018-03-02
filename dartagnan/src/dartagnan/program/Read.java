@@ -20,6 +20,7 @@ public class Read extends MemEvent {
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
+		this.memId = hashCode();
 	}
 	
 	public Register getReg() {
@@ -40,7 +41,11 @@ public class Read extends MemEvent {
 	}
 	
 	public Read clone() {
-		return this;
+		Read newRead = new Read(reg, loc, atomic);
+		newRead.condLevel = condLevel;
+		newRead.memId = memId;
+		newRead.setUnfCopy(getUnfCopy());
+		return newRead;
 	}
 
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
@@ -50,7 +55,8 @@ public class Read extends MemEvent {
 
 	public Thread compile(String target, boolean ctrl, boolean leading) {
 		Load ld = new Load(reg, loc);
-		ld.setHLId(hashCode());
+		ld.setHLId(memId);
+		ld.setUnfCopy(getUnfCopy());
 		ld.condLevel = this.condLevel;
 
 		Sync sync = new Sync();

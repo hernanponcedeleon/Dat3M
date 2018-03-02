@@ -10,6 +10,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static dartagnan.utils.Utils.ssaLoc;
+import static dartagnan.utils.Utils.initValue;;
+
 public class Init extends MemEvent {
 	
 	public Init(Location loc) {
@@ -45,9 +48,19 @@ public class Init extends MemEvent {
 			return null;
 		}
 		else {
-			Expr z3Loc = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, loc, map.getFresh(loc)));
+			Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
 			this.ssaLoc = z3Loc;
-			return new Pair<BoolExpr, MapSSA>(ctx.mkEq(z3Loc, ctx.mkInt(0)), map);
+			Expr initValue;
+			if(loc.getIValue() == null) {
+				initValue = ctx.mkInt(0);
+			}
+			else {
+				initValue = ctx.mkInt(loc.getIValue());
+			}
+			if(loc instanceof HighLocation && loc.getIValue() == null) {
+				initValue = initValue(this, ctx);
+			}
+			return new Pair<BoolExpr, MapSSA>(ctx.mkEq(z3Loc, initValue), map);
 		}
 	}
 }

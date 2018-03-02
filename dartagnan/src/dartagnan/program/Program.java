@@ -11,14 +11,14 @@ import com.microsoft.z3.*;
 
 import dartagnan.expression.Assert;
 import dartagnan.utils.*;
+import static dartagnan.utils.Utils.edge;
 import dartagnan.wmm.*;
 
 public class Program {
 	
-	public String name;
-	public Assert ass; 
+	private String name;
+	private Assert ass; 
 	private List<Thread> threads;
-	public MapSSA lastMap;
 
 	public Program (String name) {
 		this.name = name;
@@ -43,6 +43,14 @@ public class Program {
         return output;
 	}
 	
+	public Assert getAss() {
+		return ass;
+	}
+	
+	public void setAss(Assert ass) {
+		this.ass = ass;
+	}
+	
 	public Program clone() {
 		List<Thread> newThreads = new ArrayList<Thread>();
 		
@@ -56,17 +64,13 @@ public class Program {
 		return newP;
 	}
 	
-	public void initialize() {
-		initialize(1);
-	}
-	
-	public void initialize(int steps) {
+	public void initialize(int steps, boolean obsNoTermination) {
 		List<Thread> unrolledThreads = new ArrayList<Thread>();
 		
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-			t = t.unroll(steps);
+			t = t.unroll(steps, obsNoTermination);
 			unrolledThreads.add(t);
 		}
 		threads = unrolledThreads;
@@ -77,37 +81,27 @@ public class Program {
 		}
 	}
 	
-	public void compile(String target, boolean ctrl, boolean leading) {
-		List<Thread> compiledThreads = new ArrayList<Thread>();
-		
+	public void initialize(int steps) {
+		initialize(steps, false);
+	}
+	
+	public void setGuards(Context ctx) {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-			t = t.compile(target, ctrl, leading);
-			compiledThreads.add(t);
-		}
-		threads = compiledThreads;
-
-		setTId();
-		setEId();
-		setMainThread();
-		
-		// Set the thread for the registers
-		iter = threads.listIterator();
-		while (iter.hasNext()) {
-			Thread t = iter.next();
-            t.setCondRegs(new HashSet<Register>());
-            t.setLastModMap(new LastModMap());
-			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> ((Load) e).getReg()).collect(Collectors.toSet());
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
-			for(Register reg : regs) {
-				reg.setMainThread(t.tid);
-			}
-		}
+			t.setGuard(ctx.mkTrue(), ctx);
+		}		
+	}
+	
+	public void compile(String target, boolean ctrl, boolean leading) {
+		compile(target, ctrl, leading, 0, 0);
 	}	
 
 	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid) {
+		compile(target, ctrl, leading, firstEid, 0);
+	}
+	
+	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid, Integer firstTid) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
 		
 		ListIterator<Thread> iter = threads.listIterator();
@@ -118,7 +112,7 @@ public class Program {
 		}
 		threads = compiledThreads;
 
-		setTId();
+		setTId(firstTid);
 		setEId(firstEid);
 		setMainThread();
 		
@@ -167,36 +161,6 @@ public class Program {
 		}
 	}
 	
-	public void allCompile(Integer firstEId) {
-		List<Thread> compiledThreads = new ArrayList<Thread>();
-		
-		ListIterator<Thread> iter = threads.listIterator();
-		while (iter.hasNext()) {
-			Thread t = iter.next();
-			t = t.allCompile();
-			compiledThreads.add(t);
-		}
-		threads = compiledThreads;
-		
-		setTId();
-		setEId(firstEId);
-		setMainThread();
-		
-		// Set the thread for the registers
-		iter = threads.listIterator();
-		while (iter.hasNext()) {
-			Thread t = iter.next();
-            t.setCondRegs(new HashSet<Register>());
-            t.setLastModMap(new LastModMap());
-			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> ((Load) e).getReg()).collect(Collectors.toSet());
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
-			for(Register reg : regs) {
-				reg.setMainThread(t.tid);
-			}
-		}
-	}
-
 	public BoolExpr encodeMM(Context ctx, String mcm) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		switch (mcm){
@@ -222,7 +186,7 @@ public class Program {
 			enc = ctx.mkAnd(enc, ARM.encode(this, ctx));
 			break;
 		default:
-			System.out.println("Check encodeConsistent!");
+			System.out.println("Check encodeMM!");
 			break;
 		}
 		return enc;
@@ -299,7 +263,7 @@ public class Program {
 		return ret;
 	}
 	
-	public void setMainThread() {
+	private void setMainThread() {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
@@ -307,16 +271,7 @@ public class Program {
 		}
 	}
 	
-	public void setEId() {
-		ListIterator<Thread> iter = threads.listIterator();
-		Integer lastId = 1;
-		while (iter.hasNext()) {
-			Thread t = iter.next();
-		    lastId = t.setEId(lastId);
-		}
-	}
-
-	public void setEId(Integer lastId) {
+	private void setEId(Integer lastId) {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
@@ -324,9 +279,17 @@ public class Program {
 		}
 	}
 
-	public void setTId() {
+	private void setTId() {
 		ListIterator<Thread> iter = threads.listIterator();
 		Integer lastId = 1;
+		while (iter.hasNext()) {
+			Thread t = iter.next();
+		    lastId = t.setTId(lastId);
+		}
+	}
+
+	private void setTId(Integer lastId) {
+		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
 		    lastId = t.setTId(lastId);
@@ -343,14 +306,9 @@ public class Program {
 		    enc = ctx.mkAnd(enc, recResult.getFirst());
 		    lastMap = recResult.getSecond();
 		}
-		this.lastMap = lastMap;
 		return enc;
 	}
 
-	public BoolExpr encodeAssertion(Context ctx) {
-		return ass.encode(ctx, lastMap);
-	}
-	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
 		ListIterator<Thread> iter = threads.listIterator();
 		BoolExpr enc = ctx.mkTrue();
@@ -382,7 +340,7 @@ public class Program {
 			Set<Event> storeSameLoc = getEvents().stream().filter(w -> (w instanceof Store || w instanceof Init) && ((MemEvent) w).loc == ((Load) r).loc).collect(Collectors.toSet());
 			BoolExpr sameValue = ctx.mkTrue();
 			for (Event w : storeSameLoc) {
-				sameValue = ctx.mkAnd(sameValue, ctx.mkImplies(Utils.edge("rf", w, r, ctx), ctx.mkEq(((MemEvent) w).ssaLoc, ((Load) r).ssaLoc)));
+				sameValue = ctx.mkAnd(sameValue, ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(((MemEvent) w).ssaLoc, ((Load) r).ssaLoc)));
 			}
 			enc = ctx.mkAnd(enc, sameValue);
 		}

@@ -15,6 +15,7 @@ public class Thread {
 	// Main thread where this Event, Seq, etc belongs
 	protected Integer mainThread;
 	protected Integer tid;
+	protected BoolExpr myGuard;
 	
 	public int getCondLevel() {
 		return condLevel;
@@ -26,12 +27,21 @@ public class Thread {
 		});
 	}
 	
+	public void setGuard(BoolExpr guard, Context ctx) {
+		System.out.println("Check setGuard!");
+	}
+	
 	public void incCondLevel() {
 		condLevel++;
 	}
 	
 	public void decCondLevel() {
 		condLevel--;
+	}
+	
+	public Thread unroll(int steps, boolean obsNoTermination) {
+		System.out.println("Check unroll!");
+		return this;
 	}
 	
 	public Thread unroll(int steps) {

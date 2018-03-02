@@ -10,6 +10,9 @@ import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
+import static dartagnan.utils.Utils.ssaReg;
+import static dartagnan.utils.Utils.ssaLoc;
+
 public class Store extends MemEvent {
 
 	private Register reg;
@@ -43,6 +46,7 @@ public class Store extends MemEvent {
 		Store newStore = new Store(newLoc, newReg);
 		newStore.condLevel = condLevel;
 		newStore.setHLId(getHLId());
+		newStore.setUnfCopy(getUnfCopy());
 		return newStore;
 	}
 
@@ -52,9 +56,9 @@ public class Store extends MemEvent {
 			return null;
 		}
 		else {
-			Expr z3Loc = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, loc, map.getFresh(loc))); 
+			Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx); 
 			this.ssaLoc = z3Loc;
-			Expr z3Reg = ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, reg, map.get(reg)));
+			Expr z3Reg = ssaReg(reg, map.get(reg), ctx);
 			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, z3Reg)), map);
 		}		
 	}
