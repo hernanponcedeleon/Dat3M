@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -13,6 +15,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
@@ -23,12 +26,12 @@ import dartagnan.LitmusLexer;
 import dartagnan.LitmusParser;
 import dartagnan.PorthosLexer;
 import dartagnan.PorthosParser;
-import dartagnan.expression.Assert;
 import dartagnan.program.Init;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
-import dartagnan.wmm.Domain;
-import dartagnan.wmm.Encodings;
+import dartagnan.wmm.Domain;	
+import static dartagnan.utils.Encodings.encodeReachedState;
+import static dartagnan.utils.Encodings.encodeCommonExecutions;
 
 import org.apache.commons.cli.*;
 
@@ -65,6 +68,11 @@ public class Porthos {
         		.desc("Relations to be drawn in the graph")
         		.build());
         
+        options.addOption(Option.builder("unroll")
+        		.hasArg()
+        		.desc("Unrolling steps")
+        		.build());
+
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
@@ -110,8 +118,6 @@ public class Porthos {
 		String program = FileUtils.readFileToString(file, "UTF-8");		
 		ANTLRInputStream input = new ANTLRInputStream(program); 		
 
-		//System.out.println(String.format("Checking portability between %s and %s", source, target));
-		
 		Program p = new Program(inputFilePath);
 		
 		if(inputFilePath.endsWith("litmus")) {
@@ -128,47 +134,56 @@ public class Porthos {
 			p = parser.program(inputFilePath).p;
 		}
 	
-		p.initialize();
+		int steps = 1;
+        if(cmd.hasOption("unroll")) {
+            steps = Integer.parseInt(cmd.getOptionValue("unroll"));        	
+        }
+
+		p.initialize(steps);
+
 		Program pSource = p.clone();
 		Program pTarget = p.clone();
 		
 		pSource.compile(source, false, true);
 		Integer startEId = Collections.max(pSource.getEvents().stream().filter(e -> e instanceof Init).map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
 		pTarget.compile(target, false, true, startEId);
-		
+
 		Context ctx = new Context();
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 		Solver s = ctx.mkSolver();
 		Solver s2 = ctx.mkSolver();
 
+		BoolExpr sourceDF = pSource.encodeDF(ctx);
+		BoolExpr sourceCF = pSource.encodeCF(ctx);
+		BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
+		BoolExpr sourceDomain = Domain.encode(pSource, ctx);
+		BoolExpr sourceMM = pSource.encodeMM(ctx, source);
+		
 		s.add(pTarget.encodeDF(ctx));
 		s.add(pTarget.encodeCF(ctx));
 		s.add(pTarget.encodeDF_RF(ctx));
 		s.add(Domain.encode(pTarget, ctx));
 		s.add(pTarget.encodeMM(ctx, target));
 		s.add(pTarget.encodeConsistent(ctx, target));
-		
-		s.add(pSource.encodeDF(ctx));
-		s.add(pSource.encodeCF(ctx));
-		s.add(pSource.encodeDF_RF(ctx));
-		s.add(Domain.encode(pSource, ctx));
-		s.add(pSource.encodeMM(ctx, source));
+		s.add(sourceDF);
+		s.add(sourceCF);
+		s.add(sourceDF_RF);
+		s.add(sourceDomain);
+		s.add(sourceMM);
 		s.add(pSource.encodeInconsistent(ctx, source));
+		s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
-		s2.add(pSource.encodeDF(ctx));
-		s2.add(pSource.encodeCF(ctx));
-		s2.add(pSource.encodeDF_RF(ctx));
-		s2.add(Domain.encode(pSource, ctx));
-		s2.add(pSource.encodeMM(ctx, source));
+		s2.add(sourceDF);
+		s2.add(sourceCF);
+		s2.add(sourceDF_RF);
+		s2.add(sourceDomain);
+		s2.add(sourceMM);
 		s2.add(pSource.encodeConsistent(ctx, source));
-
-		s.add(Encodings.encodeCommonExecutions(pTarget, pSource, ctx));
-		
+				
 		if(!statePortability) {
-			s.add(pSource.encodeInconsistent(ctx, source));
 			if(s.check() == Status.SATISFIABLE) {
-				System.out.println("The program is not portable");
-				//System.out.println("       0");
+				//System.out.println("The program is not portable");
+				System.out.println("       0");
 				if(cmd.hasOption("draw")) {
 					String outputPath = cmd.getOptionValue("draw");
 					Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
@@ -176,52 +191,44 @@ public class Porthos {
 				return;
 			}
 			else {
-				System.out.println("The program is portable");
-				//System.out.println("       1");
+				//System.out.println("The program is portable");
+				System.out.println("       1");
 				return;
 			}
 		}
 		
-		Status lastCheck = Status.SATISFIABLE;
-
 		int iterations = 0;
+		Status lastCheck = Status.SATISFIABLE;
+		Set<Expr> visited = new HashSet<Expr>();
+
 		while(lastCheck == Status.SATISFIABLE) {
-			iterations = iterations + 1;
-			//System.out.println("Iterations: " + iterations);
-			//s.push();		
-			//s.add(pSource.encodeInconsistent(ctx, source));
-			
-			if(s.check() == Status.SATISFIABLE) {
+
+			lastCheck = s.check();
+			if(lastCheck == Status.SATISFIABLE) {
+				iterations = iterations + 1;
 				Model model = s.getModel();
-				//s.pop();
 				s2.push();
-				//s2.add(pSource.encodeConsistent(ctx, source));
-				Assert ass = Encodings.AssertFromModel(pTarget, model, ctx);
-				//BoolExpr reachedState = Encodings.encodeReachedState(pSource, model, ctx);
-				s2.add(ass.encode(ctx, pTarget.lastMap));
-				lastCheck = s.check();
-				if(s2.check() == Status.UNSATISFIABLE) {
+				BoolExpr reachedState = encodeReachedState(pTarget, model, ctx);
+				visited.add(reachedState);
+				assert(iterations == visited.size());
+				s2.add(reachedState);
+				if(s2.check	() == Status.UNSATISFIABLE) {
 					System.out.println("The program is not state-portable");
-					//System.out.println("Iterations: " + iterations);
+					System.out.println("Iterations: " + iterations);
 					//System.out.println("       0");
 					return;
 				}
-
 				else {
 					s2.pop();
-					//s.add(ctx.mkNot(reachedState));
-					s.add(ctx.mkNot(ass.encode(ctx, pTarget.lastMap)));
-					
+					s.add(ctx.mkNot(reachedState));
 				}
 			}
 			else {
-				lastCheck = s.check();
 				System.out.println("The program is state-portable");
-				//System.out.println("Iterations: " + iterations);
+				System.out.println("Iterations: " + iterations);
 				//System.out.println("       1");
 				return;
 			}
 		}
 	}	
-	
 }
