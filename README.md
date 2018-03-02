@@ -1,4 +1,4 @@
-# Dat3M: _One_ Tool _for all_ Models
+# Dat3M: memory model aware verification
 
 This tool suite is currently composed of two tools.
 
