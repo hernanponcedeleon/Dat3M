@@ -1,8 +1,14 @@
 # Dat3M: _One_ Tool _for all_ Models
 
-The Dat3M tool suite is currently composed of two tools
+The Dat3M tool suite is currently composed of two tools.
 
-![alt-text-1](https://github.com/hernanponcedeleon/PORTHOS/blob/master/dartagnan/extras/dartagnan_small.jpg) ![alt-text-2](https://github.com/hernanponcedeleon/PORTHOS/blob/master/dartagnan/extras/porthos_small.jpg)
+**Dartagnan:** a tool to check state reachability under weak memory models.
+
+![alt-text-1](https://github.com/hernanponcedeleon/PORTHOS/blob/master/dartagnan/extras/dartagnan_small.jpg)
+
+**Porthos:** a tool to check execution and state inclusion under weak memory models.
+
+![alt-text-2](https://github.com/hernanponcedeleon/PORTHOS/blob/master/dartagnan/extras/porthos_small.jpg)
 
 Requirements
 ======
