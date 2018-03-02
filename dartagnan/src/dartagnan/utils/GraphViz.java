@@ -22,15 +22,9 @@ package dartagnan.utils;
 ******************************************************************************
 */
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
-import java.util.Properties;
 
 /**
 * <dl>
@@ -70,68 +64,11 @@ import java.util.Properties;
 */
 public class GraphViz {
  /**
-  * Detects the client's operating system.
-  */
- private final static String osName = System.getProperty("os.name").replaceAll("\\s","");
-
- /**
-  * Load the config.properties file.
-  */
- private final static String cfgProp = "/Users/seteropere/NetBeansProjects/TestApplication/src/config.properties";
- private final static Properties configFile = new Properties() {
-     private final static long serialVersionUID = 1L; {
-         try {
-             load(new FileInputStream(cfgProp));
-         } catch (Exception e) {}
-     }
- };
-
- /**
   * The dir. where temporary files will be created.
   */
-private static String TEMP_DIR = "/Users/seteropere/NetBeansProjects/TestApplication";
+private static String TEMP_DIR = "./";
 
- /**
-  * Where is your dot program located? It will be called externally.
-  */
-private static String DOT = configFile.getProperty("dotFor" + osName);
-
- /**
-  * The image size in dpi. 96 dpi is normal size. Higher values are 10% higher each.
-  * Lower values 10% lower each.
-  * 
-  * dpi patch by Peter Mueller
-  */
- private int[] dpiSizes = {46, 51, 57, 63, 70, 78, 86, 96, 106, 116, 128, 141, 155, 170, 187, 206, 226, 249};
-
- /**
-  * Define the index in the image size array.
-  */
- private int currentDpiPos = 7;
-
- /**
-  * Increase the image size (dpi).
-  */
- public void increaseDpi() {
-     if ( this.currentDpiPos < (this.dpiSizes.length - 1) ) {
-         ++this.currentDpiPos;
-     }
- }
-
- /**
-  * Decrease the image size (dpi).
-  */
- public void decreaseDpi() {
-     if (this.currentDpiPos > 0) {
-         --this.currentDpiPos;
-     }
- }
-
- public int getImageDpi() {
-     return this.dpiSizes[this.currentDpiPos];
- }
-
- /**
+  /**
   * The source of the graph written in dot language.
   */
  private StringBuilder graph = new StringBuilder();
@@ -151,125 +88,11 @@ private static String DOT = configFile.getProperty("dotFor" + osName);
      return this.graph.toString();
  }
 
- /**
-  * Adds a string to the graph's source (without newline).
-  */
- public void add(String line) {
-     this.graph.append(line);
- }
-
- /**
+  /**
   * Adds a string to the graph's source (with newline).
   */
  public void addln(String line) {
      this.graph.append(line + "\n");
- }
-
- /**
-  * Adds a newline to the graph's source.
-  */
- public void addln() {
-     this.graph.append('\n');
- }
-
- public void clearGraph(){
-     this.graph = new StringBuilder();
- }
-
- /**
-  * Returns the graph as an image in binary format.
-  * @param dot_source Source of the graph to be drawn.
-  * @param type Type of the output image to be produced, e.g.: gif, dot, fig, pdf, ps, svg, png.
-  * @return A byte array containing the image of the graph.
-  */
- public byte[] getGraph(String dot_source, String type)
- {
-     File dot;
-     byte[] img_stream = null;
-
-     try {
-         dot = writeDotSourceToFile(dot_source);
-         if (dot != null)
-         {
-             img_stream = get_img_stream(dot, type);
-             if (dot.delete() == false) 
-                 System.err.println("Warning: " + dot.getAbsolutePath() + " could not be deleted!");
-             return img_stream;
-         }
-         return null;
-     } catch (java.io.IOException ioe) { return null; }
- }
-
- /**
-  * Writes the graph's image in a file.
-  * @param img   A byte array containing the image of the graph.
-  * @param file  Name of the file to where we want to write.
-  * @return Success: 1, Failure: -1
-  */
- public int writeGraphToFile(byte[] img, String file)
- {
-     File to = new File(file);
-     return writeGraphToFile(img, to);
- }
-
- /**
-  * Writes the graph's image in a file.
-  * @param img   A byte array containing the image of the graph.
-  * @param to    A File object to where we want to write.
-  * @return Success: 1, Failure: -1
-  */
- public int writeGraphToFile(byte[] img, File to)
- {
-     try {
-         FileOutputStream fos = new FileOutputStream(to);
-         fos.write(img);
-         fos.close();
-     } catch (java.io.IOException ioe) { return -1; }
-     return 1;
- }
-
- /**
-  * It will call the external dot program, and return the image in
-  * binary format.
-  * @param dot Source of the graph (in dot language).
-  * @param type Type of the output image to be produced, e.g.: gif, dot, fig, pdf, ps, svg, png.
-  * @return The image of the graph in .gif format.
-  */
- private byte[] get_img_stream(File dot, String type)
- {
-     File img;
-     byte[] img_stream = null;
-
-     try {
-         img = File.createTempFile("graph_", "."+type, new File(GraphViz.TEMP_DIR));
-         Runtime rt = Runtime.getRuntime();
-
-         // patch by Mike Chenault
-         String[] args = {DOT, "-T"+type, "-Gdpi="+dpiSizes[this.currentDpiPos], dot.getAbsolutePath(), "-o", img.getAbsolutePath()};
-         Process p = rt.exec(args);
-
-         p.waitFor();
-
-         FileInputStream in = new FileInputStream(img.getAbsolutePath());
-         img_stream = new byte[in.available()];
-         in.read(img_stream);
-         // Close it if we need to
-         if( in != null ) in.close();
-
-         if (img.delete() == false) 
-             System.err.println("Warning: " + img.getAbsolutePath() + " could not be deleted!");
-     }
-     catch (java.io.IOException ioe) {
-         System.err.println("Error:    in I/O processing of tempfile in dir " + GraphViz.TEMP_DIR+"\n");
-         System.err.println("       or in calling external command");
-         ioe.printStackTrace();
-     }
-     catch (java.lang.InterruptedException ie) {
-         System.err.println("Error: the execution of the external program was interrupted");
-         ie.printStackTrace();
-     }
-
-     return img_stream;
  }
 
  /**
@@ -278,7 +101,7 @@ private static String DOT = configFile.getProperty("dotFor" + osName);
   * @param str Source of the graph (in dot language).
   * @return The file (as a File object) that contains the source of the graph.
   */
- private File writeDotSourceToFile(String str) throws java.io.IOException
+ public File writeDotSourceToFile(String str) throws java.io.IOException
  {
      File temp;
      try {
@@ -330,33 +153,4 @@ private static String DOT = configFile.getProperty("dotFor" + osName);
  public String end_subgraph() {
      return "}";
  }
-
- /**
-  * Read a DOT graph from a text file.
-  * 
-  * @param input Input text file containing the DOT graph
-  * source.
-  */
- public void readSource(String input)
- {
-     StringBuilder sb = new StringBuilder();
-
-     try
-     {
-         FileInputStream fis = new FileInputStream(input);
-         DataInputStream dis = new DataInputStream(fis);
-         BufferedReader br = new BufferedReader(new InputStreamReader(dis));
-         String line;
-         while ((line = br.readLine()) != null) {
-             sb.append(line);
-         }
-         dis.close();
-     } 
-     catch (Exception e) {
-         System.err.println("Error: " + e.getMessage());
-     }
-
-     this.graph = sb;
- }
-
 }
