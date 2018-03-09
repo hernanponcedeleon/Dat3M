@@ -14,8 +14,6 @@ This tool suite is currently composed of two tools.
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/porthos_small.jpg">
 </p>
 
-![]()
-
 Requirements
 ======
 z3 (https://github.com/Z3Prover/z3)
