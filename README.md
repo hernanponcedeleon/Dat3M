@@ -18,7 +18,7 @@ Installation
 ======
 Run the compiling script
 ```
-sh install.sh
+. ./install.sh
 ```
 **Note:** If the java classes or libz3java cannot be found, set the the following variables manually:
 ```
