@@ -182,8 +182,8 @@ public class Porthos {
 				
 		if(!statePortability) {
 			if(s.check() == Status.SATISFIABLE) {
-				//System.out.println("The program is not portable");
-				System.out.println("       0");
+				System.out.println("The program is not portable");
+				//System.out.println("       0");
 				if(cmd.hasOption("draw")) {
 					String outputPath = cmd.getOptionValue("draw");
 					Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
@@ -191,8 +191,8 @@ public class Porthos {
 				return;
 			}
 			else {
-				//System.out.println("The program is portable");
-				System.out.println("       1");
+				System.out.println("The program is portable");
+				//System.out.println("       1");
 				return;
 			}
 		}
