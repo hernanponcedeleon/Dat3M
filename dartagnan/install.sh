@@ -1,4 +1,3 @@
-export LD_LIBRARY_PATH=./import/
 export CLASSPATH=./import/antlr-4.7-complete.jar:./import/commons-io-2.5.jar:./import/com.microsoft.z3.jar:./import/commons-cli-1.4.jar:./bin/
 
 mkdir -p bin
