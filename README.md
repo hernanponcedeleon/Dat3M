@@ -14,29 +14,22 @@ This tool suite is currently composed of two tools.
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/porthos_small.jpg">
 </p>
 
-Requirements
-======
-z3 (https://github.com/Z3Prover/z3)
-
 Installation
 ======
-Add the following files to your CLASSPATH:
+Add z3 to your library path:
 ```
-export CLASSPATH=.:/path_to_PORTHOS-master/dartagnan/import/commons-io-2.5.jar:/path_to_PORTHOS-master/dartagnan/import/commons-cli-1.4.jar:/path_to_PORTHOS-master/dartagnan/import/com.microsoft.z3.jar:/path_to_PORTHOS-master/dartagnan/import/antlr-4.7-complete.jar:/path_to_PORTHOS-master/dartagnan/target/generated-sources/antlr4:/path_to_PORTHOS-master/dartagnan/build/classes/:/path_to_PORTHOS-master/dartagnan/src/
-```
-Add the libz3java file to your library path:
-```
-export LD_LIBRARY_PATH=.:path_to_libz3java
+export LD_LIBRARY_PATH=.:./import/
 ```
 (use DYLD_LIBRARY_PATH in MacOS)
 
-Compile the main two classes:
+Run the compiling script
 ```
-javac porthos/Porthos.java
-javac dartagnan/Dartagnan.java
+sh install.sh
 ```
-
-
+*Note:* If the classes cannot be found, set the classpath manually:
+```
+export CLASSPATH=./import/antlr-4.7-complete.jar:./import/commons-io-2.5.jar:./import/com.microsoft.z3.jar:./import/commons-cli-1.4.jar:./bin/
+```
 Usage
 ======
 For checking reachability:
