@@ -20,12 +20,13 @@ Run the compiling script
 ```
 sh install.sh
 ```
-**Note:** If the classes or libz3java cannot be found, set the the following variables manually:
+**Note:** If the java classes or libz3java cannot be found, set the the following variables manually:
 ```
 export CLASSPATH=./import/antlr-4.7-complete.jar:./import/commons-io-2.5.jar:./import/com.microsoft.z3.jar:./import/commons-cli-1.4.jar:./bin/
 export LD_LIBRARY_PATH=./import/
 ```
 (use DYLD_LIBRARY_PATH in MacOS)
+
 Usage
 ======
 For checking reachability:
