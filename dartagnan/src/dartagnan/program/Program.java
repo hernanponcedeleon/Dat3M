@@ -17,7 +17,7 @@ import dartagnan.wmm.*;
 public class Program {
 	
 	private String name;
-	private Assert ass; 
+	public Assert ass; 
 	private List<Thread> threads;
 
 	public Program (String name) {

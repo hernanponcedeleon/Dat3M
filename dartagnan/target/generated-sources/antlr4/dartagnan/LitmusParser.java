@@ -202,8 +202,7 @@ public class LitmusParser extends Parser {
 			{
 
 					Program p = new Program(name);
-					p.ass = new Assert();
-					
+					p.setAss(new Assert());
 				
 			setState(49);
 			_la = _input.LA(1);
@@ -397,7 +396,7 @@ public class LitmusParser extends Parser {
 					((ProgramContext)_localctx).value = match(DIGIT);
 
 							Location loc = ((ProgramContext)_localctx).l.loc;
-							p.ass.addPair(loc, Integer.parseInt(((ProgramContext)_localctx).value.getText()));
+							p.getAss().addPair(loc, Integer.parseInt(((ProgramContext)_localctx).value.getText()));
 						
 					}
 					break;
@@ -416,7 +415,7 @@ public class LitmusParser extends Parser {
 
 							Register regPointer = ((ProgramContext)_localctx).r.reg;
 							Register reg = mapRegs.get(((ProgramContext)_localctx).thrd.getText()).get(regPointer.getName());
-							p.ass.addPair(reg, Integer.parseInt(((ProgramContext)_localctx).value.getText()));
+							p.getAss().addPair(reg, Integer.parseInt(((ProgramContext)_localctx).value.getText()));
 						
 					}
 					break;
@@ -443,7 +442,7 @@ public class LitmusParser extends Parser {
 						((ProgramContext)_localctx).value = match(DIGIT);
 
 								Location loc2 = ((ProgramContext)_localctx).l.loc;
-								p.ass.addPair(loc2, Integer.parseInt(((ProgramContext)_localctx).value.getText()));	
+								p.getAss().addPair(loc2, Integer.parseInt(((ProgramContext)_localctx).value.getText()));	
 							
 						}
 						break;
@@ -464,7 +463,7 @@ public class LitmusParser extends Parser {
 
 								Register regPointer2 = ((ProgramContext)_localctx).r.reg;
 								Register reg2 = mapRegs.get(((ProgramContext)_localctx).thrd.getText()).get(regPointer2.getName());
-								p.ass.addPair(reg2, Integer.parseInt(((ProgramContext)_localctx).value.getText()));	
+								p.getAss().addPair(reg2, Integer.parseInt(((ProgramContext)_localctx).value.getText()));	
 							
 						}
 						break;
@@ -1768,7 +1767,8 @@ public class LitmusParser extends Parser {
 					}
 					Register pointerReg = mapThreadRegs.get(((LoadX86Context)_localctx).r.reg.getName());
 					Location pointerLoc = mapLocs.get(((LoadX86Context)_localctx).l.loc.getName());
-					((LoadX86Context)_localctx).t =  new Load(pointerReg, pointerLoc);
+					//((LoadX86Context)_localctx).t =  new Load(pointerReg, pointerLoc);
+					((LoadX86Context)_localctx).t =  new Read(pointerReg, pointerLoc, "_rx");
 				
 			}
 		}
@@ -1859,7 +1859,8 @@ public class LitmusParser extends Parser {
 					}
 					Register pointerReg = mapThreadRegs.get(((LoadPowerContext)_localctx).r.reg.getName());
 					Location pointerLoc = mapRegLoc.get(mainThread).get(((LoadPowerContext)_localctx).rl.reg.getName());
-					((LoadPowerContext)_localctx).t =  new Load(pointerReg, pointerLoc);
+					//((LoadPowerContext)_localctx).t =  new Load(pointerReg, pointerLoc);
+					((LoadPowerContext)_localctx).t =  new Read(pointerReg, pointerLoc, "_rx");
 				
 			}
 		}
@@ -1925,7 +1926,8 @@ public class LitmusParser extends Parser {
 					}
 					Register pointerReg = mapThreadRegs.get(((StoreX86Context)_localctx).r.reg.getName());
 					Location pointerLoc = mapLocs.get(((StoreX86Context)_localctx).l.loc.getName());
-					((StoreX86Context)_localctx).t =  new Store(pointerLoc, pointerReg);
+					//((StoreX86Context)_localctx).t =  new Store(pointerLoc, pointerReg);
+					((StoreX86Context)_localctx).t =  new Write(pointerLoc, pointerReg, "_rx");
 				
 			}
 		}
@@ -2016,7 +2018,8 @@ public class LitmusParser extends Parser {
 					}
 					Register pointerReg = mapThreadRegs.get(((StorePowerContext)_localctx).r.reg.getName());
 					Location pointerLoc = mapRegLoc.get(mainThread).get(((StorePowerContext)_localctx).rl.reg.getName());
-					((StorePowerContext)_localctx).t =  new Store(pointerLoc, pointerReg);
+					//((StorePowerContext)_localctx).t =  new Store(pointerLoc, pointerReg);
+					((StorePowerContext)_localctx).t =  new Write(pointerLoc, pointerReg, "_rx");
 				
 			}
 		}
