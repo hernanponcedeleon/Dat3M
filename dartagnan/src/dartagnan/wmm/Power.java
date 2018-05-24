@@ -27,7 +27,7 @@ import dartagnan.program.Program;
 
 public class Power {
 	
-	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 		
@@ -35,7 +35,7 @@ public class Power {
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("poloc", "com", events, ctx));
 		
-	    enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, ctx));
+	    enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));
 	    
 	    enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", events, ctx));
 	    enc = ctx.mkAnd(enc, satEmpty("addr", events, ctx));
@@ -68,12 +68,12 @@ public class Power {
 	    // Prop-base
 	    enc = ctx.mkAnd(enc, satComp("rfe", "fence-power", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("fence-power", "(rfe;fence-power)", events, ctx));
-	    enc = ctx.mkAnd(enc, satTransRef("hb-power", events, ctx));
+	    enc = ctx.mkAnd(enc, satTransRef("hb-power", events, approx, ctx));
 	    enc = ctx.mkAnd(enc, satComp("prop-base", "(fence-power+(rfe;fence-power))", "(hb-power)*", events, ctx));
 	    // Propagation for Power
-	    enc = ctx.mkAnd(enc, satTransRef("com", events, ctx));
+	    enc = ctx.mkAnd(enc, satTransRef("com", events, approx, ctx));
 
-	    enc = ctx.mkAnd(enc, satTransRef("prop-base", events, ctx));
+	    enc = ctx.mkAnd(enc, satTransRef("prop-base", events, approx, ctx));
 	    enc = ctx.mkAnd(enc, satComp("(com)*", "(prop-base)*", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("((com)*;(prop-base)*)", "sync", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("(((com)*;(prop-base)*);sync)", "(hb-power)*", events, ctx));

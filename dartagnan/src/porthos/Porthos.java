@@ -157,13 +157,13 @@ public class Porthos {
 		BoolExpr sourceCF = pSource.encodeCF(ctx);
 		BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
 		BoolExpr sourceDomain = Domain.encode(pSource, ctx);
-		BoolExpr sourceMM = pSource.encodeMM(ctx, source);
+		BoolExpr sourceMM = pSource.encodeMM(ctx, source, false);
 		
 		s.add(pTarget.encodeDF(ctx));
 		s.add(pTarget.encodeCF(ctx));
 		s.add(pTarget.encodeDF_RF(ctx));
 		s.add(Domain.encode(pTarget, ctx));
-		s.add(pTarget.encodeMM(ctx, target));
+		s.add(pTarget.encodeMM(ctx, target, false));
 		s.add(pTarget.encodeConsistent(ctx, target));
 		s.add(sourceDF);
 		s.add(sourceCF);

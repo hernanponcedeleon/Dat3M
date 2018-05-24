@@ -28,7 +28,7 @@ import dartagnan.utils.Utils;
 
 public class ARM {
 	
-	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 		
@@ -36,7 +36,7 @@ public class ARM {
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("poloc", "com", events, ctx));
 		
-	    enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, ctx));
+	    enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));
 	    
 	    enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", events, ctx));
 	    enc = ctx.mkAnd(enc, satEmpty("addr", events, ctx));
@@ -65,12 +65,12 @@ public class ARM {
 	    // Prop-base
 	    enc = ctx.mkAnd(enc, satComp("rfe", "ish", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("ish", "(rfe;ish)", events, ctx));
-	    enc = ctx.mkAnd(enc, satTransRef("hb-arm", events, ctx));
+	    enc = ctx.mkAnd(enc, satTransRef("hb-arm", events, approx, ctx));
 	    enc = ctx.mkAnd(enc, satComp("prop-base", "(ish+(rfe;ish))", "(hb-arm)*", events, ctx));
 	    // Propagation for ARM
-	    enc = ctx.mkAnd(enc, satTransRef("com", events, ctx));
+	    enc = ctx.mkAnd(enc, satTransRef("com", events, approx, ctx));
         
-	    enc = ctx.mkAnd(enc, satTransRef("prop-base", events, ctx));
+	    enc = ctx.mkAnd(enc, satTransRef("prop-base", events, approx, ctx));
 	    enc = ctx.mkAnd(enc, satComp("(com)*", "(prop-base)*", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("((com)*;(prop-base)*)", "ish", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("(((com)*;(prop-base)*);ish)", "(hb-arm)*", events, ctx));

@@ -161,7 +161,7 @@ public class Program {
 		}
 	}
 	
-	public BoolExpr encodeMM(Context ctx, String mcm) throws Z3Exception {
+	public BoolExpr encodeMM(Context ctx, String mcm, boolean approx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		switch (mcm){
 		case "sc":
@@ -174,16 +174,16 @@ public class Program {
 			enc = ctx.mkAnd(enc, PSO.encode(this, ctx));
 			break;
 		case "rmo":
-			enc = ctx.mkAnd(enc, RMO.encode(this, ctx));
+			enc = ctx.mkAnd(enc, RMO.encode(this, approx, ctx));
 			break;
 		case "alpha":
-			enc = ctx.mkAnd(enc, Alpha.encode(this, ctx));
+			enc = ctx.mkAnd(enc, Alpha.encode(this, approx, ctx));
 			break;
 		case "power":
-			enc = ctx.mkAnd(enc, Power.encode(this, ctx));
+			enc = ctx.mkAnd(enc, Power.encode(this, approx, ctx));
 			break;
 		case "arm":
-			enc = ctx.mkAnd(enc, ARM.encode(this, ctx));
+			enc = ctx.mkAnd(enc, ARM.encode(this, approx, ctx));
 			break;
 		default:
 			System.out.println("Check encodeMM!");

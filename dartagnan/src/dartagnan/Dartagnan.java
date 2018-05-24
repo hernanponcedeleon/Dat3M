@@ -47,6 +47,10 @@ public class Dartagnan {
         		.desc("Unrolling steps")
         		.build());
 
+        options.addOption(Option.builder("approx")
+        		.desc("Approximation optimization for recursive relations")
+        		.build());
+
         options.addOption(Option.builder("draw")
         		.hasArg()
         		.desc("If a buf is found, it outputs a graph \\path_to_file.dot")
@@ -126,22 +130,22 @@ public class Dartagnan {
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
-		s.add(p.encodeMM(ctx, target));
+		s.add(p.encodeMM(ctx, target, cmd.hasOption("approx")));
 		s.add(p.encodeConsistent(ctx, target));
 
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 
 		if(s.check() == Status.SATISFIABLE) {
-			System.out.println("The state is reachable");
-			//System.out.println("       0");
+			//System.out.println("The state is reachable");
+			System.out.println("       0");
 			if(cmd.hasOption("draw")) {
 				String outputPath = cmd.getOptionValue("draw");
 				Utils.drawGraph(p, ctx, s.getModel(), outputPath, rels);
 			}
 		}
 		else {
-			System.out.println("The state is not reachable");
-			//System.out.println("       1");
+			//System.out.println("The state is not reachable");
+			System.out.println("       1");
 		}
 		return;
 	}	

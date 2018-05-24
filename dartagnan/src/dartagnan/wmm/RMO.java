@@ -9,7 +9,7 @@ import dartagnan.program.*;
 
 public class RMO {
 	
-	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 		
@@ -18,11 +18,11 @@ public class RMO {
 		enc = ctx.mkAnd(enc, EncodingsCAT.satMinus("poloc", "RR", events, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("(poloc\\RR)", "com", events, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("com-rmo", "(co+fr)", "rfe", events, ctx));
-		enc = ctx.mkAnd(enc, EncodingsCAT.satTransFixPoint("idd", eventsL, ctx));
+		enc = ctx.mkAnd(enc, EncodingsCAT.satTransFixPoint("idd", eventsL, approx, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("data", "idd^+", "RW", eventsL, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("poloc", "WR", events, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("data", "(poloc&WR)", events, ctx));
-		enc = ctx.mkAnd(enc, EncodingsCAT.satTransFixPoint("(data+(poloc&WR))", events, ctx));
+		enc = ctx.mkAnd(enc, EncodingsCAT.satTransFixPoint("(data+(poloc&WR))", events, approx, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("(data+(poloc&WR))^+", "RM", events, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("ctrl", "RW", events, ctx));
 		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("(ctrl&RW)", "ctrlisync", events, ctx));
