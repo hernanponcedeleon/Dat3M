@@ -53,7 +53,7 @@ public class ARM {
 	    enc = ctx.mkAnd(enc, satUnion("ci0", "ctrlisb", "detour", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("dp", "ctrl", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("addr", "po", events, ctx));
-	    enc = ctx.mkAnd(enc, satARMPPO(events, ctx));
+	    enc = ctx.mkAnd(enc, satARMPPO(events, approx, ctx));
 	    
 	    enc = ctx.mkAnd(enc, satUnion("cc0", "(dp+ctrl)", "(addr;po)", events, ctx));
 	    enc = ctx.mkAnd(enc, satIntersection("RR", "ii", events, ctx));
@@ -102,7 +102,7 @@ public class ARM {
 		return enc;
 	}
 	
-	private static BoolExpr satARMPPO(Set<Event> events, Context ctx) throws Z3Exception {
+	private static BoolExpr satARMPPO(Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
@@ -139,25 +139,55 @@ public class ARM {
     	        enc = ctx.mkAnd(enc, ctx.mkEq(edge("ci",e1,e2, ctx), ctx.mkOr(edge("ci0",e1,e2, ctx), edge("ci;ii",e1,e2, ctx), edge("cc;ci",e1,e2, ctx))));
     	        enc = ctx.mkAnd(enc, ctx.mkEq(edge("cc",e1,e2, ctx), ctx.mkOr(edge("cc0",e1,e2, ctx), edge("ci",e1,e2, ctx), edge("ci;ic",e1,e2, ctx), edge("cc;cc",e1,e2, ctx))));
     	        
-    	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ii",e1,e2, ctx), ctx.mkOr(ctx.mkAnd(edge("ii0",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ii0",e1,e2, ctx))),
-    	                                                                             ctx.mkAnd(edge("ci",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ci",e1,e2, ctx))),
-    	                                                                             ctx.mkAnd(edge("ic;ci",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ic;ci",e1,e2, ctx))),
-    	                                                                             ctx.mkAnd(edge("ii;ii",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ii;ii",e1,e2, ctx))))));
-    	                                                     
-    	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ic",e1,e2, ctx), ctx.mkOr(ctx.mkAnd(edge("ic0",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ic0",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("ii",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ii",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("cc",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("cc",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("ic;cc",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ic;cc",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("ii;ic",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ii;ic",e1,e2, ctx))))));
-    	                                                                                                  
-    	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ci",e1,e2, ctx), ctx.mkOr(ctx.mkAnd(edge("ci0",e1,e2, ctx), ctx.mkGt(intCount("ci",e1,e2, ctx), intCount("ci0",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("ci;ii",e1,e2, ctx), ctx.mkGt(intCount("ci",e1,e2, ctx), intCount("ci;ii",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("cc;ci",e1,e2, ctx), ctx.mkGt(intCount("ci",e1,e2, ctx), intCount("cc;ci",e1,e2, ctx))))));
-    	                                                                                                                                               
-    	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("cc",e1,e2, ctx), ctx.mkOr(ctx.mkAnd(edge("cc0",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("cc0",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("ci",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("ci",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("ci;ic",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("ci;ic",e1,e2, ctx))),
-    	        																	ctx.mkAnd(edge("cc;cc",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("cc;cc",e1,e2, ctx))))));
+    	        if(approx) {
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ii",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("ii0",e1,e2, ctx), 
+							  edge("ci",e1,e2, ctx),
+							  edge("ic;ci",e1,e2, ctx),
+							  edge("ii;ii",e1,e2, ctx))));
+
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ic",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("ic0",e1,e2, ctx),
+							   edge("ii",e1,e2, ctx),
+							   edge("cc",e1,e2, ctx),
+							   edge("ic;cc",e1,e2, ctx),
+							   edge("ii;ic",e1,e2, ctx))));
+
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ci",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("ci0",e1,e2, ctx),
+							   edge("ci;ii",e1,e2, ctx),
+							   edge("cc;ci",e1,e2, ctx))));
+                                    
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("cc",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("cc0",e1,e2, ctx),
+							   edge("ci",e1,e2, ctx),
+							   edge("ci;ic",e1,e2, ctx),
+							   edge("cc;cc",e1,e2, ctx))));    	        	
+    	        } else {
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ii",e1,e2, ctx), 
+        	        		ctx.mkOr(ctx.mkAnd(edge("ii0",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ii0",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ci",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ci",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ic;ci",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ic;ci",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ii;ii",e1,e2, ctx), ctx.mkGt(intCount("ii",e1,e2, ctx), intCount("ii;ii",e1,e2, ctx))))));
+    
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ic",e1,e2, ctx), 
+        	        		ctx.mkOr(ctx.mkAnd(edge("ic0",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ic0",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ii",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ii",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("cc",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("cc",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ic;cc",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ic;cc",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ii;ic",e1,e2, ctx), ctx.mkGt(intCount("ic",e1,e2, ctx), intCount("ii;ic",e1,e2, ctx))))));
+                                                 
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ci",e1,e2, ctx), 
+        	        		ctx.mkOr(ctx.mkAnd(edge("ci0",e1,e2, ctx), ctx.mkGt(intCount("ci",e1,e2, ctx), intCount("ci0",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ci;ii",e1,e2, ctx), ctx.mkGt(intCount("ci",e1,e2, ctx), intCount("ci;ii",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("cc;ci",e1,e2, ctx), ctx.mkGt(intCount("ci",e1,e2, ctx), intCount("cc;ci",e1,e2, ctx))))));
+                                                                                              
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("cc",e1,e2, ctx), 
+        	        		ctx.mkOr(ctx.mkAnd(edge("cc0",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("cc0",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ci",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("ci",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("ci;ic",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("ci;ic",e1,e2, ctx))),
+        	        				 ctx.mkAnd(edge("cc;cc",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("cc;cc",e1,e2, ctx))))));
+    	        }
 			}
 		}
  	    return enc;
