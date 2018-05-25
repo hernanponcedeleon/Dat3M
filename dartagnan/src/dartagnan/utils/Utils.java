@@ -25,7 +25,7 @@ public class Utils {
         GraphViz gv = new GraphViz();
 		gv.addln(gv.start_graph());
 		
-		gv.addln("  subgraph cluster_Source { rank=sink; fontsize=20; label = \"Program Compiled to Source Architecture\"; color=red; shape=box;");
+		gv.addln("  subgraph cluster_Source { rank=sink; fontsize=20; label = \"Program Compiled to Target Architecture\"; color=red; shape=box;");
 		int tid = 0;
 		for(dartagnan.program.Thread t : p.getThreads()) {
 			tid++;
