@@ -37,9 +37,9 @@ For checking state inclusion:
 ```
 java porthos/Porthos -s <source> [-scat <CAT file>] -t <target> [-tcat <CAT file>] -i <input>
 ```
-where \<input> must be a .pts program (see below).
+Programs shall be written in the .pts format (see below). The path to the .pts file shall be provided in \<input>.
 
-Strings \<source> and \<target> specify the architectures to which the program shall be compiled. They must be one of the following: 
+Strings \<source> and \<target> specify the architectures to which the program will be compiled. They must be one of the following: 
 - sc
 - tso
 - pso
