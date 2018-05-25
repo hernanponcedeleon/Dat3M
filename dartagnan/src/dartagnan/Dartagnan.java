@@ -167,16 +167,16 @@ public class Dartagnan {
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 
 		if(s.check() == Status.SATISFIABLE) {
-			//System.out.println("The state is reachable");
-			System.out.println("       0");
+			System.out.println("The state is reachable");
+			//System.out.println("       0");
 			if(cmd.hasOption("draw")) {
 				String outputPath = cmd.getOptionValue("draw");
 				Utils.drawGraph(p, ctx, s.getModel(), outputPath, rels);
 			}
 		}
 		else {
-			//System.out.println("The state is not reachable");
-			System.out.println("       1");
+			System.out.println("The state is not reachable");
+			//System.out.println("       1");
 		}
 		return;
 	}	
