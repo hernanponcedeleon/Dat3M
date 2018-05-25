@@ -263,6 +263,10 @@ public class Program {
 		return ret;
 	}
 	
+	public Set<Event> getMemEvents() {
+		return getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+    }
+	
 	private void setMainThread() {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
