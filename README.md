@@ -8,7 +8,7 @@ This tool suite is currently composed of two tools.
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/dartagnan_small.jpg">
 </p>
 
-* **PORTHOS:** a tool to check execution and state inclusion under weak memory models.
+* **PORTHOS:** a tool to check state inclusion under weak memory models.
 
 <p align="center"> 
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/porthos_small.jpg">
@@ -18,7 +18,7 @@ Installation
 ======
 Run the compiling script
 ```
-. ./install.sh
+./install.sh
 ```
 **Note:** If the java classes or libz3java cannot be found, set the the following variables manually:
 ```
@@ -31,12 +31,11 @@ Usage
 ======
 For checking reachability:
 ```
-java dartagnan/Dartagnan -t <target> -i <input> [-cat <CAT file>]
-```
+java dartagnan/Dartagnan -t <target> [-cat <CAT file>] -i <input>
 ```
 For checking state inclusion:
 ```
-java porthos/Porthos -s <source> -t <target> -i <input> [-scat <CAT file>] [-tcat <CAT file>]
+java porthos/Porthos -s <source> [-scat <CAT file>] -t <target> [-tcat <CAT file>] -i <input>
 ```
 where \<input> must be a .pts program (see below).
 
