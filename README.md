@@ -84,4 +84,4 @@ Examples are provided in the **benchmarks/** folder.
 
 Author and Contact
 ======
-Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org) and [Florian Furbach](mailto:f.furbach@tu-braunschweig.de). Please feel free to us in case of questions or to send feedback.
+Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org) and [Florian Furbach](mailto:f.furbach@tu-braunschweig.de). Please feel free to contact us in case of questions or to send feedback.
