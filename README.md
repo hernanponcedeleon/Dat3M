@@ -41,7 +41,7 @@ For checking state inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input> -state
 ```
-where \<input> must be a .pts program (see below) and \<source>, \<target> must be a CAT file or one of the following strings: 
+where \<input> must be a .pts program (see below) and \<source>, \<target> must be CAT files or one of the following strings: 
 - sc
 - tso
 - pso
