@@ -37,11 +37,11 @@ public class Dartagnan {
 		
 		Options options = new Options();
 
-        Option targetOpt = new Option("t", "target", true, "target MCM");
+        Option targetOpt = new Option("t", "target", true, "Target architecture to compile the program");
         targetOpt.setRequired(true);
         options.addOption(targetOpt);
 
-		Option inputOpt = new Option("i", "input", true, "input file path");
+		Option inputOpt = new Option("i", "input", true, "Path to the file containing the input program");
         inputOpt.setRequired(true);
         options.addOption(inputOpt);
 
@@ -50,13 +50,18 @@ public class Dartagnan {
         		.desc("Unrolling steps")
         		.build());
 
-        options.addOption(Option.builder("approx")
-        		.desc("Approximation optimization for recursive relations")
+        options.addOption(Option.builder("cat")
+        		.hasArg()
+        		.desc("Path to the CAT file")
+        		.build());
+
+        options.addOption(Option.builder("relax")
+        		.desc("Uses relax encoding for recursive relations")
         		.build());
 
         options.addOption(Option.builder("draw")
         		.hasArg()
-        		.desc("If a buf is found, it outputs a graph \\path_to_file.dot")
+        		.desc("Path to save the execution graph if the state is reachable")
         		.build());
         
         options.addOption(Option.builder("rels")
@@ -79,7 +84,7 @@ public class Dartagnan {
         }
 
 		String target = cmd.getOptionValue("target");
-		if(!MCMs.stream().anyMatch(mcms -> mcms.trim().equals(target)) && !target.endsWith("cat")) {
+		if(!MCMs.stream().anyMatch(mcms -> mcms.trim().equals(target))) {
 			System.out.println("Unrecognized target");
 			System.exit(0);
 			return;
@@ -112,8 +117,10 @@ public class Dartagnan {
 			p = parser.program(inputFilePath).p;
 		}
 	
-        if (target.endsWith("cat")) {
-            File modelfile = new File(target);
+        if (cmd.hasOption("cat")) {
+        	String catPath = cmd.getOptionValue("cat");        	
+
+            File modelfile = new File(catPath);
 
             String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
             ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
@@ -123,7 +130,7 @@ public class Dartagnan {
             mcm = parser.mcm().value;
         }
         
-        if (cmd.hasOption("approx") || mcm != null) {
+        if (cmd.hasOption("relax") || mcm != null) {
             Relation.Approx = true;
         }
         
@@ -153,7 +160,7 @@ public class Dartagnan {
             s.add(mcm.encode(p, ctx));
             s.add(mcm.Consistent(p, ctx));
         } else {
-    		s.add(p.encodeMM(ctx, target, cmd.hasOption("approx")));
+    		s.add(p.encodeMM(ctx, target, cmd.hasOption("relax")));
     		s.add(p.encodeConsistent(ctx, target));
         }
 
@@ -173,5 +180,4 @@ public class Dartagnan {
 		}
 		return;
 	}	
-	
 }
