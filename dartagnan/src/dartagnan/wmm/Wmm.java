@@ -162,7 +162,6 @@ public class Wmm {
     }
 
     private static Wmm gettso() {
-
         //basics:
         Relation co = new BasicRelation("co");
         Relation po = new BasicRelation("po");
@@ -242,8 +241,6 @@ public class Wmm {
         for (Relation namedrel : namedrels) {
             expr = ctx.mkAnd(expr, namedrel.encode(program, ctx, encodedRels));
         }
-
-        //System.out.println("encoded rels: "+encodedRels.toString());
         return expr;
     }
 

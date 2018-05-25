@@ -39,7 +39,6 @@ public class EmptyRel extends Relation{
 
     @Override
     protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-        //TODO: quantor adden.
         return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
     }
     

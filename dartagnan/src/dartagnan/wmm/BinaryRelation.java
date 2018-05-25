@@ -83,7 +83,6 @@ public abstract class BinaryRelation extends Relation {
                 }
             }
         } else {
-            //System.out.println("skipped encoding of: " + name);
             return ctx.mkTrue();
 
         }

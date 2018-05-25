@@ -54,7 +54,6 @@ public abstract class UnaryRelation extends Relation {
                 }
             }
         } else {
-            //System.out.println("skipped encoding of: "+name);
             return ctx.mkTrue();
         }
     }

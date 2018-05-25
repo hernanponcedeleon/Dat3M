@@ -7,12 +7,9 @@ package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Event;
 import dartagnan.program.Program;
-import dartagnan.utils.PredicateUtils;
 import dartagnan.utils.Utils;
 import java.util.Set;
 
@@ -64,36 +61,11 @@ public class RelInterSect extends BinaryRelation{
 
     @Override
     protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-//        BoolExpr enc = ctx.mkTrue();
-//        Set<Event> events = program.getMemEvents();
-//        Expr e1 = ctx.mkConst("e1", program.eventSort);
-//        Expr e2 = ctx.mkConst("e2", program.eventSort);
-//        Expr evts12[] = {e1, e2};
-//        Expr body = ctx.mkAnd(PredicateUtils.getEdge(r1.getName(), e1, e2, ctx), PredicateUtils.getEdge(r2.getName(), e1, e2, ctx));
-//        Expr body2 = ctx.mkEq(PredicateUtils.getEdge(name, e1, e2, ctx),body);
-//        return ctx.mkForall(evts12, body2, 0, null, null, null, null);
     	return null;
     }
 
     @Override
     protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-//        BoolExpr enc = ctx.mkTrue();
-//        Set<Event> events = program.getMemEvents();
-//        Expr e1 = ctx.mkConst("e1", program.eventSort);
-//        Expr e2 = ctx.mkConst("e2", program.eventSort);
-//        Expr evts12[] = {e1, e2};
-//        BoolExpr opt1 = PredicateUtils.getEdge(r1.getName(), e1, e2, ctx);
-//        if (r1.containsRec) {
-//            opt1 = ctx.mkAnd(opt1, ctx.mkGt((IntExpr) PredicateUtils.getBinaryInt(getName(), ctx).apply( e1, e2), (IntExpr) PredicateUtils.getBinaryInt(r1.getName(), ctx).apply( e1, e2)));
-//        }
-//        BoolExpr opt2 = PredicateUtils.getEdge(r2.getName(), e1, e2, ctx);
-//        if (r2.containsRec) {
-//            opt2 = ctx.mkAnd(opt2, ctx.mkGt((IntExpr) PredicateUtils.getBinaryInt(getName(), ctx).apply( e1, e2), (IntExpr) PredicateUtils.getBinaryInt(r2.getName(), ctx).apply( e1, e2)));
-//        }
-//        Expr body = ctx.mkAnd(opt1,opt2);
-//
-//        Expr body2 = ctx.mkEq(PredicateUtils.getEdge(name, e1, e2, ctx), body);
-//        return ctx.mkForall(evts12, body2, 0, null, null, null, null);
     	return null;
     }    
 }

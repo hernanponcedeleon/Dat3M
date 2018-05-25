@@ -51,5 +51,4 @@ public class RelDummy extends Relation{
     protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
         return ctx.mkTrue();
     }
-    
 }

@@ -80,7 +80,6 @@ public abstract class Relation {
      * @return the name of the relation (with a prefix if that was set for aramis)
      */
     public String getName() {
-        //TODO: add prefix for aramis
         return name;
     }
 
