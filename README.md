@@ -8,7 +8,7 @@ This tool suite is currently composed of two tools.
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/dartagnan_small.jpg">
 </p>
 
-* **PORTHOS:** a tool to check execution and state inclusion under weak memory models.
+* **PORTHOS:** a tool to check state inclusion under weak memory models.
 
 <p align="center"> 
 <img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/porthos_small.jpg">
@@ -18,7 +18,7 @@ Installation
 ======
 Run the compiling script
 ```
-. ./install.sh
+./install.sh
 ```
 **Note:** If the java classes or libz3java cannot be found, set the the following variables manually:
 ```
@@ -31,17 +31,15 @@ Usage
 ======
 For checking reachability:
 ```
-java dartagnan/Dartagnan -t <target> -i <input>
-```
-For checking execution inclusion:
-```
-java porthos/Porthos -s <source> -t <target> -i <input>
+java dartagnan/Dartagnan -t <target> [-cat <CAT file>] -i <input>
 ```
 For checking state inclusion:
 ```
-java porthos/Porthos -s <source> -t <target> -i <input> -state
+java porthos/Porthos -s <source> [-scat <CAT file>] -t <target> [-tcat <CAT file>] -i <input>
 ```
-where \<input> must be a .pts program (see below) and \<source>, \<target> must be one of the following memory models: 
+Programs shall be written in the .pts format (see below). The path to the .pts file shall be provided in \<input>.
+
+Strings \<source> and \<target> specify the architectures to which the program will be compiled. They must be one of the following: 
 - sc
 - tso
 - pso
@@ -50,7 +48,7 @@ where \<input> must be a .pts program (see below) and \<source>, \<target> must 
 - power
 - arm
 
-More memory models can be defined using the CAT language. See /src/dartagnan/wmm/
+The optional -cat,-scat,-tcat options specify the paths to the CAT files. When they are not provided, the memory model is extracted from the compilation options \<source> and \<target>.
 
 The .pts format
 ======
@@ -86,4 +84,4 @@ Examples are provided in the **benchmarks/** folder.
 
 Author and Contact
 ======
-Dat3M is developed and maintained by Hernán Ponce de León. Please feel free to [contact me]( mailto:ponce@fortiss.org) in case of questions or to send feedback.
+Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org) and [Florian Furbach](mailto:f.furbach@tu-braunschweig.de). Please feel free to contact us in case of questions or to send feedback.
