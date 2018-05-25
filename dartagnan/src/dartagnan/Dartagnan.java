@@ -22,6 +22,8 @@ import dartagnan.PorthosParser;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.Relation;
+import dartagnan.wmm.Wmm;
 
 import org.apache.commons.cli.*;
 
@@ -29,6 +31,7 @@ import org.apache.commons.cli.*;
 public class Dartagnan {
 
 	public static void main(String[] args) throws Z3Exception, IOException {		
+        Wmm mcm = null;
 
 		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "arm");
 		
@@ -76,7 +79,7 @@ public class Dartagnan {
         }
 
 		String target = cmd.getOptionValue("target");
-		if(!MCMs.stream().anyMatch(mcms -> mcms.trim().equals(target))) {
+		if(!MCMs.stream().anyMatch(mcms -> mcms.trim().equals(target)) && !target.endsWith("cat")) {
 			System.out.println("Unrecognized target");
 			System.exit(0);
 			return;
@@ -109,6 +112,21 @@ public class Dartagnan {
 			p = parser.program(inputFilePath).p;
 		}
 	
+        if (target.endsWith("cat")) {
+            File modelfile = new File(target);
+
+            String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
+            ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
+            ModelLexer lexer = new ModelLexer(mcminput);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            ModelParser parser = new ModelParser(tokens);
+            mcm = parser.mcm().value;
+        }
+        
+        if (cmd.hasOption("approx") || mcm != null) {
+            Relation.Approx = true;
+        }
+        
 		String[] rels = new String[100];
 		if(cmd.hasOption("rels")) {
 			rels = cmd.getOptionValues("rels");	
@@ -130,8 +148,14 @@ public class Dartagnan {
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
-		s.add(p.encodeMM(ctx, target, cmd.hasOption("approx")));
-		s.add(p.encodeConsistent(ctx, target));
+		
+        if (mcm != null) {
+            s.add(mcm.encode(p, ctx));
+            s.add(mcm.Consistent(p, ctx));
+        } else {
+    		s.add(p.encodeMM(ctx, target, cmd.hasOption("approx")));
+    		s.add(p.encodeConsistent(ctx, target));
+        }
 
 		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
 
