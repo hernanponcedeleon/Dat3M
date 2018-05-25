@@ -31,17 +31,16 @@ Usage
 ======
 For checking reachability:
 ```
-java dartagnan/Dartagnan -t <target> -i <input>
+java dartagnan/Dartagnan -t <target> -i <input> [-cat <CAT file>]
 ```
-For checking execution inclusion:
-```
-java porthos/Porthos -s <source> -t <target> -i <input>
 ```
 For checking state inclusion:
 ```
-java porthos/Porthos -s <source> -t <target> -i <input> -state
+java porthos/Porthos -s <source> -t <target> -i <input> [-scat <CAT file>] [-tcat <CAT file>]
 ```
-where \<input> must be a .pts program (see below) and \<source>, \<target> must be CAT files or one of the following strings: 
+where \<input> must be a .pts program (see below).
+
+Strings \<source> and \<target> specify the architectures to which the program shall be compiled. They must be one of the following: 
 - sc
 - tso
 - pso
@@ -49,6 +48,8 @@ where \<input> must be a .pts program (see below) and \<source>, \<target> must 
 - alpha
 - power
 - arm
+
+The optional -cat,-scat,-tcat options specify the paths to the CAT files. When they are not provided, the memory model is extracted from the compilation options \<source> and \<target>.
 
 The .pts format
 ======
