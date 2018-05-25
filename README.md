@@ -41,7 +41,7 @@ For checking state inclusion:
 ```
 java porthos/Porthos -s <source> -t <target> -i <input> -state
 ```
-where \<input> must be a .pts program (see below) and \<source>, \<target> must be one of the following memory models: 
+where \<input> must be a .pts program (see below) and \<source>, \<target> must be a CAT file or one of the following strings: 
 - sc
 - tso
 - pso
@@ -49,8 +49,6 @@ where \<input> must be a .pts program (see below) and \<source>, \<target> must 
 - alpha
 - power
 - arm
-
-More memory models can be defined using the CAT language. See /src/dartagnan/wmm/
 
 The .pts format
 ======
@@ -86,4 +84,4 @@ Examples are provided in the **benchmarks/** folder.
 
 Author and Contact
 ======
-Dat3M is developed and maintained by Hernán Ponce de León. Please feel free to [contact me]( mailto:ponce@fortiss.org) in case of questions or to send feedback.
+Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org) and [Florian Furbach](mailto:f.furbach@tu-braunschweig.de). Please feel free to us in case of questions or to send feedback.
