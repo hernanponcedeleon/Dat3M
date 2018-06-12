@@ -126,7 +126,9 @@ public class Program {
 			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
 			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
-				reg.setMainThread(t.tid);
+				if(reg != null) {
+					reg.setMainThread(t.tid);
+				}
 			}
 		}
 	}	
@@ -156,7 +158,9 @@ public class Program {
 			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
 			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
-				reg.setMainThread(t.tid);
+				if(reg != null) {
+					reg.setMainThread(t.tid);
+				}
 			}
 		}
 	}

@@ -40,7 +40,7 @@ public class Domain {
 		Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> barriers = program.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
-		
+
 		for(Event e : eventsL) {
 				enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e, e, ctx)));
 				enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e, e, ctx)));
@@ -287,19 +287,26 @@ public class Domain {
 				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("isb", e1, e2, ctx), isbs));
 			}
 		}
-		
+
 		for(Event e1 : eventsL) {
 			for(Event e2 : eventsL) {
 				if(e1.getMainThread() != e2.getMainThread() || e2.getEId() < e1.getEId() || e1 == e2) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("data", e1, e2, ctx)));
 				}
+
 				if(e2 instanceof Store) {
-					if(!e2.getLastModMap().get(e2.getReg()).contains(e1)) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));						
-					}
+                    if(e2.getReg() != null && !e2.getLastModMap().get(e2.getReg()).contains(e1)) {
+                        enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                    }
+
+                    // TODO: Why does e2.getLoc() use location of e2 not of e1?
+                    if(e2.getReg() == null && !e2.getLastModMap().keySet().contains(e2.getLoc())){
+                        enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                    }
 				}
 				if(e2 instanceof Load) {
+                    // TODO: Why does e2.getLoc() use location of e2 not of e1?
 					if(!e2.getLastModMap().keySet().contains(e2.getLoc())) {
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
 					}
@@ -309,17 +316,22 @@ public class Domain {
 				}
 			}
 		}
-		
+
 		for(Event e : eventsL) {
 			if(e instanceof Store) {
+                if(e.getReg() == null && !e.getLastModMap().keySet().contains(e.getLoc())) {
+                    continue;
+                }
+
 				BoolExpr orClause = ctx.mkFalse();
 				for(Event x : eventsL) {
-					if(e.getLastModMap().get(e.getReg()).contains(x)) {
-						orClause = ctx.mkOr(orClause, edge("idd", x, e, ctx));						
-					}
-					else {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
-					}
+                    if(e.getReg() == null && e.getLastModMap().get(e.getLoc()).contains(x)){
+                        orClause = ctx.mkOr(orClause, edge("idd", x, e, ctx));
+                    } else if(e.getReg() != null && e.getLastModMap().get(e.getReg()).contains(x)){
+                        orClause = ctx.mkOr(orClause, edge("idd", x, e, ctx));
+                    } else {
+                        enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
+                    }
 				}
 				enc = ctx.mkAnd(enc, orClause);
 			}
