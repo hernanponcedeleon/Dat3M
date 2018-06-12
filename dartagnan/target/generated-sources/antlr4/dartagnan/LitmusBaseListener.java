@@ -37,6 +37,66 @@ public class LitmusBaseListener implements LitmusListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterInits(LitmusParser.InitsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitInits(LitmusParser.InitsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterInitLocation(LitmusParser.InitLocationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitInitLocation(LitmusParser.InitLocationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterInitRegister(LitmusParser.InitRegisterContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitInitRegister(LitmusParser.InitRegisterContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterInitRegisterLocation(LitmusParser.InitRegisterLocationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitInitRegisterLocation(LitmusParser.InitRegisterLocationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAssertion(LitmusParser.AssertionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAssertion(LitmusParser.AssertionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterBop(LitmusParser.BopContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -49,13 +109,25 @@ public class LitmusBaseListener implements LitmusListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterText(LitmusParser.TextContext ctx) { }
+	@Override public void enterHeaderComments(LitmusParser.HeaderCommentsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitText(LitmusParser.TextContext ctx) { }
+	@Override public void exitHeaderComments(LitmusParser.HeaderCommentsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBottomComments(LitmusParser.BottomCommentsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBottomComments(LitmusParser.BottomCommentsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -229,13 +301,25 @@ public class LitmusBaseListener implements LitmusListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStoreX86(LitmusParser.StoreX86Context ctx) { }
+	@Override public void enterStoreX86reg(LitmusParser.StoreX86regContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStoreX86(LitmusParser.StoreX86Context ctx) { }
+	@Override public void exitStoreX86reg(LitmusParser.StoreX86regContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStoreX86val(LitmusParser.StoreX86valContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStoreX86val(LitmusParser.StoreX86valContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
