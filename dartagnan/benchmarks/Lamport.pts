@@ -57,4 +57,4 @@ thread t2 {
   }
 }
 
-exists b1 = 1, b2 = 1, b3 = 1,
+exists b1 = 2, b2 = 2, b3 = 2,
