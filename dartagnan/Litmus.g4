@@ -45,18 +45,7 @@ inits : (initLocation | initRegister | initRegisterLocation)* ;
 
 initLocation : l = location '=' DIGIT ';' {mapLocs.put($l.loc.getName(), $l.loc);};
 
-initRegister : (LETTER)* thrd = DIGIT ':' r = registerPower '=' l = location ';'
-    {
-        if(!mapRegLoc.keySet().contains($thrd.getText())) {
-            mapRegLoc.put($thrd.getText(), new HashMap<String, Location>());
-        }
-        if(!mapLoc.keySet().contains($l.loc.getName())) {
-            mapLoc.put($l.loc.getName(), $l.loc);
-        }
-        mapRegLoc.get($thrd.getText()).put($r.reg.getName(), mapLoc.get($l.loc.getName()));
-    };
-
-initRegisterLocation : (LETTER)* thrd = DIGIT ':' r = registerPower '=' d = DIGIT ';'
+initRegister : (LETTER)* thrd = DIGIT ':' r = registerPower '=' d = DIGIT ';'
     {
         Register regPointer = $r.reg;
         if(!mapRegs.keySet().contains($thrd.getText())) {
@@ -68,6 +57,18 @@ initRegisterLocation : (LETTER)* thrd = DIGIT ':' r = registerPower '=' d = DIGI
         }
         mapThreads.get($thrd.getText()).add(new Local(regPointer, new AConst(Integer.parseInt($d.getText()))));
     };
+
+initRegisterLocation : (LETTER)* thrd = DIGIT ':' r = registerPower '=' l = location ';'
+    {
+        if(!mapRegLoc.keySet().contains($thrd.getText())) {
+            mapRegLoc.put($thrd.getText(), new HashMap<String, Location>());
+        }
+        if(!mapLoc.keySet().contains($l.loc.getName())) {
+            mapLoc.put($l.loc.getName(), $l.loc);
+        }
+        mapRegLoc.get($thrd.getText()).put($r.reg.getName(), mapLoc.get($l.loc.getName()));
+    };
+
 
 assertion [Program p] : ((
     l = location '=' value = DIGIT
@@ -190,7 +191,8 @@ inst [String mainThread] returns [Thread t]:
 	| t14 = mr [mainThread] {$t = $t14.t;}
 	| t15 = cmpw [mainThread] {$t = $t15.t;}
 	| 'beq' 'LC' word
-	| 'LC' word ':';
+	| 'LC' word ':'
+	;
 
 localX86 [String mainThread] returns [Thread t]:
 	'MOV' r = registerX86 ',$' d = DIGIT {

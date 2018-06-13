@@ -337,18 +337,6 @@ public class LitmusBaseListener implements LitmusListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCmpw(LitmusParser.CmpwContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitCmpw(LitmusParser.CmpwContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterMfence(LitmusParser.MfenceContext ctx) { }
 	/**
 	 * {@inheritDoc}

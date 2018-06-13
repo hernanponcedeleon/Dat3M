@@ -18,7 +18,6 @@ public class DartagnanTest {
         Runner runner = new Runner(logger);
         System.err.close();
 
-        runner.run("litmus/PPC2", "power", null, 2, false);
         runner.run("litmus/PPC", "power", null, 2, true);
         runner.run("litmus/X86", "tso", null, 2, true);
 

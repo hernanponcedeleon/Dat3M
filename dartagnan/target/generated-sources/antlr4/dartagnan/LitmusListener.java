@@ -277,16 +277,6 @@ public interface LitmusListener extends ParseTreeListener {
 	 */
 	void exitStorePower(LitmusParser.StorePowerContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link LitmusParser#cmpw}.
-	 * @param ctx the parse tree
-	 */
-	void enterCmpw(LitmusParser.CmpwContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link LitmusParser#cmpw}.
-	 * @param ctx the parse tree
-	 */
-	void exitCmpw(LitmusParser.CmpwContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link LitmusParser#mfence}.
 	 * @param ctx the parse tree
 	 */
