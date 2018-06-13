@@ -5,33 +5,30 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import com.microsoft.z3.*;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.io.FileUtils;
 
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
-import com.microsoft.z3.Status;
-import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.LitmusLexer;
-import dartagnan.LitmusParser;
-import dartagnan.PorthosLexer;
-import dartagnan.PorthosParser;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.Relation;
 import dartagnan.wmm.Wmm;
+import dartagnan.utils.ParserErrorListener;
 
 import org.apache.commons.cli.*;
 
 @SuppressWarnings("deprecation")
 public class Dartagnan {
 
-	public static void main(String[] args) throws Z3Exception, IOException {		
-        Wmm mcm = null;
+    static Executor getExecutor(String inputFilePath) throws Exception{
+        return new Executor(inputFilePath);
+    }
+
+	public static void main(String[] args) throws Z3Exception, IOException {
 
 		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "arm");
 		
@@ -96,32 +93,72 @@ public class Dartagnan {
 			System.exit(0);
 			return;
 		}
-		File file = new File(inputFilePath);
 
-		String program = FileUtils.readFileToString(file, "UTF-8");		
-		ANTLRInputStream input = new ANTLRInputStream(program); 		
+        try{
 
-		Program p = new Program(inputFilePath);
-		
-		if(inputFilePath.endsWith("litmus")) {
-			LitmusLexer lexer = new LitmusLexer(input);	
-			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			LitmusParser parser = new LitmusParser(tokens);    
-			p = parser.program(inputFilePath).p; 
-		}
-		
-		if(inputFilePath.endsWith("pts")) {
-			PorthosLexer lexer = new PorthosLexer(input);
-			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			PorthosParser parser = new PorthosParser(tokens);
-			p = parser.program(inputFilePath).p;
-		}
-	
-        if (cmd.hasOption("cat")) {
-        	String catPath = cmd.getOptionValue("cat");        	
+		    Executor executor = getExecutor(inputFilePath);
+            boolean result = executor.execute(
+                    target,
+                    cmd.hasOption("cat") ? cmd.getOptionValue("cat") : null,
+                    cmd.hasOption("unroll") ? Integer.parseInt(cmd.getOptionValue("unroll")) : 1,
+                    cmd.hasOption("relax") && Boolean.parseBoolean(cmd.getOptionValue("relax"))
+            );
 
-            File modelfile = new File(catPath);
+            if(result) {
+                System.out.println("The state is reachable");
 
+                if(cmd.hasOption("draw")) {
+                    String[] rels = new String[100];
+                    if(cmd.hasOption("rels")) {
+                        rels = cmd.getOptionValues("rels");
+                    }
+
+                    Context ctx = executor.getContext();
+                    ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+                    String outputPath = cmd.getOptionValue("draw");
+                    Utils.drawGraph(executor.getProgram(), ctx, executor.getSolver().getModel(), outputPath, rels);
+                }
+
+            }
+            else {
+                System.out.println("The state is not reachable");
+            }
+
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+	}	
+}
+
+class Executor{
+
+    private Program p;
+    private Solver s;
+    private Context ctx;
+
+    Executor(String inputFilePath) throws Exception{
+        ctx = new Context();
+        s = ctx.mkSolver();
+        p = parseFromFile(inputFilePath);
+    }
+
+    public Program getProgram(){
+        return p;
+    }
+
+    public Solver getSolver(){
+        return s;
+    }
+
+    public Context getContext() {
+        return ctx;
+    }
+
+    boolean execute(String target, String catFilePath, int steps, boolean relax) throws Exception{
+        Wmm mcm = null;
+
+        if(catFilePath != null){
+            File modelfile = new File(catFilePath);
             String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
             ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
             ModelLexer lexer = new ModelLexer(mcminput);
@@ -129,55 +166,60 @@ public class Dartagnan {
             ModelParser parser = new ModelParser(tokens);
             mcm = parser.mcm().value;
         }
-        
-        if (cmd.hasOption("relax") || mcm != null) {
+
+        if (relax || mcm != null) {
             Relation.Approx = true;
         }
-        
-		String[] rels = new String[100];
-		if(cmd.hasOption("rels")) {
-			rels = cmd.getOptionValues("rels");	
-		}
 
-		int steps = 1;
-        if(cmd.hasOption("unroll")) {
-            steps = Integer.parseInt(cmd.getOptionValue("unroll"));        	
-        }
+        steps = steps > 0 ? steps : 1;
+        p.initialize(steps);
+        p.compile(target, false, true);
 
-		p.initialize(steps);
-		p.compile(target, false, true);
-		
-		Context ctx = new Context();
-		Solver s = ctx.mkSolver();
-		
-		s.add(p.encodeDF(ctx));
-		s.add(p.getAss().encode(ctx));
-		s.add(p.encodeCF(ctx));
-		s.add(p.encodeDF_RF(ctx));
-		s.add(Domain.encode(p, ctx));
-		
+
+        s.add(p.encodeDF(ctx));
+        s.add(p.getAss().encode(ctx));
+        s.add(p.encodeCF(ctx));
+        s.add(p.encodeDF_RF(ctx));
+        s.add(Domain.encode(p, ctx));
+
         if (mcm != null) {
             s.add(mcm.encode(p, ctx));
             s.add(mcm.Consistent(p, ctx));
         } else {
-    		s.add(p.encodeMM(ctx, target, cmd.hasOption("relax")));
-    		s.add(p.encodeConsistent(ctx, target));
+            s.add(p.encodeMM(ctx, target, relax));
+            s.add(p.encodeConsistent(ctx, target));
         }
 
-		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+        return s.check() == Status.SATISFIABLE;
+    }
 
-		if(s.check() == Status.SATISFIABLE) {
-			System.out.println("The state is reachable");
-			//System.out.println("       0");
-			if(cmd.hasOption("draw")) {
-				String outputPath = cmd.getOptionValue("draw");
-				Utils.drawGraph(p, ctx, s.getModel(), outputPath, rels);
-			}
-		}
-		else {
-			System.out.println("The state is not reachable");
-			//System.out.println("       1");
-		}
-		return;
-	}	
+    private Program parseFromFile(String inputFilePath) throws IOException{
+        File file = new File(inputFilePath);
+        String programRaw = FileUtils.readFileToString(file, "UTF-8");
+        ANTLRInputStream input = new ANTLRInputStream(programRaw);
+        Program program = new Program(inputFilePath);
+        ParserErrorListener listener = new ParserErrorListener();
+
+        if(inputFilePath.endsWith("litmus")) {
+            LitmusLexer lexer = new LitmusLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            LitmusParser parser = new LitmusParser(tokens);
+            parser.addErrorListener(listener);
+            program = parser.program(inputFilePath).p;
+        }
+
+        if(inputFilePath.endsWith("pts")) {
+            PorthosLexer lexer = new PorthosLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            PorthosParser parser = new PorthosParser(tokens);
+            parser.addErrorListener(listener);
+            program = parser.program(inputFilePath).p;
+        }
+
+        if(listener.hasError()){
+            throw new IOException("Parsing error");
+        }
+
+        return program;
+    }
 }

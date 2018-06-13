@@ -31,46 +31,39 @@ public class LitmusParser extends Parser {
 		T__17=18, T__18=19, T__19=20, T__20=21, T__21=22, T__22=23, T__23=24, 
 		T__24=25, T__25=26, T__26=27, T__27=28, T__28=29, T__29=30, T__30=31, 
 		T__31=32, T__32=33, T__33=34, T__34=35, T__35=36, T__36=37, T__37=38, 
-		T__38=39, T__39=40, T__40=41, T__41=42, T__42=43, T__43=44, T__44=45, 
-		T__45=46, T__46=47, T__47=48, T__48=49, T__49=50, T__50=51, T__51=52, 
-		T__52=53, T__53=54, T__54=55, T__55=56, T__56=57, T__57=58, T__58=59, 
-		T__59=60, T__60=61, T__61=62, T__62=63, T__63=64, T__64=65, T__65=66, 
-		T__66=67, T__67=68, T__68=69, T__69=70, ARCH=71, X86=72, POWER=73, LETTER=74, 
-		DIGIT=75, MONIO=76, SYMBOL=77, WS=78, LWSYNC=79, SYNC=80, ISYNC=81;
+		T__38=39, T__39=40, T__40=41, T__41=42, T__42=43, ARCH=44, X86=45, POWER=46, 
+		LETTER=47, DIGIT=48, MONIO=49, SYMBOL=50, WS=51, LWSYNC=52, SYNC=53, ISYNC=54;
 	public static final int
-		RULE_program = 0, RULE_bop = 1, RULE_text = 2, RULE_word = 3, RULE_location = 4, 
-		RULE_locationX86 = 5, RULE_registerPower = 6, RULE_registerX86 = 7, RULE_threads = 8, 
-		RULE_inst = 9, RULE_localX86 = 10, RULE_localPower = 11, RULE_xor = 12, 
-		RULE_addi = 13, RULE_mr = 14, RULE_loadX86 = 15, RULE_loadPower = 16, 
-		RULE_storeX86 = 17, RULE_storePower = 18, RULE_cmpw = 19, RULE_mfence = 20, 
-		RULE_lwsync = 21, RULE_sync = 22, RULE_isync = 23;
+		RULE_program = 0, RULE_inits = 1, RULE_initLocation = 2, RULE_initRegister = 3, 
+		RULE_initRegisterLocation = 4, RULE_assertion = 5, RULE_bop = 6, RULE_headerComments = 7, 
+		RULE_bottomComments = 8, RULE_word = 9, RULE_location = 10, RULE_locationX86 = 11, 
+		RULE_registerPower = 12, RULE_registerX86 = 13, RULE_threads = 14, RULE_inst = 15, 
+		RULE_localX86 = 16, RULE_localPower = 17, RULE_xor = 18, RULE_addi = 19, 
+		RULE_mr = 20, RULE_loadX86 = 21, RULE_loadPower = 22, RULE_storeX86reg = 23, 
+		RULE_storeX86val = 24, RULE_storePower = 25, RULE_mfence = 26, RULE_lwsync = 27, 
+		RULE_sync = 28, RULE_isync = 29;
 	public static final String[] ruleNames = {
-		"program", "bop", "text", "word", "location", "locationX86", "registerPower", 
-		"registerX86", "threads", "inst", "localX86", "localPower", "xor", "addi", 
-		"mr", "loadX86", "loadPower", "storeX86", "storePower", "cmpw", "mfence", 
-		"lwsync", "sync", "isync"
+		"program", "inits", "initLocation", "initRegister", "initRegisterLocation", 
+		"assertion", "bop", "headerComments", "bottomComments", "word", "location", 
+		"locationX86", "registerPower", "registerX86", "threads", "inst", "localX86", 
+		"localPower", "xor", "addi", "mr", "loadX86", "loadPower", "storeX86reg", 
+		"storeX86val", "storePower", "mfence", "lwsync", "sync", "isync"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
-		null, "'PPC'", "'X86'", "'{'", "'='", "';'", "':'", "'}'", "'exists'", 
-		"'('", "')'", "'/\\'", "'\\/'", "'li'", "',0'", "'!'", "'\\'", "'@'", 
-		"'#'", "'\u20AC'", "'%'", "'&'", "'/'", "'['", "']'", "'$'", "'|'", "'?'", 
-		"'+'", "'`'", "'\u00B4'", "'^'", "'\u00A8'", "'*'", "','", "'.'", "'-'", 
-		"'_'", "'>'", "'<'", "'\"'", "'r0'", "'r1'", "'r2'", "'r3'", "'r4'", "'r5'", 
-		"'r6'", "'r7'", "'r8'", "'r9'", "'r10'", "'r11'", "'r12'", "'r13'", "'r14'", 
-		"'EAX'", "'EBX'", "'ECX'", "'EDX'", "'beq'", "'LC'", "'MOV'", "',$'", 
-		"'xor'", "'addi'", "'mr'", "'lwz'", "'stw'", "'cmpw'", "'MFENCE'", null, 
+		null, "'PPC'", "'X86'", "'{'", "'}'", "'exists'", "'('", "')'", "'='", 
+		"';'", "':'", "'/\\'", "'['", "']'", "'r0'", "'r1'", "'r2'", "'r3'", "'r4'", 
+		"'r5'", "'r6'", "'r7'", "'r8'", "'r9'", "'r10'", "'r11'", "'r12'", "'r13'", 
+		"'r14'", "'EAX'", "'EBX'", "'ECX'", "'EDX'", "'|'", "'MOV'", "',$'", "'li'", 
+		"','", "'xor'", "'addi'", "'mr'", "'lwz'", "'stw'", "'MFENCE'", null, 
 		null, null, null, null, "'~'", null, null, "'lwsync'", "'sync'", "'isync'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, null, null, null, null, null, null, null, null, null, null, null, 
 		null, null, null, null, null, null, null, null, null, null, null, null, 
 		null, null, null, null, null, null, null, null, null, null, null, null, 
-		null, null, null, null, null, null, null, null, null, null, null, null, 
-		null, null, null, null, null, null, null, null, null, null, null, null, 
-		null, null, null, null, null, null, null, null, null, null, null, "ARCH", 
-		"X86", "POWER", "LETTER", "DIGIT", "MONIO", "SYMBOL", "WS", "LWSYNC", 
-		"SYNC", "ISYNC"
+		null, null, null, null, null, null, null, null, "ARCH", "X86", "POWER", 
+		"LETTER", "DIGIT", "MONIO", "SYMBOL", "WS", "LWSYNC", "SYNC", "ISYNC"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -131,50 +124,21 @@ public class LitmusParser extends Parser {
 	public static class ProgramContext extends ParserRuleContext {
 		public String name;
 		public Program p;
-		public LocationContext l;
-		public Token thrd;
-		public RegisterPowerContext r;
-		public Token d;
 		public ThreadsContext threadsList;
-		public Token value;
+		public HeaderCommentsContext headerComments() {
+			return getRuleContext(HeaderCommentsContext.class,0);
+		}
+		public InitsContext inits() {
+			return getRuleContext(InitsContext.class,0);
+		}
+		public BottomCommentsContext bottomComments() {
+			return getRuleContext(BottomCommentsContext.class,0);
+		}
+		public AssertionContext assertion() {
+			return getRuleContext(AssertionContext.class,0);
+		}
 		public ThreadsContext threads() {
 			return getRuleContext(ThreadsContext.class,0);
-		}
-		public List<TextContext> text() {
-			return getRuleContexts(TextContext.class);
-		}
-		public TextContext text(int i) {
-			return getRuleContext(TextContext.class,i);
-		}
-		public List<TerminalNode> DIGIT() { return getTokens(LitmusParser.DIGIT); }
-		public TerminalNode DIGIT(int i) {
-			return getToken(LitmusParser.DIGIT, i);
-		}
-		public List<LocationContext> location() {
-			return getRuleContexts(LocationContext.class);
-		}
-		public LocationContext location(int i) {
-			return getRuleContext(LocationContext.class,i);
-		}
-		public List<RegisterPowerContext> registerPower() {
-			return getRuleContexts(RegisterPowerContext.class);
-		}
-		public RegisterPowerContext registerPower(int i) {
-			return getRuleContext(RegisterPowerContext.class,i);
-		}
-		public List<TerminalNode> LETTER() { return getTokens(LitmusParser.LETTER); }
-		public TerminalNode LETTER(int i) {
-			return getToken(LitmusParser.LETTER, i);
-		}
-		public List<TerminalNode> MONIO() { return getTokens(LitmusParser.MONIO); }
-		public TerminalNode MONIO(int i) {
-			return getToken(LitmusParser.MONIO, i);
-		}
-		public List<BopContext> bop() {
-			return getRuleContexts(BopContext.class);
-		}
-		public BopContext bop(int i) {
-			return getRuleContext(BopContext.class,i);
 		}
 		public ProgramContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public ProgramContext(ParserRuleContext parent, int invokingState, String name) {
@@ -197,14 +161,13 @@ public class LitmusParser extends Parser {
 		enterRule(_localctx, 0, RULE_program);
 		int _la;
 		try {
-			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
 
 					Program p = new Program(name);
 					p.setAss(new Assert());
 				
-			setState(49);
+			setState(61);
 			_la = _input.LA(1);
 			if ( !(_la==T__0 || _la==T__1) ) {
 			_errHandler.recoverInline(this);
@@ -214,118 +177,15 @@ public class LitmusParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(53);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__3) | (1L << T__4) | (1L << T__5) | (1L << T__8) | (1L << T__9) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << T__26) | (1L << T__27) | (1L << T__28) | (1L << T__29) | (1L << T__30) | (1L << T__31) | (1L << T__32) | (1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36) | (1L << T__37) | (1L << T__38) | (1L << T__39) | (1L << T__40) | (1L << T__41) | (1L << T__42) | (1L << T__43) | (1L << T__44) | (1L << T__45) | (1L << T__46) | (1L << T__47) | (1L << T__48) | (1L << T__49) | (1L << T__50) | (1L << T__51) | (1L << T__52) | (1L << T__53) | (1L << T__54) | (1L << T__55) | (1L << T__56) | (1L << T__57) | (1L << T__58))) != 0) || ((((_la - 74)) & ~0x3f) == 0 && ((1L << (_la - 74)) & ((1L << (LETTER - 74)) | (1L << (DIGIT - 74)) | (1L << (SYMBOL - 74)) | (1L << (LWSYNC - 74)) | (1L << (SYNC - 74)) | (1L << (ISYNC - 74)))) != 0)) {
-				{
-				{
-				setState(50);
-				text();
-				}
-				}
-				setState(55);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-			}
-			setState(56);
+			setState(62);
+			headerComments();
+			setState(63);
 			match(T__2);
-			setState(82); 
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			do {
-				{
-				setState(82);
-				_errHandler.sync(this);
-				switch ( getInterpreter().adaptivePredict(_input,3,_ctx) ) {
-				case 1:
-					{
-					setState(57);
-					((ProgramContext)_localctx).l = location();
-					setState(58);
-					match(T__3);
-					setState(59);
-					match(DIGIT);
-					setState(60);
-					match(T__4);
-					mapLocs.put(((ProgramContext)_localctx).l.loc.getName(), ((ProgramContext)_localctx).l.loc);
-					}
-					break;
-				case 2:
-					{
-					setState(66);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-					while (_la==LETTER) {
-						{
-						{
-						setState(63);
-						match(LETTER);
-						}
-						}
-						setState(68);
-						_errHandler.sync(this);
-						_la = _input.LA(1);
-					}
-					setState(69);
-					((ProgramContext)_localctx).thrd = match(DIGIT);
-					setState(70);
-					match(T__5);
-					setState(71);
-					((ProgramContext)_localctx).r = registerPower();
-					setState(72);
-					match(T__3);
-					setState(78);
-					_errHandler.sync(this);
-					switch (_input.LA(1)) {
-					case LETTER:
-						{
-						setState(73);
-						((ProgramContext)_localctx).l = location();
-
-									if(!mapRegLoc.keySet().contains(((ProgramContext)_localctx).thrd.getText())) {
-										mapRegLoc.put(((ProgramContext)_localctx).thrd.getText(), new HashMap<String, Location>());
-									}
-									if(!mapLoc.keySet().contains(((ProgramContext)_localctx).l.loc.getName())) {
-										mapLoc.put(((ProgramContext)_localctx).l.loc.getName(), ((ProgramContext)_localctx).l.loc);
-									}
-									mapRegLoc.get(((ProgramContext)_localctx).thrd.getText()).put(((ProgramContext)_localctx).r.reg.getName(), mapLoc.get(((ProgramContext)_localctx).l.loc.getName()));
-								
-						}
-						break;
-					case DIGIT:
-						{
-						setState(76);
-						((ProgramContext)_localctx).d = match(DIGIT);
-
-									Register regPointer = ((ProgramContext)_localctx).r.reg;
-									if(!mapRegs.keySet().contains(((ProgramContext)_localctx).thrd.getText())) {
-										mapRegs.put(((ProgramContext)_localctx).thrd.getText(), new HashMap<String, Register>());
-									}
-									mapRegs.get(((ProgramContext)_localctx).thrd.getText()).put(regPointer.getName(), regPointer);
-									if(!mapThreads.keySet().contains(((ProgramContext)_localctx).thrd.getText())) {
-										mapThreads.put(((ProgramContext)_localctx).thrd.getText(), new ArrayList<Thread>());
-									}
-									mapThreads.get(((ProgramContext)_localctx).thrd.getText()).add(new Local(regPointer, new AConst(Integer.parseInt(((ProgramContext)_localctx).d.getText()))));
-								
-						}
-						break;
-					default:
-						throw new NoViableAltException(this);
-					}
-					setState(80);
-					match(T__4);
-					}
-					break;
-				}
-				}
-				setState(84); 
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-			} while ( _la==LETTER || _la==DIGIT );
-			setState(86);
-			match(T__6);
-			setState(87);
+			setState(64);
+			inits();
+			setState(65);
+			match(T__3);
+			setState(66);
 			((ProgramContext)_localctx).threadsList = threads();
 
 					for(Thread t : ((ProgramContext)_localctx).threadsList.lst) {
@@ -333,182 +193,468 @@ public class LitmusParser extends Parser {
 					}
 					((ProgramContext)_localctx).p =  p;
 				
-			setState(92);
+			setState(68);
+			bottomComments();
+			setState(69);
+			match(T__4);
+			setState(70);
+			match(T__5);
+			setState(71);
+			assertion(p);
+			setState(72);
+			match(T__6);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class InitsContext extends ParserRuleContext {
+		public List<InitLocationContext> initLocation() {
+			return getRuleContexts(InitLocationContext.class);
+		}
+		public InitLocationContext initLocation(int i) {
+			return getRuleContext(InitLocationContext.class,i);
+		}
+		public List<InitRegisterContext> initRegister() {
+			return getRuleContexts(InitRegisterContext.class);
+		}
+		public InitRegisterContext initRegister(int i) {
+			return getRuleContext(InitRegisterContext.class,i);
+		}
+		public List<InitRegisterLocationContext> initRegisterLocation() {
+			return getRuleContexts(InitRegisterLocationContext.class);
+		}
+		public InitRegisterLocationContext initRegisterLocation(int i) {
+			return getRuleContext(InitRegisterLocationContext.class,i);
+		}
+		public InitsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_inits; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterInits(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitInits(this);
+		}
+	}
+
+	public final InitsContext inits() throws RecognitionException {
+		InitsContext _localctx = new InitsContext(_ctx, getState());
+		enterRule(_localctx, 2, RULE_inits);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(79);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__3) | (1L << T__4) | (1L << T__5) | (1L << T__8) | (1L << T__9) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << T__26) | (1L << T__27) | (1L << T__28) | (1L << T__29) | (1L << T__30) | (1L << T__31) | (1L << T__32) | (1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36) | (1L << T__37) | (1L << T__38) | (1L << T__39) | (1L << T__40) | (1L << T__41) | (1L << T__42) | (1L << T__43) | (1L << T__44) | (1L << T__45) | (1L << T__46) | (1L << T__47) | (1L << T__48) | (1L << T__49) | (1L << T__50) | (1L << T__51) | (1L << T__52) | (1L << T__53) | (1L << T__54) | (1L << T__55) | (1L << T__56) | (1L << T__57) | (1L << T__58))) != 0) || ((((_la - 74)) & ~0x3f) == 0 && ((1L << (_la - 74)) & ((1L << (LETTER - 74)) | (1L << (DIGIT - 74)) | (1L << (SYMBOL - 74)) | (1L << (LWSYNC - 74)) | (1L << (SYNC - 74)) | (1L << (ISYNC - 74)))) != 0)) {
+			while (_la==LETTER || _la==DIGIT) {
 				{
-				{
-				setState(89);
-				text();
+				setState(77);
+				_errHandler.sync(this);
+				switch ( getInterpreter().adaptivePredict(_input,0,_ctx) ) {
+				case 1:
+					{
+					setState(74);
+					initLocation();
+					}
+					break;
+				case 2:
+					{
+					setState(75);
+					initRegister();
+					}
+					break;
+				case 3:
+					{
+					setState(76);
+					initRegisterLocation();
+					}
+					break;
 				}
 				}
-				setState(94);
+				setState(81);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(155);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class InitLocationContext extends ParserRuleContext {
+		public LocationContext l;
+		public TerminalNode DIGIT() { return getToken(LitmusParser.DIGIT, 0); }
+		public LocationContext location() {
+			return getRuleContext(LocationContext.class,0);
+		}
+		public InitLocationContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_initLocation; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterInitLocation(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitInitLocation(this);
+		}
+	}
+
+	public final InitLocationContext initLocation() throws RecognitionException {
+		InitLocationContext _localctx = new InitLocationContext(_ctx, getState());
+		enterRule(_localctx, 4, RULE_initLocation);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(82);
+			((InitLocationContext)_localctx).l = location();
+			setState(83);
+			match(T__7);
+			setState(84);
+			match(DIGIT);
+			setState(85);
+			match(T__8);
+			mapLocs.put(((InitLocationContext)_localctx).l.loc.getName(), ((InitLocationContext)_localctx).l.loc);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class InitRegisterContext extends ParserRuleContext {
+		public Token thrd;
+		public RegisterPowerContext r;
+		public LocationContext l;
+		public TerminalNode DIGIT() { return getToken(LitmusParser.DIGIT, 0); }
+		public RegisterPowerContext registerPower() {
+			return getRuleContext(RegisterPowerContext.class,0);
+		}
+		public LocationContext location() {
+			return getRuleContext(LocationContext.class,0);
+		}
+		public List<TerminalNode> LETTER() { return getTokens(LitmusParser.LETTER); }
+		public TerminalNode LETTER(int i) {
+			return getToken(LitmusParser.LETTER, i);
+		}
+		public InitRegisterContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_initRegister; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterInitRegister(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitInitRegister(this);
+		}
+	}
+
+	public final InitRegisterContext initRegister() throws RecognitionException {
+		InitRegisterContext _localctx = new InitRegisterContext(_ctx, getState());
+		enterRule(_localctx, 6, RULE_initRegister);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(91);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__7 || _la==MONIO) {
+			while (_la==LETTER) {
 				{
 				{
-				setState(98);
+				setState(88);
+				match(LETTER);
+				}
+				}
+				setState(93);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while (_la==MONIO) {
-					{
-					{
-					setState(95);
-					match(MONIO);
-					}
-					}
-					setState(100);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-				}
-				setState(101);
-				match(T__7);
-				setState(105);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-				while (_la==T__8) {
-					{
-					{
-					setState(102);
-					match(T__8);
-					}
-					}
-					setState(107);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-				}
-				setState(120);
-				_errHandler.sync(this);
-				switch (_input.LA(1)) {
-				case LETTER:
-					{
-					setState(108);
-					((ProgramContext)_localctx).l = location();
-					setState(109);
-					match(T__3);
-					setState(110);
-					((ProgramContext)_localctx).value = match(DIGIT);
+			}
+			setState(94);
+			((InitRegisterContext)_localctx).thrd = match(DIGIT);
+			setState(95);
+			match(T__9);
+			setState(96);
+			((InitRegisterContext)_localctx).r = registerPower();
+			setState(97);
+			match(T__7);
+			setState(98);
+			((InitRegisterContext)_localctx).l = location();
+			setState(99);
+			match(T__8);
 
-							Location loc = ((ProgramContext)_localctx).l.loc;
-							p.getAss().addPair(loc, Integer.parseInt(((ProgramContext)_localctx).value.getText()));
-						
-					}
-					break;
-				case DIGIT:
+			        if(!mapRegLoc.keySet().contains(((InitRegisterContext)_localctx).thrd.getText())) {
+			            mapRegLoc.put(((InitRegisterContext)_localctx).thrd.getText(), new HashMap<String, Location>());
+			        }
+			        if(!mapLoc.keySet().contains(((InitRegisterContext)_localctx).l.loc.getName())) {
+			            mapLoc.put(((InitRegisterContext)_localctx).l.loc.getName(), ((InitRegisterContext)_localctx).l.loc);
+			        }
+			        mapRegLoc.get(((InitRegisterContext)_localctx).thrd.getText()).put(((InitRegisterContext)_localctx).r.reg.getName(), mapLoc.get(((InitRegisterContext)_localctx).l.loc.getName()));
+			    
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class InitRegisterLocationContext extends ParserRuleContext {
+		public Token thrd;
+		public RegisterPowerContext r;
+		public Token d;
+		public List<TerminalNode> DIGIT() { return getTokens(LitmusParser.DIGIT); }
+		public TerminalNode DIGIT(int i) {
+			return getToken(LitmusParser.DIGIT, i);
+		}
+		public RegisterPowerContext registerPower() {
+			return getRuleContext(RegisterPowerContext.class,0);
+		}
+		public List<TerminalNode> LETTER() { return getTokens(LitmusParser.LETTER); }
+		public TerminalNode LETTER(int i) {
+			return getToken(LitmusParser.LETTER, i);
+		}
+		public InitRegisterLocationContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_initRegisterLocation; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterInitRegisterLocation(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitInitRegisterLocation(this);
+		}
+	}
+
+	public final InitRegisterLocationContext initRegisterLocation() throws RecognitionException {
+		InitRegisterLocationContext _localctx = new InitRegisterLocationContext(_ctx, getState());
+		enterRule(_localctx, 8, RULE_initRegisterLocation);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(105);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==LETTER) {
+				{
+				{
+				setState(102);
+				match(LETTER);
+				}
+				}
+				setState(107);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			setState(108);
+			((InitRegisterLocationContext)_localctx).thrd = match(DIGIT);
+			setState(109);
+			match(T__9);
+			setState(110);
+			((InitRegisterLocationContext)_localctx).r = registerPower();
+			setState(111);
+			match(T__7);
+			setState(112);
+			((InitRegisterLocationContext)_localctx).d = match(DIGIT);
+			setState(113);
+			match(T__8);
+
+			        Register regPointer = ((InitRegisterLocationContext)_localctx).r.reg;
+			        if(!mapRegs.keySet().contains(((InitRegisterLocationContext)_localctx).thrd.getText())) {
+			            mapRegs.put(((InitRegisterLocationContext)_localctx).thrd.getText(), new HashMap<String, Register>());
+			        }
+			        mapRegs.get(((InitRegisterLocationContext)_localctx).thrd.getText()).put(regPointer.getName(), regPointer);
+			        if(!mapThreads.keySet().contains(((InitRegisterLocationContext)_localctx).thrd.getText())) {
+			            mapThreads.put(((InitRegisterLocationContext)_localctx).thrd.getText(), new ArrayList<Thread>());
+			        }
+			        mapThreads.get(((InitRegisterLocationContext)_localctx).thrd.getText()).add(new Local(regPointer, new AConst(Integer.parseInt(((InitRegisterLocationContext)_localctx).d.getText()))));
+			    
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class AssertionContext extends ParserRuleContext {
+		public Program p;
+		public LocationContext l;
+		public Token value;
+		public Token thrd;
+		public RegisterPowerContext r;
+		public RegisterX86Context rx;
+		public List<LocationContext> location() {
+			return getRuleContexts(LocationContext.class);
+		}
+		public LocationContext location(int i) {
+			return getRuleContext(LocationContext.class,i);
+		}
+		public List<TerminalNode> DIGIT() { return getTokens(LitmusParser.DIGIT); }
+		public TerminalNode DIGIT(int i) {
+			return getToken(LitmusParser.DIGIT, i);
+		}
+		public List<RegisterPowerContext> registerPower() {
+			return getRuleContexts(RegisterPowerContext.class);
+		}
+		public RegisterPowerContext registerPower(int i) {
+			return getRuleContext(RegisterPowerContext.class,i);
+		}
+		public List<RegisterX86Context> registerX86() {
+			return getRuleContexts(RegisterX86Context.class);
+		}
+		public RegisterX86Context registerX86(int i) {
+			return getRuleContext(RegisterX86Context.class,i);
+		}
+		public List<BopContext> bop() {
+			return getRuleContexts(BopContext.class);
+		}
+		public BopContext bop(int i) {
+			return getRuleContext(BopContext.class,i);
+		}
+		public AssertionContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public AssertionContext(ParserRuleContext parent, int invokingState, Program p) {
+			super(parent, invokingState);
+			this.p = p;
+		}
+		@Override public int getRuleIndex() { return RULE_assertion; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterAssertion(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitAssertion(this);
+		}
+	}
+
+	public final AssertionContext assertion(Program p) throws RecognitionException {
+		AssertionContext _localctx = new AssertionContext(_ctx, getState(), p);
+		enterRule(_localctx, 10, RULE_assertion);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(140); 
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			do {
+				{
+				{
+				setState(135);
+				_errHandler.sync(this);
+				switch ( getInterpreter().adaptivePredict(_input,4,_ctx) ) {
+				case 1:
 					{
-					setState(113);
-					((ProgramContext)_localctx).thrd = match(DIGIT);
-					setState(114);
-					match(T__5);
-					setState(115);
-					((ProgramContext)_localctx).r = registerPower();
 					setState(116);
-					match(T__3);
+					((AssertionContext)_localctx).l = location();
 					setState(117);
-					((ProgramContext)_localctx).value = match(DIGIT);
+					match(T__7);
+					setState(118);
+					((AssertionContext)_localctx).value = match(DIGIT);
 
-							Register regPointer = ((ProgramContext)_localctx).r.reg;
-							Register reg = mapRegs.get(((ProgramContext)_localctx).thrd.getText()).get(regPointer.getName());
-							p.getAss().addPair(reg, Integer.parseInt(((ProgramContext)_localctx).value.getText()));
-						
+					        Location loc = ((AssertionContext)_localctx).l.loc;
+					        p.getAss().addPair(loc, Integer.parseInt(((AssertionContext)_localctx).value.getText()));
+					    
 					}
 					break;
-				default:
-					throw new NoViableAltException(this);
+				case 2:
+					{
+					setState(121);
+					((AssertionContext)_localctx).thrd = match(DIGIT);
+					setState(122);
+					match(T__9);
+					setState(123);
+					((AssertionContext)_localctx).r = registerPower();
+					setState(124);
+					match(T__7);
+					setState(125);
+					((AssertionContext)_localctx).value = match(DIGIT);
+
+					        Register regPointer = ((AssertionContext)_localctx).r.reg;
+					        Register reg = mapRegs.get(((AssertionContext)_localctx).thrd.getText()).get(regPointer.getName());
+					        p.getAss().addPair(reg, Integer.parseInt(((AssertionContext)_localctx).value.getText()));
+					    
+					}
+					break;
+				case 3:
+					{
+					setState(128);
+					((AssertionContext)_localctx).thrd = match(DIGIT);
+					setState(129);
+					match(T__9);
+					setState(130);
+					((AssertionContext)_localctx).rx = registerX86();
+					setState(131);
+					match(T__7);
+					setState(132);
+					((AssertionContext)_localctx).value = match(DIGIT);
+
+					            Register regPointer = ((AssertionContext)_localctx).rx.reg;
+					            Register reg = mapRegs.get(((AssertionContext)_localctx).thrd.getText()).get(regPointer.getName());
+					            p.getAss().addPair(reg, Integer.parseInt(((AssertionContext)_localctx).value.getText()));
+					        
+					}
+					break;
 				}
 				setState(138);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while (_la==T__10 || _la==T__11) {
+				if (_la==T__10) {
 					{
-					setState(136);
-					_errHandler.sync(this);
-					switch ( getInterpreter().adaptivePredict(_input,9,_ctx) ) {
-					case 1:
-						{
-						setState(122);
-						bop();
-						setState(123);
-						((ProgramContext)_localctx).l = location();
-						setState(124);
-						match(T__3);
-						setState(125);
-						((ProgramContext)_localctx).value = match(DIGIT);
-
-								Location loc2 = ((ProgramContext)_localctx).l.loc;
-								p.getAss().addPair(loc2, Integer.parseInt(((ProgramContext)_localctx).value.getText()));	
-							
-						}
-						break;
-					case 2:
-						{
-						setState(128);
-						bop();
-						setState(129);
-						((ProgramContext)_localctx).thrd = match(DIGIT);
-						setState(130);
-						match(T__5);
-						setState(131);
-						((ProgramContext)_localctx).r = registerPower();
-						setState(132);
-						match(T__3);
-						setState(133);
-						((ProgramContext)_localctx).value = match(DIGIT);
-
-								Register regPointer2 = ((ProgramContext)_localctx).r.reg;
-								Register reg2 = mapRegs.get(((ProgramContext)_localctx).thrd.getText()).get(regPointer2.getName());
-								p.getAss().addPair(reg2, Integer.parseInt(((ProgramContext)_localctx).value.getText()));	
-							
-						}
-						break;
+					setState(137);
+					bop();
 					}
-					}
-					setState(140);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
 				}
-				setState(144);
-				_errHandler.sync(this);
-				_alt = getInterpreter().adaptivePredict(_input,11,_ctx);
-				while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
-					if ( _alt==1 ) {
-						{
-						{
-						setState(141);
-						match(T__9);
-						}
-						} 
-					}
-					setState(146);
-					_errHandler.sync(this);
-					_alt = getInterpreter().adaptivePredict(_input,11,_ctx);
+
 				}
-				setState(150);
+				}
+				setState(142); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__3) | (1L << T__4) | (1L << T__5) | (1L << T__8) | (1L << T__9) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << T__26) | (1L << T__27) | (1L << T__28) | (1L << T__29) | (1L << T__30) | (1L << T__31) | (1L << T__32) | (1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36) | (1L << T__37) | (1L << T__38) | (1L << T__39) | (1L << T__40) | (1L << T__41) | (1L << T__42) | (1L << T__43) | (1L << T__44) | (1L << T__45) | (1L << T__46) | (1L << T__47) | (1L << T__48) | (1L << T__49) | (1L << T__50) | (1L << T__51) | (1L << T__52) | (1L << T__53) | (1L << T__54) | (1L << T__55) | (1L << T__56) | (1L << T__57) | (1L << T__58))) != 0) || ((((_la - 74)) & ~0x3f) == 0 && ((1L << (_la - 74)) & ((1L << (LETTER - 74)) | (1L << (DIGIT - 74)) | (1L << (SYMBOL - 74)) | (1L << (LWSYNC - 74)) | (1L << (SYNC - 74)) | (1L << (ISYNC - 74)))) != 0)) {
-					{
-					{
-					setState(147);
-					text();
-					}
-					}
-					setState(152);
-					_errHandler.sync(this);
-					_la = _input.LA(1);
-				}
-				}
-				}
-				setState(157);
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-			}
+			} while ( _la==LETTER || _la==DIGIT );
 			}
 		}
 		catch (RecognitionException re) {
@@ -539,20 +685,68 @@ public class LitmusParser extends Parser {
 
 	public final BopContext bop() throws RecognitionException {
 		BopContext _localctx = new BopContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_bop);
+		enterRule(_localctx, 12, RULE_bop);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(144);
+			match(T__10);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class HeaderCommentsContext extends ParserRuleContext {
+		public HeaderCommentsContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_headerComments; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterHeaderComments(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitHeaderComments(this);
+		}
+	}
+
+	public final HeaderCommentsContext headerComments() throws RecognitionException {
+		HeaderCommentsContext _localctx = new HeaderCommentsContext(_ctx, getState());
+		enterRule(_localctx, 14, RULE_headerComments);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(158);
+			setState(149);
+			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ( !(_la==T__10 || _la==T__11) ) {
-			_errHandler.recoverInline(this);
-			}
-			else {
-				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
-				_errHandler.reportMatch(this);
-				consume();
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__1) | (1L << T__3) | (1L << T__4) | (1L << T__5) | (1L << T__6) | (1L << T__7) | (1L << T__8) | (1L << T__9) | (1L << T__10) | (1L << T__11) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << T__26) | (1L << T__27) | (1L << T__28) | (1L << T__29) | (1L << T__30) | (1L << T__31) | (1L << T__32) | (1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36) | (1L << T__37) | (1L << T__38) | (1L << T__39) | (1L << T__40) | (1L << T__41) | (1L << T__42) | (1L << ARCH) | (1L << X86) | (1L << POWER) | (1L << LETTER) | (1L << DIGIT) | (1L << MONIO) | (1L << SYMBOL) | (1L << WS) | (1L << LWSYNC) | (1L << SYNC) | (1L << ISYNC))) != 0)) {
+				{
+				{
+				setState(146);
+				_la = _input.LA(1);
+				if ( _la <= 0 || (_la==T__2) ) {
+				_errHandler.recoverInline(this);
+				}
+				else {
+					if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+					_errHandler.reportMatch(this);
+					consume();
+				}
+				}
+				}
+				setState(151);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
 			}
 			}
 		}
@@ -567,69 +761,50 @@ public class LitmusParser extends Parser {
 		return _localctx;
 	}
 
-	public static class TextContext extends ParserRuleContext {
-		public List<TerminalNode> SYMBOL() { return getTokens(LitmusParser.SYMBOL); }
-		public TerminalNode SYMBOL(int i) {
-			return getToken(LitmusParser.SYMBOL, i);
-		}
-		public List<TerminalNode> LETTER() { return getTokens(LitmusParser.LETTER); }
-		public TerminalNode LETTER(int i) {
-			return getToken(LitmusParser.LETTER, i);
-		}
-		public List<TerminalNode> DIGIT() { return getTokens(LitmusParser.DIGIT); }
-		public TerminalNode DIGIT(int i) {
-			return getToken(LitmusParser.DIGIT, i);
-		}
-		public TextContext(ParserRuleContext parent, int invokingState) {
+	public static class BottomCommentsContext extends ParserRuleContext {
+		public BottomCommentsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_text; }
+		@Override public int getRuleIndex() { return RULE_bottomComments; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterText(this);
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterBottomComments(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitText(this);
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitBottomComments(this);
 		}
 	}
 
-	public final TextContext text() throws RecognitionException {
-		TextContext _localctx = new TextContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_text);
+	public final BottomCommentsContext bottomComments() throws RecognitionException {
+		BottomCommentsContext _localctx = new BottomCommentsContext(_ctx, getState());
+		enterRule(_localctx, 16, RULE_bottomComments);
 		int _la;
 		try {
-			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(161); 
+			setState(155);
 			_errHandler.sync(this);
-			_alt = 1;
-			do {
-				switch (_alt) {
-				case 1:
-					{
-					{
-					setState(160);
-					_la = _input.LA(1);
-					if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__3) | (1L << T__4) | (1L << T__5) | (1L << T__8) | (1L << T__9) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << T__26) | (1L << T__27) | (1L << T__28) | (1L << T__29) | (1L << T__30) | (1L << T__31) | (1L << T__32) | (1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36) | (1L << T__37) | (1L << T__38) | (1L << T__39) | (1L << T__40) | (1L << T__41) | (1L << T__42) | (1L << T__43) | (1L << T__44) | (1L << T__45) | (1L << T__46) | (1L << T__47) | (1L << T__48) | (1L << T__49) | (1L << T__50) | (1L << T__51) | (1L << T__52) | (1L << T__53) | (1L << T__54) | (1L << T__55) | (1L << T__56) | (1L << T__57) | (1L << T__58))) != 0) || ((((_la - 74)) & ~0x3f) == 0 && ((1L << (_la - 74)) & ((1L << (LETTER - 74)) | (1L << (DIGIT - 74)) | (1L << (SYMBOL - 74)) | (1L << (LWSYNC - 74)) | (1L << (SYNC - 74)) | (1L << (ISYNC - 74)))) != 0)) ) {
-					_errHandler.recoverInline(this);
-					}
-					else {
-						if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
-						_errHandler.reportMatch(this);
-						consume();
-					}
-					}
-					}
-					break;
-				default:
-					throw new NoViableAltException(this);
+			_la = _input.LA(1);
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__1) | (1L << T__2) | (1L << T__3) | (1L << T__5) | (1L << T__6) | (1L << T__7) | (1L << T__8) | (1L << T__9) | (1L << T__10) | (1L << T__11) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << T__26) | (1L << T__27) | (1L << T__28) | (1L << T__29) | (1L << T__30) | (1L << T__31) | (1L << T__32) | (1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36) | (1L << T__37) | (1L << T__38) | (1L << T__39) | (1L << T__40) | (1L << T__41) | (1L << T__42) | (1L << ARCH) | (1L << X86) | (1L << POWER) | (1L << LETTER) | (1L << DIGIT) | (1L << MONIO) | (1L << SYMBOL) | (1L << WS) | (1L << LWSYNC) | (1L << SYNC) | (1L << ISYNC))) != 0)) {
+				{
+				{
+				setState(152);
+				_la = _input.LA(1);
+				if ( _la <= 0 || (_la==T__4) ) {
+				_errHandler.recoverInline(this);
 				}
-				setState(163); 
+				else {
+					if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+					_errHandler.reportMatch(this);
+					consume();
+				}
+				}
+				}
+				setState(157);
 				_errHandler.sync(this);
-				_alt = getInterpreter().adaptivePredict(_input,14,_ctx);
-			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
+				_la = _input.LA(1);
+			}
 			}
 		}
 		catch (RecognitionException re) {
@@ -670,13 +845,13 @@ public class LitmusParser extends Parser {
 
 	public final WordContext word() throws RecognitionException {
 		WordContext _localctx = new WordContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_word);
+		enterRule(_localctx, 18, RULE_word);
 		int _la;
 		try {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(166); 
+			setState(159); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
@@ -684,7 +859,7 @@ public class LitmusParser extends Parser {
 				case 1:
 					{
 					{
-					setState(165);
+					setState(158);
 					((WordContext)_localctx).w = _input.LT(1);
 					_la = _input.LA(1);
 					if ( !(_la==LETTER || _la==DIGIT) ) {
@@ -701,9 +876,9 @@ public class LitmusParser extends Parser {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(168); 
+				setState(161); 
 				_errHandler.sync(this);
-				_alt = getInterpreter().adaptivePredict(_input,15,_ctx);
+				_alt = getInterpreter().adaptivePredict(_input,9,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
 			((WordContext)_localctx).str =  ((WordContext)_localctx).w.getText();
 			}
@@ -746,20 +921,20 @@ public class LitmusParser extends Parser {
 
 	public final LocationContext location() throws RecognitionException {
 		LocationContext _localctx = new LocationContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_location);
+		enterRule(_localctx, 20, RULE_location);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(172);
+			setState(165);
 			((LocationContext)_localctx).l = match(LETTER);
-			setState(176);
+			setState(169);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==LETTER || _la==DIGIT) {
 				{
 				{
-				setState(173);
+				setState(166);
 				_la = _input.LA(1);
 				if ( !(_la==LETTER || _la==DIGIT) ) {
 				_errHandler.recoverInline(this);
@@ -771,7 +946,7 @@ public class LitmusParser extends Parser {
 				}
 				}
 				}
-				setState(178);
+				setState(171);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -811,16 +986,16 @@ public class LitmusParser extends Parser {
 
 	public final LocationX86Context locationX86() throws RecognitionException {
 		LocationX86Context _localctx = new LocationX86Context(_ctx, getState());
-		enterRule(_localctx, 10, RULE_locationX86);
+		enterRule(_localctx, 22, RULE_locationX86);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(181);
-			match(T__22);
-			setState(182);
+			setState(174);
+			match(T__11);
+			setState(175);
 			((LocationX86Context)_localctx).l = location();
-			setState(183);
-			match(T__23);
+			setState(176);
+			match(T__12);
 			((LocationX86Context)_localctx).loc =  ((LocationX86Context)_localctx).l.loc;
 			}
 		}
@@ -854,15 +1029,15 @@ public class LitmusParser extends Parser {
 
 	public final RegisterPowerContext registerPower() throws RecognitionException {
 		RegisterPowerContext _localctx = new RegisterPowerContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_registerPower);
+		enterRule(_localctx, 24, RULE_registerPower);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(186);
+			setState(179);
 			((RegisterPowerContext)_localctx).r = _input.LT(1);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__40) | (1L << T__41) | (1L << T__42) | (1L << T__43) | (1L << T__44) | (1L << T__45) | (1L << T__46) | (1L << T__47) | (1L << T__48) | (1L << T__49) | (1L << T__50) | (1L << T__51) | (1L << T__52) | (1L << T__53) | (1L << T__54))) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << T__26) | (1L << T__27))) != 0)) ) {
 				((RegisterPowerContext)_localctx).r = (Token)_errHandler.recoverInline(this);
 			}
 			else {
@@ -903,15 +1078,15 @@ public class LitmusParser extends Parser {
 
 	public final RegisterX86Context registerX86() throws RecognitionException {
 		RegisterX86Context _localctx = new RegisterX86Context(_ctx, getState());
-		enterRule(_localctx, 14, RULE_registerX86);
+		enterRule(_localctx, 26, RULE_registerX86);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(189);
+			setState(182);
 			((RegisterX86Context)_localctx).r = _input.LT(1);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__55) | (1L << T__56) | (1L << T__57) | (1L << T__58))) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__28) | (1L << T__29) | (1L << T__30) | (1L << T__31))) != 0)) ) {
 				((RegisterX86Context)_localctx).r = (Token)_errHandler.recoverInline(this);
 			}
 			else {
@@ -970,49 +1145,49 @@ public class LitmusParser extends Parser {
 
 	public final ThreadsContext threads() throws RecognitionException {
 		ThreadsContext _localctx = new ThreadsContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_threads);
+		enterRule(_localctx, 28, RULE_threads);
 		int _la;
 		try {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(200); 
+			setState(193); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(192);
+				setState(185);
 				((ThreadsContext)_localctx).mainThread = word();
 
 						if(!mapRegs.keySet().contains(((ThreadsContext)_localctx).mainThread.str)) {
 							mapRegs.put(((ThreadsContext)_localctx).mainThread.str, new HashMap<String, Register>());
 						}
 					
-				setState(197);
+				setState(190);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while (_la==T__25) {
+				while (_la==T__32) {
 					{
 					{
-					setState(194);
-					match(T__25);
+					setState(187);
+					match(T__32);
 					}
 					}
-					setState(199);
+					setState(192);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
 				}
 				}
-				setState(202); 
+				setState(195); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==LETTER || _la==DIGIT );
-			setState(204);
-			match(T__4);
+			setState(197);
+			match(T__8);
 			Integer thread = 0;
-			setState(223); 
+			setState(216); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
@@ -1020,7 +1195,7 @@ public class LitmusParser extends Parser {
 				case 1:
 					{
 					{
-					setState(206);
+					setState(199);
 					((ThreadsContext)_localctx).t1 = inst(thread.toString());
 
 							if(!mapThreads.keySet().contains(thread.toString())) {
@@ -1028,42 +1203,39 @@ public class LitmusParser extends Parser {
 							}
 							mapThreads.get(thread.toString()).add(((ThreadsContext)_localctx).t1.t);
 						
-					setState(217);
+					setState(210);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
-					while (_la==T__25) {
+					while (_la==T__32) {
 						{
 						{
 						thread ++;
-						setState(209);
-						match(T__25);
-						setState(212);
+						setState(202);
+						match(T__32);
+						setState(205);
 						_errHandler.sync(this);
 						switch (_input.LA(1)) {
-						case T__4:
-						case T__12:
-						case T__25:
-						case T__59:
-						case T__60:
-						case T__61:
-						case T__63:
-						case T__64:
-						case T__65:
-						case T__66:
-						case T__67:
-						case T__68:
-						case T__69:
+						case T__8:
+						case T__32:
+						case T__33:
+						case T__35:
+						case T__37:
+						case T__38:
+						case T__39:
+						case T__40:
+						case T__41:
+						case T__42:
 						case LWSYNC:
 						case SYNC:
 						case ISYNC:
 							{
-							setState(210);
+							setState(203);
 							((ThreadsContext)_localctx).t2 = inst(thread.toString());
 							}
 							break;
 						case WS:
 							{
-							setState(211);
+							setState(204);
 							match(WS);
 							}
 							break;
@@ -1078,12 +1250,12 @@ public class LitmusParser extends Parser {
 							
 						}
 						}
-						setState(219);
+						setState(212);
 						_errHandler.sync(this);
 						_la = _input.LA(1);
 					}
-					setState(220);
-					match(T__4);
+					setState(213);
+					match(T__8);
 					thread = 0;
 					}
 					}
@@ -1091,9 +1263,9 @@ public class LitmusParser extends Parser {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(225); 
+				setState(218); 
 				_errHandler.sync(this);
-				_alt = getInterpreter().adaptivePredict(_input,21,_ctx);
+				_alt = getInterpreter().adaptivePredict(_input,15,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
 
 					List threads = new ArrayList<Thread>();
@@ -1122,7 +1294,7 @@ public class LitmusParser extends Parser {
 									}
 									partialIfBody = null;
 									lastIf = (If) t;
-								}	
+								}
 							}
 						}
 						if(lastIf != null && partialIfBody != null) {
@@ -1151,26 +1323,29 @@ public class LitmusParser extends Parser {
 		public Thread t;
 		public LocalX86Context t1;
 		public LoadX86Context t2;
-		public StoreX86Context t3;
-		public MfenceContext t4;
-		public LocalPowerContext t5;
-		public LoadPowerContext t6;
-		public StorePowerContext t7;
-		public IsyncContext t8;
-		public SyncContext t9;
-		public LwsyncContext t10;
-		public XorContext t11;
-		public AddiContext t12;
-		public MrContext t13;
-		public CmpwContext t14;
+		public StoreX86regContext t3;
+		public StoreX86valContext t4;
+		public MfenceContext t5;
+		public LocalPowerContext t6;
+		public LoadPowerContext t7;
+		public StorePowerContext t8;
+		public IsyncContext t9;
+		public SyncContext t10;
+		public LwsyncContext t11;
+		public XorContext t12;
+		public AddiContext t13;
+		public MrContext t14;
 		public LocalX86Context localX86() {
 			return getRuleContext(LocalX86Context.class,0);
 		}
 		public LoadX86Context loadX86() {
 			return getRuleContext(LoadX86Context.class,0);
 		}
-		public StoreX86Context storeX86() {
-			return getRuleContext(StoreX86Context.class,0);
+		public StoreX86regContext storeX86reg() {
+			return getRuleContext(StoreX86regContext.class,0);
+		}
+		public StoreX86valContext storeX86val() {
+			return getRuleContext(StoreX86valContext.class,0);
 		}
 		public MfenceContext mfence() {
 			return getRuleContext(MfenceContext.class,0);
@@ -1202,12 +1377,6 @@ public class LitmusParser extends Parser {
 		public MrContext mr() {
 			return getRuleContext(MrContext.class,0);
 		}
-		public CmpwContext cmpw() {
-			return getRuleContext(CmpwContext.class,0);
-		}
-		public WordContext word() {
-			return getRuleContext(WordContext.class,0);
-		}
 		public InstContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public InstContext(ParserRuleContext parent, int invokingState, String mainThread) {
 			super(parent, invokingState);
@@ -1226,11 +1395,11 @@ public class LitmusParser extends Parser {
 
 	public final InstContext inst(String mainThread) throws RecognitionException {
 		InstContext _localctx = new InstContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 18, RULE_inst);
+		enterRule(_localctx, 30, RULE_inst);
 		try {
-			setState(279);
+			setState(265);
 			_errHandler.sync(this);
-			switch ( getInterpreter().adaptivePredict(_input,22,_ctx) ) {
+			switch ( getInterpreter().adaptivePredict(_input,16,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
@@ -1239,7 +1408,7 @@ public class LitmusParser extends Parser {
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(230);
+				setState(223);
 				((InstContext)_localctx).t1 = localX86(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t1.t;
 				}
@@ -1247,7 +1416,7 @@ public class LitmusParser extends Parser {
 			case 3:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(233);
+				setState(226);
 				((InstContext)_localctx).t2 = loadX86(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t2.t;
 				}
@@ -1255,119 +1424,97 @@ public class LitmusParser extends Parser {
 			case 4:
 				enterOuterAlt(_localctx, 4);
 				{
-				setState(236);
-				((InstContext)_localctx).t3 = storeX86(mainThread);
+				setState(229);
+				((InstContext)_localctx).t3 = storeX86reg(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t3.t;
 				}
 				break;
 			case 5:
 				enterOuterAlt(_localctx, 5);
 				{
-				setState(239);
-				((InstContext)_localctx).t4 = mfence();
+				setState(232);
+				((InstContext)_localctx).t4 = storeX86val(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t4.t;
 				}
 				break;
 			case 6:
 				enterOuterAlt(_localctx, 6);
 				{
-				setState(242);
-				((InstContext)_localctx).t5 = localPower(mainThread);
+				setState(235);
+				((InstContext)_localctx).t5 = mfence();
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t5.t;
 				}
 				break;
 			case 7:
 				enterOuterAlt(_localctx, 7);
 				{
-				setState(245);
-				((InstContext)_localctx).t6 = loadPower(mainThread);
+				setState(238);
+				((InstContext)_localctx).t6 = localPower(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t6.t;
 				}
 				break;
 			case 8:
 				enterOuterAlt(_localctx, 8);
 				{
-				setState(248);
-				((InstContext)_localctx).t7 = storePower(mainThread);
+				setState(241);
+				((InstContext)_localctx).t7 = loadPower(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t7.t;
 				}
 				break;
 			case 9:
 				enterOuterAlt(_localctx, 9);
 				{
-				setState(251);
-				((InstContext)_localctx).t8 = isync();
+				setState(244);
+				((InstContext)_localctx).t8 = storePower(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t8.t;
 				}
 				break;
 			case 10:
 				enterOuterAlt(_localctx, 10);
 				{
-				setState(254);
-				((InstContext)_localctx).t9 = sync();
+				setState(247);
+				((InstContext)_localctx).t9 = isync();
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t9.t;
 				}
 				break;
 			case 11:
 				enterOuterAlt(_localctx, 11);
 				{
-				setState(257);
-				((InstContext)_localctx).t10 = lwsync();
+				setState(250);
+				((InstContext)_localctx).t10 = sync();
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t10.t;
 				}
 				break;
 			case 12:
 				enterOuterAlt(_localctx, 12);
 				{
-				setState(260);
-				((InstContext)_localctx).t11 = xor(mainThread);
+				setState(253);
+				((InstContext)_localctx).t11 = lwsync();
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t11.t;
 				}
 				break;
 			case 13:
 				enterOuterAlt(_localctx, 13);
 				{
-				setState(263);
-				((InstContext)_localctx).t12 = addi(mainThread);
+				setState(256);
+				((InstContext)_localctx).t12 = xor(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t12.t;
 				}
 				break;
 			case 14:
 				enterOuterAlt(_localctx, 14);
 				{
-				setState(266);
-				((InstContext)_localctx).t13 = mr(mainThread);
+				setState(259);
+				((InstContext)_localctx).t13 = addi(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t13.t;
 				}
 				break;
 			case 15:
 				enterOuterAlt(_localctx, 15);
 				{
-				setState(269);
-				((InstContext)_localctx).t14 = cmpw(mainThread);
+				setState(262);
+				((InstContext)_localctx).t14 = mr(mainThread);
 				((InstContext)_localctx).t =  ((InstContext)_localctx).t14.t;
-				}
-				break;
-			case 16:
-				enterOuterAlt(_localctx, 16);
-				{
-				setState(272);
-				match(T__59);
-				setState(273);
-				match(T__60);
-				setState(274);
-				word();
-				}
-				break;
-			case 17:
-				enterOuterAlt(_localctx, 17);
-				{
-				setState(275);
-				match(T__60);
-				setState(276);
-				word();
-				setState(277);
-				match(T__5);
 				}
 				break;
 			}
@@ -1410,17 +1557,17 @@ public class LitmusParser extends Parser {
 
 	public final LocalX86Context localX86(String mainThread) throws RecognitionException {
 		LocalX86Context _localctx = new LocalX86Context(_ctx, getState(), mainThread);
-		enterRule(_localctx, 20, RULE_localX86);
+		enterRule(_localctx, 32, RULE_localX86);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(281);
-			match(T__61);
-			setState(282);
+			setState(267);
+			match(T__33);
+			setState(268);
 			((LocalX86Context)_localctx).r = registerX86();
-			setState(283);
-			match(T__62);
-			setState(284);
+			setState(269);
+			match(T__34);
+			setState(270);
 			((LocalX86Context)_localctx).d = match(DIGIT);
 
 					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
@@ -1470,17 +1617,17 @@ public class LitmusParser extends Parser {
 
 	public final LocalPowerContext localPower(String mainThread) throws RecognitionException {
 		LocalPowerContext _localctx = new LocalPowerContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 22, RULE_localPower);
+		enterRule(_localctx, 34, RULE_localPower);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(287);
-			match(T__12);
-			setState(288);
+			setState(273);
+			match(T__35);
+			setState(274);
 			((LocalPowerContext)_localctx).r = registerPower();
-			setState(289);
-			match(T__33);
-			setState(290);
+			setState(275);
+			match(T__36);
+			setState(276);
 			((LocalPowerContext)_localctx).d = match(DIGIT);
 
 					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
@@ -1533,21 +1680,21 @@ public class LitmusParser extends Parser {
 
 	public final XorContext xor(String mainThread) throws RecognitionException {
 		XorContext _localctx = new XorContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 24, RULE_xor);
+		enterRule(_localctx, 36, RULE_xor);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(293);
-			match(T__63);
-			setState(294);
+			setState(279);
+			match(T__37);
+			setState(280);
 			((XorContext)_localctx).r1 = registerPower();
-			setState(295);
-			match(T__33);
-			setState(296);
+			setState(281);
+			match(T__36);
+			setState(282);
 			((XorContext)_localctx).r2 = registerPower();
-			setState(297);
-			match(T__33);
-			setState(298);
+			setState(283);
+			match(T__36);
+			setState(284);
 			((XorContext)_localctx).r3 = registerPower();
 
 					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
@@ -1609,21 +1756,21 @@ public class LitmusParser extends Parser {
 
 	public final AddiContext addi(String mainThread) throws RecognitionException {
 		AddiContext _localctx = new AddiContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 26, RULE_addi);
+		enterRule(_localctx, 38, RULE_addi);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(301);
-			match(T__64);
-			setState(302);
+			setState(287);
+			match(T__38);
+			setState(288);
 			((AddiContext)_localctx).r1 = registerPower();
-			setState(303);
-			match(T__33);
-			setState(304);
+			setState(289);
+			match(T__36);
+			setState(290);
 			((AddiContext)_localctx).r2 = registerPower();
-			setState(305);
-			match(T__33);
-			setState(306);
+			setState(291);
+			match(T__36);
+			setState(292);
 			((AddiContext)_localctx).d = match(DIGIT);
 
 					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
@@ -1679,17 +1826,17 @@ public class LitmusParser extends Parser {
 
 	public final MrContext mr(String mainThread) throws RecognitionException {
 		MrContext _localctx = new MrContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 28, RULE_mr);
+		enterRule(_localctx, 40, RULE_mr);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(309);
-			match(T__65);
-			setState(310);
+			setState(295);
+			match(T__39);
+			setState(296);
 			((MrContext)_localctx).r1 = registerPower();
-			setState(311);
-			match(T__33);
-			setState(312);
+			setState(297);
+			match(T__36);
+			setState(298);
 			((MrContext)_localctx).r2 = registerPower();
 
 					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
@@ -1745,17 +1892,17 @@ public class LitmusParser extends Parser {
 
 	public final LoadX86Context loadX86(String mainThread) throws RecognitionException {
 		LoadX86Context _localctx = new LoadX86Context(_ctx, getState(), mainThread);
-		enterRule(_localctx, 30, RULE_loadX86);
+		enterRule(_localctx, 42, RULE_loadX86);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(315);
-			match(T__61);
-			setState(316);
-			((LoadX86Context)_localctx).r = registerX86();
-			setState(317);
+			setState(301);
 			match(T__33);
-			setState(318);
+			setState(302);
+			((LoadX86Context)_localctx).r = registerX86();
+			setState(303);
+			match(T__36);
+			setState(304);
 			((LoadX86Context)_localctx).l = locationX86();
 
 					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
@@ -1763,7 +1910,8 @@ public class LitmusParser extends Parser {
 						mapThreadRegs.put(((LoadX86Context)_localctx).r.reg.getName(), ((LoadX86Context)_localctx).r.reg);
 					}
 					if(!(mapLocs.keySet().contains(((LoadX86Context)_localctx).l.loc.getName()))) {
-						System.out.println(String.format("Location %s must be initialized", ((LoadX86Context)_localctx).l.loc.getName()));
+						//System.out.println(String.format("Location %s must be initialized", ((LoadX86Context)_localctx).l.loc.getName()));
+						mapLocs.put(((LoadX86Context)_localctx).l.loc.getName(), ((LoadX86Context)_localctx).l.loc);
 					}
 					Register pointerReg = mapThreadRegs.get(((LoadX86Context)_localctx).r.reg.getName());
 					Location pointerLoc = mapLocs.get(((LoadX86Context)_localctx).l.loc.getName());
@@ -1787,6 +1935,7 @@ public class LitmusParser extends Parser {
 		public String mainThread;
 		public Thread t;
 		public RegisterPowerContext r;
+		public Token s;
 		public RegisterPowerContext rl;
 		public List<RegisterPowerContext> registerPower() {
 			return getRuleContexts(RegisterPowerContext.class);
@@ -1794,6 +1943,7 @@ public class LitmusParser extends Parser {
 		public RegisterPowerContext registerPower(int i) {
 			return getRuleContext(RegisterPowerContext.class,i);
 		}
+		public TerminalNode DIGIT() { return getToken(LitmusParser.DIGIT, 0); }
 		public LoadPowerContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public LoadPowerContext(ParserRuleContext parent, int invokingState, String mainThread) {
 			super(parent, invokingState);
@@ -1812,20 +1962,22 @@ public class LitmusParser extends Parser {
 
 	public final LoadPowerContext loadPower(String mainThread) throws RecognitionException {
 		LoadPowerContext _localctx = new LoadPowerContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 32, RULE_loadPower);
+		enterRule(_localctx, 44, RULE_loadPower);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(321);
-			match(T__66);
-			setState(322);
+			setState(307);
+			match(T__40);
+			setState(308);
 			((LoadPowerContext)_localctx).r = registerPower();
-			setState(323);
-			match(T__13);
-			setState(324);
+			setState(309);
+			match(T__36);
+			setState(310);
+			((LoadPowerContext)_localctx).s = match(DIGIT);
+			setState(311);
 			_la = _input.LA(1);
-			if ( !(_la==T__8 || _la==T__33) ) {
+			if ( !(_la==T__5 || _la==T__36) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -1833,19 +1985,19 @@ public class LitmusParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(325);
+			setState(312);
 			((LoadPowerContext)_localctx).rl = registerPower();
-			setState(329);
+			setState(316);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__9) {
+			while (_la==T__6) {
 				{
 				{
-				setState(326);
-				match(T__9);
+				setState(313);
+				match(T__6);
 				}
 				}
-				setState(331);
+				setState(318);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -1875,7 +2027,7 @@ public class LitmusParser extends Parser {
 		return _localctx;
 	}
 
-	public static class StoreX86Context extends ParserRuleContext {
+	public static class StoreX86regContext extends ParserRuleContext {
 		public String mainThread;
 		public Thread t;
 		public LocationX86Context l;
@@ -1886,49 +2038,110 @@ public class LitmusParser extends Parser {
 		public RegisterX86Context registerX86() {
 			return getRuleContext(RegisterX86Context.class,0);
 		}
-		public StoreX86Context(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public StoreX86Context(ParserRuleContext parent, int invokingState, String mainThread) {
+		public StoreX86regContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public StoreX86regContext(ParserRuleContext parent, int invokingState, String mainThread) {
 			super(parent, invokingState);
 			this.mainThread = mainThread;
 		}
-		@Override public int getRuleIndex() { return RULE_storeX86; }
+		@Override public int getRuleIndex() { return RULE_storeX86reg; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterStoreX86(this);
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterStoreX86reg(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitStoreX86(this);
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitStoreX86reg(this);
 		}
 	}
 
-	public final StoreX86Context storeX86(String mainThread) throws RecognitionException {
-		StoreX86Context _localctx = new StoreX86Context(_ctx, getState(), mainThread);
-		enterRule(_localctx, 34, RULE_storeX86);
+	public final StoreX86regContext storeX86reg(String mainThread) throws RecognitionException {
+		StoreX86regContext _localctx = new StoreX86regContext(_ctx, getState(), mainThread);
+		enterRule(_localctx, 46, RULE_storeX86reg);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(334);
-			match(T__61);
-			setState(335);
-			((StoreX86Context)_localctx).l = locationX86();
-			setState(336);
+			setState(321);
 			match(T__33);
-			setState(337);
-			((StoreX86Context)_localctx).r = registerX86();
+			setState(322);
+			((StoreX86regContext)_localctx).l = locationX86();
+			setState(323);
+			match(T__36);
+			setState(324);
+			((StoreX86regContext)_localctx).r = registerX86();
 
-					if(!(mapLocs.keySet().contains(((StoreX86Context)_localctx).l.loc.getName()))) {
-						System.out.println(String.format("Location %s must be initialized", ((StoreX86Context)_localctx).l.loc.getName()));
-					}
-					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
-					if(!(mapThreadRegs.keySet().contains(((StoreX86Context)_localctx).r.reg.getName()))) {
-						System.out.println(String.format("Register %s must be initialized", ((StoreX86Context)_localctx).r.reg.getName()));
-					}
-					Register pointerReg = mapThreadRegs.get(((StoreX86Context)_localctx).r.reg.getName());
-					Location pointerLoc = mapLocs.get(((StoreX86Context)_localctx).l.loc.getName());
-					//((StoreX86Context)_localctx).t =  new Store(pointerLoc, pointerReg);
-					((StoreX86Context)_localctx).t =  new Write(pointerLoc, pointerReg, "_rx");
-				
+			        if(!(mapLocs.keySet().contains(((StoreX86regContext)_localctx).l.loc.getName()))) {
+			            System.out.println(String.format("Location %s must be initialized", ((StoreX86regContext)_localctx).l.loc.getName()));
+			        }
+			        Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
+			        if(!(mapThreadRegs.keySet().contains(((StoreX86regContext)_localctx).r.reg.getName()))) {
+			            System.out.println(String.format("Register %s must be initialized", ((StoreX86regContext)_localctx).r.reg.getName()));
+			        }
+			        Register pointerReg = mapThreadRegs.get(((StoreX86regContext)_localctx).r.reg.getName());
+			        Location pointerLoc = mapLocs.get(((StoreX86regContext)_localctx).l.loc.getName());
+			            //((StoreX86regContext)_localctx).t =  new Store(pointerLoc, pointerReg);
+			            ((StoreX86regContext)_localctx).t =  new Write(pointerLoc, pointerReg, "_rx");
+			        
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class StoreX86valContext extends ParserRuleContext {
+		public String mainThread;
+		public Thread t;
+		public LocationX86Context l;
+		public Token value;
+		public LocationX86Context locationX86() {
+			return getRuleContext(LocationX86Context.class,0);
+		}
+		public TerminalNode DIGIT() { return getToken(LitmusParser.DIGIT, 0); }
+		public StoreX86valContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public StoreX86valContext(ParserRuleContext parent, int invokingState, String mainThread) {
+			super(parent, invokingState);
+			this.mainThread = mainThread;
+		}
+		@Override public int getRuleIndex() { return RULE_storeX86val; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterStoreX86val(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitStoreX86val(this);
+		}
+	}
+
+	public final StoreX86valContext storeX86val(String mainThread) throws RecognitionException {
+		StoreX86valContext _localctx = new StoreX86valContext(_ctx, getState(), mainThread);
+		enterRule(_localctx, 48, RULE_storeX86val);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(327);
+			match(T__33);
+			setState(328);
+			((StoreX86valContext)_localctx).l = locationX86();
+			setState(329);
+			match(T__34);
+			setState(330);
+			((StoreX86valContext)_localctx).value = match(DIGIT);
+
+			    	    if(!(mapLocs.keySet().contains(((StoreX86valContext)_localctx).l.loc.getName()))) {
+			        		System.out.println(String.format("Location %s must be initialized", ((StoreX86valContext)_localctx).l.loc.getName()));
+			        	}
+			        	Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
+			        	Location pointerLoc = mapLocs.get(((StoreX86valContext)_localctx).l.loc.getName());
+			        	AConst val = new AConst(Integer.parseInt(((StoreX86valContext)_localctx).value.getText()));
+			        	((StoreX86valContext)_localctx).t =  new Write(pointerLoc, val, "_rx");
+			    	
 			}
 		}
 		catch (RecognitionException re) {
@@ -1946,6 +2159,7 @@ public class LitmusParser extends Parser {
 		public String mainThread;
 		public Thread t;
 		public RegisterPowerContext r;
+		public Token s;
 		public RegisterPowerContext rl;
 		public List<RegisterPowerContext> registerPower() {
 			return getRuleContexts(RegisterPowerContext.class);
@@ -1953,6 +2167,7 @@ public class LitmusParser extends Parser {
 		public RegisterPowerContext registerPower(int i) {
 			return getRuleContext(RegisterPowerContext.class,i);
 		}
+		public TerminalNode DIGIT() { return getToken(LitmusParser.DIGIT, 0); }
 		public StorePowerContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public StorePowerContext(ParserRuleContext parent, int invokingState, String mainThread) {
 			super(parent, invokingState);
@@ -1971,20 +2186,22 @@ public class LitmusParser extends Parser {
 
 	public final StorePowerContext storePower(String mainThread) throws RecognitionException {
 		StorePowerContext _localctx = new StorePowerContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 36, RULE_storePower);
+		enterRule(_localctx, 50, RULE_storePower);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(340);
-			match(T__67);
-			setState(341);
+			setState(333);
+			match(T__41);
+			setState(334);
 			((StorePowerContext)_localctx).r = registerPower();
-			setState(342);
-			match(T__13);
-			setState(343);
+			setState(335);
+			match(T__36);
+			setState(336);
+			((StorePowerContext)_localctx).s = match(DIGIT);
+			setState(337);
 			_la = _input.LA(1);
-			if ( !(_la==T__8 || _la==T__33) ) {
+			if ( !(_la==T__5 || _la==T__36) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -1992,19 +2209,19 @@ public class LitmusParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(344);
+			setState(338);
 			((StorePowerContext)_localctx).rl = registerPower();
-			setState(348);
+			setState(342);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__9) {
+			while (_la==T__6) {
 				{
 				{
-				setState(345);
-				match(T__9);
+				setState(339);
+				match(T__6);
 				}
 				}
-				setState(350);
+				setState(344);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -2020,66 +2237,6 @@ public class LitmusParser extends Parser {
 					Location pointerLoc = mapRegLoc.get(mainThread).get(((StorePowerContext)_localctx).rl.reg.getName());
 					//((StorePowerContext)_localctx).t =  new Store(pointerLoc, pointerReg);
 					((StorePowerContext)_localctx).t =  new Write(pointerLoc, pointerReg, "_rx");
-				
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public static class CmpwContext extends ParserRuleContext {
-		public String mainThread;
-		public Thread t;
-		public RegisterPowerContext r1;
-		public RegisterPowerContext r2;
-		public List<RegisterPowerContext> registerPower() {
-			return getRuleContexts(RegisterPowerContext.class);
-		}
-		public RegisterPowerContext registerPower(int i) {
-			return getRuleContext(RegisterPowerContext.class,i);
-		}
-		public CmpwContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public CmpwContext(ParserRuleContext parent, int invokingState, String mainThread) {
-			super(parent, invokingState);
-			this.mainThread = mainThread;
-		}
-		@Override public int getRuleIndex() { return RULE_cmpw; }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).enterCmpw(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof LitmusListener ) ((LitmusListener)listener).exitCmpw(this);
-		}
-	}
-
-	public final CmpwContext cmpw(String mainThread) throws RecognitionException {
-		CmpwContext _localctx = new CmpwContext(_ctx, getState(), mainThread);
-		enterRule(_localctx, 38, RULE_cmpw);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(353);
-			match(T__68);
-			setState(354);
-			((CmpwContext)_localctx).r1 = registerPower();
-			setState(355);
-			match(T__33);
-			setState(356);
-			((CmpwContext)_localctx).r2 = registerPower();
-
-					Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
-					Register pointerReg1 = mapThreadRegs.get(((CmpwContext)_localctx).r1.reg.getName());
-					Register pointerReg2 = mapThreadRegs.get(((CmpwContext)_localctx).r2.reg.getName());
-					((CmpwContext)_localctx).t =  new If(new Atom(pointerReg1, "==", pointerReg2), new Skip(), new Skip());
 				
 			}
 		}
@@ -2112,12 +2269,12 @@ public class LitmusParser extends Parser {
 
 	public final MfenceContext mfence() throws RecognitionException {
 		MfenceContext _localctx = new MfenceContext(_ctx, getState());
-		enterRule(_localctx, 40, RULE_mfence);
+		enterRule(_localctx, 52, RULE_mfence);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(359);
-			match(T__69);
+			setState(347);
+			match(T__42);
 			((MfenceContext)_localctx).t =  new Mfence();
 			}
 		}
@@ -2151,11 +2308,11 @@ public class LitmusParser extends Parser {
 
 	public final LwsyncContext lwsync() throws RecognitionException {
 		LwsyncContext _localctx = new LwsyncContext(_ctx, getState());
-		enterRule(_localctx, 42, RULE_lwsync);
+		enterRule(_localctx, 54, RULE_lwsync);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(362);
+			setState(350);
 			match(LWSYNC);
 			((LwsyncContext)_localctx).t =  new Lwsync();
 			}
@@ -2190,11 +2347,11 @@ public class LitmusParser extends Parser {
 
 	public final SyncContext sync() throws RecognitionException {
 		SyncContext _localctx = new SyncContext(_ctx, getState());
-		enterRule(_localctx, 44, RULE_sync);
+		enterRule(_localctx, 56, RULE_sync);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(365);
+			setState(353);
 			match(SYNC);
 			((SyncContext)_localctx).t =  new Sync();
 			}
@@ -2229,11 +2386,11 @@ public class LitmusParser extends Parser {
 
 	public final IsyncContext isync() throws RecognitionException {
 		IsyncContext _localctx = new IsyncContext(_ctx, getState());
-		enterRule(_localctx, 46, RULE_isync);
+		enterRule(_localctx, 58, RULE_isync);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(368);
+			setState(356);
 			match(ISYNC);
 			((IsyncContext)_localctx).t =  new Isync();
 			}
@@ -2250,133 +2407,128 @@ public class LitmusParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3S\u0176\4\2\t\2\4"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\38\u016a\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
 		"\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
-		"\3\2\3\2\3\2\7\2\66\n\2\f\2\16\29\13\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2"+
-		"\7\2C\n\2\f\2\16\2F\13\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\5\2Q\n\2"+
-		"\3\2\3\2\6\2U\n\2\r\2\16\2V\3\2\3\2\3\2\3\2\7\2]\n\2\f\2\16\2`\13\2\3"+
-		"\2\7\2c\n\2\f\2\16\2f\13\2\3\2\3\2\7\2j\n\2\f\2\16\2m\13\2\3\2\3\2\3\2"+
-		"\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\5\2{\n\2\3\2\3\2\3\2\3\2\3\2\3\2"+
-		"\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\7\2\u008b\n\2\f\2\16\2\u008e\13\2\3\2"+
-		"\7\2\u0091\n\2\f\2\16\2\u0094\13\2\3\2\7\2\u0097\n\2\f\2\16\2\u009a\13"+
-		"\2\7\2\u009c\n\2\f\2\16\2\u009f\13\2\3\3\3\3\3\4\6\4\u00a4\n\4\r\4\16"+
-		"\4\u00a5\3\5\6\5\u00a9\n\5\r\5\16\5\u00aa\3\5\3\5\3\6\3\6\7\6\u00b1\n"+
-		"\6\f\6\16\6\u00b4\13\6\3\6\3\6\3\7\3\7\3\7\3\7\3\7\3\b\3\b\3\b\3\t\3\t"+
-		"\3\t\3\n\3\n\3\n\7\n\u00c6\n\n\f\n\16\n\u00c9\13\n\6\n\u00cb\n\n\r\n\16"+
-		"\n\u00cc\3\n\3\n\3\n\3\n\3\n\3\n\3\n\3\n\5\n\u00d7\n\n\3\n\7\n\u00da\n"+
-		"\n\f\n\16\n\u00dd\13\n\3\n\3\n\3\n\6\n\u00e2\n\n\r\n\16\n\u00e3\3\n\3"+
-		"\n\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3"+
-		"\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3"+
-		"\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3"+
-		"\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\3\13\5\13\u011a\n\13\3\f\3\f\3"+
-		"\f\3\f\3\f\3\f\3\r\3\r\3\r\3\r\3\r\3\r\3\16\3\16\3\16\3\16\3\16\3\16\3"+
-		"\16\3\16\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\20\3\20\3\20\3\20\3"+
-		"\20\3\20\3\21\3\21\3\21\3\21\3\21\3\21\3\22\3\22\3\22\3\22\3\22\3\22\7"+
-		"\22\u014a\n\22\f\22\16\22\u014d\13\22\3\22\3\22\3\23\3\23\3\23\3\23\3"+
-		"\23\3\23\3\24\3\24\3\24\3\24\3\24\3\24\7\24\u015d\n\24\f\24\16\24\u0160"+
-		"\13\24\3\24\3\24\3\25\3\25\3\25\3\25\3\25\3\25\3\26\3\26\3\26\3\27\3\27"+
-		"\3\27\3\30\3\30\3\30\3\31\3\31\3\31\3\31\2\2\32\2\4\6\b\n\f\16\20\22\24"+
-		"\26\30\32\34\36 \"$&(*,.\60\2\t\3\2\3\4\3\2\r\16\t\2\3\3\6\b\13\f\17="+
-		"LMOOQS\3\2LM\3\2+9\3\2:=\4\2\13\13$$\2\u0185\2\62\3\2\2\2\4\u00a0\3\2"+
-		"\2\2\6\u00a3\3\2\2\2\b\u00a8\3\2\2\2\n\u00ae\3\2\2\2\f\u00b7\3\2\2\2\16"+
-		"\u00bc\3\2\2\2\20\u00bf\3\2\2\2\22\u00ca\3\2\2\2\24\u0119\3\2\2\2\26\u011b"+
-		"\3\2\2\2\30\u0121\3\2\2\2\32\u0127\3\2\2\2\34\u012f\3\2\2\2\36\u0137\3"+
-		"\2\2\2 \u013d\3\2\2\2\"\u0143\3\2\2\2$\u0150\3\2\2\2&\u0156\3\2\2\2(\u0163"+
-		"\3\2\2\2*\u0169\3\2\2\2,\u016c\3\2\2\2.\u016f\3\2\2\2\60\u0172\3\2\2\2"+
-		"\62\63\b\2\1\2\63\67\t\2\2\2\64\66\5\6\4\2\65\64\3\2\2\2\669\3\2\2\2\67"+
-		"\65\3\2\2\2\678\3\2\2\28:\3\2\2\29\67\3\2\2\2:T\7\5\2\2;<\5\n\6\2<=\7"+
-		"\6\2\2=>\7M\2\2>?\7\7\2\2?@\b\2\1\2@U\3\2\2\2AC\7L\2\2BA\3\2\2\2CF\3\2"+
-		"\2\2DB\3\2\2\2DE\3\2\2\2EG\3\2\2\2FD\3\2\2\2GH\7M\2\2HI\7\b\2\2IJ\5\16"+
-		"\b\2JP\7\6\2\2KL\5\n\6\2LM\b\2\1\2MQ\3\2\2\2NO\7M\2\2OQ\b\2\1\2PK\3\2"+
-		"\2\2PN\3\2\2\2QR\3\2\2\2RS\7\7\2\2SU\3\2\2\2T;\3\2\2\2TD\3\2\2\2UV\3\2"+
-		"\2\2VT\3\2\2\2VW\3\2\2\2WX\3\2\2\2XY\7\t\2\2YZ\5\22\n\2Z^\b\2\1\2[]\5"+
-		"\6\4\2\\[\3\2\2\2]`\3\2\2\2^\\\3\2\2\2^_\3\2\2\2_\u009d\3\2\2\2`^\3\2"+
-		"\2\2ac\7N\2\2ba\3\2\2\2cf\3\2\2\2db\3\2\2\2de\3\2\2\2eg\3\2\2\2fd\3\2"+
-		"\2\2gk\7\n\2\2hj\7\13\2\2ih\3\2\2\2jm\3\2\2\2ki\3\2\2\2kl\3\2\2\2lz\3"+
-		"\2\2\2mk\3\2\2\2no\5\n\6\2op\7\6\2\2pq\7M\2\2qr\b\2\1\2r{\3\2\2\2st\7"+
-		"M\2\2tu\7\b\2\2uv\5\16\b\2vw\7\6\2\2wx\7M\2\2xy\b\2\1\2y{\3\2\2\2zn\3"+
-		"\2\2\2zs\3\2\2\2{\u008c\3\2\2\2|}\5\4\3\2}~\5\n\6\2~\177\7\6\2\2\177\u0080"+
-		"\7M\2\2\u0080\u0081\b\2\1\2\u0081\u008b\3\2\2\2\u0082\u0083\5\4\3\2\u0083"+
-		"\u0084\7M\2\2\u0084\u0085\7\b\2\2\u0085\u0086\5\16\b\2\u0086\u0087\7\6"+
-		"\2\2\u0087\u0088\7M\2\2\u0088\u0089\b\2\1\2\u0089\u008b\3\2\2\2\u008a"+
-		"|\3\2\2\2\u008a\u0082\3\2\2\2\u008b\u008e\3\2\2\2\u008c\u008a\3\2\2\2"+
-		"\u008c\u008d\3\2\2\2\u008d\u0092\3\2\2\2\u008e\u008c\3\2\2\2\u008f\u0091"+
-		"\7\f\2\2\u0090\u008f\3\2\2\2\u0091\u0094\3\2\2\2\u0092\u0090\3\2\2\2\u0092"+
-		"\u0093\3\2\2\2\u0093\u0098\3\2\2\2\u0094\u0092\3\2\2\2\u0095\u0097\5\6"+
-		"\4\2\u0096\u0095\3\2\2\2\u0097\u009a\3\2\2\2\u0098\u0096\3\2\2\2\u0098"+
-		"\u0099\3\2\2\2\u0099\u009c\3\2\2\2\u009a\u0098\3\2\2\2\u009bd\3\2\2\2"+
-		"\u009c\u009f\3\2\2\2\u009d\u009b\3\2\2\2\u009d\u009e\3\2\2\2\u009e\3\3"+
-		"\2\2\2\u009f\u009d\3\2\2\2\u00a0\u00a1\t\3\2\2\u00a1\5\3\2\2\2\u00a2\u00a4"+
-		"\t\4\2\2\u00a3\u00a2\3\2\2\2\u00a4\u00a5\3\2\2\2\u00a5\u00a3\3\2\2\2\u00a5"+
-		"\u00a6\3\2\2\2\u00a6\7\3\2\2\2\u00a7\u00a9\t\5\2\2\u00a8\u00a7\3\2\2\2"+
-		"\u00a9\u00aa\3\2\2\2\u00aa\u00a8\3\2\2\2\u00aa\u00ab\3\2\2\2\u00ab\u00ac"+
-		"\3\2\2\2\u00ac\u00ad\b\5\1\2\u00ad\t\3\2\2\2\u00ae\u00b2\7L\2\2\u00af"+
-		"\u00b1\t\5\2\2\u00b0\u00af\3\2\2\2\u00b1\u00b4\3\2\2\2\u00b2\u00b0\3\2"+
-		"\2\2\u00b2\u00b3\3\2\2\2\u00b3\u00b5\3\2\2\2\u00b4\u00b2\3\2\2\2\u00b5"+
-		"\u00b6\b\6\1\2\u00b6\13\3\2\2\2\u00b7\u00b8\7\31\2\2\u00b8\u00b9\5\n\6"+
-		"\2\u00b9\u00ba\7\32\2\2\u00ba\u00bb\b\7\1\2\u00bb\r\3\2\2\2\u00bc\u00bd"+
-		"\t\6\2\2\u00bd\u00be\b\b\1\2\u00be\17\3\2\2\2\u00bf\u00c0\t\7\2\2\u00c0"+
-		"\u00c1\b\t\1\2\u00c1\21\3\2\2\2\u00c2\u00c3\5\b\5\2\u00c3\u00c7\b\n\1"+
-		"\2\u00c4\u00c6\7\34\2\2\u00c5\u00c4\3\2\2\2\u00c6\u00c9\3\2\2\2\u00c7"+
-		"\u00c5\3\2\2\2\u00c7\u00c8\3\2\2\2\u00c8\u00cb\3\2\2\2\u00c9\u00c7\3\2"+
-		"\2\2\u00ca\u00c2\3\2\2\2\u00cb\u00cc\3\2\2\2\u00cc\u00ca\3\2\2\2\u00cc"+
-		"\u00cd\3\2\2\2\u00cd\u00ce\3\2\2\2\u00ce\u00cf\7\7\2\2\u00cf\u00e1\b\n"+
-		"\1\2\u00d0\u00d1\5\24\13\2\u00d1\u00db\b\n\1\2\u00d2\u00d3\b\n\1\2\u00d3"+
-		"\u00d6\7\34\2\2\u00d4\u00d7\5\24\13\2\u00d5\u00d7\7P\2\2\u00d6\u00d4\3"+
-		"\2\2\2\u00d6\u00d5\3\2\2\2\u00d7\u00d8\3\2\2\2\u00d8\u00da\b\n\1\2\u00d9"+
-		"\u00d2\3\2\2\2\u00da\u00dd\3\2\2\2\u00db\u00d9\3\2\2\2\u00db\u00dc\3\2"+
-		"\2\2\u00dc\u00de\3\2\2\2\u00dd\u00db\3\2\2\2\u00de\u00df\7\7\2\2\u00df"+
-		"\u00e0\b\n\1\2\u00e0\u00e2\3\2\2\2\u00e1\u00d0\3\2\2\2\u00e2\u00e3\3\2"+
-		"\2\2\u00e3\u00e1\3\2\2\2\u00e3\u00e4\3\2\2\2\u00e4\u00e5\3\2\2\2\u00e5"+
-		"\u00e6\b\n\1\2\u00e6\23\3\2\2\2\u00e7\u011a\3\2\2\2\u00e8\u00e9\5\26\f"+
-		"\2\u00e9\u00ea\b\13\1\2\u00ea\u011a\3\2\2\2\u00eb\u00ec\5 \21\2\u00ec"+
-		"\u00ed\b\13\1\2\u00ed\u011a\3\2\2\2\u00ee\u00ef\5$\23\2\u00ef\u00f0\b"+
-		"\13\1\2\u00f0\u011a\3\2\2\2\u00f1\u00f2\5*\26\2\u00f2\u00f3\b\13\1\2\u00f3"+
-		"\u011a\3\2\2\2\u00f4\u00f5\5\30\r\2\u00f5\u00f6\b\13\1\2\u00f6\u011a\3"+
-		"\2\2\2\u00f7\u00f8\5\"\22\2\u00f8\u00f9\b\13\1\2\u00f9\u011a\3\2\2\2\u00fa"+
-		"\u00fb\5&\24\2\u00fb\u00fc\b\13\1\2\u00fc\u011a\3\2\2\2\u00fd\u00fe\5"+
-		"\60\31\2\u00fe\u00ff\b\13\1\2\u00ff\u011a\3\2\2\2\u0100\u0101\5.\30\2"+
-		"\u0101\u0102\b\13\1\2\u0102\u011a\3\2\2\2\u0103\u0104\5,\27\2\u0104\u0105"+
-		"\b\13\1\2\u0105\u011a\3\2\2\2\u0106\u0107\5\32\16\2\u0107\u0108\b\13\1"+
-		"\2\u0108\u011a\3\2\2\2\u0109\u010a\5\34\17\2\u010a\u010b\b\13\1\2\u010b"+
-		"\u011a\3\2\2\2\u010c\u010d\5\36\20\2\u010d\u010e\b\13\1\2\u010e\u011a"+
-		"\3\2\2\2\u010f\u0110\5(\25\2\u0110\u0111\b\13\1\2\u0111\u011a\3\2\2\2"+
-		"\u0112\u0113\7>\2\2\u0113\u0114\7?\2\2\u0114\u011a\5\b\5\2\u0115\u0116"+
-		"\7?\2\2\u0116\u0117\5\b\5\2\u0117\u0118\7\b\2\2\u0118\u011a\3\2\2\2\u0119"+
-		"\u00e7\3\2\2\2\u0119\u00e8\3\2\2\2\u0119\u00eb\3\2\2\2\u0119\u00ee\3\2"+
-		"\2\2\u0119\u00f1\3\2\2\2\u0119\u00f4\3\2\2\2\u0119\u00f7\3\2\2\2\u0119"+
-		"\u00fa\3\2\2\2\u0119\u00fd\3\2\2\2\u0119\u0100\3\2\2\2\u0119\u0103\3\2"+
-		"\2\2\u0119\u0106\3\2\2\2\u0119\u0109\3\2\2\2\u0119\u010c\3\2\2\2\u0119"+
-		"\u010f\3\2\2\2\u0119\u0112\3\2\2\2\u0119\u0115\3\2\2\2\u011a\25\3\2\2"+
-		"\2\u011b\u011c\7@\2\2\u011c\u011d\5\20\t\2\u011d\u011e\7A\2\2\u011e\u011f"+
-		"\7M\2\2\u011f\u0120\b\f\1\2\u0120\27\3\2\2\2\u0121\u0122\7\17\2\2\u0122"+
-		"\u0123\5\16\b\2\u0123\u0124\7$\2\2\u0124\u0125\7M\2\2\u0125\u0126\b\r"+
-		"\1\2\u0126\31\3\2\2\2\u0127\u0128\7B\2\2\u0128\u0129\5\16\b\2\u0129\u012a"+
-		"\7$\2\2\u012a\u012b\5\16\b\2\u012b\u012c\7$\2\2\u012c\u012d\5\16\b\2\u012d"+
-		"\u012e\b\16\1\2\u012e\33\3\2\2\2\u012f\u0130\7C\2\2\u0130\u0131\5\16\b"+
-		"\2\u0131\u0132\7$\2\2\u0132\u0133\5\16\b\2\u0133\u0134\7$\2\2\u0134\u0135"+
-		"\7M\2\2\u0135\u0136\b\17\1\2\u0136\35\3\2\2\2\u0137\u0138\7D\2\2\u0138"+
-		"\u0139\5\16\b\2\u0139\u013a\7$\2\2\u013a\u013b\5\16\b\2\u013b\u013c\b"+
-		"\20\1\2\u013c\37\3\2\2\2\u013d\u013e\7@\2\2\u013e\u013f\5\20\t\2\u013f"+
-		"\u0140\7$\2\2\u0140\u0141\5\f\7\2\u0141\u0142\b\21\1\2\u0142!\3\2\2\2"+
-		"\u0143\u0144\7E\2\2\u0144\u0145\5\16\b\2\u0145\u0146\7\20\2\2\u0146\u0147"+
-		"\t\b\2\2\u0147\u014b\5\16\b\2\u0148\u014a\7\f\2\2\u0149\u0148\3\2\2\2"+
-		"\u014a\u014d\3\2\2\2\u014b\u0149\3\2\2\2\u014b\u014c\3\2\2\2\u014c\u014e"+
-		"\3\2\2\2\u014d\u014b\3\2\2\2\u014e\u014f\b\22\1\2\u014f#\3\2\2\2\u0150"+
-		"\u0151\7@\2\2\u0151\u0152\5\f\7\2\u0152\u0153\7$\2\2\u0153\u0154\5\20"+
-		"\t\2\u0154\u0155\b\23\1\2\u0155%\3\2\2\2\u0156\u0157\7F\2\2\u0157\u0158"+
-		"\5\16\b\2\u0158\u0159\7\20\2\2\u0159\u015a\t\b\2\2\u015a\u015e\5\16\b"+
-		"\2\u015b\u015d\7\f\2\2\u015c\u015b\3\2\2\2\u015d\u0160\3\2\2\2\u015e\u015c"+
-		"\3\2\2\2\u015e\u015f\3\2\2\2\u015f\u0161\3\2\2\2\u0160\u015e\3\2\2\2\u0161"+
-		"\u0162\b\24\1\2\u0162\'\3\2\2\2\u0163\u0164\7G\2\2\u0164\u0165\5\16\b"+
-		"\2\u0165\u0166\7$\2\2\u0166\u0167\5\16\b\2\u0167\u0168\b\25\1\2\u0168"+
-		")\3\2\2\2\u0169\u016a\7H\2\2\u016a\u016b\b\26\1\2\u016b+\3\2\2\2\u016c"+
-		"\u016d\7Q\2\2\u016d\u016e\b\27\1\2\u016e-\3\2\2\2\u016f\u0170\7R\2\2\u0170"+
-		"\u0171\b\30\1\2\u0171/\3\2\2\2\u0172\u0173\7S\2\2\u0173\u0174\b\31\1\2"+
-		"\u0174\61\3\2\2\2\33\67DPTV^dkz\u008a\u008c\u0092\u0098\u009d\u00a5\u00aa"+
-		"\u00b2\u00c7\u00cc\u00d6\u00db\u00e3\u0119\u014b\u015e";
+		"\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36\4\37\t\37\3\2\3\2\3"+
+		"\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\3\3\3\3\3\7\3P\n\3\f"+
+		"\3\16\3S\13\3\3\4\3\4\3\4\3\4\3\4\3\4\3\5\7\5\\\n\5\f\5\16\5_\13\5\3\5"+
+		"\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\6\7\6j\n\6\f\6\16\6m\13\6\3\6\3\6\3\6\3"+
+		"\6\3\6\3\6\3\6\3\6\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7"+
+		"\3\7\3\7\3\7\3\7\3\7\3\7\5\7\u008a\n\7\3\7\5\7\u008d\n\7\6\7\u008f\n\7"+
+		"\r\7\16\7\u0090\3\b\3\b\3\t\7\t\u0096\n\t\f\t\16\t\u0099\13\t\3\n\7\n"+
+		"\u009c\n\n\f\n\16\n\u009f\13\n\3\13\6\13\u00a2\n\13\r\13\16\13\u00a3\3"+
+		"\13\3\13\3\f\3\f\7\f\u00aa\n\f\f\f\16\f\u00ad\13\f\3\f\3\f\3\r\3\r\3\r"+
+		"\3\r\3\r\3\16\3\16\3\16\3\17\3\17\3\17\3\20\3\20\3\20\7\20\u00bf\n\20"+
+		"\f\20\16\20\u00c2\13\20\6\20\u00c4\n\20\r\20\16\20\u00c5\3\20\3\20\3\20"+
+		"\3\20\3\20\3\20\3\20\3\20\5\20\u00d0\n\20\3\20\7\20\u00d3\n\20\f\20\16"+
+		"\20\u00d6\13\20\3\20\3\20\3\20\6\20\u00db\n\20\r\20\16\20\u00dc\3\20\3"+
+		"\20\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3"+
+		"\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3"+
+		"\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3\21\3"+
+		"\21\3\21\5\21\u010c\n\21\3\22\3\22\3\22\3\22\3\22\3\22\3\23\3\23\3\23"+
+		"\3\23\3\23\3\23\3\24\3\24\3\24\3\24\3\24\3\24\3\24\3\24\3\25\3\25\3\25"+
+		"\3\25\3\25\3\25\3\25\3\25\3\26\3\26\3\26\3\26\3\26\3\26\3\27\3\27\3\27"+
+		"\3\27\3\27\3\27\3\30\3\30\3\30\3\30\3\30\3\30\3\30\7\30\u013d\n\30\f\30"+
+		"\16\30\u0140\13\30\3\30\3\30\3\31\3\31\3\31\3\31\3\31\3\31\3\32\3\32\3"+
+		"\32\3\32\3\32\3\32\3\33\3\33\3\33\3\33\3\33\3\33\3\33\7\33\u0157\n\33"+
+		"\f\33\16\33\u015a\13\33\3\33\3\33\3\34\3\34\3\34\3\35\3\35\3\35\3\36\3"+
+		"\36\3\36\3\37\3\37\3\37\3\37\2\2 \2\4\6\b\n\f\16\20\22\24\26\30\32\34"+
+		"\36 \"$&(*,.\60\62\64\668:<\2\t\3\2\3\4\3\2\5\5\3\2\7\7\3\2\61\62\3\2"+
+		"\20\36\3\2\37\"\4\2\b\b\'\'\2\u016d\2>\3\2\2\2\4Q\3\2\2\2\6T\3\2\2\2\b"+
+		"]\3\2\2\2\nk\3\2\2\2\f\u008e\3\2\2\2\16\u0092\3\2\2\2\20\u0097\3\2\2\2"+
+		"\22\u009d\3\2\2\2\24\u00a1\3\2\2\2\26\u00a7\3\2\2\2\30\u00b0\3\2\2\2\32"+
+		"\u00b5\3\2\2\2\34\u00b8\3\2\2\2\36\u00c3\3\2\2\2 \u010b\3\2\2\2\"\u010d"+
+		"\3\2\2\2$\u0113\3\2\2\2&\u0119\3\2\2\2(\u0121\3\2\2\2*\u0129\3\2\2\2,"+
+		"\u012f\3\2\2\2.\u0135\3\2\2\2\60\u0143\3\2\2\2\62\u0149\3\2\2\2\64\u014f"+
+		"\3\2\2\2\66\u015d\3\2\2\28\u0160\3\2\2\2:\u0163\3\2\2\2<\u0166\3\2\2\2"+
+		">?\b\2\1\2?@\t\2\2\2@A\5\20\t\2AB\7\5\2\2BC\5\4\3\2CD\7\6\2\2DE\5\36\20"+
+		"\2EF\b\2\1\2FG\5\22\n\2GH\7\7\2\2HI\7\b\2\2IJ\5\f\7\2JK\7\t\2\2K\3\3\2"+
+		"\2\2LP\5\6\4\2MP\5\b\5\2NP\5\n\6\2OL\3\2\2\2OM\3\2\2\2ON\3\2\2\2PS\3\2"+
+		"\2\2QO\3\2\2\2QR\3\2\2\2R\5\3\2\2\2SQ\3\2\2\2TU\5\26\f\2UV\7\n\2\2VW\7"+
+		"\62\2\2WX\7\13\2\2XY\b\4\1\2Y\7\3\2\2\2Z\\\7\61\2\2[Z\3\2\2\2\\_\3\2\2"+
+		"\2][\3\2\2\2]^\3\2\2\2^`\3\2\2\2_]\3\2\2\2`a\7\62\2\2ab\7\f\2\2bc\5\32"+
+		"\16\2cd\7\n\2\2de\5\26\f\2ef\7\13\2\2fg\b\5\1\2g\t\3\2\2\2hj\7\61\2\2"+
+		"ih\3\2\2\2jm\3\2\2\2ki\3\2\2\2kl\3\2\2\2ln\3\2\2\2mk\3\2\2\2no\7\62\2"+
+		"\2op\7\f\2\2pq\5\32\16\2qr\7\n\2\2rs\7\62\2\2st\7\13\2\2tu\b\6\1\2u\13"+
+		"\3\2\2\2vw\5\26\f\2wx\7\n\2\2xy\7\62\2\2yz\b\7\1\2z\u008a\3\2\2\2{|\7"+
+		"\62\2\2|}\7\f\2\2}~\5\32\16\2~\177\7\n\2\2\177\u0080\7\62\2\2\u0080\u0081"+
+		"\b\7\1\2\u0081\u008a\3\2\2\2\u0082\u0083\7\62\2\2\u0083\u0084\7\f\2\2"+
+		"\u0084\u0085\5\34\17\2\u0085\u0086\7\n\2\2\u0086\u0087\7\62\2\2\u0087"+
+		"\u0088\b\7\1\2\u0088\u008a\3\2\2\2\u0089v\3\2\2\2\u0089{\3\2\2\2\u0089"+
+		"\u0082\3\2\2\2\u008a\u008c\3\2\2\2\u008b\u008d\5\16\b\2\u008c\u008b\3"+
+		"\2\2\2\u008c\u008d\3\2\2\2\u008d\u008f\3\2\2\2\u008e\u0089\3\2\2\2\u008f"+
+		"\u0090\3\2\2\2\u0090\u008e\3\2\2\2\u0090\u0091\3\2\2\2\u0091\r\3\2\2\2"+
+		"\u0092\u0093\7\r\2\2\u0093\17\3\2\2\2\u0094\u0096\n\3\2\2\u0095\u0094"+
+		"\3\2\2\2\u0096\u0099\3\2\2\2\u0097\u0095\3\2\2\2\u0097\u0098\3\2\2\2\u0098"+
+		"\21\3\2\2\2\u0099\u0097\3\2\2\2\u009a\u009c\n\4\2\2\u009b\u009a\3\2\2"+
+		"\2\u009c\u009f\3\2\2\2\u009d\u009b\3\2\2\2\u009d\u009e\3\2\2\2\u009e\23"+
+		"\3\2\2\2\u009f\u009d\3\2\2\2\u00a0\u00a2\t\5\2\2\u00a1\u00a0\3\2\2\2\u00a2"+
+		"\u00a3\3\2\2\2\u00a3\u00a1\3\2\2\2\u00a3\u00a4\3\2\2\2\u00a4\u00a5\3\2"+
+		"\2\2\u00a5\u00a6\b\13\1\2\u00a6\25\3\2\2\2\u00a7\u00ab\7\61\2\2\u00a8"+
+		"\u00aa\t\5\2\2\u00a9\u00a8\3\2\2\2\u00aa\u00ad\3\2\2\2\u00ab\u00a9\3\2"+
+		"\2\2\u00ab\u00ac\3\2\2\2\u00ac\u00ae\3\2\2\2\u00ad\u00ab\3\2\2\2\u00ae"+
+		"\u00af\b\f\1\2\u00af\27\3\2\2\2\u00b0\u00b1\7\16\2\2\u00b1\u00b2\5\26"+
+		"\f\2\u00b2\u00b3\7\17\2\2\u00b3\u00b4\b\r\1\2\u00b4\31\3\2\2\2\u00b5\u00b6"+
+		"\t\6\2\2\u00b6\u00b7\b\16\1\2\u00b7\33\3\2\2\2\u00b8\u00b9\t\7\2\2\u00b9"+
+		"\u00ba\b\17\1\2\u00ba\35\3\2\2\2\u00bb\u00bc\5\24\13\2\u00bc\u00c0\b\20"+
+		"\1\2\u00bd\u00bf\7#\2\2\u00be\u00bd\3\2\2\2\u00bf\u00c2\3\2\2\2\u00c0"+
+		"\u00be\3\2\2\2\u00c0\u00c1\3\2\2\2\u00c1\u00c4\3\2\2\2\u00c2\u00c0\3\2"+
+		"\2\2\u00c3\u00bb\3\2\2\2\u00c4\u00c5\3\2\2\2\u00c5\u00c3\3\2\2\2\u00c5"+
+		"\u00c6\3\2\2\2\u00c6\u00c7\3\2\2\2\u00c7\u00c8\7\13\2\2\u00c8\u00da\b"+
+		"\20\1\2\u00c9\u00ca\5 \21\2\u00ca\u00d4\b\20\1\2\u00cb\u00cc\b\20\1\2"+
+		"\u00cc\u00cf\7#\2\2\u00cd\u00d0\5 \21\2\u00ce\u00d0\7\65\2\2\u00cf\u00cd"+
+		"\3\2\2\2\u00cf\u00ce\3\2\2\2\u00d0\u00d1\3\2\2\2\u00d1\u00d3\b\20\1\2"+
+		"\u00d2\u00cb\3\2\2\2\u00d3\u00d6\3\2\2\2\u00d4\u00d2\3\2\2\2\u00d4\u00d5"+
+		"\3\2\2\2\u00d5\u00d7\3\2\2\2\u00d6\u00d4\3\2\2\2\u00d7\u00d8\7\13\2\2"+
+		"\u00d8\u00d9\b\20\1\2\u00d9\u00db\3\2\2\2\u00da\u00c9\3\2\2\2\u00db\u00dc"+
+		"\3\2\2\2\u00dc\u00da\3\2\2\2\u00dc\u00dd\3\2\2\2\u00dd\u00de\3\2\2\2\u00de"+
+		"\u00df\b\20\1\2\u00df\37\3\2\2\2\u00e0\u010c\3\2\2\2\u00e1\u00e2\5\"\22"+
+		"\2\u00e2\u00e3\b\21\1\2\u00e3\u010c\3\2\2\2\u00e4\u00e5\5,\27\2\u00e5"+
+		"\u00e6\b\21\1\2\u00e6\u010c\3\2\2\2\u00e7\u00e8\5\60\31\2\u00e8\u00e9"+
+		"\b\21\1\2\u00e9\u010c\3\2\2\2\u00ea\u00eb\5\62\32\2\u00eb\u00ec\b\21\1"+
+		"\2\u00ec\u010c\3\2\2\2\u00ed\u00ee\5\66\34\2\u00ee\u00ef\b\21\1\2\u00ef"+
+		"\u010c\3\2\2\2\u00f0\u00f1\5$\23\2\u00f1\u00f2\b\21\1\2\u00f2\u010c\3"+
+		"\2\2\2\u00f3\u00f4\5.\30\2\u00f4\u00f5\b\21\1\2\u00f5\u010c\3\2\2\2\u00f6"+
+		"\u00f7\5\64\33\2\u00f7\u00f8\b\21\1\2\u00f8\u010c\3\2\2\2\u00f9\u00fa"+
+		"\5<\37\2\u00fa\u00fb\b\21\1\2\u00fb\u010c\3\2\2\2\u00fc\u00fd\5:\36\2"+
+		"\u00fd\u00fe\b\21\1\2\u00fe\u010c\3\2\2\2\u00ff\u0100\58\35\2\u0100\u0101"+
+		"\b\21\1\2\u0101\u010c\3\2\2\2\u0102\u0103\5&\24\2\u0103\u0104\b\21\1\2"+
+		"\u0104\u010c\3\2\2\2\u0105\u0106\5(\25\2\u0106\u0107\b\21\1\2\u0107\u010c"+
+		"\3\2\2\2\u0108\u0109\5*\26\2\u0109\u010a\b\21\1\2\u010a\u010c\3\2\2\2"+
+		"\u010b\u00e0\3\2\2\2\u010b\u00e1\3\2\2\2\u010b\u00e4\3\2\2\2\u010b\u00e7"+
+		"\3\2\2\2\u010b\u00ea\3\2\2\2\u010b\u00ed\3\2\2\2\u010b\u00f0\3\2\2\2\u010b"+
+		"\u00f3\3\2\2\2\u010b\u00f6\3\2\2\2\u010b\u00f9\3\2\2\2\u010b\u00fc\3\2"+
+		"\2\2\u010b\u00ff\3\2\2\2\u010b\u0102\3\2\2\2\u010b\u0105\3\2\2\2\u010b"+
+		"\u0108\3\2\2\2\u010c!\3\2\2\2\u010d\u010e\7$\2\2\u010e\u010f\5\34\17\2"+
+		"\u010f\u0110\7%\2\2\u0110\u0111\7\62\2\2\u0111\u0112\b\22\1\2\u0112#\3"+
+		"\2\2\2\u0113\u0114\7&\2\2\u0114\u0115\5\32\16\2\u0115\u0116\7\'\2\2\u0116"+
+		"\u0117\7\62\2\2\u0117\u0118\b\23\1\2\u0118%\3\2\2\2\u0119\u011a\7(\2\2"+
+		"\u011a\u011b\5\32\16\2\u011b\u011c\7\'\2\2\u011c\u011d\5\32\16\2\u011d"+
+		"\u011e\7\'\2\2\u011e\u011f\5\32\16\2\u011f\u0120\b\24\1\2\u0120\'\3\2"+
+		"\2\2\u0121\u0122\7)\2\2\u0122\u0123\5\32\16\2\u0123\u0124\7\'\2\2\u0124"+
+		"\u0125\5\32\16\2\u0125\u0126\7\'\2\2\u0126\u0127\7\62\2\2\u0127\u0128"+
+		"\b\25\1\2\u0128)\3\2\2\2\u0129\u012a\7*\2\2\u012a\u012b\5\32\16\2\u012b"+
+		"\u012c\7\'\2\2\u012c\u012d\5\32\16\2\u012d\u012e\b\26\1\2\u012e+\3\2\2"+
+		"\2\u012f\u0130\7$\2\2\u0130\u0131\5\34\17\2\u0131\u0132\7\'\2\2\u0132"+
+		"\u0133\5\30\r\2\u0133\u0134\b\27\1\2\u0134-\3\2\2\2\u0135\u0136\7+\2\2"+
+		"\u0136\u0137\5\32\16\2\u0137\u0138\7\'\2\2\u0138\u0139\7\62\2\2\u0139"+
+		"\u013a\t\b\2\2\u013a\u013e\5\32\16\2\u013b\u013d\7\t\2\2\u013c\u013b\3"+
+		"\2\2\2\u013d\u0140\3\2\2\2\u013e\u013c\3\2\2\2\u013e\u013f\3\2\2\2\u013f"+
+		"\u0141\3\2\2\2\u0140\u013e\3\2\2\2\u0141\u0142\b\30\1\2\u0142/\3\2\2\2"+
+		"\u0143\u0144\7$\2\2\u0144\u0145\5\30\r\2\u0145\u0146\7\'\2\2\u0146\u0147"+
+		"\5\34\17\2\u0147\u0148\b\31\1\2\u0148\61\3\2\2\2\u0149\u014a\7$\2\2\u014a"+
+		"\u014b\5\30\r\2\u014b\u014c\7%\2\2\u014c\u014d\7\62\2\2\u014d\u014e\b"+
+		"\32\1\2\u014e\63\3\2\2\2\u014f\u0150\7,\2\2\u0150\u0151\5\32\16\2\u0151"+
+		"\u0152\7\'\2\2\u0152\u0153\7\62\2\2\u0153\u0154\t\b\2\2\u0154\u0158\5"+
+		"\32\16\2\u0155\u0157\7\t\2\2\u0156\u0155\3\2\2\2\u0157\u015a\3\2\2\2\u0158"+
+		"\u0156\3\2\2\2\u0158\u0159\3\2\2\2\u0159\u015b\3\2\2\2\u015a\u0158\3\2"+
+		"\2\2\u015b\u015c\b\33\1\2\u015c\65\3\2\2\2\u015d\u015e\7-\2\2\u015e\u015f"+
+		"\b\34\1\2\u015f\67\3\2\2\2\u0160\u0161\7\66\2\2\u0161\u0162\b\35\1\2\u0162"+
+		"9\3\2\2\2\u0163\u0164\7\67\2\2\u0164\u0165\b\36\1\2\u0165;\3\2\2\2\u0166"+
+		"\u0167\78\2\2\u0167\u0168\b\37\1\2\u0168=\3\2\2\2\25OQ]k\u0089\u008c\u0090"+
+		"\u0097\u009d\u00a3\u00ab\u00c0\u00c5\u00cf\u00d4\u00dc\u010b\u013e\u0158";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
