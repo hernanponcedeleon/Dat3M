@@ -26,7 +26,7 @@ program [String name] returns [Program p]:
 	}
 	('PPC' | 'X86') headerComments
 
-	'{' inits '}'
+	'{' inits '}' (';')?
 
 	 threadsList = threads
 	{
@@ -38,14 +38,14 @@ program [String name] returns [Program p]:
 
 	bottomComments
 
-	'exists' '(' assertion[p] ')'
+	EXISTS ('(')+ assertion[p] (')')+
 	;
 
-inits : (initLocation | initRegister | initRegisterLocation)* ;
+inits : (initLocation | initRegister | initRegisterX86 | initRegisterLocation | initRegisterX86Location)* ;
 
-initLocation : l = location '=' DIGIT ';' {mapLocs.put($l.loc.getName(), $l.loc);};
+initLocation : l = location '=' DIGIT (';')? {mapLocs.put($l.loc.getName(), $l.loc);};
 
-initRegister : (LETTER)* thrd = DIGIT ':' r = registerPower '=' d = DIGIT ';'
+initRegister : (LETTER)* thrd = DIGIT ':' r = registerPower '=' d = DIGIT (';')?
     {
         Register regPointer = $r.reg;
         if(!mapRegs.keySet().contains($thrd.getText())) {
@@ -58,7 +58,20 @@ initRegister : (LETTER)* thrd = DIGIT ':' r = registerPower '=' d = DIGIT ';'
         mapThreads.get($thrd.getText()).add(new Local(regPointer, new AConst(Integer.parseInt($d.getText()))));
     };
 
-initRegisterLocation : (LETTER)* thrd = DIGIT ':' r = registerPower '=' l = location ';'
+initRegisterX86 : (LETTER)* thrd = DIGIT ':' r = registerX86 '=' d = DIGIT (';')?
+    {
+        Register regPointer = $r.reg;
+        if(!mapRegs.keySet().contains($thrd.getText())) {
+            mapRegs.put($thrd.getText(), new HashMap<String, Register>());
+        }
+        mapRegs.get($thrd.getText()).put(regPointer.getName(), regPointer);
+        if(!mapThreads.keySet().contains($thrd.getText())) {
+            mapThreads.put($thrd.getText(), new ArrayList<Thread>());
+        }
+        mapThreads.get($thrd.getText()).add(new Local(regPointer, new AConst(Integer.parseInt($d.getText()))));
+    };
+
+initRegisterLocation : (LETTER)* thrd = DIGIT ':' r = registerPower '=' l = location (';')?
     {
         if(!mapRegLoc.keySet().contains($thrd.getText())) {
             mapRegLoc.put($thrd.getText(), new HashMap<String, Location>());
@@ -69,6 +82,16 @@ initRegisterLocation : (LETTER)* thrd = DIGIT ':' r = registerPower '=' l = loca
         mapRegLoc.get($thrd.getText()).put($r.reg.getName(), mapLoc.get($l.loc.getName()));
     };
 
+initRegisterX86Location : (LETTER)* thrd = DIGIT ':' r = registerX86 '=' l = location (';')?
+    {
+        if(!mapRegLoc.keySet().contains($thrd.getText())) {
+            mapRegLoc.put($thrd.getText(), new HashMap<String, Location>());
+        }
+        if(!mapLoc.keySet().contains($l.loc.getName())) {
+            mapLoc.put($l.loc.getName(), $l.loc);
+        }
+        mapRegLoc.get($thrd.getText()).put($r.reg.getName(), mapLoc.get($l.loc.getName()));
+    };
 
 assertion [Program p] : ((
     l = location '=' value = DIGIT
@@ -97,7 +120,7 @@ assertion [Program p] : ((
 bop : '/\\';
 
 headerComments : ~('{')*;
-bottomComments : ~('exists')*;
+bottomComments : ~(EXISTS)*;
 
 word returns [String str]:
 	w = (LETTER | DIGIT)+ {$str = $w.getText();};
@@ -110,6 +133,7 @@ locationX86 returns [Location loc]:
 
 registerPower returns [Register reg]:
 	r = ('r0' | 'r1' | 'r2' | 'r3' | 'r4' | 'r5' | 'r6' | 'r7' | 'r8' | 'r9' |  'r10' |  'r11' |  'r12' |  'r13' |  'r14') {$reg = new Register($r.getText());};
+
 registerX86 returns [Register reg]:
 	r = ('EAX' | 'EBX' | 'ECX' | 'EDX') {$reg = new Register($r.getText());};
 
@@ -195,7 +219,7 @@ inst [String mainThread] returns [Thread t]:
 	;
 
 localX86 [String mainThread] returns [Thread t]:
-	'MOV' r = registerX86 ',$' d = DIGIT {
+	MOV r = registerX86 ',' ('$')? d = DIGIT {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
 			mapThreadRegs.put($r.reg.getName(), $r.reg);
@@ -262,7 +286,7 @@ mr [String mainThread] returns [Thread t]:
 	};
 
 loadX86 [String mainThread] returns [Thread t]:
-	'MOV' r = registerX86 ',' l = locationX86 {
+	MOV r = registerX86 ',' l = locationX86 {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
 			mapThreadRegs.put($r.reg.getName(), $r.reg);
@@ -293,7 +317,7 @@ loadPower [String mainThread] returns [Thread t]:
 	};
 
 storeX86reg [String mainThread] returns [Thread t]:
-    'MOV' l = locationX86 ',' r = registerX86 {
+    MOV l = locationX86 ',' r = registerX86 {
         if(!(mapLocs.keySet().contains($l.loc.getName()))) {
             System.out.println(String.format("Location %s must be initialized", $l.loc.getName()));
         }
@@ -308,7 +332,7 @@ storeX86reg [String mainThread] returns [Thread t]:
         };
 
 storeX86val [String mainThread] returns [Thread t]:
-    'MOV' l = locationX86 ',$' value = DIGIT {
+    MOV l = locationX86 ',' ('$')? value = DIGIT {
     	    if(!(mapLocs.keySet().contains($l.loc.getName()))) {
         		System.out.println(String.format("Location %s must be initialized", $l.loc.getName()));
         	}
@@ -342,7 +366,7 @@ cmpw [String mainThread] returns [Thread t]:
 	};
 
 mfence returns [Thread t]:
-	'MFENCE' {$t = new Mfence();};
+	MFENCE {$t = new Mfence();};
 
 lwsync returns [Thread t]:
 	LWSYNC {$t = new Lwsync();};
@@ -356,6 +380,10 @@ isync returns [Thread t]:
 ARCH : X86 | POWER;
 X86 : 'x86' | 'X86';
 POWER : 'PPC' | 'ppc';
+
+MOV : 'MOV' | 'mov';
+EXISTS : 'exists' | 'final';
+MFENCE : 'MFENCE' | 'mfence';
 
 LETTER : 'a'..'z' | 'A'..'Z';
 DIGIT : [0-9]+;
