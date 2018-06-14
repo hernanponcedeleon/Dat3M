@@ -1,8 +1,6 @@
 PPC LB+lwsyncs
 "LwSyncdRW Rfe LwSyncdRW Rfe"
-Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
-Com=Rf Rf
-Orig=LwSyncdRW Rfe LwSyncdRW Rfe
+Cycle=Rfe LwSyncdRW Rfe LwSyncdRW
 {
 0:r2=x; 0:r4=y;
 1:r2=y; 1:r4=x;

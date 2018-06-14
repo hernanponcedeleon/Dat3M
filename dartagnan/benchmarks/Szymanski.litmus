@@ -42,4 +42,4 @@ PPC Szymanski
  LC03:		| LC13:		;
 
 exists
-(0:r3 = 0 /\ 1:r3 = 1)
+(flag1=10)

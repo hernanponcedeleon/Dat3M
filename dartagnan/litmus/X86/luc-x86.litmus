@@ -1,0 +1,16 @@
+X86 luc-x86
+(* Another idea of induced conflict *)
+
+{
+}
+
+P0            | P1           ;
+mov EBX,1     | mov EBX,1    ;
+mov [x],1     | mov [y],1    ;
+mov EAX,[y]   | mov EAX,[x]  ;
+mov [z],1     | mov [t],1    ;
+cmp EAX,0     | cmp EAX,0    ;
+je L00        | je L01       ;
+mov EBX,[t]   | mov EBX,[z]  ; 
+L00:          |L01:          ;
+exists (0:EBX=0 /\ 1:EBX=0)

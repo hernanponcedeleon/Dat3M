@@ -12,7 +12,7 @@ acyclic (po-loc | com) as uniproc
 let com-tso = (rfe | co | fr)
 
 (* Program order for TSO *)
-let po-tso = ((po \ W*M) | mfence)
+let po-tso = ((po \ W*R) | mfence)
 
 (* TSO global-happens-before *)
 let ghb-tso = (po-tso | com-tso)

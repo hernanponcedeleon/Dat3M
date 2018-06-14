@@ -1,0 +1,9 @@
+X86 x86-e2  (X86ETwo)
+"write ordering final state observation & loads"
+{x = 0; y = 0;}
+
+P0        |P1        ;
+mov [x],1 |mov [y],1 ;
+mov [y],2 |mov [x],2 ;
+mov EAX,[x]|mov EBX,[y] ;
+locations [x;y;0:EAX;1:EBX;]

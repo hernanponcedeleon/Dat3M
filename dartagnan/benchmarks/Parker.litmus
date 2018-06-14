@@ -14,4 +14,4 @@ PPC Parker
  LC00:		| 		;
 
 exists
-(cond = 1 /\ parker = 0 /\ 0:r2 = 0)
+(cond = 10)

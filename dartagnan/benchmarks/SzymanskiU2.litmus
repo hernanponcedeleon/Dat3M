@@ -93,4 +93,4 @@ PPC Szymanski
  LC08:		| LC18:		;
 
 exists
-(0:r3 = 0 /\ 1:r3 = 1)
+(flag1=10)

@@ -1,0 +1,10 @@
+X86 x86.bug.2 (IntelBugTwo) "performance problem in rfmap generation"
+{ %r1=1 }
+P0 ;
+add %r1,%r1 ;
+add %r1,%r1 ;
+add %r1,%r1 ;
+forall (true)
+<<
+essdump generated/x86bug-2-ess.dot
+>>

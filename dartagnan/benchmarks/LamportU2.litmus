@@ -40,4 +40,4 @@ PPC Lamport
  LC03:		| LC13:		| LC23:		; 
 
 exists
-(b1 = 1 /\ b2 = 1 /\ b3 = 1)
+(b1 = 2 /\ b2 = 2 /\ b3 = 2)

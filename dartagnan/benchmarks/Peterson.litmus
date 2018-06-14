@@ -19,4 +19,4 @@ PPC Peterson
  LC00:		| LC10:		;
 
 exists
-(0:r5 = 0 /\ 0:r6 = 0 /\ 1:r5 = 0 /\ 1:r6 = 0)
+(turn=10)

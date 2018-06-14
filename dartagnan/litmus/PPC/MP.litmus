@@ -1,8 +1,6 @@
 PPC MP
 "PodWW Rfe PodRR Fre"
-Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
-Com=Rf Fr
-Orig=PodWW Rfe PodRR Fre
+Cycle=Rfe PodRR Fre PodWW
 {
 0:r2=x; 0:r4=y;
 1:r2=y; 1:r4=x;

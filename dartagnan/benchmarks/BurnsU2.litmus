@@ -27,4 +27,4 @@ PPC Burns
 		| lwz r4,0(r1)	;
 
 exists
-(0:r4=0 /\ 1:r4=0)
+(x=10)

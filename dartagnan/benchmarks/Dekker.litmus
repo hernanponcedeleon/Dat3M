@@ -24,4 +24,4 @@ PPC Dekker
  LC00:		| LC10:		;
 
 exists
-(0:r5=0 /\ 1:r5=0)
+(turn=10)

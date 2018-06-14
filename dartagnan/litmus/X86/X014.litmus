@@ -1,0 +1,15 @@
+X86 X014
+"PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre"
+Cycle=Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR
+Relax=
+Safe=Fre PodWR
+Prefetch=0:x=F,0:y=T,1:y=F,1:z=T,2:z=F,2:a=T,3:a=F,3:b=T,4:b=F,4:c=T,5:c=F,5:d=T,6:d=F,6:e=T,7:e=F,7:f=T,8:f=F,8:g=T,9:g=F,9:h=T,10:h=F,10:i=T,11:i=F,11:j=T,12:j=F,12:k=T,13:k=F,13:l=T,14:l=F,14:m=T,15:m=F,15:x=T
+Com=Fr Fr Fr Fr Fr Fr Fr Fr Fr Fr Fr Fr Fr Fr Fr Fr
+Orig=PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre PodWR Fre
+{
+}
+ P0          | P1          | P2          | P3          | P4          | P5          | P6          | P7          | P8          | P9          | P10         | P11         | P12         | P13         | P14         | P15         ;
+ MOV [x],$1  | MOV [y],$1  | MOV [z],$1  | MOV [a],$1  | MOV [b],$1  | MOV [c],$1  | MOV [d],$1  | MOV [e],$1  | MOV [f],$1  | MOV [g],$1  | MOV [h],$1  | MOV [i],$1  | MOV [j],$1  | MOV [k],$1  | MOV [l],$1  | MOV [m],$1  ;
+ MOV EAX,[y] | MOV EAX,[z] | MOV EAX,[a] | MOV EAX,[b] | MOV EAX,[c] | MOV EAX,[d] | MOV EAX,[e] | MOV EAX,[f] | MOV EAX,[g] | MOV EAX,[h] | MOV EAX,[i] | MOV EAX,[j] | MOV EAX,[k] | MOV EAX,[l] | MOV EAX,[m] | MOV EAX,[x] ;
+exists
+(0:EAX=0 /\ 1:EAX=0 /\ 2:EAX=0 /\ 3:EAX=0 /\ 4:EAX=0 /\ 5:EAX=0 /\ 6:EAX=0 /\ 7:EAX=0 /\ 8:EAX=0 /\ 9:EAX=0 /\ 10:EAX=0 /\ 11:EAX=0 /\ 12:EAX=0 /\ 13:EAX=0 /\ 14:EAX=0 /\ 15:EAX=0)

@@ -57,4 +57,4 @@ PPC Dekker
  LC05:		| LC15:		;
 
 exists
-(0:r5=0 /\ 1:r5=0)
+(turn=10)

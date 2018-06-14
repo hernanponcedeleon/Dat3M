@@ -1,9 +1,11 @@
-PPC 2+2W
-"PodWW Wse PodWW Wse"
-{ 0:r2=x; 0:r4=y; 1:r2=y; 1:r4=x; }
- P0           | P1           ;
- li r1,2      | li r1,2      ;
- stw r1,0(r2) | stw r1,0(r2) ;
- li r3,1      | li r3,1      ;
- stw r3,0(r4) | stw r3,0(r4) ;
-exists (x=2 /\ y=2)
+PPC 2+2W (EOne)
+{
+0:r5=x ; 0:r6=y; 0:r1=1 ; 0:r2=2;
+1:r5=x ; 1:r6=y; 1:r1=1 ; 1:r2=2;
+}
+P0          |P1           ;
+stw r1,0(r5)|stw r1,0(r6) ;
+stw r2,0(r6)|stw r2,0(r5) ;
+
+locations [x;y;]
+exists (x=1 /\ y=1)

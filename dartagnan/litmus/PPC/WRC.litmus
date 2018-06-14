@@ -1,8 +1,6 @@
 PPC WRC
 "Rfe PodRW Rfe PodRR Fre"
-Prefetch=0:x=T,1:x=F,1:y=W,2:y=F,2:x=T
-Com=Rf Rf Fr
-Orig=Rfe PodRW Rfe PodRR Fre
+Cycle=Rfe PodRW Rfe PodRR Fre
 {
 0:r2=x;
 1:r2=x; 1:r4=y;
