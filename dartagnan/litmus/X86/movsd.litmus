@@ -1,0 +1,10 @@
+X86 MOVSD
+
+{s=0x12345678; ps=s; d=0XABCDEF; pd=d;}
+
+ P0           | P1          ;
+ MOV EDI,[pd] | MOV EAX,[d] ;
+ MOV ESI,[ps] |             ;
+ MOVSD        |             ;
+
+forall (d=*s /\ (1:EAX=0x12345678 \/ 1:EAX=0xabcdef))

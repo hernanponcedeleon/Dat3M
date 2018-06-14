@@ -1,0 +1,9 @@
+X86 x86.bug.1 (IntelBugOne) "bug in flag setting"
+(* Flags are the same for both procs.. *)
+{ %r1=1; %r2=1; }
+P0 | P1 ;
+add %r1,$0 | add %r2,$0 ;
+forall (true)
+<<
+essdump generated/x86bug-ess.dot
+>>
