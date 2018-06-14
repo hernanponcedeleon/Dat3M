@@ -1,4 +1,4 @@
-for file in litmus/reach/power/*.litmus;
+for file in litmus/PPC/*.litmus;
 do
    java dartagnan/Dartagnan -t power -i $file > ./dart_power.out
    dart=$(grep -e 'not' dart_power.out | wc -l)
