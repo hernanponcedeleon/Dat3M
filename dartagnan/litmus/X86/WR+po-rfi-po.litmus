@@ -7,6 +7,7 @@ Prefetch=
 Com=Fr
 Orig=PodWW Rfi PodRR Fre
 {
+ x=0; y=0;
 }
  P0          ;
  MOV [x],$1  ;

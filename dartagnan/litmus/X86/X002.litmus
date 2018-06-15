@@ -6,7 +6,10 @@ Safe=Fre MFencedWR
 Prefetch=0:y=T,1:x=T
 Com=Fr Fr
 Orig=Fre MFencedWR Fre Rfi PodRR
-{ x=0; y=0;}
+{
+x=0;
+y=0;
+}
  P0          | P1          ;
  MOV [x],$1  | MOV [y],$1  ;
  MFENCE      | MOV EAX,[y] ;

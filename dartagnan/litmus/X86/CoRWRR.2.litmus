@@ -1,0 +1,11 @@
+X86 CoRWRR
+{
+ x=0;
+}
+ P0          | P1          ;
+ MOV EAX,[x] | MOV [x],$2  ;
+ MOV [x],$1  |             ;
+ MOV EAX,[x] |             ;
+ MOV EBX,[x] |             ;
+
+exists (0:EAX=0 /\ 0:EBX=0 /\ x=2)

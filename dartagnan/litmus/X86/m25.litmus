@@ -1,5 +1,4 @@
-X86 m25 (MTwoFive)
-"Simple sync test, no syncs"
+X86 m25 (MTwoFive) "Simple sync test, no syncs"
 {
  x=0; y=0;
 }
@@ -8,5 +7,4 @@ P0             | P1            |P2        ;
 MOV EAX,[y]    | MOV EAX,[x]   |MOV [y],2 ;
 MOV [x],1      | MOV [y],1     |          ;
 
-
-~exists (0:EAX=2 /\ 1:EAX=1 /\ y=2)
+exists (0:EAX=2 /\ 1:EAX=1 /\ y=2)

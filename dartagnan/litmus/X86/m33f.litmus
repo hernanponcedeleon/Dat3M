@@ -4,10 +4,9 @@ X86 m33f (MThreeThreeFence)
  x=0; y=0;
 }
 
-P0              | P1          ;
+ P0             | P1          ;
  MOV [x],1      | MOV [y],1   ;
  MFENCE         | MFENCE      ;
  MOV EAX,[y]    | MOV EAX,[x] ;
 
-
-~exists (0:EAX=0 /\ 1:EAX=0)
+exists (0:EAX=0 /\ 1:EAX=0)

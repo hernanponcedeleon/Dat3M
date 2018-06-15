@@ -1,11 +1,11 @@
-X86 irreduc3
-"Irreducible Pod ; Pod on P0"
+X86 irreduc3 "Irreducible Pod ; Pod on P0"
 {
+ a=0; b=0; c=0; d=0;
 }
- P0          | P1          | P2          ;
+ P0          | P1          | P2         ;
  MOV [a],$2  | MOV EAX,[b] | MOV [d],$1 ;
  MOV [b],$1  | MOV [c],$1  | MOV [a],$1 ;
- MOV EAX,[c] |             |;
- MOV EBX,[d] |             |;
-~exists
-(0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ a=2)
+ MOV EAX,[c] |             |            ;
+ MOV EBX,[d] |             |            ;
+
+exists (0:EAX=1 /\ 0:EBX=0 /\ 1:EAX=1 /\ a=2)

@@ -7,11 +7,13 @@ Prefetch=0:x=F,0:z=W,1:z=F,1:x=T
 Com=Ws Fr
 Orig=MFencedWR PodRW Wse PodWW Rfi Fre
 {
+ x=0; y=0; z=0;
 }
+
  P0          | P1          ;
  MOV [x],$2  | MOV [z],$2  ;
  MFENCE      | MOV [x],$1  ;
  MOV EAX,[y] | MOV EAX,[x] ;
  MOV [z],$1  |             ;
-exists
-(x=2 /\ z=2 /\ 1:EAX=1)
+
+exists (x=2 /\ z=2 /\ 1:EAX=1)

@@ -1,9 +1,10 @@
 X86 m11 (MOneOne)
 {
+ x=0; y=0;
 }
-P0          |P1   ;
-MOV [x],1|MOV [y],1;
-MOV [y],2|MOV [x],2;
-
+ P0          | P1           ;
+ MOV [x],1   | MOV [y],1    ;
+ MOV [y],2   | MOV [x],2    ;
 locations [x;y;]
-~exists (x=1 /\ y=1)
+
+exists (x=1 /\ y=1)

@@ -1,18 +1,9 @@
 X86 x86/n7 (LitmusNSeven) 
-{[100] = 0; [200] = 0};
-        P0        |       P1      |        P2      ;
-  mov [100], 1    |  mov [200], 1 | mov ECX, [200] ; 
-  mov EAX, [100]  |               | mov EDX, [100] ;
-  mov EBX, [200]  |               |                ;
-exists (P0:EAX = 1 /\ P0:EBX = 0 /\ P2:ECX=1 /\ P1:EDX=0);
-<<
-show flags false
-show 0
-genprog generated/intel-n7-prog.tex
-essdump generated/intel-n7-ess.dot
->>
-<<
-show flags false
-show 0
-readfrom generated/intel-n7-ignored-rf.dot
->>
+{
+ x = 0; y = 0;
+}
+  P0            |  P1           | P2           ;
+  mov [x], 1    |  mov [y], 1   | mov ECX, [y] ;
+  mov EAX, [x]  |               | mov EDX, [x] ;
+  mov EBX, [y]  |               |              ;
+exists (0:EAX = 1 /\ 0:EBX = 0 /\ 2:ECX=1 /\ 2:EDX=0);
