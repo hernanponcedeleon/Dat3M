@@ -1,8 +1,11 @@
 X86 x86-e3  (X86EThree)
 "write ordering final state observation (testing stabilization)"
-{}
-P0        |P1        |P2       |P3       ;
-mov [x],1 |mov [x],2 |mov [x],3|mov [x],4;
-mov EAX,[x]|mov EAX,[x]|mov EAX,[x]|mov EAX,[x];
+{
+ x=0; y=0;
+}
 
-locations [x; 0:EAX; 1:EAX; 2:EAX; 3:EAX; ]
+P0          | P1            | P2            | P3            ;
+mov [x],1   | mov [x],2     | mov [x],3     | mov [x],4     ;
+mov EAX,[x] | mov EAX,[x]   | mov EAX,[x]   | mov EAX,[x]   ;
+
+exists (x=1 /\ 0:EAX=1 /\ 1:EAX=1 /\ 2:EAX=1 /\ 3:EAX=1 )

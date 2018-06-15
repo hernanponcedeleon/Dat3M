@@ -1,9 +1,10 @@
-X86 MP (MP) ""
-{x = 0; y = 0};
+X86 MP (MP)
+{
+ x = 0; y = 0;
+}
 
-        P0    |       P1      ;
+  P0          |  P1           ;
   mov [x], 1  |  mov EAX, [y] ;
-  mov [y], 1  |  mov EBX, [x];
+  mov [y], 1  |  mov EBX, [x] ;
 
-
-~exists (P1:EAX = 1 /\ P1:EBX = 0);
+exists (1:EAX = 1 /\ 1:EBX = 0);

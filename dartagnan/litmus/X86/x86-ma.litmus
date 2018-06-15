@@ -1,10 +1,11 @@
 X86 x86-ma  (X86MTen)
 " ST ; LD || LD ; ST hexa version"
 {
+ x=0; y=0;
 }
 
-P0          |P1          |P2          |P3        ;
-mov [x],1   |mov EAX,[y] |            |          ;
-mov EAX,[y] |mov [x],2   |mov EAX,[x] |mov [y],2 ;
-locations [0:EAX ; 1:EAX ; 2:EAX ; x ;]
+P0          | P1          | P2          | P3        ;
+mov [x],1   | mov EAX,[y] |             |           ;
+mov EAX,[y] | mov [x],2   | mov EAX,[x] | mov [y],2 ;
 
+exists (0:EAX=1 /\ 1:EAX=1 /\ 2:EAX=1 /\ x=1)

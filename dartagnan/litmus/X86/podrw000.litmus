@@ -3,9 +3,12 @@ X86 podrw000
 Cycle=Fre PodWR Fre PodWR
 Relax=PodWR
 Safe=Fre
-{ x=0; y=0; }
+{
+ x=0; y=0;
+}
+
  P0          | P1          ;
  MOV [y],$1  | MOV [x],$1  ;
  MOV EAX,[x] | MOV EAX,[y] ;
-exists
-(0:EAX=0 /\ 1:EAX=0)
+
+exists (0:EAX=0 /\ 1:EAX=0)

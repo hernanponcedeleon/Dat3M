@@ -1,9 +1,0 @@
-X86 A
-"test suggested by hanbing.liu@amd.com, replace xchck by locked cmpxchg"
-{
-}
- P0                     | P1          ;
- MOV [y],$1             | MOV [x],$1  ;
- LOCK; CMPXCHG [f1],ECX | LOCK; CMPXCHG [f2],ECX ;
- MOV EBX,[x]            | MOV EBX,[y] ;
-exists (0:EBX=0 /\ 1:EBX=0)
