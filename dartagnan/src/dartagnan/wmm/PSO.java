@@ -1,5 +1,9 @@
 package dartagnan.wmm;
 
+import static dartagnan.wmm.Encodings.satAcyclic;
+import static dartagnan.wmm.Encodings.satCycle;
+import static dartagnan.wmm.Encodings.satCycleDef;
+
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,13 +28,13 @@ public class PSO {
 	
 	public static BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		return ctx.mkAnd(EncodingsCAT.satAcyclic("(poloc+com)", events, ctx), EncodingsCAT.satAcyclic("ghb-pso", events, ctx));
+		return ctx.mkAnd(satAcyclic("(poloc+com)", events, ctx), satAcyclic("ghb-pso", events, ctx));
 	}
 	
 	public static BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		BoolExpr enc = ctx.mkAnd(EncodingsCAT.satCycleDef("(poloc+com)", events, ctx), EncodingsCAT.satCycleDef("ghb-pso", events, ctx));
-		enc = ctx.mkAnd(enc, ctx.mkOr(EncodingsCAT.satCycle("(poloc+com)", events, ctx), EncodingsCAT.satCycle("ghb-pso", events, ctx)));
+		BoolExpr enc = ctx.mkAnd(satCycleDef("(poloc+com)", events, ctx), satCycleDef("ghb-pso", events, ctx));
+		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("(poloc+com)", events, ctx), satCycle("ghb-pso", events, ctx)));
 		return enc;
 	}
 }

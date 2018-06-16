@@ -50,6 +50,10 @@ public class Dartagnan {
         		.desc("Unrolling steps")
         		.build());
 
+        options.addOption(Option.builder("idl")
+        		.desc("Uses IDL encoding for transitive closure")
+        		.build());
+
         options.addOption(Option.builder("cat")
         		.hasArg()
         		.desc("Path to the CAT file")
@@ -160,7 +164,7 @@ public class Dartagnan {
             s.add(mcm.encode(p, ctx));
             s.add(mcm.Consistent(p, ctx));
         } else {
-    		s.add(p.encodeMM(ctx, target, cmd.hasOption("relax")));
+    		s.add(p.encodeMM(ctx, target, cmd.hasOption("relax"), cmd.hasOption("idl")));
     		s.add(p.encodeConsistent(ctx, target));
         }
 

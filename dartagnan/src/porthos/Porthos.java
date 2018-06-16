@@ -64,6 +64,10 @@ public class Porthos {
 
 //        options.addOption("state", false, "PORTHOS performs state portability");
 
+        options.addOption(Option.builder("relax")
+        		.desc("Uses relax encoding for transitive closure")
+        		.build());
+
         options.addOption(Option.builder("draw")
                 .hasArg()
         		.desc("Path to save the execution graphs if a porting bug is found")
@@ -203,7 +207,7 @@ public class Porthos {
             sourceMM = mcmS.encode(p, ctx);
 
         } else {
-            sourceMM = pSource.encodeMM(ctx, source, false);
+            sourceMM = pSource.encodeMM(ctx, source, false, cmd.hasOption("idl"));
         }
 
         s.add(pTarget.encodeDF(ctx));
@@ -214,7 +218,7 @@ public class Porthos {
             s.add(mcmT.encode(p, ctx));
             s.add(mcmT.Consistent(p, ctx));
         } else {
-            s.add(pTarget.encodeMM(ctx, target, false));
+            s.add(pTarget.encodeMM(ctx, target, false, cmd.hasOption("idl")));
             s.add(pTarget.encodeConsistent(ctx, target));
         }
         s.add(sourceDF);

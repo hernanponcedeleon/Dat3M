@@ -5,8 +5,8 @@ import static dartagnan.utils.Utils.intVar;
 import static dartagnan.utils.Utils.lastValueLoc;
 import static dartagnan.utils.Utils.lastValueReg;
 import static dartagnan.utils.Utils.ssaReg;
-import static dartagnan.wmm.EncodingsCAT.satTO;
-import static dartagnan.wmm.EncodingsCAT.encodeEO;
+import static dartagnan.wmm.Encodings.satTO;
+import static dartagnan.wmm.Encodings.encodeEO;
 
 import java.util.HashSet;
 import java.util.Set;
