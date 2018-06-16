@@ -10,6 +10,9 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Event;
 import dartagnan.utils.Utils;
+
+import static dartagnan.wmm.EncodingsCAT.satIrref;
+
 import java.util.Set;
 
 /**
@@ -20,7 +23,7 @@ public class Irreflexive extends Axiom{
 
     @Override
     public BoolExpr Consistent(Set<Event> events, Context ctx) throws Z3Exception {
-        return Encodings.satIrref(rel.getName(), events, ctx);
+        return satIrref(rel.getName(), events, ctx);
     }
 
     @Override

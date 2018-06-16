@@ -1,9 +1,9 @@
 package dartagnan.wmm;
 
 import static dartagnan.wmm.EncodingsCAT.satUnion;
-import static dartagnan.wmm.EncodingsCAT.satAcyclic;
-import static dartagnan.wmm.EncodingsCAT.satCycleDef;
-import static dartagnan.wmm.EncodingsCAT.satCycle;
+import static dartagnan.wmm.Encodings.satAcyclic;
+import static dartagnan.wmm.Encodings.satCycleDef;
+import static dartagnan.wmm.Encodings.satCycle;
 
 import java.util.Set;
 import java.util.stream.Collectors;

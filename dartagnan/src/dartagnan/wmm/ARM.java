@@ -8,10 +8,13 @@ import static dartagnan.wmm.EncodingsCAT.satEmpty;
 import static dartagnan.wmm.EncodingsCAT.satComp;
 import static dartagnan.wmm.EncodingsCAT.satTransRef;
 import static dartagnan.wmm.EncodingsCAT.satIrref;
-import static dartagnan.wmm.EncodingsCAT.satAcyclic;
+import static dartagnan.wmm.Encodings.satAcyclic;
 import static dartagnan.wmm.EncodingsCAT.satTransFixPoint;
-import static dartagnan.wmm.EncodingsCAT.satCycleDef;
-import static dartagnan.wmm.EncodingsCAT.satCycle;
+import static dartagnan.wmm.Encodings.satCycleDef;
+import static dartagnan.wmm.Encodings.satCycle;
+import static dartagnan.wmm.EncodingsCAT.satTransIDL;
+import static dartagnan.wmm.EncodingsCAT.satTransRefIDL;
+
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,7 +31,7 @@ import dartagnan.utils.Utils;
 
 public class ARM {
 	
-	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
+	public static BoolExpr encode(Program program, boolean approx, boolean idl, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 		
@@ -36,7 +39,11 @@ public class ARM {
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("poloc", "com", events, ctx));
 		
-	    enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));
+		if (idl) {
+		    enc = ctx.mkAnd(enc, satTransIDL("idd", eventsL, approx, ctx));			
+		} else {
+			enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));	
+		}
 	    
 	    enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", events, ctx));
 	    enc = ctx.mkAnd(enc, satEmpty("addr", events, ctx));
@@ -65,12 +72,24 @@ public class ARM {
 	    // Prop-base
 	    enc = ctx.mkAnd(enc, satComp("rfe", "ish", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("ish", "(rfe;ish)", events, ctx));
-	    enc = ctx.mkAnd(enc, satTransRef("hb-arm", events, approx, ctx));
+	    if (idl) {
+		    enc = ctx.mkAnd(enc, satTransRefIDL("hb-arm", events, approx, ctx));	    	
+	    } else {
+		    enc = ctx.mkAnd(enc, satTransRef("hb-arm", events, approx, ctx));
+	    }
 	    enc = ctx.mkAnd(enc, satComp("prop-base", "(ish+(rfe;ish))", "(hb-arm)*", events, ctx));
 	    // Propagation for ARM
-	    enc = ctx.mkAnd(enc, satTransRef("com", events, approx, ctx));
+	    if (idl) {
+		    enc = ctx.mkAnd(enc, satTransRefIDL("com", events, approx, ctx));	    	
+	    } else {
+		    enc = ctx.mkAnd(enc, satTransRef("com", events, approx, ctx));
+	    }
         
-	    enc = ctx.mkAnd(enc, satTransRef("prop-base", events, approx, ctx));
+	    if (idl) {
+		    enc = ctx.mkAnd(enc, satTransRefIDL("prop-base", events, approx, ctx));	    	
+	    } else {
+		    enc = ctx.mkAnd(enc, satTransRef("prop-base", events, approx, ctx));
+	    }
 	    enc = ctx.mkAnd(enc, satComp("(com)*", "(prop-base)*", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("((com)*;(prop-base)*)", "ish", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("(((com)*;(prop-base)*);ish)", "(hb-arm)*", events, ctx));
@@ -187,6 +206,30 @@ public class ARM {
         	        				 ctx.mkAnd(edge("ci",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("ci",e1,e2, ctx))),
         	        				 ctx.mkAnd(edge("ci;ic",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("ci;ic",e1,e2, ctx))),
         	        				 ctx.mkAnd(edge("cc;cc",e1,e2, ctx), ctx.mkGt(intCount("cc",e1,e2, ctx), intCount("cc;cc",e1,e2, ctx))))));
+        	        
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ii",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("ii0",e1,e2, ctx), 
+							  edge("ci",e1,e2, ctx),
+							  edge("ic;ci",e1,e2, ctx),
+							  edge("ii;ii",e1,e2, ctx))));
+
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ic",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("ic0",e1,e2, ctx),
+							   edge("ii",e1,e2, ctx),
+							   edge("cc",e1,e2, ctx),
+							   edge("ic;cc",e1,e2, ctx),
+							   edge("ii;ic",e1,e2, ctx))));
+
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ci",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("ci0",e1,e2, ctx),
+							   edge("ci;ii",e1,e2, ctx),
+							   edge("cc;ci",e1,e2, ctx))));
+                                    
+        	        enc = ctx.mkAnd(enc, ctx.mkImplies(edge("cc",e1,e2, ctx), 
+        	        		ctx.mkOr(edge("cc0",e1,e2, ctx),
+							   edge("ci",e1,e2, ctx),
+							   edge("ci;ic",e1,e2, ctx),
+							   edge("cc;cc",e1,e2, ctx))));    
     	        }
 			}
 		}

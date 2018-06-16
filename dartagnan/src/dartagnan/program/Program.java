@@ -185,34 +185,34 @@ public class Program extends Thread{
 			}
 		}
 	}
-
-	public BoolExpr encodeMM(Context ctx, String mcm, boolean approx) throws Z3Exception {
+	
+	public BoolExpr encodeMM(Context ctx, String mcm, boolean approx, boolean idl) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		switch (mcm){
-			case "sc":
-				enc = ctx.mkAnd(enc, SC.encode(this, ctx));
-				break;
-			case "tso":
-				enc = ctx.mkAnd(enc, TSO.encode(this, ctx));
-				break;
-			case "pso":
-				enc = ctx.mkAnd(enc, PSO.encode(this, ctx));
-				break;
-			case "rmo":
-				enc = ctx.mkAnd(enc, RMO.encode(this, approx, ctx));
-				break;
-			case "alpha":
-				enc = ctx.mkAnd(enc, Alpha.encode(this, approx, ctx));
-				break;
-			case "power":
-				enc = ctx.mkAnd(enc, Power.encode(this, approx, ctx));
-				break;
-			case "arm":
-				enc = ctx.mkAnd(enc, ARM.encode(this, approx, ctx));
-				break;
-			default:
-				System.out.println("Check encodeMM!");
-				break;
+		case "sc":
+			enc = ctx.mkAnd(enc, SC.encode(this, ctx));
+			break;
+		case "tso":
+			enc = ctx.mkAnd(enc, TSO.encode(this, ctx));
+			break;
+		case "pso":
+			enc = ctx.mkAnd(enc, PSO.encode(this, ctx));
+			break;
+		case "rmo":
+			enc = ctx.mkAnd(enc, RMO.encode(this, approx, ctx));
+			break;
+		case "alpha":
+			enc = ctx.mkAnd(enc, Alpha.encode(this, approx, ctx));
+			break;
+		case "power":
+			enc = ctx.mkAnd(enc, Power.encode(this, approx, idl, ctx));
+			break;
+		case "arm":
+			enc = ctx.mkAnd(enc, ARM.encode(this, approx, idl, ctx));
+			break;
+		default:
+			System.out.println("Check encodeMM!");
+			break;
 		}
 		return enc;
 	}
