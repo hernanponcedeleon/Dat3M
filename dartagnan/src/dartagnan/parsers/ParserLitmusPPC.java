@@ -11,10 +11,11 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 
 public class ParserLitmusPPC implements ParserInterface{
 
-    public Program parse(String inputFilePath) throws Exception{
+    public Program parse(String inputFilePath) throws IOException {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);

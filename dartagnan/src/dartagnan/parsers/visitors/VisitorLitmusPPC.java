@@ -1,19 +1,20 @@
 package dartagnan.parsers.visitors;
 
-import dartagnan.parsers.utils.Branch.BareIf;
-import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
-
 import dartagnan.program.Thread;
 import dartagnan.program.*;
 import dartagnan.expression.*;
 import dartagnan.LitmusPPCParser;
-import dartagnan.program.Program;
 import dartagnan.LitmusPPCVisitor;
-
 import dartagnan.parsers.utils.Utils;
+import dartagnan.parsers.utils.Branch.BareIf;
+import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Stack;
+import java.util.UUID;
 
 
 public class VisitorLitmusPPC

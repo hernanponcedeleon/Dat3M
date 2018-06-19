@@ -6,7 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.microsoft.z3.*;
-import dartagnan.parsers.ParserLitmusPPC;
+import dartagnan.parsers.ParserInterface;
+import dartagnan.parsers.ParserResolver;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.io.FileUtils;
@@ -106,8 +107,8 @@ public class Dartagnan {
                     target,
                     cmd.hasOption("cat") ? cmd.getOptionValue("cat") : null,
                     cmd.hasOption("unroll") ? Integer.parseInt(cmd.getOptionValue("unroll")) : 1,
-                    cmd.hasOption("relax") && Boolean.parseBoolean(cmd.getOptionValue("relax")),
-                    cmd.hasOption("idl") && Boolean.parseBoolean(cmd.getOptionValue("idl"))
+                    cmd.hasOption("relax"),
+                    cmd.hasOption("idl")
             );
 
             if(result) {
@@ -141,6 +142,7 @@ class Executor{
     private Program p;
     private Solver s;
     private Context ctx;
+    private ParserResolver parserResolver;
 
     Executor(String inputFilePath) throws Exception{
         ctx = new Context();
@@ -206,14 +208,8 @@ class Executor{
         ParserErrorListener listener = new ParserErrorListener();
 
         if(inputFilePath.endsWith("litmus")) {
-            LitmusLexer lexer = new LitmusLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            LitmusParser parser = new LitmusParser(tokens);
-            parser.addErrorListener(listener);
-            //program = parser.program(inputFilePath).p;
-
-            ParserLitmusPPC testParser = new ParserLitmusPPC();
-            program = testParser.parse(inputFilePath);
+            ParserInterface parser = parserResolver.getParser(inputFilePath);
+            program = parser.parse(inputFilePath);
             //System.out.println(program);
         }
 

@@ -15,8 +15,12 @@ public class ParserResolver {
     public ParserInterface getParser(String inputFilePath) throws IOException{
         if(inputFilePath.endsWith("litmus")){
             String header = readFirstLine(inputFilePath);
+
             if(header.indexOf(TYPE_LITMUS_PPC) == 0){
                 return new ParserLitmusPPC();
+            }
+            if(header.indexOf(TYPE_LITMUS_X86) == 0){
+                return new ParserLitmusX86();
             }
             // TODO: Other parsers
         }
