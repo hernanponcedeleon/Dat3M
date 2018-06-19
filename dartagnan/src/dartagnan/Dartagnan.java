@@ -106,7 +106,8 @@ public class Dartagnan {
                     target,
                     cmd.hasOption("cat") ? cmd.getOptionValue("cat") : null,
                     cmd.hasOption("unroll") ? Integer.parseInt(cmd.getOptionValue("unroll")) : 1,
-                    cmd.hasOption("relax") && Boolean.parseBoolean(cmd.getOptionValue("relax"))
+                    cmd.hasOption("relax") && Boolean.parseBoolean(cmd.getOptionValue("relax")),
+                    cmd.hasOption("idl") && Boolean.parseBoolean(cmd.getOptionValue("idl"))
             );
 
             if(result) {
@@ -159,7 +160,7 @@ class Executor{
         return ctx;
     }
 
-    boolean execute(String target, String catFilePath, int steps, boolean relax) throws Exception{
+    boolean execute(String target, String catFilePath, int steps, boolean relax, boolean idl) throws Exception{
         Wmm mcm = null;
 
         if(catFilePath != null){
@@ -190,7 +191,7 @@ class Executor{
             s.add(mcm.encode(p, ctx));
             s.add(mcm.Consistent(p, ctx));
         } else {
-    		s.add(p.encodeMM(ctx, target, cmd.hasOption("relax"), cmd.hasOption("idl")));
+    		s.add(p.encodeMM(ctx, target, relax, idl));
     		s.add(p.encodeConsistent(ctx, target));
         }
 

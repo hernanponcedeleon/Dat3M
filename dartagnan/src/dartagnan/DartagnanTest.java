@@ -18,7 +18,7 @@ public class DartagnanTest {
         Runner runner = new Runner(logger);
         //System.err.close();
 
-        runner.run("litmus/PPC", "power", null, 2, true);
+        runner.run("litmus/PPC", "power", null, 2, true, true);
         //runner.run("litmus/X86", "tso", null, 2, true);
 
         logger.close();
@@ -33,7 +33,7 @@ class Runner{
         this.logger = logger;
     }
 
-    void run(String testsDirectoryPath, String target, String catFilePath, int steps, boolean relax){
+    void run(String testsDirectoryPath, String target, String catFilePath, int steps, boolean relax, boolean idl){
         try(Stream<Path> paths = Files.walk(Paths.get(testsDirectoryPath))){
             paths
                     .filter(Files::isRegularFile)
@@ -41,7 +41,7 @@ class Runner{
                     .forEach(f -> {
                         try{
                             Executor ex = Dartagnan.getExecutor(f.toString());
-                            boolean result = ex.execute(target, catFilePath, steps, relax);
+                            boolean result = ex.execute(target, catFilePath, steps, relax, idl);
                             logger.log(f.toString(), result ? "Allowed" : "Forbidden");
                         } catch (Exception e){
                             logger.log(f.toString(), "Error");
