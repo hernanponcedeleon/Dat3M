@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.microsoft.z3.*;
+import dartagnan.parsers.ParserLitmusPPC;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.io.FileUtils;
@@ -175,7 +176,6 @@ class Executor{
         p.initialize(steps);
         p.compile(target, false, true);
 
-
         s.add(p.encodeDF(ctx));
         s.add(p.getAss().encode(ctx));
         s.add(p.encodeCF(ctx));
@@ -193,7 +193,7 @@ class Executor{
         return s.check() == Status.SATISFIABLE;
     }
 
-    private Program parseFromFile(String inputFilePath) throws IOException{
+    private Program parseFromFile(String inputFilePath) throws Exception{
         File file = new File(inputFilePath);
         String programRaw = FileUtils.readFileToString(file, "UTF-8");
         ANTLRInputStream input = new ANTLRInputStream(programRaw);
@@ -205,7 +205,11 @@ class Executor{
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             LitmusParser parser = new LitmusParser(tokens);
             parser.addErrorListener(listener);
-            program = parser.program(inputFilePath).p;
+            //program = parser.program(inputFilePath).p;
+
+            ParserLitmusPPC testParser = new ParserLitmusPPC();
+            program = testParser.parse(inputFilePath);
+            //System.out.println(program);
         }
 
         if(inputFilePath.endsWith("pts")) {

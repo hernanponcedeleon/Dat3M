@@ -16,10 +16,10 @@ public class DartagnanTest {
         logger.initialize();
 
         Runner runner = new Runner(logger);
-        System.err.close();
+        //System.err.close();
 
         runner.run("litmus/PPC", "power", null, 2, true);
-        runner.run("litmus/X86", "tso", null, 2, true);
+        //runner.run("litmus/X86", "tso", null, 2, true);
 
         logger.close();
     }
