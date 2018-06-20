@@ -147,6 +147,7 @@ class Executor{
     Executor(String inputFilePath) throws Exception{
         ctx = new Context();
         s = ctx.mkSolver();
+        parserResolver = new ParserResolver();
         p = parseFromFile(inputFilePath);
     }
 
