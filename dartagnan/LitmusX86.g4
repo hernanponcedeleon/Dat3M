@@ -70,6 +70,10 @@ instruction
     |   sfence
     |   exchangeRegisterLocation
     |   incrementLocation
+    |   compareRegisterValue
+    |   compareLocationValue
+    |   addRegisterRegister
+    |   addRegisterValue
     ;
 
 none
@@ -110,7 +114,23 @@ exchangeRegisterLocation
     ;
 
 incrementLocation
-    :   Inc '[' location ']'
+    :   Inc ('[')? location (']')?
+    ;
+
+compareRegisterValue
+    :   Cmp r1 ',' ('$')? value
+    ;
+
+compareLocationValue
+    :   Cmp ('[')? location (']')? ',' ('$')? value
+    ;
+
+addRegisterRegister
+    :   Add r1 ',' r2
+    ;
+
+addRegisterValue
+    :   Add r1 ',' ('$')? value
     ;
 
 thread
@@ -119,6 +139,10 @@ thread
     ;
 
 r1
+    :   Register
+    ;
+
+r2
     :   Register
     ;
 
@@ -131,13 +155,13 @@ value
     ;
 
 assertionList
-    :   (AssertionExists | AssertionExistsNot) assertionClauseOrWithParenthesis (';')?
+    :   (AssertionExists | AssertionExistsNot) (assertionClauseOrWithParenthesis | '(' assertionClauseOrWithParenthesis ')' )(';')?
     |   AssertionFinal assertionClauseOrWithParenthesis (';')? assertionListExpectationList
-    |   AssertionForall  (assertionClauseOrWithParenthesis | assertionClauseOr) (';')?
+    |   AssertionForall  (assertionClauseOr | '(' assertionClauseOr ')') (';')?
     ;
 
 assertionClauseOrWithParenthesis
-    :   '(' assertionClauseAnd ')' (LogicOr '(' assertionClauseAnd ')')*
+    :   '(' (assertion | assertionClauseAnd) ')' (LogicOr '(' (assertion | assertionClauseAnd) ')')*
     ;
 
 assertionClauseOr
@@ -209,6 +233,16 @@ Sfence
 Inc
     :   'INC'
     |   'inc'
+    ;
+
+Cmp
+    :   'CMP'
+    |   'cmp'
+    ;
+
+Add
+    :   'ADD'
+    |   'add'
     ;
 
 Register

@@ -191,6 +191,30 @@ public class VisitorLitmusX86
     }
 
     @Override
+    public Object visitCompareRegisterValue(LitmusX86Parser.CompareRegisterValueContext ctx) {
+        // TODO: Implementation
+        throw new RuntimeException("CMP is not implemented");
+    }
+
+    @Override
+    public Object visitCompareLocationValue(LitmusX86Parser.CompareLocationValueContext ctx) {
+        // TODO: Implementation
+        throw new RuntimeException("CMP is not implemented");
+    }
+
+    @Override
+    public Object visitAddRegisterRegister(LitmusX86Parser.AddRegisterRegisterContext ctx) {
+        // TODO: Implementation
+        throw new RuntimeException("ADD is not implemented");
+    }
+
+    @Override
+    public Object visitAddRegisterValue(LitmusX86Parser.AddRegisterValueContext ctx) {
+        // TODO: Implementation
+        throw new RuntimeException("ADD is not implemented");
+    }
+
+    @Override
     public Object visitMfence(LitmusX86Parser.MfenceContext ctx) {
         return new Mfence();
     }
@@ -335,6 +359,11 @@ public class VisitorLitmusX86
     }
 
     @Override
+    public Object visitR2(LitmusX86Parser.R2Context ctx) {
+        return null;
+    }
+
+    @Override
     public Object visitLocation(LitmusX86Parser.LocationContext ctx) {
         return null;
     }
@@ -404,6 +433,6 @@ public class VisitorLitmusX86
 
     private void error(String msg){
         // TODO: Own type of exception
-        throw new RuntimeException("Parsing error :" + msg);
+        throw new RuntimeException("Parser : " + msg);
     }
 }
