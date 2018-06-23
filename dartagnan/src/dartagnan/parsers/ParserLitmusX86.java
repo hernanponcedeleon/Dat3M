@@ -1,29 +1,34 @@
 package dartagnan.parsers;
 
+import dartagnan.LitmusX86Lexer;
+import dartagnan.LitmusX86Parser;
+import dartagnan.parsers.visitors.VisitorLitmusX86;
 import dartagnan.program.Program;
-import dartagnan.LitmusLexer;
-import dartagnan.LitmusParser;
 import dartagnan.utils.ParserErrorListener;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.apache.commons.io.FileUtils;
+import org.antlr.v4.runtime.*;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 public class ParserLitmusX86 implements ParserInterface {
 
     public Program parse(String inputFilePath) throws IOException {
+
         File file = new File(inputFilePath);
-        String programRaw = FileUtils.readFileToString(file, "UTF-8");
-        ANTLRInputStream input = new ANTLRInputStream(programRaw);
-        LitmusLexer lexer = new LitmusLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        FileInputStream stream = new FileInputStream(file);
+        CharStream charStream = CharStreams.fromStream(stream);
 
-        ParserErrorListener listener = new ParserErrorListener();
+        LitmusX86Lexer lexer = new LitmusX86Lexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
-        LitmusParser parser = new LitmusParser(tokens);
-        parser.addErrorListener(listener);
-        return parser.program(inputFilePath).p;
+        LitmusX86Parser parser = new LitmusX86Parser(tokenStream);
+        parser.addErrorListener(new ParserErrorListener());
+        ParserRuleContext parserEntryPoint = parser.main();
+        VisitorLitmusX86 visitor = new VisitorLitmusX86();
+
+        Program program = (Program) parserEntryPoint.accept(visitor);
+        program.setName(inputFilePath);
+        return program;
     }
 }

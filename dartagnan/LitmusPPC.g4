@@ -17,7 +17,7 @@ headerComment
     ;
 
 variableDeclaratorList
-    :   '{' variableDeclarator* '}'
+    :   '{' (variableDeclarator)? (';' variableDeclarator)* (';')? '}' (';')?
     ;
 
 variableDeclarator
@@ -27,15 +27,15 @@ variableDeclarator
     ;
 
 variableDeclaratorLocation
-    :   location '=' value ';'
+    :   location '=' value
     ;
 
 variableDeclaratorRegister
-    :   thread ':' r1 '=' value ';'
+    :   thread ':' r1 '=' value
     ;
 
 variableDeclaratorRegisterLocation
-    :   thread ':' r1 '=' location ';'
+    :   thread ':' r1 '=' location
     ;
 
 threadDeclaratorList

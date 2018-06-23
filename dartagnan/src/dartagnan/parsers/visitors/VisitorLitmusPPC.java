@@ -525,7 +525,6 @@ public class VisitorLitmusPPC
     }
 
     private void error(String info){
-        System.err.println(String.format("Parsing error : %s", info));
-        program.addParsingError(info);
+        throw new RuntimeException(String.format("Parsing error : %s", info));
     }
 }

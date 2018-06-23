@@ -19,7 +19,6 @@ public class Program extends Thread{
 	private String name;
 	public Assert ass;
 	private List<Thread> threads;
-	private List<String> parsingErrors;
 
 	public Program(){
         this("");
@@ -32,17 +31,6 @@ public class Program extends Thread{
 
 	public void setName(String name){
 	    this.name = name;
-    }
-
-    public void addParsingError(String error) {
-	    if(this.parsingErrors == null){
-	        this.parsingErrors = new ArrayList<String>();
-        }
-        this.parsingErrors.add(error);
-    }
-
-    public List<String> getParsingErrors(){
-	    return this.parsingErrors;
     }
 
     public void add(Thread t) {

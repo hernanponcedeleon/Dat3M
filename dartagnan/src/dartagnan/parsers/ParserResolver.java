@@ -7,14 +7,14 @@ import java.io.IOException;
 
 public class ParserResolver {
 
-    private final String TYPE_LITMUS_PPC = "PPC";
-    private final String TYPE_LITMUS_X86 = "X86";
-    private final String TYPE_LITMUS_ARM = "ARM";
-    private final String TYPE_LITMUS_C   = "C";
+    public static final String TYPE_LITMUS_PPC = "PPC";
+    public static final String TYPE_LITMUS_X86 = "X86";
+    public static final String TYPE_LITMUS_ARM = "ARM";
+    public static final String TYPE_LITMUS_C   = "C";
 
     public ParserInterface getParser(String inputFilePath) throws IOException{
         if(inputFilePath.endsWith("litmus")){
-            String header = readFirstLine(inputFilePath);
+            String header = readFirstLine(inputFilePath).toUpperCase();
 
             if(header.indexOf(TYPE_LITMUS_PPC) == 0){
                 return new ParserLitmusPPC();

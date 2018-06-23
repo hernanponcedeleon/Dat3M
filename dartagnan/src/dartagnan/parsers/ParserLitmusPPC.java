@@ -22,10 +22,9 @@ public class ParserLitmusPPC implements ParserInterface{
 
         LitmusPPCLexer lexer = new LitmusPPCLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        ParserErrorListener listener = new ParserErrorListener();
 
         LitmusPPCParser parser = new LitmusPPCParser(tokenStream);
-        parser.addErrorListener(listener);
+        parser.addErrorListener(new ParserErrorListener());
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPPC visitor = new VisitorLitmusPPC();
 
