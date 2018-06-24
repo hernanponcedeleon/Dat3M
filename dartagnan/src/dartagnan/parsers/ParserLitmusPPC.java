@@ -4,11 +4,11 @@ import dartagnan.LitmusPPCLexer;
 import dartagnan.LitmusPPCParser;
 import dartagnan.parsers.visitors.VisitorLitmusPPC;
 import dartagnan.program.Program;
-import dartagnan.utils.ParserErrorListener;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.DiagnosticErrorListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,7 +24,7 @@ public class ParserLitmusPPC implements ParserInterface{
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusPPCParser parser = new LitmusPPCParser(tokenStream);
-        parser.addErrorListener(new ParserErrorListener());
+        parser.addErrorListener(new DiagnosticErrorListener(true));
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPPC visitor = new VisitorLitmusPPC();
 

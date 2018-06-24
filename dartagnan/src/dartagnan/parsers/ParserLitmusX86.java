@@ -4,9 +4,11 @@ import dartagnan.LitmusX86Lexer;
 import dartagnan.LitmusX86Parser;
 import dartagnan.parsers.visitors.VisitorLitmusX86;
 import dartagnan.program.Program;
-import dartagnan.utils.ParserErrorListener;
-import org.antlr.v4.runtime.*;
-
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.DiagnosticErrorListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,7 +25,7 @@ public class ParserLitmusX86 implements ParserInterface {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusX86Parser parser = new LitmusX86Parser(tokenStream);
-        parser.addErrorListener(new ParserErrorListener());
+        parser.addErrorListener(new DiagnosticErrorListener(true));
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusX86 visitor = new VisitorLitmusX86();
 

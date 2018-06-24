@@ -10,6 +10,7 @@ import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DiagnosticErrorListener;
 import org.apache.commons.io.FileUtils;
 
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
@@ -19,7 +20,6 @@ import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.Relation;
 import dartagnan.wmm.Wmm;
-import dartagnan.utils.ParserErrorListener;
 
 import org.apache.commons.cli.*;
 
@@ -206,7 +206,6 @@ class Executor{
         String programRaw = FileUtils.readFileToString(file, "UTF-8");
         ANTLRInputStream input = new ANTLRInputStream(programRaw);
         Program program = new Program(inputFilePath);
-        ParserErrorListener listener = new ParserErrorListener();
 
         if(inputFilePath.endsWith("litmus")) {
             ParserInterface parser = parserResolver.getParser(inputFilePath);
@@ -218,12 +217,8 @@ class Executor{
             PorthosLexer lexer = new PorthosLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             PorthosParser parser = new PorthosParser(tokens);
-            parser.addErrorListener(listener);
+            parser.addErrorListener(new DiagnosticErrorListener(true));
             program = parser.program(inputFilePath).p;
-        }
-
-        if(listener.hasError()){
-            throw new IOException("Parsing error");
         }
 
         return program;
