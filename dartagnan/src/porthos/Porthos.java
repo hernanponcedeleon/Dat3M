@@ -22,8 +22,8 @@ import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.LitmusLexer;
-import dartagnan.LitmusParser;
+import dartagnan.parsers.ParserAssertableInterface;
+import dartagnan.parsers.ParserResolver;
 import dartagnan.ModelLexer;
 import dartagnan.ModelParser;
 import dartagnan.PorthosLexer;
@@ -140,10 +140,10 @@ public class Porthos {
         }
 
         if(inputFilePath.endsWith("litmus")) {
-            LitmusLexer lexer = new LitmusLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            LitmusParser parser = new LitmusParser(tokens);
-            p = parser.program(inputFilePath).p;
+            ParserResolver parserResolver = new ParserResolver();
+            ParserAssertableInterface parser = (ParserAssertableInterface)parserResolver.getParser(inputFilePath);
+            parser.setAllowEmptyAssertFlag(true);
+            p = parser.parse(inputFilePath);
         }
 
         if(inputFilePath.endsWith("pts")) {

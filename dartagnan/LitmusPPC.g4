@@ -5,7 +5,7 @@ package dartagnan;
 }
 
 main
-    :    header variableDeclaratorList threadDeclaratorList instructionList (variableList)? assertionList EOF
+    :    header variableDeclaratorList threadDeclaratorList instructionList (variableList)? (assertionList)? EOF
     ;
 
 header

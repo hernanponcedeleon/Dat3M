@@ -13,7 +13,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class ParserLitmusPPC implements ParserInterface{
+public class ParserLitmusPPC implements ParserAssertableInterface{
+
+    private boolean allowEmptyAssertFlag = false;
+
+    public void setAllowEmptyAssertFlag(boolean flag){
+        allowEmptyAssertFlag = flag;
+    }
 
     public Program parse(String inputFilePath) throws IOException {
         File file = new File(inputFilePath);
@@ -27,6 +33,7 @@ public class ParserLitmusPPC implements ParserInterface{
         parser.addErrorListener(new DiagnosticErrorListener(true));
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPPC visitor = new VisitorLitmusPPC();
+        visitor.setAllowEmptyAssertFlag(allowEmptyAssertFlag);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);
