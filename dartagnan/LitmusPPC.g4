@@ -5,11 +5,11 @@ package dartagnan;
 }
 
 main
-    :    header variableDeclaratorList threadDeclaratorList instructionList assertionComment assertionList
+    :    header variableDeclaratorList threadDeclaratorList instructionList (variableList)? assertionList EOF
     ;
 
 header
-    :   'PPC' headerComment
+    :   LitmusLanguage headerComment
     ;
 
 headerComment
@@ -38,37 +38,25 @@ variableDeclaratorRegisterLocation
     :   thread ':' r1 '=' location
     ;
 
+variableList
+    :   'locations' '[' variable (';' variable)* (';')? ']'
+    ;
+
+variable
+    :   location
+    |   thread ':' r1
+    ;
+
 threadDeclaratorList
     :   thread ('|' thread)* ';'
     ;
 
 instructionList
-    :   (instructionRow)*
+    :   (instructionRow)+
     ;
 
 instructionRow
     :   instruction ('|' instruction)* ';'
-    ;
-
-assertionComment
-    :   ~('exists')*
-    ;
-
-assertionList
-    :   'exists' ('(')+ assertion ('/\\' assertion)* (')')+
-    ;
-
-assertion
-    :   variableAssertionLocation
-    |   variableAssertionRegister
-    ;
-
-variableAssertionLocation
-    :   location '=' value
-    ;
-
-variableAssertionRegister
-    :   thread ':' r1 '=' value
     ;
 
 instruction
@@ -185,24 +173,24 @@ eieio
     ;
 
 thread
-    :   ThreadDeclarator
+    :   ThreadIdentifier
     |   DigitSequence
     ;
 
 r1
-    :   'r' DigitSequence
+    :   Register
     ;
 
 r2
-    :   'r' DigitSequence
+    :   Register
     ;
 
 r3
-    :   'r' DigitSequence
+    :   Register
     ;
 
 location
-    :   Location
+    :   Identifier
     ;
 
 value
@@ -213,14 +201,104 @@ offset
     :   DigitSequence
     ;
 
-fragment
-NoRegisterFirstChar
-    :   [a-qs-zA-Z_]
+assertionList
+    :   (AssertionExists | AssertionExistsNot) (assertionClauseOrWithParenthesis | '(' assertionClauseOrWithParenthesis ')' )(';')?
+    |   AssertionFinal assertionClauseOrWithParenthesis (';')? assertionListExpectationList
+    |   AssertionForall  (assertionClauseOr | '(' assertionClauseOr ')') (';')?
     ;
 
-fragment
-IdentifierChars
-    :   [0-9a-qs-zA-Z_]
+assertionClauseOrWithParenthesis
+    :   '(' (assertion | assertionClauseAnd) ')' (LogicOr '(' (assertion | assertionClauseAnd) ')')*
+    ;
+
+assertionClauseOr
+    :   (assertion | assertionClauseAnd) (LogicOr (assertion | assertionClauseAnd))*
+    ;
+
+assertionClauseAnd
+    :   (assertion | '(' assertionClauseOr ')') (LogicAnd (assertion | '(' assertionClauseOr ')'))+
+    ;
+
+assertion
+    :   variableAssertionLocation
+    |   variableAssertionRegister
+    ;
+
+variableAssertionLocation
+    :   location '=' value
+    ;
+
+variableAssertionRegister
+    :   thread ':' r1 '=' value
+    ;
+
+assertionListExpectationList
+    :   'with' (assertionListExpectation)+
+    ;
+
+assertionListExpectation
+    :   assertionListExpectationTest ':' (AssertionExists | AssertionExistsNot) ';'
+    ;
+
+assertionListExpectationTest
+    :   'tso'
+    |   'cc'
+    |   'optic'
+    |   'default'
+    ;
+
+LitmusLanguage
+    :   'PPC'
+    |   'ppc'
+    ;
+
+Register
+    :   'r' DigitSequence
+    ;
+
+Label
+    :   'LC' DigitSequence
+    ;
+
+ThreadIdentifier
+    :   'P' DigitSequence
+    ;
+
+AssertionExistsNot
+    :   '~exists'
+    |   '~ exists'
+    ;
+
+AssertionExists
+    :   'exists'
+    ;
+
+AssertionFinal
+    :   'final'
+    ;
+
+AssertionForall
+    :   'forall'
+    ;
+
+LogicAnd
+    :   '/\\'
+    ;
+
+LogicOr
+    :   '\\/'
+    ;
+
+Identifier
+    :   (Letter)+ (Letter | Digit)*
+    ;
+
+DigitSequence
+    :   Digit+
+    ;
+
+Word
+    :   (Letter | Digit | Symbol)+
     ;
 
 fragment
@@ -228,37 +306,25 @@ Digit
     :   [0-9]
     ;
 
-Label
-    :   'LC' DigitSequence
+fragment
+Letter
+    :   [A-Za-z]
     ;
 
-ThreadDeclarator
-    :   'P' DigitSequence
-    ;
-
-Location
-    :   NoRegisterFirstChar (IdentifierChars)*
-    ;
-
-DigitSequence
-    :   Digit+
-    ;
-
-SkipSymbols
-    :   (   '+'
-        |   '-'
-        |   '*'
-        |   '/'
-        |   '"'
-        |   '.'
-        |   '['
-        |   ']'
-        |   '?'
-        |   '@'
-        |   '\''
-        |   '\\'
-        )
-        -> skip
+fragment
+Symbol
+    :   '+'
+    |   '-'
+    |   '*'
+    |   '/'
+    |   '"'
+    |   '.'
+    |   '?'
+    |   '@'
+    |   '&'
+    |   '\''
+    |   '\\'
+    |   '_'
     ;
 
 Whitespace
@@ -274,11 +340,11 @@ Newline
     ;
 
 BlockComment
-    :   '/*' .*? '*/'
+    :   '(*' .*? '*)'
         -> skip
     ;
 
-LineComment
-    :   '//' ~[\r\n]*
+ExecConfig
+    :   '<<' .*? '>>'
         -> skip
     ;

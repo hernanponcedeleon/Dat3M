@@ -39,7 +39,7 @@ variableDeclaratorRegisterLocation
     ;
 
 variableList
-    :   'locations' '[' (variable ';')+ ']'
+    :   'locations' '[' variable (';' variable)* (';')? ']'
     ;
 
 variable
@@ -309,19 +309,18 @@ Letter
 
 fragment
 Symbol
-    :   (   '+'
-        |   '-'
-        |   '*'
-        |   '/'
-        |   '"'
-        |   '.'
-        |   '?'
-        |   '@'
-        |   '&'
-        |   '\''
-        |   '\\'
-        |   '_'
-        )
+    :   '+'
+    |   '-'
+    |   '*'
+    |   '/'
+    |   '"'
+    |   '.'
+    |   '?'
+    |   '@'
+    |   '&'
+    |   '\''
+    |   '\\'
+    |   '_'
     ;
 
 Whitespace
