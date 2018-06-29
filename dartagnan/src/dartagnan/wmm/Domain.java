@@ -143,8 +143,8 @@ public class Domain {
 					boolean noIsh = true;
 					boolean noIsb = true;
 					for(Event b : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread()
-															&& e1.getEId() < e.getEId()
-															&& e.getEId() < e2.getEId()).collect(Collectors.toSet())) {
+							&& e1.getEId() < e.getEId()
+							&& e.getEId() < e2.getEId()).collect(Collectors.toSet())) {
 						if(b instanceof Mfence) {
 							noMfence = false;
 						}
@@ -300,8 +300,8 @@ public class Domain {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("data", e1, e2, ctx)));
 				}
 				if(e2 instanceof Store) {
-					if(!e2.getLastModMap().get(e2.getReg()).contains(e1)) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));						
+					if(e2.getReg() == null || !e2.getLastModMap().get(e2.getReg()).contains(e1)) {
+						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
 					}
 				}
 				if(e2 instanceof Load) {
@@ -317,6 +317,10 @@ public class Domain {
 		
 		for(Event e : eventsL) {
 			if(e instanceof Store) {
+				if(e.getReg() == null) {
+					continue;
+				}
+
 				BoolExpr orClause = ctx.mkFalse();
 				for(Event x : eventsL) {
 					if(e.getLastModMap().get(e.getReg()).contains(x)) {
@@ -326,7 +330,9 @@ public class Domain {
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
 					}
 				}
-				enc = ctx.mkAnd(enc, orClause);
+				if(!orClause.equals(ctx.mkFalse())){
+					enc = ctx.mkAnd(enc, orClause);
+				}
 			}
 			if(e instanceof Load) {
 				if(!e.getLastModMap().keySet().contains(e.getLoc())) {
@@ -341,7 +347,9 @@ public class Domain {
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
 					}
 				}
-				enc = ctx.mkAnd(enc, orClause);
+				if(!orClause.equals(ctx.mkFalse())) {
+					enc = ctx.mkAnd(enc, orClause);
+				}
 			}
 			if(e instanceof Local) {
 				for(Register reg : e.getExpr().getRegs()) {
@@ -354,7 +362,9 @@ public class Domain {
 							enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
 						}
 					}
-					enc = ctx.mkAnd(enc, orClause);	
+					if(!orClause.equals(ctx.mkFalse())) {
+						enc = ctx.mkAnd(enc, orClause);
+					}
 				}
 			}
 		}
@@ -369,6 +379,9 @@ public class Domain {
 				}
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("fr", e1, e2, ctx), orClause));
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrl", e1, e2, ctx), ctrlClause));
+				if(!orClause.equals(ctx.mkFalse())) {
+					enc = ctx.mkAnd(enc, ctx.mkEq(edge("fr", e1, e2, ctx), orClause));
+				}
 			}
 		}
 		

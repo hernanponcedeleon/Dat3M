@@ -19,7 +19,7 @@ public class DartagnanTest {
         //System.err.close();
 
         runner.run("litmus/PPC", "power", null, 2, true, true);
-        //runner.run("litmus/X86", "tso", null, 2, true);
+        runner.run("litmus/X86", "tso", null, 2, true, true);
 
         logger.close();
     }
@@ -44,7 +44,7 @@ class Runner{
                             boolean result = ex.execute(target, catFilePath, steps, relax, idl);
                             logger.log(f.toString(), result ? "Allowed" : "Forbidden");
                         } catch (Exception e){
-                            logger.log(f.toString(), "Error");
+                            logger.log(f.toString(), "Error" + e.getMessage());
                         }
                     });
 
