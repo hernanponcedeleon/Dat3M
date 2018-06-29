@@ -140,9 +140,7 @@ public class Domain {
 					boolean noIsync = true;
 					boolean noIsh = true;
 					boolean noIsb = true;
-					for(Event b : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread()
-															&& e1.getEId() < e.getEId()
-															&& e.getEId() < e2.getEId()).collect(Collectors.toSet())) {
+					for(Event b : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread() && e1.getEId() < e.getEId() && e.getEId() < e2.getEId()).collect(Collectors.toSet())) {
 						if(b instanceof Mfence) {
 							noMfence = false;
 						}
