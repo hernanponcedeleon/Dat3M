@@ -50,8 +50,8 @@ public class Domain {
 				enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e, e, ctx)));
 		}
 		
-		for(Event e1 : mSkipEvents) {
-			for(Event e2 : mSkipEvents) {
+		for(Event e1 : mEvents) {
+			for(Event e2 : mEvents) {
 				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("rf", e1, e2, ctx), ctx.mkAnd(e1.executes(ctx), e2.executes(ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("co", e1, e2, ctx), ctx.mkAnd(e1.executes(ctx), e2.executes(ctx))));
 				if(!(e1 instanceof Init)) {
@@ -123,19 +123,6 @@ public class Domain {
 				if(e1.getMainThread() == e2.getMainThread()) {
 					enc = ctx.mkAnd(enc, edge("int", e1, e2, ctx));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ext", e1, e2, ctx)));
-					if(e1.getEId() < e2.getEId()) {
-						enc = ctx.mkAnd(enc, edge("po", e1, e2, ctx));
-						if(e1.getCondLevel() < e2.getCondLevel() && e1 instanceof Load && e2.getCondRegs().contains(e1.getReg())) {
-							enc = ctx.mkAnd(enc, edge("ctrlDirect", e1, e2, ctx));
-						}
-						else {
-							enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrlDirect", e1, e2, ctx)));								
-						}
-					}
-					else {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("po", e1, e2, ctx)));
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrl", e1, e2, ctx)));
-					}
 					boolean noMfence = true;
 					boolean noSync = true;
 					boolean noLwsync = true;
@@ -184,15 +171,13 @@ public class Domain {
 				else {
 					enc = ctx.mkAnd(enc, edge("ext", e1, e2, ctx));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("int", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("po", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrl", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e2, ctx)));
 				}
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("rfe", e1, e2, ctx),
-						ctx.mkAnd(edge("rf", e1, e2, ctx), edge("ext", e1, e2, ctx))));
+										ctx.mkAnd(edge("rf", e1, e2, ctx), edge("ext", e1, e2, ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("rfi", e1, e2, ctx),
 										ctx.mkAnd(edge("rf", e1, e2, ctx), edge("int", e1, e2, ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("coe", e1, e2, ctx),
@@ -205,13 +190,6 @@ public class Domain {
 										ctx.mkAnd(edge("fr", e1, e2, ctx), edge("int", e1, e2, ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("poloc", e1, e2, ctx),
 										ctx.mkAnd(edge("po", e1, e2, ctx), edge("loc", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrlisync", e1, e2, ctx),
-										ctx.mkAnd(edge("ctrl", e1, e2, ctx), edge("isync", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrlisb", e1, e2, ctx),
-										ctx.mkAnd(edge("ctrl", e1, e2, ctx), edge("isb", e1, e2, ctx))));
-				if(e1 instanceof Skip || e2 instanceof Skip) {
-					continue;
-				}
 				if(e1.getLoc() == e2.getLoc()) {
 					enc = ctx.mkAnd(enc, edge("loc", e1, e2, ctx));
 				}
@@ -299,7 +277,7 @@ public class Domain {
 				}
 				if(e2 instanceof Store) {
 					if(!e2.getLastModMap().get(e2.getReg()).contains(e1)) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));						
+						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
 					}
 				}
 				if(e2 instanceof Load) {
@@ -352,20 +330,54 @@ public class Domain {
 							enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
 						}
 					}
-					enc = ctx.mkAnd(enc, orClause);	
+					enc = ctx.mkAnd(enc, orClause);
+				}
+			}
+		}
+		
+		for(Event e1 : mEvents) {
+			for(Event e2 : mEvents) {
+				BoolExpr orClause = ctx.mkFalse();
+				for(Event e3 : mEvents) {
+					orClause = ctx.mkOr(orClause, ctx.mkAnd(edge("rf", e3, e1, ctx), edge("co", e3, e2, ctx)));
+				}
+				enc = ctx.mkAnd(enc, ctx.mkEq(edge("fr", e1, e2, ctx), orClause));
+				if(!orClause.equals(ctx.mkFalse())) {
+					enc = ctx.mkAnd(enc, ctx.mkEq(edge("fr", e1, e2, ctx), orClause));
 				}
 			}
 		}
 		
 		for(Event e1 : mSkipEvents) {
 			for(Event e2 : mSkipEvents) {
+				if(e1.getMainThread() == e2.getMainThread()) {
+					enc = ctx.mkAnd(enc, edge("int", e1, e2, ctx));
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ext", e1, e2, ctx)));
+					if(e1.getEId() < e2.getEId()) {
+						enc = ctx.mkAnd(enc, edge("po", e1, e2, ctx));
+						if(e1.getCondLevel() < e2.getCondLevel() && e1 instanceof Load && e2.getCondRegs().contains(e1.getReg())) {
+							enc = ctx.mkAnd(enc, edge("ctrlDirect", e1, e2, ctx));
+						}
+						else {
+							enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrlDirect", e1, e2, ctx)));								
+						}
+					}
+					else {
+						enc = ctx.mkAnd(enc, ctx.mkNot(edge("po", e1, e2, ctx)));
+						enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrl", e1, e2, ctx)));
+					}
+				} else {
+						enc = ctx.mkAnd(enc, ctx.mkNot(edge("po", e1, e2, ctx)));
+						enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrl", e1, e2, ctx)));
+				}
+				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrlisync", e1, e2, ctx),
+						ctx.mkAnd(edge("ctrl", e1, e2, ctx), edge("isync", e1, e2, ctx))));
+				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrlisb", e1, e2, ctx),
+						ctx.mkAnd(edge("ctrl", e1, e2, ctx), edge("isb", e1, e2, ctx))));				
 				BoolExpr ctrlClause = edge("ctrlDirect",e1,e2,ctx);
-				BoolExpr orClause = ctx.mkFalse();
 				for(Event e3 : mSkipEvents) {
 					ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("ctrl", e1, e3, ctx), edge("po", e3, e2, ctx)));
-					orClause = ctx.mkOr(orClause, ctx.mkAnd(edge("rf", e3, e1, ctx), edge("co", e3, e2, ctx)));
 				}
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("fr", e1, e2, ctx), orClause));
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrl", e1, e2, ctx), ctrlClause));
 			}
 		}
