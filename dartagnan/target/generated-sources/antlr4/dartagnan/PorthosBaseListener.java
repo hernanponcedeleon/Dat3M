@@ -227,6 +227,18 @@ public class PorthosBaseListener implements PorthosListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterSkip(PorthosParser.SkipContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSkip(PorthosParser.SkipContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterInst(PorthosParser.InstContext ctx) { }
 	/**
 	 * {@inheritDoc}

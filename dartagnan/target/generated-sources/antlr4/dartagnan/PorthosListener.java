@@ -185,6 +185,16 @@ public interface PorthosListener extends ParseTreeListener {
 	 */
 	void exitIsync(PorthosParser.IsyncContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link PorthosParser#skip}.
+	 * @param ctx the parse tree
+	 */
+	void enterSkip(PorthosParser.SkipContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PorthosParser#skip}.
+	 * @param ctx the parse tree
+	 */
+	void exitSkip(PorthosParser.SkipContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PorthosParser#inst}.
 	 * @param ctx the parse tree
 	 */

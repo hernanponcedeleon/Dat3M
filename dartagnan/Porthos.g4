@@ -129,6 +129,9 @@ sync : 'sync';
 lwsync : 'lwsync';
 isync : 'isync';
 
+skip returns [Thread t]:
+	'skip' {$t = new Skip();};
+
 inst [String mainThread] returns [Thread t]:
 	| t1 = atom [mainThread] {$t = $t1.t;}
 	| t2 = seq [mainThread] {$t = $t2.t;} 
@@ -141,7 +144,8 @@ atom [String mainThread] returns [Thread t]:
 	| t3 = store [mainThread] {$t = $t3.t;}
 	| t4 = fence {$t = $t4.t;}
 	| t5 = read [mainThread] {$t = $t5.t;}
-	| t6 = write [mainThread] {$t = $t6.t;};
+	| t6 = write [mainThread] {$t = $t6.t;}
+	| t10 = skip {$t = $t10.t;};
 seq [String mainThread] returns [Thread t]: 
 	| t1 = atom [mainThread] ';' t2 = inst[mainThread] {$t = new Seq($t1.t, $t2.t);} 
 	| t3 = while_ [mainThread] ';' t4 = inst[mainThread] {$t = new Seq($t3.t, $t4.t);}
@@ -202,7 +206,7 @@ program [String name] returns [Program p]:
 ///////////////////////////////////////////////////////////////////////////////////////
 
 COMP_OP : EQ | NEQ | LEQ | LT | GEQ | GT;
-ARITH_OP : ADD | SUB | MULT | DIV | MOD;
+ARITH_OP : ADD | SUB | MULT | DIV | MOD | XOR ;
 BOOL_OP : AND | OR; 
 
 DIGIT : [0-9]+;
@@ -229,5 +233,6 @@ DIV : '/';
 MOD : '%';
 AND : 'and';
 OR : 'or';
+XOR : 'xor';
 
 ATOMIC : '_na' | '_sc' | '_rx' | '_acq' | '_rel' | '_con';
