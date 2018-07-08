@@ -155,34 +155,16 @@ value
     ;
 
 assertionList
-    :   (AssertionExists | AssertionExistsNot) (assertionClauseOrWithParenthesis | '(' assertionClauseOrWithParenthesis ')' )(';')?
-    |   AssertionFinal assertionClauseOrWithParenthesis (';')? assertionListExpectationList
-    |   AssertionForall  (assertionClauseOr | '(' assertionClauseOr ')') (';')?
-    ;
-
-assertionClauseOrWithParenthesis
-    :   '(' (assertion | assertionClauseAnd) ')' (LogicOr '(' (assertion | assertionClauseAnd) ')')*
-    ;
-
-assertionClauseOr
-    :   (assertion | assertionClauseAnd) (LogicOr (assertion | assertionClauseAnd))*
-    ;
-
-assertionClauseAnd
-    :   (assertion | '(' assertionClauseOr ')') (LogicAnd (assertion | '(' assertionClauseOr ')'))+
+    :   (AssertionExists | AssertionExistsNot | AssertionForall) assertion (';')?
+    |   AssertionFinal AssertionFinal (';')? assertionListExpectationList
     ;
 
 assertion
-    :   variableAssertionLocation
-    |   variableAssertionRegister
-    ;
-
-variableAssertionLocation
-    :   location '=' value
-    ;
-
-variableAssertionRegister
-    :   thread ':' r1 '=' value
+    :   '(' assertion ')'               # assertionParenthesis
+    |   assertion LogicAnd assertion    # assertionAnd
+    |   assertion LogicOr assertion     # assertionOr
+    |   location '=' value              # assertionLocation
+    |   thread ':' r1 '=' value         # assertionRegister
     ;
 
 assertionListExpectationList

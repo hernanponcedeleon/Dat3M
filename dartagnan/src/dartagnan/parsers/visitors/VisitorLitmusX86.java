@@ -269,18 +269,39 @@ public class VisitorLitmusX86
     }
 
     @Override
-    public Object visitAssertionClauseOr(LitmusX86Parser.AssertionClauseOrContext ctx) {
-        return visitAssertionClauseComposite(ctx, new AssertCompositeOr());
+    public Object visitAssertionLocation(LitmusX86Parser.AssertionLocationContext ctx) {
+        Location location = getLocation(ctx.location().getText());
+        int value = Integer.parseInt(ctx.value().getText());
+        return new AssertLocation(location, value);
     }
 
     @Override
-    public Object visitAssertionClauseAnd(LitmusX86Parser.AssertionClauseAndContext ctx) {
+    public Object visitAssertionRegister(LitmusX86Parser.AssertionRegisterContext ctx) {
+        Register register = getRegister(threadId(ctx.thread().getText()), ctx.r1().getText());
+        int value = Integer.parseInt(ctx.value().getText());
+        return new AssertRegister(register, value);
+    }
+
+    @Override
+    public Object visitAssertionAnd(LitmusX86Parser.AssertionAndContext ctx) {
         return visitAssertionClauseComposite(ctx, new AssertCompositeAnd());
     }
 
     @Override
-    public Object visitAssertionClauseOrWithParenthesis(LitmusX86Parser.AssertionClauseOrWithParenthesisContext ctx) {
+    public Object visitAssertionOr(LitmusX86Parser.AssertionOrContext ctx) {
         return visitAssertionClauseComposite(ctx, new AssertCompositeOr());
+    }
+
+    @Override
+    public Object visitAssertionParenthesis(LitmusX86Parser.AssertionParenthesisContext ctx) {
+        int n = ctx.getChildCount();
+        for(int i = 0; i < n; i++) {
+            Object child = ctx.getChild(i).accept(this);
+            if(child instanceof AssertInterface){
+                return child;
+            }
+        }
+        return null;
     }
 
     private Object visitAssertionClauseComposite(RuleNode ctx, AssertCompositeInterface ass){
@@ -292,25 +313,6 @@ public class VisitorLitmusX86
             }
         }
         return ass;
-    }
-
-    @Override
-    public Object visitAssertion(LitmusX86Parser.AssertionContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitVariableAssertionLocation(LitmusX86Parser.VariableAssertionLocationContext ctx) {
-        Location location = getLocation(ctx.location().getText());
-        int value = Integer.parseInt(ctx.value().getText());
-        return new AssertLocation(location, value);
-    }
-
-    @Override
-    public Object visitVariableAssertionRegister(LitmusX86Parser.VariableAssertionRegisterContext ctx) {
-        Register register = getRegister(threadId(ctx.thread().getText()), ctx.r1().getText());
-        int value = Integer.parseInt(ctx.value().getText());
-        return new AssertRegister(register, value);
     }
 
 
