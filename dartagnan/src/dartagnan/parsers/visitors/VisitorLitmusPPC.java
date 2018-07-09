@@ -363,8 +363,12 @@ public class VisitorLitmusPPC
             error("Failed to parse assertion");
         }
 
-        if(ctx.AssertionExistsNot() != null){
+        if(ctx.AssertionForall() != null){
             ass = new AssertNot(ass);
+        }
+
+        if(ctx.AssertionExistsNot() != null || ctx.AssertionForall() != null){
+            ass.setInvert(true);
         }
 
         program.setAss(ass);

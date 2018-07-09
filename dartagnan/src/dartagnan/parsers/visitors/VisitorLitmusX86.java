@@ -251,8 +251,12 @@ public class VisitorLitmusX86
             error("Failed to parse assertion");
         }
 
-        if(ctx.AssertionExistsNot() != null){
-            ass = new AssertNot((AssertInterface)ass);
+        if(ctx.AssertionForall() != null){
+            ass = new AssertNot(ass);
+        }
+
+        if(ctx.AssertionExistsNot() != null || ctx.AssertionForall() != null){
+            ass.setInvert(true);
         }
 
         program.setAss(ass);

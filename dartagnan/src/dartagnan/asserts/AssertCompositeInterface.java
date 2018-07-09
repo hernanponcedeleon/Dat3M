@@ -1,6 +1,6 @@
 package dartagnan.asserts;
 
-public interface AssertCompositeInterface extends AssertInterface{
+public abstract class AssertCompositeInterface extends AssertInterface{
 
-    void addChild(AssertInterface ass);
+    public abstract void addChild(AssertInterface ass);
 }

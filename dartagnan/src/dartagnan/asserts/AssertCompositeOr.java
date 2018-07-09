@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AssertCompositeOr implements AssertCompositeInterface {
+public class AssertCompositeOr extends AssertCompositeInterface {
 
     private List<AssertInterface> children = new ArrayList<AssertInterface>();
 

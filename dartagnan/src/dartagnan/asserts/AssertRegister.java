@@ -6,7 +6,7 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Register;
 import static dartagnan.utils.Utils.lastValueReg;
 
-public class AssertRegister implements AssertInterface{
+public class AssertRegister extends AssertInterface{
 
     private Register register;
     private int value;

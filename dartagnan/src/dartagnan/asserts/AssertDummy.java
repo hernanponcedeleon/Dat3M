@@ -4,7 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 
-public class AssertDummy implements AssertInterface {
+public class AssertDummy extends AssertInterface {
 
     public BoolExpr encode(Context ctx) throws Z3Exception {
         return ctx.mkTrue();

@@ -15,12 +15,18 @@ DIRS="$(find $TESTS_PATH -type d)"
 for dir in $DIRS
 do
     # TODO: Put HERD configs here (cat model etc) and apply them to all tests in this dir
-
     FILES="$(find $dir -name '*.litmus')"
     for file in $FILES
     do
-        # TODO: More reliable way to extract result
-        result=$($HERD $file | tail -6 | head -1 | grep -oE "^Positive: [0-9]+" | grep -oE "[0-9]+$")
+        result=-1
+        herdOut=$($HERD $file | tail -8 | head -1 | grep -oE "(Ok|No)")
+        if [ $herdOut = "Ok" ]
+        then
+            result=1
+        elif [ $herdOut = "No" ]
+        then
+            result=0
+        fi
         if [ $OUTPUT_RELATIVE_PATH = 1 ]
         then
             file=${file/$ROOT\//}

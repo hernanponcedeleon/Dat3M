@@ -4,9 +4,17 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 
-public interface AssertInterface {
+public abstract class AssertInterface {
 
-    BoolExpr encode(Context ctx) throws Z3Exception;
+    private boolean invertFlag = false;
 
-    String toString();
+    public abstract BoolExpr encode(Context ctx) throws Z3Exception;
+
+    public void setInvert(boolean flag){
+        invertFlag = flag;
+    }
+
+    public boolean getInvert(){
+        return invertFlag;
+    }
 }
