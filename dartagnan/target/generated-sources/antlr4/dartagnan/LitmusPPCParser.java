@@ -2305,10 +2305,7 @@ public class LitmusPPCParser extends Parser {
 		public TerminalNode AssertionExists() { return getToken(LitmusPPCParser.AssertionExists, 0); }
 		public TerminalNode AssertionExistsNot() { return getToken(LitmusPPCParser.AssertionExistsNot, 0); }
 		public TerminalNode AssertionForall() { return getToken(LitmusPPCParser.AssertionForall, 0); }
-		public List<TerminalNode> AssertionFinal() { return getTokens(LitmusPPCParser.AssertionFinal); }
-		public TerminalNode AssertionFinal(int i) {
-			return getToken(LitmusPPCParser.AssertionFinal, i);
-		}
+		public TerminalNode AssertionFinal() { return getToken(LitmusPPCParser.AssertionFinal, 0); }
 		public AssertionListExpectationListContext assertionListExpectationList() {
 			return getRuleContext(AssertionListExpectationListContext.class,0);
 		}
@@ -2328,7 +2325,7 @@ public class LitmusPPCParser extends Parser {
 		enterRule(_localctx, 86, RULE_assertionList);
 		int _la;
 		try {
-			setState(345);
+			setState(346);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case AssertionExistsNot:
@@ -2366,7 +2363,7 @@ public class LitmusPPCParser extends Parser {
 				setState(339);
 				match(AssertionFinal);
 				setState(340);
-				match(AssertionFinal);
+				assertion(0);
 				setState(342);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -2495,7 +2492,7 @@ public class LitmusPPCParser extends Parser {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(362);
+			setState(363);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case T__12:
@@ -2504,11 +2501,11 @@ public class LitmusPPCParser extends Parser {
 				_ctx = _localctx;
 				_prevctx = _localctx;
 
-				setState(348);
-				match(T__12);
 				setState(349);
-				assertion(0);
+				match(T__12);
 				setState(350);
+				assertion(0);
+				setState(351);
 				match(T__13);
 				}
 				break;
@@ -2517,11 +2514,11 @@ public class LitmusPPCParser extends Parser {
 				_localctx = new AssertionLocationContext(_localctx);
 				_ctx = _localctx;
 				_prevctx = _localctx;
-				setState(352);
-				location();
 				setState(353);
-				match(T__3);
+				location();
 				setState(354);
+				match(T__3);
+				setState(355);
 				value();
 				}
 				break;
@@ -2531,15 +2528,15 @@ public class LitmusPPCParser extends Parser {
 				_localctx = new AssertionRegisterContext(_localctx);
 				_ctx = _localctx;
 				_prevctx = _localctx;
-				setState(356);
-				thread();
 				setState(357);
-				match(T__4);
+				thread();
 				setState(358);
-				r1();
+				match(T__4);
 				setState(359);
-				match(T__3);
+				r1();
 				setState(360);
+				match(T__3);
+				setState(361);
 				value();
 				}
 				break;
@@ -2547,7 +2544,7 @@ public class LitmusPPCParser extends Parser {
 				throw new NoViableAltException(this);
 			}
 			_ctx.stop = _input.LT(-1);
-			setState(372);
+			setState(373);
 			_errHandler.sync(this);
 			_alt = getInterpreter().adaptivePredict(_input,20,_ctx);
 			while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
@@ -2555,18 +2552,18 @@ public class LitmusPPCParser extends Parser {
 					if ( _parseListeners!=null ) triggerExitRuleEvent();
 					_prevctx = _localctx;
 					{
-					setState(370);
+					setState(371);
 					_errHandler.sync(this);
 					switch ( getInterpreter().adaptivePredict(_input,19,_ctx) ) {
 					case 1:
 						{
 						_localctx = new AssertionAndContext(new AssertionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_assertion);
-						setState(364);
-						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
 						setState(365);
-						match(LogicAnd);
+						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
 						setState(366);
+						match(LogicAnd);
+						setState(367);
 						assertion(5);
 						}
 						break;
@@ -2574,18 +2571,18 @@ public class LitmusPPCParser extends Parser {
 						{
 						_localctx = new AssertionOrContext(new AssertionContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_assertion);
-						setState(367);
-						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
 						setState(368);
-						match(LogicOr);
+						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
 						setState(369);
+						match(LogicOr);
+						setState(370);
 						assertion(4);
 						}
 						break;
 					}
 					} 
 				}
-				setState(374);
+				setState(375);
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,20,_ctx);
 			}
@@ -2627,19 +2624,19 @@ public class LitmusPPCParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(375);
+			setState(376);
 			match(T__32);
-			setState(377); 
+			setState(378); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(376);
+				setState(377);
 				assertionListExpectation();
 				}
 				}
-				setState(379); 
+				setState(380); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36))) != 0) );
@@ -2680,11 +2677,11 @@ public class LitmusPPCParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(381);
-			assertionListExpectationTest();
 			setState(382);
-			match(T__4);
+			assertionListExpectationTest();
 			setState(383);
+			match(T__4);
+			setState(384);
 			_la = _input.LA(1);
 			if ( !(_la==AssertionExistsNot || _la==AssertionExists) ) {
 			_errHandler.recoverInline(this);
@@ -2694,7 +2691,7 @@ public class LitmusPPCParser extends Parser {
 				_errHandler.reportMatch(this);
 				consume();
 			}
-			setState(384);
+			setState(385);
 			match(T__1);
 			}
 		}
@@ -2728,7 +2725,7 @@ public class LitmusPPCParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(386);
+			setState(387);
 			_la = _input.LA(1);
 			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__33) | (1L << T__34) | (1L << T__35) | (1L << T__36))) != 0)) ) {
 			_errHandler.recoverInline(this);
@@ -2769,7 +2766,7 @@ public class LitmusPPCParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\38\u0187\4\2\t\2\4"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\38\u0188\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
 		"\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
@@ -2792,13 +2789,13 @@ public class LitmusPPCParser extends Parser {
 		"\3\30\3\30\3\30\3\31\3\31\3\31\3\31\3\31\3\32\3\32\3\32\3\33\3\33\3\33"+
 		"\3\34\3\34\3\34\3\35\3\35\3\35\3\36\3\36\3\36\3\37\3\37\3\37\3 \3 \3 "+
 		"\3!\3!\3!\3\"\3\"\3#\3#\3$\3$\3%\3%\3&\3&\3\'\3\'\3(\3(\3)\3)\3*\3*\3"+
-		"+\3+\3,\3,\3-\3-\3-\5-\u0154\n-\3-\3-\3-\5-\u0159\n-\3-\5-\u015c\n-\3"+
-		".\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\5.\u016d\n.\3.\3.\3.\3.\3"+
-		".\3.\7.\u0175\n.\f.\16.\u0178\13.\3/\3/\6/\u017c\n/\r/\16/\u017d\3\60"+
-		"\3\60\3\60\3\60\3\60\3\61\3\61\3\61\2\3Z\62\2\4\6\b\n\f\16\20\22\24\26"+
-		"\30\32\34\36 \"$&(*,.\60\62\64\668:<>@BDFHJLNPRTVXZ\\^`\2\7\3\2\3\3\4"+
-		"\2++\63\63\4\2,-//\3\2,-\3\2$\'\2\u0182\2b\3\2\2\2\4n\3\2\2\2\6t\3\2\2"+
-		"\2\bw\3\2\2\2\n\u008c\3\2\2\2\f\u008e\3\2\2\2\16\u0092\3\2\2\2\20\u0098"+
+		"+\3+\3,\3,\3-\3-\3-\5-\u0154\n-\3-\3-\3-\5-\u0159\n-\3-\3-\5-\u015d\n"+
+		"-\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\3.\5.\u016e\n.\3.\3.\3.\3"+
+		".\3.\3.\7.\u0176\n.\f.\16.\u0179\13.\3/\3/\6/\u017d\n/\r/\16/\u017e\3"+
+		"\60\3\60\3\60\3\60\3\60\3\61\3\61\3\61\2\3Z\62\2\4\6\b\n\f\16\20\22\24"+
+		"\26\30\32\34\36 \"$&(*,.\60\62\64\668:<>@BDFHJLNPRTVXZ\\^`\2\7\3\2\3\3"+
+		"\4\2++\63\63\4\2,-//\3\2,-\3\2$\'\2\u0183\2b\3\2\2\2\4n\3\2\2\2\6t\3\2"+
+		"\2\2\bw\3\2\2\2\n\u008c\3\2\2\2\f\u008e\3\2\2\2\16\u0092\3\2\2\2\20\u0098"+
 		"\3\2\2\2\22\u009e\3\2\2\2\24\u00b2\3\2\2\2\26\u00b4\3\2\2\2\30\u00bf\3"+
 		"\2\2\2\32\u00c3\3\2\2\2\34\u00e3\3\2\2\2\36\u00e5\3\2\2\2 \u00e7\3\2\2"+
 		"\2\"\u00ec\3\2\2\2$\u00f4\3\2\2\2&\u00fb\3\2\2\2(\u0103\3\2\2\2*\u010a"+
@@ -2806,8 +2803,8 @@ public class LitmusPPCParser extends Parser {
 		"\2\64\u0125\3\2\2\2\66\u0128\3\2\2\28\u012b\3\2\2\2:\u012e\3\2\2\2<\u0131"+
 		"\3\2\2\2>\u0134\3\2\2\2@\u0137\3\2\2\2B\u013a\3\2\2\2D\u013c\3\2\2\2F"+
 		"\u013e\3\2\2\2H\u0140\3\2\2\2J\u0142\3\2\2\2L\u0144\3\2\2\2N\u0146\3\2"+
-		"\2\2P\u0148\3\2\2\2R\u014a\3\2\2\2T\u014c\3\2\2\2V\u014e\3\2\2\2X\u015b"+
-		"\3\2\2\2Z\u016c\3\2\2\2\\\u0179\3\2\2\2^\u017f\3\2\2\2`\u0184\3\2\2\2"+
+		"\2\2P\u0148\3\2\2\2R\u014a\3\2\2\2T\u014c\3\2\2\2V\u014e\3\2\2\2X\u015c"+
+		"\3\2\2\2Z\u016d\3\2\2\2\\\u017a\3\2\2\2^\u0180\3\2\2\2`\u0185\3\2\2\2"+
 		"bc\5\4\3\2cd\5\b\5\2de\5\26\f\2eg\5\30\r\2fh\5\22\n\2gf\3\2\2\2gh\3\2"+
 		"\2\2hj\3\2\2\2ik\5X-\2ji\3\2\2\2jk\3\2\2\2kl\3\2\2\2lm\7\2\2\3m\3\3\2"+
 		"\2\2no\7(\2\2op\5\6\4\2p\5\3\2\2\2qs\n\2\2\2rq\3\2\2\2sv\3\2\2\2tr\3\2"+
@@ -2879,24 +2876,24 @@ public class LitmusPPCParser extends Parser {
 		"\7)\2\2\u0147O\3\2\2\2\u0148\u0149\7)\2\2\u0149Q\3\2\2\2\u014a\u014b\7"+
 		"\62\2\2\u014bS\3\2\2\2\u014c\u014d\7\63\2\2\u014dU\3\2\2\2\u014e\u014f"+
 		"\7\63\2\2\u014fW\3\2\2\2\u0150\u0151\t\4\2\2\u0151\u0153\5Z.\2\u0152\u0154"+
-		"\7\4\2\2\u0153\u0152\3\2\2\2\u0153\u0154\3\2\2\2\u0154\u015c\3\2\2\2\u0155"+
-		"\u0156\7.\2\2\u0156\u0158\7.\2\2\u0157\u0159\7\4\2\2\u0158\u0157\3\2\2"+
-		"\2\u0158\u0159\3\2\2\2\u0159\u015a\3\2\2\2\u015a\u015c\5\\/\2\u015b\u0150"+
-		"\3\2\2\2\u015b\u0155\3\2\2\2\u015cY\3\2\2\2\u015d\u015e\b.\1\2\u015e\u015f"+
-		"\7\17\2\2\u015f\u0160\5Z.\2\u0160\u0161\7\20\2\2\u0161\u016d\3\2\2\2\u0162"+
-		"\u0163\5R*\2\u0163\u0164\7\6\2\2\u0164\u0165\5T+\2\u0165\u016d\3\2\2\2"+
-		"\u0166\u0167\5J&\2\u0167\u0168\7\7\2\2\u0168\u0169\5L\'\2\u0169\u016a"+
-		"\7\6\2\2\u016a\u016b\5T+\2\u016b\u016d\3\2\2\2\u016c\u015d\3\2\2\2\u016c"+
-		"\u0162\3\2\2\2\u016c\u0166\3\2\2\2\u016d\u0176\3\2\2\2\u016e\u016f\f\6"+
-		"\2\2\u016f\u0170\7\60\2\2\u0170\u0175\5Z.\7\u0171\u0172\f\5\2\2\u0172"+
-		"\u0173\7\61\2\2\u0173\u0175\5Z.\6\u0174\u016e\3\2\2\2\u0174\u0171\3\2"+
-		"\2\2\u0175\u0178\3\2\2\2\u0176\u0174\3\2\2\2\u0176\u0177\3\2\2\2\u0177"+
-		"[\3\2\2\2\u0178\u0176\3\2\2\2\u0179\u017b\7#\2\2\u017a\u017c\5^\60\2\u017b"+
-		"\u017a\3\2\2\2\u017c\u017d\3\2\2\2\u017d\u017b\3\2\2\2\u017d\u017e\3\2"+
-		"\2\2\u017e]\3\2\2\2\u017f\u0180\5`\61\2\u0180\u0181\7\7\2\2\u0181\u0182"+
-		"\t\5\2\2\u0182\u0183\7\4\2\2\u0183_\3\2\2\2\u0184\u0185\t\6\2\2\u0185"+
-		"a\3\2\2\2\30gjty\177\u0083\u0087\u008c\u00a5\u00a9\u00b2\u00b9\u00c1\u00c8"+
-		"\u00e3\u0153\u0158\u015b\u016c\u0174\u0176\u017d";
+		"\7\4\2\2\u0153\u0152\3\2\2\2\u0153\u0154\3\2\2\2\u0154\u015d\3\2\2\2\u0155"+
+		"\u0156\7.\2\2\u0156\u0158\5Z.\2\u0157\u0159\7\4\2\2\u0158\u0157\3\2\2"+
+		"\2\u0158\u0159\3\2\2\2\u0159\u015a\3\2\2\2\u015a\u015b\5\\/\2\u015b\u015d"+
+		"\3\2\2\2\u015c\u0150\3\2\2\2\u015c\u0155\3\2\2\2\u015dY\3\2\2\2\u015e"+
+		"\u015f\b.\1\2\u015f\u0160\7\17\2\2\u0160\u0161\5Z.\2\u0161\u0162\7\20"+
+		"\2\2\u0162\u016e\3\2\2\2\u0163\u0164\5R*\2\u0164\u0165\7\6\2\2\u0165\u0166"+
+		"\5T+\2\u0166\u016e\3\2\2\2\u0167\u0168\5J&\2\u0168\u0169\7\7\2\2\u0169"+
+		"\u016a\5L\'\2\u016a\u016b\7\6\2\2\u016b\u016c\5T+\2\u016c\u016e\3\2\2"+
+		"\2\u016d\u015e\3\2\2\2\u016d\u0163\3\2\2\2\u016d\u0167\3\2\2\2\u016e\u0177"+
+		"\3\2\2\2\u016f\u0170\f\6\2\2\u0170\u0171\7\60\2\2\u0171\u0176\5Z.\7\u0172"+
+		"\u0173\f\5\2\2\u0173\u0174\7\61\2\2\u0174\u0176\5Z.\6\u0175\u016f\3\2"+
+		"\2\2\u0175\u0172\3\2\2\2\u0176\u0179\3\2\2\2\u0177\u0175\3\2\2\2\u0177"+
+		"\u0178\3\2\2\2\u0178[\3\2\2\2\u0179\u0177\3\2\2\2\u017a\u017c\7#\2\2\u017b"+
+		"\u017d\5^\60\2\u017c\u017b\3\2\2\2\u017d\u017e\3\2\2\2\u017e\u017c\3\2"+
+		"\2\2\u017e\u017f\3\2\2\2\u017f]\3\2\2\2\u0180\u0181\5`\61\2\u0181\u0182"+
+		"\7\7\2\2\u0182\u0183\t\5\2\2\u0183\u0184\7\4\2\2\u0184_\3\2\2\2\u0185"+
+		"\u0186\t\6\2\2\u0186a\3\2\2\2\30gjty\177\u0083\u0087\u008c\u00a5\u00a9"+
+		"\u00b2\u00b9\u00c1\u00c8\u00e3\u0153\u0158\u015c\u016d\u0175\u0177\u017e";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

@@ -8,7 +8,6 @@ import dartagnan.LitmusX86Parser;
 import dartagnan.LitmusX86Visitor;
 import dartagnan.parsers.utils.Utils;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
-import org.antlr.v4.runtime.tree.RuleNode;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -246,15 +245,7 @@ public class VisitorLitmusX86
             return null;
         }
 
-        Assert ass = null;
-        int n = ctx.getChildCount();
-        for(int i = 0; i < n; ++i) {
-            Object childResult = ctx.getChild(i).accept(this);
-            if(childResult instanceof AssertInterface){
-                ass = (Assert) childResult;
-                break;
-            }
-        }
+        AssertInterface ass = (AssertInterface) visit(ctx.assertion());
 
         if(ass == null){
             error("Failed to parse assertion");
@@ -284,35 +275,23 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitAssertionAnd(LitmusX86Parser.AssertionAndContext ctx) {
-        return visitAssertionClauseComposite(ctx, new AssertCompositeAnd());
+        return new AssertCompositeAnd(
+                (AssertInterface) visit(ctx.assertion(0)),
+                (AssertInterface) visit(ctx.assertion(1))
+        );
     }
 
     @Override
     public Object visitAssertionOr(LitmusX86Parser.AssertionOrContext ctx) {
-        return visitAssertionClauseComposite(ctx, new AssertCompositeOr());
+        return new AssertCompositeOr(
+                (AssertInterface) visit(ctx.assertion(0)),
+                (AssertInterface) visit(ctx.assertion(1))
+        );
     }
 
     @Override
     public Object visitAssertionParenthesis(LitmusX86Parser.AssertionParenthesisContext ctx) {
-        int n = ctx.getChildCount();
-        for(int i = 0; i < n; i++) {
-            Object child = ctx.getChild(i).accept(this);
-            if(child instanceof AssertInterface){
-                return child;
-            }
-        }
-        return null;
-    }
-
-    private Object visitAssertionClauseComposite(RuleNode ctx, AssertCompositeInterface ass){
-        int n = ctx.getChildCount();
-        for(int i = 0; i < n; i++) {
-            Object child = ctx.getChild(i).accept(this);
-            if(child instanceof AssertInterface){
-                ass.addChild((AssertInterface) child);
-            }
-        }
-        return ass;
+        return visit(ctx.assertion());
     }
 
 

@@ -7,12 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// TODO: Temporary parent for backward compatibility. Should rely on AssertInterface only.
-import dartagnan.expression.Assert;
-
-public class AssertCompositeAnd extends Assert implements AssertCompositeInterface {
+public class AssertCompositeAnd implements AssertCompositeInterface {
 
     private List<AssertInterface> children = new ArrayList<AssertInterface>();
+
+    public AssertCompositeAnd(){}
+
+    public AssertCompositeAnd(AssertInterface a1, AssertInterface a2){
+        addChild(a1);
+        addChild(a2);
+    }
 
     public void addChild(AssertInterface ass){
         children.add(ass);

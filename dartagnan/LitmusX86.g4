@@ -156,7 +156,7 @@ value
 
 assertionList
     :   (AssertionExists | AssertionExistsNot | AssertionForall) assertion (';')?
-    |   AssertionFinal AssertionFinal (';')? assertionListExpectationList
+    |   AssertionFinal assertion (';')? assertionListExpectationList
     ;
 
 assertion

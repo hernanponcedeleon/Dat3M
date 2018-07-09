@@ -2,6 +2,9 @@ grammar Porthos;
 
 @header{
 package dartagnan;
+import dartagnan.asserts.AssertCompositeAnd;
+import dartagnan.asserts.AssertLocation;
+import dartagnan.asserts.AssertRegister;
 import dartagnan.program.*;
 import dartagnan.expression.*;
 import dartagnan.program.Thread;
@@ -11,7 +14,8 @@ import java.util.Map;
 @parser::members
 {
 private Map<String, Location> mapLocs = new HashMap<String, Location>();
-private Map<String, Map<String, Register>> mapRegs = new HashMap<String, Map<String, Register>>();	
+private Map<String, Map<String, Register>> mapRegs = new HashMap<String, Map<String, Register>>();
+private AssertCompositeAnd ass = new AssertCompositeAnd();
 }
 
 arith_expr [String mainThread] returns [AExpr expr]:
@@ -168,7 +172,6 @@ while_ [String mainThread] returns [Thread t]:
 program [String name] returns [Program p]:
 	{
 		Program p = new Program(name);
-		p.setAss(new Assert());
 	} 
 	LCBRA l = location 
 		('=' '[' min = DIGIT {$l.loc.setMin(Integer.parseInt($min.getText()));} ',' max = DIGIT {$l.loc.setMax(Integer.parseInt($max.getText()));} ']')* 
@@ -185,17 +188,20 @@ program [String name] returns [Program p]:
 	(l = location '=' value = DIGIT ','
 	{
 		Location loc = $l.loc;
-		p.getAss().addPair(loc, Integer.parseInt($value.getText()));
+		ass.addChild(new AssertLocation(loc, Integer.parseInt($value.getText())));
 	}
 	|
 	thrd = DIGIT ':' r = register '=' value = DIGIT ','
 	{
 		Register regPointer = $r.reg;
 		Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
-		p.getAss().addPair(reg, Integer.parseInt($value.getText()));
+		ass.addChild(new AssertRegister(reg, Integer.parseInt($value.getText())));
 	}
 	)*
-	)*;
+	)*
+	{
+	    p.setAss(ass);
+	};
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////

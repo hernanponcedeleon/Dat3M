@@ -1,6 +1,9 @@
 // Generated from Porthos.g4 by ANTLR 4.7
 
 package dartagnan;
+import dartagnan.asserts.AssertCompositeAnd;
+import dartagnan.asserts.AssertLocation;
+import dartagnan.asserts.AssertRegister;
 import dartagnan.program.*;
 import dartagnan.expression.*;
 import dartagnan.program.Thread;

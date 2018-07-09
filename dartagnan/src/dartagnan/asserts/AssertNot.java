@@ -4,10 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 
-// TODO: Temporary parent for backward compatibility. Should rely on AssertInterface only.
-import dartagnan.expression.Assert;
-
-public class AssertNot extends Assert implements AssertInterface {
+public class AssertNot implements AssertInterface {
 
     private AssertInterface child;
 
