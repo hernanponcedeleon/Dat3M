@@ -198,7 +198,12 @@ class Executor{
     		s.add(p.encodeConsistent(ctx, target));
         }
 
-        return s.check() == Status.SATISFIABLE;
+        boolean result = (s.check() == Status.SATISFIABLE);
+        if(p.getAss().getInvert()){
+            result = !result;
+        }
+
+        return result;
     }
 
     private Program parseFromFile(String inputFilePath) throws Exception{
