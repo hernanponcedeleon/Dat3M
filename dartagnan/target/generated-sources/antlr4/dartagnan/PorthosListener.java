@@ -1,9 +1,7 @@
 // Generated from Porthos.g4 by ANTLR 4.7
 
 package dartagnan;
-import dartagnan.asserts.AssertCompositeAnd;
-import dartagnan.asserts.AssertLocation;
-import dartagnan.asserts.AssertRegister;
+import dartagnan.asserts.*;
 import dartagnan.program.*;
 import dartagnan.expression.*;
 import dartagnan.program.Thread;
@@ -257,6 +255,36 @@ public interface PorthosListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitWhile_(PorthosParser.While_Context ctx);
+	/**
+	 * Enter a parse tree produced by {@link PorthosParser#assertionList}.
+	 * @param ctx the parse tree
+	 */
+	void enterAssertionList(PorthosParser.AssertionListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PorthosParser#assertionList}.
+	 * @param ctx the parse tree
+	 */
+	void exitAssertionList(PorthosParser.AssertionListContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PorthosParser#assertionType}.
+	 * @param ctx the parse tree
+	 */
+	void enterAssertionType(PorthosParser.AssertionTypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PorthosParser#assertionType}.
+	 * @param ctx the parse tree
+	 */
+	void exitAssertionType(PorthosParser.AssertionTypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PorthosParser#assertion}.
+	 * @param ctx the parse tree
+	 */
+	void enterAssertion(PorthosParser.AssertionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PorthosParser#assertion}.
+	 * @param ctx the parse tree
+	 */
+	void exitAssertion(PorthosParser.AssertionContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PorthosParser#program}.
 	 * @param ctx the parse tree

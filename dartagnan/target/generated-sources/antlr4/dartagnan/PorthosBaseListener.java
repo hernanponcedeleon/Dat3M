@@ -1,9 +1,7 @@
 // Generated from Porthos.g4 by ANTLR 4.7
 
 package dartagnan;
-import dartagnan.asserts.AssertCompositeAnd;
-import dartagnan.asserts.AssertLocation;
-import dartagnan.asserts.AssertRegister;
+import dartagnan.asserts.*;
 import dartagnan.program.*;
 import dartagnan.expression.*;
 import dartagnan.program.Thread;
@@ -309,6 +307,42 @@ public class PorthosBaseListener implements PorthosListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitWhile_(PorthosParser.While_Context ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAssertionList(PorthosParser.AssertionListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAssertionList(PorthosParser.AssertionListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAssertionType(PorthosParser.AssertionTypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAssertionType(PorthosParser.AssertionTypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAssertion(PorthosParser.AssertionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAssertion(PorthosParser.AssertionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
