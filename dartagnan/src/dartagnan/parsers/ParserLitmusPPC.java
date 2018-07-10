@@ -31,6 +31,7 @@ public class ParserLitmusPPC implements ParserAssertableInterface{
 
         LitmusPPCParser parser = new LitmusPPCParser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
+        parser.addErrorListener(new ParserErrorListener());
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPPC visitor = new VisitorLitmusPPC();
         visitor.setAllowEmptyAssertFlag(allowEmptyAssertFlag);

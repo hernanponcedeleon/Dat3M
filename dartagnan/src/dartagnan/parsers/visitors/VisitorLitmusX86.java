@@ -6,7 +6,7 @@ import dartagnan.expression.*;
 import dartagnan.asserts.*;
 import dartagnan.LitmusX86Parser;
 import dartagnan.LitmusX86Visitor;
-import dartagnan.parsers.utils.Utils;
+import dartagnan.parsers.utils.*;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 import java.util.Map;
@@ -187,31 +187,31 @@ public class VisitorLitmusX86
     @Override
     public Object visitIncrementLocation(LitmusX86Parser.IncrementLocationContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("INC is not implemented");
+        throw new ParsingException("INC is not implemented");
     }
 
     @Override
     public Object visitCompareRegisterValue(LitmusX86Parser.CompareRegisterValueContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("CMP is not implemented");
+        throw new ParsingException("CMP is not implemented");
     }
 
     @Override
     public Object visitCompareLocationValue(LitmusX86Parser.CompareLocationValueContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("CMP is not implemented");
+        throw new ParsingException("CMP is not implemented");
     }
 
     @Override
     public Object visitAddRegisterRegister(LitmusX86Parser.AddRegisterRegisterContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("ADD is not implemented");
+        throw new ParsingException("ADD is not implemented");
     }
 
     @Override
     public Object visitAddRegisterValue(LitmusX86Parser.AddRegisterValueContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("ADD is not implemented");
+        throw new ParsingException("ADD is not implemented");
     }
 
     @Override
@@ -222,13 +222,13 @@ public class VisitorLitmusX86
     @Override
     public Object visitLfence(LitmusX86Parser.LfenceContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("LFENCE is not implemented");
+        throw new ParsingException("LFENCE is not implemented");
     }
 
     @Override
     public Thread visitSfence(LitmusX86Parser.SfenceContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("SFENCE is not implemented");
+        throw new ParsingException("SFENCE is not implemented");
     }
 
 
@@ -239,26 +239,23 @@ public class VisitorLitmusX86
     public Object visitAssertionList(LitmusX86Parser.AssertionListContext ctx) {
         if(ctx == null){
             if(!allowEmptyAssertFlag){
-                error("Missing assertion");
+                throw new ParsingException("Missing assertion");
             }
             program.setAss(new AssertDummy());
             return null;
         }
 
-        AssertInterface ass = (AssertInterface) visit(ctx.assertion());
+        AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
 
         if(ass == null){
-            error("Failed to parse assertion");
+            throw new ParsingException("Failed to parse assertion");
         }
 
         if(ctx.AssertionForall() != null){
             ass = new AssertNot(ass);
         }
 
-        if(ctx.AssertionExistsNot() != null || ctx.AssertionForall() != null){
-            ass.setInvert(true);
-        }
-
+        ass.setType(getAssertionType(ctx));
         program.setAss(ass);
         return null;
     }
@@ -272,30 +269,51 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitAssertionRegister(LitmusX86Parser.AssertionRegisterContext ctx) {
-        Register register = getRegister(threadId(ctx.thread().getText()), ctx.r1().getText());
+        String thread = threadId(ctx.thread().getText());
+        Register register = getRegister(thread, ctx.r1().getText());
         int value = Integer.parseInt(ctx.value().getText());
-        return new AssertRegister(register, value);
+        return new AssertRegister(thread, register, value);
     }
 
     @Override
     public Object visitAssertionAnd(LitmusX86Parser.AssertionAndContext ctx) {
         return new AssertCompositeAnd(
-                (AssertInterface) visit(ctx.assertion(0)),
-                (AssertInterface) visit(ctx.assertion(1))
+                (AbstractAssert) visit(ctx.assertion(0)),
+                (AbstractAssert) visit(ctx.assertion(1))
         );
     }
 
     @Override
     public Object visitAssertionOr(LitmusX86Parser.AssertionOrContext ctx) {
         return new AssertCompositeOr(
-                (AssertInterface) visit(ctx.assertion(0)),
-                (AssertInterface) visit(ctx.assertion(1))
+                (AbstractAssert) visit(ctx.assertion(0)),
+                (AbstractAssert) visit(ctx.assertion(1))
         );
     }
 
     @Override
     public Object visitAssertionParenthesis(LitmusX86Parser.AssertionParenthesisContext ctx) {
         return visit(ctx.assertion());
+    }
+
+    private String getAssertionType(LitmusX86Parser.AssertionListContext ctx){
+        if(ctx.AssertionExists() != null){
+            return AbstractAssert.ASSERT_TYPE_EXISTS;
+        }
+
+        if(ctx.AssertionExistsNot() != null){
+            return AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
+        }
+
+        if(ctx.AssertionFinal() != null){
+            return AbstractAssert.ASSERT_TYPE_FINAL;
+        }
+
+        if(ctx.AssertionForall() != null){
+            return AbstractAssert.ASSERT_TYPE_FORALL;
+        }
+
+        throw new ParsingException("Unknown type of assertion clause");
     }
 
 
@@ -381,7 +399,7 @@ public class VisitorLitmusX86
 
     private Map<String, Location> getMapRegLoc(String threadName){
         if(!(mapRegistersLocations.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         return mapRegistersLocations.get(threadName);
     }
@@ -392,18 +410,18 @@ public class VisitorLitmusX86
         }
 
         if(!(mapRegisters.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(!(registers.keySet().contains(registerName))) {
-            error("Register " + registerName + " must be initialised");
+            throw new ParsingException("Register " + registerName + " must be initialised");
         }
         return registers.get(registerName);
     }
 
     private Register getRegister(String threadName, String registerName){
         if(!(mapRegisters.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(!(registers.keySet().contains(registerName))) {
@@ -424,13 +442,8 @@ public class VisitorLitmusX86
 
     private List<Thread> getThreadEvents(String threadName){
         if(!(mapThreadEvents.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         return mapThreadEvents.get(threadName);
-    }
-
-    private void error(String msg){
-        // TODO: Own type of exception
-        throw new RuntimeException("Parser : " + msg);
     }
 }

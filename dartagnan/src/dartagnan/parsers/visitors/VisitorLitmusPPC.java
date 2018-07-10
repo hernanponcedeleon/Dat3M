@@ -6,7 +6,7 @@ import dartagnan.expression.*;
 import dartagnan.asserts.*;
 import dartagnan.LitmusPPCParser;
 import dartagnan.LitmusPPCVisitor;
-import dartagnan.parsers.utils.Utils;
+import dartagnan.parsers.utils.*;
 import dartagnan.parsers.utils.Branch.BareIf;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -179,7 +179,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitLwzx(LitmusPPCParser.LwzxContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("lwzx is not implemented");
+        throw new ParsingException("lwzx is not implemented");
     }
 
     @Override
@@ -192,7 +192,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitStwx(LitmusPPCParser.StwxContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("stwx is not implemented");
+        throw new ParsingException("stwx is not implemented");
     }
 
     @Override
@@ -258,7 +258,7 @@ public class VisitorLitmusPPC
     private Object visitBranchCondition(String op, String label){
         Thread lastEvent = getLastEvent(mainThread);
         if(!(lastEvent instanceof BareIf)){
-            error("Invalid instruction sequence in thread " + mainThread);
+            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
         }
         ((BareIf)lastEvent).setOp(op);
         ((BareIf)lastEvent).setElseLabel(label);
@@ -283,7 +283,7 @@ public class VisitorLitmusPPC
     public Object visitLabel(LitmusPPCParser.LabelContext ctx) {
         Thread lastEvent = getLastEvent(mainThread);
         if(!(lastEvent instanceof BareIf)){
-            error("Invalid instruction sequence in thread " + mainThread);
+            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
         }
 
         String label = ctx.Label().getText();
@@ -315,7 +315,7 @@ public class VisitorLitmusPPC
     public Object visitB(LitmusPPCParser.BContext ctx) {
         Thread lastEvent = getLastEvent(mainThread);
         if(!(lastEvent instanceof BareIf) || ((BareIf) lastEvent).getEndLabel() != null){
-            error("Invalid instruction sequence in thread " + mainThread);
+            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
         }
         String label = ctx.Label().getText();
         ((BareIf) lastEvent).setEndLabel(label);
@@ -341,7 +341,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitEieio(LitmusPPCParser.EieioContext ctx) {
         // TODO: Implementation
-        throw new RuntimeException("eieio is not implemented");
+        throw new ParsingException("eieio is not implemented");
     }
 
 
@@ -352,25 +352,22 @@ public class VisitorLitmusPPC
     public Object visitAssertionList(LitmusPPCParser.AssertionListContext ctx) {
         if(ctx == null){
             if(!allowEmptyAssertFlag){
-                error("Missing assertion");
+                throw new ParsingException("Missing assertion");
             }
             program.setAss(new AssertDummy());
             return null;
         }
 
-        AssertInterface ass = (AssertInterface) visit(ctx.assertion());
+        AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
         if(ass == null){
-            error("Failed to parse assertion");
+            throw new ParsingException("Failed to parse assertion");
         }
 
         if(ctx.AssertionForall() != null){
             ass = new AssertNot(ass);
         }
 
-        if(ctx.AssertionExistsNot() != null || ctx.AssertionForall() != null){
-            ass.setInvert(true);
-        }
-
+        ass.setType(getAssertionType(ctx));
         program.setAss(ass);
         return null;
     }
@@ -384,30 +381,51 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitAssertionRegister(LitmusPPCParser.AssertionRegisterContext ctx) {
-        Register register = getRegister(threadId(ctx.thread().getText()), ctx.r1().getText());
+        String thread = threadId(ctx.thread().getText());
+        Register register = getRegister(thread, ctx.r1().getText());
         int value = Integer.parseInt(ctx.value().getText());
-        return new AssertRegister(register, value);
+        return new AssertRegister(thread, register, value);
     }
 
     @Override
     public Object visitAssertionAnd(LitmusPPCParser.AssertionAndContext ctx) {
         return new AssertCompositeAnd(
-                (AssertInterface) visit(ctx.assertion(0)),
-                (AssertInterface) visit(ctx.assertion(1))
+                (AbstractAssert) visit(ctx.assertion(0)),
+                (AbstractAssert) visit(ctx.assertion(1))
         );
     }
 
     @Override
     public Object visitAssertionOr(LitmusPPCParser.AssertionOrContext ctx) {
         return new AssertCompositeOr(
-                (AssertInterface) visit(ctx.assertion(0)),
-                (AssertInterface) visit(ctx.assertion(1))
+                (AbstractAssert) visit(ctx.assertion(0)),
+                (AbstractAssert) visit(ctx.assertion(1))
         );
     }
 
     @Override
     public Object visitAssertionParenthesis(LitmusPPCParser.AssertionParenthesisContext ctx) {
         return visit(ctx.assertion());
+    }
+
+    private String getAssertionType(LitmusPPCParser.AssertionListContext ctx){
+        if(ctx.AssertionExists() != null){
+            return AbstractAssert.ASSERT_TYPE_EXISTS;
+        }
+
+        if(ctx.AssertionExistsNot() != null){
+            return AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
+        }
+
+        if(ctx.AssertionFinal() != null){
+            return AbstractAssert.ASSERT_TYPE_FINAL;
+        }
+
+        if(ctx.AssertionForall() != null){
+            return AbstractAssert.ASSERT_TYPE_FORALL;
+        }
+
+        throw new ParsingException("Unknown type of assertion clause");
     }
 
 
@@ -507,7 +525,7 @@ public class VisitorLitmusPPC
 
     private Map<String, Location> getMapRegLoc(String threadName){
         if(!(mapRegistersLocations.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         return mapRegistersLocations.get(threadName);
     }
@@ -518,18 +536,18 @@ public class VisitorLitmusPPC
         }
 
         if(!(mapRegisters.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(!(registers.keySet().contains(registerName))) {
-            error("Register " + registerName + " must be initialised");
+            throw new ParsingException("Register " + registerName + " must be initialised");
         }
         return registers.get(registerName);
     }
 
     private Register getRegister(String threadName, String registerName){
         if(!(mapRegisters.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(!(registers.keySet().contains(registerName))) {
@@ -550,18 +568,18 @@ public class VisitorLitmusPPC
 
     private Location getLocationForRegister(String threadName, String registerName){
         if(!mapRegistersLocations.containsKey(threadName)){
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         Map<String, Location> registerLocationMap = mapRegistersLocations.get(threadName);
         if(!registerLocationMap.containsKey(registerName)){
-            error("Register " + registerName + " must be initialized to a location");
+            throw new ParsingException("Register " + registerName + " must be initialized to a location");
         }
         return registerLocationMap.get(registerName);
     }
 
     private List<Thread> getThreadEvents(String threadName){
         if(!(mapThreadEvents.keySet().contains(threadName))) {
-            error("Unknown thread " + threadName);
+            throw new ParsingException("Unknown thread " + threadName);
         }
         return mapThreadEvents.get(threadName);
     }
@@ -570,13 +588,8 @@ public class VisitorLitmusPPC
         List<Thread> events = getThreadEvents(threadName);
         int size = events.size();
         if(size == 0){
-            error("Invalid instruction sequence in thread " + mainThread);
+            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
         }
         return events.get(size - 1);
-    }
-
-    private void error(String msg){
-        // TODO: Own type of exception
-        throw new RuntimeException("Parser : " + msg);
     }
 }

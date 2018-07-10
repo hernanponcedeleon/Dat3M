@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
 
-import dartagnan.asserts.AssertInterface;
+import dartagnan.asserts.AbstractAssert;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
 import dartagnan.wmm.*;
@@ -17,7 +17,7 @@ import dartagnan.wmm.*;
 public class Program extends Thread{
 
 	private String name;
-	public AssertInterface ass;
+	public AbstractAssert ass;
 	private List<Thread> threads;
 
 	public Program(){
@@ -51,11 +51,11 @@ public class Program extends Thread{
 		return output;
 	}
 
-	public AssertInterface getAss() {
+	public AbstractAssert getAss() {
 		return ass;
 	}
 
-	public void setAss(AssertInterface ass) {
+	public void setAss(AbstractAssert ass) {
 		this.ass = ass;
 	}
 

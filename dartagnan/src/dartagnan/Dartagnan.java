@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.microsoft.z3.*;
+import dartagnan.asserts.AbstractAssert;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -33,7 +34,7 @@ public class Dartagnan {
 	public static void main(String[] args) throws Z3Exception, IOException {
 
 		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "arm");
-		
+
 		Options options = new Options();
 
         Option targetOpt = new Option("t", "target", true, "Target architecture to compile the program");
@@ -66,7 +67,7 @@ public class Dartagnan {
         		.hasArg()
         		.desc("Path to save the execution graph if the state is reachable")
         		.build());
-        
+
         options.addOption(Option.builder("rels")
         		.hasArgs()
         		.desc("Relations to be drawn in the graph")
@@ -111,30 +112,38 @@ public class Dartagnan {
                     cmd.hasOption("idl")
             );
 
-            if(result) {
-                System.out.println("The state is reachable");
+            System.out.println("Condition " + executor.getProgram().getAss().toStringWithType());
+            System.out.println(result ? "Ok" : "No");
 
-                if(cmd.hasOption("draw")) {
-                    String[] rels = new String[100];
-                    if(cmd.hasOption("rels")) {
-                        rels = cmd.getOptionValues("rels");
-                    }
-
-                    Context ctx = executor.getContext();
-                    ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-                    String outputPath = cmd.getOptionValue("draw");
-                    Utils.drawGraph(executor.getProgram(), ctx, executor.getSolver().getModel(), outputPath, rels);
+            if(cmd.hasOption("draw") && canDraw(executor.getProgram().getAss(), result)) {
+                String[] rels = new String[100];
+                if(cmd.hasOption("rels")) {
+                    rels = cmd.getOptionValues("rels");
                 }
 
-            }
-            else {
-                System.out.println("The state is not reachable");
+                Context ctx = executor.getContext();
+                ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+                String outputPath = cmd.getOptionValue("draw");
+                Utils.drawGraph(executor.getProgram(), ctx, executor.getSolver().getModel(), outputPath, rels);
+                System.out.println("Execution graph is written to " + outputPath);
             }
 
         } catch(Exception e){
             e.printStackTrace();
         }
-	}	
+    }
+
+    private static boolean canDraw(AbstractAssert ass, boolean result){
+        String type = ass.getType();
+        if(type == null){
+            return result;
+        }
+
+        if(result){
+            return type.equals(AbstractAssert.ASSERT_TYPE_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FINAL);
+        }
+        return type.equals(AbstractAssert.ASSERT_TYPE_NOT_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FORALL);
+    }
 }
 
 class Executor{

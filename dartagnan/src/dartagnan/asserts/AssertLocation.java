@@ -6,7 +6,7 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Location;
 import static dartagnan.utils.Utils.lastValueLoc;
 
-public class AssertLocation extends AssertInterface{
+public class AssertLocation extends AbstractAssert {
 
     private Location location;
     private int value;

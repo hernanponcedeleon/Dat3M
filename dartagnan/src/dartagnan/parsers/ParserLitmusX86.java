@@ -32,6 +32,7 @@ public class ParserLitmusX86 implements ParserAssertableInterface {
 
         LitmusX86Parser parser = new LitmusX86Parser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
+        parser.addErrorListener(new ParserErrorListener());
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusX86 visitor = new VisitorLitmusX86();
         visitor.setAllowEmptyAssertFlag(allowEmptyAssertFlag);

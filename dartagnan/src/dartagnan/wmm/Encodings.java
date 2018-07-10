@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.asserts.AssertCompositeAnd;
-import dartagnan.asserts.AssertInterface;
+import dartagnan.asserts.AbstractAssert;
 import dartagnan.asserts.AssertLocation;
 import dartagnan.asserts.AssertRegister;
 import dartagnan.program.Event;
@@ -177,7 +177,7 @@ public class Encodings {
 		return enc;
 	}
 
-	public static AssertInterface AssertFromModel(Program p, Model model, Context ctx) {
+	public static AbstractAssert AssertFromModel(Program p, Model model, Context ctx) {
 		AssertCompositeAnd ass = new AssertCompositeAnd();
 		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
 		for(Location loc : locs) {
@@ -194,7 +194,7 @@ public class Encodings {
 			}
 			Integer lastRegIndex = Collections.max(ssaRegIndexes);
 			String regVarName = format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
-			ass.addChild(new AssertRegister(reg, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString())));
+			ass.addChild(new AssertRegister(reg.getMainThread().toString(), reg, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString())));
 		}
 		return ass;
 	}

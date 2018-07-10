@@ -3,23 +3,15 @@ package dartagnan.asserts;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Collectors;
 
-public class AssertCompositeOr extends AssertCompositeInterface {
-
-    private List<AssertInterface> children = new ArrayList<AssertInterface>();
+public class AssertCompositeOr extends AbstractAssertComposite {
 
     public AssertCompositeOr(){}
 
-    public AssertCompositeOr(AssertInterface a1, AssertInterface a2){
+    public AssertCompositeOr(AbstractAssert a1, AbstractAssert a2){
         addChild(a1);
         addChild(a2);
-    }
-
-    public void addChild(AssertInterface ass){
-        children.add(ass);
     }
 
     public BoolExpr encode(Context ctx) throws Z3Exception {
@@ -27,15 +19,15 @@ public class AssertCompositeOr extends AssertCompositeInterface {
             throw new RuntimeException("Empty assertion clause");
         }
         BoolExpr enc = ctx.mkFalse();
-        for(AssertInterface child : children){
+        for(AbstractAssert child : children){
             enc = ctx.mkOr(enc, child.encode(ctx));
         }
         return enc;
     }
 
     public String toString() {
-        return " (" + children.stream()
+        return "(" + children.stream()
                 .map(child -> child.toString())
-                .collect(Collectors.joining(" || " )) + ") ";
+                .collect(Collectors.joining(" || " )) + ")";
     }
 }

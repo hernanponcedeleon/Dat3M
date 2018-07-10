@@ -6,12 +6,14 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Register;
 import static dartagnan.utils.Utils.lastValueReg;
 
-public class AssertRegister extends AssertInterface{
+public class AssertRegister extends AbstractAssert {
 
+    private String thread;
     private Register register;
     private int value;
 
-    public AssertRegister(Register register, int value){
+    public AssertRegister(String thread, Register register, int value){
+        this.thread = thread;
         this.register = register;
         this.value = value;
     }
@@ -21,6 +23,6 @@ public class AssertRegister extends AssertInterface{
     }
 
     public String toString(){
-        return register.getName() + "=" + value;
+        return thread + ":" + register.getName() + "=" + value;
     }
 }
