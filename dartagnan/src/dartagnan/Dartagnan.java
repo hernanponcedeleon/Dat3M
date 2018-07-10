@@ -129,7 +129,7 @@ public class Dartagnan {
             }
 
         } catch(Exception e){
-            e.printStackTrace();
+		    System.out.println("Error: " + e.getMessage());
         }
     }
 
@@ -158,6 +158,9 @@ class Executor{
         s = ctx.mkSolver();
         parserResolver = new ParserResolver();
         p = parseFromFile(inputFilePath);
+        if(p.getAss() == null){
+            throw new RuntimeException("Assert is required for Dartagnan tests");
+        }
     }
 
     public Program getProgram(){

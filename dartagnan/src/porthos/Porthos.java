@@ -22,7 +22,7 @@ import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.parsers.ParserAssertableInterface;
+import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
 import dartagnan.ModelLexer;
 import dartagnan.ModelParser;
@@ -141,8 +141,7 @@ public class Porthos {
 
         if(inputFilePath.endsWith("litmus")) {
             ParserResolver parserResolver = new ParserResolver();
-            ParserAssertableInterface parser = (ParserAssertableInterface)parserResolver.getParser(inputFilePath);
-            parser.setAllowEmptyAssertFlag(true);
+            ParserInterface parser = parserResolver.getParser(inputFilePath);
             p = parser.parse(inputFilePath);
         }
 

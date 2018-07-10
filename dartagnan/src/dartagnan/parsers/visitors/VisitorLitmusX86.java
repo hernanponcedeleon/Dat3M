@@ -28,7 +28,6 @@ public class VisitorLitmusX86
     private Program program;
     private String mainThread;
     private Integer threadCount = 0;
-    private boolean allowEmptyAssertFlag = false;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
@@ -237,26 +236,15 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitAssertionList(LitmusX86Parser.AssertionListContext ctx) {
-        if(ctx == null){
-            if(!allowEmptyAssertFlag){
-                throw new ParsingException("Missing assertion");
+        if(ctx != null){
+            AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
+            if(ctx.AssertionForall() != null){
+                ass = new AssertNot(ass);
             }
-            program.setAss(new AssertDummy());
-            return null;
+
+            ass.setType(getAssertionType(ctx));
+            program.setAss(ass);
         }
-
-        AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
-
-        if(ass == null){
-            throw new ParsingException("Failed to parse assertion");
-        }
-
-        if(ctx.AssertionForall() != null){
-            ass = new AssertNot(ass);
-        }
-
-        ass.setType(getAssertionType(ctx));
-        program.setAss(ass);
         return null;
     }
 
@@ -383,10 +371,6 @@ public class VisitorLitmusX86
     @Override
     public Object visitValue(LitmusX86Parser.ValueContext ctx) {
         return null;
-    }
-
-    public void setAllowEmptyAssertFlag(boolean flag){
-        allowEmptyAssertFlag = flag;
     }
 
 

@@ -2,6 +2,7 @@ package dartagnan.parsers;
 
 import dartagnan.LitmusPPCLexer;
 import dartagnan.LitmusPPCParser;
+import dartagnan.parsers.utils.ParserErrorListener;
 import dartagnan.parsers.visitors.VisitorLitmusPPC;
 import dartagnan.program.Program;
 import org.antlr.v4.runtime.CharStream;
@@ -13,13 +14,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class ParserLitmusPPC implements ParserAssertableInterface{
-
-    private boolean allowEmptyAssertFlag = false;
-
-    public void setAllowEmptyAssertFlag(boolean flag){
-        allowEmptyAssertFlag = flag;
-    }
+public class ParserLitmusPPC implements ParserInterface {
 
     public Program parse(String inputFilePath) throws IOException {
         File file = new File(inputFilePath);
@@ -34,7 +29,6 @@ public class ParserLitmusPPC implements ParserAssertableInterface{
         parser.addErrorListener(new ParserErrorListener());
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPPC visitor = new VisitorLitmusPPC();
-        visitor.setAllowEmptyAssertFlag(allowEmptyAssertFlag);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);

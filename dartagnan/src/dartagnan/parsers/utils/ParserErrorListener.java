@@ -1,4 +1,4 @@
-package dartagnan.parsers;
+package dartagnan.parsers.utils;
 
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.RecognitionException;

@@ -2,6 +2,7 @@ package dartagnan.parsers;
 
 import dartagnan.LitmusX86Lexer;
 import dartagnan.LitmusX86Parser;
+import dartagnan.parsers.utils.ParserErrorListener;
 import dartagnan.parsers.visitors.VisitorLitmusX86;
 import dartagnan.program.Program;
 import org.antlr.v4.runtime.CharStream;
@@ -13,13 +14,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class ParserLitmusX86 implements ParserAssertableInterface {
-
-    private boolean allowEmptyAssertFlag = false;
-
-    public void setAllowEmptyAssertFlag(boolean flag){
-        allowEmptyAssertFlag = flag;
-    }
+public class ParserLitmusX86 implements ParserInterface {
 
     public Program parse(String inputFilePath) throws IOException {
 
@@ -35,7 +30,6 @@ public class ParserLitmusX86 implements ParserAssertableInterface {
         parser.addErrorListener(new ParserErrorListener());
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusX86 visitor = new VisitorLitmusX86();
-        visitor.setAllowEmptyAssertFlag(allowEmptyAssertFlag);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);

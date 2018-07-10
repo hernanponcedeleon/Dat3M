@@ -350,25 +350,15 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitAssertionList(LitmusPPCParser.AssertionListContext ctx) {
-        if(ctx == null){
-            if(!allowEmptyAssertFlag){
-                throw new ParsingException("Missing assertion");
+        if(ctx != null){
+            AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
+            if(ctx.AssertionForall() != null){
+                ass = new AssertNot(ass);
             }
-            program.setAss(new AssertDummy());
-            return null;
-        }
 
-        AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
-        if(ass == null){
-            throw new ParsingException("Failed to parse assertion");
+            ass.setType(getAssertionType(ctx));
+            program.setAss(ass);
         }
-
-        if(ctx.AssertionForall() != null){
-            ass = new AssertNot(ass);
-        }
-
-        ass.setType(getAssertionType(ctx));
-        program.setAss(ass);
         return null;
     }
 
