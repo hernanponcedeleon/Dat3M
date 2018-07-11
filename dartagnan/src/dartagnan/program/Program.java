@@ -15,7 +15,7 @@ import static dartagnan.utils.Utils.edge;
 import dartagnan.wmm.*;
 
 public class Program {
-	
+
 	private String name;
 	public AbstractAssert ass;
 	private List<Thread> threads;
@@ -100,15 +100,15 @@ public class Program {
 			t.setGuard(ctx.mkTrue(), ctx);
 		}		
 	}
-	
+
 	public void compile(String target, boolean ctrl, boolean leading) {
 		compile(target, ctrl, leading, 0, 0);
-	}	
+	}
 
 	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid) {
 		compile(target, ctrl, leading, firstEid, 0);
 	}
-	
+
 	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid, Integer firstTid) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
 		
@@ -134,10 +134,12 @@ public class Program {
 			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
 			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
-				reg.setMainThread(t.tid);
+				if(reg != null) {
+					reg.setMainThread(t.tid);
+				}
 			}
 		}
-	}	
+	}
 
 	public void optCompile(Integer firstEId, boolean ctrl, boolean leading) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
@@ -284,7 +286,7 @@ public class Program {
 		    t.setMainThread(t.tid);
 		}
 	}
-	
+
 	private void setEId(Integer lastId) {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
