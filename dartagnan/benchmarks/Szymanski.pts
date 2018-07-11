@@ -64,4 +64,4 @@ while true {
 }
 }
 
-exists flag1=10,
+exists flag1=10
