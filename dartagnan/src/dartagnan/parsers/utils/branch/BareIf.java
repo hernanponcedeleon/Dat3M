@@ -1,4 +1,4 @@
-package dartagnan.parsers.utils.Branch;
+package dartagnan.parsers.utils.branch;
 
 import dartagnan.expression.AExpr;
 import dartagnan.expression.Atom;

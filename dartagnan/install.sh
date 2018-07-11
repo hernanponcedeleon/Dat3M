@@ -29,7 +29,7 @@ src/dartagnan/expression/AExpr.java \
 src/dartagnan/expression/Atom.java \
 src/dartagnan/expression/BConst.java \
 src/dartagnan/expression/BExpr.java \
-src/dartagnan/parsers/utils/branch/Bareif.java \
+src/dartagnan/parsers/utils/branch/BareIf.java \
 src/dartagnan/parsers/utils/ParserErrorListener.java \
 src/dartagnan/parsers/utils/ParsingException.java \
 src/dartagnan/parsers/utils/Utils.java \
@@ -70,11 +70,14 @@ src/dartagnan/utils/GraphViz.java \
 src/dartagnan/utils/LastModMap.java \
 src/dartagnan/utils/MapSSA.java \
 src/dartagnan/utils/Pair.java \
+src/dartagnan/utils/PredicateUtils.java \
 src/dartagnan/utils/Utils.java \
 src/dartagnan/wmm/Acyclic.java \
 src/dartagnan/wmm/Alpha.java \
 src/dartagnan/wmm/ARM.java \
+src/dartagnan/wmm/Axiom.java \
 src/dartagnan/wmm/BasicRelation.java \
+src/dartagnan/wmm/BinaryRelation.java \
 src/dartagnan/wmm/Consistent.java \
 src/dartagnan/wmm/Domain.java \
 src/dartagnan/wmm/EmptyRel.java \

@@ -5,7 +5,7 @@ import dartagnan.LitmusPPCVisitor;
 import dartagnan.asserts.*;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
-import dartagnan.parsers.utils.Branch.BareIf;
+import dartagnan.parsers.utils.branch.BareIf;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
