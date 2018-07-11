@@ -163,12 +163,6 @@ public interface LitmusPPCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLabel(LitmusPPCParser.LabelContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link LitmusPPCParser#b}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitB(LitmusPPCParser.BContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link LitmusPPCParser#beq}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

@@ -71,7 +71,6 @@ instruction
     |   xor
     |   cmpw
     |   label
-    |   b
     |   beq
     |   bne
     |   blt
@@ -126,10 +125,6 @@ cmpw
 
 label
     :   Label ':'
-    ;
-
-b
-    :   'b' Label
     ;
 
 beq

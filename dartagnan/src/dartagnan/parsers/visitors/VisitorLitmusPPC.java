@@ -34,7 +34,6 @@ public class VisitorLitmusPPC
     private Program program;
     private String mainThread;
     private Integer threadCount = 0;
-    private boolean allowEmptyAssertFlag = false;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
@@ -47,6 +46,11 @@ public class VisitorLitmusPPC
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.instructionList());
         visitAssertionList(ctx.assertionList());
+
+        // This can happen if there are arbitrary jumps, not matching if / else structures
+        if(threadCount != mapThreadEvents.size()){
+            throw new ParsingException("Not supported instruction sequence");
+        }
 
         for(String i : mapThreadEvents.keySet()) {
             program.add(Utils.listToThread(mapThreadEvents.get(i)));
@@ -256,7 +260,7 @@ public class VisitorLitmusPPC
     }
 
     private Object visitBranchCondition(String op, String label){
-        Thread lastEvent = getLastEvent(mainThread);
+        Thread lastEvent = getLastEvent(effectiveThread);
         if(!(lastEvent instanceof BareIf)){
             throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
         }
@@ -281,45 +285,31 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitLabel(LitmusPPCParser.LabelContext ctx) {
-        Thread lastEvent = getLastEvent(mainThread);
-        if(!(lastEvent instanceof BareIf)){
-            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
-        }
-
         String label = ctx.Label().getText();
-        List<Thread> mainThreadInstructions = getThreadEvents(mainThread);
-        if(((BareIf)lastEvent).getEndLabel() != null
-                && ((BareIf)lastEvent).getEndLabel().equals(label)){
+        boolean branchFound = false;
 
-            ((BareIf) lastEvent).setT1(closeBranch());
-            mainThreadInstructions.remove(mainThreadInstructions.size() - 1);
-            return ((BareIf) lastEvent).toIf();
-        }
+        while(true){
+            String parentThreadId = parentThread();
+            Thread lastEvent = getLastEvent(parentThreadId);
+            List<Thread> parentThreadInstructions = getThreadEvents(parentThreadId);
 
-        if(((BareIf)lastEvent).getElseLabel() != null
-                && ((BareIf)lastEvent).getElseLabel().equals(label)){
-
-            if(((BareIf)lastEvent).getEndLabel() == null){
-                ((BareIf)lastEvent).setT2(closeBranch());
-                mainThreadInstructions.remove(mainThreadInstructions.size() - 1);
-                return ((BareIf)lastEvent).toIf();
-
-            } else {
-                forkBranch();
+            if(!(lastEvent instanceof BareIf)
+                    || ((BareIf)lastEvent).getElseLabel() == null
+                    || !((BareIf)lastEvent).getElseLabel().equals(label)){
+                if(!branchFound){
+                    throw new ParsingException("Not supported instruction sequence");
+                }
+                break;
             }
-        }
-        return null;
-    }
 
-    @Override
-    public Object visitB(LitmusPPCParser.BContext ctx) {
-        Thread lastEvent = getLastEvent(mainThread);
-        if(!(lastEvent instanceof BareIf) || ((BareIf) lastEvent).getEndLabel() != null){
-            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
+            branchFound = true;
+
+            ((BareIf)lastEvent).setT2(closeBranch());
+            parentThreadInstructions.remove(parentThreadInstructions.size() - 1);
+
+            getThreadEvents(effectiveThread()).add(((BareIf)lastEvent).toIf());
+            effectiveThread = effectiveThread();
         }
-        String label = ctx.Label().getText();
-        ((BareIf) lastEvent).setEndLabel(label);
-        ((BareIf) lastEvent).setT2(closeBranch());
         return null;
     }
 
@@ -497,10 +487,6 @@ public class VisitorLitmusPPC
         return null;
     }
 
-    public void setAllowEmptyAssertFlag(boolean flag){
-        allowEmptyAssertFlag = flag;
-    }
-
 
     // ----------------------------------------------------------------------------------------------------------------
     // Private
@@ -511,6 +497,18 @@ public class VisitorLitmusPPC
 
     private String effectiveThread(){
         return branchingStacks.get(mainThread).peek();
+    }
+
+    private String parentThread(){
+        if(effectiveThread().equals(mainThread)){
+            return mainThread;
+        }
+
+        Stack<String> stack = branchingStacks.get(mainThread);
+        String self = stack.pop();
+        String parent = stack.peek();
+        stack.push(self);
+        return parent;
     }
 
     private Map<String, Location> getMapRegLoc(String threadName){
