@@ -5,25 +5,22 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.apache.commons.io.FileUtils;
-
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
-import com.microsoft.z3.Status;
-import com.microsoft.z3.Z3Exception;
+import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.LitmusLexer;
-import dartagnan.LitmusParser;
-import dartagnan.PorthosLexer;
-import dartagnan.PorthosParser;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DiagnosticErrorListener;
+import org.apache.commons.io.FileUtils;
+
+import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.Relation;
 import dartagnan.wmm.Wmm;
+import dartagnan.parsers.ParserInterface;
+import dartagnan.parsers.ParserResolver;
 
 import org.apache.commons.cli.*;
 
@@ -105,83 +102,104 @@ public class Dartagnan {
 		String program = FileUtils.readFileToString(file, "UTF-8");		
 		ANTLRInputStream input = new ANTLRInputStream(program); 		
 
-		Program p = new Program(inputFilePath);
-		
-		if(inputFilePath.endsWith("litmus")) {
-			LitmusLexer lexer = new LitmusLexer(input);	
-			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			LitmusParser parser = new LitmusParser(tokens);    
-			p = parser.program(inputFilePath).p; 
+		Program p = parseProgram(inputFilePath);
+		if(p.getAss() == null){
+			throw new RuntimeException("Assert is required for Dartagnan tests");
 		}
-		
-		if(inputFilePath.endsWith("pts")) {
-			PorthosLexer lexer = new PorthosLexer(input);
+
+		if (cmd.hasOption("cat")) {
+			String catPath = cmd.getOptionValue("cat");
+			File modelfile = new File(catPath);
+			String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
+			ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
+			ModelLexer lexer = new ModelLexer(mcminput);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			PorthosParser parser = new PorthosParser(tokens);
-			p = parser.program(inputFilePath).p;
+			ModelParser parser = new ModelParser(tokens);
+			mcm = parser.mcm().value;
 		}
-	
-        if (cmd.hasOption("cat")) {
-        	String catPath = cmd.getOptionValue("cat");        	
 
-            File modelfile = new File(catPath);
-
-            String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
-            ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
-            ModelLexer lexer = new ModelLexer(mcminput);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ModelParser parser = new ModelParser(tokens);
-            mcm = parser.mcm().value;
-        }
-        
-        if (cmd.hasOption("relax") || mcm != null) {
-            Relation.Approx = true;
-        }
-        
-		String[] rels = new String[100];
-		if(cmd.hasOption("rels")) {
-			rels = cmd.getOptionValues("rels");	
+		if (cmd.hasOption("relax") || mcm != null) {
+			Relation.Approx = true;
 		}
 
 		int steps = 1;
-        if(cmd.hasOption("unroll")) {
-            steps = Integer.parseInt(cmd.getOptionValue("unroll"));        	
-        }
+		if(cmd.hasOption("unroll")) {
+			steps = Integer.parseInt(cmd.getOptionValue("unroll"));
+		}
 
 		p.initialize(steps);
 		p.compile(target, false, true);
-		
+
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver();
-		
+
 		s.add(p.encodeDF(ctx));
 		s.add(p.getAss().encode(ctx));
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
-		
-        if (mcm != null) {
-            s.add(mcm.encode(p, ctx));
-            s.add(mcm.Consistent(p, ctx));
-        } else {
-    		s.add(p.encodeMM(ctx, target, cmd.hasOption("relax"), cmd.hasOption("idl")));
-    		s.add(p.encodeConsistent(ctx, target));
-        }
 
-		ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+		if (mcm != null) {
+			s.add(mcm.encode(p, ctx));
+			s.add(mcm.Consistent(p, ctx));
+		} else {
+			s.add(p.encodeMM(ctx, target, cmd.hasOption("relax"), cmd.hasOption("idl")));
+			s.add(p.encodeConsistent(ctx, target));
+		}
 
-		if(s.check() == Status.SATISFIABLE) {
-			System.out.println("The state is reachable");
-			//System.out.println("       0");
-			if(cmd.hasOption("draw")) {
-				String outputPath = cmd.getOptionValue("draw");
-				Utils.drawGraph(p, ctx, s.getModel(), outputPath, rels);
+		boolean result = (s.check() == Status.SATISFIABLE);
+		if(p.getAss().getInvert()){
+			result = !result;
+		}
+
+		System.out.println("Condition " + p.getAss().toStringWithType());
+		System.out.println(result ? "Ok" : "No");
+
+		if(cmd.hasOption("draw") && canDrawGraph(p.getAss(), result)) {
+			String[] rels = new String[100];
+			if(cmd.hasOption("rels")) {
+				rels = cmd.getOptionValues("rels");
 			}
+
+			ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+			String outputPath = cmd.getOptionValue("draw");
+			Utils.drawGraph(p, ctx, s.getModel(), outputPath, rels);
+			System.out.println("Execution graph is written to " + outputPath);
 		}
-		else {
-			System.out.println("The state is not reachable");
-			//System.out.println("       1");
+	}
+
+	public static Program parseProgram(String inputFilePath) throws IOException{
+		File file = new File(inputFilePath);
+		String programRaw = FileUtils.readFileToString(file, "UTF-8");
+		ANTLRInputStream input = new ANTLRInputStream(programRaw);
+		Program program = new Program(inputFilePath);
+
+		if(inputFilePath.endsWith("litmus")) {
+			ParserResolver parserResolver = new ParserResolver();
+			ParserInterface parser = parserResolver.getParser(inputFilePath);
+			program = parser.parse(inputFilePath);
 		}
-		return;
-	}	
+
+		if(inputFilePath.endsWith("pts")) {
+			PorthosLexer lexer = new PorthosLexer(input);
+			CommonTokenStream tokens = new CommonTokenStream(lexer);
+			PorthosParser parser = new PorthosParser(tokens);
+			parser.addErrorListener(new DiagnosticErrorListener(true));
+			program = parser.program(inputFilePath).p;
+		}
+
+		return program;
+	}
+
+	private static boolean canDrawGraph(AbstractAssert ass, boolean result){
+		String type = ass.getType();
+		if(type == null){
+			return result;
+		}
+
+		if(result){
+			return type.equals(AbstractAssert.ASSERT_TYPE_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FINAL);
+		}
+		return type.equals(AbstractAssert.ASSERT_TYPE_NOT_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FORALL);
+	}
 }

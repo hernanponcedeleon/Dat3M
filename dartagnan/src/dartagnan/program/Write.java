@@ -6,12 +6,14 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
+import dartagnan.expression.AConst;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 public class Write extends MemEvent {
 
+	private AConst val;
 	private Register reg;
 	private String atomic;
 	
@@ -22,13 +24,24 @@ public class Write extends MemEvent {
 		this.condLevel = 0;
 		this.memId = hashCode();
 	}
-	
+
+    public Write(Location loc, AConst val, String atomic) {
+        this.val = val;
+        this.loc = loc;
+        this.atomic = atomic;
+        this.condLevel = 0;
+        this.memId = hashCode();
+    }
+
 	public Register getReg() {
 		return reg;
 	}
 	
 	public String toString() {
-		return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, reg);
+	    if(reg != null){
+            return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, reg);
+        }
+        return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, val);
 	}
 
 	public LastModMap setLastModMap(LastModMap map) {
@@ -41,7 +54,12 @@ public class Write extends MemEvent {
 	}
 	
 	public Write clone() {
-		Write newWrite = new Write(loc, reg, atomic);
+        Write newWrite;
+        if(reg != null){
+            newWrite = new Write(loc, reg, atomic);
+        } else {
+            newWrite = new Write(loc, val, atomic);
+        }
 		newWrite.condLevel = condLevel;
 		newWrite.memId = memId;
 		newWrite.setUnfCopy(getUnfCopy());
@@ -54,7 +72,12 @@ public class Write extends MemEvent {
 	}
 
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		Store st = new Store(loc, reg);
+        Store st;
+	    if(reg != null){
+            st = new Store(loc, reg);
+        } else {
+            st = new Store(loc, val);
+        }
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
 		st.condLevel = this.condLevel;
@@ -112,7 +135,12 @@ public class Write extends MemEvent {
 	}
 
 	public Thread optCompile(String target, boolean ctrl, boolean leading) {
-		Store st = new Store(loc, reg);
+        Store st;
+        if(reg != null){
+            st = new Store(loc, reg);
+        } else {
+            st = new Store(loc, val);
+        }
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
 		
@@ -140,7 +168,12 @@ public class Write extends MemEvent {
 	}
 	
 	public Thread allCompile() {
-		Store st = new Store(loc, reg);
+        Store st;
+        if(reg != null){
+            st = new Store(loc, reg);
+        } else {
+            st = new Store(loc, val);
+        }
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
 		OptSync os = new OptSync();

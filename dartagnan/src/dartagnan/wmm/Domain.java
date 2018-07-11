@@ -15,23 +15,7 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.expression.AConst;
-import dartagnan.program.Barrier;
-import dartagnan.program.Event;
-import dartagnan.program.Init;
-import dartagnan.program.Isb;
-import dartagnan.program.Ish;
-import dartagnan.program.Isync;
-import dartagnan.program.Load;
-import dartagnan.program.Local;
-import dartagnan.program.Location;
-import dartagnan.program.Lwsync;
-import dartagnan.program.MemEvent;
-import dartagnan.program.Mfence;
-import dartagnan.program.Program;
-import dartagnan.program.Register;
-import dartagnan.program.Skip;
-import dartagnan.program.Store;
-import dartagnan.program.Sync;
+import dartagnan.program.*;
 
 public class Domain {
 	
@@ -190,6 +174,9 @@ public class Domain {
 										ctx.mkAnd(edge("fr", e1, e2, ctx), edge("int", e1, e2, ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("poloc", e1, e2, ctx),
 										ctx.mkAnd(edge("po", e1, e2, ctx), edge("loc", e1, e2, ctx))));
+				if(e1 instanceof Skip || e2 instanceof Skip) {
+					continue;
+				}
 				if(e1.getLoc() == e2.getLoc()) {
 					enc = ctx.mkAnd(enc, edge("loc", e1, e2, ctx));
 				}
@@ -276,7 +263,7 @@ public class Domain {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("data", e1, e2, ctx)));
 				}
 				if(e2 instanceof Store) {
-					if(!e2.getLastModMap().get(e2.getReg()).contains(e1)) {
+					if(e2.getReg() == null || !e2.getLastModMap().get(e2.getReg()).contains(e1)) {
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
 					}
 				}
@@ -293,6 +280,10 @@ public class Domain {
 		
 		for(Event e : eventsL) {
 			if(e instanceof Store) {
+				if(e.getReg() == null) {
+					continue;
+				}
+
 				BoolExpr orClause = ctx.mkFalse();
 				for(Event x : eventsL) {
 					if(e.getLastModMap().get(e.getReg()).contains(x)) {
@@ -302,7 +293,9 @@ public class Domain {
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
 					}
 				}
-				enc = ctx.mkAnd(enc, orClause);
+				if(!orClause.equals(ctx.mkFalse())){
+					enc = ctx.mkAnd(enc, orClause);
+				}
 			}
 			if(e instanceof Load) {
 				if(!e.getLastModMap().keySet().contains(e.getLoc())) {
@@ -317,7 +310,9 @@ public class Domain {
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
 					}
 				}
-				enc = ctx.mkAnd(enc, orClause);
+				if(!orClause.equals(ctx.mkFalse())) {
+					enc = ctx.mkAnd(enc, orClause);
+				}
 			}
 			if(e instanceof Local) {
 				for(Register reg : e.getExpr().getRegs()) {
@@ -330,7 +325,9 @@ public class Domain {
 							enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd",x,e,ctx)));
 						}
 					}
-					enc = ctx.mkAnd(enc, orClause);
+					if(!orClause.equals(ctx.mkFalse())) {
+						enc = ctx.mkAnd(enc, orClause);
+					}
 				}
 			}
 		}

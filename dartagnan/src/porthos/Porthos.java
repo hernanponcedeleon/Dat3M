@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import dartagnan.*;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.io.FileUtils;
@@ -22,12 +23,6 @@ import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.LitmusLexer;
-import dartagnan.LitmusParser;
-import dartagnan.ModelLexer;
-import dartagnan.ModelParser;
-import dartagnan.PorthosLexer;
-import dartagnan.PorthosParser;
 import dartagnan.program.Init;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
@@ -61,8 +56,6 @@ public class Porthos {
 		Option inputOpt = new Option("i", "input", true, "Path to the file containing the input program");
         inputOpt.setRequired(true);
         options.addOption(inputOpt);
-
-//        options.addOption("state", false, "PORTHOS performs state portability");
 
         options.addOption(Option.builder("relax")
         		.desc("Uses relax encoding for transitive closure")
@@ -128,34 +121,13 @@ public class Porthos {
         		.desc("Path to the CAT file of the target memory model")
         		.build());
 
-        File file = new File(inputFilePath);
-        String program = FileUtils.readFileToString(file, "UTF-8");
-        ANTLRInputStream input = new ANTLRInputStream(program);
-        Program p = new Program(inputFilePath);
-
-        //boolean statePortability = cmd.hasOption("state");
         String[] rels = new String[100];
         if(cmd.hasOption("rels")) {
             rels = cmd.getOptionValues("rels");
         }
 
-        if(inputFilePath.endsWith("litmus")) {
-            LitmusLexer lexer = new LitmusLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            LitmusParser parser = new LitmusParser(tokens);
-            p = parser.program(inputFilePath).p;
-        }
-
-        if(inputFilePath.endsWith("pts")) {
-            PorthosLexer lexer = new PorthosLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            PorthosParser parser = new PorthosParser(tokens);
-            p = parser.program(inputFilePath).p;
-        }
-
         if (cmd.hasOption("scat")) {
             File sourceFile = new File(cmd.getOptionValue("scat"));
-
             String mcmStext = FileUtils.readFileToString(sourceFile, "UTF-8");
             ANTLRInputStream mcmSinput = new ANTLRInputStream(mcmStext);
             ModelLexer lexerS = new ModelLexer(mcmSinput);
@@ -166,7 +138,6 @@ public class Porthos {
 
         if (cmd.hasOption("tcat")) {
             File targetFile = new File(cmd.getOptionValue("tcat"));
-
             String mcmTtext = FileUtils.readFileToString(targetFile, "UTF-8");
             ANTLRInputStream mcmTinput = new ANTLRInputStream(mcmTtext);
             ModelLexer lexerT = new ModelLexer(mcmTinput);
@@ -184,6 +155,7 @@ public class Porthos {
             steps = Integer.parseInt(cmd.getOptionValue("unroll"));
         }
 
+        Program p = Dartagnan.parseProgram(inputFilePath);
         p.initialize(steps);
 
         Program pSource = p.clone();
@@ -276,10 +248,9 @@ public class Porthos {
                 visited.add(reachedState);
                 assert(iterations == visited.size());
                 s2.add(reachedState);
-                if(s2.check    () == Status.UNSATISFIABLE) {
+                if(s2.check() == Status.UNSATISFIABLE) {
                     System.out.println("The program is not state-portable");
                     System.out.println("Iterations: " + iterations);
-                    //System.out.println("       0");
                     if(cmd.hasOption("draw")) {
                   	  String outputPath = cmd.getOptionValue("draw");
                   	  Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
@@ -294,7 +265,6 @@ public class Porthos {
             else {
                 System.out.println("The program is state-portable");
                 System.out.println("Iterations: " + iterations);
-                //System.out.println("       1");
                 return;
             }
         }
