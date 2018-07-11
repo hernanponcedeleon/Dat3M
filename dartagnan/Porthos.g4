@@ -2,6 +2,7 @@ grammar Porthos;
 
 @header{
 package dartagnan;
+import dartagnan.asserts.*;
 import dartagnan.program.*;
 import dartagnan.expression.*;
 import dartagnan.program.Thread;
@@ -11,7 +12,7 @@ import java.util.Map;
 @parser::members
 {
 private Map<String, Location> mapLocs = new HashMap<String, Location>();
-private Map<String, Map<String, Register>> mapRegs = new HashMap<String, Map<String, Register>>();	
+private Map<String, Map<String, Register>> mapRegs = new HashMap<String, Map<String, Register>>();
 }
 
 arith_expr [String mainThread] returns [AExpr expr]:
@@ -165,11 +166,35 @@ while_ [String mainThread] returns [Thread t]:
 		$t = new While($b.expr, $t1.t);
 	};
 
+assertionList [Program p]: t = assertionType a = assertion{
+    if($t.t.equals(AbstractAssert.ASSERT_TYPE_FORALL)){$a.ass = new AssertNot($a.ass);}
+    $a.ass.setType($t.t);
+    $p.setAss($a.ass);
+    };
+
+assertionType returns [String t]
+    : 'exists' {$t = AbstractAssert.ASSERT_TYPE_EXISTS;}
+    | '~' 'exists' {$t = AbstractAssert.ASSERT_TYPE_NOT_EXISTS;}
+    | 'forall' {$t = AbstractAssert.ASSERT_TYPE_FORALL;};
+
+assertion returns [AbstractAssert ass]
+    : '(' a = assertion ')' {$ass = $a.ass;}
+    | a1 = assertion '&&' a2 = assertion {$ass = new AssertCompositeAnd($a1.ass, $a2.ass);}
+    | a1 = assertion '||' a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
+    | l = location '=' value = DIGIT{
+        Location loc = $l.loc;
+        $ass = new AssertLocation(loc, Integer.parseInt($value.getText()));
+      }
+    | thrd = DIGIT ':' r = register '=' value = DIGIT ','{
+        Register regPointer = $r.reg;
+        Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
+        $ass = new AssertRegister($thrd.getText(), reg, Integer.parseInt($value.getText()));
+      };
+
 program [String name] returns [Program p]:
 	{
 		Program p = new Program(name);
-		p.setAss(new Assert());
-	} 
+	}
 	LCBRA l = location 
 		('=' '[' min = DIGIT {$l.loc.setMin(Integer.parseInt($min.getText()));} ',' max = DIGIT {$l.loc.setMax(Integer.parseInt($max.getText()));} ']')* 
 		('=' iValue = DIGIT {$l.loc.setIValue(Integer.parseInt($iValue.getText()));})*
@@ -181,21 +206,8 @@ program [String name] returns [Program p]:
 		)* RCBRA 
 	('thread t' mainThread = DIGIT {mapRegs.put($mainThread.getText(), new HashMap<String, Register>());} 
 		LCBRA t1=inst [$mainThread.getText()] RCBRA {p.add($t1.t);})+ {$p = p;}
-	('exists'
-	(l = location '=' value = DIGIT ','
-	{
-		Location loc = $l.loc;
-		p.getAss().addPair(loc, Integer.parseInt($value.getText()));
-	}
-	|
-	thrd = DIGIT ':' r = register '=' value = DIGIT ','
-	{
-		Register regPointer = $r.reg;
-		Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
-		p.getAss().addPair(reg, Integer.parseInt($value.getText()));
-	}
-	)*
-	)*;
+	(assertionList[p])?
+	EOF;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
