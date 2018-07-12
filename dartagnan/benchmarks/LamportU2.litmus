@@ -39,4 +39,5 @@ PPC Lamport
  stw r4,0(r2)	| stw r4,0(r2)	| stw r4,0(r2)	;
  LC03:		| LC13:		| LC23:		; 
 
-exists (b1 = 1 /\ b2 = 1 /\ b3 = 1)
+exists (b1 = 2 /\ b2 = 2 /\ b3 = 2)
+

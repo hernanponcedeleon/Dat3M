@@ -18,4 +18,4 @@ PPC Parker
  lwz r2,0(r0)	| 		;
  LC01:		| 		;
 
-exists (cond = 1 /\ parker = 0 /\ 0:r2 = 0)
+exists (cond = 10)

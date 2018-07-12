@@ -23,4 +23,4 @@ PPC Dekker
  stw r3,0(r0)	| stw r3,0(r0)	;
  LC00:		| LC10:		;
 
-exists (0:r5=0 /\ 1:r5=0)
+exists (turn=10)
