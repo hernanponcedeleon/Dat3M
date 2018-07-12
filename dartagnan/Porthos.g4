@@ -185,7 +185,7 @@ assertion returns [AbstractAssert ass]
         Location loc = $l.loc;
         $ass = new AssertLocation(loc, Integer.parseInt($value.getText()));
       }
-    | thrd = DIGIT ':' r = register '=' value = DIGIT ','{
+    | thrd = DIGIT ':' r = register '=' value = DIGIT {
         Register regPointer = $r.reg;
         Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
         $ass = new AssertRegister($thrd.getText(), reg, Integer.parseInt($value.getText()));
