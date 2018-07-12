@@ -174,9 +174,6 @@ public class Domain {
 										ctx.mkAnd(edge("fr", e1, e2, ctx), edge("int", e1, e2, ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkEq(edge("poloc", e1, e2, ctx),
 										ctx.mkAnd(edge("po", e1, e2, ctx), edge("loc", e1, e2, ctx))));
-				if(e1 instanceof Skip || e2 instanceof Skip) {
-					continue;
-				}
 				if(e1.getLoc() == e2.getLoc()) {
 					enc = ctx.mkAnd(enc, edge("loc", e1, e2, ctx));
 				}
