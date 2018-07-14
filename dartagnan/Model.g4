@@ -6,10 +6,10 @@ import dartagnan.wmm.*;
 }
 @parser::members
 {
-String test="test";
+private Wmm wmm = new Wmm();
 }
-mcm returns [Wmm value]: {$value =  new Wmm();}  
-MCMNAME? (ax1=axiom {$value.addAxiom($ax1.value);} | r1=reldef {$value.addRel($r1.value);})+ 
+mcm returns [Wmm value]:
+MCMNAME? (ax1=axiom {wmm.addAxiom($ax1.value);} | r1=reldef {wmm.addRel($r1.value);})+ {$value = wmm;}
 ;
 
 axiom returns [Axiom value]: 'acyclic' m1=fancyrel  {$value =  new Acyclic($m1.value);} ('as' NAME)?| 'irreflexive' m1=fancyrel {$value =  new Irreflexive($m1.value);}('as' NAME)?;
@@ -47,19 +47,19 @@ PO {$value=new BasicRelation("po");}
 | COI {$value=new BasicRelation("coi");}
 | AD {$value=new BasicRelation("po");}
 | IDD {$value=new BasicRelation("idd");}
-| ISH {$value=new BasicRelation("ish");}
+| ISH {wmm.addFence("ish"); $value=new BasicRelation("ish");}
 | CD {$value=new BasicRelation("cd");}
 | STHD {$value=new BasicRelation("sthd");}
 | SLOC {$value=new BasicRelation("sloc");}
-| MFENCE {$value=new BasicRelation("mfence");}
-| CTRLISYNC {$value=new BasicRelation("ctrlisync");}
-| LWSYNC {$value=new BasicRelation("lwsync");}
-| ISYNC {$value=new BasicRelation("isync");}
-| SYNC {$value=new BasicRelation("sync");}
+| MFENCE {wmm.addFence("mfence"); $value=new BasicRelation("mfence");}
+| CTRLISYNC {wmm.addFence("isync"); $value=new BasicRelation("ctrlisync");}
+| LWSYNC {wmm.addFence("lwsync"); $value=new BasicRelation("lwsync");}
+| ISYNC {wmm.addFence("isync"); $value=new BasicRelation("isync");}
+| SYNC {wmm.addFence("sync"); $value=new BasicRelation("sync");}
 | CTRLDIREKT {$value=new BasicRelation("ctrlDirect");}
-| CTRLISB {$value=new BasicRelation("ctrlisb");}
+| CTRLISB {wmm.addFence("isb"); $value=new BasicRelation("ctrlisb");}
 | CTRL {$value=new BasicRelation("ctrl");}
-| ISB {$value=new BasicRelation("isb");}
+| ISB {wmm.addFence("isb"); $value=new BasicRelation("isb");}
 | ADDR {$value=new EmptyRel();}
 | DATA {$value=new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("RW"));}
 | n=NAME {$value=new RelDummy($n.text);}

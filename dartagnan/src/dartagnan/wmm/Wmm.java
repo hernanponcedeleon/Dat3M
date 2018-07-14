@@ -20,7 +20,7 @@ import java.util.Set;
  */
 public class Wmm {
 
-    public static final String[] fences = {"mfence", "sync", "lwsync", "isync", "isb", "ish"};
+    private Set<String> fences = new HashSet<String>();
         
     private static Wmm getRMO(){
         Wmm temp = new Wmm();
@@ -227,6 +227,11 @@ public class Wmm {
     public void addRel(Relation rel) {
         namedrels.add(rel);
     }
+
+    public void addFence(String fence){
+        fences.add(fence);
+    }
+
     /**
      * Encodes  all relations in the model according to the predicate and approximate settings.
      * @param program
