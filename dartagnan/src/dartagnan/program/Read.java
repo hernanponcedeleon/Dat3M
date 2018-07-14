@@ -68,17 +68,14 @@ public class Read extends MemEvent {
 		}
 
 		if(target.equals("power")) {
-            Fence lwsync = new Fence("lwsync");
-            lwsync.condLevel = this.condLevel;
-
+            Fence lwsync = new Fence("lwsync", this.condLevel);
             if(atomic.equals("_con") || atomic.equals("_acq")) {
                 return new Seq(ld, lwsync);
             }
 
             if(atomic.equals("_sc")) {
 				if(leading) {
-                    Fence sync = new Fence("sync");
-                    sync.condLevel = this.condLevel;
+                    Fence sync = new Fence("sync", this.condLevel);
 					return new Seq(sync, new Seq(ld, lwsync));
 				}
                 return new Seq(ld, lwsync);
@@ -87,8 +84,7 @@ public class Read extends MemEvent {
 
 		if(target.equals("arm")) {
 			if(atomic.equals("_con") || atomic.equals("_acq") || atomic.equals("_sc")) {
-				Fence ish = new Fence("ish");
-                ish.condLevel = this.condLevel;
+				Fence ish = new Fence("ish", this.condLevel);
 				return new Seq(ld, ish);
 			}			
 		}
@@ -106,17 +102,14 @@ public class Read extends MemEvent {
             return ld;
         }
 
-        OptFence lwsync = new OptFence("lwsync");
-        lwsync.condLevel = this.condLevel;
-
+        OptFence lwsync = new OptFence("lwsync", this.condLevel);
         if(atomic.equals("_con") || atomic.equals("_acq")) {
             return new Seq(ld, lwsync);
         }
 
 		if(atomic.equals("_sc")) {
 			if(leading) {
-                OptFence sync = new OptFence("sync");
-                sync.condLevel = this.condLevel;
+                OptFence sync = new OptFence("sync", this.condLevel);
 				return new Seq(sync, new Seq(ld, lwsync));
 			}
 			return new Seq(ld, lwsync);
@@ -130,10 +123,8 @@ public class Read extends MemEvent {
 		Load ld = new Load(reg, loc);
 		ld.setHLId(hashCode());
 		ld.condLevel = this.condLevel;
-		OptFence os = new OptFence("sync");
-		os.condLevel = condLevel;
-		OptFence olws = new OptFence("lwsync");
-		olws.condLevel = condLevel;
+		OptFence os = new OptFence("sync", this.condLevel);
+		OptFence olws = new OptFence("lwsync",  this.condLevel);
 		return new Seq(os, new Seq(olws, ld));
 	}
 }

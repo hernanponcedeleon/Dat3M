@@ -6,9 +6,13 @@ public class Fence extends Event {
 
 	protected String name;
 
-	public Fence(String name){
-		this.condLevel = 0;
+	public Fence(String name, int condLevel){
 		this.name = name;
+		this.condLevel = condLevel;
+	}
+
+	public Fence(String name){
+		this(name, 0);
 	}
 
 	public String getName(){
@@ -20,8 +24,6 @@ public class Fence extends Event {
 	}
 
 	public Fence clone() {
-		Fence newBarrier = new Fence(name);
-		newBarrier.condLevel = condLevel;
-		return newBarrier;
+		return new Fence(name, condLevel);
 	}
 }

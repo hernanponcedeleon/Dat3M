@@ -6,8 +6,12 @@ import com.microsoft.z3.Z3Exception;
 
 public class OptFence extends Fence {
 
+    public OptFence(String name, int condLevel){
+        super(name, condLevel);
+    }
+
     public OptFence(String name){
-        super(name);
+        super(name, 0);
     }
 
     public BoolExpr encodeCF(Context ctx) throws Z3Exception {
