@@ -11,7 +11,7 @@ with
 tso: ~exists;
 cc: exists;
 optic: ~exists;
-default: ~exists
+default: ~exists;
 
 <<
 genprog generated/amd5-prog.tex

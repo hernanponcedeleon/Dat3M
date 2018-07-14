@@ -24,5 +24,4 @@ PPC Peterson
  lwz r6,0(r2)	| lwz r6,0(r2)	;
  LC01:		| LC11:		;
 
-exists
-(turn=10)
+exists (turn=10)

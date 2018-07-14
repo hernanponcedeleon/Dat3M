@@ -1,9 +1,9 @@
 X86 x86/n7 (LitmusNSeven) 
-{[100] = 0; [200] = 0};
-        P0        |       P1      |        P2      ;
-  mov [100], 1    |  mov [200], 1 | mov ECX, [200] ; 
-  mov EAX, [100]  |               | mov EDX, [100] ;
-  mov EBX, [200]  |               |                ;
+{a = 0; b = 0};
+        P0        |       P1      |        P2       ;
+  mov [a], 1      |  mov [b], 1   | mov ECX, [b]    ;
+  mov EAX, [a]    |               | mov EDX, [a]    ;
+  mov EBX, [b]    |               |                 ;
 exists (P0:EAX = 1 /\ P0:EBX = 0 /\ P2:ECX=1 /\ P1:EDX=0);
 <<
 show flags false

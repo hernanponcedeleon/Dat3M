@@ -24,5 +24,4 @@ PPC Bakery
  lwz r7,0(r3)	| lwz r7,0(r3)	;
  LC01:		| LC11:		;
 
-exists
-(c0=10)
+exists (c0=10)

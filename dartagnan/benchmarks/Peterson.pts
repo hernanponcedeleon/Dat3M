@@ -25,4 +25,4 @@ while ((f0 == 1) and (t1 == 0)) {
 }
 }
 
-exists turn=10,
+exists turn=10

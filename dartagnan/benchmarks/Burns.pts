@@ -21,4 +21,4 @@ while True {
   chk = x.load(_rx)
 }}
 
-exists x=10,
+exists x=10

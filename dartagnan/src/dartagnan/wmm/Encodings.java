@@ -10,16 +10,8 @@ import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.Assert;
-import dartagnan.program.Event;
-import dartagnan.program.Init;
-import dartagnan.program.Load;
-import dartagnan.program.Local;
-import dartagnan.program.Location;
-import dartagnan.program.MemEvent;
-import dartagnan.program.Program;
-import dartagnan.program.Register;
-import dartagnan.program.Store;
+import dartagnan.asserts.*;
+import dartagnan.program.*;
 import dartagnan.utils.Utils;
 
 public class Encodings {
@@ -174,11 +166,11 @@ public class Encodings {
 		return enc;
 	}
 
-	public static Assert AssertFromModel(Program p, Model model, Context ctx) {
-		Assert ass = new Assert();
+	public static AbstractAssert AssertFromModel(Program p, Model model, Context ctx) {
+		AssertCompositeAnd ass = new AssertCompositeAnd();
 		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
 		for(Location loc : locs) {
-			ass.addPair(loc, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString()));
+			ass.addChild(new AssertLocation(loc, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString())));
 		}
 		Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
@@ -191,7 +183,7 @@ public class Encodings {
 			}
 			Integer lastRegIndex = Collections.max(ssaRegIndexes);
 			String regVarName = format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
-			ass.addPair(reg, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString()));
+			ass.addChild(new AssertRegister(reg.getMainThread().toString(), reg, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString())));
 		}
 		return ass;
 	}

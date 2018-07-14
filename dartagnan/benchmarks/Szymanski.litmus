@@ -17,7 +17,7 @@ PPC Szymanski
  lwz r3,0(r4)	| lwz r3,0(r4)	;
  li r6,1	| li r6,1	;
  cmpw r3,r6	| cmpw r3,r6	;
- bne LC01	| bne LC01	;
+ bne LC01	| bne LC11	;
  li r1,2        | li r1,2	;
  stw r1,0(r2)   | stw r1,0(r2)	;
  lwz r3,0(r4)	| lwz r3,0(r4)	;
@@ -27,6 +27,7 @@ PPC Szymanski
  lwz r3,0(r4)	| lwz r3,0(r4)	;
  LC01:		| LC11:		;
  li r1,4        | li r1,4	;
+ li r8,2        | li r8,2   ;
  stw r1,0(r2)   | stw r1,0(r2)	;
  lwz r3,0(r4)	| lwz r3,0(r4)	;
  cmpw r3,r8	| cmpw r3,r8	;
@@ -41,5 +42,4 @@ PPC Szymanski
  lwz r3,0(r4)	| lwz r3,0(r4)	;
  LC03:		| LC13:		;
 
-exists
-(flag1=10)
+exists (flag1=10)
