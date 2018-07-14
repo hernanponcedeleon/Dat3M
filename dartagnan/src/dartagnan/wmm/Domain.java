@@ -10,6 +10,9 @@ import static dartagnan.wmm.Encodings.encodeEO;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
@@ -24,7 +27,6 @@ public class Domain {
 		
 		Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> mSkipEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Skip).collect(Collectors.toSet());
-		Set<Event> barriers = program.getEvents().stream().filter(e -> e instanceof Barrier).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 		
 		for(Event e : eventsL) {
@@ -107,50 +109,6 @@ public class Domain {
 				if(e1.getMainThread() == e2.getMainThread()) {
 					enc = ctx.mkAnd(enc, edge("int", e1, e2, ctx));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ext", e1, e2, ctx)));
-					boolean noMfence = true;
-					boolean noSync = true;
-					boolean noLwsync = true;
-					boolean noIsync = true;
-					boolean noIsh = true;
-					boolean noIsb = true;
-					for(Event b : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread() && e1.getEId() < e.getEId() && e.getEId() < e2.getEId()).collect(Collectors.toSet())) {
-						if(b instanceof Mfence) {
-							noMfence = false;
-						}
-						if(b instanceof Sync) {
-							noSync = false;
-						}
-						if(b instanceof Lwsync) {
-							noLwsync = false;
-						}
-						if(b instanceof Isync) {
-							noIsync = false;
-						}
-						if(b instanceof Ish) {
-							noIsh = false;
-						}
-						if(b instanceof Isb) {
-							noIsb = false;
-						}
-					}
-					if(noMfence) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("mfence", e1, e2, ctx)));
-					}
-					if(noSync) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("sync", e1, e2, ctx)));
-					}
-					if(noLwsync) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("lwsync", e1, e2, ctx)));
-					}
-					if(noIsync) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("isync", e1, e2, ctx)));
-					}
-					if(noIsh) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("ish", e1, e2, ctx)));
-					}
-					if(noIsb) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("isb", e1, e2, ctx)));
-					}
 				}
 				else {
 					enc = ctx.mkAnd(enc, edge("ext", e1, e2, ctx));
@@ -186,73 +144,10 @@ public class Domain {
 				if(!((e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && e1.getLoc() == e2.getLoc())) {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("co", e1, e2, ctx)));
 				}
-				if(!(e1.getMainThread() == e2.getMainThread() && e1.getEId() < e2.getEId())) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("mfence", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("sync", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("lwsync", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("isync", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ish", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("isb", e1, e2, ctx)));
-				}
 			}
 		}
-				
-		for(Event e1 : mEvents) {
-			for(Event e2 : mEvents) {
-				BoolExpr mfences = ctx.mkFalse();
-				BoolExpr syncs = ctx.mkFalse();
-				BoolExpr lwsyncs = ctx.mkFalse();
-				BoolExpr isyncs = ctx.mkFalse();
-				BoolExpr ishs = ctx.mkFalse();
-				BoolExpr isbs = ctx.mkFalse();
 
-				for(Event b : barriers) {
-					if(b instanceof Mfence && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
-							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-						mfences = ctx.mkOr(mfences, b.executes(ctx));
-						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-								edge("mfence", e1, e2, ctx)));
-			        }
-					if(b instanceof Sync && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
-							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-						syncs = ctx.mkOr(syncs, b.executes(ctx));
-						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-								edge("sync", e1, e2, ctx)));
-			        }
-					if(b instanceof Lwsync && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
-							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-						lwsyncs = ctx.mkOr(lwsyncs, b.executes(ctx));
-						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-								edge("lwsync", e1, e2, ctx)));
-			        }
-					if(b instanceof Isync && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
-							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-						isyncs = ctx.mkOr(isyncs, b.executes(ctx));
-						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-								edge("isync", e1, e2, ctx)));
-			        }
-					if(b instanceof Ish && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
-							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-						ishs = ctx.mkOr(ishs, b.executes(ctx));
-						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-								edge("ish", e1, e2, ctx)));
-			        }
-					if(b instanceof Isb && e1.getMainThread() == b.getMainThread() && b.getMainThread() == e2.getMainThread()
-							&& e1.getEId() < b.getEId() && b.getEId() < e2.getEId()) {
-						isbs = ctx.mkOr(isbs, b.executes(ctx));
-						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(b.executes(ctx), e2.executes(ctx))),
-								edge("isb", e1, e2, ctx)));
-			        }
-				}
-				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("mfence", e1, e2, ctx), mfences));
-				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("sync", e1, e2, ctx), syncs));
-				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("lwsync", e1, e2, ctx), lwsyncs));
-				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("isync", e1, e2, ctx), isyncs));
-				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("ish", e1, e2, ctx), ishs));
-				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("isb", e1, e2, ctx), isbs));
-			}
-		}
-		
+
 		for(Event e1 : eventsL) {
 			for(Event e2 : eventsL) {
 				if(e1.getMainThread() != e2.getMainThread() || e2.getEId() < e1.getEId() || e1 == e2) {
@@ -411,6 +306,53 @@ public class Domain {
 				rfPairs.add(edge("rf", w, e, ctx));
 			}
 			enc = ctx.mkAnd(enc, ctx.mkImplies(e.executes(ctx), encodeEO(rfPairs, ctx)));
+		}
+		return enc;
+	}
+
+	public static BoolExpr encodeFences(Program program, Context ctx, String[] fences) throws Z3Exception {
+		return encodeFences(program, ctx, new HashSet<String>(Arrays.asList(fences)));
+	}
+
+	public static BoolExpr encodeFences(Program program, Context ctx, Set<String> fences) throws Z3Exception {
+		Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Fence> barriers = program.getEvents().stream().filter(e -> e instanceof Fence).map(e -> (Fence)e).collect(Collectors.toSet());
+		BoolExpr enc = ctx.mkTrue();
+
+		for(Event e1 : mEvents) {
+			for(Event e2 : mEvents) {
+				if(!(e1.getMainThread() == e2.getMainThread() && e1.getEId() < e2.getEId())) {
+					for (String fenceName : fences) {
+						enc = ctx.mkAnd(enc, ctx.mkNot(edge(fenceName, e1, e2, ctx)));
+					}
+
+				} else {
+					Map<String, BoolExpr> fenceMap = new HashMap<String, BoolExpr>();
+					for(Fence f : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread()
+							&& e1.getEId() < e.getEId()
+							&& e.getEId() < e2.getEId()).collect(Collectors.toSet())) {
+
+						String fenceName = f.getName();
+						if(!fenceMap.containsKey(fenceName)){
+							fenceMap.put(fenceName, ctx.mkFalse());
+						}
+
+						BoolExpr fenceEnc = fenceMap.get(fenceName);
+						fenceEnc = ctx.mkOr(fenceEnc, f.executes(ctx));
+						fenceMap.put(fenceName, fenceEnc);
+						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(f.executes(ctx), e2.executes(ctx))),
+								edge(fenceName, e1, e2, ctx)));
+					}
+
+					for (String fenceName : fences) {
+						if(fenceMap.containsKey(fenceName)){
+							enc = ctx.mkAnd(enc, ctx.mkImplies(edge(fenceName, e1, e2, ctx), fenceMap.get(fenceName)));
+						} else {
+							enc = ctx.mkAnd(enc, ctx.mkNot(edge(fenceName, e1, e2, ctx)));
+						}
+					}
+				}
+			}
 		}
 		return enc;
 	}

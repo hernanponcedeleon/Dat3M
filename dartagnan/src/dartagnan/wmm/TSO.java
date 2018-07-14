@@ -14,10 +14,14 @@ import com.microsoft.z3.*;
 import dartagnan.program.*;
 
 public class TSO {
+
+	public static final String[] fences = {"mfence"};
 	
 	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		BoolExpr enc = satUnion("co", "fr", events, ctx);
+
+		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("poloc", "com", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("com-tso", "(co+fr)", "rfe", events, ctx));

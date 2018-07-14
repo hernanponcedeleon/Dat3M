@@ -81,19 +81,10 @@ public class Write extends MemEvent {
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
 		st.condLevel = this.condLevel;
-		
-		Mfence mfence = new Mfence();
-		mfence.condLevel = this.condLevel;
-		Sync sync = new Sync();
-		sync.condLevel = this.condLevel;
-		Lwsync lwsync = new Lwsync();
-		lwsync.condLevel = this.condLevel;
-		Ish ish1 = new Ish();
-		ish1.condLevel = this.condLevel;
-		Ish ish2 = new Ish();
-		ish2.condLevel = this.condLevel;
 
 		if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
+            Fence mfence = new Fence("mfence");
+            mfence.condLevel = this.condLevel;
 			return new Seq(st, mfence);
 		}
 		
@@ -102,32 +93,46 @@ public class Write extends MemEvent {
 		}
 		
 		if(target.equals("power")) {
-			if(atomic.equals("_sc")) {
+            if(atomic.equals("_rx") || atomic.equals("_na")) {
+                return st;
+            }
+
+            Fence lwsync = new Fence("lwsync");
+            lwsync.condLevel = this.condLevel;
+
+            if(atomic.equals("_rel")) {
+                return new Seq(lwsync, st);
+            }
+
+            if(atomic.equals("_sc")) {
+				Fence sync = new Fence("sync");
+				sync.condLevel = this.condLevel;
+
 				if(leading) {
-					return new Seq(sync, st);	
+					return new Seq(sync, st);
 				}
-				else {
-					return new Seq(lwsync, new Seq(st, sync));
-				}
+				return new Seq(lwsync, new Seq(st, sync));
 			}
-			if(atomic.equals("_rx") || atomic.equals("_na")) {
-				return st;
-			}
-			if(atomic.equals("_rel")) {
-				return new Seq(lwsync, st);
-			}			
 		}
 
 		if(target.equals("arm")) {
+            if(atomic.equals("_rx") || atomic.equals("_na")) {
+                return st;
+            }
+
+            Fence ish1 = new Fence("ish");
+            ish1.condLevel = this.condLevel;
+
+            if(atomic.equals("_rel")) {
+                return new Seq(ish1, st);
+            }
+
+            Fence ish2 = new Fence("ish");
+            ish2.condLevel = this.condLevel;
+
 			if(atomic.equals("_sc")) {
 				return new Seq(ish1, new Seq(st, ish2));
 			}
-			if(atomic.equals("_rx") || atomic.equals("_na")) {
-				return st;
-			}
-			if(atomic.equals("_rel")) {
-				return new Seq(ish1, st);
-			}			
 		}
 
 		else System.out.println(String.format("Error in the atomic operation type of", this));
@@ -143,26 +148,28 @@ public class Write extends MemEvent {
         }
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
-		
-		Sync sync = new OptSync();
-		sync.condLevel = this.condLevel;
-		Lwsync lwsync = new OptLwsync();
+
+        if(atomic.equals("_rx") || atomic.equals("_na")) {
+            return st;
+        }
+
+		OptFence lwsync = new OptFence("lwsync");
 		lwsync.condLevel = this.condLevel;
+
+        if(atomic.equals("_rel")) {
+            return new Seq(lwsync, st);
+        }
+
+		OptFence sync = new OptFence("sync");
+        sync.condLevel = this.condLevel;
 
 		if(atomic.equals("_sc")) {
 			if(leading) {
 				return new Seq(sync, st);	
 			}
-			else {
-				return new Seq(lwsync, new Seq(st, sync));
-			}
+			return new Seq(lwsync, new Seq(st, sync));
 		}
-		if(atomic.equals("_rx") || atomic.equals("_na")) {
-			return st;
-		}
-		if(atomic.equals("_rel")) {
-			return new Seq(lwsync, st);
-		}
+
 		else System.out.println(String.format("Error in the atomic operation type of", this));
 		return null;
 	}
@@ -176,9 +183,9 @@ public class Write extends MemEvent {
         }
 		st.setHLId(hashCode());
 		st.condLevel = this.condLevel;
-		OptSync os = new OptSync();
+		OptFence os = new OptFence("sync");
 		os.condLevel = condLevel;
-		OptLwsync olws = new OptLwsync();
+		OptFence olws = new OptFence("lwsync");
 		olws.condLevel = condLevel;
 		return new Seq(os, new Seq(olws, st));
 	}

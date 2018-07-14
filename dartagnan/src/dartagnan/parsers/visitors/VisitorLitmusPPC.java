@@ -312,17 +312,17 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitSync(LitmusPPCParser.SyncContext ctx) {
-        return new Sync();
+        return new Fence("sync");
     }
 
     @Override
     public Object visitLwsync(LitmusPPCParser.LwsyncContext ctx) {
-        return new Lwsync();
+        return new Fence("lwsync");
     }
 
     @Override
     public Object visitIsync(LitmusPPCParser.IsyncContext ctx) {
-        return new Isync();
+        return new Fence("isync");
     }
 
     @Override

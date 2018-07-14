@@ -78,9 +78,9 @@ public class Event extends Thread {
 	}
 
 	public Thread allCompile() {
-		OptSync os = new OptSync();
+		OptFence os = new OptFence("sync");
 		os.condLevel = condLevel;
-		OptLwsync olws = new OptLwsync();
+		OptFence olws = new OptFence("lwsync");
 		olws.condLevel = condLevel;
 		return new Seq(os, new Seq(olws, this));
 	}

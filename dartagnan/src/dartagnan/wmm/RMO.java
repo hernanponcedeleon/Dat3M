@@ -16,12 +16,15 @@ import com.microsoft.z3.*;
 import dartagnan.program.*;
 
 public class RMO {
+
+	public static final String[] fences = {"mfence", "sync", "isync"};
 	
 	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
-		
-		BoolExpr enc = EncodingsCAT.satUnion("co", "fr", events, ctx);
+
+		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satMinus("poloc", "RR", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("(poloc\\RR)", "com", events, ctx));

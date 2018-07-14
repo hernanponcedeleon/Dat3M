@@ -120,10 +120,10 @@ write [String mainThread] returns [Thread t]:
 		$t = new Write(pointerLoc, pointerReg, $at.getText());
 	};
 fence returns [Thread t]:
-	| mfence {$t = new Mfence();}
-	| sync {$t = new Sync();}
-	| lwsync {$t = new Lwsync();}
-	| isync {$t = new Isync();}; 
+	| mfence {$t = new Fence("mfence");}
+	| sync {$t = new Fence("sync");}
+	| lwsync {$t = new Fence("lwsync");}
+	| isync {$t = new Fence("isync");};
 
 mfence : 'mfence';
 sync : 'sync';

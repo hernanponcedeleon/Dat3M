@@ -19,6 +19,8 @@ import java.util.Set;
  * @author Florian Furbach
  */
 public class Wmm {
+
+    public static final String[] fences = {"mfence", "sync", "lwsync", "isync", "isb", "ish"};
         
     private static Wmm getRMO(){
         Wmm temp = new Wmm();
@@ -233,7 +235,7 @@ public class Wmm {
      * @throws Z3Exception
      */
     public BoolExpr encode(Program program, Context ctx) throws Z3Exception {
-        BoolExpr expr = ctx.mkTrue();
+        BoolExpr expr = Domain.encodeFences(program, ctx, fences);
         Set<String> encodedRels = new HashSet<>();
         for (Axiom ax : axioms) {
             expr = ctx.mkAnd(expr, ax.getRel().encode(program, ctx, encodedRels));

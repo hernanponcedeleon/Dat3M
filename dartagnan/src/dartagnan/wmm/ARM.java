@@ -30,12 +30,15 @@ import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 
 public class ARM {
+
+	public static final String[] fences = {"ish", "isb"};
 	
 	public static BoolExpr encode(Program program, boolean approx, boolean idl, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 		
-		BoolExpr enc = satUnion("co", "fr", events, ctx);
+		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("poloc", "com", events, ctx));
 		
