@@ -72,15 +72,18 @@ public class Utils {
 				if(e1.getLoc() == e2.getLoc() && (e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && Integer.parseInt(model.getConstInterp(intVar("co", e1, ctx)).toString()) == Integer.parseInt(model.getConstInterp(intVar("co", e2, ctx)).toString()) - 1 && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()	) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"co\", color=\"brown\", fontcolor=\"brown\", weight=1];");	
 				}
-				if(model.getConstInterp(edge("sync", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr syncExpr = model.getConstInterp(edge("sync", e1, e2, ctx));
+				if(syncExpr != null && syncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"sync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-				if(model.getConstInterp(edge("lwsync", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr lwsyncExpr = model.getConstInterp(edge("lwsync", e1, e2, ctx));
+				if(lwsyncExpr != null && lwsyncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"lwsync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-				if(model.getConstInterp(edge("mfence", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr mfenceExpr = model.getConstInterp(edge("mfence", e1, e2, ctx));
+				if(mfenceExpr != null && mfenceExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"mfence\", color=\"black\", fontcolor=\"black\", weight=1];");
-				}				
+				}
 			}
 		}
 		
@@ -148,13 +151,16 @@ public class Utils {
 				if(e1.getLoc() == e2.getLoc() && (e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && Integer.parseInt(model.getConstInterp(intVar("co", e1, ctx)).toString()) == Integer.parseInt(model.getConstInterp(intVar("co", e2, ctx)).toString()) - 1 && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()	) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"co\", color=\"brown\", fontcolor=\"brown\", weight=1];");	
 				}
-				if(model.getConstInterp(edge("sync", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr syncExpr = model.getConstInterp(edge("sync", e1, e2, ctx));
+				if(syncExpr != null && syncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"sync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-				if(model.getConstInterp(edge("lwsync", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr lwsyncExpr = model.getConstInterp(edge("lwsync", e1, e2, ctx));
+				if(lwsyncExpr != null && lwsyncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"lwsync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-				if(model.getConstInterp(edge("mfence", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr mfenceExpr = model.getConstInterp(edge("mfence", e1, e2, ctx));
+				if(mfenceExpr != null && mfenceExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"mfence\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
 				
@@ -231,16 +237,19 @@ public class Utils {
 				if(e1.getLoc() == e2.getLoc() && (e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && Integer.parseInt(model.getConstInterp(intVar("co", e1, ctx)).toString()) == Integer.parseInt(model.getConstInterp(intVar("co", e2, ctx)).toString()) - 1 && model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"co\", color=\"brown\", fontcolor=\"brown\", weight=1];");	
 				}
-				if(model.getConstInterp(edge("sync", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr syncExpr = model.getConstInterp(edge("sync", e1, e2, ctx));
+				if(syncExpr != null && syncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"sync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-				if(model.getConstInterp(edge("lwsync", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr lwsyncExpr = model.getConstInterp(edge("lwsync", e1, e2, ctx));
+				if(lwsyncExpr != null && lwsyncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"lwsync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-				if(model.getConstInterp(edge("mfence", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+                Expr mfenceExpr = model.getConstInterp(edge("mfence", e1, e2, ctx));
+				if(mfenceExpr != null && mfenceExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"mfence\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-				
+
 				for(String r : relations) {
 					if(r == null) {continue;}
 					if(!Arrays.asList(model.getDecls()).contains(edge(r, e1, e2, ctx).getFuncDecl())) {
