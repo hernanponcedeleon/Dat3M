@@ -20,11 +20,9 @@ public class Thread {
 	public int getCondLevel() {
 		return condLevel;
 	}
-	
+
 	public void setCondLevel(int condLevel) {
-		IntStream.range(0, condLevel).forEachOrdered(n -> {
-		    incCondLevel();
-		});
+		this.condLevel = condLevel;
 	}
 	
 	public void setGuard(BoolExpr guard, Context ctx) {

@@ -7,6 +7,7 @@ import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
+import dartagnan.program.rmw.Xchg;
 import dartagnan.program.Thread;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -180,8 +181,9 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
-        // TODO: Implementation
-        throw new RuntimeException("XCHG is not implemented");
+        Register register = getRegister(mainThread, ctx.r1().getText(), true);
+        Location location = getLocation(ctx.location().getText());
+        return new Xchg(location, register, "_rx");
     }
 
     @Override

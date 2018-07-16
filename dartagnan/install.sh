@@ -52,6 +52,9 @@ src/dartagnan/program/OptFence.java \
 src/dartagnan/program/Program.java \
 src/dartagnan/program/Read.java \
 src/dartagnan/program/Register.java \
+src/dartagnan/program/rmw/AbstractRMW.java \
+src/dartagnan/program/rmw/RMWStore.java \
+src/dartagnan/program/rmw/Xchg.java \
 src/dartagnan/program/Seq.java  \
 src/dartagnan/program/Skip.java  \
 src/dartagnan/program/Store.java \

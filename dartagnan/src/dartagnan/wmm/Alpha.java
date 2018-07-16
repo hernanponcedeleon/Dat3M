@@ -16,6 +16,10 @@ public class Alpha {
 	public static final String[] fences = {"mfence", "isync"};
 	
 	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
+		if(program.hasRMWEvents()){
+			throw new RuntimeException("RMW is not implemented for Alpha");
+		}
+
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 

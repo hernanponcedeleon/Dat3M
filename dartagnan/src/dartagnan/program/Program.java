@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.asserts.AbstractAssert;
+import dartagnan.program.rmw.RMWStore;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
 import dartagnan.wmm.*;
@@ -35,6 +36,10 @@ public class Program {
 
     public void add(Thread t) {
 		threads.add(t);
+	}
+
+	public boolean hasRMWEvents(){
+		return getEvents().stream().anyMatch(e -> e instanceof RMWStore);
 	}
 	
 	public String toString() {
@@ -111,7 +116,7 @@ public class Program {
 
 	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid, Integer firstTid) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
-		
+
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();

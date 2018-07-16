@@ -1,12 +1,17 @@
 "X86 TSO"
 include "cos.cat"
 include "fences.cat"
+include "filters.cat"
 
 (* All communication relations *)
 let com = (rf | fr | co)
 
 (* Uniproc *)
 acyclic (po-loc | com) as uniproc
+
+(* Atomic *)
+empty rmw & (fre;coe)
+let implied = po & W*R & ((M * A) | (A * M))
 
 (* Communication relations for TSO *)
 let com-tso = (rfe | co | fr)
@@ -15,5 +20,6 @@ let com-tso = (rfe | co | fr)
 let po-tso = ((po \ W*R) | mfence)
 
 (* TSO global-happens-before *)
-let ghb-tso = (po-tso | com-tso)
+let ghb-tso = po-tso | com-tso | implied
+
 acyclic ghb-tso as tso

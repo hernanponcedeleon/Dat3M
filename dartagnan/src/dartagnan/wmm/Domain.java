@@ -19,6 +19,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.expression.AConst;
 import dartagnan.program.*;
+import dartagnan.program.rmw.RMWStore;
 
 public class Domain {
 	
@@ -351,6 +352,29 @@ public class Domain {
 							enc = ctx.mkAnd(enc, ctx.mkNot(edge(fenceName, e1, e2, ctx)));
 						}
 					}
+				}
+			}
+		}
+		return enc;
+	}
+
+	public static BoolExpr encodeRMW(Program program, Context ctx) throws Z3Exception {
+		BoolExpr enc = ctx.mkTrue();
+		Set<Event> rmwWrites = program.getEvents().stream().filter(e -> e instanceof RMWStore).collect(Collectors.toSet());
+
+		if(!rmwWrites.isEmpty()){
+            Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+			for(Event w : rmwWrites){
+				Load r = ((RMWStore)w).getLoadEvent();
+				enc = ctx.mkAnd(enc, ctx.mkEq(r.executes(ctx), w.executes(ctx)));
+				enc = ctx.mkAnd(enc, ctx.mkNot(edge("rf", w, r, ctx)));
+				enc = ctx.mkAnd(enc, edge("rmw", r, w, ctx));
+
+				for(Event e : mEvents){
+					enc = ctx.mkAnd(enc, edge("MA", e, w, ctx));
+					enc = ctx.mkAnd(enc, edge("MA", e, r, ctx));
+					enc = ctx.mkAnd(enc, edge("AM", w, e, ctx));
+					enc = ctx.mkAnd(enc, edge("AM", r, e, ctx));
 				}
 			}
 		}

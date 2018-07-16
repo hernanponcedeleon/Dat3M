@@ -33,6 +33,10 @@ public class Power {
 	public static final String[] fences = {"sync", "lwsync", "isync"};
 	
 	public static BoolExpr encode(Program program, boolean approx, boolean idl, Context ctx) throws Z3Exception {
+		if(program.hasRMWEvents()){
+			throw new RuntimeException("RMW is not implemented for Power");
+		}
+
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 

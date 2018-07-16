@@ -32,8 +32,8 @@ b1=base {$value =$b1.value;}
 | '(' ( m1=relation ';' {$value =$m1.value;}) ( m2=relation ';' {$value =new RelComposition($value, $m2.value);} )* m3=relation ')'{$value =new RelComposition($value, $m3.value);} 
 | m1=relation'+' {$value =new RelTrans($m1.value);}
 | m1=relation'*' {$value =new RelTransRef($m1.value);}
+| '(' m1=relation ')' {$value =$m1.value;}
 ;
-
 
 
 base returns [Relation value]: 
@@ -67,19 +67,21 @@ PO {$value=new BasicRelation("po");}
 | DATA {$value=new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("RW"));}
 | n=NAME {$value=new RelDummy($n.text);}
 | EMPTY {$value=new EmptyRel();}
-| RW {$value=new BasicRelation("RW");}
-| WR {$value=new BasicRelation("WR");}
-| RR {$value=new BasicRelation("RR");}
-| WW {$value=new BasicRelation("WW");}
-| RM {$value=new BasicRelation("RM");}
-| WM {$value=new BasicRelation("WM");}
-| MR {$value=new BasicRelation("MR");}
-| MW {$value=new BasicRelation("MW");}
-| MM {$value=new BasicRelation("MM");}
-| IR {$value=new BasicRelation("IR");}
-| IW {$value=new BasicRelation("IW");}
-| IM {$value=new BasicRelation("IM");}
 | ID {$value=new BasicRelation("id");}
+| 'R' '*' 'W' {$value=new BasicRelation("RW");}
+| 'W' '*' 'R' {$value=new BasicRelation("WR");}
+| 'R' '*' 'R' {$value=new BasicRelation("RR");}
+| 'W' '*' 'W' {$value=new BasicRelation("WW");}
+| 'R' '*' 'M' {$value=new BasicRelation("RM");}
+| 'W' '*' 'M' {$value=new BasicRelation("WM");}
+| 'M' '*' 'R' {$value=new BasicRelation("MR");}
+| 'M' '*' 'W' {$value=new BasicRelation("MW");}
+| 'M' '*' 'M' {$value=new BasicRelation("MM");}
+| 'I' '*' 'R' {$value=new BasicRelation("IR");}
+| 'I' '*' 'W' {$value=new BasicRelation("IW");}
+| 'I' '*' 'M' {$value=new BasicRelation("IM");}
+| 'A' '*' 'M' {$value=new BasicRelation("AM");}
+| 'M' '*' 'A' {$value=new BasicRelation("MA");}
 ;
 
 PO : 'po' ;
@@ -111,18 +113,6 @@ ISB : 'isb' ;
 ADDR : 'addr' ;
 DATA : 'data' ;
 ID : 'id' ;
-RW : 'R*W' ;
-WR : 'W*R' ;
-RR : 'R*R' ;
-WW : 'W*W' ;
-RM : 'R*M' ;
-WM : 'W*M' ;
-MR : 'M*R' ;
-MW : 'M*W' ;
-MM : 'M*M' ;
-IR : 'I*R' ;
-IW : 'I*W' ;
-IM : 'I*M' ;
 EMPTY : '0' ;
 
 TILDE : '~';

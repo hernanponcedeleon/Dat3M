@@ -15,6 +15,10 @@ import dartagnan.program.*;
 public class SC {
 	
 	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+		if(program.hasRMWEvents()){
+			throw new RuntimeException("RMW is not implemented for SC");
+		}
+
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 	    BoolExpr enc = satUnion("co", "fr", events, ctx);
 	    enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));

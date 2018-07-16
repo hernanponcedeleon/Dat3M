@@ -16,6 +16,10 @@ public class PSO {
 	public static final String[] fences = {"mfence"};
 	
 	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+		if(program.hasRMWEvents()){
+			throw new RuntimeException("RMW is not implemented for PSO");
+		}
+
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 
 		BoolExpr enc = Domain.encodeFences(program, ctx, fences);

@@ -16,8 +16,8 @@ import static dartagnan.utils.Utils.ssaLoc;
 
 public class Store extends MemEvent {
 
-	private Register reg;
-	private AConst val;
+	protected Register reg;
+	protected AConst val;
 
 	public Store(Location loc, Register reg) {
 		this.reg = reg;

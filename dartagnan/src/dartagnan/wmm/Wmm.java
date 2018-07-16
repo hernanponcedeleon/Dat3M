@@ -44,15 +44,18 @@ public class Wmm {
      * @throws Z3Exception
      */
     public BoolExpr encode(Program program, Context ctx) throws Z3Exception {
-        BoolExpr expr = Domain.encodeFences(program, ctx, fences);
+        BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+        if(program.hasRMWEvents()){
+            enc = ctx.mkAnd(enc, Domain.encodeRMW(program, ctx));
+        }
         Set<String> encodedRels = new HashSet<>();
         for (Axiom ax : axioms) {
-            expr = ctx.mkAnd(expr, ax.getRel().encode(program, ctx, encodedRels));
+            enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
         }
         for (Relation relation : relations) {
-            expr = ctx.mkAnd(expr, relation.encode(program, ctx, encodedRels));
+            enc = ctx.mkAnd(enc, relation.encode(program, ctx, encodedRels));
         }
-        return expr;
+        return enc;
     }
 
     /**

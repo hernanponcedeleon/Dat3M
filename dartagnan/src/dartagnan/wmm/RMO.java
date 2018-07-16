@@ -20,6 +20,10 @@ public class RMO {
 	public static final String[] fences = {"mfence", "sync", "isync"};
 	
 	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
+		if(program.hasRMWEvents()){
+			throw new RuntimeException("RMW is not implemented for RMO");
+		}
+
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 
