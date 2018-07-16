@@ -33,10 +33,10 @@ public abstract class Relation {
     protected Set<Relation> namedRelations;
     
     /**
-     *  
-     * @return the term that defines the relation.
+     * The term that defines the relation.
+     * @return String
      */
-    public String write(){
+    public String toString(){
         if(isnamed) return String.format("%s := %s", name, term);
         else return String.format("%s", name);
     }

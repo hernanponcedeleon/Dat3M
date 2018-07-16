@@ -16,7 +16,8 @@ import java.util.Set;
  * @author Florian Furbach
  */
 public abstract class Axiom {
-        protected Relation rel;
+
+    protected Relation rel;
 
     public Axiom(Relation rel) {
         this.rel = rel;
@@ -26,9 +27,7 @@ public abstract class Axiom {
         return rel;
     }
     
-    public abstract String write();
-        public abstract BoolExpr Consistent(Set<Event> events, Context ctx) throws Z3Exception;
-        public abstract BoolExpr Inconsistent(Set<Event> events, Context ctx) throws Z3Exception;
-
-
+    public abstract String toString();
+    public abstract BoolExpr Consistent(Set<Event> events, Context ctx) throws Z3Exception;
+    public abstract BoolExpr Inconsistent(Set<Event> events, Context ctx) throws Z3Exception;
 }

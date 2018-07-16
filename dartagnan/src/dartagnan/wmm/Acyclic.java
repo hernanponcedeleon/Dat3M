@@ -32,8 +32,8 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    public String write() {
-        return String.format("Acyclic(%s)", rel.getName());
+    public String toString() {
+        return String.format("acyclic %s", rel.getName());
     }
 
 }

@@ -40,7 +40,7 @@ public class Irreflexive extends Axiom{
     }
 
     @Override
-    public String write() {
+    public String toString() {
         return String.format("Irreflexive(%s)", rel.getName());
     }
     
