@@ -12,7 +12,10 @@ mcm returns [Wmm value]:
 MCMNAME? (ax1=axiom {wmm.addAxiom($ax1.value);} | r1=reldef {wmm.addRel($r1.value);})+ {$value = wmm;}
 ;
 
-axiom returns [Axiom value]: 'acyclic' m1=fancyrel  {$value =  new Acyclic($m1.value);} ('as' NAME)?| 'irreflexive' m1=fancyrel {$value =  new Irreflexive($m1.value);}('as' NAME)?;
+axiom returns [Axiom value]
+ : (negate = TILDE)? 'acyclic' m1=fancyrel  {$value =  new Acyclic($m1.value, $negate != null);} ('as' NAME)?
+ | (negate = TILDE)? 'irreflexive' m1=fancyrel {$value =  new Irreflexive($m1.value, $negate != null);}('as' NAME)?
+ | (negate = TILDE)? 'empty' m1=fancyrel {$value =  new Empty($m1.value, $negate != null);}('as' NAME)?;
 
 reldef returns [Relation value]:
 ('let' | 'and') ('rec')? n=NAME '=' m1=fancyrel {$value =$m1.value; $value.setName($n.text);};
@@ -121,6 +124,8 @@ IR : 'I*R' ;
 IW : 'I*W' ;
 IM : 'I*M' ;
 EMPTY : '0' ;
+
+TILDE : '~';
 
 NAME : [a-z0-9\-]+ ;        // match lower-case identifiers
 MCMNAME : [A-Za-z0-9]+ ;        // match lower-case identifiers

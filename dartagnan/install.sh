@@ -73,6 +73,7 @@ src/dartagnan/wmm/BasicRelation.java \
 src/dartagnan/wmm/BinaryRelation.java \
 src/dartagnan/wmm/Consistent.java \
 src/dartagnan/wmm/Domain.java \
+src/dartagnan/wmm/Empty.java \
 src/dartagnan/wmm/EmptyRel.java \
 src/dartagnan/wmm/Encodings.java \
 src/dartagnan/wmm/EncodingsCAT.java \

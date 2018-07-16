@@ -17,23 +17,26 @@ import java.util.Set;
  */
 public class Acyclic extends Axiom {
 
-    @Override
-    public BoolExpr Consistent(Set<Event> events, Context ctx) throws Z3Exception {
-          return Encodings.satAcyclic(rel.getName(), events, ctx);
-    }
-
-    @Override
-    public BoolExpr Inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
-        return ctx.mkAnd(Encodings.satCycleDef(rel.getName(), events, ctx), Encodings.satCycle(rel.getName(), events, ctx));
-    }
-
     public Acyclic(Relation rel) {
         super(rel);
     }
 
-    @Override
-    public String toString() {
-        return String.format("acyclic %s", rel.getName());
+    public Acyclic(Relation rel, boolean negate) {
+        super(rel, negate);
     }
 
+    @Override
+    protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
+        return Encodings.satAcyclic(rel.getName(), events, ctx);
+    }
+
+    @Override
+    protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
+        return ctx.mkAnd(Encodings.satCycleDef(rel.getName(), events, ctx), Encodings.satCycle(rel.getName(), events, ctx));
+    }
+
+    @Override
+    protected String _toString() {
+        return String.format("acyclic %s", rel.getName());
+    }
 }

@@ -21,13 +21,21 @@ import java.util.Set;
  */
 public class Irreflexive extends Axiom{
 
+    public Irreflexive(Relation rel) {
+        super(rel);
+    }
+
+    public Irreflexive(Relation rel, boolean negate) {
+        super(rel, negate);
+    }
+
     @Override
-    public BoolExpr Consistent(Set<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
         return satIrref(rel.getName(), events, ctx);
     }
 
     @Override
-    public BoolExpr Inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         for(Event e : events){
             enc = ctx.mkOr(enc, Utils.edge(rel.getName(), e, e, ctx));
@@ -35,13 +43,8 @@ public class Irreflexive extends Axiom{
         return enc;
     }
 
-    public Irreflexive(Relation rel) {
-        super(rel);
-    }
-
     @Override
-    public String toString() {
-        return String.format("Irreflexive(%s)", rel.getName());
+    protected String _toString() {
+        return String.format("irreflexive %s", rel.getName());
     }
-    
 }
