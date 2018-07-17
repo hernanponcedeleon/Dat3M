@@ -3,13 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package dartagnan.wmm;
+package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.utils.PredicateUtils;
+import dartagnan.wmm.relation.Relation;
+
 import java.util.Set;
 
 /**
@@ -25,7 +27,6 @@ public abstract class UnaryRelation extends Relation {
         this.r1 = r1;
         containsRec = r1.containsRec;
         namedRelations.addAll(r1.getNamedRelations());
-
     }
 
     public UnaryRelation(Relation r1, String term) {
@@ -57,5 +58,4 @@ public abstract class UnaryRelation extends Relation {
             return ctx.mkTrue();
         }
     }
-
 }

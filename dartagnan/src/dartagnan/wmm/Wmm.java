@@ -10,6 +10,9 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Event;
 import dartagnan.program.Program;
+import dartagnan.wmm.axiom.Axiom;
+import dartagnan.wmm.relation.Relation;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -103,7 +106,7 @@ public class Wmm {
         }
 
         for (Relation relation : relations) {
-            if(relation.isnamed){
+            if(relation.getIsNamed()){
                 result.append(relation);
                 result.append("\n");
             }

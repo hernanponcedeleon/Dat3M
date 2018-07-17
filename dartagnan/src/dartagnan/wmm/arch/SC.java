@@ -1,4 +1,4 @@
-package dartagnan.wmm;
+package dartagnan.wmm.arch;
 
 import static dartagnan.wmm.EncodingsCAT.satUnion;
 import static dartagnan.wmm.Encodings.satAcyclic;

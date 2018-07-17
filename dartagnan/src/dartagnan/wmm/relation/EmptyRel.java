@@ -3,46 +3,43 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package dartagnan.wmm;
+package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
+import dartagnan.wmm.EncodingsCAT;
+
 import java.util.Set;
 
 /**
  *
  * @author Florian Furbach
  */
-public class BasicRelation extends Relation{
-        public static final String BASERELS[] = {"po", "co", "fr", "rf", "poloc", "rfe", "WR", "mfence"};
+public class EmptyRel extends Relation {
 
-    public BasicRelation(String rel) {
-        super(rel);
-        containsRec=false;
+    public EmptyRel() {
+        super("0");
     }
 
     @Override
     public BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        return ctx.mkTrue();
+        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
     }
 
     @Override
     public BoolExpr encode(Program program, Context ctx, Set<String> encodedRels) throws Z3Exception {
-        return ctx.mkTrue();
+        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
     }
 
     @Override
     protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-        return ctx.mkTrue();
+        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
     }
 
     @Override
     protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-        return ctx.mkTrue();
+        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
     }
-    
-    
-    
 }

@@ -1,4 +1,4 @@
-package dartagnan.wmm;
+package dartagnan.wmm.arch;
 
 import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.intCount;
@@ -28,6 +28,7 @@ import dartagnan.program.Local;
 import dartagnan.program.MemEvent;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.Domain;
 
 public class ARM {
 

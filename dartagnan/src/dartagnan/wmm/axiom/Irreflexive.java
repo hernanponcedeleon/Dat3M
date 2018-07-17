@@ -3,13 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package dartagnan.wmm;
+package dartagnan.wmm.axiom;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Event;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.Relation;
 
 import static dartagnan.wmm.EncodingsCAT.satIrref;
 
@@ -19,7 +20,7 @@ import java.util.Set;
  *
  * @author Florian Furbach
  */
-public class Irreflexive extends Axiom{
+public class Irreflexive extends Axiom {
 
     public Irreflexive(Relation rel) {
         super(rel);

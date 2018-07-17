@@ -17,7 +17,7 @@ import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
-import dartagnan.wmm.Relation;
+import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.Wmm;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;

@@ -27,7 +27,7 @@ import dartagnan.program.Init;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
-import dartagnan.wmm.Relation;
+import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.Wmm;
 import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;

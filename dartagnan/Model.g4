@@ -2,7 +2,9 @@
 grammar Model;
 @header{
 package dartagnan;
-import dartagnan.wmm.*;
+import dartagnan.wmm.axiom.*;
+import dartagnan.wmm.relation.*;
+import dartagnan.wmm.Wmm;
 }
 @parser::members
 {

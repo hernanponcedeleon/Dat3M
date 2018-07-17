@@ -11,14 +11,14 @@ import com.microsoft.z3.*;
 
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.rmw.RMWStore;
+import dartagnan.wmm.arch.*;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
-import dartagnan.wmm.*;
 
 public class Program {
 
 	private String name;
-	public AbstractAssert ass;
+	private AbstractAssert ass;
 	private List<Thread> threads;
 
 	public Program(){

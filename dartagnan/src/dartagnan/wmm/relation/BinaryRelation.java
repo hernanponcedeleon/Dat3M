@@ -3,13 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package dartagnan.wmm;
+package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.utils.PredicateUtils;
+
 import java.util.Set;
 
 /**
@@ -20,14 +21,6 @@ public abstract class BinaryRelation extends Relation {
 
     protected Relation r1;
     protected Relation r2;
-
-    public BinaryRelation(String name, String term) {
-        super(name, term);
-    }
-
-    public BinaryRelation(String name) {
-        super(name);
-    }
 
     /**
      * Creates a named binary relation.
@@ -44,7 +37,6 @@ public abstract class BinaryRelation extends Relation {
         containsRec = r1.containsRec || r2.containsRec;
         namedRelations.addAll(r1.namedRelations);
         namedRelations.addAll(r2.namedRelations);
-
     }
 
     /**
@@ -87,5 +79,4 @@ public abstract class BinaryRelation extends Relation {
 
         }
     }
-
 }

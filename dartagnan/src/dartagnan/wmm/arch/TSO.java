@@ -1,4 +1,4 @@
-package dartagnan.wmm;
+package dartagnan.wmm.arch;
 
 import static dartagnan.wmm.Encodings.satAcyclic;
 import static dartagnan.wmm.Encodings.satCycle;
@@ -11,6 +11,9 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.program.*;
+import dartagnan.wmm.Domain;
+import dartagnan.wmm.axiom.Empty;
+import dartagnan.wmm.relation.BasicRelation;
 
 public class TSO {
 

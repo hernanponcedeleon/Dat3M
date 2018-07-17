@@ -1,13 +1,13 @@
-package dartagnan.wmm;
+package dartagnan.wmm.axiom;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Event;
+import dartagnan.wmm.EncodingsCAT;
+import dartagnan.wmm.relation.Relation;
 
 import java.util.Set;
-
-import static dartagnan.utils.Utils.edge;
 
 public class Empty extends Axiom {
 
@@ -21,13 +21,7 @@ public class Empty extends Axiom {
 
     @Override
     protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
-        BoolExpr enc = ctx.mkTrue();
-        for(Event e1 : events){
-            for(Event e2 : events){
-                enc = ctx.mkAnd(enc, ctx.mkNot(edge(rel.getName(), e1, e2, ctx)));
-            }
-        }
-        return enc;
+        return EncodingsCAT.satEmpty(rel.getName(), events, ctx);
     }
 
     @Override

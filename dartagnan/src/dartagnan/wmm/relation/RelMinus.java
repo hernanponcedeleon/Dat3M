@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package dartagnan.wmm;
+package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -12,6 +12,9 @@ import dartagnan.program.Event;
 import dartagnan.program.Program;
 import dartagnan.utils.PredicateUtils;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.BinaryRelation;
+import dartagnan.wmm.relation.Relation;
+
 import java.util.Set;
 
 /**

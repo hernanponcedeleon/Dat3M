@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package dartagnan.wmm;
+package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -11,7 +11,6 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import java.util.HashSet;
 import java.util.Set;
-
 
 /**
  *
@@ -22,42 +21,21 @@ public abstract class Relation {
     /**
      * Describes whether the encoding process uses an over-approximation which is only suitable for checking consistency, NOT inconsistency.
      */
-    public static boolean Approx=false;
-    public static boolean CloseApprox=false;
-    public static boolean PostFixApprox=false;
+    public static boolean Approx = false;
+    public static boolean CloseApprox = false;
+    public static boolean PostFixApprox = false;
 
     protected String name;
-    protected boolean containsRec;
-    protected boolean isnamed=false;
     protected String term;
-    protected Set<Relation> namedRelations;
-    
-    /**
-     * The term that defines the relation.
-     * @return String
-     */
-    public String toString(){
-        if(isnamed) return String.format("%s := %s", name, term);
-        else return String.format("%s", name);
-    }
-    
-    /**
-     * This is only used by the parser where a relation is defined and named later.
-     * Only use this method before relations depending on this one are encoded!!!
-     * @param name
-     */
-    public void setName(String name){
-        this.name=name;
-        if (!namedRelations.contains(this))namedRelations.add(this);
-        isnamed=true;
-    }
+    protected boolean containsRec;
+    protected boolean isNamed;
+    protected Set<Relation> namedRelations = new HashSet<>();
 
     /**
      * Creates a relation with an automatically generated identifier.
      * @param name
      */
     public Relation(String name) {
-        this.namedRelations = new HashSet<>();
         this.name = name;
         this.term = name;
     }
@@ -68,11 +46,25 @@ public abstract class Relation {
      * @param term (automatically generated)
      */
     public Relation(String name, String term) {
-        this.namedRelations = new HashSet<>();
         namedRelations.add(this);
         this.name = name;
         this.term = term;
-        isnamed=true;
+        isNamed = true;
+    }
+
+    /**
+     * @return boolean
+     */
+    public boolean getIsNamed(){
+        return isNamed;
+    }
+
+    /**
+     *
+     * @return all named relations that this relation revers to.
+     */
+    public Set<Relation> getNamedRelations() {
+        return namedRelations;
     }
 
     /**
@@ -84,11 +76,23 @@ public abstract class Relation {
     }
 
     /**
-     * 
-     * @return all named relations that this relation revers to.
+     * This is only used by the parser where a relation is defined and named later.
+     * Only use this method before relations depending on this one are encoded!!!
+     * @param name
      */
-    public Set<Relation> getNamedRelations() {
-        return namedRelations;
+    public void setName(String name){
+        this.name=name;
+        if (!namedRelations.contains(this))namedRelations.add(this);
+        isNamed = true;
+    }
+
+    /**
+     * The term that defines the relation.
+     * @return String
+     */
+    public String toString(){
+        if(isNamed) return String.format("%s := %s", name, term);
+        else return String.format("%s", name);
     }
     
     /**
