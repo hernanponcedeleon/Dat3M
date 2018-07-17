@@ -36,18 +36,18 @@ public class RMO implements WmmInterface {
 		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
 		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
-		enc = ctx.mkAnd(enc, satMinus("poloc", "RR", events, ctx));
-		enc = ctx.mkAnd(enc, satUnion("(poloc\\RR)", "com", events, ctx));
+		enc = ctx.mkAnd(enc, satMinus("po-loc", "RR", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("(po-loc\\RR)", "com", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com-rmo", "(co+fr)", "rfe", events, ctx));
 		enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", eventsL, ctx));
-		enc = ctx.mkAnd(enc, satIntersection("poloc", "WR", events, ctx));
-		enc = ctx.mkAnd(enc, satUnion("data", "(poloc&WR)", events, ctx));
-		enc = ctx.mkAnd(enc, satTransFixPoint("(data+(poloc&WR))", events, approx, ctx));
-		enc = ctx.mkAnd(enc, satIntersection("(data+(poloc&WR))^+", "RM", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("po-loc", "WR", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("data", "(po-loc&WR)", events, ctx));
+		enc = ctx.mkAnd(enc, satTransFixPoint("(data+(po-loc&WR))", events, approx, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("(data+(po-loc&WR))^+", "RM", events, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("ctrl", "RW", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("(ctrl&RW)", "ctrlisync", events, ctx));
-		enc = ctx.mkAnd(enc, satUnion("dp-rmo", "((ctrl&RW)+ctrlisync)", "((data+(poloc&WR))^+&RM)", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("dp-rmo", "((ctrl&RW)+ctrlisync)", "((data+(po-loc&WR))^+&RM)", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("fence-rmo", "sync", "mfence", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-rmo", "dp-rmo", "fence-rmo", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("ghb-rmo", "po-rmo", "com-rmo", events, ctx));
@@ -56,13 +56,13 @@ public class RMO implements WmmInterface {
 	
 	public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		return ctx.mkAnd(satAcyclic("((poloc\\RR)+com)", events, ctx), satAcyclic("ghb-rmo", events, ctx));
+		return ctx.mkAnd(satAcyclic("((po-loc\\RR)+com)", events, ctx), satAcyclic("ghb-rmo", events, ctx));
 	}
 	
 	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		BoolExpr enc = ctx.mkAnd(satCycleDef("((poloc\\RR)+com)", events, ctx), satCycleDef("ghb-rmo", events, ctx));
-		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("((poloc\\RR)+com)", events, ctx), satCycle("ghb-rmo", events, ctx)));
+		BoolExpr enc = ctx.mkAnd(satCycleDef("((po-loc\\RR)+com)", events, ctx), satCycleDef("ghb-rmo", events, ctx));
+		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("((po-loc\\RR)+com)", events, ctx), satCycle("ghb-rmo", events, ctx)));
 		return enc;
 	}
 }

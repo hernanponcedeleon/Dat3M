@@ -40,7 +40,7 @@ b1=base {$value =$b1.value;}
 
 base returns [Relation value]: 
 PO {$value=new BasicRelation("po");}
-| POLOC {$value=new BasicRelation("poloc");}
+| POLOC {$value=new BasicRelation("po-loc");}
 | RFE {$value=new BasicRelation("rfe");}
 | RFI {$value=new BasicRelation("rfi");}
 | RF {$value=new BasicRelation("rf");}

@@ -46,7 +46,7 @@ public class ARM implements WmmInterface {
 		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
-		enc = ctx.mkAnd(enc, satUnion("poloc", "com", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));
 		
 		if (idl) {
 		    enc = ctx.mkAnd(enc, satTransIDL("idd", eventsL, approx, ctx));			
@@ -60,8 +60,8 @@ public class ARM implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satComp("fre", "rfe", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("coe", "rfe", events, ctx));
     	
-	    enc = ctx.mkAnd(enc, satIntersection("rdw", "poloc", "(fre;rfe)", events, ctx));
-	    enc = ctx.mkAnd(enc, satIntersection("detour", "poloc", "(coe;rfe)", events,ctx));
+	    enc = ctx.mkAnd(enc, satIntersection("rdw", "po-loc", "(fre;rfe)", events, ctx));
+	    enc = ctx.mkAnd(enc, satIntersection("detour", "po-loc", "(coe;rfe)", events,ctx));
 	    // Base case for program order
 	    enc = ctx.mkAnd(enc, satUnion("dp", "rdw", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("ii0", "(dp+rdw)", "rfi", events, ctx));
@@ -115,18 +115,18 @@ public class ARM implements WmmInterface {
 	    return ctx.mkAnd(satAcyclic("hb-arm", events, ctx),
 	    				satIrref("((fre;prop);(hb-arm)*)", events, ctx),
 	    				satAcyclic("(co+prop)", events, ctx),
-	    				satAcyclic("(poloc+com)", events, ctx));
+	    				satAcyclic("(po-loc+com)", events, ctx));
 	}
 
 	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		BoolExpr enc = ctx.mkAnd(satCycleDef("hb-arm", events, ctx), 
 								satCycleDef("(co+prop)", events, ctx),
-								satCycleDef("(poloc+com)", events, ctx));
+								satCycleDef("(po-loc+com)", events, ctx));
 		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("hb-arm", events, ctx),
 									ctx.mkNot(satIrref("((fre;prop);(hb-arm)*)", events, ctx)),
 									satCycle("(co+prop)", events, ctx),
-									satCycle("(poloc+com)", events, ctx)));
+									satCycle("(po-loc+com)", events, ctx)));
 		return enc;
 	}
 	

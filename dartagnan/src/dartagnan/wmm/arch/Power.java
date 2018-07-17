@@ -45,7 +45,7 @@ public class Power implements WmmInterface {
 		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
-		enc = ctx.mkAnd(enc, satUnion("poloc", "com", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));
 		
 		if (idl) {
 		    enc = ctx.mkAnd(enc, satTransIDL("idd", eventsL, approx, ctx));			
@@ -59,19 +59,19 @@ public class Power implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satComp("fre", "rfe", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("coe", "rfe", events, ctx));
     	
-	    enc = ctx.mkAnd(enc, satIntersection("rdw", "poloc", "(fre;rfe)", events, ctx));
-	    enc = ctx.mkAnd(enc, satIntersection("detour", "poloc", "(coe;rfe)", events,ctx));
+	    enc = ctx.mkAnd(enc, satIntersection("rdw", "po-loc", "(fre;rfe)", events, ctx));
+	    enc = ctx.mkAnd(enc, satIntersection("detour", "po-loc", "(coe;rfe)", events,ctx));
 	    // Base case for program order
 	    enc = ctx.mkAnd(enc, satUnion("dp", "rdw", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("ii0", "(dp+rdw)", "rfi", events, ctx));
 	    enc = ctx.mkAnd(enc, satEmpty("ic0", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("ci0", "ctrlisync", "detour", events, ctx));
-	    enc = ctx.mkAnd(enc, satUnion("dp", "poloc", events, ctx));
-	    enc = ctx.mkAnd(enc, satUnion("(dp+poloc)", "ctrl", events, ctx));
+	    enc = ctx.mkAnd(enc, satUnion("dp", "po-loc", events, ctx));
+	    enc = ctx.mkAnd(enc, satUnion("(dp+po-loc)", "ctrl", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("addr", "po", events, ctx));
 	    enc = ctx.mkAnd(enc, satPowerPPO(events, approx, ctx));
 	    
-	    enc = ctx.mkAnd(enc, satUnion("cc0", "((dp+poloc)+ctrl)", "(addr;po)", events, ctx));
+	    enc = ctx.mkAnd(enc, satUnion("cc0", "((dp+po-loc)+ctrl)", "(addr;po)", events, ctx));
 	    enc = ctx.mkAnd(enc, satIntersection("RR", "ii", events, ctx));
 	    enc = ctx.mkAnd(enc, satIntersection("RW", "ic", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("po-power", "(RR&ii)", "(RW&ic)", events, ctx));
@@ -118,18 +118,18 @@ public class Power implements WmmInterface {
 	    return ctx.mkAnd(satAcyclic("hb-power", events, ctx),
 	    				satIrref("((fre;prop);(hb-power)*)", events, ctx),
 	    				satAcyclic("(co+prop)", events, ctx),
-	    				satAcyclic("(poloc+com)", events, ctx));
+	    				satAcyclic("(po-loc+com)", events, ctx));
 	}
 
 	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		BoolExpr enc = ctx.mkAnd(satCycleDef("hb-power", events, ctx), 
 								satCycleDef("(co+prop)", events, ctx),
-								satCycleDef("(poloc+com)", events, ctx));
+								satCycleDef("(po-loc+com)", events, ctx));
 		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("hb-power", events, ctx),
 									ctx.mkNot(satIrref("((fre;prop);(hb-power)*)", events, ctx)),
 									satCycle("(co+prop)", events, ctx),
-									satCycle("(poloc+com)", events, ctx)));
+									satCycle("(po-loc+com)", events, ctx)));
 		return enc;
 	}
 	
