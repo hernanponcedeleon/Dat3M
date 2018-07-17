@@ -21,7 +21,7 @@ import java.util.Set;
  *
  * @author Florian Furbach
  */
-public class Wmm {
+public class Wmm implements WmmInterface{
 
     private Set<String> fences = new HashSet<String>();
     private ArrayList<Axiom> axioms = new ArrayList<>();
@@ -46,7 +46,7 @@ public class Wmm {
      * @return the encoding of the relations.
      * @throws Z3Exception
      */
-    public BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
         BoolExpr enc = Domain.encodeFences(program, ctx, fences);
         if(program.hasRMWEvents()){
             enc = ctx.mkAnd(enc, Domain.encodeRMW(program, ctx));

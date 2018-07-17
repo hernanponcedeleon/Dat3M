@@ -29,12 +29,13 @@ import dartagnan.program.event.MemEvent;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.WmmInterface;
 
-public class ARM {
+public class ARM implements WmmInterface {
 
-	public static final String[] fences = {"ish", "isb"};
+	public final String[] fences = {"ish", "isb"};
 	
-	public static BoolExpr encode(Program program, boolean approx, boolean idl, Context ctx) throws Z3Exception {
+	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
 			throw new RuntimeException("RMW is not implemented for ARM");
 		}
@@ -109,7 +110,7 @@ public class ARM {
 	    return enc;
 	}
 	
-	public static BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
+	public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 	    return ctx.mkAnd(satAcyclic("hb-arm", events, ctx),
 	    				satIrref("((fre;prop);(hb-arm)*)", events, ctx),
@@ -117,7 +118,7 @@ public class ARM {
 	    				satAcyclic("(poloc+com)", events, ctx));
 	}
 
-	public static BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
+	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		BoolExpr enc = ctx.mkAnd(satCycleDef("hb-arm", events, ctx), 
 								satCycleDef("(co+prop)", events, ctx),
@@ -129,7 +130,7 @@ public class ARM {
 		return enc;
 	}
 	
-	private static BoolExpr satARMPPO(Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
+	private BoolExpr satARMPPO(Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {

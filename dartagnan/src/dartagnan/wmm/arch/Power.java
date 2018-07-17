@@ -28,12 +28,13 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.Program;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.WmmInterface;
 
-public class Power {
+public class Power implements WmmInterface {
 
-	public static final String[] fences = {"sync", "lwsync", "isync"};
+	public final String[] fences = {"sync", "lwsync", "isync"};
 	
-	public static BoolExpr encode(Program program, boolean approx, boolean idl, Context ctx) throws Z3Exception {
+	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
 			throw new RuntimeException("RMW is not implemented for Power");
 		}
@@ -112,7 +113,7 @@ public class Power {
 	    return enc;
 	}
 	
-	public static BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
+	public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 	    return ctx.mkAnd(satAcyclic("hb-power", events, ctx),
 	    				satIrref("((fre;prop);(hb-power)*)", events, ctx),
@@ -120,7 +121,7 @@ public class Power {
 	    				satAcyclic("(poloc+com)", events, ctx));
 	}
 
-	public static BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
+	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		BoolExpr enc = ctx.mkAnd(satCycleDef("hb-power", events, ctx), 
 								satCycleDef("(co+prop)", events, ctx),
@@ -132,7 +133,7 @@ public class Power {
 		return enc;
 	}
 	
-	private static BoolExpr satPowerPPO(Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
+	private BoolExpr satPowerPPO(Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {

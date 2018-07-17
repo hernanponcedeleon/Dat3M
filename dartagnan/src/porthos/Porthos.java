@@ -1,18 +1,14 @@
 package porthos;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import dartagnan.*;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.apache.commons.io.FileUtils;
+import dartagnan.wmm.WmmInterface;
+import dartagnan.wmm.WmmResolver;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -38,10 +34,7 @@ import org.apache.commons.cli.*;
 public class Porthos {
 
     public static void main(String[] args) throws Z3Exception, IOException {
-        Wmm mcmS = null;
-        Wmm mcmT = null;
-
-        List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "arm");
+        WmmResolver wmmResolver = new WmmResolver();
 
         Options options = new Options();
 
@@ -90,15 +83,15 @@ public class Porthos {
             return;
         }
 
-        String source = cmd.getOptionValue("source");
-        if(!MCMs.stream().anyMatch(mcms -> mcms.trim().equals(source))) {
+        String source = cmd.getOptionValue("source").trim();
+        if(!(wmmResolver.getArchSet().contains(source))){
             System.out.println("Unrecognized source");
             System.exit(0);
             return;
         }
 
-        String target = cmd.getOptionValue("target");
-        if(!MCMs.stream().anyMatch(mcms -> mcms.trim().equals(target))) {
+        String target = cmd.getOptionValue("target").trim();
+        if(!(wmmResolver.getArchSet().contains(target))){
             System.out.println("Unrecognized target");
             System.exit(0);
             return;
@@ -126,27 +119,21 @@ public class Porthos {
             rels = cmd.getOptionValues("rels");
         }
 
+        WmmInterface mcmS;
         if (cmd.hasOption("scat")) {
-            File sourceFile = new File(cmd.getOptionValue("scat"));
-            String mcmStext = FileUtils.readFileToString(sourceFile, "UTF-8");
-            ANTLRInputStream mcmSinput = new ANTLRInputStream(mcmStext);
-            ModelLexer lexerS = new ModelLexer(mcmSinput);
-            CommonTokenStream tokensS = new CommonTokenStream(lexerS);
-            ModelParser parserS = new ModelParser(tokensS);
-            mcmS = parserS.mcm().value;
+            mcmS = Dartagnan.parseCat(cmd.getOptionValue("scat"));
+        } else {
+            mcmS = wmmResolver.getWmmForArch(source);
         }
 
+        WmmInterface mcmT;
         if (cmd.hasOption("tcat")) {
-            File targetFile = new File(cmd.getOptionValue("tcat"));
-            String mcmTtext = FileUtils.readFileToString(targetFile, "UTF-8");
-            ANTLRInputStream mcmTinput = new ANTLRInputStream(mcmTtext);
-            ModelLexer lexerT = new ModelLexer(mcmTinput);
-            CommonTokenStream tokensT = new CommonTokenStream(lexerT);
-            ModelParser parserT = new ModelParser(tokensT);
-            mcmT = parserT.mcm().value;
+            mcmT = Dartagnan.parseCat(cmd.getOptionValue("tcat"));
+        } else {
+            mcmT = wmmResolver.getWmmForArch(target);
         }
 
-        if (cmd.hasOption("relax") || mcmS != null|| mcmT != null) {
+        if (cmd.hasOption("relax") || mcmS instanceof Wmm || mcmT instanceof Wmm) {
             Relation.Approx = true;
         }
 
@@ -174,35 +161,22 @@ public class Porthos {
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceDomain = Domain.encode(pSource, ctx);
-        BoolExpr sourceMM = null;
-        if (mcmS != null) {
-            sourceMM = mcmS.encode(p, ctx);
-
-        } else {
-            sourceMM = pSource.encodeMM(ctx, source, false, cmd.hasOption("idl"));
-        }
+        BoolExpr sourceMM = mcmS.encode(p, ctx, false, cmd.hasOption("idl"));
 
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
         s.add(Domain.encode(pTarget, ctx));
-        if (mcmT != null) {
-            s.add(mcmT.encode(p, ctx));
-            s.add(mcmT.Consistent(p, ctx));
-        } else {
-            s.add(pTarget.encodeMM(ctx, target, false, cmd.hasOption("idl")));
-            s.add(pTarget.encodeConsistent(ctx, target));
-        }
+        s.add(mcmT.encode(p, ctx, false, cmd.hasOption("idl")));
+        s.add(mcmT.Consistent(p, ctx));
+
         s.add(sourceDF);
         s.add(sourceCF);
         s.add(sourceDF_RF);
         s.add(sourceDomain);
         s.add(sourceMM);
-        if (mcmS != null) {
-            s.add(mcmS.Inconsistent(p, ctx));
-        } else {
-            s.add(pSource.encodeInconsistent(ctx, source));
-        }
+        s.add(mcmS.Inconsistent(p, ctx));
+
         s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
         s2.add(sourceDF);
@@ -210,11 +184,8 @@ public class Porthos {
         s2.add(sourceDF_RF);
         s2.add(sourceDomain);
         s2.add(sourceMM);
-        if (mcmS != null) {
-            s.add(mcmS.Consistent(p, ctx));
-        } else {
-            s2.add(pSource.encodeConsistent(ctx, source));
-        }
+        s2.add(mcmS.Consistent(p, ctx));
+
 
 //        if(!statePortability) {
 //            if(s.check() == Status.SATISFIABLE) {

@@ -96,6 +96,8 @@ src/dartagnan/wmm/arch/RMO.java \
 src/dartagnan/wmm/arch/SC.java \
 src/dartagnan/wmm/arch/TSO.java \
 src/dartagnan/wmm/relation/UnaryRelation.java \
+src/dartagnan/wmm/WmmInterface.java \
+src/dartagnan/wmm/WmmResolver.java \
 src/dartagnan/wmm/Wmm.java \
 src/porthos/Porthos.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCBaseVisitor.java \

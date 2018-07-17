@@ -2,12 +2,13 @@ package dartagnan;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
+import dartagnan.wmm.WmmInterface;
+import dartagnan.wmm.WmmResolver;
+import dartagnan.wmm.Wmm;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.DiagnosticErrorListener;
@@ -18,7 +19,6 @@ import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.Wmm;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
 
@@ -27,10 +27,8 @@ import org.apache.commons.cli.*;
 @SuppressWarnings("deprecation")
 public class Dartagnan {
 
-	public static void main(String[] args) throws Z3Exception, IOException {		
-        Wmm mcm = null;
-
-		List<String> MCMs = Arrays.asList("sc", "tso", "pso", "rmo", "alpha", "power", "arm");
+	public static void main(String[] args) throws Z3Exception, IOException {
+        WmmResolver wmmResolver = new WmmResolver();
 		
 		Options options = new Options();
 
@@ -84,12 +82,12 @@ public class Dartagnan {
         	return;
         }
 
-		String target = cmd.getOptionValue("target");
-		if(!MCMs.stream().anyMatch(mcms -> mcms.trim().equals(target))) {
-			System.out.println("Unrecognized target");
-			System.exit(0);
-			return;
-		}
+		String target = cmd.getOptionValue("target").trim();
+        if(!(wmmResolver.getArchSet().contains(target))){
+            System.out.println("Unrecognized target");
+            System.exit(0);
+            return;
+        }
 
 		String inputFilePath = cmd.getOptionValue("input");
 		if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus")) {
@@ -97,30 +95,20 @@ public class Dartagnan {
 			System.exit(0);
 			return;
 		}
-		File file = new File(inputFilePath);
-
-		String program = FileUtils.readFileToString(file, "UTF-8");		
-		ANTLRInputStream input = new ANTLRInputStream(program); 		
 
 		Program p = parseProgram(inputFilePath);
 		if(p.getAss() == null){
 			throw new RuntimeException("Assert is required for Dartagnan tests");
 		}
 
+        WmmInterface mcm;
 		if (cmd.hasOption("cat")) {
-			String catPath = cmd.getOptionValue("cat");
-			File modelfile = new File(catPath);
-			String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
-			ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
-			ModelLexer lexer = new ModelLexer(mcminput);
-			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			ModelParser parser = new ModelParser(tokens);
-			mcm = parser.mcm().value;
-		}
-
-		if (cmd.hasOption("relax") || mcm != null) {
-			Relation.Approx = true;
-		}
+			mcm = parseCat(cmd.getOptionValue("cat"));
+            Relation.Approx = true;
+		} else {
+            mcm = wmmResolver.getWmmForArch(target);
+            Relation.Approx = cmd.hasOption("relax");
+        }
 
 		int steps = 1;
 		if(cmd.hasOption("unroll")) {
@@ -138,14 +126,8 @@ public class Dartagnan {
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
-
-		if (mcm != null) {
-			s.add(mcm.encode(p, ctx));
-			s.add(mcm.Consistent(p, ctx));
-		} else {
-			s.add(p.encodeMM(ctx, target, cmd.hasOption("relax"), cmd.hasOption("idl")));
-			s.add(p.encodeConsistent(ctx, target));
-		}
+        s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
+        s.add(mcm.Consistent(p, ctx));
 
 		boolean result = (s.check() == Status.SATISFIABLE);
 		if(p.getAss().getInvert()){
@@ -189,6 +171,16 @@ public class Dartagnan {
 		}
 
 		return program;
+	}
+
+	public static Wmm parseCat(String catPath) throws IOException{
+		File modelfile = new File(catPath);
+		String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
+		ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
+		ModelLexer lexer = new ModelLexer(mcminput);
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		ModelParser parser = new ModelParser(tokens);
+		return parser.mcm().value;
 	}
 
 	private static boolean canDrawGraph(AbstractAssert ass, boolean result){

@@ -12,7 +12,6 @@ import com.microsoft.z3.*;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.event.*;
 import dartagnan.program.event.rmw.RMWStore;
-import dartagnan.wmm.arch.*;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
 
@@ -177,99 +176,6 @@ public class Program {
 				}
 			}
 		}
-	}
-	
-	public BoolExpr encodeMM(Context ctx, String mcm, boolean approx, boolean idl) throws Z3Exception {
-		BoolExpr enc = ctx.mkTrue();
-		switch (mcm){
-		case "sc":
-			enc = ctx.mkAnd(enc, SC.encode(this, ctx));
-			break;
-		case "tso":
-			enc = ctx.mkAnd(enc, TSO.encode(this, ctx));
-			break;
-		case "pso":
-			enc = ctx.mkAnd(enc, PSO.encode(this, ctx));
-			break;
-		case "rmo":
-			enc = ctx.mkAnd(enc, RMO.encode(this, approx, ctx));
-			break;
-		case "alpha":
-			enc = ctx.mkAnd(enc, Alpha.encode(this, approx, ctx));
-			break;
-		case "power":
-			enc = ctx.mkAnd(enc, Power.encode(this, approx, idl, ctx));
-			break;
-		case "arm":
-			enc = ctx.mkAnd(enc, ARM.encode(this, approx, idl, ctx));
-			break;
-		default:
-			System.out.println("Check encodeMM!");
-			break;
-		}
-		return enc;
-	}
-
-	public BoolExpr encodeConsistent(Context ctx, String mcm) throws Z3Exception {
-		BoolExpr enc = ctx.mkTrue();
-		switch (mcm){
-		case "sc":
-			enc = ctx.mkAnd(enc, SC.Consistent(this, ctx));
-			break;
-		case "tso":
-			enc = ctx.mkAnd(enc, TSO.Consistent(this, ctx));
-			break;
-		case "pso":
-			enc = ctx.mkAnd(enc, PSO.Consistent(this, ctx));
-			break;
-		case "rmo":
-			enc = ctx.mkAnd(enc, RMO.Consistent(this, ctx));
-			break;
-		case "alpha":
-			enc = ctx.mkAnd(enc, Alpha.Consistent(this, ctx));
-			break;
-		case "power":
-			enc = ctx.mkAnd(enc, Power.Consistent(this, ctx));
-			break;
-		case "arm":
-			enc = ctx.mkAnd(enc, ARM.Consistent(this, ctx));
-			break;
-		default:
-			System.out.println("Check encodeConsistent!");
-			break;
-		}
-		return enc;
-	}
-	
-	public BoolExpr encodeInconsistent(Context ctx, String mcm) throws Z3Exception {
-		BoolExpr enc = ctx.mkTrue();
-		switch (mcm) {
-		case "sc":
-			enc = ctx.mkAnd(enc, SC.Inconsistent(this, ctx));
-			break;
-		case "tso":
-			enc = ctx.mkAnd(enc, TSO.Inconsistent(this, ctx));
-			break;
-		case "pso":
-			enc = ctx.mkAnd(enc, PSO.Inconsistent(this, ctx));
-			break;
-		case "rmo":
-			enc = ctx.mkAnd(enc, RMO.Inconsistent(this, ctx));
-			break;
-		case "alpha":
-			enc = ctx.mkAnd(enc, Alpha.Inconsistent(this, ctx));
-			break;
-		case "power":
-			enc = ctx.mkAnd(enc, Power.Inconsistent(this, ctx));
-			break;
-		case "arm":
-			enc = ctx.mkAnd(enc, ARM.Inconsistent(this, ctx));
-			break;
-		default:
-			System.out.println("Check encodeInconsistent!");
-			break;
-		}
-		return enc;
 	}
 	
 	public Set<Event> getEvents() {

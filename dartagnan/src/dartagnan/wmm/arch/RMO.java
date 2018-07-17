@@ -19,12 +19,13 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.EncodingsCAT;
+import dartagnan.wmm.WmmInterface;
 
-public class RMO {
+public class RMO implements WmmInterface {
 
-	public static final String[] fences = {"mfence", "sync", "isync"};
+	public final String[] fences = {"mfence", "sync", "isync"};
 	
-	public static BoolExpr encode(Program program, boolean approx, Context ctx) throws Z3Exception {
+	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
 			throw new RuntimeException("RMW is not implemented for RMO");
 		}
@@ -53,12 +54,12 @@ public class RMO {
 		return enc;
 	}
 	
-	public static BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
+	public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		return ctx.mkAnd(satAcyclic("((poloc\\RR)+com)", events, ctx), satAcyclic("ghb-rmo", events, ctx));
 	}
 	
-	public static BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
+	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		BoolExpr enc = ctx.mkAnd(satCycleDef("((poloc\\RR)+com)", events, ctx), satCycleDef("ghb-rmo", events, ctx));
 		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("((poloc\\RR)+com)", events, ctx), satCycle("ghb-rmo", events, ctx)));
