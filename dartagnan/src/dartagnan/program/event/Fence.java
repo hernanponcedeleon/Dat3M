@@ -1,4 +1,4 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
 import java.util.Collections;
 

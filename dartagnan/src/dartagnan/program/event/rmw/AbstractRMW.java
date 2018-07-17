@@ -1,10 +1,10 @@
-package dartagnan.program.rmw;
+package dartagnan.program.event.rmw;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Location;
-import dartagnan.program.MemEvent;
+import dartagnan.program.event.MemEvent;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;

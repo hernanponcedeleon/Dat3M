@@ -12,6 +12,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.asserts.*;
 import dartagnan.program.*;
+import dartagnan.program.event.*;
 import dartagnan.utils.Utils;
 
 public class Encodings {

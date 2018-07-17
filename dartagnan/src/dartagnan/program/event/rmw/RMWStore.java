@@ -1,10 +1,10 @@
-package dartagnan.program.rmw;
+package dartagnan.program.event.rmw;
 
 import dartagnan.expression.AConst;
-import dartagnan.program.Load;
+import dartagnan.program.event.Load;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.Store;
+import dartagnan.program.event.Store;
 
 public class RMWStore extends Store {
 

@@ -1,7 +1,7 @@
 package dartagnan.parsers.utils;
 
 import dartagnan.program.Seq;
-import dartagnan.program.Skip;
+import dartagnan.program.event.Skip;
 import dartagnan.program.Thread;
 
 import java.util.List;

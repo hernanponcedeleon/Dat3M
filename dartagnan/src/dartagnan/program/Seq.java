@@ -5,6 +5,8 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
+import dartagnan.program.event.Event;
+import dartagnan.program.event.Skip;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -21,7 +23,7 @@ public class Seq extends Thread {
 	}
 	
 	public String toString() {
-		if (t2 instanceof Skip) 
+		if (t2 instanceof Skip)
 			return t1.toString();
 		else
 			return String.format("%s;\n%s", t1, t2);

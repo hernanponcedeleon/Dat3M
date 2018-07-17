@@ -8,7 +8,7 @@ package dartagnan.wmm;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Event;
+import dartagnan.program.event.Event;
 import dartagnan.program.Program;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.Relation;

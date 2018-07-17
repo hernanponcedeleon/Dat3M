@@ -7,7 +7,11 @@ import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
-import dartagnan.program.rmw.Xchg;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.Load;
+import dartagnan.program.event.Local;
+import dartagnan.program.event.Store;
+import dartagnan.program.event.rmw.Xchg;
 import dartagnan.program.Thread;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 

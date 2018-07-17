@@ -8,14 +8,10 @@ import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
 
-import dartagnan.program.Event;
-import dartagnan.program.Init;
-import dartagnan.program.Load;
+import dartagnan.program.event.*;
 import dartagnan.program.Location;
-import dartagnan.program.MemEvent;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
-import dartagnan.program.Store;
 
 public class Utils {
 

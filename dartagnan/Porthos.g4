@@ -4,6 +4,7 @@ grammar Porthos;
 package dartagnan;
 import dartagnan.asserts.*;
 import dartagnan.program.*;
+import dartagnan.program.event.*;
 import dartagnan.expression.*;
 import dartagnan.program.Thread;
 import java.util.HashMap;

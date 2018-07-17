@@ -10,6 +10,10 @@ import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.Load;
+import dartagnan.program.event.Local;
+import dartagnan.program.event.Store;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 import java.util.*;

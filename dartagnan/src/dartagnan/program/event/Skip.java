@@ -1,4 +1,6 @@
-package dartagnan.program;
+package dartagnan.program.event;
+
+import dartagnan.program.Thread;
 
 import java.util.Collections;
 

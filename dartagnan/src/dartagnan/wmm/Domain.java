@@ -19,7 +19,8 @@ import com.microsoft.z3.*;
 
 import dartagnan.expression.AConst;
 import dartagnan.program.*;
-import dartagnan.program.rmw.RMWStore;
+import dartagnan.program.event.*;
+import dartagnan.program.event.rmw.RMWStore;
 
 public class Domain {
 	

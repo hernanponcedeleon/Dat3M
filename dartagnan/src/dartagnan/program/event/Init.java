@@ -1,7 +1,9 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
 import com.microsoft.z3.*;
 
+import dartagnan.program.HighLocation;
+import dartagnan.program.Location;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;

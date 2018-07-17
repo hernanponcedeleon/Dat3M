@@ -1,4 +1,4 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -7,6 +7,8 @@ import java.util.Set;
 import com.microsoft.z3.*;
 
 import dartagnan.expression.AConst;
+import dartagnan.program.Location;
+import dartagnan.program.Register;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;

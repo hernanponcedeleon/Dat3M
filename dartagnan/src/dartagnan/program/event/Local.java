@@ -1,4 +1,4 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -6,20 +6,22 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
+import dartagnan.expression.AExpr;
+import dartagnan.program.Register;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
-import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
-public class Load extends MemEvent {
-
+public class Local extends Event {
+	
 	private Register reg;
+	private AExpr expr;
 	private Integer ssaRegIndex;
 	
-	public Load(Register reg, Location loc) {
+	public Local(Register reg, AExpr expr) {
 		this.reg = reg;
-		this.loc = loc;
+		this.expr = expr;
 		this.condLevel = 0;
 	}
 	
@@ -27,8 +29,8 @@ public class Load extends MemEvent {
 		return reg;
 	}
 	
-	public String toString() {
-		return String.format("%s%s <- %s", String.join("", Collections.nCopies(condLevel, "  ")), reg, loc);
+	public AExpr getExpr() {
+		return expr;
 	}
 	
 	public LastModMap setLastModMap(LastModMap map) {
@@ -40,31 +42,34 @@ public class Load extends MemEvent {
 		return retMap;
 	}
 	
-	public Load clone() {
-		Register newReg = reg.clone();
-		Location newLoc = loc.clone();
-		Load newLoad = new Load(newReg, newLoc);
-		newLoad.condLevel = condLevel;
-		newLoad.setHLId(getHLId());
-		newLoad.setUnfCopy(getUnfCopy());
-		return newLoad;
+	public String toString() {
+		return String.format("%s%s <- %s", String.join("", Collections.nCopies(condLevel, "  ")), reg, expr);
 	}
 	
+	public Local clone() {
+		Register newReg = reg.clone();
+		AExpr newExpr = expr.clone();
+		Local newLocal = new Local(newReg, newExpr);
+		newLocal.condLevel = condLevel;
+		newLocal.setHLId(hashCode());
+		newLocal.setUnfCopy(getUnfCopy());
+		return newLocal;
+	}
+
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
 		if(mainThread == null){
 			System.out.println(String.format("Check encodeDF for %s", this));
 			return null;
 		}
 		else {
+			Expr z3Expr = expr.toZ3(map, ctx);
 			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-			Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
-			this.ssaLoc = z3Loc;
 			this.ssaRegIndex = map.get(reg);
-			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
+			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
 		}		
 	}
 	
 	public Integer getSsaRegIndex() {
-		return ssaRegIndex;
+			return ssaRegIndex;
 	}
 }

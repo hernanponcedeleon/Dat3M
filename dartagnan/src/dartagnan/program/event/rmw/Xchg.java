@@ -1,6 +1,9 @@
-package dartagnan.program.rmw;
+package dartagnan.program.event.rmw;
 
 import dartagnan.program.*;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.Load;
+import dartagnan.program.event.Local;
 import dartagnan.utils.LastModMap;
 
 import java.util.Collections;

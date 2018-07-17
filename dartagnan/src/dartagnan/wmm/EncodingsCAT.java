@@ -10,7 +10,7 @@ import static java.lang.String.format;
 
 import com.microsoft.z3.*;
 
-import dartagnan.program.Event;
+import dartagnan.program.event.Event;
 
 public class EncodingsCAT {
 

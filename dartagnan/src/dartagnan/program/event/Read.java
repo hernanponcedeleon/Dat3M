@@ -1,4 +1,4 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -6,6 +6,8 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
+import dartagnan.program.*;
+import dartagnan.program.Thread;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -57,7 +59,7 @@ public class Read extends MemEvent {
 		Load ld = new Load(reg, loc);
 		ld.setHLId(memId);
 		ld.setUnfCopy(getUnfCopy());
-		ld.condLevel = this.condLevel;
+		ld.setCondLevel(this.condLevel);
 		
 		if(!target.equals("power") && !target.equals("arm")) {
 			return ld;
@@ -96,7 +98,7 @@ public class Read extends MemEvent {
 	public Thread optCompile(boolean ctrl, boolean leading) {
 		Load ld = new Load(reg, loc);
 		ld.setHLId(hashCode());
-		ld.condLevel = this.condLevel;
+		ld.setCondLevel(this.condLevel);
 
         if(atomic.equals("_rx") || atomic.equals("_na")) {
             return ld;
@@ -122,7 +124,7 @@ public class Read extends MemEvent {
 	public Thread allCompile() {
 		Load ld = new Load(reg, loc);
 		ld.setHLId(hashCode());
-		ld.condLevel = this.condLevel;
+		ld.setCondLevel(this.condLevel);
 		OptFence os = new OptFence("sync", this.condLevel);
 		OptFence olws = new OptFence("lwsync",  this.condLevel);
 		return new Seq(os, new Seq(olws, ld));

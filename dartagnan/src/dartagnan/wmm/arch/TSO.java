@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.program.*;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.MemEvent;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.axiom.Empty;
 import dartagnan.wmm.relation.BasicRelation;

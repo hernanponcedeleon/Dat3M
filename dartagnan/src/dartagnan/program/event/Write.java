@@ -1,4 +1,4 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -7,6 +7,8 @@ import java.util.Set;
 import com.microsoft.z3.*;
 
 import dartagnan.expression.AConst;
+import dartagnan.program.*;
+import dartagnan.program.Thread;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -80,7 +82,7 @@ public class Write extends MemEvent {
         }
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
-		st.condLevel = this.condLevel;
+		st.setCondLevel(this.condLevel);
 
 		if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
             Fence mfence = new Fence("mfence", this.condLevel);
@@ -138,7 +140,7 @@ public class Write extends MemEvent {
             st = new Store(loc, val);
         }
 		st.setHLId(hashCode());
-		st.condLevel = this.condLevel;
+		st.setCondLevel(this.condLevel);
 
         if(atomic.equals("_rx") || atomic.equals("_na")) {
             return st;
@@ -169,7 +171,7 @@ public class Write extends MemEvent {
             st = new Store(loc, val);
         }
 		st.setHLId(hashCode());
-		st.condLevel = this.condLevel;
+		st.setCondLevel(this.condLevel);
 		OptFence os = new OptFence("sync", this.condLevel);
 		OptFence olws = new OptFence("lwsync", this.condLevel);
 		return new Seq(os, new Seq(olws, st));

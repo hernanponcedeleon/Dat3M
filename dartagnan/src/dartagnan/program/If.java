@@ -7,6 +7,8 @@ import java.util.Set;
 import com.microsoft.z3.*;
 
 import dartagnan.expression.BExpr;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.Skip;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;

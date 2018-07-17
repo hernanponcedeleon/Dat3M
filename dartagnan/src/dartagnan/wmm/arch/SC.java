@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.program.*;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.MemEvent;
 
 public class SC {
 	

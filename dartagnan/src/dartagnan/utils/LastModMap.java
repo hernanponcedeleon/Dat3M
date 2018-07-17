@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import dartagnan.program.Event;
+import dartagnan.program.event.Event;
 
 public class LastModMap {
 	

@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.asserts.AbstractAssert;
-import dartagnan.program.rmw.RMWStore;
+import dartagnan.program.event.*;
+import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.wmm.arch.*;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
@@ -358,7 +359,7 @@ public class Program {
 		BoolExpr enc = ctx.mkTrue();
 		Set<Event> loadEvents = getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
 		for (Event r : loadEvents) {
-			Set<Event> storeSameLoc = getEvents().stream().filter(w -> (w instanceof Store || w instanceof Init) && ((MemEvent) w).loc == ((Load) r).loc).collect(Collectors.toSet());
+			Set<Event> storeSameLoc = getEvents().stream().filter(w -> (w instanceof Store || w instanceof Init) && ((MemEvent) w).getLoc() == ((Load) r).getLoc()).collect(Collectors.toSet());
 			BoolExpr sameValue = ctx.mkTrue();
 			for (Event w : storeSameLoc) {
 				sameValue = ctx.mkAnd(sameValue, ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(((MemEvent) w).ssaLoc, ((Load) r).ssaLoc)));

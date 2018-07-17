@@ -4,7 +4,7 @@ import dartagnan.expression.AExpr;
 import dartagnan.expression.Atom;
 import dartagnan.expression.BExpr;
 import dartagnan.program.If;
-import dartagnan.program.Skip;
+import dartagnan.program.event.Skip;
 import dartagnan.program.Thread;
 
 public class BareIf extends Thread {

@@ -1,10 +1,10 @@
 package dartagnan.program;
 
 import java.util.Set;
-import java.util.stream.IntStream;
 
 import com.microsoft.z3.*;
 
+import dartagnan.program.event.Event;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
