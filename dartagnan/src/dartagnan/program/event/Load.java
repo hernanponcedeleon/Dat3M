@@ -8,6 +8,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.Location;
 import dartagnan.program.Register;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -16,13 +17,19 @@ import static dartagnan.utils.Utils.ssaReg;
 
 public class Load extends MemEvent {
 
-	private Register reg;
-	private Integer ssaRegIndex;
+	protected Register reg;
+	protected Integer ssaRegIndex;
 	
-	public Load(Register reg, Location loc) {
+	public Load(Register reg, Location loc, String atomic) {
 		this.reg = reg;
 		this.loc = loc;
 		this.condLevel = 0;
+		this.atomic = atomic;
+		this.addFilters(
+				FilterUtils.EVENT_TYPE_ANY,
+				FilterUtils.EVENT_TYPE_MEMORY,
+				FilterUtils.EVENT_TYPE_READ
+		);
 	}
 	
 	public Register getReg() {
@@ -45,7 +52,7 @@ public class Load extends MemEvent {
 	public Load clone() {
 		Register newReg = reg.clone();
 		Location newLoc = loc.clone();
-		Load newLoad = new Load(newReg, newLoc);
+		Load newLoad = new Load(newReg, newLoc, atomic);
 		newLoad.condLevel = condLevel;
 		newLoad.setHLId(getHLId());
 		newLoad.setUnfCopy(getUnfCopy());

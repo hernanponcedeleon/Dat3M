@@ -4,6 +4,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.HighLocation;
 import dartagnan.program.Location;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -21,6 +22,12 @@ public class Init extends MemEvent {
 		setHLId(hashCode());
 		this.loc = loc;
 		this.condLevel = 0;
+		addFilters(
+				FilterUtils.EVENT_TYPE_ANY,
+				FilterUtils.EVENT_TYPE_MEMORY,
+				FilterUtils.EVENT_TYPE_INIT,
+				FilterUtils.EVENT_TYPE_WRITE
+		);
 	}
 	
 	public String toString() {

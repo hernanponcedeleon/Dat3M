@@ -5,6 +5,8 @@ import static dartagnan.wmm.Encodings.satCycle;
 import static dartagnan.wmm.Encodings.satCycleDef;
 import static dartagnan.wmm.EncodingsCAT.*;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -13,14 +15,20 @@ import com.microsoft.z3.*;
 import dartagnan.program.*;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.axiom.Empty;
 import dartagnan.wmm.relation.BasicRelation;
 
 public class TSO implements WmmInterface {
 
-	public final String[] fences = {"mfence"};
+	private final String[] fences = {"mfence"};
+
+	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR")
+	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
@@ -34,6 +42,8 @@ public class TSO implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satUnion("po-tso", "(po\\WR)", "mfence", events, ctx));
 
 	    if(program.hasRMWEvents()){
+			cartesianRelations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"));
+			cartesianRelations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM"));
 			enc = ctx.mkAnd(enc, Domain.encodeRMW(program, ctx));
 			enc = ctx.mkAnd(enc, satComp("fre", "coe", events, ctx));
 			enc = ctx.mkAnd(enc, satIntersection("rmw", "(fre;coe)", events, ctx));
@@ -44,6 +54,10 @@ public class TSO implements WmmInterface {
 			enc = ctx.mkAnd(enc, satUnion("ghb-tso", "(po-tso+com-tso)", "implied", events, ctx));
 		} else {
 			enc = ctx.mkAnd(enc, satUnion("ghb-tso", "po-tso", "com-tso", events, ctx));
+		}
+
+		for(RelCartesian relation : cartesianRelations){
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
 		}
 
 		return enc;

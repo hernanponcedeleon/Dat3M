@@ -17,6 +17,8 @@ import static dartagnan.wmm.EncodingsCAT.satTransIDL;
 import static dartagnan.wmm.EncodingsCAT.satTransRefIDL;
 
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.microsoft.z3.BoolExpr;
@@ -27,12 +29,21 @@ import dartagnan.program.event.Event;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.Program;
+import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 
 public class Power implements WmmInterface {
 
-	public final String[] fences = {"sync", "lwsync", "isync"};
+	private final String[] fences = {"sync", "lwsync", "isync"};
+
+	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR"),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR"),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW")
+	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
@@ -110,6 +121,11 @@ public class Power implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satComp("fre", "prop", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("(fre;prop)", "(hb-power)*", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("co", "prop", events, ctx));
+
+		for(RelCartesian relation : cartesianRelations){
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+		}
+
 	    return enc;
 	}
 	

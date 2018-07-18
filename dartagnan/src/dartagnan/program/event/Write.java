@@ -9,6 +9,7 @@ import com.microsoft.z3.*;
 import dartagnan.expression.AConst;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -17,7 +18,6 @@ public class Write extends MemEvent {
 
 	private AConst val;
 	private Register reg;
-	private String atomic;
 	
 	public Write(Location loc, Register reg, String atomic) {
 		this.reg = reg;
@@ -25,6 +25,11 @@ public class Write extends MemEvent {
 		this.atomic = atomic;
 		this.condLevel = 0;
 		this.memId = hashCode();
+		addFilters(
+				FilterUtils.EVENT_TYPE_ANY,
+				FilterUtils.EVENT_TYPE_MEMORY,
+				FilterUtils.EVENT_TYPE_WRITE
+		);
 	}
 
     public Write(Location loc, AConst val, String atomic) {
@@ -33,6 +38,11 @@ public class Write extends MemEvent {
         this.atomic = atomic;
         this.condLevel = 0;
         this.memId = hashCode();
+		addFilters(
+				FilterUtils.EVENT_TYPE_ANY,
+				FilterUtils.EVENT_TYPE_MEMORY,
+				FilterUtils.EVENT_TYPE_WRITE
+		);
     }
 
 	public Register getReg() {
@@ -76,9 +86,9 @@ public class Write extends MemEvent {
 	public Thread compile(String target, boolean ctrl, boolean leading) {
         Store st;
 	    if(reg != null){
-            st = new Store(loc, reg);
+            st = new Store(loc, reg, atomic);
         } else {
-            st = new Store(loc, val);
+            st = new Store(loc, val, atomic);
         }
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
@@ -135,9 +145,9 @@ public class Write extends MemEvent {
 	public Thread optCompile(String target, boolean ctrl, boolean leading) {
         Store st;
         if(reg != null){
-            st = new Store(loc, reg);
+            st = new Store(loc, reg, atomic);
         } else {
-            st = new Store(loc, val);
+            st = new Store(loc, val, atomic);
         }
 		st.setHLId(hashCode());
 		st.setCondLevel(this.condLevel);
@@ -166,9 +176,9 @@ public class Write extends MemEvent {
 	public Thread allCompile() {
         Store st;
         if(reg != null){
-            st = new Store(loc, reg);
+            st = new Store(loc, reg, atomic);
         } else {
-            st = new Store(loc, val);
+            st = new Store(loc, val, atomic);
         }
 		st.setHLId(hashCode());
 		st.setCondLevel(this.condLevel);

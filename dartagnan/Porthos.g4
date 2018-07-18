@@ -79,7 +79,7 @@ load [String mainThread] returns [Thread t]:
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		Location pointerLoc = mapLocs.get($l.loc.getName());
-		$t = new Load(pointerReg, pointerLoc);
+		$t = new Load(pointerReg, pointerLoc, "_rx");
 	};
 store [String mainThread] returns [Thread t]:
 	l = location ':=' r = register {
@@ -92,7 +92,7 @@ store [String mainThread] returns [Thread t]:
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		Location pointerLoc = mapLocs.get($l.loc.getName());
-		$t = new Store(pointerLoc, pointerReg);
+		$t = new Store(pointerLoc, pointerReg, "_rx");
 	};
 read [String mainThread] returns [Thread t]:
 	r = register '=' l = location POINT 'load' LPAR at = ATOMIC RPAR {

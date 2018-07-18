@@ -4,6 +4,8 @@ import static dartagnan.wmm.Encodings.satAcyclic;
 import static dartagnan.wmm.Encodings.satCycle;
 import static dartagnan.wmm.Encodings.satCycleDef;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -12,13 +14,19 @@ import com.microsoft.z3.*;
 import dartagnan.program.*;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.WmmInterface;
 
 public class PSO implements WmmInterface {
 
-	public final String[] fences = {"mfence"};
+	private final String[] fences = {"mfence"};
+
+	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM")
+	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
@@ -35,6 +43,11 @@ public class PSO implements WmmInterface {
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("po", "RM", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("po-pso", "(po&RM)", "mfence", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("ghb-pso", "po-pso", "com-pso", events, ctx));
+
+		for(RelCartesian relation : cartesianRelations){
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+		}
+
 		return enc;
 	}
 	

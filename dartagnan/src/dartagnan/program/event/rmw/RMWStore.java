@@ -10,13 +10,13 @@ public class RMWStore extends Store {
 
     private Load loadEvent;
 
-    public RMWStore(Load loadEvent, Location loc, Register reg) {
-        super(loc, reg);
+    public RMWStore(Load loadEvent, Location loc, Register reg, String atomic) {
+        super(loc, reg, atomic);
         this.loadEvent = loadEvent;
     }
 
-    public RMWStore(Load loadEvent, Location loc, AConst val) {
-        super(loc, val);
+    public RMWStore(Load loadEvent, Location loc, AConst val, String atomic) {
+        super(loc, val, atomic);
         this.loadEvent = loadEvent;
     }
 
@@ -30,10 +30,10 @@ public class RMWStore extends Store {
         Load newLoad = loadEvent.clone();
         if(reg != null){
             Register newReg = reg.clone();
-            newStore = new RMWStore(newLoad, newLoc, newReg);
+            newStore = new RMWStore(newLoad, newLoc, newReg, atomic);
         } else {
             AConst newVal = val.clone();
-            newStore = new RMWStore(newLoad, newLoc, newVal);
+            newStore = new RMWStore(newLoad, newLoc, newVal, atomic);
         }
         newStore.condLevel = condLevel;
         newStore.setHLId(getHLId());

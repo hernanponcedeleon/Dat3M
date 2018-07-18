@@ -8,6 +8,8 @@ import static dartagnan.wmm.EncodingsCAT.satMinus;
 import static dartagnan.wmm.EncodingsCAT.satTransFixPoint;
 import static dartagnan.wmm.EncodingsCAT.satUnion;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,13 +19,23 @@ import dartagnan.program.*;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.WmmInterface;
 
 public class RMO implements WmmInterface {
 
-	public final String[] fences = {"mfence", "sync", "isync"};
+	private final String[] fences = {"mfence", "sync", "isync"};
+
+	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR"),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR"),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM")
+	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
@@ -51,6 +63,11 @@ public class RMO implements WmmInterface {
 		enc = ctx.mkAnd(enc, satUnion("fence-rmo", "sync", "mfence", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-rmo", "dp-rmo", "fence-rmo", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("ghb-rmo", "po-rmo", "com-rmo", events, ctx));
+
+		for(RelCartesian relation : cartesianRelations){
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+		}
+
 		return enc;
 	}
 	

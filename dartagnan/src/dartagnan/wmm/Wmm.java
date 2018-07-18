@@ -10,10 +10,13 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.program.Program;
+import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.axiom.Axiom;
+import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.relation.Relation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,6 +29,24 @@ public class Wmm implements WmmInterface{
     private Set<String> fences = new HashSet<String>();
     private ArrayList<Axiom> axioms = new ArrayList<>();
     private final ArrayList<Relation> relations = new ArrayList<>();
+
+    private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
+            new RelCartesian(new FilterBasic("I"), new FilterBasic("M"), "IM"),
+            new RelCartesian(new FilterBasic("I"), new FilterBasic("R"), "IR"),
+            new RelCartesian(new FilterBasic("I"), new FilterBasic("W"), "IW"),
+
+            new RelCartesian(new FilterBasic("M"), new FilterBasic("I"), "MI"),
+            new RelCartesian(new FilterBasic("R"), new FilterBasic("I"), "RI"),
+            new RelCartesian(new FilterBasic("W"), new FilterBasic("I"), "WI"),
+
+            new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM"),
+            new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR"),
+            new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
+
+            new RelCartesian(new FilterBasic("W"), new FilterBasic("M"), "WM"),
+            new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR"),
+            new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW")
+    ));
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
@@ -47,10 +68,21 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
+
         BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+
         if(program.hasRMWEvents()){
+            cartesianRelations.addAll(Arrays.asList(
+                    new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"),
+                    new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM")
+            ));
             enc = ctx.mkAnd(enc, Domain.encodeRMW(program, ctx));
         }
+
+        for(RelCartesian relation : cartesianRelations){
+            enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
+        }
+
         Set<String> encodedRels = new HashSet<>();
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));

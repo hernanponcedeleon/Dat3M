@@ -178,7 +178,7 @@ public class VisitorLitmusPPC
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
         Register r1 = getRegister(mainThread, ctx.r1().getText());
         Location location = getLocationForRegister(mainThread, ctx.r2().getText());
-        return new Load(r1, location);
+        return new Load(r1, location, "_rx");
     }
 
     @Override
@@ -191,7 +191,7 @@ public class VisitorLitmusPPC
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = getRegister(mainThread, ctx.r1().getText(), true);
         Location location = getLocationForRegister(mainThread, ctx.r2().getText());
-        return new Store(location, r1);
+        return new Store(location, r1, "_rx");
     }
 
     @Override

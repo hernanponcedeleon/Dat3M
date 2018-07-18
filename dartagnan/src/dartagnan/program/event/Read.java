@@ -8,6 +8,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.*;
 import dartagnan.program.Thread;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -15,7 +16,6 @@ import dartagnan.utils.Pair;
 public class Read extends MemEvent {
 
 	private Register reg;
-	private String atomic;
 	
 	public Read(Register reg, Location loc, String atomic) {
 		this.reg = reg;
@@ -23,6 +23,11 @@ public class Read extends MemEvent {
 		this.atomic = atomic;
 		this.condLevel = 0;
 		this.memId = hashCode();
+        addFilters(
+                FilterUtils.EVENT_TYPE_ANY,
+                FilterUtils.EVENT_TYPE_MEMORY,
+                FilterUtils.EVENT_TYPE_READ
+        );
 	}
 	
 	public Register getReg() {
@@ -56,7 +61,7 @@ public class Read extends MemEvent {
 	}
 
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		Load ld = new Load(reg, loc);
+		Load ld = new Load(reg, loc, atomic);
 		ld.setHLId(memId);
 		ld.setUnfCopy(getUnfCopy());
 		ld.setCondLevel(this.condLevel);
@@ -96,7 +101,7 @@ public class Read extends MemEvent {
 	}
 	
 	public Thread optCompile(boolean ctrl, boolean leading) {
-		Load ld = new Load(reg, loc);
+		Load ld = new Load(reg, loc, atomic);
 		ld.setHLId(hashCode());
 		ld.setCondLevel(this.condLevel);
 
@@ -122,7 +127,7 @@ public class Read extends MemEvent {
 	}
 	
 	public Thread allCompile() {
-		Load ld = new Load(reg, loc);
+		Load ld = new Load(reg, loc, atomic);
 		ld.setHLId(hashCode());
 		ld.setCondLevel(this.condLevel);
 		OptFence os = new OptFence("sync", this.condLevel);

@@ -15,7 +15,8 @@ import static dartagnan.wmm.Encodings.satCycle;
 import static dartagnan.wmm.EncodingsCAT.satTransIDL;
 import static dartagnan.wmm.EncodingsCAT.satTransRefIDL;
 
-
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,13 +28,21 @@ import dartagnan.program.event.Event;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.Program;
+import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
+import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 
 public class ARM implements WmmInterface {
 
-	public final String[] fences = {"ish", "isb"};
+	private final String[] fences = {"ish", "isb"};
+
+	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR"),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW")
+	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
@@ -47,7 +56,7 @@ public class ARM implements WmmInterface {
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));
-		
+
 		if (idl) {
 		    enc = ctx.mkAnd(enc, satTransIDL("idd", eventsL, approx, ctx));			
 		} else {
@@ -107,6 +116,11 @@ public class ARM implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satComp("fre", "prop", events, ctx));
 	    enc = ctx.mkAnd(enc, satComp("(fre;prop)", "(hb-arm)*", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("co", "prop", events, ctx));
+
+		for(RelCartesian relation : cartesianRelations){
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+		}
+
 	    return enc;
 	}
 	

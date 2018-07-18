@@ -9,6 +9,7 @@ import com.microsoft.z3.*;
 import dartagnan.expression.AConst;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -21,16 +22,28 @@ public class Store extends MemEvent {
 	protected Register reg;
 	protected AConst val;
 
-	public Store(Location loc, Register reg) {
+	public Store(Location loc, Register reg, String atomic) {
 		this.reg = reg;
 		this.loc = loc;
+		this.atomic = atomic;
 		this.condLevel = 0;
+		addFilters(
+				FilterUtils.EVENT_TYPE_ANY,
+				FilterUtils.EVENT_TYPE_MEMORY,
+				FilterUtils.EVENT_TYPE_WRITE
+		);
 	}
 
-	public Store(Location loc, AConst val) {
+	public Store(Location loc, AConst val, String atomic) {
 		this.val = val;
 		this.loc = loc;
+		this.atomic = atomic;
 		this.condLevel = 0;
+		addFilters(
+				FilterUtils.EVENT_TYPE_ANY,
+				FilterUtils.EVENT_TYPE_MEMORY,
+				FilterUtils.EVENT_TYPE_WRITE
+		);
 	}
 
 	public Register getReg() {
@@ -58,10 +71,10 @@ public class Store extends MemEvent {
         Location newLoc = loc.clone();
 		if(reg != null){
             Register newReg = reg.clone();
-            newStore = new Store(newLoc, newReg);
+            newStore = new Store(newLoc, newReg, atomic);
         } else {
             AConst newVal = val.clone();
-            newStore = new Store(newLoc, newVal);
+            newStore = new Store(newLoc, newVal, atomic);
         }
 		newStore.condLevel = condLevel;
 		newStore.setHLId(getHLId());

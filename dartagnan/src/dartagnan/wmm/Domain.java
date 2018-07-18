@@ -42,66 +42,7 @@ public class Domain {
 			for(Event e2 : mEvents) {
 				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("rf", e1, e2, ctx), ctx.mkAnd(e1.executes(ctx), e2.executes(ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("co", e1, e2, ctx), ctx.mkAnd(e1.executes(ctx), e2.executes(ctx))));
-				if(!(e1 instanceof Init)) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("IM", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("IW", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("IR", e1, e2, ctx)));
-				}
-				else {
-					enc = ctx.mkAnd(enc, edge("IM", e1, e2, ctx));
-				}
-				if(!(e2 instanceof Init)) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("MI", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("WI", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("RI", e1, e2, ctx)));
-				}
-				else {
-					enc = ctx.mkAnd(enc, edge("MI", e1, e2, ctx));
-				}
-				if(!(e1 instanceof Load)) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("RM", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("RW", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("RR", e1, e2, ctx)));
-				}
-				else {
-					enc = ctx.mkAnd(enc, edge("RM", e1, e2, ctx));
-				}
-				if(!(e2 instanceof Load)) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("MR", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("WR", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("RR", e1, e2, ctx)));
-				}
-				else {
-					enc = ctx.mkAnd(enc, edge("MR", e1, e2, ctx));
-				}
-				if(!(e1 instanceof Store || e1 instanceof Init)) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("WM", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("WW", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("WR", e1, e2, ctx)));
-				}
-				else {
-					enc = ctx.mkAnd(enc, edge("WM", e1, e2, ctx));
-				}
-				if(!(e2 instanceof Store || e2 instanceof Init)) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("MW", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("WW", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("RW", e1, e2, ctx)));
-				}
-				else {
-					enc = ctx.mkAnd(enc, edge("MW", e1, e2, ctx));
-				}
-				if(e1 instanceof Load && e2 instanceof Load) {
-					enc = ctx.mkAnd(enc, edge("RR", e1, e2, ctx));
-				}
-				if(e1 instanceof Load && (e2 instanceof Init || e2 instanceof Store)) {
-					enc = ctx.mkAnd(enc, edge("RW", e1, e2, ctx));
-				}
-				if((e1 instanceof Init || e1 instanceof Store) && (e2 instanceof Init || e2 instanceof Store)) {
-					enc = ctx.mkAnd(enc, edge("WW", e1, e2, ctx));
-				}
-				if((e1 instanceof Init || e1 instanceof Store) && e2 instanceof Load) {
-					enc = ctx.mkAnd(enc, edge("WR", e1, e2, ctx));
-				}
+
 				if(e1 == e2) {
 					enc = ctx.mkAnd(enc, edge("id", e1, e2, ctx));	
 				}
@@ -362,21 +303,12 @@ public class Domain {
 	public static BoolExpr encodeRMW(Program program, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		Set<Event> rmwWrites = program.getEvents().stream().filter(e -> e instanceof RMWStore).collect(Collectors.toSet());
-
 		if(!rmwWrites.isEmpty()){
-            Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 			for(Event w : rmwWrites){
 				Load r = ((RMWStore)w).getLoadEvent();
 				enc = ctx.mkAnd(enc, ctx.mkEq(r.executes(ctx), w.executes(ctx)));
 				enc = ctx.mkAnd(enc, ctx.mkNot(edge("rf", w, r, ctx)));
 				enc = ctx.mkAnd(enc, edge("rmw", r, w, ctx));
-
-				for(Event e : mEvents){
-					enc = ctx.mkAnd(enc, edge("MA", e, w, ctx));
-					enc = ctx.mkAnd(enc, edge("MA", e, r, ctx));
-					enc = ctx.mkAnd(enc, edge("AM", w, e, ctx));
-					enc = ctx.mkAnd(enc, edge("AM", r, e, ctx));
-				}
 			}
 		}
 		return enc;

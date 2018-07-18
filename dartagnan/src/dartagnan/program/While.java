@@ -41,7 +41,7 @@ public class While extends Thread {
 				Local newLocal = new Local(rTerm, new AConst(1));
 				newLocal.condLevel = condLevel;
 				Location termination = new Location(String.format("termination_%s", hashCode()));
-				Store newStore = new Store(termination, rTerm);
+				Store newStore = new Store(termination, rTerm, "_rx");
 				newStore.condLevel = condLevel;
 				Thread newThread = new If(pred, new Seq(newLocal, newStore), new Skip());
 				newThread.condLevel = oldCondLevel;
