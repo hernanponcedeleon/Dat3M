@@ -21,10 +21,13 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.axiom.Empty;
 import dartagnan.wmm.relation.BasicRelation;
+import dartagnan.wmm.relation.RelFencerel;
 
 public class TSO implements WmmInterface {
 
-	private final String[] fences = {"mfence"};
+	private Set<RelFencerel> fenceRelations = new HashSet<RelFencerel>(Arrays.asList(
+			new RelFencerel("Mfence", "mfence")
+	));
 
 	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
 			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR")
@@ -33,7 +36,7 @@ public class TSO implements WmmInterface {
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 
-		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));

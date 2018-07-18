@@ -222,7 +222,7 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitMfence(LitmusX86Parser.MfenceContext ctx) {
-        return new Fence("mfence");
+        return new Fence("Mfence");
     }
 
     @Override

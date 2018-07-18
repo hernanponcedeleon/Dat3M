@@ -253,53 +253,6 @@ public class Domain {
 		return enc;
 	}
 
-	public static BoolExpr encodeFences(Program program, Context ctx, String[] fences) throws Z3Exception {
-		return encodeFences(program, ctx, new HashSet<String>(Arrays.asList(fences)));
-	}
-
-	public static BoolExpr encodeFences(Program program, Context ctx, Set<String> fences) throws Z3Exception {
-		Set<Event> mEvents = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		Set<Fence> barriers = program.getEvents().stream().filter(e -> e instanceof Fence).map(e -> (Fence)e).collect(Collectors.toSet());
-		BoolExpr enc = ctx.mkTrue();
-
-		for(Event e1 : mEvents) {
-			for(Event e2 : mEvents) {
-				if(!(e1.getMainThread() == e2.getMainThread() && e1.getEId() < e2.getEId())) {
-					for (String fenceName : fences) {
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge(fenceName, e1, e2, ctx)));
-					}
-
-				} else {
-					Map<String, BoolExpr> fenceMap = new HashMap<String, BoolExpr>();
-					for(Fence f : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread()
-							&& e1.getEId() < e.getEId()
-							&& e.getEId() < e2.getEId()).collect(Collectors.toSet())) {
-
-						String fenceName = f.getName();
-						if(!fenceMap.containsKey(fenceName)){
-							fenceMap.put(fenceName, ctx.mkFalse());
-						}
-
-						BoolExpr fenceEnc = fenceMap.get(fenceName);
-						fenceEnc = ctx.mkOr(fenceEnc, f.executes(ctx));
-						fenceMap.put(fenceName, fenceEnc);
-						enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(f.executes(ctx), e2.executes(ctx))),
-								edge(fenceName, e1, e2, ctx)));
-					}
-
-					for (String fenceName : fences) {
-						if(fenceMap.containsKey(fenceName)){
-							enc = ctx.mkAnd(enc, ctx.mkImplies(edge(fenceName, e1, e2, ctx), fenceMap.get(fenceName)));
-						} else {
-							enc = ctx.mkAnd(enc, ctx.mkNot(edge(fenceName, e1, e2, ctx)));
-						}
-					}
-				}
-			}
-		}
-		return enc;
-	}
-
 	public static BoolExpr encodeRMW(Program program, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		Set<Event> rmwWrites = program.getEvents().stream().filter(e -> e instanceof RMWStore).collect(Collectors.toSet());

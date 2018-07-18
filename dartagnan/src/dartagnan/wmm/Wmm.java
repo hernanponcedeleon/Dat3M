@@ -13,12 +13,10 @@ import dartagnan.program.Program;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.RelCartesian;
+import dartagnan.wmm.relation.RelFencerel;
 import dartagnan.wmm.relation.Relation;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -26,7 +24,10 @@ import java.util.Set;
  */
 public class Wmm implements WmmInterface{
 
-    private Set<String> fences = new HashSet<String>();
+    // Map is used here instead of Set in order to avoid duplicates on ctrlisync and ctrlsibs
+    // TODO: Change to Set when ctrlisync and ctrlsibs are encoded as derived relations
+    private Map<String, RelFencerel> fenceRelations = new HashMap<String, RelFencerel>();
+
     private ArrayList<Axiom> axioms = new ArrayList<>();
     private final ArrayList<Relation> relations = new ArrayList<>();
 
@@ -56,8 +57,10 @@ public class Wmm implements WmmInterface{
         relations.add(rel);
     }
 
-    public void addFence(String fence){
-        fences.add(fence);
+    public void addFenceRelation(RelFencerel rel){
+        if(!(fenceRelations.containsKey(rel.getName()))){
+            fenceRelations.put(rel.getName(), rel);
+        }
     }
 
     /**
@@ -69,7 +72,7 @@ public class Wmm implements WmmInterface{
      */
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 
-        BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+        BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations.values());
 
         if(program.hasRMWEvents()){
             cartesianRelations.addAll(Arrays.asList(

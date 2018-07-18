@@ -89,9 +89,9 @@ public abstract class Event extends Thread {
 	}
 
 	public Thread allCompile() {
-		OptFence os = new OptFence("sync");
+		OptFence os = new OptFence("Sync");
 		os.condLevel = condLevel;
-		OptFence olws = new OptFence("lwsync");
+		OptFence olws = new OptFence("Lwsync");
 		olws.condLevel = condLevel;
 		return new Seq(os, new Seq(olws, this));
 	}

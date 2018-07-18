@@ -30,13 +30,17 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.Program;
 import dartagnan.program.event.filter.FilterBasic;
-import dartagnan.wmm.Domain;
 import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
+import dartagnan.wmm.relation.RelFencerel;
 
 public class Power implements WmmInterface {
 
-	private final String[] fences = {"sync", "lwsync", "isync"};
+	private Set<RelFencerel> fenceRelations = new HashSet<RelFencerel>(Arrays.asList(
+			new RelFencerel("Sync", "sync"),
+			new RelFencerel("Lwsync", "lwsync"),
+			new RelFencerel("Isync", "isync")
+	));
 
 	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
 			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
@@ -53,7 +57,7 @@ public class Power implements WmmInterface {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 
-		BoolExpr enc = Domain.encodeFences(program, ctx, fences);
+		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));
