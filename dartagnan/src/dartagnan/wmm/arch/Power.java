@@ -127,7 +127,7 @@ public class Power implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satUnion("co", "prop", events, ctx));
 
 		for(RelCartesian relation : cartesianRelations){
-			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx, null));
 		}
 
 	    return enc;

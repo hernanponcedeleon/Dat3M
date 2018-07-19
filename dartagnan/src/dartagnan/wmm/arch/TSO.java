@@ -60,7 +60,7 @@ public class TSO implements WmmInterface {
 		}
 
 		for(RelCartesian relation : cartesianRelations){
-			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx, null));
 		}
 
 		return enc;

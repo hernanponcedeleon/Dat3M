@@ -3,6 +3,7 @@ package dartagnan.wmm;
 import static dartagnan.utils.Utils.edge;
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +18,7 @@ import dartagnan.utils.Utils;
 
 public class Encodings {
 
-	public static BoolExpr satTO(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satTO(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0))));
@@ -39,7 +40,7 @@ public class Encodings {
 		return enc;
 	}
 
-	public static BoolExpr satAcyclic(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satAcyclic(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0))));
@@ -50,7 +51,7 @@ public class Encodings {
 		return enc;
 	}
 	
-	public static BoolExpr satCycle(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satCycle(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr oneEventInCycle = ctx.mkFalse();
 		for(Event e : events) {
 			oneEventInCycle = ctx.mkOr(oneEventInCycle, Utils.cycleVar(name, e, ctx));
@@ -58,7 +59,7 @@ public class Encodings {
 		return oneEventInCycle;
 	}
 	
-	public static BoolExpr satCycleDef(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satCycleDef(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			Set<BoolExpr> source = new HashSet<BoolExpr>();
@@ -74,7 +75,7 @@ public class Encodings {
 		return enc;
 	}
 	
-	public static BoolExpr encodeEO(Set<BoolExpr> set, Context ctx) throws Z3Exception {
+	public static BoolExpr encodeEO(Collection<BoolExpr> set, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkFalse();
 		for(BoolExpr exp : set) {
 			BoolExpr thisYesOthersNot = exp;
@@ -86,7 +87,7 @@ public class Encodings {
 		return enc;
 	}
 
-	public static BoolExpr encodeALO(Set<BoolExpr> set, Context ctx) throws Z3Exception {
+	public static BoolExpr encodeALO(Collection<BoolExpr> set, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkFalse();
 		for(BoolExpr exp : set) {
 			enc = ctx.mkOr(enc, exp);

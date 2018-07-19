@@ -68,7 +68,7 @@ public class RMO implements WmmInterface {
 		enc = ctx.mkAnd(enc, satUnion("ghb-rmo", "po-rmo", "com-rmo", events, ctx));
 
 		for(RelCartesian relation : cartesianRelations){
-			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx, null));
 		}
 
 		return enc;

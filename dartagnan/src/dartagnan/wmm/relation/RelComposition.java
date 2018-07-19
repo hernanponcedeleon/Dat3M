@@ -1,18 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
-import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  *
@@ -29,9 +23,8 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 BoolExpr orClause = ctx.mkFalse();
@@ -54,14 +47,8 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-    	return null;
-    }
-
-    @Override
-    public BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 BoolExpr orClause = ctx.mkFalse();
@@ -78,10 +65,5 @@ public class RelComposition extends BinaryRelation {
             }
         }
         return enc;
-    }
-
-    @Override
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-    	return null;
     }
 }

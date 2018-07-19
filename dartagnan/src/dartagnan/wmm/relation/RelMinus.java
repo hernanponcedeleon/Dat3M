@@ -1,19 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
-import dartagnan.program.Program;
-import dartagnan.utils.PredicateUtils;
 import dartagnan.utils.Utils;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  *
@@ -32,9 +25,25 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+        if(encodedRels != null){
+            if(encodedRels.contains(name)){
+                return ctx.mkTrue();
+            }
+            encodedRels.add(name);
+        }
+
+        BoolExpr enc = r1.encode(events, ctx, encodedRels);
+        boolean approx = Relation.Approx;
+        Relation.Approx = false;
+        enc = ctx.mkAnd(enc, r2.encode(events, ctx, encodedRels));
+        Relation.Approx = approx;
+        return ctx.mkAnd(enc, doEncode(events, ctx));
+    }
+
+    @Override
+    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
@@ -49,9 +58,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
@@ -64,43 +72,5 @@ public class RelMinus extends BinaryRelation {
             }
         }
         return enc;
-    }
-
-    @Override
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-    	return null;
-    }
-
-    @Override
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-    	return null;
-    }
-
-    @Override
-    public BoolExpr encode(Program program, Context ctx, Set<String> encodedRels) throws Z3Exception {
-        if (!encodedRels.contains(getName())) {
-            encodedRels.add(getName());
-            BoolExpr enc = r1.encode(program, ctx, encodedRels);
-            //the second relation must not be overapproximated since that would mean the inverse is underapproximated.
-            boolean approx = Relation.Approx;
-            Relation.Approx = false;
-            enc = ctx.mkAnd(enc, r2.encode(program, ctx, encodedRels));
-            Relation.Approx = approx;
-            if (PredicateUtils.usePredicate) {
-                if (Relation.Approx) {
-                    return ctx.mkAnd(enc, this.encodePredicateApprox(program, ctx));
-                } else {
-                    return ctx.mkAnd(enc, this.encodePredicateBasic(program, ctx));
-                }
-            } else {
-                if (Relation.Approx) {
-                    return ctx.mkAnd(enc, this.encodeApprox(program, ctx));
-                } else {
-                    return ctx.mkAnd(enc, this.encodeBasic(program, ctx));
-                }
-            }
-        } else {
-            return ctx.mkTrue();
-        }
     }
 }

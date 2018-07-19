@@ -14,12 +14,16 @@ import dartagnan.program.Program;
  */
 public abstract class PredicateUtils {
     //states whether we use predicate logic
-    public static boolean usePredicate=false;
+    private static boolean usePredicate = false;
     //the program we currently use, for aramis and dartagnan there is only one, for artemis this is more complicated and must be up to date!
     private static Program currentProg;
 
     public static Program getCurrentProg() {
         return currentProg;
+    }
+
+    public static boolean getUsePredicate(){
+        return usePredicate;
     }
     
     /**

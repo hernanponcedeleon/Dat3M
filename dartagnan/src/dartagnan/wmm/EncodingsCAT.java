@@ -3,7 +3,7 @@ package dartagnan.wmm;
 import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.intCount;
 
-import java.util.Set;
+import java.util.Collection;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -14,7 +14,7 @@ import dartagnan.program.event.Event;
 
 public class EncodingsCAT {
 
-	public static BoolExpr satComp(String name, String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satComp(String name, String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
@@ -28,12 +28,12 @@ public class EncodingsCAT {
 		return enc;
 	}
 
-	public static BoolExpr satComp(String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satComp(String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		String name = format("(%s;%s)", r1, r2);
 		return satComp(name, r1, r2, events, ctx);
 	}
 	
-	public static BoolExpr satEmpty(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satEmpty(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
@@ -43,7 +43,7 @@ public class EncodingsCAT {
 		return enc;
 	}
 	
-	public static BoolExpr satUnion(String name, String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satUnion(String name, String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
@@ -53,12 +53,12 @@ public class EncodingsCAT {
 		return enc;
 	}
 	
-	public static BoolExpr satUnion(String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satUnion(String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		String name = format("(%s+%s)", r1, r2);
 		return satUnion(name, r1, r2, events, ctx);
 	}
 
-	public static BoolExpr satIntersection(String name, String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satIntersection(String name, String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
@@ -68,12 +68,12 @@ public class EncodingsCAT {
 		return enc;
 	}
 	
-	public static BoolExpr satIntersection(String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satIntersection(String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		String name = format("(%s&%s)", r1, r2);
 		return satIntersection(name, r1, r2, events, ctx);
 	}
 	
-	public static BoolExpr satMinus(String name, String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satMinus(String name, String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
@@ -83,12 +83,12 @@ public class EncodingsCAT {
 		return enc;
 	}
 	
-	public static BoolExpr satMinus(String r1, String r2, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satMinus(String r1, String r2, Collection<Event> events, Context ctx) throws Z3Exception {
 		String name = format("(%s\\%s)", r1, r2);
 		return satMinus(name, r1, r2, events, ctx);
 	}
 	
-	public static BoolExpr satTransFixPoint(String name, Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
+	public static BoolExpr satTransFixPoint(String name, Collection<Event> events, boolean approx, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
         if (approx) {
             for (Event e1 : events) {
@@ -128,13 +128,13 @@ public class EncodingsCAT {
 		return enc;
 	}
 	
-	public static BoolExpr satTransRef(String name, Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
+	public static BoolExpr satTransRef(String name, Collection<Event> events, boolean approx, Context ctx) throws Z3Exception {
 		BoolExpr enc = satTransFixPoint(name, events, approx, ctx);
 		enc = ctx.mkAnd(enc, satUnion(format("(%s)*", name), "id", format("%s^+", name), events, ctx));
 		return enc;
 	}
 
-	public static BoolExpr satTransIDL(String name, Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
+	public static BoolExpr satTransIDL(String name, Collection<Event> events, boolean approx, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			for(Event e2 : events) {
@@ -166,13 +166,13 @@ public class EncodingsCAT {
 		return enc;
 	}
 	
-	public static BoolExpr satTransRefIDL(String name, Set<Event> events, boolean approx, Context ctx) throws Z3Exception {
+	public static BoolExpr satTransRefIDL(String name, Collection<Event> events, boolean approx, Context ctx) throws Z3Exception {
 		BoolExpr enc = satTransIDL(name, events, approx, ctx);
 		enc = ctx.mkAnd(enc, satUnion(format("(%s)*", name), "id", format("%s^+", name), events, ctx));
 		return enc;
 	}
 	
-	public static BoolExpr satIrref(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satIrref(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 	    BoolExpr enc = ctx.mkTrue();
 	    for(Event e : events){
 	    	enc = ctx.mkAnd(enc, ctx.mkNot(edge(name, e, e, ctx)));

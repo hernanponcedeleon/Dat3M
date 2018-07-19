@@ -1,17 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
+import dartagnan.program.event.Event;
 import dartagnan.wmm.EncodingsCAT;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  *
@@ -24,22 +19,22 @@ public class EmptyRel extends Relation {
     }
 
     @Override
-    public BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
+    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+        return EncodingsCAT.satEmpty(this.getName(), events, ctx);
     }
 
     @Override
-    public BoolExpr encode(Program program, Context ctx, Set<String> encodedRels) throws Z3Exception {
-        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
+    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+        return encodeBasic(events, ctx);
     }
 
     @Override
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
+    protected BoolExpr encodePredicateBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+        return encodeBasic(events, ctx);
     }
 
     @Override
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-        return EncodingsCAT.satEmpty(this.getName(), program.getEvents(), ctx);
+    protected BoolExpr encodePredicateApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+        return encodeBasic(events, ctx);
     }
 }

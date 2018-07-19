@@ -65,7 +65,7 @@ public class Alpha implements WmmInterface {
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("ghb-alpha", "po-alpha", "com-alpha", events, ctx));
 
 		for(RelCartesian relation : cartesianRelations){
-			enc = ctx.mkAnd(enc, relation.encode(events, ctx));
+			enc = ctx.mkAnd(enc, relation.encode(events, ctx, null));
 		}
 
 	    return enc;

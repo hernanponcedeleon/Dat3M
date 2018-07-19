@@ -4,10 +4,9 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
-import dartagnan.program.Program;
 import dartagnan.program.event.filter.FilterAbstract;
 
-import java.util.Set;
+import java.util.Collection;
 
 import static dartagnan.utils.Utils.edge;
 
@@ -28,7 +27,8 @@ public class RelSetIdentity extends Relation {
         this(filter,"[" + filter.toString() + "]");
     }
 
-    protected BoolExpr encode(Set<Event> events, Context ctx) throws Z3Exception {
+    @Override
+    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         for (Event e : events) {
             if(filter.filter(e)){
@@ -40,23 +40,8 @@ public class RelSetIdentity extends Relation {
         return enc;
     }
 
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        return encode(program.getEvents(), ctx);
-    }
-
-    public BoolExpr encode(Program program, Context ctx, Set<String> encodedRels) throws Z3Exception{
-        return this.encodeBasic(program, ctx);
-    }
-
-    public BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception{
-        return this.encodeBasic(program, ctx);
-    }
-
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-        return null;
-    }
-
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception{
-        return null;
+    @Override
+    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+        return encodeBasic(events, ctx);
     }
 }

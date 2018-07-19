@@ -1,16 +1,18 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.MemEvent;
+import dartagnan.utils.PredicateUtils;
+
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -94,53 +96,52 @@ public abstract class Relation {
         if(isNamed) return String.format("%s := %s", name, term);
         else return String.format("%s", name);
     }
-    
-    /**
-     * Recursively encodes this relation and all its children according to the predicate and approximate settings.
-     * @param program
-     * @param ctx
-     * @param encodedRels contains all relations that were already encoded.
-     * @return the encoding of this relation and all its children.
-     * @throws Z3Exception
-     */
-    public abstract BoolExpr encode(Program program, Context ctx, Set<String> encodedRels) throws Z3Exception;
-    
-    /**
-     * 
-     * @param program
-     * @param ctx
-     * @return the enooding of 
-     * @throws Z3Exception this relation only.
-     */
-    protected abstract BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception;
-    
-    /**
-     * 
-     * @param program
-     * @param ctx
-     * @return the approximate encoding of this relation only.
-     * @throws Z3Exception
-     */
-    public BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception{
-        return this.encodeBasic(program, ctx);
+
+    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+        if(encodedRels != null){
+            if(encodedRels.contains(name)){
+                return ctx.mkTrue();
+            }
+            encodedRels.add(name);
+        }
+        return doEncode(events, ctx);
     }
-    
-    /**
-     * 
-     * @param program
-     * @param ctx
-     * @return the predicate based encoding of this relation only.
-     * @throws Z3Exception
-     */
-    protected abstract BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception;
 
-    /**
-     *
-     * @param program
-     * @param ctx
-     * @return the approximate predicate based encoding of this relation only.
-     * @throws Z3Exception
-     */
-    protected abstract BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception;
+    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+        return encode(getProgramEvents(program), ctx, encodedRels);
+    }
 
+    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+        throw new RuntimeException("Method encodeBasic is not implemented for " + getClass().getCanonicalName());
+    }
+
+    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+        throw new RuntimeException("Method encodeApprox is not implemented for " + getClass().getCanonicalName());
+    }
+
+    protected BoolExpr encodePredicateBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+        throw new RuntimeException("Method encodePredicateBasic is not implemented for " + getClass().getCanonicalName());
+    }
+
+    protected BoolExpr encodePredicateApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+        throw new RuntimeException("Method encodePredicateApprox is not implemented for " + getClass().getCanonicalName());
+    }
+
+    protected Collection<Event> getProgramEvents(Program program){
+        return program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Fence).collect(Collectors.toSet());
+    }
+
+    protected BoolExpr doEncode(Collection<Event> events, Context ctx){
+        if(PredicateUtils.getUsePredicate()){
+            if(Relation.Approx){
+                return encodePredicateApprox(events, ctx);
+            }
+            return encodePredicateBasic(events, ctx);
+        }
+
+        if(Relation.Approx){
+            return encodeApprox(events, ctx);
+        }
+        return encodeBasic(events, ctx);
+    }
 }

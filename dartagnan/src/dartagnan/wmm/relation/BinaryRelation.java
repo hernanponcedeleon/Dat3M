@@ -1,17 +1,11 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
-import dartagnan.utils.PredicateUtils;
+import dartagnan.program.event.Event;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  *
@@ -47,36 +41,19 @@ public abstract class BinaryRelation extends Relation {
      * @param term that describes the relation
      */
     public BinaryRelation(Relation r1, Relation r2, String term) {
-        super(term);
-        this.r1 = r1;
-        this.r2 = r2;
-        containsRec = r1.containsRec || r2.containsRec;
-        namedRelations.addAll(r1.namedRelations);
-        namedRelations.addAll(r2.namedRelations);
+        this(r1, r2, term, term);
     }
 
     @Override
-    public BoolExpr encode(Program program, Context ctx, Set<String> encodedRels) throws Z3Exception {
-        if (!encodedRels.contains(getName())) {
-            encodedRels.add(getName());
-            BoolExpr enc = r1.encode(program, ctx, encodedRels);
-            enc = ctx.mkAnd(enc, r2.encode(program, ctx, encodedRels));
-            if (PredicateUtils.usePredicate) {
-                if (Relation.Approx) {
-                    return ctx.mkAnd(enc, this.encodePredicateApprox(program, ctx));
-                } else {
-                    return ctx.mkAnd(enc, this.encodePredicateBasic(program, ctx));
-                }
-            } else {
-                if (Relation.Approx) {
-                    return ctx.mkAnd(enc, this.encodeApprox(program, ctx));
-                } else {
-                    return ctx.mkAnd(enc, this.encodeBasic(program, ctx));
-                }
+    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+        if(encodedRels != null){
+            if(encodedRels.contains(name)){
+                return ctx.mkTrue();
             }
-        } else {
-            return ctx.mkTrue();
-
+            encodedRels.add(name);
         }
+        BoolExpr enc = r1.encode(events, ctx, encodedRels);
+        enc = ctx.mkAnd(enc, r2.encode(events, ctx, encodedRels));
+        return ctx.mkAnd(enc, doEncode(events, ctx));
     }
 }
