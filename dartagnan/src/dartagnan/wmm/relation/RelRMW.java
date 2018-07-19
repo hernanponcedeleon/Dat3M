@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class RelRMW extends Relation {
 
     public RelRMW(){
-        super("rmw");
+        term = "rmw";
     }
 
     @Override

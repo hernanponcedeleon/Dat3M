@@ -15,18 +15,15 @@ public abstract class UnaryRelation extends Relation {
 
     protected Relation r1;
 
-    public UnaryRelation(Relation r1, String name, String term) {
-        super(name, term);
+    UnaryRelation(Relation r1) {
         this.r1 = r1;
         containsRec = r1.containsRec;
-        namedRelations.addAll(r1.getNamedRelations());
     }
 
-    public UnaryRelation(Relation r1, String term) {
-        super(term);
+    UnaryRelation(Relation r1, String name) {
+        super(name);
         this.r1 = r1;
         containsRec = r1.containsRec;
-        namedRelations.addAll(r1.getNamedRelations());
     }
 
     @Override

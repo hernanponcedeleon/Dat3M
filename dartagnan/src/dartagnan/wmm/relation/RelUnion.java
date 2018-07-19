@@ -14,12 +14,14 @@ import java.util.Collection;
  */
 public class RelUnion extends BinaryRelation {
 
-    public RelUnion(Relation r1, Relation r2, String name) {
-        super(r1, r2, name, String.format("(%s+%s)", r1.getName(), r2.getName()));
+    public RelUnion(Relation r1, Relation r2) {
+        super(r1, r2);
+        term = "(" + r1.getName() + " + " + r2.getName() + ")";
     }
 
-    public RelUnion(Relation r1, Relation r2) {
-        super(r1, r2, String.format("(%s+%s)", r1.getName(), r2.getName()));
+    public RelUnion(Relation r1, Relation r2, String name) {
+        super(r1, r2, name);
+        term = "(" + r1.getName() + " + " + r2.getName() + ")";
     }
 
     @Override

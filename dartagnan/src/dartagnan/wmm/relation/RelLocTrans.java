@@ -19,6 +19,10 @@ public class RelLocTrans extends RelTrans {
         super(r1);
     }
 
+    public RelLocTrans(Relation r1, String name) {
+        super(r1, name);
+    }
+
     @Override
     protected Collection<Event> getProgramEvents(Program program){
         return program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Fence || e instanceof Local).collect(Collectors.toSet());

@@ -14,18 +14,17 @@ public class RelCartesian extends Relation {
     private FilterAbstract filter1;
     private FilterAbstract filter2;
 
-    public RelCartesian(FilterAbstract filter1, FilterAbstract filter2, String name, String term) {
-        super(name, term);
+    public RelCartesian(FilterAbstract filter1, FilterAbstract filter2) {
         this.filter1 = filter1;
         this.filter2 = filter2;
+        this.term = "(" + filter1 + " * " + filter2 + ")";
     }
 
     public RelCartesian(FilterAbstract filter1, FilterAbstract filter2, String name) {
-        this(filter1, filter2, name, filter1.toString() + "*" + filter2.toString());
-    }
-
-    public RelCartesian(FilterAbstract filter1, FilterAbstract filter2) {
-        this(filter1, filter2, filter1.toString() + "*" + filter2.toString());
+        super(name);
+        this.filter1 = filter1;
+        this.filter2 = filter2;
+        this.term = "(" + filter1 + " * " + filter2 + ")";
     }
 
     @Override

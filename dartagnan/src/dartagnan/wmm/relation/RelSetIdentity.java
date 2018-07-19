@@ -14,17 +14,15 @@ public class RelSetIdentity extends Relation {
 
     protected FilterAbstract filter;
 
-    public RelSetIdentity(FilterAbstract filter, String name, String term) {
-        super(name, term);
-        this.filter = filter;
-    }
-
-    public RelSetIdentity(FilterAbstract filter, String term) {
-        this(filter, "[" + filter.toString() + "]", term);
-    }
-
     public RelSetIdentity(FilterAbstract filter) {
-        this(filter,"[" + filter.toString() + "]");
+        this.filter = filter;
+        term = "[" + filter + "]";
+    }
+
+    public RelSetIdentity(FilterAbstract filter, String name) {
+        super(name);
+        this.filter = filter;
+        term = "[" + filter + "]";
     }
 
     @Override

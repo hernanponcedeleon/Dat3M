@@ -14,8 +14,14 @@ import java.util.Collection;
  */
 public class RelInverse extends UnaryRelation {
 
-    public RelInverse(Relation r1) {
-        super(r1,String.format("%s^+", r1.getName()));
+    public RelInverse(Relation r1){
+        super(r1);
+        term = r1.getName() + "^+";
+    }
+
+    public RelInverse(Relation r1, String name) {
+        super(r1, name);
+        term = r1.getName() + "^+";
     }
 
     @Override

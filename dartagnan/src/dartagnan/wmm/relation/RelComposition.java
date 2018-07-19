@@ -14,13 +14,16 @@ import java.util.Collection;
  */
 public class RelComposition extends BinaryRelation {
 
-    public RelComposition(Relation r1, Relation r2, String name) {
-        super(r1, r2, name, String.format("(%s;%s)", r1.getName(), r2.getName()));
+    public RelComposition(Relation r1, Relation r2) {
+        super(r1, r2);
+        term = "(" + r1.getName() + " ; " + r2.getName() + ")";
     }
 
-    public RelComposition(Relation r1, Relation r2) {
-        super(r1, r2, String.format("(%s;%s)", r1.getName(), r2.getName()));
+    public RelComposition(Relation r1, Relation r2, String name) {
+        super(r1, r2, name);
+        term = "(" + r1.getName() + " ; " + r2.getName() + ")";
     }
+
 
     @Override
     protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {

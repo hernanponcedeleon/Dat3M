@@ -10,8 +10,6 @@ import dartagnan.program.event.MemEvent;
 import dartagnan.utils.PredicateUtils;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -31,26 +29,18 @@ public abstract class Relation {
     protected String term;
     protected boolean containsRec;
     protected boolean isNamed;
-    protected Set<Relation> namedRelations = new HashSet<>();
 
     /**
      * Creates a relation with an automatically generated identifier.
-     * @param name
      */
-    public Relation(String name) {
-        this.name = name;
-        this.term = name;
-    }
+    public Relation() {}
 
     /**
      * Creates a relation that is explicitly named either for recursion or readability.
      * @param name (manually chosen)
-     * @param term (automatically generated)
      */
-    public Relation(String name, String term) {
-        namedRelations.add(this);
+    public Relation(String name) {
         this.name = name;
-        this.term = term;
         isNamed = true;
     }
 
@@ -63,18 +53,13 @@ public abstract class Relation {
 
     /**
      *
-     * @return all named relations that this relation revers to.
-     */
-    public Set<Relation> getNamedRelations() {
-        return namedRelations;
-    }
-
-    /**
-     *
      * @return the name of the relation (with a prefix if that was set for aramis)
      */
     public String getName() {
-        return name;
+        if(isNamed){
+            return name;
+        }
+        return term;
     }
 
     /**
@@ -83,8 +68,7 @@ public abstract class Relation {
      * @param name
      */
     public void setName(String name){
-        this.name=name;
-        if (!namedRelations.contains(this))namedRelations.add(this);
+        this.name = name;
         isNamed = true;
     }
 
@@ -94,7 +78,7 @@ public abstract class Relation {
      */
     public String toString(){
         if(isNamed) return String.format("%s := %s", name, term);
-        else return String.format("%s", name);
+        else return String.format("%s", term);
     }
 
     public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {

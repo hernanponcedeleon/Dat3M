@@ -14,7 +14,7 @@ import java.util.Collection;
 public class BasicRelation extends Relation {
 
     public BasicRelation(String name) {
-        super(name);
+        term = name;
     }
 
     @Override

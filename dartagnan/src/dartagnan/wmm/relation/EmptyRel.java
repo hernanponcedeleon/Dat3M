@@ -15,7 +15,12 @@ import java.util.Collection;
 public class EmptyRel extends Relation {
 
     public EmptyRel() {
-        super("0");
+        term = "0";
+    }
+
+    public EmptyRel(String name) {
+        super(name);
+        term = "0";
     }
 
     @Override

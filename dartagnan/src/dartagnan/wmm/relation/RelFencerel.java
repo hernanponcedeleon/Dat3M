@@ -19,21 +19,15 @@ public class RelFencerel extends Relation {
 
     private String fenceName;
 
-    public RelFencerel(String fenceName, String name, String term) {
-        super(name, term);
+    public RelFencerel(String fenceName) {
         this.fenceName = fenceName;
+        term = "fencerel(" + fenceName + ")";
     }
 
     public RelFencerel(String fenceName, String name) {
-        this(fenceName, name, "fencerel(" + fenceName + ")");
-    }
-
-    public RelFencerel(String fenceName) {
-        this(fenceName, "fencerel(" + fenceName + ")");
-    }
-
-    public String getFenceName(){
-        return fenceName;
+        super(name);
+        this.fenceName = fenceName;
+        term = "fencerel(" + fenceName + ")";
     }
 
     @Override
@@ -128,5 +122,9 @@ public class RelFencerel extends Relation {
 
     public static BoolExpr encodeBatch(Program program, Context ctx, Collection<RelFencerel> relations){
         return encodeBatch(program.getEvents(), ctx, relations);
+    }
+
+    protected String getFenceName(){
+        return fenceName;
     }
 }

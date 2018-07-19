@@ -60,12 +60,12 @@ public class Wmm implements WmmInterface{
 
                 // TODO: Temporary dirty solution
             } else if(name.equals("addr") || name.equals("0")){
-                return new EmptyRel();
+                return new EmptyRel(name);
 
                 // TODO: Temporary dirty solution
             } else if(name.equals("data")){
-                addRelation(new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"));
-                return new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("RW"));
+                addRelation(new RelCartesian(new FilterBasic("R"), new FilterBasic("W")));
+                return new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("RW"), "data");
             }
         }
         return relation;

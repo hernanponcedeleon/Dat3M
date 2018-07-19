@@ -17,31 +17,29 @@ public abstract class BinaryRelation extends Relation {
     protected Relation r2;
 
     /**
+     * Creates a binary relation.
+     *
+     * @param r1 the left child.
+     * @param r2 the right child.
+     */
+    BinaryRelation(Relation r1, Relation r2) {
+        this.r1 = r1;
+        this.r2 = r2;
+        containsRec = r1.containsRec || r2.containsRec;
+    }
+
+    /**
      * Creates a named binary relation.
      *
      * @param r1 the left child
      * @param r2 the right child
      * @param name
-     * @param term
      */
-    public BinaryRelation(Relation r1, Relation r2, String name, String term) {
-        super(name, term);
+    BinaryRelation(Relation r1, Relation r2, String name) {
+        super(name);
         this.r1 = r1;
         this.r2 = r2;
         containsRec = r1.containsRec || r2.containsRec;
-        namedRelations.addAll(r1.namedRelations);
-        namedRelations.addAll(r2.namedRelations);
-    }
-
-    /**
-     * Creates a binary relation.
-     *
-     * @param r1 the left child.
-     * @param r2 the right child.
-     * @param term that describes the relation
-     */
-    public BinaryRelation(Relation r1, Relation r2, String term) {
-        this(r1, r2, term, term);
     }
 
     @Override
