@@ -10,9 +10,6 @@ import static dartagnan.wmm.Encodings.encodeEO;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
@@ -20,7 +17,6 @@ import com.microsoft.z3.*;
 import dartagnan.expression.AConst;
 import dartagnan.program.*;
 import dartagnan.program.event.*;
-import dartagnan.program.event.rmw.RMWStore;
 
 public class Domain {
 	
@@ -249,20 +245,6 @@ public class Domain {
 				rfPairs.add(edge("rf", w, e, ctx));
 			}
 			enc = ctx.mkAnd(enc, ctx.mkImplies(e.executes(ctx), encodeEO(rfPairs, ctx)));
-		}
-		return enc;
-	}
-
-	public static BoolExpr encodeRMW(Program program, Context ctx) throws Z3Exception {
-		BoolExpr enc = ctx.mkTrue();
-		Set<Event> rmwWrites = program.getEvents().stream().filter(e -> e instanceof RMWStore).collect(Collectors.toSet());
-		if(!rmwWrites.isEmpty()){
-			for(Event w : rmwWrites){
-				Load r = ((RMWStore)w).getLoadEvent();
-				enc = ctx.mkAnd(enc, ctx.mkEq(r.executes(ctx), w.executes(ctx)));
-				enc = ctx.mkAnd(enc, ctx.mkNot(edge("rf", w, r, ctx)));
-				enc = ctx.mkAnd(enc, edge("rmw", r, w, ctx));
-			}
 		}
 		return enc;
 	}

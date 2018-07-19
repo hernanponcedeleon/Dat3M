@@ -29,6 +29,10 @@ public class RelFencerel extends Relation {
         this(fenceName, name, "fencerel(" + fenceName + ")");
     }
 
+    public RelFencerel(String fenceName) {
+        this(fenceName, "fencerel(" + fenceName + ")");
+    }
+
     public String getFenceName(){
         return fenceName;
     }
@@ -86,7 +90,38 @@ public class RelFencerel extends Relation {
     }
 
     public BoolExpr encode(Set<Event> events, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Encode of single relation is not implemented for Fencerel");
+        Set<Event> mEvents = events.stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+        Set<Fence> barriers = events.stream().filter(e -> e instanceof Fence).map(e -> (Fence)e).collect(Collectors.toSet());
+
+        BoolExpr enc = ctx.mkTrue();
+
+        for(Event e1 : mEvents) {
+            for(Event e2 : mEvents) {
+                if(!(e1.getMainThread() == e2.getMainThread() && e1.getEId() < e2.getEId())) {
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge(name, e1, e2, ctx)));
+
+                } else {
+                    BoolExpr fenceEnc = ctx.mkFalse();
+
+                    for(Fence f : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread()
+                            && e1.getEId() < e.getEId()
+                            && e.getEId() < e2.getEId()
+                            && e.getName().equals(getFenceName())).collect(Collectors.toSet())) {
+
+                        fenceEnc = ctx.mkOr(fenceEnc, f.executes(ctx));
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(f.executes(ctx), e2.executes(ctx))),
+                                edge(name, e1, e2, ctx)));
+                    }
+
+                    if(!(fenceEnc.equals(ctx.mkFalse()))){
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(edge(name, e1, e2, ctx), fenceEnc));
+                    } else {
+                        enc = ctx.mkAnd(enc, ctx.mkNot(edge(name, e1, e2, ctx)));
+                    }
+                }
+            }
+        }
+        return enc;
     }
 
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {

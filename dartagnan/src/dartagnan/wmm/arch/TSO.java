@@ -16,12 +16,12 @@ import dartagnan.program.*;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.filter.FilterBasic;
-import dartagnan.wmm.Domain;
 import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.axiom.Empty;
 import dartagnan.wmm.relation.BasicRelation;
 import dartagnan.wmm.relation.RelFencerel;
+import dartagnan.wmm.relation.RelRMW;
 
 public class TSO implements WmmInterface {
 
@@ -47,7 +47,7 @@ public class TSO implements WmmInterface {
 	    if(program.hasRMWEvents()){
 			cartesianRelations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"));
 			cartesianRelations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM"));
-			enc = ctx.mkAnd(enc, Domain.encodeRMW(program, ctx));
+			enc = ctx.mkAnd(enc, new RelRMW().encode(program, ctx, null));
 			enc = ctx.mkAnd(enc, satComp("fre", "coe", events, ctx));
 			enc = ctx.mkAnd(enc, satIntersection("rmw", "(fre;coe)", events, ctx));
 			enc = ctx.mkAnd(enc, satUnion("MA", "AM", events, ctx));

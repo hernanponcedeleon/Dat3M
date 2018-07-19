@@ -10,11 +10,11 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.program.Program;
+import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.program.event.filter.FilterBasic;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.wmm.axiom.Axiom;
-import dartagnan.wmm.relation.RelCartesian;
-import dartagnan.wmm.relation.RelFencerel;
-import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.*;
 
 import java.util.*;
 
@@ -24,43 +24,66 @@ import java.util.*;
  */
 public class Wmm implements WmmInterface{
 
-    // Map is used here instead of Set in order to avoid duplicates on ctrlisync and ctrlsibs
-    // TODO: Change to Set when ctrlisync and ctrlsibs are encoded as derived relations
-    private Map<String, RelFencerel> fenceRelations = new HashMap<String, RelFencerel>();
-
     private ArrayList<Axiom> axioms = new ArrayList<>();
-    private final ArrayList<Relation> relations = new ArrayList<>();
-
-    private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
-            new RelCartesian(new FilterBasic("I"), new FilterBasic("M"), "IM"),
-            new RelCartesian(new FilterBasic("I"), new FilterBasic("R"), "IR"),
-            new RelCartesian(new FilterBasic("I"), new FilterBasic("W"), "IW"),
-
-            new RelCartesian(new FilterBasic("M"), new FilterBasic("I"), "MI"),
-            new RelCartesian(new FilterBasic("R"), new FilterBasic("I"), "RI"),
-            new RelCartesian(new FilterBasic("W"), new FilterBasic("I"), "WI"),
-
-            new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM"),
-            new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR"),
-            new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
-
-            new RelCartesian(new FilterBasic("W"), new FilterBasic("M"), "WM"),
-            new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR"),
-            new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW")
-    ));
+    protected Map<String, Relation> relations = new HashMap<String, Relation>();
+    protected Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
     }
 
-    public void addRel(Relation rel) {
-        relations.add(rel);
+    public void addRelation(Relation rel) {
+        relations.put(rel.getName(), rel);
     }
 
-    public void addFenceRelation(RelFencerel rel){
-        if(!(fenceRelations.containsKey(rel.getName()))){
-            fenceRelations.put(rel.getName(), rel);
+    public Relation getRelation(String name){
+        Relation relation = relations.get(name);
+        if(relation == null){
+            if(WmmUtils.basicRelations.contains(name)) {
+                relation = new BasicRelation(name);
+
+                // TODO: Temporary dirty solution
+                if(name.equals("ctrlisync")){
+                    addRelation(new RelFencerel("Isync", "isync"));
+                }
+                if(name.equals("ctrlisb")){
+                    addRelation(new RelFencerel("Isb", "isb"));
+                }
+
+                // TODO: Temporary dirty solution
+            } else if(WmmUtils.basicFenceRelations.containsKey(name)){
+                relation = new RelFencerel(WmmUtils.basicFenceRelations.get(name), name);
+
+                // TODO: Temporary dirty solution
+            } else if(name.equals("rmw")){
+                return new RelRMW();
+
+                // TODO: Temporary dirty solution
+            } else if(name.equals("addr") || name.equals("0")){
+                return new EmptyRel();
+
+                // TODO: Temporary dirty solution
+            } else if(name.equals("data")){
+                addRelation(new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"));
+                return new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("RW"));
+            }
         }
+        return relation;
+    }
+
+    public void addFilter(FilterAbstract filter) {
+        filters.put(filter.getName(), filter);
+    }
+
+    public FilterAbstract getFilter(String name){
+        FilterAbstract filter = filters.get(name);
+        if(filter == null){
+            name = FilterUtils.resolve(name);
+            if(name != null){
+                filter = new FilterBasic(name);
+            }
+        }
+        return filter;
     }
 
     /**
@@ -72,26 +95,14 @@ public class Wmm implements WmmInterface{
      */
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 
-        BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations.values());
-
-        if(program.hasRMWEvents()){
-            cartesianRelations.addAll(Arrays.asList(
-                    new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"),
-                    new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM")
-            ));
-            enc = ctx.mkAnd(enc, Domain.encodeRMW(program, ctx));
-        }
-
-        for(RelCartesian relation : cartesianRelations){
-            enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
-        }
+        BoolExpr enc = ctx.mkTrue();
 
         Set<String> encodedRels = new HashSet<>();
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
         }
-        for (Relation relation : relations) {
-            enc = ctx.mkAnd(enc, relation.encode(program, ctx, encodedRels));
+        for (Map.Entry<String, Relation> relation : relations.entrySet()){
+            enc = ctx.mkAnd(enc, relation.getValue().encode(program, ctx, encodedRels));
         }
         return enc;
     }
@@ -140,11 +151,16 @@ public class Wmm implements WmmInterface{
             result.append("\n");
         }
 
-        for (Relation relation : relations) {
-            if(relation.getIsNamed()){
-                result.append(relation);
+        for (Map.Entry<String, Relation> relation : relations.entrySet()) {
+            if(relation.getValue().getIsNamed()){
+                result.append(relation.getValue());
                 result.append("\n");
             }
+        }
+
+        for (Map.Entry<String, FilterAbstract> filter : filters.entrySet()){
+            result.append(filter.getValue());
+            result.append("\n");
         }
 
         return result.toString();

@@ -37,6 +37,14 @@ public class FilterUtils {
         // Locks
         put(EVENT_TYPE_LOCK, EVENT_TYPE_LOCK);
 
+        // Fences
+        put("Mfence", "Mfence");
+        put("Sync", "Sync");
+        put("Isync", "Isync");
+        put("Lwsync", "Lwsync");
+        put("Isb", "Isb");
+        put("Ish", "Ish");
+
         // C11 memory order
         put("SC", "_sc");
         put("RX", "_rx");
@@ -55,6 +63,7 @@ public class FilterUtils {
         put("Mb", "Mb");
         put("Before-atomic", "Before-atomic");
         put("After-atomic", "After-atomic");
+        put("Before-spinlock", "Before-spinlock");
         put("After-spinlock", "After-spinlock");
         put("Sync-rcu", "Sync-rcu");
 

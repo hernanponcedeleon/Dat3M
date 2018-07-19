@@ -97,6 +97,8 @@ src/dartagnan/wmm/relation/RelInterSect.java \
 src/dartagnan/wmm/relation/RelInverse.java \
 src/dartagnan/wmm/relation/RelLocTrans.java \
 src/dartagnan/wmm/relation/RelMinus.java \
+src/dartagnan/wmm/relation/RelRMW.java \
+src/dartagnan/wmm/relation/RelSetIdentity.java \
 src/dartagnan/wmm/relation/RelTrans.java \
 src/dartagnan/wmm/relation/RelTransRef.java \
 src/dartagnan/wmm/relation/RelUnion.java \
@@ -107,6 +109,7 @@ src/dartagnan/wmm/relation/UnaryRelation.java \
 src/dartagnan/wmm/WmmInterface.java \
 src/dartagnan/wmm/WmmResolver.java \
 src/dartagnan/wmm/Wmm.java \
+src/dartagnan/wmm/WmmUtils.java \
 src/porthos/Porthos.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCBaseVisitor.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCLexer.java \
