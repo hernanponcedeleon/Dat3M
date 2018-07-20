@@ -98,19 +98,19 @@ public abstract class Relation {
     }
 
     protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodeBasic is not implemented for " + getClass().getCanonicalName());
+        throw new RuntimeException("Method encodeBasic is not implemented for " + getClass().getName());
     }
 
     protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodeApprox is not implemented for " + getClass().getCanonicalName());
+        throw new RuntimeException("Method encodeApprox is not implemented for " + getClass().getName());
     }
 
     protected BoolExpr encodePredicateBasic(Collection<Event> events, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodePredicateBasic is not implemented for " + getClass().getCanonicalName());
+        throw new RuntimeException("Method encodePredicateBasic is not implemented for " + getClass().getName());
     }
 
     protected BoolExpr encodePredicateApprox(Collection<Event> events, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodePredicateApprox is not implemented for " + getClass().getCanonicalName());
+        throw new RuntimeException("Method encodePredicateApprox is not implemented for " + getClass().getName());
     }
 
     protected Collection<Event> getProgramEvents(Program program){
