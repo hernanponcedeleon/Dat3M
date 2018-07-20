@@ -56,6 +56,13 @@ public class ARM implements WmmInterface {
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 
 		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
+		enc = ctx.mkAnd(enc, satIntersection("ctrlisb", "ctrl", "isb", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("rfe", "rf", "ext", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("rfi", "rf", "int", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("fre", "fr", "ext", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("po-loc", "po", "loc", events, ctx));
+
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));
@@ -65,7 +72,7 @@ public class ARM implements WmmInterface {
 		} else {
 			enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));	
 		}
-	    
+
 	    enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", events, ctx));
 	    enc = ctx.mkAnd(enc, satEmpty("addr", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("dp", "addr", "data", events, ctx));

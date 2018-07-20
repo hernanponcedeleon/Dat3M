@@ -37,6 +37,9 @@ public class TSO implements WmmInterface {
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 
 		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
+		enc = ctx.mkAnd(enc, satIntersection("rfe", "rf", "ext", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("po-loc", "po", "loc", events, ctx));
+
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));
@@ -48,6 +51,8 @@ public class TSO implements WmmInterface {
 			cartesianRelations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"));
 			cartesianRelations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM"));
 			enc = ctx.mkAnd(enc, new RelRMW().encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));
+			enc = ctx.mkAnd(enc, satIntersection("fre", "fr", "ext", events, ctx));
 			enc = ctx.mkAnd(enc, satComp("fre", "coe", events, ctx));
 			enc = ctx.mkAnd(enc, satIntersection("rmw", "(fre;coe)", events, ctx));
 			enc = ctx.mkAnd(enc, satUnion("MA", "AM", events, ctx));

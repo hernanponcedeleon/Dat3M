@@ -44,6 +44,10 @@ public class Alpha implements WmmInterface {
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 
 		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
+		enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("ctrlisync", "ctrl", "isync", events, ctx));
+		enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("rfe", "rf", "ext", eventsL, ctx));
+		enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("po-loc", "po", "loc", eventsL, ctx));
+
 		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("co", "fr", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("com", "(co+fr)", "rf", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("po-loc", "com", events, ctx));

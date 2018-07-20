@@ -12,12 +12,9 @@ public class WmmUtils {
     protected static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
             "ii", "ic", "ci", "cc",
             "id", "int", "ext",
-            "loc", "po", "po-loc",
-            "rf", "rfe", "rfi",
-            "fr", "fre", "fri",
-            "co", "coe", "coi",
+            "loc", "po",
+            "rf", "fr", "co",
             "idd", "ctrlDirect", "ctrl",
-            "ctrlisync", "ctrlisb",
             // "data", Note: some data constraints are also encoded in Domain
             "crit"  // TODO: Implementation
     ));

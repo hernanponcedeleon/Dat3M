@@ -28,6 +28,18 @@ public class Wmm implements WmmInterface{
     protected Map<String, Relation> relations = new HashMap<String, Relation>();
     protected Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
 
+    public Wmm(){
+        relations.put("ctrlisync", new RelInterSect(new BasicRelation("ctrl"), new BasicRelation("isync")));
+        relations.put("ctrlisb", new RelInterSect(new BasicRelation("ctrl"), new BasicRelation("isb")));
+        relations.put("rfe", new RelInterSect(new BasicRelation("rf"), new BasicRelation("ext")));
+        relations.put("rfi", new RelInterSect(new BasicRelation("rf"), new BasicRelation("int")));
+        relations.put("coe", new RelInterSect(new BasicRelation("co"), new BasicRelation("ext")));
+        relations.put("coi", new RelInterSect(new BasicRelation("co"), new BasicRelation("int")));
+        relations.put("fre", new RelInterSect(new BasicRelation("fr"), new BasicRelation("ext")));
+        relations.put("fri", new RelInterSect(new BasicRelation("fr"), new BasicRelation("int")));
+        relations.put("po-loc", new RelInterSect(new BasicRelation("po"), new BasicRelation("loc")));
+    }
+
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
     }
@@ -41,14 +53,6 @@ public class Wmm implements WmmInterface{
         if(relation == null){
             if(WmmUtils.basicRelations.contains(name)) {
                 relation = new BasicRelation(name);
-
-                // TODO: Temporary dirty solution
-                if(name.equals("ctrlisync")){
-                    addRelation(new RelFencerel("Isync", "isync"));
-                }
-                if(name.equals("ctrlisb")){
-                    addRelation(new RelFencerel("Isb", "isb"));
-                }
 
                 // TODO: Temporary dirty solution
             } else if(WmmUtils.basicFenceRelations.containsKey(name)){
@@ -65,7 +69,7 @@ public class Wmm implements WmmInterface{
                 // TODO: Temporary dirty solution
             } else if(name.equals("data")){
                 addRelation(new RelCartesian(new FilterBasic("R"), new FilterBasic("W")));
-                return new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("RW"), "data");
+                return new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("(R * W)"), "data");
             }
         }
         return relation;

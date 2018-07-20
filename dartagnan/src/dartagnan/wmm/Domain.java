@@ -57,20 +57,7 @@ public class Domain {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e2, ctx)));
 				}
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("rfe", e1, e2, ctx),
-										ctx.mkAnd(edge("rf", e1, e2, ctx), edge("ext", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("rfi", e1, e2, ctx),
-										ctx.mkAnd(edge("rf", e1, e2, ctx), edge("int", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("coe", e1, e2, ctx),
-										ctx.mkAnd(edge("co", e1, e2, ctx), edge("ext", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("coi", e1, e2, ctx),
-										ctx.mkAnd(edge("co", e1, e2, ctx), edge("int", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("fre", e1, e2, ctx),
-										ctx.mkAnd(edge("fr", e1, e2, ctx), edge("ext", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("fri", e1, e2, ctx),
-										ctx.mkAnd(edge("fr", e1, e2, ctx), edge("int", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("po-loc", e1, e2, ctx),
-										ctx.mkAnd(edge("po", e1, e2, ctx), edge("loc", e1, e2, ctx))));
+
 				if(e1.getLoc() == e2.getLoc()) {
 					enc = ctx.mkAnd(enc, edge("loc", e1, e2, ctx));
 				}
@@ -198,10 +185,7 @@ public class Domain {
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("po", e1, e2, ctx)));
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrl", e1, e2, ctx)));
 				}
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrlisync", e1, e2, ctx),
-						ctx.mkAnd(edge("ctrl", e1, e2, ctx), edge("isync", e1, e2, ctx))));
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrlisb", e1, e2, ctx),
-						ctx.mkAnd(edge("ctrl", e1, e2, ctx), edge("isb", e1, e2, ctx))));				
+
 				BoolExpr ctrlClause = edge("ctrlDirect",e1,e2,ctx);
 				for(Event e3 : mSkipEvents) {
 					ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("ctrl", e1, e3, ctx), edge("po", e3, e2, ctx)));

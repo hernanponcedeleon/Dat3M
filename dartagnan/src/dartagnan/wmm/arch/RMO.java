@@ -21,7 +21,6 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.relation.RelCartesian;
-import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.RelFencerel;
 
@@ -48,7 +47,11 @@ public class RMO implements WmmInterface {
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
 
 		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
-		enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("co", "fr", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("ctrlisync", "ctrl", "isync", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("rfe", "rf", "ext", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("po-loc", "po", "loc", events, ctx));
+
+		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satMinus("po-loc", "RR", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("(po-loc\\RR)", "com", events, ctx));
