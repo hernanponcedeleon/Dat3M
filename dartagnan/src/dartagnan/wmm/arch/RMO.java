@@ -23,7 +23,7 @@ import dartagnan.wmm.WmmInterface;
 
 public class RMO implements WmmInterface {
 
-	public final String[] fences = {"mfence", "sync", "isync"};
+	public final String[] fences = {"mfence", "isync"};
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		if(program.hasRMWEvents()){
@@ -48,8 +48,7 @@ public class RMO implements WmmInterface {
 		enc = ctx.mkAnd(enc, satIntersection("ctrl", "RW", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("(ctrl&RW)", "ctrlisync", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("dp-rmo", "((ctrl&RW)+ctrlisync)", "((data+(po-loc&WR))^+&RM)", events, ctx));
-		enc = ctx.mkAnd(enc, satUnion("fence-rmo", "sync", "mfence", events, ctx));
-		enc = ctx.mkAnd(enc, satUnion("po-rmo", "dp-rmo", "fence-rmo", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("po-rmo", "dp-rmo", "mfence", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("ghb-rmo", "po-rmo", "com-rmo", events, ctx));
 		return enc;
 	}
