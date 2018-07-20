@@ -45,10 +45,10 @@ public abstract class BinaryRelation extends Relation {
     @Override
     public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
-            if(encodedRels.contains(name)){
+            if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
-            encodedRels.add(getName());
+            encodedRels.add(this.getName());
         }
         BoolExpr enc = r1.encode(events, ctx, encodedRels);
         enc = ctx.mkAnd(enc, r2.encode(events, ctx, encodedRels));

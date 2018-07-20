@@ -33,9 +33,9 @@ public class RelCartesian extends Relation {
         for (Event e1 : events) {
             for (Event e2 : events) {
                 if(filter1.filter(e1) && filter2.filter(e2)){
-                    enc = ctx.mkAnd(enc, Utils.edge(name, e1, e2, ctx));
+                    enc = ctx.mkAnd(enc, Utils.edge(this.getName(), e1, e2, ctx));
                 } else {
-                    enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(name, e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(this.getName(), e1, e2, ctx)));
                 }
             }
         }

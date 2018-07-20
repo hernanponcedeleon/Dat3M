@@ -31,15 +31,15 @@ public class RelInterSect extends BinaryRelation {
             for(Event e2 : events) {
                 BoolExpr opt1=Utils.edge(r1.getName(), e1, e2, ctx);
                 if(r1.containsRec) {
-                    opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
+                    opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
                 }
 
                 BoolExpr opt2=Utils.edge(r2.getName(), e1, e2, ctx);
                 if(r2.containsRec){
-                    opt2=ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(getName(),e1,e2, ctx), Utils.intCount(r2.getName(),e1,e2, ctx)));
+                    opt2=ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(),e1,e2, ctx), Utils.intCount(r2.getName(),e1,e2, ctx)));
                 }
 
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(getName(), e1, e2, ctx), ctx.mkAnd(opt1,opt2)));
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1,opt2)));
             }
         }
         return enc;
@@ -52,7 +52,7 @@ public class RelInterSect extends BinaryRelation {
             for(Event e2 : events) {
                 BoolExpr opt1=Utils.edge(r1.getName(), e1, e2, ctx);
                 BoolExpr opt2=Utils.edge(r2.getName(), e1, e2, ctx);
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(getName(), e1, e2, ctx), ctx.mkAnd(opt1,opt2)));
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1,opt2)));
             }
         }
         return enc;

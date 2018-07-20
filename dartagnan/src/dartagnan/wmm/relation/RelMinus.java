@@ -33,10 +33,10 @@ public class RelMinus extends BinaryRelation {
     @Override
     public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
-            if(encodedRels.contains(name)){
+            if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
-            encodedRels.add(getName());
+            encodedRels.add(this.getName());
         }
         BoolExpr enc = r1.encode(events, ctx, encodedRels);
         boolean approx = Relation.Approx;
@@ -56,7 +56,7 @@ public class RelMinus extends BinaryRelation {
                     opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
                 }
                 BoolExpr opt2 = ctx.mkNot(Utils.edge(r2.getName(), e1, e2, ctx));
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
             }
         }
         return enc;

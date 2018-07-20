@@ -33,8 +33,8 @@ public class RelTrans extends UnaryRelation {
                 for (Event e3 : events) {
                     //e1e2 caused by transitivity:
                     orTrans = ctx.mkOr(orTrans, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx),
-                            ctx.mkGt(Utils.intCount(String.format(this.getName()), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
-                            ctx.mkGt(Utils.intCount(String.format(this.getName()), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
+                            ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
+                            ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
                 }
                 //r(e1,e2) caused by r1:
                 BoolExpr orr1 = Utils.edge(r1.getName(), e1, e2, ctx);
@@ -59,7 +59,7 @@ public class RelTrans extends UnaryRelation {
                 //transitive
                 BoolExpr orClause = ctx.mkFalse();
                 for (Event e3 : events) {
-                    orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(getName(), e1, e3, ctx), Utils.edge(getName(), e3, e2, ctx)));
+                    orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
                     if(Relation.CloseApprox){
                         orclose1 = ctx.mkOr(orclose1, Utils.edge(r1.getName(), e1, e3, ctx));
                         orclose2 = ctx.mkOr(orclose2, Utils.edge(r1.getName(), e3, e2, ctx));
@@ -69,12 +69,12 @@ public class RelTrans extends UnaryRelation {
                 orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
                 //putting it together:
                 if(Relation.CloseApprox){
-                	enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
+                	enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
                 }
                 if(Relation.PostFixApprox) {
-                	enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(getName(), e1, e2, ctx)));
+                	enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
                 } else {
-                	enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(getName(), e1, e2, ctx), orClause));
+                	enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
                 }
             }
         }

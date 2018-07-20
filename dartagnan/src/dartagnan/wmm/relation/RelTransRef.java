@@ -37,8 +37,8 @@ public class RelTransRef extends UnaryRelation {
                     for (Event e3 : events) {
                         //e1e2 caused by transitivity:
                         orTrans = ctx.mkOr(orTrans, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx),
-                                ctx.mkGt(Utils.intCount(String.format(this.getName()), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
-                                ctx.mkGt(Utils.intCount(String.format(this.getName()), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
+                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
+                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
                     }
                     //e1e2 caused by r1:
                     BoolExpr orr1 = Utils.edge(r1.getName(), e1, e2, ctx);

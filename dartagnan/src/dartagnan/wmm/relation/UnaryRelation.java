@@ -29,10 +29,10 @@ public abstract class UnaryRelation extends Relation {
     @Override
     public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
-            if(encodedRels.contains(name)){
+            if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
-            encodedRels.add(getName());
+            encodedRels.add(this.getName());
         }
         BoolExpr enc = r1.encode(events, ctx, encodedRels);
         return ctx.mkAnd(enc, doEncode(events, ctx));

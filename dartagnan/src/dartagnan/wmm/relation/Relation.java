@@ -77,16 +77,18 @@ public abstract class Relation {
      * @return String
      */
     public String toString(){
-        if(isNamed) return String.format("%s := %s", name, term);
-        else return String.format("%s", term);
+        if(isNamed){
+            return name + " := " + term;
+        }
+        return term;
     }
 
     public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
-            if(encodedRels.contains(name)){
+            if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
-            encodedRels.add(getName());
+            encodedRels.add(this.getName());
         }
         return doEncode(events, ctx);
     }

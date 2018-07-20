@@ -40,7 +40,7 @@ public class RelFencerel extends Relation {
         for(Event e1 : mEvents) {
             for(Event e2 : mEvents) {
                 if(!(e1.getMainThread() == e2.getMainThread() && e1.getEId() < e2.getEId())) {
-                    enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(name, e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(this.getName(), e1, e2, ctx)));
 
                 } else {
                     BoolExpr fenceEnc = ctx.mkFalse();
@@ -52,13 +52,13 @@ public class RelFencerel extends Relation {
 
                         fenceEnc = ctx.mkOr(fenceEnc, f.executes(ctx));
                         enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), ctx.mkAnd(f.executes(ctx), e2.executes(ctx))),
-                                Utils.edge(name, e1, e2, ctx)));
+                                Utils.edge(this.getName(), e1, e2, ctx)));
                     }
 
                     if(!(fenceEnc.equals(ctx.mkFalse()))){
-                        enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(name, e1, e2, ctx), fenceEnc));
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), fenceEnc));
                     } else {
-                        enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(name, e1, e2, ctx)));
+                        enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(this.getName(), e1, e2, ctx)));
                     }
                 }
             }
