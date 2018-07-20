@@ -11,6 +11,14 @@ do
       echo $file
       break
    fi
+   java dartagnan/Dartagnan -t power -i $file -cat cat/power.cat > ./dart_power.out
+   dart=$(grep -e 'No' dart_power.out | wc -l)
+   rm dart_power.out
+   if [ $dart != $herd ]
+   then
+      echo $file
+      break
+   fi
 done
 
 
