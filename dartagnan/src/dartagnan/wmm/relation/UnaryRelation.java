@@ -32,9 +32,8 @@ public abstract class UnaryRelation extends Relation {
             if(encodedRels.contains(name)){
                 return ctx.mkTrue();
             }
-            encodedRels.add(name);
+            encodedRels.add(getName());
         }
-
         BoolExpr enc = r1.encode(events, ctx, encodedRels);
         return ctx.mkAnd(enc, doEncode(events, ctx));
     }

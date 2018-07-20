@@ -48,7 +48,7 @@ public abstract class BinaryRelation extends Relation {
             if(encodedRels.contains(name)){
                 return ctx.mkTrue();
             }
-            encodedRels.add(name);
+            encodedRels.add(getName());
         }
         BoolExpr enc = r1.encode(events, ctx, encodedRels);
         enc = ctx.mkAnd(enc, r2.encode(events, ctx, encodedRels));

@@ -86,7 +86,7 @@ public abstract class Relation {
             if(encodedRels.contains(name)){
                 return ctx.mkTrue();
             }
-            encodedRels.add(name);
+            encodedRels.add(getName());
         }
         return doEncode(events, ctx);
     }

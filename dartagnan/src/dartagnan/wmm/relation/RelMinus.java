@@ -36,9 +36,8 @@ public class RelMinus extends BinaryRelation {
             if(encodedRels.contains(name)){
                 return ctx.mkTrue();
             }
-            encodedRels.add(name);
+            encodedRels.add(getName());
         }
-
         BoolExpr enc = r1.encode(events, ctx, encodedRels);
         boolean approx = Relation.Approx;
         Relation.Approx = false;
