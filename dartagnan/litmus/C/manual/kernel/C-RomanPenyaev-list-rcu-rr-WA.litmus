@@ -8,12 +8,12 @@ C C-RomanPenyaev-list-rcu-rr-WA
  *)
 
 {
-	int *z=1; (* List: v->w->x->y->z. Noncircular, but long enough. *)
+	int *z=1; /* List: v->w->x->y->z. Noncircular, but long enough. */
 	int *y=z;
 	int *x=y;
 	int *w=x;
-	int *v=w; (* List head is v. *)
-	int *c=w; (* Cache, emulating ppcpu_con. *)
+	int *v=w; /* List head is v. */
+	int *c=w; /* Cache, emulating ppcpu_con. */
 }
 
 P0(int *c, int *v, int *w, int *x, int *y)
