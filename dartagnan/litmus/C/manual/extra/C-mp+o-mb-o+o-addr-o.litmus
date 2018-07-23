@@ -1,0 +1,22 @@
+C C-MP+o-mb-o+o-addr-o
+{
+a = 1;
+b = 42;
+int *x = &b;
+}
+
+P0(int **x, int *a)
+{
+	int *r0 = a;
+	WRITE_ONCE(*a, 3);
+	smp_mb();
+	WRITE_ONCE(*x, r0);
+}
+
+P1(int **x)
+{
+	int *r1 = READ_ONCE(*x);
+	int r2 = READ_ONCE(*r1);
+}
+
+exists (1:r1 = a /\ 1:r2 = 1)

@@ -1,0 +1,29 @@
+C AlanStern.2018.01.11a.litmus
+
+{}
+
+P0(int *x)
+{
+	WRITE_ONCE(*x, 1);
+}
+
+P1(int *x, int *y)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	WRITE_ONCE(*x, 2);
+	smp_store_release(y, 1);
+}
+
+P2(int *x, int *y)
+{
+	int r1;
+
+	r1 = smp_load_acquire(y);
+	if (r1)
+		*x = 3;
+}
+
+filter (1:r1=1)
+exists (2:r1=1 /\ ~x=3)
