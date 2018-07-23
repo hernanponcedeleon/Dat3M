@@ -19,22 +19,17 @@ public class RelDummy extends Relation {
     }
 
     @Override
+    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+        return encodeBasic(events, ctx);
+    }
+
+    @Override
     protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
         return ctx.mkTrue();
     }
 
     @Override
     protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
-        return encodeBasic(events, ctx);
-    }
-
-    @Override
-    protected BoolExpr encodePredicateBasic(Collection<Event> events, Context ctx) throws Z3Exception {
-        return encodeBasic(events, ctx);
-    }
-
-    @Override
-    protected BoolExpr encodePredicateApprox(Collection<Event> events, Context ctx) throws Z3Exception {
         return encodeBasic(events, ctx);
     }
 }

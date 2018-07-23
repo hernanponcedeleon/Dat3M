@@ -109,7 +109,6 @@ src/dartagnan/wmm/relation/UnaryRelation.java \
 src/dartagnan/wmm/WmmInterface.java \
 src/dartagnan/wmm/WmmResolver.java \
 src/dartagnan/wmm/Wmm.java \
-src/dartagnan/wmm/WmmUtils.java \
 src/porthos/Porthos.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCBaseVisitor.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCLexer.java \

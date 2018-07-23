@@ -29,6 +29,7 @@ import dartagnan.program.event.Event;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.Program;
+import dartagnan.program.event.Skip;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
@@ -56,9 +57,10 @@ public class Power implements WmmInterface {
 
 		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
 		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
+		Set<Event> eventsS = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Skip).collect(Collectors.toSet());
 
 		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
-		enc = ctx.mkAnd(enc, satIntersection("ctrlisync", "ctrl", "isync", events, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("ctrlisync", "ctrl", "isync", eventsS, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("rfe", "rf", "ext", events, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("rfi", "rf", "int", events, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));

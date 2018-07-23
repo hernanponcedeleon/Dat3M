@@ -24,21 +24,26 @@ import java.util.*;
  */
 public class Wmm implements WmmInterface{
 
-    private ArrayList<Axiom> axioms = new ArrayList<>();
-    protected Map<String, Relation> relations = new HashMap<String, Relation>();
-    protected Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
+    private static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
+            "id", "int", "ext", "loc", "po",
+            "rf", "fr", "co",
+            "idd", "ctrlDirect", "ctrl",
+            "crit"  // TODO: Implementation
+    ));
 
-    public Wmm(){
-        relations.put("ctrlisync", new RelInterSect(new BasicRelation("ctrl"), new BasicRelation("isync")));
-        relations.put("ctrlisb", new RelInterSect(new BasicRelation("ctrl"), new BasicRelation("isb")));
-        relations.put("rfe", new RelInterSect(new BasicRelation("rf"), new BasicRelation("ext")));
-        relations.put("rfi", new RelInterSect(new BasicRelation("rf"), new BasicRelation("int")));
-        relations.put("coe", new RelInterSect(new BasicRelation("co"), new BasicRelation("ext")));
-        relations.put("coi", new RelInterSect(new BasicRelation("co"), new BasicRelation("int")));
-        relations.put("fre", new RelInterSect(new BasicRelation("fr"), new BasicRelation("ext")));
-        relations.put("fri", new RelInterSect(new BasicRelation("fr"), new BasicRelation("int")));
-        relations.put("po-loc", new RelInterSect(new BasicRelation("po"), new BasicRelation("loc")));
+    private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
+    static {
+        basicFenceRelations.put("mfence", "Mfence");
+        basicFenceRelations.put("ish", "Ish");
+        basicFenceRelations.put("isb", "Isb");
+        basicFenceRelations.put("sync", "Sync");
+        basicFenceRelations.put("lwsync", "Lwsync");
+        basicFenceRelations.put("isync", "Isync");
     }
+
+    private ArrayList<Axiom> axioms = new ArrayList<>();
+    private Map<String, Relation> relations = new HashMap<String, Relation>();
+    private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
@@ -50,29 +55,15 @@ public class Wmm implements WmmInterface{
 
     public Relation getRelation(String name){
         Relation relation = relations.get(name);
-        if(relation == null){
-            if(WmmUtils.basicRelations.contains(name)) {
-                relation = new BasicRelation(name);
-
-                // TODO: Temporary dirty solution
-            } else if(WmmUtils.basicFenceRelations.containsKey(name)){
-                relation = new RelFencerel(WmmUtils.basicFenceRelations.get(name), name);
-
-                // TODO: Temporary dirty solution
-            } else if(name.equals("rmw")){
-                return new RelRMW();
-
-                // TODO: Temporary dirty solution
-            } else if(name.equals("addr") || name.equals("0")){
-                return new EmptyRel(name);
-
-                // TODO: Temporary dirty solution
-            } else if(name.equals("data")){
-                addRelation(new RelCartesian(new FilterBasic("R"), new FilterBasic("W")));
-                return new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("(R * W)"), "data");
-            }
+        if(relation != null){
+            return relation;
         }
-        return relation;
+
+        if(basicRelations.contains(name)) {
+            return new BasicRelation(name);
+        }
+
+        return resolveRelation(name);
     }
 
     public void addFilter(FilterAbstract filter) {
@@ -98,7 +89,6 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
-
         BoolExpr enc = ctx.mkTrue();
 
         Set<String> encodedRels = new HashSet<>();
@@ -112,7 +102,7 @@ public class Wmm implements WmmInterface{
     }
 
     /**
-     * 
+     *
      * @param program
      * @param ctx
      * @return encoding that ensures all axioms are satisfied and the execution is consistent.
@@ -168,5 +158,68 @@ public class Wmm implements WmmInterface{
         }
 
         return result.toString();
+    }
+
+    // TODO: Later these relations should come from included cat files, e.g., "stdlib.cat" or "fences.cat"
+    private Relation resolveRelation(String name){
+        Relation relation = null;
+
+        if(basicFenceRelations.containsKey(name)) {
+            relation = new RelFencerel(basicFenceRelations.get(name), name);
+
+        } else {
+            switch (name){
+                case "rfe":
+                    relation = new RelInterSect(new BasicRelation("rf"), new BasicRelation("ext"), "rfe");
+                    break;
+                case "rfi":
+                    relation = new RelInterSect(new BasicRelation("rf"), new BasicRelation("int"), "rfi");
+                    break;
+                case "coe":
+                    relation = new RelInterSect(new BasicRelation("co"), new BasicRelation("ext"), "coe");
+                    break;
+                case "coi":
+                    relation = new RelInterSect(new BasicRelation("co"), new BasicRelation("int"), "coi");
+                    break;
+                case "fre":
+                    relation = new RelInterSect(new BasicRelation("fr"), new BasicRelation("ext"), "fre");
+                    break;
+                case "fri":
+                    relation = new RelInterSect(new BasicRelation("fr"), new BasicRelation("int"), "fri");
+                    break;
+                case "po-loc":
+                    relation = new RelInterSect(new BasicRelation("po"), new BasicRelation("loc"), "po-loc");
+                    break;
+                case "addr":
+                    relation = new EmptyRel("addr");
+                    break;
+                case "0":
+                    relation = new EmptyRel("0");
+                    break;
+                case "data":
+                    Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
+                    addRelation(RW);
+                    relation = new RelInterSect(new RelLocTrans(new BasicRelation("idd")), RW);
+                    break;
+                case "ctrlisync":
+                    Relation isync = new RelFencerel("Isync", "isync");
+                    addRelation(isync);
+                    relation = new RelInterSect(new BasicRelation("ctrl"), isync, "ctrlisync");
+                    break;
+                case "ctrlisb":
+                    Relation isb = new RelFencerel("Isb", "isb");
+                    addRelation(isb);
+                    relation = new RelInterSect(new BasicRelation("ctrl"), isb, "ctrlisb");
+                    break;
+                case "rmw":
+                    relation = new RelRMW();
+                    break;
+            }
+        }
+
+        if(relation != null){
+            addRelation(relation);
+        }
+        return relation;
     }
 }
