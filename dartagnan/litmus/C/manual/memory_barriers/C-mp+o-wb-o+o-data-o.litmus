@@ -1,0 +1,28 @@
+C C-MP+o-wb-o+o-data-o
+(*
+ * Allowed: wmb on only two threads with write-to-read relationship,
+ * but the data dependency on P1 is not enforced by either r[lderef],
+ * r[deref], or f[rb_dep].  This would therefore be allowed on real
+ * hardware, namely DEC Alpha.
+ *)
+{
+x = 2;
+int a = 0;
+int *p = &a;
+}
+
+P0(int *x, int **p)
+{
+	WRITE_ONCE(*x, 4);
+	smp_wmb();
+	WRITE_ONCE(*p, x);
+}
+
+P1(int **p)
+{
+	int *r1; int r2;
+	r1 = READ_ONCE(*p);
+	r2 = READ_ONCE(*r1);
+}
+
+exists (1:r1 = x /\ 1:r2 = 2)

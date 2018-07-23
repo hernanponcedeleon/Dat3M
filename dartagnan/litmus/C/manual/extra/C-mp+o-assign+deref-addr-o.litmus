@@ -1,0 +1,20 @@
+C C-MP+o-assign+deref-addr-o
+{
+a = 1;
+b = 42;
+int *x = &b;
+}
+
+P0(int **x, int *a)
+{
+	WRITE_ONCE(*a, 3);
+	rcu_assign_pointer(*x, a);
+}
+
+P1(int **x)
+{
+	int *r1 = rcu_dereference(*x);
+	int r2 = READ_ONCE(*r1);
+}
+
+exists (1:r1 = a /\ 1:r2 = 1)

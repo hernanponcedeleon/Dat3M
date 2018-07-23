@@ -1,0 +1,35 @@
+C C-LB+ldref-o+o-ctrl-o+o-dep-o.litmus
+
+{
+	a=x0;
+	c=y0;
+	1:r2=b;
+}
+
+P0(int **a)
+{
+	int *r1;
+
+	r1 = READ_ONCE(*a);
+	WRITE_ONCE(*r1, 1);
+}
+
+P1(int *b, int **c)
+{
+	int r1;
+
+	r1 = READ_ONCE(*b);
+	if (r1)
+		WRITE_ONCE(*c, r2);
+}
+
+P2(int **a, int **c)
+{
+	int *r1;
+
+	r1 = READ_ONCE(*c);
+	WRITE_ONCE(*a, r1);
+}
+
+exists
+(0:r1=b /\ 1:r1=1 /\ 2:r1=b)

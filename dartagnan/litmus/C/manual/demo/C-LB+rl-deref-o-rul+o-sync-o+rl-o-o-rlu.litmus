@@ -1,0 +1,36 @@
+C C-LB+rl-deref-o-rul+o-sync-o+rl-o-o-rlu.litmus
+
+{
+	a=x;
+}
+
+P0(int **a)
+{
+	int *r1;
+	int r2;
+
+	rcu_read_lock();
+	r1 = rcu_dereference(*a);
+	r2 = READ_ONCE(*r1);
+	rcu_read_unlock();
+}
+
+P1(int **a, int *y, int *z)
+{
+	WRITE_ONCE(*a, y);
+	synchronize_rcu();
+	WRITE_ONCE(*z, 1);
+}
+
+P2(int *x, int *z)
+{
+	int r3;
+
+	rcu_read_lock();
+	r3 = READ_ONCE(*z);
+	WRITE_ONCE(*x, 1);  /* Emulate kfree(). */
+	rcu_read_unlock();
+}
+
+exists
+(0:r1=x /\ 0:r2=1 /\ 2:r3=1)

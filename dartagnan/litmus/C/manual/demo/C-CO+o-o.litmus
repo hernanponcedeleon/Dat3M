@@ -1,0 +1,13 @@
+C C-CO+o-o.litmus
+
+{
+}
+
+P0(int *x)
+{
+	*x = 3;
+	*x = 4;
+}
+
+exists
+(x=3)

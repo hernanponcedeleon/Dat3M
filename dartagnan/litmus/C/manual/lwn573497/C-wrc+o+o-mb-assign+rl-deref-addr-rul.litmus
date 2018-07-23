@@ -1,0 +1,34 @@
+C C-WRC+o+o-mb-assign+rl-deref-addr-rul
+(*
+ * Forbid: Address dependency in P2 and mb/assign in P0, write-to-read
+ * relationship.  (Note: Reworked to apply to ARM as well as PowerPC.)
+ *)
+{
+z = 42;
+int *x = &z;
+y = 0;
+}
+
+P0(int *y)
+{
+	WRITE_ONCE(*y, 1);
+}
+
+P1(int *y, int **x)
+{
+	int r3;
+	r3 = READ_ONCE(*y);
+	smp_mb();
+	rcu_assign_pointer(*x, y);
+}
+
+P2(int **x)
+{
+	int *r1; int r2;
+	rcu_read_lock();
+	r1 = rcu_dereference(*x);
+	r2 = READ_ONCE(*r1);
+	rcu_read_unlock();
+}
+
+exists (1:r3=1 /\ 2:r1=y /\ 2:r2=0)

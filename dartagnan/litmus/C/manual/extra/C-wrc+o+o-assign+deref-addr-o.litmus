@@ -1,0 +1,27 @@
+C C-WRC+o+o-assign+deref-addr-o
+{
+b = 42;
+int *x = &b;
+y = 3;
+}
+
+P0(int *y)
+{
+	WRITE_ONCE(*y, 1);
+}
+
+P1(int *y, int **x)
+{
+	int r3;
+	r3 = READ_ONCE(*y);
+	rcu_assign_pointer(*x, y);
+}
+
+P2(int **x)
+{
+	int *r1; int r2;
+	r1 = rcu_dereference(*x);
+	r2 = READ_ONCE(*r1);
+}
+
+exists (1:r3=1 /\ 2:r1=y /\ 2:r2=3)

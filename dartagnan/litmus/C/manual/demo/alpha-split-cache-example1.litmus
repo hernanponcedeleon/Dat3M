@@ -1,0 +1,24 @@
+C alpha-split-cache-example1
+{
+int u = 0;
+int v = 0;
+int *p = &u;
+}
+
+P0(int **p, int *v)
+{
+	WRITE_ONCE(*v, 1);
+	smp_mb();
+	WRITE_ONCE(*p, v);
+}
+
+P1(int **p)
+{
+	int *r1;
+	int r2;
+
+	r1 = READ_ONCE(*p);
+	r2 = READ_ONCE(*r1);
+}
+
+exists (1:r1=v /\ 1:r2=0);
