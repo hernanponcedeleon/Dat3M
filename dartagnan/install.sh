@@ -35,9 +35,11 @@ src/dartagnan/parsers/utils/branch/BareIf.java \
 src/dartagnan/parsers/utils/ParserErrorListener.java \
 src/dartagnan/parsers/utils/ParsingException.java \
 src/dartagnan/parsers/utils/Utils.java \
+src/dartagnan/parsers/visitors/VisitorLitmusC.java \
 src/dartagnan/parsers/visitors/VisitorLitmusPPC.java \
 src/dartagnan/parsers/visitors/VisitorLitmusX86.java \
 src/dartagnan/parsers/ParserInterface.java \
+src/dartagnan/parsers/ParserLitmusC.java \
 src/dartagnan/parsers/ParserLitmusPPC.java \
 src/dartagnan/parsers/ParserLitmusX86.java \
 src/dartagnan/parsers/ParserResolver.java \
@@ -112,6 +114,10 @@ src/dartagnan/wmm/WmmInterface.java \
 src/dartagnan/wmm/WmmResolver.java \
 src/dartagnan/wmm/Wmm.java \
 src/porthos/Porthos.java \
+target/generated-sources/antlr4/dartagnan/LitmusCBaseVisitor.java \
+target/generated-sources/antlr4/dartagnan/LitmusCLexer.java \
+target/generated-sources/antlr4/dartagnan/LitmusCParser.java \
+target/generated-sources/antlr4/dartagnan/LitmusCVisitor.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCBaseVisitor.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCLexer.java \
 target/generated-sources/antlr4/dartagnan/LitmusPPCParser.java \
