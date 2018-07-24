@@ -5,21 +5,22 @@ package dartagnan;
 }
 
 main
-    :   header declaratorList threadList variableList? assertionFilter? assertionList? bottomComment? EOF
+    :   header variableDeclaratorList threadList variableList? assertionFilter? assertionList? bottomComment? EOF
     ;
 
 header
     :   'C' ~(LeftBrace)*
     ;
 
-declaratorList
+variableDeclaratorList
     :   LeftBrace (globalDeclarator Semi)* RightBrace (Semi)?
     ;
 
 globalDeclarator
-    :   genericVariable Assign returnExpression
-    |   genericVariableDeclarator Assign returnExpression
-    |   genericVariableDeclarator
+    :   typeSpecifier? variable (Assign initConstantValue)?                                                             # globalDeclaratorLocation
+    |   typeSpecifier? threadVariable (Assign initConstantValue)?                                                       # globalDeclaratorRegister
+    |   typeSpecifier? variable (Assign variable)?                                                                      # globalDeclaratorLocationLocation
+    |   typeSpecifier? threadVariable (Assign variable)?                                                                # globalDeclaratorRegisterLocation
     ;
 
 threadList
@@ -35,7 +36,7 @@ threadArguments
     ;
 
 expression
-    :   basicExpression Semi
+    :   seqExpression Semi
     |   ifExpression
     ;
 
@@ -49,73 +50,126 @@ elseExpression
     |   'else' LeftBrace expression* RightBrace
     ;
 
-basicExpression
-    :   variableDeclarator Assign returnExpression
-    |   variable Assign returnExpression
-    |   variableDeclarator
-    |   returnExpression
-    |   nonReturnExpression
+seqExpression
+    :   typeSpecifier? variable (Assign returnExpression)?                                                              # seqReturnExpression
+    |   nonReturnExpression                                                                                             # seqNonReturnExpression
     ;
 
 returnExpression
-    :   'ATOMIC_INIT' LeftParen returnExpression RightParen
+    :   'atomic_add_return' LeftParen returnExpression Comma variable RightParen                                        # reAtomicAddReturn
+    |   'atomic_add_return_relaxed' LeftParen returnExpression Comma variable RightParen                                # reAtomicAddReturnRelaxed
+    |   'atomic_add_return_acquire' LeftParen returnExpression Comma variable RightParen                                # reAtomicAddReturnAcquire
+    |   'atomic_add_return_release' LeftParen returnExpression Comma variable RightParen                                # reAtomicAddReturnRelease
 
-    |   'atomic_add_return' LeftParen returnExpression Comma variable RightParen
-    |   'atomic_add_unless' LeftParen variable Comma returnExpression Comma returnExpression RightParen
-    |   'atomic_cmpxchg' LeftParen variable Comma returnExpression Comma returnExpression RightParen
-    |   'atomic_dec_and_test' LeftParen variable RightParen
-    |   'atomic_read' LeftParen variable RightParen
-    |   'atomic_xchg_release' LeftParen variable Comma returnExpression RightParen
+    |   'atomic_sub_return' LeftParen returnExpression Comma variable RightParen                                        # reAtomicSubReturn
+    |   'atomic_sub_return_relaxed' LeftParen returnExpression Comma variable RightParen                                # reAtomicSubReturnRelaxed
+    |   'atomic_sub_return_acquire' LeftParen returnExpression Comma variable RightParen                                # reAtomicSubReturnAcquire
+    |   'atomic_sub_return_release' LeftParen returnExpression Comma variable RightParen                                # reAtomicSubReturnRelease
 
-    |   'cmpxchg' LeftParen variable Comma returnExpression Comma returnExpression RightParen
-    |   'cmpxchg_acquire' LeftParen variable Comma returnExpression Comma returnExpression RightParen
-    |   'xchg' LeftParen variable Comma returnExpression RightParen
-    |   'xchg_acquire' LeftParen variable Comma returnExpression RightParen
-    |   'xchg_relaxed' LeftParen variable Comma returnExpression RightParen
+    |   'atomic_inc_return' LeftParen variable RightParen                                                               # reAtomicIncReturn
+    |   'atomic_inc_return_relaxed' LeftParen variable RightParen                                                       # reAtomicIncReturnRelaxed
+    |   'atomic_inc_return_acquire' LeftParen variable RightParen                                                       # reAtomicIncReturnAcquire
+    |   'atomic_inc_return_release' LeftParen variable RightParen                                                       # reAtomicIncReturnRelease
 
-    |   'smp_load_acquire' LeftParen variable RightParen
+    |   'atomic_dec_return' LeftParen variable RightParen                                                               # reAtomicDecReturn
+    |   'atomic_dec_return_relaxed' LeftParen variable RightParen                                                       # reAtomicDecReturnRelaxed
+    |   'atomic_dec_return_acquire' LeftParen variable RightParen                                                       # reAtomicDecReturnAcquire
+    |   'atomic_dec_return_release' LeftParen variable RightParen                                                       # reAtomicDecReturnRelease
 
-    |   'rcu_dereference' LeftParen variable RightParen
+    |   'atomic_fetch_add' LeftParen returnExpression Comma variable RightParen                                         # reAtomicFetchAdd
+    |   'atomic_fetch_add_relaxed' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchAddRelaxed
+    |   'atomic_fetch_add_acquire' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchAddAcquire
+    |   'atomic_fetch_add_release' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchAddRelease
 
-    |   'READ_ONCE' LeftParen variable RightParen
+    |   'atomic_fetch_sub' LeftParen returnExpression Comma variable RightParen                                         # reAtomicFetchSub
+    |   'atomic_fetch_sub_relaxed' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchSubRelaxed
+    |   'atomic_fetch_sub_acquire' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchSubAcquire
+    |   'atomic_fetch_sub_release' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchSubRelease
 
-    |   'spin_trylock' LeftParen variable RightParen
+    |   'atomic_fetch_inc' LeftParen variable RightParen                                                                # reAtomicFetchInc
+    |   'atomic_fetch_inc_relaxed' LeftParen variable RightParen                                                        # reAtomicFetchIncRelaxed
+    |   'atomic_fetch_inc_acquire' LeftParen variable RightParen                                                        # reAtomicFetchIncAcquire
+    |   'atomic_fetch_inc_release' LeftParen variable RightParen                                                        # reAtomicFetchIncRelease
 
-    |   returnExpression Equal returnExpression
-    |   returnExpression NotEqual returnExpression
-    |   returnExpression Plus returnExpression
-    |   returnExpression Minus returnExpression
-    |   returnExpression And returnExpression
-    |   returnExpression Or returnExpression
+    |   'atomic_fetch_dec' LeftParen variable RightParen                                                                # reAtomicFetchDec
+    |   'atomic_fetch_dec_relaxed' LeftParen variable RightParen                                                        # reAtomicFetchDecRelaxed
+    |   'atomic_fetch_dec_acquire' LeftParen variable RightParen                                                        # reAtomicFetchDecAcquire
+    |   'atomic_fetch_dec_release' LeftParen variable RightParen                                                        # reAtomicFetchDecRelease
 
-    |   LeftParen returnExpression RightParen
-    |   cast returnExpression
-    |   variable
-    |   constantValue
+    |   'atomic_xchg' LeftParen variable Comma returnExpression RightParen                                              # reAtomicXchg
+    |   'atomic_xchg_relaxed' LeftParen variable Comma returnExpression RightParen                                      # reAtomicXchgRelaxed
+    |   'atomic_xchg_acquire' LeftParen variable Comma returnExpression RightParen                                      # reAtomicXchgAcquire
+    |   'atomic_xchg_release' LeftParen variable Comma returnExpression RightParen                                      # reAtomicXchgRelease
+
+    |   'xchg' LeftParen variable Comma returnExpression RightParen                                                     # reXchg
+    |   'xchg_relaxed' LeftParen variable Comma returnExpression RightParen                                             # reXchgRelaxed
+    |   'xchg_acquire' LeftParen variable Comma returnExpression RightParen                                             # reXchgAcquire
+    |   'xchg_release' LeftParen variable Comma returnExpression RightParen                                             # reXchgRelease
+
+    |   'atomic_cmpxchg' LeftParen variable Comma returnExpression Comma returnExpression RightParen                    # reAtomicCmpxchg
+    |   'atomic_cmpxchg_relaxed' LeftParen variable Comma returnExpression Comma returnExpression RightParen            # reAtomicCmpxchgRelaxed
+    |   'atomic_cmpxchg_acquire' LeftParen variable Comma returnExpression Comma returnExpression RightParen            # reAtomicCmpxchgAcquire
+    |   'atomic_cmpxchg_release' LeftParen variable Comma returnExpression Comma returnExpression RightParen            # reAtomicCmpxchgRelease
+
+    |   'cmpxchg' LeftParen variable Comma returnExpression Comma returnExpression RightParen                           # reCmpxchg
+    |   'cmpxchg_relaxed' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgRelaxed
+    |   'cmpxchg_acquire' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgAcquire
+    |   'cmpxchg_release' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgRelease
+
+    |   'atomic_sub_and_test' LeftParen returnExpression Comma variable RightParen                                      # reAtomicSubAndTest
+    |   'atomic_inc_and_test' LeftParen variable RightParen                                                             # reAtomicIncAndTest
+    |   'atomic_dec_and_test' LeftParen variable RightParen                                                             # reAtomicDecAndTest
+
+    |   'READ_ONCE' LeftParen variable RightParen                                                                       # reReadOnce
+    |   'atomic_read' LeftParen variable RightParen                                                                     # reAtomicRead
+    |   'rcu_dereference' LeftParen variable RightParen                                                                 # reRcuDerefence
+    |   'smp_load_acquire' LeftParen variable RightParen                                                                # reSmpLoadAcquire
+    |   'atomic_read_acquire' LeftParen variable RightParen                                                             # reAtomicReadAcquire
+
+    |   'atomic_add_unless' LeftParen variable Comma returnExpression Comma returnExpression RightParen                 # reAtomicAddUnless
+
+    |   'spin_trylock' LeftParen variable RightParen                                                                    # reSpinTryLock
+    |   'spin_is_locked' LeftParen variable RightParen                                                                  # reSpinIsLocked
+
+    |   returnExpression opCompare returnExpression                                                                     # reOpCompare
+    |   returnExpression opArith returnExpression                                                                       # reOpArith
+
+    |   LeftParen returnExpression RightParen                                                                           # reParenthesis
+    |   cast returnExpression                                                                                           # reCast
+    |   variable                                                                                                        # reVariable
+    |   constantValue                                                                                                   # reConst
     ;
 
 nonReturnExpression
-    :   'atomic_add' LeftParen returnExpression Comma variable RightParen
-    |   'atomic_inc' LeftParen variable RightParen
+    :   'atomic_add' LeftParen returnExpression Comma variable RightParen                                               # nreAtomicAdd
+    |   'atomic_sub' LeftParen returnExpression Comma variable RightParen                                               # nreAtomicSub
+    |   'atomic_inc' LeftParen variable RightParen                                                                      # nreAtomicInc
+    |   'atomic_dec' LeftParen variable RightParen                                                                      # nreAtomicDec
 
-    |   'smp_store_release' LeftParen variable Comma returnExpression RightParen
+    |   'WRITE_ONCE' LeftParen variable Comma returnExpression RightParen                                               # nreWriteOnce
+    |   'atomic_set' LeftParen variable Comma returnExpression RightParen                                               # nreAtomicSet
+    |   'smp_store_release' LeftParen variable Comma returnExpression RightParen                                        # nreSmpStoreRelease
+    |   'atomic_set_release' LeftParen variable Comma returnExpression RightParen                                       # nreAtomicSetRelease
 
-    |   'smp_mb' LeftParen RightParen
-    |   'smp_mb__before_atomic' LeftParen RightParen
-    |   'smp_mb__after_atomic' LeftParen RightParen
-    |   'smp_rmb' LeftParen RightParen
-    |   'smp_wmb' LeftParen RightParen
+    |   'smp_mb' LeftParen RightParen                                                                                   # nreSmpMb
+    |   'smp_rmb' LeftParen RightParen                                                                                  # nreSmpRmb
+    |   'smp_wmb' LeftParen RightParen                                                                                  # nreSmpWmb
+    |   'smp_read_barrier_depends' LeftParen RightParen                                                                 # nreSmpReadBarrierDepends
+    |   'smp_mb__before_atomic' LeftParen RightParen                                                                    # nreSmpMbBeforeAtomic
+    |   'smp_mb__after_atomic' LeftParen RightParen                                                                     # nreSmpMbAfterAtomic
+    |   'smp_mb__after_spinlock' LeftParen RightParen                                                                   # nreSmpMbAfterSpinlock
 
-    |   'rcu_read_lock' LeftParen RightParen
-    |   'rcu_read_unlock' LeftParen RightParen
-    |   'rcu_assign_pointer' LeftParen variable Comma returnExpression RightParen
-    |   'synchronize_rcu' LeftParen RightParen
+    |   'rcu_read_lock' LeftParen RightParen                                                                            # nreRcuReadLock
+    |   'rcu_read_unlock' LeftParen RightParen                                                                          # nreRcuReadUnlock
+    |   'synchronize_rcu' LeftParen RightParen                                                                          # nreSynchronizeRcu
+    |   'synchronize_rcu_expedited' LeftParen RightParen                                                                # nreSynchronizeRcuExpedited
 
-    |   'WRITE_ONCE' LeftParen variable Comma returnExpression RightParen
+    |   'rcu_assign_pointer' LeftParen variable Comma returnExpression RightParen                                       # nreRcuAssignPointer
+    |   'smp_store_mb' LeftParen variable Comma returnExpression RightParen                                             # nreSmpStoreMb
 
-    |   'spin_lock' LeftParen variable RightParen
-    |   'spin_unlock' LeftParen variable RightParen
-    |   'spin_unlock_wait' LeftParen variable RightParen
+    |   'spin_lock' LeftParen variable RightParen                                                                       # nreSpinLock
+    |   'spin_unlock' LeftParen variable RightParen                                                                     # nreSpinUnlock
+    |   'spin_unlock_wait' LeftParen variable RightParen                                                                # nreSpinUnlockWait
     ;
 
 variableList
@@ -132,12 +186,12 @@ assertionList
     ;
 
 assertion
-    :   LeftParen assertion RightParen                                          # assertionParenthesis
-    |   assertion AssertionAnd assertion                                        # assertionAnd
-    |   assertion AssertionOr assertion                                         # assertionOr
-    |   genericVariable (Assign | Equal) (returnExpression | threadVariable)    # assertionEqual
-    |   genericVariable NotEqual (returnExpression | threadVariable)            # assertionNotEqual
-    |   Tilde assertion                                                         # assertionNot
+    :   LeftParen assertion RightParen                                                                                  # assertionParenthesis
+    |   assertion AssertionAnd assertion                                                                                # assertionAnd
+    |   assertion AssertionOr assertion                                                                                 # assertionOr
+    |   genericVariable (Assign | Equal) (returnExpression | threadVariable)                                            # assertionEqual
+    |   genericVariable NotEqual (returnExpression | threadVariable)                                                    # assertionNotEqual
+    |   Tilde assertion                                                                                                 # assertionNot
     ;
 
 assertionListExpectationList
@@ -153,6 +207,22 @@ assertionListExpectationTest
     |   'cc'
     |   'optic'
     |   'default'
+    ;
+
+opCompare
+    :   Equal
+    |   NotEqual
+    |   LessEqual
+    |   GreaterEqual
+    |   Less
+    |   Greater
+    ;
+
+opArith
+    :   Plus
+    |   Minus
+    |   And
+    |   Or
     ;
 
 genericVariableDeclarator
@@ -192,6 +262,11 @@ threadIdentifier
     |   DigitSequence
     ;
 
+initConstantValue
+    :   'ATOMIC_INIT' LeftParen constantValue RightParen
+    |   constantValue
+    ;
+
 constantValue
     :   DigitSequence
     ;
@@ -220,7 +295,6 @@ atomicTypeSpecifier
 bottomComment
     :   LeftParen Star .*? Star RightParen
     ;
-
 
 Volatile
     :   'volatile'
@@ -255,10 +329,8 @@ RightBracket : ']';
 LeftBrace : '{';
 RightBrace : '}';
 
-LeftShift : '<<';
 LessEqual : '<=';
 Less : '<';
-RightShift : '>>';
 GreaterEqual : '>=';
 Greater : '>';
 
