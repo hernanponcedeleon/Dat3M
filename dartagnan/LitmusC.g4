@@ -50,8 +50,10 @@ elseExpression
     |   'else' LeftBrace expression* RightBrace
     ;
 
+// TODO: Some tests initialize variables without a type specifier, so it makes sence to reduce this to two options
 seqExpression
-    :   typeSpecifier? variable (Assign returnExpression)?                                                              # seqReturnExpression
+    :   typeSpecifier variable (Assign returnExpression)?                                                               # seqDeclarationReturnExpression
+    |   variable Assign returnExpression                                                                                # seqReturnExpression
     |   nonReturnExpression                                                                                             # seqNonReturnExpression
     ;
 
@@ -150,11 +152,12 @@ nonReturnExpression
     |   'atomic_set' LeftParen variable Comma returnExpression RightParen                                               # nreAtomicSet
     |   'smp_store_release' LeftParen variable Comma returnExpression RightParen                                        # nreSmpStoreRelease
     |   'atomic_set_release' LeftParen variable Comma returnExpression RightParen                                       # nreAtomicSetRelease
+    |   'rcu_assign_pointer' LeftParen variable Comma returnExpression RightParen                                       # nreRcuAssignPointer
+    |   'smp_store_mb' LeftParen variable Comma returnExpression RightParen                                             # nreSmpStoreMb
 
     |   'smp_mb' LeftParen RightParen                                                                                   # nreSmpMb
     |   'smp_rmb' LeftParen RightParen                                                                                  # nreSmpRmb
     |   'smp_wmb' LeftParen RightParen                                                                                  # nreSmpWmb
-    |   'smp_read_barrier_depends' LeftParen RightParen                                                                 # nreSmpReadBarrierDepends
     |   'smp_mb__before_atomic' LeftParen RightParen                                                                    # nreSmpMbBeforeAtomic
     |   'smp_mb__after_atomic' LeftParen RightParen                                                                     # nreSmpMbAfterAtomic
     |   'smp_mb__after_spinlock' LeftParen RightParen                                                                   # nreSmpMbAfterSpinlock
@@ -163,9 +166,6 @@ nonReturnExpression
     |   'rcu_read_unlock' LeftParen RightParen                                                                          # nreRcuReadUnlock
     |   'synchronize_rcu' LeftParen RightParen                                                                          # nreSynchronizeRcu
     |   'synchronize_rcu_expedited' LeftParen RightParen                                                                # nreSynchronizeRcuExpedited
-
-    |   'rcu_assign_pointer' LeftParen variable Comma returnExpression RightParen                                       # nreRcuAssignPointer
-    |   'smp_store_mb' LeftParen variable Comma returnExpression RightParen                                             # nreSmpStoreMb
 
     |   'spin_lock' LeftParen variable RightParen                                                                       # nreSpinLock
     |   'spin_unlock' LeftParen variable RightParen                                                                     # nreSpinUnlock

@@ -63,8 +63,9 @@ public class FilterUtils {
         put("Mb", "Mb");
         put("Before-atomic", "Before-atomic");
         put("After-atomic", "After-atomic");
-        put("Before-spinlock", "Before-spinlock");
         put("After-spinlock", "After-spinlock");
+        put("Rcu-lock", "Rcu-lock");
+        put("Rcu-unlock", "Rcu-unlock");
         put("Sync-rcu", "Sync-rcu");
 
     }};
