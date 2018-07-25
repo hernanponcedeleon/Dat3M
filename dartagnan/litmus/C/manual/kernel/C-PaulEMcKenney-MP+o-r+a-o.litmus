@@ -5,7 +5,6 @@ C C-PaulEMcKenney-MP+o-r+a-o.litmus
 {
 int x;
 int *p=&x;
-int * 1:r1;
 }
 
 P0(int **p, int *y)
@@ -16,7 +15,7 @@ P0(int **p, int *y)
 
 P1(int **p, int *y)
 {
-        int *r1; int r2;
+    int *r1; int r2;
 	r1 = smp_load_acquire(p);
 	r2 = READ_ONCE(*y);
 }
