@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
@@ -90,14 +85,22 @@ public class Wmm implements WmmInterface{
      */
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-
         Set<String> encodedRels = new HashSet<>();
+
+        // Encoded separately for performance reasons (the only derived relation which requires Local events).
+        // All other relations can reuse the same set of events without filtering all program events for each encoding.
+        Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
+        Relation rel = new RelInterSect(new RelLocTrans(new BasicRelation("idd")), RW, "data");
+        enc = ctx.mkAnd(enc, rel.encode(program.getEvents(), ctx, encodedRels));
+        addRelation(RW);
+
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
         }
         for (Map.Entry<String, Relation> relation : relations.entrySet()){
             enc = ctx.mkAnd(enc, relation.getValue().encode(program, ctx, encodedRels));
         }
+
         return enc;
     }
 
@@ -197,9 +200,7 @@ public class Wmm implements WmmInterface{
                     relation = new EmptyRel("0");
                     break;
                 case "data":
-                    Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    addRelation(RW);
-                    relation = new RelInterSect(new RelLocTrans(new BasicRelation("idd")), RW);
+                    relation = new BasicRelation("data");
                     break;
                 case "ctrlisync":
                     Relation isync = new RelFencerel("Isync", "isync");

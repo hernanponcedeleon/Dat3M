@@ -2,7 +2,6 @@ package dartagnan.wmm.relation;
 
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
-import dartagnan.program.event.Fence;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 
@@ -25,6 +24,6 @@ public class RelLocTrans extends RelTrans {
 
     @Override
     protected Collection<Event> getProgramEvents(Program program){
-        return program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Fence || e instanceof Local).collect(Collectors.toSet());
+        return program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
     }
 }

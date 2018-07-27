@@ -5,6 +5,9 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.Skip;
 import dartagnan.utils.PredicateUtils;
 
 import java.util.Collection;
@@ -112,7 +115,7 @@ public abstract class Relation {
     }
 
     protected Collection<Event> getProgramEvents(Program program){
-        return program.getEvents();
+        return program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Skip || e instanceof Fence).collect(Collectors.toSet());
     }
 
     protected BoolExpr doEncode(Collection<Event> events, Context ctx){
