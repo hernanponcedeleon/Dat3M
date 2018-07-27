@@ -189,9 +189,19 @@ assertion
     :   LeftParen assertion RightParen                                                                                  # assertionParenthesis
     |   assertion AssertionAnd assertion                                                                                # assertionAnd
     |   assertion AssertionOr assertion                                                                                 # assertionOr
-    |   genericVariable (Assign | Equal) (returnExpression | threadVariable)                                            # assertionEqual
-    |   genericVariable NotEqual (returnExpression | threadVariable)                                                    # assertionNotEqual
     |   Tilde assertion                                                                                                 # assertionNot
+    |   variable assertionOp constantValue                                                                              # assertionLocation
+    |   variable assertionOp threadVariable                                                                             # assertionLocationRegister
+    |   variable assertionOp variable                                                                                   # assertionLocationLocation
+    |   threadVariable assertionOp constantValue                                                                        # assertionRegister
+    |   threadVariable assertionOp threadVariable                                                                       # assertionRegisterRegister
+    |   threadVariable assertionOp variable                                                                             # assertionRegisterLocation
+    ;
+
+assertionOp
+    :   Assign
+    |   Equal
+    |   NotEqual
     ;
 
 assertionListExpectationList

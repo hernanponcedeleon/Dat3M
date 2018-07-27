@@ -3,6 +3,7 @@ package dartagnan.parsers.visitors;
 import dartagnan.LitmusCBaseVisitor;
 import dartagnan.LitmusCVisitor;
 import dartagnan.LitmusCParser;
+import dartagnan.asserts.*;
 import dartagnan.expression.*;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.Utils;
@@ -37,10 +38,8 @@ public class VisitorLitmusC
     public Object visitMain(LitmusCParser.MainContext ctx) {
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitThreadList(ctx.threadList());
-
-        // TODO: Implementation
-        //visitAssertionFilter(ctx.assertionFilter());
-        //visitAssertionList(ctx.assertionList());
+        visitAssertionFilter(ctx.assertionFilter());
+        visitAssertionList(ctx.assertionList());
 
         //System.out.println("\n\n" + ctx.getText());
         //System.out.println(program);
@@ -423,6 +422,118 @@ public class VisitorLitmusC
     public Thread visitNreSpinUnlockWait(LitmusCParser.NreSpinUnlockWaitContext ctx){
         // TODO: Implementation
         return new Skip();
+    }
+
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Assertions
+
+    @Override
+    public Object visitAssertionFilter(LitmusCParser.AssertionFilterContext ctx) {
+        // TODO: Implementation
+        return null;
+    }
+
+
+    @Override
+    public Object visitAssertionList(LitmusCParser.AssertionListContext ctx) {
+        if(ctx != null){
+            AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
+            if(ctx.AssertionForall() != null){
+                ass = new AssertNot(ass);
+            }
+
+            ass.setType(getAssertionType(ctx));
+            program.setAss(ass);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitAssertionParenthesis(LitmusCParser.AssertionParenthesisContext ctx) {
+        return visit(ctx.assertion());
+    }
+
+
+    @Override
+    public Object visitAssertionAnd(LitmusCParser.AssertionAndContext ctx) {
+        return new AssertCompositeAnd(
+                (AbstractAssert) visit(ctx.assertion(0)),
+                (AbstractAssert) visit(ctx.assertion(1))
+        );
+    }
+
+    @Override
+    public Object visitAssertionOr(LitmusCParser.AssertionOrContext ctx) {
+        return new AssertCompositeOr(
+                (AbstractAssert) visit(ctx.assertion(0)),
+                (AbstractAssert) visit(ctx.assertion(1))
+        );
+    }
+
+    @Override
+    public Object visitAssertionNot(LitmusCParser.AssertionNotContext ctx) {
+        return new AssertNot((AbstractAssert) visit(ctx.assertion()));
+    }
+
+    @Override
+    public Object visitAssertionLocation(LitmusCParser.AssertionLocationContext ctx) {
+        Location location = getLocation(visitVariable(ctx.variable()));
+        int value = Integer.parseInt(ctx.constantValue().getText());
+        return new AssertLocation(location, value);
+    }
+
+    @Override
+    public Object visitAssertionLocationRegister(LitmusCParser.AssertionLocationRegisterContext ctx) {
+        // TODO: Implementation
+        return null;
+    }
+
+    @Override
+    public Object visitAssertionLocationLocation(LitmusCParser.AssertionLocationLocationContext ctx) {
+        // TODO: Implementation
+        return null;
+    }
+
+    @Override
+    public Object visitAssertionRegister(LitmusCParser.AssertionRegisterContext ctx) {
+        Pair<String, String> data = visitThreadVariable(ctx.threadVariable());
+        String thread = data.getKey();
+        Register register = getOrCreateRegister(thread, data.getValue());
+        int value = Integer.parseInt(ctx.constantValue().getText());
+        return new AssertRegister(thread, register, value);
+    }
+
+    @Override
+    public Object visitAssertionRegisterRegister(LitmusCParser.AssertionRegisterRegisterContext ctx) {
+        // TODO: Implementation
+        return null;
+    }
+
+    @Override
+    public Object visitAssertionRegisterLocation(LitmusCParser.AssertionRegisterLocationContext ctx) {
+        // TODO: Implementation
+        return null;
+    }
+
+    private String getAssertionType(LitmusCParser.AssertionListContext ctx){
+        if(ctx.AssertionExists() != null){
+            return AbstractAssert.ASSERT_TYPE_EXISTS;
+        }
+
+        if(ctx.AssertionExistsNot() != null){
+            return AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
+        }
+
+        if(ctx.AssertionFinal() != null){
+            return AbstractAssert.ASSERT_TYPE_FINAL;
+        }
+
+        if(ctx.AssertionForall() != null){
+            return AbstractAssert.ASSERT_TYPE_FORALL;
+        }
+
+        throw new ParsingException("Unknown type of assertion clause");
     }
 
 
