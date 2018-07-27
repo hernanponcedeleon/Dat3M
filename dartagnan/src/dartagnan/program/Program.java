@@ -135,13 +135,11 @@ public class Program {
 			Thread t = iter.next();
             t.setCondRegs(new HashSet<Register>());
             t.setLastModMap(new LastModMap());
-			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> ((Load) e).getReg()).collect(Collectors.toSet());
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
+			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
+			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
-				if(reg != null) {
-					reg.setMainThread(t.tid);
-				}
+				reg.setMainThread(t.tid);
 			}
 		}
 	}
@@ -167,13 +165,11 @@ public class Program {
 			Thread t = iter.next();
             t.setCondRegs(new HashSet<Register>());
             t.setLastModMap(new LastModMap());
-			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> ((Load) e).getReg()).collect(Collectors.toSet());
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Store).map(e -> ((Store) e).getReg()).collect(Collectors.toSet()));
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> ((Local) e).getReg()).collect(Collectors.toSet()));
+			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
+			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
-				if(reg != null) {
-					reg.setMainThread(t.tid);
-				}
+				reg.setMainThread(t.tid);
 			}
 		}
 	}
