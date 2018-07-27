@@ -21,7 +21,7 @@ public class Write extends MemEvent {
 
 	public Write(Location loc, AExpr aExpr, String atomic){
 		this.val = aExpr;
-		this.reg = (Register)val;
+		this.reg = (val instanceof Register) ? (Register) val : null;
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;

@@ -24,7 +24,7 @@ public class Store extends MemEvent {
 
 	public Store(Location loc, AExpr val, String atomic) {
 		this.val = val;
-		this.reg = (Register) val;
+		this.reg = (val instanceof Register) ? (Register) val : null;
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
