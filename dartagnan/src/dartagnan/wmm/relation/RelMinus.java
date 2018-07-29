@@ -17,7 +17,7 @@ public class RelMinus extends BinaryRelation {
 
     public RelMinus(Relation r1, Relation r2) {
         super(r1, r2);
-        term = "(" + r1.getName() + " \\ " + r2.getName() + ")";
+        term = "(" + r1.getName() + "\\" + r2.getName() + ")";
         if(r2.containsRec){
             throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
         }
@@ -25,7 +25,7 @@ public class RelMinus extends BinaryRelation {
 
     public RelMinus(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
-        term = "(" + r1.getName() + " \\ " + r2.getName() + ")";
+        term = "(" + r1.getName() + "\\" + r2.getName() + ")";
         if(r2.containsRec){
             throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
         }
@@ -48,7 +48,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
             for (Event e2 : events) {
@@ -64,7 +65,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
             for (Event e2 : events) {

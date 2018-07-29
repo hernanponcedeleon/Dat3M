@@ -14,12 +14,15 @@ import java.util.Collection;
 
 public class RelRMW extends Relation {
 
+    protected int eventMask = EventRepository.EVENT_RMW_STORE;
+
     public RelRMW(){
         term = "rmw";
     }
 
     @Override
-    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(eventMask);
         BoolExpr enc = ctx.mkTrue();
         if(!events.isEmpty()){
             for(Event w : events){
@@ -33,12 +36,7 @@ public class RelRMW extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
-        return encodeBasic(events, ctx);
-    }
-
-    @Override
-    protected Collection<Event> getProgramEvents(Program program){
-        return program.getEventRepository().getEvents(EventRepository.EVENT_RMW_STORE);
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        return encodeBasic(program, ctx);
     }
 }

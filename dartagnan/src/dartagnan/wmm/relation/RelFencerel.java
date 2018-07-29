@@ -6,11 +6,9 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Fence;
-import dartagnan.program.event.MemEvent;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.Collection;
 
@@ -30,9 +28,9 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
-        Set<Event> mEvents = events.stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-        Set<Fence> barriers = events.stream().filter(e -> e instanceof Fence).map(e -> (Fence)e).collect(Collectors.toSet());
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> mEvents = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+        Collection<Fence> barriers = program.getEventRepository().getEvents(EventRepository.EVENT_FENCE).stream().map(e -> (Fence)e).collect(Collectors.toSet());
 
         BoolExpr enc = ctx.mkTrue();
 
@@ -66,12 +64,8 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
-        return encodeBasic(events, ctx);
-    }
-
-    protected Collection<Event> getProgramEvents(Program program){
-        return program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE);
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        return encodeBasic(program, ctx);
     }
 
     protected String getFenceName(){

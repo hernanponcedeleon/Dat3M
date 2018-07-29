@@ -22,7 +22,7 @@ public class PSO implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelFencerel("Mfence", "mfence"),
-			new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM")
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM").setEventMask(EventRepository.EVENT_MEMORY)
 	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {

@@ -39,10 +39,10 @@ public class Power implements WmmInterface {
 			new RelFencerel("Sync", "sync"),
 			new RelFencerel("Lwsync", "lwsync"),
 			new RelFencerel("Isync", "isync"),
-			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
-			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR"),
-			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR"),
-			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW")
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW").setEventMask(EventRepository.EVENT_MEMORY)
 	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {

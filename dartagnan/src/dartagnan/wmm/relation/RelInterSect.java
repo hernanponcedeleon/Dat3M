@@ -3,6 +3,7 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 
@@ -16,16 +17,17 @@ public class RelInterSect extends BinaryRelation {
 
     public RelInterSect(Relation r1, Relation r2) {
         super(r1, r2);
-        term = "(" + r1.getName() + " & " + r2.getName() + ")";
+        term = "(" + r1.getName() + "&" + r2.getName() + ")";
     }
 
     public RelInterSect(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
-        term = "(" + r1.getName() + " & " + r2.getName() + ")";
+        term = "(" + r1.getName() + "&" + r2.getName() + ")";
     }
 
     @Override
-    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc=ctx.mkTrue();
         for(Event e1 : events) {
             for(Event e2 : events) {
@@ -46,7 +48,8 @@ public class RelInterSect extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+    public BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc=ctx.mkTrue();
         for(Event e1 : events) {
             for(Event e2 : events) {

@@ -21,25 +21,25 @@ public class TSO implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelFencerel("Mfence", "mfence"),
-			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR")
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR").setEventMask(EventRepository.EVENT_MEMORY)
 	));
-	
+
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 
-        BoolExpr enc = satIntersection("rfe", "rf", "ext", events, ctx);
+		BoolExpr enc = satIntersection("rfe", "rf", "ext", events, ctx);
 		enc = ctx.mkAnd(enc, satIntersection("po-loc", "po", "loc", events, ctx));
-
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com", "(co+fr)", "rf", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("po-loc", "com", events, ctx));
-	    enc = ctx.mkAnd(enc, satUnion("com-tso", "(co+fr)", "rfe", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("com-tso", "(co+fr)", "rfe", events, ctx));
 		enc = ctx.mkAnd(enc, satMinus("po", "WR", events, ctx));
-	    enc = ctx.mkAnd(enc, satUnion("po-tso", "(po\\WR)", "mfence", events, ctx));
+		enc = ctx.mkAnd(enc, satUnion("po-tso", "(po\\WR)", "mfence", events, ctx));
 
-	    if(program.hasRMWEvents()){
-			relations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"));
-			relations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM"));
+		if(program.hasRMWEvents()){
+			relations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA").setEventMask(EventRepository.EVENT_MEMORY));
+			relations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM").setEventMask(EventRepository.EVENT_MEMORY));
+
 			enc = ctx.mkAnd(enc, new RelRMW().encode(program, ctx, null));
 			enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));
 			enc = ctx.mkAnd(enc, satIntersection("fre", "fr", "ext", events, ctx));
@@ -60,7 +60,7 @@ public class TSO implements WmmInterface {
 
 		return enc;
 	}
-	
+
 	public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
 		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 		BoolExpr enc = ctx.mkAnd(satAcyclic("(po-loc+com)", events, ctx), satAcyclic("ghb-tso", events, ctx));

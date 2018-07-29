@@ -26,10 +26,10 @@ public class Alpha implements WmmInterface {
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelFencerel("Mfence", "mfence"),
 			new RelFencerel("Isync", "isync"),
-			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
-			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR"),
-			new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM"),
-			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW")
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("M"), "RM").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW").setEventMask(EventRepository.EVENT_MEMORY)
 	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {

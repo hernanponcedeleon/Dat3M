@@ -96,7 +96,6 @@ src/dartagnan/wmm/relation/RelDummy.java \
 src/dartagnan/wmm/relation/RelFencerel.java \
 src/dartagnan/wmm/relation/RelInterSect.java \
 src/dartagnan/wmm/relation/RelInverse.java \
-src/dartagnan/wmm/relation/RelLocTrans.java \
 src/dartagnan/wmm/relation/RelMinus.java \
 src/dartagnan/wmm/relation/RelRMW.java \
 src/dartagnan/wmm/relation/RelSetIdentity.java \
