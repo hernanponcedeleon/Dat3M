@@ -3,6 +3,7 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 
@@ -31,19 +32,19 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
             if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
             encodedRels.add(this.getName());
         }
-        BoolExpr enc = r1.encode(events, ctx, encodedRels);
+        BoolExpr enc = r1.encode(program, ctx, encodedRels);
         boolean approx = Relation.Approx;
         Relation.Approx = false;
-        enc = ctx.mkAnd(enc, r2.encode(events, ctx, encodedRels));
+        enc = ctx.mkAnd(enc, r2.encode(program, ctx, encodedRels));
         Relation.Approx = approx;
-        return ctx.mkAnd(enc, doEncode(events, ctx));
+        return ctx.mkAnd(enc, doEncode(program, ctx));
     }
 
     @Override

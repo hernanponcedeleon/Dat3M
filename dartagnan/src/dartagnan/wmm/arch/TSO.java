@@ -5,39 +5,29 @@ import static dartagnan.wmm.Encodings.satCycle;
 import static dartagnan.wmm.Encodings.satCycleDef;
 import static dartagnan.wmm.EncodingsCAT.*;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import com.microsoft.z3.*;
 
 import dartagnan.program.*;
 import dartagnan.program.event.Event;
-import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.filter.FilterBasic;
-import dartagnan.wmm.relation.RelCartesian;
+import dartagnan.program.utils.EventRepository;
+import dartagnan.wmm.relation.*;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.axiom.Empty;
-import dartagnan.wmm.relation.BasicRelation;
-import dartagnan.wmm.relation.RelFencerel;
-import dartagnan.wmm.relation.RelRMW;
 
 public class TSO implements WmmInterface {
 
-	private Set<RelFencerel> fenceRelations = new HashSet<RelFencerel>(Arrays.asList(
-			new RelFencerel("Mfence", "mfence")
-	));
-
-	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
+	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
+			new RelFencerel("Mfence", "mfence"),
 			new RelCartesian(new FilterBasic("W"), new FilterBasic("R"), "WR")
 	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
-		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 
-		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
-		enc = ctx.mkAnd(enc, satIntersection("rfe", "rf", "ext", events, ctx));
+        BoolExpr enc = satIntersection("rfe", "rf", "ext", events, ctx);
 		enc = ctx.mkAnd(enc, satIntersection("po-loc", "po", "loc", events, ctx));
 
 		enc = ctx.mkAnd(enc, satUnion("co", "fr", events, ctx));
@@ -48,8 +38,8 @@ public class TSO implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satUnion("po-tso", "(po\\WR)", "mfence", events, ctx));
 
 	    if(program.hasRMWEvents()){
-			cartesianRelations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"));
-			cartesianRelations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM"));
+			relations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA"));
+			relations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM"));
 			enc = ctx.mkAnd(enc, new RelRMW().encode(program, ctx, null));
 			enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));
 			enc = ctx.mkAnd(enc, satIntersection("fre", "fr", "ext", events, ctx));
@@ -64,30 +54,30 @@ public class TSO implements WmmInterface {
 			enc = ctx.mkAnd(enc, satUnion("ghb-tso", "po-tso", "com-tso", events, ctx));
 		}
 
-		for(RelCartesian relation : cartesianRelations){
-			enc = ctx.mkAnd(enc, relation.encode(events, ctx, null));
+		for(Relation relation : relations){
+			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
 		}
 
 		return enc;
 	}
 	
 	public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
-		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 		BoolExpr enc = ctx.mkAnd(satAcyclic("(po-loc+com)", events, ctx), satAcyclic("ghb-tso", events, ctx));
 		if(program.hasRMWEvents()){
 			Empty rmw = new Empty(new BasicRelation("(rmw&(fre;coe))"));
-			enc = ctx.mkAnd(enc, rmw.Consistent(program.getEvents(), ctx));
+			enc = ctx.mkAnd(enc, rmw.Consistent(events, ctx));
 		}
 		return enc;
 	}
 
 	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
-		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 		BoolExpr enc = ctx.mkAnd(satCycleDef("(po-loc+com)", events, ctx), satCycleDef("ghb-tso", events, ctx));
 		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("(po-loc+com)", events, ctx), satCycle("ghb-tso", events, ctx)));
 		if(program.hasRMWEvents()){
 			Empty rmw = new Empty(new BasicRelation("(rmw&(fre;coe))"));
-			enc = ctx.mkAnd(enc, rmw.Inconsistent(program.getEvents(), ctx));
+			enc = ctx.mkAnd(enc, rmw.Inconsistent(events, ctx));
 		}
 		return enc;
 	}

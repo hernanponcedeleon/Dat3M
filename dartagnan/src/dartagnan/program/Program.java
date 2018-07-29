@@ -11,7 +11,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.event.*;
-import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
 
@@ -20,6 +20,7 @@ public class Program {
 	private String name;
 	private AbstractAssert ass;
 	private List<Thread> threads;
+	private EventRepository eventRepository = new EventRepository(this);
 
 	public Program(){
         this("");
@@ -36,10 +37,6 @@ public class Program {
 
     public void add(Thread t) {
 		threads.add(t);
-	}
-
-	public boolean hasRMWEvents(){
-		return getEvents().stream().anyMatch(e -> e instanceof RMWStore);
 	}
 	
 	public String toString() {
@@ -88,10 +85,12 @@ public class Program {
 		}
 		threads = unrolledThreads;
 		
-		Set<Location> locs = getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> ((MemEvent) e).getLoc()).collect(Collectors.toSet());
+		Set<Location> locs = eventRepository.getEvents(EventRepository.EVENT_MEMORY).stream()
+				.map(e -> ((MemEvent) e).getLoc()).collect(Collectors.toSet());
 		for(Location loc : locs) {
 			threads.add(new Init(loc));
 		}
+		eventRepository.clear();
 	}
 	
 	public void initialize(int steps) {
@@ -142,6 +141,7 @@ public class Program {
 				reg.setMainThread(t.tid);
 			}
 		}
+		eventRepository.clear();
 	}
 
 	public void optCompile(Integer firstEId, boolean ctrl, boolean leading) {
@@ -172,20 +172,16 @@ public class Program {
 				reg.setMainThread(t.tid);
 			}
 		}
+		eventRepository.clear();
 	}
-	
-	public Set<Event> getEvents() {
-		Set<Event> ret = new HashSet<Event>();
-		ListIterator<Thread> iter = threads.listIterator();
-		while (iter.hasNext()) {
-			ret.addAll(iter.next().getEvents());
-		}
-		return ret;
+
+	public EventRepository getEventRepository(){
+		return eventRepository;
 	}
-	
-	public Set<Event> getMemEvents() {
-		return getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-    }
+
+	public boolean hasRMWEvents(){
+		return eventRepository.getEvents(EventRepository.EVENT_RMW_STORE).size() > 0;
+	}
 	
 	private void setMainThread() {
 		ListIterator<Thread> iter = threads.listIterator();
@@ -259,9 +255,10 @@ public class Program {
 	
 	public BoolExpr encodeDF_RF(Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> loadEvents = getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
+		Set<Event> loadEvents = eventRepository.getEvents(EventRepository.EVENT_LOAD);
+		Set<Event> storeInitEvents = eventRepository.getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT);
 		for (Event r : loadEvents) {
-			Set<Event> storeSameLoc = getEvents().stream().filter(w -> (w instanceof Store || w instanceof Init) && ((MemEvent) w).getLoc() == ((Load) r).getLoc()).collect(Collectors.toSet());
+			Set<Event> storeSameLoc = storeInitEvents.stream().filter(w -> ((MemEvent) w).getLoc() == ((Load) r).getLoc()).collect(Collectors.toSet());
 			BoolExpr sameValue = ctx.mkTrue();
 			for (Event w : storeSameLoc) {
 				sameValue = ctx.mkAnd(sameValue, ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(((MemEvent) w).ssaLoc, ((Load) r).ssaLoc)));

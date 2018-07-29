@@ -67,6 +67,7 @@ src/dartagnan/program/Register.java \
 src/dartagnan/program/Seq.java  \
 src/dartagnan/program/Thread.java \
 src/dartagnan/program/While.java \
+src/dartagnan/program/utils/EventRepository.java \
 src/dartagnan/utils/Encodings.java \
 src/dartagnan/utils/GraphViz.java \
 src/dartagnan/utils/LastModMap.java \

@@ -8,6 +8,7 @@ import dartagnan.program.Program;
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
 
@@ -91,7 +92,7 @@ public class Wmm implements WmmInterface{
         // All other relations can reuse the same set of events without filtering all program events for each encoding.
         Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
         Relation rel = new RelInterSect(new RelLocTrans(new BasicRelation("idd")), RW, "data");
-        enc = ctx.mkAnd(enc, rel.encode(program.getEvents(), ctx, encodedRels));
+        enc = ctx.mkAnd(enc, rel.encode(program, ctx, encodedRels));
         addRelation(RW);
 
         for (Axiom ax : axioms) {
@@ -112,7 +113,7 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getMemEvents();
+        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkTrue();
         for (Axiom ax : axioms) {
             expr = ctx.mkAnd(expr, ax.Consistent(events, ctx));
@@ -128,7 +129,7 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getMemEvents();
+        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkFalse();
         for (Axiom ax : axioms) {
             expr = ctx.mkOr(expr, ax.Inconsistent(events, ctx));

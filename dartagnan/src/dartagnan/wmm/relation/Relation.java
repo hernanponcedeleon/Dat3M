@@ -5,13 +5,10 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
-import dartagnan.program.event.Fence;
-import dartagnan.program.event.MemEvent;
-import dartagnan.program.event.Skip;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.PredicateUtils;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -84,18 +81,14 @@ public abstract class Relation {
         return term;
     }
 
-    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
             if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
             encodedRels.add(this.getName());
         }
-        return doEncode(events, ctx);
-    }
-
-    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
-        return encode(getProgramEvents(program), ctx, encodedRels);
+        return doEncode(program, ctx);
     }
 
     protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
@@ -115,20 +108,20 @@ public abstract class Relation {
     }
 
     protected Collection<Event> getProgramEvents(Program program){
-        return program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Skip || e instanceof Fence).collect(Collectors.toSet());
+        return program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
     }
 
-    protected BoolExpr doEncode(Collection<Event> events, Context ctx){
+    protected BoolExpr doEncode(Program program, Context ctx){
         if(PredicateUtils.getUsePredicate()){
             if(Relation.Approx){
-                return encodePredicateApprox(events, ctx);
+                return encodePredicateApprox(getProgramEvents(program), ctx);
             }
-            return encodePredicateBasic(events, ctx);
+            return encodePredicateBasic(getProgramEvents(program), ctx);
         }
 
         if(Relation.Approx){
-            return encodeApprox(events, ctx);
+            return encodeApprox(getProgramEvents(program), ctx);
         }
-        return encodeBasic(events, ctx);
+        return encodeBasic(getProgramEvents(program), ctx);
     }
 }

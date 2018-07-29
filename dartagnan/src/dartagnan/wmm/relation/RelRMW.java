@@ -3,14 +3,14 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 
 import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class RelRMW extends Relation {
 
@@ -21,9 +21,8 @@ public class RelRMW extends Relation {
     @Override
     protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> rmwWrites = events.stream().filter(e -> e instanceof RMWStore).collect(Collectors.toSet());
-        if(!rmwWrites.isEmpty()){
-            for(Event w : rmwWrites){
+        if(!events.isEmpty()){
+            for(Event w : events){
                 Load r = ((RMWStore)w).getLoadEvent();
                 enc = ctx.mkAnd(enc, ctx.mkEq(r.executes(ctx), w.executes(ctx)));
                 enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge("rf", w, r, ctx)));
@@ -36,5 +35,10 @@ public class RelRMW extends Relation {
     @Override
     protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
         return encodeBasic(events, ctx);
+    }
+
+    @Override
+    protected Collection<Event> getProgramEvents(Program program){
+        return program.getEventRepository().getEvents(EventRepository.EVENT_RMW_STORE);
     }
 }
