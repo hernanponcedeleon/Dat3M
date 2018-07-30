@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
+import dartagnan.expression.AExpr;
 import dartagnan.expression.BExpr;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Skip;
@@ -18,7 +19,8 @@ import static dartagnan.utils.Utils.mergeMaps;
 import static dartagnan.utils.Utils.mergeMapLastMod;
 
 public class If extends Thread {
-	
+
+	private AExpr aPred;
 	private BExpr pred;
 	private Thread t1;
 	private Thread t2;
@@ -30,12 +32,21 @@ public class If extends Thread {
 		t1.incCondLevel();
 		t2.incCondLevel();
 	}
+
+	public If(AExpr aPred, Thread t1, Thread t2) {
+		this.aPred = aPred;
+		this.t1 = t1;
+		this.t2 = t2;
+		t1.incCondLevel();
+		t2.incCondLevel();
+	}
 	
 	public String toString() {
+		String predicateString = pred != null ? pred.toString() : aPred.toString();
 		if (t2 instanceof Skip)
-			return String.format("%sif %s {\n%s\n%s}", nTimesCondLevel(), pred, t1, nTimesCondLevel());
+			return String.format("%sif %s {\n%s\n%s}", nTimesCondLevel(), predicateString, t1, nTimesCondLevel());
 		else
-			return String.format("%sif %s {\n%s\n%s}\n%selse {\n%s\n%s}", nTimesCondLevel(), pred, t1, nTimesCondLevel(), nTimesCondLevel(), t2, nTimesCondLevel());
+			return String.format("%sif %s {\n%s\n%s}\n%selse {\n%s\n%s}", nTimesCondLevel(), predicateString, t1, nTimesCondLevel(), nTimesCondLevel(), t2, nTimesCondLevel());
 	}
 
 	private String nTimesCondLevel() {
@@ -67,7 +78,11 @@ public class If extends Thread {
 	public void setCondRegs(Set<Register> setRegs) {
 		Set<Register> newSetRegs = new HashSet<Register>();
 		newSetRegs.addAll(setRegs);
-		newSetRegs.addAll(pred.getRegs());
+		if(pred != null){
+			newSetRegs.addAll(pred.getRegs());
+		} else {
+			newSetRegs.addAll(aPred.getRegs());
+		}
 		t1.setCondRegs(newSetRegs);
 		t2.setCondRegs(newSetRegs);
 	}
@@ -113,12 +128,19 @@ public class If extends Thread {
 	}
 	
 	public If clone() {
-		BExpr newPred = pred.clone();
 		Thread newT1 = t1.clone();
 		newT1.decCondLevel();
 		Thread newT2 = t2.clone();
 		newT2.decCondLevel();
-		If newIf = new If(newPred, newT1, newT2);
+
+		If newIf;
+		if(pred != null){
+			BExpr newPred = pred.clone();
+			newIf = new If(newPred, newT1, newT2);
+		} else {
+			AExpr newPred = aPred.clone();
+			newIf = new If(newPred, newT1, newT2);
+		}
 		newIf.condLevel = condLevel;
 		return newIf;
 	}
@@ -156,7 +178,12 @@ public class If extends Thread {
 	}
 	
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		myGuard = pred.toZ3(map, ctx);
+		if(pred != null){
+			myGuard = pred.toZ3(map, ctx);
+		} else {
+			myGuard = aPred.toZ3Boolean(map, ctx);
+		}
+
 		if(mainThread == null){
 			System.out.println(String.format("Check encodeDF for %s", this));
 			return null;
@@ -164,8 +191,16 @@ public class If extends Thread {
 		else {
 			MapSSA map1 = map.clone();
 			MapSSA map2 = map.clone();
-			BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), pred.toZ3(map, ctx)),
-									ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(pred.toZ3(map, ctx))));			
+
+			BoolExpr enc;
+			if(pred != null){
+				enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), pred.toZ3(map, ctx)),
+						ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(pred.toZ3(map, ctx))));
+			} else {
+				enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), aPred.toZ3Boolean(map, ctx)),
+						ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(aPred.toZ3Boolean(map, ctx))));
+			}
+
 			Pair<BoolExpr, MapSSA> p1 = t1.encodeDF(map1, ctx);
 			enc = ctx.mkAnd(enc, p1.getFirst());
 			Pair<BoolExpr, MapSSA> p2 = t2.encodeDF(map2, ctx);

@@ -46,6 +46,10 @@ public class AExpr {
 		return null;
 	}
 
+	public BoolExpr toZ3Boolean(MapSSA map, Context ctx) throws Z3Exception {
+		return ctx.mkGt(toZ3(map, ctx), ctx.mkInt(0));
+	}
+
 	public Set<Register> getRegs() {
 		Set<Register> setRegs = new HashSet<Register>();
 		setRegs.addAll(lhs.getRegs());

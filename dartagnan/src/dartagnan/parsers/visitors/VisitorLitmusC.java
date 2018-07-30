@@ -133,16 +133,9 @@ public class VisitorLitmusC
     @Override
     public Thread visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
         Thread evalThread = (Thread)ctx.returnExpression().accept(this);
-
-        // TODO: AExpr to BExpr conversion
-        //------
-        AExpr temp = returnStack.pop();
-        BExpr boolExp = new BConst(true);
-        //------
-
         Thread t1 = visitExpressionSequence(ctx);
         Thread t2 = ctx.elseExpression() == null ? new Skip() : visitExpressionSequence(ctx.elseExpression());
-        Thread result = new If(boolExp, t1, t2);
+        Thread result = new If(returnStack.pop(), t1, t2);
         if(evalThread != null){
             result = new Seq(evalThread, result);
         }
