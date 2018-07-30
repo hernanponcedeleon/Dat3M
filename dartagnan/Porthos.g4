@@ -180,8 +180,8 @@ assertionType returns [String t]
 
 assertion returns [AbstractAssert ass]
     : '(' a = assertion ')' {$ass = $a.ass;}
-    | a1 = assertion '&&' a2 = assertion {$ass = new AssertCompositeAnd($a1.ass, $a2.ass);}
-    | a1 = assertion '||' a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
+    | a1 = assertion AMP AMP a2 = assertion {$ass = new AssertCompositeAnd($a1.ass, $a2.ass);}
+    | a1 = assertion BAR BAR a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
     | l = location '=' value = DIGIT{
         Location loc = $l.loc;
         $ass = new AssertLocation(loc, Integer.parseInt($value.getText()));
@@ -219,7 +219,7 @@ program [String name] returns [Program p]:
 ///////////////////////////////////////////////////////////////////////////////////////
 
 COMP_OP : EQ | NEQ | LEQ | LT | GEQ | GT;
-ARITH_OP : ADD | SUB | MULT | DIV | MOD | XOR ;
+ARITH_OP : ADD | SUB | MULT | DIV | MOD | AMP | BAR | XOR ;
 BOOL_OP : AND | OR; 
 
 DIGIT : [0-9]+;
@@ -244,6 +244,8 @@ SUB : '-';
 MULT : '*';
 DIV : '/';
 MOD : '%';
+AMP : '&';
+BAR : '|';
 AND : 'and';
 OR : 'or';
 XOR : 'xor';
