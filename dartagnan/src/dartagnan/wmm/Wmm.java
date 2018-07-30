@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
@@ -13,6 +8,7 @@ import dartagnan.program.Program;
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
 
@@ -90,8 +86,8 @@ public class Wmm implements WmmInterface{
      */
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-
         Set<String> encodedRels = new HashSet<>();
+
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
         }
@@ -109,7 +105,7 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getMemEvents();
+        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkTrue();
         for (Axiom ax : axioms) {
             expr = ctx.mkAnd(expr, ax.Consistent(events, ctx));
@@ -125,7 +121,7 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getMemEvents();
+        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkFalse();
         for (Axiom ax : axioms) {
             expr = ctx.mkOr(expr, ax.Inconsistent(events, ctx));
@@ -198,8 +194,10 @@ public class Wmm implements WmmInterface{
                     break;
                 case "data":
                     Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
+                    Relation iddInv = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
                     addRelation(RW);
-                    relation = new RelInterSect(new RelLocTrans(new BasicRelation("idd")), RW);
+                    addRelation(iddInv);
+                    relation = new RelInterSect(iddInv, RW, "data");
                     break;
                 case "ctrlisync":
                     Relation isync = new RelFencerel("Isync", "isync");

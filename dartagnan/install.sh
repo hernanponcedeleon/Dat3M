@@ -71,6 +71,7 @@ src/dartagnan/program/Register.java \
 src/dartagnan/program/Seq.java  \
 src/dartagnan/program/Thread.java \
 src/dartagnan/program/While.java \
+src/dartagnan/program/utils/EventRepository.java \
 src/dartagnan/utils/Encodings.java \
 src/dartagnan/utils/GraphViz.java \
 src/dartagnan/utils/LastModMap.java \
@@ -99,7 +100,6 @@ src/dartagnan/wmm/relation/RelDummy.java \
 src/dartagnan/wmm/relation/RelFencerel.java \
 src/dartagnan/wmm/relation/RelInterSect.java \
 src/dartagnan/wmm/relation/RelInverse.java \
-src/dartagnan/wmm/relation/RelLocTrans.java \
 src/dartagnan/wmm/relation/RelMinus.java \
 src/dartagnan/wmm/relation/RelRMW.java \
 src/dartagnan/wmm/relation/RelSetIdentity.java \

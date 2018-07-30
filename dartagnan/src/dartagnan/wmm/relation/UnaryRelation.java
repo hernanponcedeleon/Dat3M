@@ -3,7 +3,7 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
+import dartagnan.program.Program;
 
 import java.util.Collection;
 
@@ -27,14 +27,14 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
             if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
             encodedRels.add(this.getName());
         }
-        BoolExpr enc = r1.encode(events, ctx, encodedRels);
-        return ctx.mkAnd(enc, doEncode(events, ctx));
+        BoolExpr enc = r1.encode(program, ctx, encodedRels);
+        return ctx.mkAnd(enc, doEncode(program, ctx));
     }
 }

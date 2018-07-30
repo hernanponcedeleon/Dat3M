@@ -15,37 +15,33 @@ import static dartagnan.wmm.Encodings.satCycle;
 import static dartagnan.wmm.EncodingsCAT.satTransIDL;
 import static dartagnan.wmm.EncodingsCAT.satTransRefIDL;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 
 import dartagnan.program.event.Event;
-import dartagnan.program.event.Local;
-import dartagnan.program.event.MemEvent;
 import dartagnan.program.Program;
-import dartagnan.program.event.Skip;
 import dartagnan.program.event.filter.FilterBasic;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.RelFencerel;
+import dartagnan.wmm.relation.Relation;
 
 public class ARM implements WmmInterface {
 
-	private Set<RelFencerel> fenceRelations = new HashSet<RelFencerel>(Arrays.asList(
+	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelFencerel("Isb", "isb"),
-			new RelFencerel("Ish", "ish")
-	));
-
-	private Set<RelCartesian> cartesianRelations = new HashSet<>(Arrays.asList(
-			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW"),
-			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR"),
-			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW")
+			new RelFencerel("Ish", "ish"),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR").setEventMask(EventRepository.EVENT_MEMORY),
+			new RelCartesian(new FilterBasic("W"), new FilterBasic("W"), "WW").setEventMask(EventRepository.EVENT_MEMORY)
 	));
 	
 	public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
@@ -53,12 +49,12 @@ public class ARM implements WmmInterface {
 			throw new RuntimeException("RMW is not implemented for ARM");
 		}
 
-		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		Set<Event> eventsL = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Local).collect(Collectors.toSet());
-		Set<Event> eventsS = program.getEvents().stream().filter(e -> e instanceof MemEvent || e instanceof Skip).collect(Collectors.toSet());
+		EventRepository eventRepository = program.getEventRepository();
+		Set<Event> events = eventRepository.getEvents(EventRepository.EVENT_MEMORY);
+		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> eventsS = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
 
-		BoolExpr enc = RelFencerel.encodeBatch(program, ctx, fenceRelations);
-		enc = ctx.mkAnd(enc, satIntersection("ctrlisb", "ctrl", "isb", eventsS, ctx));
+		BoolExpr enc = satIntersection("ctrlisb", "ctrl", "isb", eventsS, ctx);
 		enc = ctx.mkAnd(enc, satIntersection("rfe", "rf", "ext", events, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("rfi", "rf", "int", events, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));
@@ -129,15 +125,15 @@ public class ARM implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satComp("(fre;prop)", "(hb-arm)*", events, ctx));
 	    enc = ctx.mkAnd(enc, satUnion("co", "prop", events, ctx));
 
-		for(RelCartesian relation : cartesianRelations){
-			enc = ctx.mkAnd(enc, relation.encode(events, ctx, null));
+		for(Relation relation : relations){
+			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
 		}
 
 	    return enc;
 	}
 	
 	public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
-		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 	    return ctx.mkAnd(satAcyclic("hb-arm", events, ctx),
 	    				satIrref("((fre;prop);(hb-arm)*)", events, ctx),
 	    				satAcyclic("(co+prop)", events, ctx),
@@ -145,7 +141,7 @@ public class ARM implements WmmInterface {
 	}
 
 	public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
-		Set<Event> events = program.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 		BoolExpr enc = ctx.mkAnd(satCycleDef("hb-arm", events, ctx), 
 								satCycleDef("(co+prop)", events, ctx),
 								satCycleDef("(po-loc+com)", events, ctx));

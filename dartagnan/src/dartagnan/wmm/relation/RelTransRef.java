@@ -3,6 +3,7 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 
@@ -25,7 +26,8 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
             for (Event e2 : events) {
@@ -54,7 +56,8 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         BoolExpr orclose1 = ctx.mkTrue();
         BoolExpr orclose2 = ctx.mkTrue();

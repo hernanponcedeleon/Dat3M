@@ -3,8 +3,10 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
+import dartagnan.program.utils.EventRepository;
 
 import java.util.Collection;
 
@@ -13,6 +15,7 @@ import static dartagnan.utils.Utils.edge;
 public class RelSetIdentity extends Relation {
 
     protected FilterAbstract filter;
+    protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE;
 
     public RelSetIdentity(FilterAbstract filter) {
         this.filter = filter;
@@ -26,7 +29,8 @@ public class RelSetIdentity extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         for (Event e : events) {
             if(filter.filter(e)){
@@ -39,7 +43,7 @@ public class RelSetIdentity extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
-        return encodeBasic(events, ctx);
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        return encodeBasic(program, ctx);
     }
 }

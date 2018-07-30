@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.AConst;
+import dartagnan.expression.AExpr;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.filter.FilterUtils;
@@ -19,23 +19,12 @@ import static dartagnan.utils.Utils.ssaLoc;
 
 public class Store extends MemEvent {
 
+	protected AExpr val;
 	protected Register reg;
-	protected AConst val;
 
-	public Store(Location loc, Register reg, String atomic) {
-		this.reg = reg;
-		this.loc = loc;
-		this.atomic = atomic;
-		this.condLevel = 0;
-		addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_MEMORY,
-				FilterUtils.EVENT_TYPE_WRITE
-		);
-	}
-
-	public Store(Location loc, AConst val, String atomic) {
+	public Store(Location loc, AExpr val, String atomic) {
 		this.val = val;
+		this.reg = (val instanceof Register) ? (Register) val : null;
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
@@ -51,9 +40,6 @@ public class Store extends MemEvent {
 	}
 	
 	public String toString() {
-		if(reg != null){
-            return String.format("%s%s := %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, reg);
-		}
         return String.format("%s%s := %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, val);
 	}
 
@@ -67,15 +53,9 @@ public class Store extends MemEvent {
 	}
 	
 	public Store clone() {
-        Store newStore;
         Location newLoc = loc.clone();
-		if(reg != null){
-            Register newReg = reg.clone();
-            newStore = new Store(newLoc, newReg, atomic);
-        } else {
-            AConst newVal = val.clone();
-            newStore = new Store(newLoc, newVal, atomic);
-        }
+        AExpr newVal = val.clone();
+		Store newStore = new Store(newLoc, newVal, atomic);
 		newStore.condLevel = condLevel;
 		newStore.setHLId(getHLId());
 		newStore.setUnfCopy(getUnfCopy());

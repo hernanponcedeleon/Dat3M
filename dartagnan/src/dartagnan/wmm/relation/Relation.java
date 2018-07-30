@@ -4,11 +4,10 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
-import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.PredicateUtils;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -27,6 +26,7 @@ public abstract class Relation {
     protected String term;
     protected boolean containsRec;
     protected boolean isNamed;
+    protected int eventMask = EventRepository.EVENT_MEMORY;
 
     /**
      * Creates a relation with an automatically generated identifier.
@@ -40,6 +40,11 @@ public abstract class Relation {
     public Relation(String name) {
         this.name = name;
         isNamed = true;
+    }
+
+    public Relation setEventMask(int mask){
+        this.eventMask = mask;
+        return this;
     }
 
     /**
@@ -81,51 +86,43 @@ public abstract class Relation {
         return term;
     }
 
-    public BoolExpr encode(Collection<Event> events, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
             if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
             encodedRels.add(this.getName());
         }
-        return doEncode(events, ctx);
+        return doEncode(program, ctx);
     }
 
-    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
-        return encode(getProgramEvents(program), ctx, encodedRels);
-    }
-
-    protected BoolExpr encodeBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
         throw new RuntimeException("Method encodeBasic is not implemented for " + getClass().getName());
     }
 
-    protected BoolExpr encodeApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
         throw new RuntimeException("Method encodeApprox is not implemented for " + getClass().getName());
     }
 
-    protected BoolExpr encodePredicateBasic(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
         throw new RuntimeException("Method encodePredicateBasic is not implemented for " + getClass().getName());
     }
 
-    protected BoolExpr encodePredicateApprox(Collection<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
         throw new RuntimeException("Method encodePredicateApprox is not implemented for " + getClass().getName());
     }
 
-    protected Collection<Event> getProgramEvents(Program program){
-        return program.getEvents();
-    }
-
-    protected BoolExpr doEncode(Collection<Event> events, Context ctx){
+    protected BoolExpr doEncode(Program program, Context ctx){
         if(PredicateUtils.getUsePredicate()){
             if(Relation.Approx){
-                return encodePredicateApprox(events, ctx);
+                return encodePredicateApprox(program, ctx);
             }
-            return encodePredicateBasic(events, ctx);
+            return encodePredicateBasic(program, ctx);
         }
 
         if(Relation.Approx){
-            return encodeApprox(events, ctx);
+            return encodeApprox(program, ctx);
         }
-        return encodeBasic(events, ctx);
+        return encodeBasic(program, ctx);
     }
 }
