@@ -13,14 +13,14 @@ import java.util.Collection;
  *
  * @author Florian Furbach
  */
-public class RelInterSect extends BinaryRelation {
+public class RelIntersection extends BinaryRelation {
 
-    public RelInterSect(Relation r1, Relation r2) {
+    public RelIntersection(Relation r1, Relation r2) {
         super(r1, r2);
         term = "(" + r1.getName() + "&" + r2.getName() + ")";
     }
 
-    public RelInterSect(Relation r1, Relation r2, String name) {
+    public RelIntersection(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = "(" + r1.getName() + "&" + r2.getName() + ")";
     }

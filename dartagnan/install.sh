@@ -94,7 +94,7 @@ src/dartagnan/wmm/relation/RelCartesian.java \
 src/dartagnan/wmm/relation/RelComposition.java \
 src/dartagnan/wmm/relation/RelDummy.java \
 src/dartagnan/wmm/relation/RelFencerel.java \
-src/dartagnan/wmm/relation/RelInterSect.java \
+src/dartagnan/wmm/relation/RelIntersection.java \
 src/dartagnan/wmm/relation/RelInverse.java \
 src/dartagnan/wmm/relation/RelMinus.java \
 src/dartagnan/wmm/relation/RelRMW.java \

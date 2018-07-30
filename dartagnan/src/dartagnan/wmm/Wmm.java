@@ -166,25 +166,25 @@ public class Wmm implements WmmInterface{
         } else {
             switch (name){
                 case "rfe":
-                    relation = new RelInterSect(new BasicRelation("rf"), new BasicRelation("ext"), "rfe");
+                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("ext"), "rfe");
                     break;
                 case "rfi":
-                    relation = new RelInterSect(new BasicRelation("rf"), new BasicRelation("int"), "rfi");
+                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("int"), "rfi");
                     break;
                 case "coe":
-                    relation = new RelInterSect(new BasicRelation("co"), new BasicRelation("ext"), "coe");
+                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("ext"), "coe");
                     break;
                 case "coi":
-                    relation = new RelInterSect(new BasicRelation("co"), new BasicRelation("int"), "coi");
+                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("int"), "coi");
                     break;
                 case "fre":
-                    relation = new RelInterSect(new BasicRelation("fr"), new BasicRelation("ext"), "fre");
+                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("ext"), "fre");
                     break;
                 case "fri":
-                    relation = new RelInterSect(new BasicRelation("fr"), new BasicRelation("int"), "fri");
+                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("int"), "fri");
                     break;
                 case "po-loc":
-                    relation = new RelInterSect(new BasicRelation("po"), new BasicRelation("loc"), "po-loc");
+                    relation = new RelIntersection(new BasicRelation("po"), new BasicRelation("loc"), "po-loc");
                     break;
                 case "addr":
                     relation = new EmptyRel("addr");
@@ -194,20 +194,20 @@ public class Wmm implements WmmInterface{
                     break;
                 case "data":
                     Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    Relation iddInv = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+                    Relation iddTrans = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
                     addRelation(RW);
-                    addRelation(iddInv);
-                    relation = new RelInterSect(iddInv, RW, "data");
+                    addRelation(iddTrans);
+                    relation = new RelIntersection(iddTrans, RW, "data");
                     break;
                 case "ctrlisync":
                     Relation isync = new RelFencerel("Isync", "isync");
                     addRelation(isync);
-                    relation = new RelInterSect(new BasicRelation("ctrl"), isync, "ctrlisync");
+                    relation = new RelIntersection(new BasicRelation("ctrl"), isync, "ctrlisync");
                     break;
                 case "ctrlisb":
                     Relation isb = new RelFencerel("Isb", "isb");
                     addRelation(isb);
-                    relation = new RelInterSect(new BasicRelation("ctrl"), isb, "ctrlisb");
+                    relation = new RelIntersection(new BasicRelation("ctrl"), isb, "ctrlisb");
                     break;
                 case "rmw":
                     relation = new RelRMW();

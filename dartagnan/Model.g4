@@ -135,7 +135,7 @@ expression returns [Object value]
         }
     |   e1 = expression AMP e2 = expression {
             if($e1.value instanceof Relation && $e2.value instanceof Relation){
-                $value = new RelInterSect((Relation)$e1.value, (Relation)$e2.value);
+                $value = new RelIntersection((Relation)$e1.value, (Relation)$e2.value);
             } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
                 $value = new FilterIntersection((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
             } else {
