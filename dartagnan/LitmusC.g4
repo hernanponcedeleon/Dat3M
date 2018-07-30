@@ -187,9 +187,9 @@ assertionList
 
 assertion
     :   LeftParen assertion RightParen                                                                                  # assertionParenthesis
+    |   Tilde assertion                                                                                                 # assertionNot
     |   assertion AssertionAnd assertion                                                                                # assertionAnd
     |   assertion AssertionOr assertion                                                                                 # assertionOr
-    |   Tilde assertion                                                                                                 # assertionNot
     |   variable assertionOp constantValue                                                                              # assertionLocation
     |   variable assertionOp threadVariable                                                                             # assertionLocationRegister
     |   variable assertionOp variable                                                                                   # assertionLocationLocation
