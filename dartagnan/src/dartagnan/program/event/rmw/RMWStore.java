@@ -7,7 +7,7 @@ import dartagnan.program.event.Store;
 
 public class RMWStore extends Store {
 
-    private Load loadEvent;
+    protected Load loadEvent;
 
     public RMWStore(Load loadEvent, Location loc, AExpr val, String atomic) {
         super(loc, val, atomic);

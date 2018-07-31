@@ -64,18 +64,18 @@ public class Store extends MemEvent {
 
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
 		if(mainThread == null){
-			System.out.println(String.format("Check encodeDF for %s", this));
-			return null;
+			throw new RuntimeException("Main thread is not set in " + this);
 		}
-		else {
-			Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx); 
-			this.ssaLoc = z3Loc;
-			if(reg != null){
-                Expr z3Reg = ssaReg(reg, map.get(reg), ctx);
-                return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, z3Reg)), map);
-            } else {
-                return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, ctx.mkInt(val.toString()))), map);
-            }
-		}		
+
+		Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
+		this.ssaLoc = z3Loc;
+		return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, encodeValue(map, ctx, reg, val))), map);
+	}
+
+	protected Expr encodeValue(MapSSA map, Context ctx, Register r, AExpr v){
+		if(r != null){
+			return ssaReg(r, map.get(r), ctx);
+		}
+		return ctx.mkInt(v.toString());
 	}
 }
