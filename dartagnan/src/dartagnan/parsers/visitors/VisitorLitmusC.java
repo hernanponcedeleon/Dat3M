@@ -162,45 +162,27 @@ public class VisitorLitmusC
     }
 
     public Thread visitSeqReturnExpression(LitmusCParser.SeqReturnExpressionContext ctx){
+        Thread t = (Thread)ctx.returnExpression().accept(this);
         String varName = visitVariable(ctx.variable());
+        Thread result = null;
 
         Register register = getRegister(currentThread, varName);
-        if(register != null){
-            Thread t = (Thread)ctx.returnExpression().accept(this);
-            Thread result = new Local(register, returnStack.pop());
-            if(t != null){
-                result = new Seq(t, result);
+        if(register == null){
+            Location location = getLocation(varName);
+            if(location != null){
+                result = new Write(location, returnStack.pop(), "_rx");
             }
-            return result;
         }
 
-        Location location = getLocation(varName);
-        if(location != null){
-            Thread t = (Thread)ctx.returnExpression().accept(this);
-            Thread result;
-
-            // TODO: Constructor for class Write with AExpr ----------
-            AExpr retValue = returnStack.pop();
-            if(retValue instanceof Register){
-                result = new Write(location, (Register)retValue, "_rx");
-            } else if(retValue instanceof AConst){
-                result = new Write(location, (AConst) retValue, "_rx");
-            } else {
-                throw new RuntimeException("Check retValue");
+        if(result == null){
+            if(register == null){
+                register = getOrCreateRegister(currentThread, varName);
             }
-            // ---------------------------------------------
-
-            if(t != null){
-                result = new Seq(t, result);
-            }
-            return result;
+            result = new Local(register, returnStack.pop());
         }
 
-        register = getOrCreateRegister(currentThread, varName);
-        Thread t = (Thread)ctx.returnExpression().accept(this);
-        Thread result = new Local(register, returnStack.pop());
         if(t != null) {
-            result = new Seq(t, result);
+            return new Seq(t, result);
         }
         return result;
     }
@@ -224,8 +206,10 @@ public class VisitorLitmusC
     // ----------------------------------------------------------------------------------------------------------------
     // Return expressions (all other return expressions are reduced to these ones)
 
-    // TODO: Draft, review required, add filters to RMW events, create a clonable RMW class for this RMW
+    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, AExpr value, String op, String memoryOrder){
+        throw new ParsingException("visitAtomicOpReturn not implemented");
+        /*
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
@@ -233,19 +217,33 @@ public class VisitorLitmusC
             throw new RuntimeException("Uninitialized location " + varName);
         }
 
-        Register register1 = getOrCreateRegister(currentThread,"DUMMY_REG_" + hashCode());
-        Register register2 = getOrCreateRegister(currentThread, "DUMMY_REG_" + hashCode());
+        Register register1 = getOrCreateRegister(currentThread, null);
+        Register register2 = getOrCreateRegister(currentThread, null);
 
-        Load load = new Load(register1, location, memoryOrder);
+        String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
+        Load load = new Load(register1, location, loadMO);
+        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+
         Local local = new Local(register2, new AExpr(register1, op, value));
-        RMWStore store = new RMWStore(load, location, register2, memoryOrder);
+
+        String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
+        RMWStore store = new RMWStore(load, location, register2, storeMO);
+        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
 
         returnStack.push(register2);
-        return new Seq(load, new Seq(local, store));
+
+        Thread result = new Seq(new Seq(load, local), store);
+        if(memoryOrder.equals("_sc")){
+            result = new Seq(new Fence("mb"), new Seq(result, new Fence("mb")));
+        }
+        return result;
+        */
     }
 
-    // TODO: Draft, review required, add filters to RMW events, create a clonable RMW class for this RMW
+    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicFetchOp(LitmusCParser.VariableContext varCtx, AExpr value, String op, String memoryOrder){
+        throw new ParsingException("visitAtomicFetchOp not implemented");
+        /*
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
@@ -253,64 +251,121 @@ public class VisitorLitmusC
             throw new RuntimeException("Uninitialized location " + varName);
         }
 
-        Register register1 = getOrCreateRegister(currentThread,"DUMMY_REG_" + hashCode());
-        Register register2 = getOrCreateRegister(currentThread, "DUMMY_REG_" + hashCode());
+        Register register1 = getOrCreateRegister(currentThread, null);
+        Register register2 = getOrCreateRegister(currentThread, null);
 
-        Load load = new Load(register1, location, memoryOrder);
+        String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
+        Load load = new Load(register1, location, loadMO);
+        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+
         Local local = new Local(register2, new AExpr(register1, op, value));
-        RMWStore store = new RMWStore(load, location, register2, memoryOrder);
+
+        String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
+        RMWStore store = new RMWStore(load, location, register2, storeMO);
+        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
 
         returnStack.push(register1);
-        return new Seq(load, new Seq(local, store));
+
+        Thread result = new Seq(new Seq(load, local), store);
+        if(memoryOrder.equals("_sc")){
+            result = new Seq(new Fence("mb"), new Seq(result, new Fence("mb")));
+        }
+        return result;
+        */
     }
 
+    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicXchg(LitmusCParser.VariableContext varCtx, AExpr value, String memoryOrder){
-        // TODO: Implementation
-        returnStack.push(new AConst(1));
-        return new Skip();
+        throw new ParsingException("visitAtomicCmpxchg not implemented");
+        /*
+        String varName = visitVariable(varCtx);
+        Location location = getLocation(varName);
+        if(location == null){
+            // TODO: In general, it can be also a local variable (register)
+            throw new RuntimeException("Uninitialized location " + varName);
+        }
+
+        Register dummyReg = getOrCreateRegister(currentThread, null);
+        Register returnReg = getOrCreateRegister(currentThread, null);
+
+        String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
+        Load load = new Load(dummyReg, location, loadMO);
+        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+
+        String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
+        RMWStore store = new RMWStore(load, location, returnReg, storeMO);
+        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+
+        returnStack.push(returnReg);
+
+        Thread result = new Seq(new Seq(load, store), new Local(returnReg, dummyReg));
+        if(memoryOrder.equals("_sc")){
+            result = new Seq(new Fence("mb"), new Seq(result, new Fence("mb")));
+        }
+        return result;
+        */
     }
 
     private Thread visitAtomicCmpxchg(LitmusCParser.VariableContext varCtx, AExpr cmp, AExpr value, String memoryOrder){
+        throw new ParsingException("visitAtomicCmpxchg not implemented");
+        /*
         // TODO: Implementation
         returnStack.push(new AConst(1));
         return new Skip();
+        */
     }
 
     private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, AExpr value, String op){
+        throw new ParsingException("visitAtomicOpAndTest not implemented");
+        /*
         // TODO: Implementation
         returnStack.push(new AConst(1));
         return new Skip();
+        */
     }
 
     private Thread visitAtomicRead(LitmusCParser.VariableContext varCtx, String memoryOrder){
-        // TODO: Implementation
-        returnStack.push(new AConst(1));
-        return new Skip();
+        Register register = getOrCreateRegister(currentThread, null);
+        String varName = visitVariable(varCtx);
+        Location location = getLocation(varName);
+        returnStack.push(register);
+        return new Read(register, location, memoryOrder);
     }
 
     @Override
     public Thread visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
+        throw new ParsingException("visitReAtomicAddUnless not implemented");
+        /*
         // TODO: Implementation
         returnStack.push(new AConst(1));
         return new Skip();
+        */
     }
 
     @Override
     public Thread visitReSpinTryLock(LitmusCParser.ReSpinTryLockContext ctx){
+        throw new ParsingException("visitReSpinTryLock not implemented");
+        /*
         // TODO: Implementation
         returnStack.push(new AConst(1));
         return new Skip();
+        */
     }
 
     @Override
     public Thread visitReSpinIsLocked(LitmusCParser.ReSpinIsLockedContext ctx){
+        throw new ParsingException("visitReSpinIsLocked not implemented");
+        /*
         // TODO: Implementation
         returnStack.push(new AConst(1));
         return new Skip();
+        */
     }
 
     @Override
     public Thread visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
+        throw new ParsingException("visitReOpCompare not implemented");
+        /*
         Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
         AExpr v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
@@ -327,6 +382,7 @@ public class VisitorLitmusC
             return t1;
         }
         return t2;
+        */
     }
 
     @Override
@@ -370,7 +426,7 @@ public class VisitorLitmusC
             throw new RuntimeException("Variable " + varName + " has not been initialized");
         }
 
-        register = new Register("DUMMY_REG_" + hashCode());
+        register = getOrCreateRegister(currentThread, null);
         returnStack.push(register);
         return new Read(register, location, "_rx");
     }
@@ -387,34 +443,36 @@ public class VisitorLitmusC
 
     private Thread visitAtomicOp(LitmusCParser.VariableContext varCtx, AExpr value, String op){
         // TODO: Implementation
-        return new Skip();
+        throw new ParsingException("visitAtomicOp is not implemented");
     }
 
     private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, AExpr value, String memoryOrder){
-        // TODO: Implementation
-        return new Skip();
+        String varName = visitVariable(varCtx);
+        Location location = getLocation(varName);
+        return new Write(location, value, memoryOrder);
     }
 
     private Thread visitFenceExpression(String fenceName){
-        return new Fence(fenceName);
+        throw new ParsingException("visitNreSpinLock is not implemented");
+        //return new Fence(fenceName);
     }
 
     @Override
     public Thread visitNreSpinLock(LitmusCParser.NreSpinLockContext ctx){
         // TODO: Implementation
-        return new Skip();
+        throw new ParsingException("visitNreSpinLock is not implemented");
     }
 
     @Override
     public Thread visitNreSpinUnlock(LitmusCParser.NreSpinUnlockContext ctx){
         // TODO: Implementation
-        return new Skip();
+        throw new ParsingException("visitNreSpinUnlock is not implemented");
     }
 
     @Override
     public Thread visitNreSpinUnlockWait(LitmusCParser.NreSpinUnlockWaitContext ctx){
         // TODO: Implementation
-        return new Skip();
+        throw new ParsingException("visitNreSpinUnlockWait is not implemented");
     }
 
 
@@ -423,7 +481,10 @@ public class VisitorLitmusC
 
     @Override
     public Object visitAssertionFilter(LitmusCParser.AssertionFilterContext ctx) {
-        // TODO: Implementation
+        if(ctx != null){
+            // TODO: Implementation
+            throw new ParsingException("visitAssertionFilter is not implemented");
+        }
         return null;
     }
 
@@ -479,13 +540,13 @@ public class VisitorLitmusC
     @Override
     public Object visitAssertionLocationRegister(LitmusCParser.AssertionLocationRegisterContext ctx) {
         // TODO: Implementation
-        return null;
+        throw new ParsingException("visitAssertionLocationRegister is not implemented");
     }
 
     @Override
     public Object visitAssertionLocationLocation(LitmusCParser.AssertionLocationLocationContext ctx) {
         // TODO: Implementation
-        return null;
+        throw new ParsingException("visitAssertionLocationLocation is not implemented");
     }
 
     @Override
@@ -500,13 +561,13 @@ public class VisitorLitmusC
     @Override
     public Object visitAssertionRegisterRegister(LitmusCParser.AssertionRegisterRegisterContext ctx) {
         // TODO: Implementation
-        return null;
+        throw new ParsingException("visitAssertionRegisterRegister is not implemented");
     }
 
     @Override
     public Object visitAssertionRegisterLocation(LitmusCParser.AssertionRegisterLocationContext ctx) {
         // TODO: Implementation
-        return null;
+        throw new ParsingException("visitAssertionRegisterLocation is not implemented");
     }
 
     private String getAssertionType(LitmusCParser.AssertionListContext ctx){
@@ -902,7 +963,8 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReRcuDerefence(LitmusCParser.ReRcuDerefenceContext ctx){
-        return visitAtomicRead(ctx.variable(), "_rx");
+        throw new ParsingException("visitReRcuDerefence not implemented");
+        //return visitAtomicRead(ctx.variable(), "_rx");
     }
 
     @Override
@@ -960,7 +1022,8 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitNreRcuAssignPointer(LitmusCParser.NreRcuAssignPointerContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rel");
+        throw new ParsingException("visitNreRcuAssignPointer not implemented");
+        //return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rel");
     }
 
     @Override

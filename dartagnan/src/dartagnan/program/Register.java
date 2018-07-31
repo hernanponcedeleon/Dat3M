@@ -2,6 +2,7 @@ package dartagnan.program;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import com.microsoft.z3.*;
 
@@ -15,6 +16,9 @@ public class Register extends AExpr {
 	private Integer mainThread;
 
 	public Register(String name) {
+		if(name == null){
+			name = "DUMMY_REG_" + UUID.randomUUID().toString();
+		}
 		this.name = name;
 	}
 	
