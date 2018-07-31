@@ -118,6 +118,7 @@ returnExpression
     |   'cmpxchg_acquire' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgAcquire
     |   'cmpxchg_release' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgRelease
 
+    |   'atomic_add_unless' LeftParen variable Comma returnExpression Comma returnExpression RightParen                 # reAtomicAddUnless
     |   'atomic_sub_and_test' LeftParen returnExpression Comma variable RightParen                                      # reAtomicSubAndTest
     |   'atomic_inc_and_test' LeftParen variable RightParen                                                             # reAtomicIncAndTest
     |   'atomic_dec_and_test' LeftParen variable RightParen                                                             # reAtomicDecAndTest
@@ -127,8 +128,6 @@ returnExpression
     |   'rcu_dereference' LeftParen variable RightParen                                                                 # reRcuDerefence
     |   'smp_load_acquire' LeftParen variable RightParen                                                                # reSmpLoadAcquire
     |   'atomic_read_acquire' LeftParen variable RightParen                                                             # reAtomicReadAcquire
-
-    |   'atomic_add_unless' LeftParen variable Comma returnExpression Comma returnExpression RightParen                 # reAtomicAddUnless
 
     |   'spin_trylock' LeftParen variable RightParen                                                                    # reSpinTryLock
     |   'spin_is_locked' LeftParen variable RightParen                                                                  # reSpinIsLocked

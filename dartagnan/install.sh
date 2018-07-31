@@ -51,6 +51,8 @@ src/dartagnan/program/event/filter/FilterUnion.java \
 src/dartagnan/program/event/filter/FilterUtils.java \
 src/dartagnan/program/event/rmw/AbstractRMW.java \
 src/dartagnan/program/event/rmw/RMWStore.java \
+src/dartagnan/program/event/rmw/RMWStoreIf.java \
+src/dartagnan/program/event/rmw/RMWStoreUnless.java \
 src/dartagnan/program/event/rmw/Xchg.java \
 src/dartagnan/program/event/Event.java \
 src/dartagnan/program/event/Fence.java \
