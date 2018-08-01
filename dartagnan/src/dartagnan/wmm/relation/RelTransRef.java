@@ -1,18 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
 import dartagnan.program.Program;
+import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  *
@@ -20,18 +15,20 @@ import java.util.Set;
  */
 public class RelTransRef extends UnaryRelation {
 
-    public RelTransRef(Relation r1, String name) {
-        super(r1, name, String.format("(%s)*", r1.getName()));
+    public RelTransRef(Relation r1) {
+        super(r1);
+        term = r1.getName() + "^*";
     }
 
-    public RelTransRef(Relation r1) {
-        super(r1, String.format("(%s)*", r1.getName()));
+    public RelTransRef(Relation r1, String name) {
+        super(r1, name);
+        term = r1.getName() + "^*";
     }
 
     @Override
-    public BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 //reflexive
@@ -42,8 +39,8 @@ public class RelTransRef extends UnaryRelation {
                     for (Event e3 : events) {
                         //e1e2 caused by transitivity:
                         orTrans = ctx.mkOr(orTrans, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx),
-                                ctx.mkGt(Utils.intCount(String.format(this.getName()), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
-                                ctx.mkGt(Utils.intCount(String.format(this.getName()), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
+                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
+                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
                     }
                     //e1e2 caused by r1:
                     BoolExpr orr1 = Utils.edge(r1.getName(), e1, e2, ctx);
@@ -59,11 +56,11 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    public BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         BoolExpr orclose1 = ctx.mkTrue();
         BoolExpr orclose2 = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 //reflexive
@@ -89,15 +86,5 @@ public class RelTransRef extends UnaryRelation {
             }
         }
         return enc;
-    }
-
-    @Override
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-    	return null;
-    }
-
-    @Override
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-    	return null;
     }
 }

@@ -1,5 +1,6 @@
 package dartagnan.program.event;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,16 +13,24 @@ import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-public class Event extends Thread {
+public abstract class Event extends Thread {
 	
 	private Integer eid;
 	private Integer hlId;
 	private Integer unfCopy;
+	protected String atomic;
 
 	private Set<Register> condReg;
 	protected LastModMap lastModMap;
-	
-	public Event() {}
+	protected Set<String> filter = new HashSet<>();
+
+	public boolean is(String param){
+		return param != null && (filter.contains(param) || param.equals(atomic));
+	}
+
+	public void addFilters(String... params){
+		filter.addAll(Arrays.asList(params));
+	}
 	
 	public Integer getEId() {
 		return eid;
@@ -80,9 +89,9 @@ public class Event extends Thread {
 	}
 
 	public Thread allCompile() {
-		OptFence os = new OptFence("sync");
+		OptFence os = new OptFence("Sync");
 		os.condLevel = condLevel;
-		OptFence olws = new OptFence("lwsync");
+		OptFence olws = new OptFence("Lwsync");
 		olws.condLevel = condLevel;
 		return new Seq(os, new Seq(olws, this));
 	}

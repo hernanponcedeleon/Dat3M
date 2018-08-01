@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import dartagnan.*;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.WmmResolver;
 
@@ -19,7 +20,6 @@ import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.program.event.Init;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
@@ -149,7 +149,7 @@ public class Porthos {
         Program pTarget = p.clone();
 
         pSource.compile(source, false, true);
-        Integer startEId = Collections.max(pSource.getEvents().stream().filter(e -> e instanceof Init).map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
+        Integer startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
         pTarget.compile(target, false, true, startEId);
 
         Context ctx = new Context();

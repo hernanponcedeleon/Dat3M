@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
 
@@ -12,6 +11,7 @@ import dartagnan.program.event.*;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
+import dartagnan.program.utils.EventRepository;
 
 public class Utils {
 
@@ -29,7 +29,7 @@ public class Utils {
 				gv.addln("    subgraph cluster_Thread_Source" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
 			}
 			
-			for(Event e : p.getEvents()) {
+			for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 				String label = "";
 				if (!(e instanceof MemEvent)) {continue;}
 				if((e instanceof Store || e instanceof Init) && model.getConstInterp(e.executes(ctx)).isTrue()) {
@@ -38,7 +38,7 @@ public class Utils {
 				if(e instanceof Load && model.getConstInterp(e.executes(ctx)).isTrue()) {
 					label = "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
 				}
-				for(Event eHL : p.getEvents().stream().filter(x -> x instanceof MemEvent).collect(Collectors.toSet())) {
+				for(Event eHL : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
 					if(!(e instanceof Init) && e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
 						label = label + eHL.toString().replaceAll("\\s","");
 					}
@@ -55,8 +55,8 @@ public class Utils {
 			}
 		}
 
-		for(Event e1 : p.getEvents()) {
-			for(Event e2 : p.getEvents()) {
+		for(Event e1 : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
+			for(Event e2 : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 				if (!(e1 instanceof MemEvent && e2 instanceof MemEvent)) {continue;}
 				if (!(model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue())) {continue;}
 				if(model.getConstInterp(edge("rf", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
@@ -105,7 +105,7 @@ public class Utils {
 				gv.addln("    subgraph cluster_Thread_Source" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
 			}
 			
-			for(Event e : pSource.getEvents()) {
+			for(Event e : pSource.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 				String label = "";
 				if (!(e instanceof MemEvent)) {continue;}
 				if(e instanceof Store && model.getConstInterp(e.executes(ctx)).isTrue()) {
@@ -114,7 +114,7 @@ public class Utils {
 				if(e instanceof Load && model.getConstInterp(e.executes(ctx)).isTrue()) {
 					label = "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
 				}
-				for(Event eHL : p.getEvents().stream().filter(x -> x instanceof MemEvent).collect(Collectors.toSet())) {
+				for(Event eHL : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
 					if(e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
 						label = label + eHL.toString().replaceAll("\\s","");
 					}
@@ -134,8 +134,8 @@ public class Utils {
 			}
 		}
 
-		for(Event e1 : pSource.getEvents()) {
-			for(Event e2 : pSource.getEvents()) {
+		for(Event e1 : pSource.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
+			for(Event e2 : pSource.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 				if (!(e1 instanceof MemEvent && e2 instanceof MemEvent)) {continue;}
 				if (!(model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue())) {continue;}
 				if(model.getConstInterp(edge("rf", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
@@ -191,7 +191,7 @@ public class Utils {
 				gv.addln("    subgraph cluster_Thread_Target" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
 			}
 			
-			for(Event e : pTarget.getEvents()) {
+			for(Event e : pTarget.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 				String label = "";
 				if (!(e instanceof MemEvent)) {continue;}
 				if(e instanceof Store && model.getConstInterp(e.executes(ctx)).isTrue()) {
@@ -200,7 +200,7 @@ public class Utils {
 				if(e instanceof Load && model.getConstInterp(e.executes(ctx)).isTrue()) {
 					label = "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
 				}
-				for(Event eHL : p.getEvents().stream().filter(x -> x instanceof MemEvent).collect(Collectors.toSet())) {
+				for(Event eHL : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
 					if(e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
 						label = label + eHL.toString().replaceAll("\\s","");
 					}
@@ -220,8 +220,8 @@ public class Utils {
 			}
 		}
 
-		for(Event e1 : pTarget.getEvents()) {
-			for(Event e2 : pTarget.getEvents()) {
+		for(Event e1 : pTarget.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
+			for(Event e2 : pTarget.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 				if (!(e1 instanceof MemEvent && e2 instanceof MemEvent)) {continue;}
 				if (!(model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue())) {continue;}
 				if(model.getConstInterp(edge("rf", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue()) {

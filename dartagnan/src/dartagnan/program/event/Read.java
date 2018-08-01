@@ -8,6 +8,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.*;
 import dartagnan.program.Thread;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -15,7 +16,6 @@ import dartagnan.utils.Pair;
 public class Read extends MemEvent {
 
 	private Register reg;
-	private String atomic;
 	
 	public Read(Register reg, Location loc, String atomic) {
 		this.reg = reg;
@@ -23,6 +23,11 @@ public class Read extends MemEvent {
 		this.atomic = atomic;
 		this.condLevel = 0;
 		this.memId = hashCode();
+        addFilters(
+                FilterUtils.EVENT_TYPE_ANY,
+                FilterUtils.EVENT_TYPE_MEMORY,
+                FilterUtils.EVENT_TYPE_READ
+        );
 	}
 	
 	public Register getReg() {
@@ -56,7 +61,7 @@ public class Read extends MemEvent {
 	}
 
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		Load ld = new Load(reg, loc);
+		Load ld = new Load(reg, loc, atomic);
 		ld.setHLId(memId);
 		ld.setUnfCopy(getUnfCopy());
 		ld.setCondLevel(this.condLevel);
@@ -70,14 +75,14 @@ public class Read extends MemEvent {
 		}
 
 		if(target.equals("power")) {
-            Fence lwsync = new Fence("lwsync", this.condLevel);
+            Fence lwsync = new Fence("Lwsync", this.condLevel);
             if(atomic.equals("_con") || atomic.equals("_acq")) {
                 return new Seq(ld, lwsync);
             }
 
             if(atomic.equals("_sc")) {
 				if(leading) {
-                    Fence sync = new Fence("sync", this.condLevel);
+                    Fence sync = new Fence("Sync", this.condLevel);
 					return new Seq(sync, new Seq(ld, lwsync));
 				}
                 return new Seq(ld, lwsync);
@@ -86,7 +91,7 @@ public class Read extends MemEvent {
 
 		if(target.equals("arm")) {
 			if(atomic.equals("_con") || atomic.equals("_acq") || atomic.equals("_sc")) {
-				Fence ish = new Fence("ish", this.condLevel);
+				Fence ish = new Fence("Ish", this.condLevel);
 				return new Seq(ld, ish);
 			}			
 		}
@@ -96,7 +101,7 @@ public class Read extends MemEvent {
 	}
 	
 	public Thread optCompile(boolean ctrl, boolean leading) {
-		Load ld = new Load(reg, loc);
+		Load ld = new Load(reg, loc, atomic);
 		ld.setHLId(hashCode());
 		ld.setCondLevel(this.condLevel);
 
@@ -104,14 +109,14 @@ public class Read extends MemEvent {
             return ld;
         }
 
-        OptFence lwsync = new OptFence("lwsync", this.condLevel);
+        OptFence lwsync = new OptFence("Lwsync", this.condLevel);
         if(atomic.equals("_con") || atomic.equals("_acq")) {
             return new Seq(ld, lwsync);
         }
 
 		if(atomic.equals("_sc")) {
 			if(leading) {
-                OptFence sync = new OptFence("sync", this.condLevel);
+                OptFence sync = new OptFence("Sync", this.condLevel);
 				return new Seq(sync, new Seq(ld, lwsync));
 			}
 			return new Seq(ld, lwsync);
@@ -122,11 +127,11 @@ public class Read extends MemEvent {
 	}
 	
 	public Thread allCompile() {
-		Load ld = new Load(reg, loc);
+		Load ld = new Load(reg, loc, atomic);
 		ld.setHLId(hashCode());
 		ld.setCondLevel(this.condLevel);
-		OptFence os = new OptFence("sync", this.condLevel);
-		OptFence olws = new OptFence("lwsync",  this.condLevel);
+		OptFence os = new OptFence("Sync", this.condLevel);
+		OptFence olws = new OptFence("Lwsync",  this.condLevel);
 		return new Seq(os, new Seq(olws, ld));
 	}
 }

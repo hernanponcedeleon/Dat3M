@@ -1,18 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
 import dartagnan.program.Program;
+import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  *
@@ -20,18 +15,20 @@ import java.util.Set;
  */
 public class RelComposition extends BinaryRelation {
 
-    public RelComposition(Relation r1, Relation r2, String name) {
-        super(r1, r2, name, String.format("(%s;%s)", r1.getName(), r2.getName()));
+    public RelComposition(Relation r1, Relation r2) {
+        super(r1, r2);
+        term = "(" + r1.getName() + ";" + r2.getName() + ")";
     }
 
-    public RelComposition(Relation r1, Relation r2) {
-        super(r1, r2, String.format("(%s;%s)", r1.getName(), r2.getName()));
+    public RelComposition(Relation r1, Relation r2, String name) {
+        super(r1, r2, name);
+        term = "(" + r1.getName() + ";" + r2.getName() + ")";
     }
 
     @Override
-    public BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 BoolExpr orClause = ctx.mkFalse();
@@ -54,14 +51,9 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-    	return null;
-    }
-
-    @Override
-    public BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
-        Set<Event> events = program.getMemEvents();
         for (Event e1 : events) {
             for (Event e2 : events) {
                 BoolExpr orClause = ctx.mkFalse();
@@ -78,10 +70,5 @@ public class RelComposition extends BinaryRelation {
             }
         }
         return enc;
-    }
-
-    @Override
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-    	return null;
     }
 }

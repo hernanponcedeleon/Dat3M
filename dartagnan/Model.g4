@@ -1,128 +1,226 @@
-// Define a grammar called model
 grammar Model;
 @header{
 package dartagnan;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.filter.*;
 import dartagnan.wmm.axiom.*;
 import dartagnan.wmm.relation.*;
 import dartagnan.wmm.Wmm;
+
+import java.util.List;
+import java.util.ArrayList;
 }
 @parser::members
 {
-private Wmm wmm = new Wmm();
+    Wmm wmm = new Wmm();
+    boolean createDummy = false;
 }
-mcm returns [Wmm value]:
-MCMNAME? (ax1=axiom {wmm.addAxiom($ax1.value);} | r1=reldef {wmm.addRel($r1.value);})+ {$value = wmm;}
-;
 
-axiom returns [Axiom value]
- : (negate = TILDE)? 'acyclic' m1=fancyrel  {$value =  new Acyclic($m1.value, $negate != null);} ('as' NAME)?
- | (negate = TILDE)? 'irreflexive' m1=fancyrel {$value =  new Irreflexive($m1.value, $negate != null);}('as' NAME)?
- | (negate = TILDE)? 'empty' m1=fancyrel {$value =  new Empty($m1.value, $negate != null);}('as' NAME)?;
+mcm returns [Wmm value]
+    :   (NAME)? definition+ EOF {
+            $value =  wmm;
+        }
+    ;
 
-reldef returns [Relation value]:
-('let' | 'and') ('rec')? n=NAME '=' m1=fancyrel {$value =$m1.value; $value.setName($n.text);};
+definition
+    :   axiomDefinition
+    |   letDefinition
+    |   letRecDefinition
+    ;
 
-fancyrel returns [Relation value]:
-m1=relation {$value =$m1.value;} ('|' m2=relation {$value =new RelUnion($value, $m2.value);} )*
-| m1=relation {$value =$m1.value;} ('&' m2=relation {$value =new RelInterSect($value, $m2.value);} )*
-| m1=relation {$value =$m1.value;} (';' m2=relation {$value =new RelComposition($value, $m2.value);} )*;
-relation returns [Relation value]: 
-b1=base {$value =$b1.value;} 
-| '(' ( m1=relation '|' {$value =$m1.value;}) ( m2=relation '|' {$value =new RelUnion($value, $m2.value);} )* m3=relation ')'{$value =new RelUnion($value, $m3.value);} 
-| '(' m1=relation '\\' m2=relation ')' {$value =new RelMinus($m1.value, $m2.value);}
-| '(' m1=relation '&' m2=relation ')' {$value =new RelInterSect($m1.value, $m2.value);}
-| '(' ( m1=relation ';' {$value =$m1.value;}) ( m2=relation ';' {$value =new RelComposition($value, $m2.value);} )* m3=relation ')'{$value =new RelComposition($value, $m3.value);} 
-| m1=relation'+' {$value =new RelTrans($m1.value);}
-| m1=relation'*' {$value =new RelTransRef($m1.value);}
-| '(' m1=relation ')' {$value =$m1.value;}
-;
+axiomDefinition returns [Axiom value]
+    :   (negate = NOT)? ACYCLIC { createDummy = false; } e = expression (AS NAME)? {
+            if(!($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            wmm.addAxiom(new Acyclic((Relation)$e.value, $negate != null));
+        }
+    |   (negate = NOT)? IRREFLEXIVE { createDummy = false; } e = expression (AS NAME)? {
+            if(!($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            wmm.addAxiom(new Irreflexive((Relation)$e.value, $negate != null));
+        }
+    |   (negate = NOT)? EMPTY { createDummy = false; } e = expression (AS NAME)? {
+            if(!($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            wmm.addAxiom(new Empty((Relation)$e.value, $negate != null));
+        }
+    ;
 
+letDefinition
+    :   LET { createDummy = false; } n = NAME EQ e = expression {
+            if($e.value instanceof Relation){
+                ((Relation)$e.value).setName($n.text);
+                wmm.addRelation((Relation)$e.value);
+            } else if ($e.value instanceof FilterAbstract){
+                ((FilterAbstract)$e.value).setName($n.text);
+                wmm.addFilter((FilterAbstract)$e.value);
+            } else {
+                throw new RuntimeException("Invalid definition of " + $n.text);
+            }
+        }
+    ;
 
-base returns [Relation value]: 
-PO {$value=new BasicRelation("po");}
-| POLOC {$value=new BasicRelation("po-loc");}
-| RFE {$value=new BasicRelation("rfe");}
-| RFI {$value=new BasicRelation("rfi");}
-| RF {$value=new BasicRelation("rf");}
-| FR {$value=new BasicRelation("fr");}
-| FRI {$value=new BasicRelation("fri");}
-| FRE {$value=new BasicRelation("fre");}
-| CO {$value=new BasicRelation("co");}
-| COE {$value=new BasicRelation("coe");}
-| COI {$value=new BasicRelation("coi");}
-| AD {$value=new BasicRelation("po");}
-| IDD {$value=new BasicRelation("idd");}
-| ISH {wmm.addFence("ish"); $value=new BasicRelation("ish");}
-| CD {$value=new BasicRelation("cd");}
-| STHD {$value=new BasicRelation("sthd");}
-| SLOC {$value=new BasicRelation("sloc");}
-| MFENCE {wmm.addFence("mfence"); $value=new BasicRelation("mfence");}
-| CTRLISYNC {wmm.addFence("isync"); $value=new BasicRelation("ctrlisync");}
-| LWSYNC {wmm.addFence("lwsync"); $value=new BasicRelation("lwsync");}
-| ISYNC {wmm.addFence("isync"); $value=new BasicRelation("isync");}
-| SYNC {wmm.addFence("sync"); $value=new BasicRelation("sync");}
-| CTRLDIREKT {$value=new BasicRelation("ctrlDirect");}
-| CTRLISB {wmm.addFence("isb"); $value=new BasicRelation("ctrlisb");}
-| CTRL {$value=new BasicRelation("ctrl");}
-| ISB {wmm.addFence("isb"); $value=new BasicRelation("isb");}
-| ADDR {$value=new EmptyRel();}
-| DATA {$value=new RelInterSect(new RelLocTrans(new BasicRelation("idd")), new BasicRelation("RW"));}
-| n=NAME {$value=new RelDummy($n.text);}
-| EMPTY {$value=new EmptyRel();}
-| ID {$value=new BasicRelation("id");}
-| 'R' '*' 'W' {$value=new BasicRelation("RW");}
-| 'W' '*' 'R' {$value=new BasicRelation("WR");}
-| 'R' '*' 'R' {$value=new BasicRelation("RR");}
-| 'W' '*' 'W' {$value=new BasicRelation("WW");}
-| 'R' '*' 'M' {$value=new BasicRelation("RM");}
-| 'W' '*' 'M' {$value=new BasicRelation("WM");}
-| 'M' '*' 'R' {$value=new BasicRelation("MR");}
-| 'M' '*' 'W' {$value=new BasicRelation("MW");}
-| 'M' '*' 'M' {$value=new BasicRelation("MM");}
-| 'I' '*' 'R' {$value=new BasicRelation("IR");}
-| 'I' '*' 'W' {$value=new BasicRelation("IW");}
-| 'I' '*' 'M' {$value=new BasicRelation("IM");}
-| 'A' '*' 'M' {$value=new BasicRelation("AM");}
-| 'M' '*' 'A' {$value=new BasicRelation("MA");}
-;
+letRecDefinition
+    :   (LET REC | AND) { createDummy = true; } n = NAME EQ e = expression {
+            if($e.value instanceof Relation){
+                ((Relation)$e.value).setName($n.text);
+                wmm.addRelation((Relation)$e.value);
+            } else {
+                throw new RuntimeException("Invalid definition of " + $n.text);
+            }
+        }
+    ;
 
-PO : 'po' ;
-POLOC : 'po-loc' ;
-RFE : 'rfe' ;
-RFI : 'rfi' ;
-RF : 'rf' ;
-FR : 'fr' ;
-FRE : 'fre' ;
-FRI : 'fri' ;
-CO : 'co' ;
-COE : 'coe' ;
-COI : 'coi' ;
-AD : 'ad' ;
-IDD : 'idd' ;
-ISH : 'ish' ;
-CD : 'cd' ;
-STHD : 'sthd' ;
-SLOC : 'sloc' ;
-MFENCE : 'mfence' ;
-LWSYNC : 'lwsync' ;
-CTRLISYNC : 'ctrlisync' ;
-ISYNC : 'isync' ;
-SYNC : 'sync' ;
-CTRLDIREKT : 'ctrlDirect';
-CTRLISB : 'ctrlisb';
-CTRL : 'ctrl';
-ISB : 'isb' ;
-ADDR : 'addr' ;
-DATA : 'data' ;
-ID : 'id' ;
-EMPTY : '0' ;
+expression returns [Object value]
+    :   e1 = expression STAR e2 = expression {
+            if(!($e1.value instanceof FilterAbstract) || !($e2.value instanceof FilterAbstract)){
+                throw new RuntimeException("Invalid syntax at " + $e1.text + " * " + $e2.text);
+            }
+            $value = new RelCartesian((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
+        }
+    |   e = expression (POW)? STAR {
+            if(!($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            $value = new RelTransRef((Relation)$e.value);
+        }
+    |   e = expression (POW)? PLUS {
+            if(!($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            $value = new RelTrans((Relation)$e.value);
+        }
+    |   e = expression (POW)? INV {
+            if(!($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            $value = new RelInverse((Relation)$e.value);
+        }
+    |   e = expression OPT {
+            if(!($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            $value = new RelUnion(new BasicRelation("id"), (Relation)$e.value);
+        }
+    |   NOT e = expression {
+            // TODO: Implementation for relation and filter
+            System.out.println("Complement is not implemented");
+        }
+    |   e1 = expression SEMI e2 = expression {
+            if(!($e1.value instanceof Relation) || !($e2.value instanceof Relation)){
+                throw new RuntimeException("Invalid syntax at " + $e1.text + " ; " + $e2.text);
+            }
+            $value = new RelComposition((Relation)$e1.value, (Relation)$e2.value);
+        }
+    |   e1 = expression BAR e2 = expression {
+            if($e1.value instanceof Relation && $e2.value instanceof Relation){
+                $value = new RelUnion((Relation)$e1.value, (Relation)$e2.value);
+            } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
+                $value = new FilterUnion((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
+            } else {
+                throw new RuntimeException("Invalid syntax at " + $e1.text + " | " + $e2.text);
+            }
+        }
+    |   e1 = expression BSLASH e2 = expression {
+            if($e1.value instanceof Relation && $e2.value instanceof Relation){
+                $value = new RelMinus((Relation)$e1.value, (Relation)$e2.value);
+            } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
+                $value = new FilterMinus((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
+            } else {
+                throw new RuntimeException("Invalid syntax at " + $e1.text + " \\ " + $e2.text);
+            }
+        }
+    |   e1 = expression AMP e2 = expression {
+            if($e1.value instanceof Relation && $e2.value instanceof Relation){
+                $value = new RelIntersection((Relation)$e1.value, (Relation)$e2.value);
+            } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
+                $value = new FilterIntersection((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
+            } else {
+                throw new RuntimeException("Invalid syntax at " + $e1.text + " & " + $e2.text);
+            }
+        }
+    |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC){
+            if(!($e.value instanceof FilterAbstract)){
+                throw new RuntimeException("Invalid syntax at " + $e.text);
+            }
+            $value = new RelSetIdentity((FilterAbstract)$e.value);
+        }
+    |   FENCEREL LPAR e = expression RPAR {
+            if(!($e.value instanceof FilterAbstract)){
+                throw new RuntimeException("Invalid syntax at fencerel(" + $e.text + ")");
+            }
+            // TODO: In general, this should be a filter (consider fence + MO rel_acq)
+            $value = new RelFencerel($e.text);
+        }
+    |   LPAR e = expression RPAR {
+                $value = $e.value;
+            }
+    |   n = NAME {
+            $value = wmm.getRelation($n.text);
+            if($value == null){
+                $value = wmm.getFilter($n.text);
+                if($value == null && createDummy){
+                    $value = new RelDummy($n.text);
+                }
+            }
+        }
+    ;
 
-TILDE : '~';
+LET     :   'let';
+REC     :   'rec';
+AND     :   'and';
+AS      :   'as';
+TOID    :   'toid';
 
-NAME : [a-z0-9\-]+ ;        // match lower-case identifiers
-MCMNAME : [A-Za-z0-9]+ ;        // match lower-case identifiers
-WS : [ \t\n\r]+ -> skip ; // skip spaces, tabs, newlines
-ENDE : EOF -> skip ;
-ML_COMMENT  : '(*' .*? '*)' -> skip ;
-INCLUDE  : 'include "' .*? '"' -> skip ; //skip include refs
-MODELNAME  : '"' .*? '"' -> skip ; //skip names
+ACYCLIC     :   'acyclic';
+IRREFLEXIVE :   'irreflexive';
+EMPTY       :   'empty';
+
+EQ      :   '=';
+STAR    :   '*';
+PLUS    :   '+';
+OPT     :   '?';
+INV     :   '-1';
+NOT     :   '~';
+AMP     :   '&';
+BAR     :   '|';
+SEMI    :   ';';
+BSLASH  :   '\\';
+POW     :   ('^');
+
+LPAR    :   '(';
+RPAR    :   ')';
+LBRAC   :   '[';
+RBRAC   :   ']';
+
+FENCEREL    :   'fencerel';
+
+NAME    : [A-Za-z0-9\-_]+;
+
+LINE_COMMENT
+    :   '//' ~[\n]*
+        -> skip
+    ;
+
+BLOCK_COMMENT
+    :   '(*' (.)*? '*)'
+        -> skip
+    ;
+
+WS
+    :   [ \t\r\n]+
+        -> skip
+    ;
+
+INCLUDE
+    :   'include "' .*? '"'
+        -> skip
+    ;
+
+MODELNAME
+    :   '"' .*? '"'
+        -> skip
+    ;

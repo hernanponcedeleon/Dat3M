@@ -19,17 +19,18 @@ import dartagnan.program.event.*;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
+import dartagnan.program.utils.EventRepository;
 
 public class Encodings {
 
 	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> lEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent | e instanceof Local).collect(Collectors.toSet());
-		Set<Event> lEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent | e instanceof Local).collect(Collectors.toSet());
-		Set<Event> rEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
-		Set<Event> wEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
-		Set<Event> rEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
-		Set<Event> wEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
+		Set<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> rEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
+		Set<Event> wEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT);
+		Set<Event> rEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
+		Set<Event> wEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT);
 		for(Event e1 : lEventsP1) {
 			for(Event e2 : lEventsP2) {
 				if(e1.getHLId().equals(e2.getHLId()) && e1.getUnfCopy().equals(e2.getUnfCopy())) {
@@ -73,8 +74,8 @@ public class Encodings {
 
 	public static BoolExpr encodePreserveFences(Program p1, Program p2, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> memEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		Set<Event> memEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> memEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+		Set<Event> memEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 		for(Event e1P1 : memEventsP1) {
 			for(Event e1P2 : memEventsP2) {
 				if(e1P1.getHLId().equals(e1P2.getHLId())) {
@@ -96,12 +97,12 @@ public class Encodings {
 	}
 	
 	public static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
-		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
+		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : locs) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueLoc(loc, ctx), model.getConstInterp(lastValueLoc(loc, ctx))));
 		}
-		Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
+		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
 		for(Register reg : regs) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueReg(reg, ctx), model.getConstInterp(lastValueReg(reg, ctx))));
@@ -110,7 +111,7 @@ public class Encodings {
 	}
 
 	public static BoolExpr getReachedStateLow(Program p, Model model, Context ctx) {
-		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).filter(l -> !(l instanceof HighLocation)).collect(Collectors.toSet());
+		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).filter(l -> !(l instanceof HighLocation)).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : locs) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueLoc(loc, ctx), model.getConstInterp(lastValueLoc(loc, ctx))));
@@ -119,7 +120,7 @@ public class Encodings {
 	}
 
 	public static BoolExpr getInitialHigh(Program p, Model model, Context ctx, boolean var1, boolean val1) {
-		Set<Event> highInits = p.getEvents().stream().filter(e -> e instanceof Init).filter(e -> e.getLoc() instanceof HighLocation).collect(Collectors.toSet());
+		Set<Event> highInits = p.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().filter(e -> e.getLoc() instanceof HighLocation).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Event e : highInits) {
 			IntExpr var = var1 ? initValue(e,ctx) : initValue2(e,ctx);
@@ -133,7 +134,7 @@ public class Encodings {
 
 	public static BoolExpr getExecutedGuards(Program p, Model model, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
-		for(Event e : p.getEvents()) {
+		for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 			if(model.getConstInterp(e.executes(ctx)).isTrue()) {
 				enc = ctx.mkAnd(enc, e.getGuard());
 			}
@@ -143,7 +144,7 @@ public class Encodings {
 
 	public static BoolExpr getExecutedInstanciatedEvents(Program p, Model model, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
-		for(Event e : p.getEvents()) {
+		for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 			if(!(e instanceof MemEvent)) {
 				continue;
 			}
@@ -157,7 +158,7 @@ public class Encodings {
 	}
 
 	public static BoolExpr diffInitialHigh(Program p, Context ctx) {
-		Set<Event> highInits = p.getEvents().stream().filter(e -> e instanceof Init).filter(e -> e.getLoc() instanceof HighLocation).collect(Collectors.toSet());
+		Set<Event> highInits = p.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().filter(e -> e.getLoc() instanceof HighLocation).collect(Collectors.toSet());
 		BoolExpr initState = ctx.mkTrue();
 		for(Event e : highInits) {
 			if(e.getLoc().getIValue() == null) {
@@ -216,14 +217,14 @@ public class Encodings {
 		}
 		return ret;	
 	}
-	
+
 	public static BoolExpr initsUniquePath(Program p, Context ctx) {
 		BoolExpr prec = ctx.mkTrue();
 		BoolExpr post = ctx.mkTrue();
-		for(Event e : p.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet())) {
+		for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
 			prec = ctx.mkAnd(prec, ctx.mkOr(e.getGuard(), ctx.mkNot(e.executes(ctx))));
 		}
-		for(Event e : p.getEvents().stream().filter(e -> e instanceof Init && e.getLoc() instanceof HighLocation).collect(Collectors.toSet())) {
+		for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().filter(e -> e.getLoc() instanceof HighLocation).collect(Collectors.toSet())) {
 			BoolExpr guards = ctx.mkAnd(ctx.mkLt(ctx.mkSub(uniqueValue(e, ctx), ctx.mkInt(1)), initValue(e, ctx)), ctx.mkGt(ctx.mkAdd(uniqueValue(e, ctx), ctx.mkInt(1)), initValue(e, ctx)));
 			post = ctx.mkAnd(post, guards);
 		}

@@ -3,6 +3,7 @@ package dartagnan.wmm;
 import static dartagnan.utils.Utils.edge;
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -13,11 +14,12 @@ import com.microsoft.z3.*;
 import dartagnan.asserts.*;
 import dartagnan.program.*;
 import dartagnan.program.event.*;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 
 public class Encodings {
 
-	public static BoolExpr satTO(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satTO(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0))));
@@ -39,7 +41,7 @@ public class Encodings {
 		return enc;
 	}
 
-	public static BoolExpr satAcyclic(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satAcyclic(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0))));
@@ -50,7 +52,7 @@ public class Encodings {
 		return enc;
 	}
 	
-	public static BoolExpr satCycle(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satCycle(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr oneEventInCycle = ctx.mkFalse();
 		for(Event e : events) {
 			oneEventInCycle = ctx.mkOr(oneEventInCycle, Utils.cycleVar(name, e, ctx));
@@ -58,7 +60,7 @@ public class Encodings {
 		return oneEventInCycle;
 	}
 	
-	public static BoolExpr satCycleDef(String name, Set<Event> events, Context ctx) throws Z3Exception {
+	public static BoolExpr satCycleDef(String name, Collection<Event> events, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 		for(Event e1 : events) {
 			Set<BoolExpr> source = new HashSet<BoolExpr>();
@@ -74,7 +76,7 @@ public class Encodings {
 		return enc;
 	}
 	
-	public static BoolExpr encodeEO(Set<BoolExpr> set, Context ctx) throws Z3Exception {
+	public static BoolExpr encodeEO(Collection<BoolExpr> set, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkFalse();
 		for(BoolExpr exp : set) {
 			BoolExpr thisYesOthersNot = exp;
@@ -86,7 +88,7 @@ public class Encodings {
 		return enc;
 	}
 
-	public static BoolExpr encodeALO(Set<BoolExpr> set, Context ctx) throws Z3Exception {
+	public static BoolExpr encodeALO(Collection<BoolExpr> set, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkFalse();
 		for(BoolExpr exp : set) {
 			enc = ctx.mkOr(enc, exp);
@@ -96,12 +98,12 @@ public class Encodings {
 
 	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> lEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent | e instanceof Local).collect(Collectors.toSet());
-		Set<Event> lEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent | e instanceof Local).collect(Collectors.toSet());
-		Set<Event> rEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
-		Set<Event> wEventsP1 = p1.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
-		Set<Event> rEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Load).collect(Collectors.toSet());
-		Set<Event> wEventsP2 = p2.getEvents().stream().filter(e -> e instanceof Store || e instanceof Init).collect(Collectors.toSet());
+		Set<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> rEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
+		Set<Event> wEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT);
+		Set<Event> rEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
+		Set<Event> wEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT);
 		for(Event e1 : lEventsP1) {
 			for(Event e2 : lEventsP2) {
 				if(e1.getHLId().equals(e2.getHLId())) {
@@ -145,8 +147,8 @@ public class Encodings {
 
 	public static BoolExpr encodePreserveFences(Program p1, Program p2, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> memEventsP1 = p1.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
-		Set<Event> memEventsP2 = p2.getEvents().stream().filter(e -> e instanceof MemEvent).collect(Collectors.toSet());
+		Set<Event> memEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+		Set<Event> memEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 		for(Event e1P1 : memEventsP1) {
 			for(Event e1P2 : memEventsP2) {
 				if(e1P1.getHLId().equals(e1P2.getHLId())) {
@@ -169,11 +171,11 @@ public class Encodings {
 
 	public static AbstractAssert AssertFromModel(Program p, Model model, Context ctx) {
 		AssertCompositeAnd ass = new AssertCompositeAnd();
-		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
+		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 		for(Location loc : locs) {
 			ass.addChild(new AssertLocation(loc, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString())));
 		}
-		Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
+		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
 		for(Register reg : regs) {
 			Set<Integer> ssaRegIndexes = new HashSet<Integer>();
@@ -190,12 +192,12 @@ public class Encodings {
 	}
 
 	public static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
-		Set<Location> locs = p.getEvents().stream().filter(e -> e instanceof MemEvent).map(e -> e.getLoc()).collect(Collectors.toSet());
+		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : locs) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(loc.getName() + "_final"), model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final"))));
 		}
-		Set<Event> executedEvents = p.getEvents().stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
+		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
 		for(Register reg : regs) {
 			Set<Integer> ssaRegIndexes = new HashSet<Integer>();

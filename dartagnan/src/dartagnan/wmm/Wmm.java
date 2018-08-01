@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
@@ -10,12 +5,14 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.program.Program;
+import dartagnan.program.event.filter.FilterAbstract;
+import dartagnan.program.event.filter.FilterBasic;
+import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
-import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -23,20 +20,61 @@ import java.util.Set;
  */
 public class Wmm implements WmmInterface{
 
-    private Set<String> fences = new HashSet<String>();
+    private static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
+            "id", "int", "ext", "loc", "po",
+            "rf", "fr", "co",
+            "idd", "ctrlDirect", "ctrl",
+            "crit"  // TODO: Implementation
+    ));
+
+    private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
+    static {
+        basicFenceRelations.put("mfence", "Mfence");
+        basicFenceRelations.put("ish", "Ish");
+        basicFenceRelations.put("isb", "Isb");
+        basicFenceRelations.put("sync", "Sync");
+        basicFenceRelations.put("lwsync", "Lwsync");
+        basicFenceRelations.put("isync", "Isync");
+    }
+
     private ArrayList<Axiom> axioms = new ArrayList<>();
-    private final ArrayList<Relation> relations = new ArrayList<>();
+    private Map<String, Relation> relations = new HashMap<String, Relation>();
+    private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
     }
 
-    public void addRel(Relation rel) {
-        relations.add(rel);
+    public void addRelation(Relation rel) {
+        relations.put(rel.getName(), rel);
     }
 
-    public void addFence(String fence){
-        fences.add(fence);
+    public Relation getRelation(String name){
+        Relation relation = relations.get(name);
+        if(relation != null){
+            return relation;
+        }
+
+        if(basicRelations.contains(name)) {
+            return new BasicRelation(name);
+        }
+
+        return resolveRelation(name);
+    }
+
+    public void addFilter(FilterAbstract filter) {
+        filters.put(filter.getName(), filter);
+    }
+
+    public FilterAbstract getFilter(String name){
+        FilterAbstract filter = filters.get(name);
+        if(filter == null){
+            name = FilterUtils.resolve(name);
+            if(name != null){
+                filter = new FilterBasic(name);
+            }
+        }
+        return filter;
     }
 
     /**
@@ -47,29 +85,27 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
-        BoolExpr enc = Domain.encodeFences(program, ctx, fences);
-        if(program.hasRMWEvents()){
-            enc = ctx.mkAnd(enc, Domain.encodeRMW(program, ctx));
-        }
+        BoolExpr enc = ctx.mkTrue();
         Set<String> encodedRels = new HashSet<>();
+
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
         }
-        for (Relation relation : relations) {
-            enc = ctx.mkAnd(enc, relation.encode(program, ctx, encodedRels));
+        for (Map.Entry<String, Relation> relation : relations.entrySet()){
+            enc = ctx.mkAnd(enc, relation.getValue().encode(program, ctx, encodedRels));
         }
         return enc;
     }
 
     /**
-     * 
+     *
      * @param program
      * @param ctx
      * @return encoding that ensures all axioms are satisfied and the execution is consistent.
      * @throws Z3Exception
      */
     public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getMemEvents();
+        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkTrue();
         for (Axiom ax : axioms) {
             expr = ctx.mkAnd(expr, ax.Consistent(events, ctx));
@@ -85,7 +121,7 @@ public class Wmm implements WmmInterface{
      * @throws Z3Exception
      */
     public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getMemEvents();
+        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkFalse();
         for (Axiom ax : axioms) {
             expr = ctx.mkOr(expr, ax.Inconsistent(events, ctx));
@@ -105,13 +141,83 @@ public class Wmm implements WmmInterface{
             result.append("\n");
         }
 
-        for (Relation relation : relations) {
-            if(relation.getIsNamed()){
-                result.append(relation);
+        for (Map.Entry<String, Relation> relation : relations.entrySet()) {
+            if(relation.getValue().getIsNamed()){
+                result.append(relation.getValue());
                 result.append("\n");
             }
         }
 
+        for (Map.Entry<String, FilterAbstract> filter : filters.entrySet()){
+            result.append(filter.getValue());
+            result.append("\n");
+        }
+
         return result.toString();
+    }
+
+    // TODO: Later these relations should come from included cat files, e.g., "stdlib.cat" or "fences.cat"
+    private Relation resolveRelation(String name){
+        Relation relation = null;
+
+        if(basicFenceRelations.containsKey(name)) {
+            relation = new RelFencerel(basicFenceRelations.get(name), name);
+
+        } else {
+            switch (name){
+                case "rfe":
+                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("ext"), "rfe");
+                    break;
+                case "rfi":
+                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("int"), "rfi");
+                    break;
+                case "coe":
+                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("ext"), "coe");
+                    break;
+                case "coi":
+                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("int"), "coi");
+                    break;
+                case "fre":
+                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("ext"), "fre");
+                    break;
+                case "fri":
+                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("int"), "fri");
+                    break;
+                case "po-loc":
+                    relation = new RelIntersection(new BasicRelation("po"), new BasicRelation("loc"), "po-loc");
+                    break;
+                case "addr":
+                    relation = new EmptyRel("addr");
+                    break;
+                case "0":
+                    relation = new EmptyRel("0");
+                    break;
+                case "data":
+                    Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
+                    Relation iddTrans = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+                    addRelation(RW);
+                    addRelation(iddTrans);
+                    relation = new RelIntersection(iddTrans, RW, "data");
+                    break;
+                case "ctrlisync":
+                    Relation isync = new RelFencerel("Isync", "isync");
+                    addRelation(isync);
+                    relation = new RelIntersection(new BasicRelation("ctrl"), isync, "ctrlisync");
+                    break;
+                case "ctrlisb":
+                    Relation isb = new RelFencerel("Isb", "isb");
+                    addRelation(isb);
+                    relation = new RelIntersection(new BasicRelation("ctrl"), isb, "ctrlisb");
+                    break;
+                case "rmw":
+                    relation = new RelRMW();
+                    break;
+            }
+        }
+
+        if(relation != null){
+            addRelation(relation);
+        }
+        return relation;
     }
 }

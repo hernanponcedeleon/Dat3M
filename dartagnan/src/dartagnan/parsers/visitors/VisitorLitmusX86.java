@@ -166,21 +166,21 @@ public class VisitorLitmusX86
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = getRegister(mainThread, ctx.r1().getText());
         Location location = getLocation(ctx.location().getText());
-        return new Load(register, location);
+        return new Load(register, location, "_rx");
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         Location location = getLocation(ctx.location().getText());
         AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new Store(location, constant);
+        return new Store(location, constant, "_rx");
     }
 
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = getRegister(mainThread, ctx.r1().getText(), true);
         Location location = getLocation(ctx.location().getText());
-        return new Store(location, register);
+        return new Store(location, register, "_rx");
     }
 
     @Override
@@ -222,7 +222,7 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitMfence(LitmusX86Parser.MfenceContext ctx) {
-        return new Fence("mfence");
+        return new Fence("Mfence");
     }
 
     @Override

@@ -6,43 +6,38 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.AConst;
+import dartagnan.expression.AExpr;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
+import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 public class Write extends MemEvent {
 
-	private AConst val;
+	private AExpr val;
 	private Register reg;
-	private String atomic;
-	
-	public Write(Location loc, Register reg, String atomic) {
-		this.reg = reg;
+
+	public Write(Location loc, AExpr aExpr, String atomic){
+		this.val = aExpr;
+		this.reg = (val instanceof Register) ? (Register) val : null;
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
 		this.memId = hashCode();
+		addFilters(
+				FilterUtils.EVENT_TYPE_ANY,
+				FilterUtils.EVENT_TYPE_MEMORY,
+				FilterUtils.EVENT_TYPE_WRITE
+		);
 	}
 
-    public Write(Location loc, AConst val, String atomic) {
-        this.val = val;
-        this.loc = loc;
-        this.atomic = atomic;
-        this.condLevel = 0;
-        this.memId = hashCode();
-    }
-
 	public Register getReg() {
-		return reg;
+		return (reg);
 	}
 	
 	public String toString() {
-	    if(reg != null){
-            return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, reg);
-        }
         return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, val);
 	}
 
@@ -56,12 +51,7 @@ public class Write extends MemEvent {
 	}
 	
 	public Write clone() {
-        Write newWrite;
-        if(reg != null){
-            newWrite = new Write(loc, reg, atomic);
-        } else {
-            newWrite = new Write(loc, val, atomic);
-        }
+        Write newWrite = new Write(loc, val, atomic);
 		newWrite.condLevel = condLevel;
 		newWrite.memId = memId;
 		newWrite.setUnfCopy(getUnfCopy());
@@ -74,18 +64,13 @@ public class Write extends MemEvent {
 	}
 
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-        Store st;
-	    if(reg != null){
-            st = new Store(loc, reg);
-        } else {
-            st = new Store(loc, val);
-        }
+        Store st = new Store(loc, val, atomic);
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
 		st.setCondLevel(this.condLevel);
 
 		if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
-            Fence mfence = new Fence("mfence", this.condLevel);
+            Fence mfence = new Fence("Mfence", this.condLevel);
 			return new Seq(st, mfence);
 		}
 		
@@ -98,13 +83,13 @@ public class Write extends MemEvent {
                 return st;
             }
 
-            Fence lwsync = new Fence("lwsync", this.condLevel);
+            Fence lwsync = new Fence("Lwsync", this.condLevel);
             if(atomic.equals("_rel")) {
                 return new Seq(lwsync, st);
             }
 
             if(atomic.equals("_sc")) {
-				Fence sync = new Fence("sync", this.condLevel);
+				Fence sync = new Fence("Sync", this.condLevel);
 				if(leading) {
 					return new Seq(sync, st);
 				}
@@ -117,12 +102,12 @@ public class Write extends MemEvent {
                 return st;
             }
 
-            Fence ish1 = new Fence("ish", this.condLevel);
+            Fence ish1 = new Fence("Ish", this.condLevel);
             if(atomic.equals("_rel")) {
                 return new Seq(ish1, st);
             }
 
-            Fence ish2 = new Fence("ish", this.condLevel);
+            Fence ish2 = new Fence("Ish", this.condLevel);
 			if(atomic.equals("_sc")) {
 				return new Seq(ish1, new Seq(st, ish2));
 			}
@@ -133,12 +118,7 @@ public class Write extends MemEvent {
 	}
 
 	public Thread optCompile(String target, boolean ctrl, boolean leading) {
-        Store st;
-        if(reg != null){
-            st = new Store(loc, reg);
-        } else {
-            st = new Store(loc, val);
-        }
+		Store st = new Store(loc, val, atomic);
 		st.setHLId(hashCode());
 		st.setCondLevel(this.condLevel);
 
@@ -146,12 +126,12 @@ public class Write extends MemEvent {
             return st;
         }
 
-		OptFence lwsync = new OptFence("lwsync", this.condLevel);
+		OptFence lwsync = new OptFence("Lwsync", this.condLevel);
         if(atomic.equals("_rel")) {
             return new Seq(lwsync, st);
         }
 
-		OptFence sync = new OptFence("sync", this.condLevel);
+		OptFence sync = new OptFence("Sync", this.condLevel);
 		if(atomic.equals("_sc")) {
 			if(leading) {
 				return new Seq(sync, st);	
@@ -164,16 +144,11 @@ public class Write extends MemEvent {
 	}
 	
 	public Thread allCompile() {
-        Store st;
-        if(reg != null){
-            st = new Store(loc, reg);
-        } else {
-            st = new Store(loc, val);
-        }
+		Store st = new Store(loc, val, atomic);
 		st.setHLId(hashCode());
 		st.setCondLevel(this.condLevel);
-		OptFence os = new OptFence("sync", this.condLevel);
-		OptFence olws = new OptFence("lwsync", this.condLevel);
+		OptFence os = new OptFence("Sync", this.condLevel);
+		OptFence olws = new OptFence("Lwsync", this.condLevel);
 		return new Seq(os, new Seq(olws, st));
 	}
 
