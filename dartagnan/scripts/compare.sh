@@ -4,7 +4,7 @@ echo "TSO"
 for file in benchmarks/*.pts;
 do
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t tso -i $file -unroll 2)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t tso -i $file -unroll 2)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -16,7 +16,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t tso -i $file -unroll 2 -relax)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t tso -i $file -unroll 2 -relax)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -28,7 +28,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t tso -i $file -unroll 2 -idl)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t tso -i $file -unroll 2 -idl)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -40,7 +40,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t tso -i $file -unroll 2 -idl -relax)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t tso -i $file -unroll 2 -idl -relax)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -57,7 +57,7 @@ echo "POWER"
 for file in benchmarks/*.pts;
 do
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t power -i $file -unroll 2)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t power -i $file -unroll 2)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -69,7 +69,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t power -i $file -unroll 2 -relax)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t power -i $file -unroll 2 -relax)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -81,7 +81,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t power -i $file -unroll 2 -idl)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t power -i $file -unroll 2 -idl)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -93,7 +93,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t power -i $file -unroll 2 -idl -relax)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t power -i $file -unroll 2 -idl -relax)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -110,7 +110,7 @@ echo "ARM"
 for file in benchmarks/*.pts;
 do
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t arm -i $file -unroll 2)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t arm -i $file -unroll 2)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -122,7 +122,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t arm -i $file -unroll 2 -relax)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t arm -i $file -unroll 2 -relax)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -134,7 +134,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t arm -i $file -unroll 2 -idl)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t arm -i $file -unroll 2 -idl)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then
@@ -146,7 +146,7 @@ do
    echo \\bench{$file} $diffPort1
 
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java dartagnan/Dartagnan -t arm -i $file -unroll 2 -idl -relax)
+   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t arm -i $file -unroll 2 -idl -relax)
    END=$(python -c 'import time; print time.time()')
    if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
       then

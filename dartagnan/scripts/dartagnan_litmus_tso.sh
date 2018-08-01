@@ -1,6 +1,6 @@
 for file in litmus/X86/*.litmus;
 do
-   java dartagnan/Dartagnan -t tso -i $file > ./dart_tso.out
+   java -Xmx128m dartagnan/Dartagnan -t tso -i $file > ./dart_tso.out
    dart=$(grep -e 'No' dart_tso.out | wc -l)
    herd7 -model cat/tso.cat $file > ./herd_tso.out
    herd=$(grep -e 'No' herd_tso.out | wc -l)
@@ -11,7 +11,7 @@ do
       echo $file
       break
    fi
-   java dartagnan/Dartagnan -t tso -i $file -cat cat/tso.cat > ./dart_tso.out
+   java -Xmx128m dartagnan/Dartagnan -t tso -i $file -cat cat/tso.cat > ./dart_tso.out
    dart=$(grep -e 'No' dart_tso.out | wc -l)
    rm dart_tso.out
    if [ $dart != $herd ]
