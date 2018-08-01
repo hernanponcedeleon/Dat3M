@@ -30,7 +30,6 @@ import static dartagnan.utils.Encodings.encodeCommonExecutions;
 
 import org.apache.commons.cli.*;
 
-@SuppressWarnings("deprecation")
 public class Porthos {
 
     public static void main(String[] args) throws Z3Exception, IOException {
