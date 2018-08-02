@@ -44,9 +44,9 @@ public class If extends Thread {
 	public String toString() {
 		String predicateString = pred != null ? pred.toString() : aPred.toString();
 		if (t2 instanceof Skip)
-			return String.format("%sif %s {\n%s\n%s}", nTimesCondLevel(), predicateString, t1, nTimesCondLevel());
+			return String.format("%sif (%s) {\n%s\n%s}", nTimesCondLevel(), predicateString, t1, nTimesCondLevel());
 		else
-			return String.format("%sif %s {\n%s\n%s}\n%selse {\n%s\n%s}", nTimesCondLevel(), predicateString, t1, nTimesCondLevel(), nTimesCondLevel(), t2, nTimesCondLevel());
+			return String.format("%sif (%s) {\n%s\n%s}\n%selse {\n%s\n%s}", nTimesCondLevel(), predicateString, t1, nTimesCondLevel(), nTimesCondLevel(), t2, nTimesCondLevel());
 	}
 
 	private String nTimesCondLevel() {

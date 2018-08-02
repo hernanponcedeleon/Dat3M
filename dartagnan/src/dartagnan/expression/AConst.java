@@ -8,7 +8,7 @@ import com.microsoft.z3.*;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
-public class AConst extends AExpr {
+public class AConst extends AExpr implements ExprInterface {
 
 	private Integer value;
 	
@@ -29,6 +29,6 @@ public class AConst extends AExpr {
 	}
 	
 	public Set<Register> getRegs() {
-		return new HashSet<Register>();
+		return new HashSet<>();
 	}
 }

@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.filter.FilterUtils;
@@ -14,15 +14,14 @@ import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import static dartagnan.utils.Utils.ssaReg;
 import static dartagnan.utils.Utils.ssaLoc;
 
 public class Store extends MemEvent {
 
-	protected AExpr val;
+	protected ExprInterface val;
 	protected Register reg;
 
-	public Store(Location loc, AExpr val, String atomic) {
+	public Store(Location loc, ExprInterface val, String atomic) {
 		this.val = val;
 		this.reg = (val instanceof Register) ? (Register) val : null;
 		this.loc = loc;
@@ -38,7 +37,7 @@ public class Store extends MemEvent {
 	public Register getReg() {
 		return reg;
 	}
-	
+
 	public String toString() {
         return String.format("%s%s := %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, val);
 	}
@@ -54,7 +53,7 @@ public class Store extends MemEvent {
 	
 	public Store clone() {
         Location newLoc = loc.clone();
-        AExpr newVal = val.clone();
+        ExprInterface newVal = val.clone();
 		Store newStore = new Store(newLoc, newVal, atomic);
 		newStore.condLevel = condLevel;
 		newStore.setHLId(getHLId());
@@ -67,15 +66,9 @@ public class Store extends MemEvent {
 			throw new RuntimeException("Main thread is not set in " + this);
 		}
 
+		Expr z3Expr = val.toZ3(map, ctx);
 		Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
 		this.ssaLoc = z3Loc;
-		return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, encodeValue(map, ctx, reg, val))), map);
-	}
-
-	protected Expr encodeValue(MapSSA map, Context ctx, Register r, AExpr v){
-		if(r != null){
-			return ssaReg(r, map.get(r), ctx);
-		}
-		return ctx.mkInt(v.toString());
+		return new Pair<>(ctx.mkImplies(executes(ctx), val.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
 	}
 }

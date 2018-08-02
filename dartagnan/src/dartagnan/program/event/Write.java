@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.ExprInterface;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.filter.FilterUtils;
@@ -16,11 +16,11 @@ import dartagnan.utils.Pair;
 
 public class Write extends MemEvent {
 
-	private AExpr val;
+	private ExprInterface val;
 	private Register reg;
 
-	public Write(Location loc, AExpr aExpr, String atomic){
-		this.val = aExpr;
+	public Write(Location loc, ExprInterface expr, String atomic){
+		this.val = expr;
 		this.reg = (val instanceof Register) ? (Register) val : null;
 		this.loc = loc;
 		this.atomic = atomic;
@@ -36,7 +36,7 @@ public class Write extends MemEvent {
 	public Register getReg() {
 		return (reg);
 	}
-	
+
 	public String toString() {
         return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, val);
 	}

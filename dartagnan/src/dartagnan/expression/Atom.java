@@ -10,7 +10,7 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
-public class Atom extends BExpr {
+public class Atom extends BExpr implements ExprInterface {
 	
 	private AExpr lhs;
 	private AExpr rhs;

@@ -8,7 +8,7 @@ import com.microsoft.z3.*;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
-public class AExpr {
+public class AExpr implements ExprInterface {
 
 	private AExpr lhs;
 	private AExpr rhs;
@@ -55,6 +55,10 @@ public class AExpr {
 		setRegs.addAll(lhs.getRegs());
 		setRegs.addAll(rhs.getRegs());
 		return setRegs;
+	}
+
+	public BoolExpr encodeAssignment(MapSSA map, Context ctx, Expr target, Expr value){
+		return ctx.mkEq(target, value);
 	}
 }
 

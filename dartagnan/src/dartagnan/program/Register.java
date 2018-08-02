@@ -42,7 +42,7 @@ public class Register extends AExpr {
 		if(getMainThread() == null) {
 			System.out.println(String.format("Check toZ3() for %s: null pointer!", this));
 		}
-		return (ArithExpr) ssaReg(this, map.get(this), ctx);
+		return ssaReg(this, map.get(this), ctx);
 	}
 	
 	public Set<Register> getRegs() {

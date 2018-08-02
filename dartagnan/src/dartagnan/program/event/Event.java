@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.ExprInterface;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.utils.LastModMap;
@@ -164,7 +164,7 @@ public abstract class Event extends Thread {
 		return null;
 	}
 
-	public AExpr getExpr() {
+	public ExprInterface getExpr() {
 		// This should be never executes; should match a more concrete class
 		System.out.println(String.format("Check getExpr for %s", this));
 		return null;

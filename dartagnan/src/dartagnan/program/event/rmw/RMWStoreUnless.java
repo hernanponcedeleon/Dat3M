@@ -15,6 +15,7 @@ import java.util.Collections;
 
 import static dartagnan.utils.Utils.ssaLoc;
 
+// TODO: Support for conversion from BExpr
 public class RMWStoreUnless extends RMWStore {
 
     private AExpr cmp;
@@ -30,7 +31,7 @@ public class RMWStoreUnless extends RMWStore {
         Location newLoc = loc.clone();
         Load newLoad = loadEvent.clone();
         AExpr newCmp = cmp.clone();
-        AExpr newVal = val.clone();
+        AExpr newVal = (AExpr) val.clone();
         RMWStoreUnless newStore = new RMWStoreUnless(newLoad, newLoc, newCmp, newVal, atomic);
         newStore.condLevel = condLevel;
         newStore.setHLId(getHLId());
@@ -51,7 +52,7 @@ public class RMWStoreUnless extends RMWStore {
         Expr z3LocNew = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
         this.ssaLoc = z3LocNew;
 
-        Expr z3Val = encodeValue(map, ctx, reg, val);
+        Expr z3Val = encodeValue(map, ctx, reg, (AExpr) val);
         Expr z3Cmp = encodeValue(map, ctx, cmpReg, cmp);
 
         return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx),
