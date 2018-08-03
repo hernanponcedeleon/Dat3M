@@ -79,7 +79,6 @@ public class Domain {
 		}
 
 		for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_STORE)) {
-			BoolExpr orClause = ctx.mkFalse();
 			for(Event x : eventsLocal){
 				if(!(x.getMainThread().equals(e.getMainThread()) || e.getEId() <= x.getEId())){
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
@@ -89,16 +88,12 @@ public class Domain {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
 
 				} else {
-					orClause = ctx.mkOr(orClause, edge("idd", x, e, ctx));
+					enc = ctx.mkAnd(enc, edge("idd", x, e, ctx));
 				}
-			}
-			if(!orClause.equals(ctx.mkFalse())){
-				enc = ctx.mkAnd(enc, orClause);
 			}
 		}
 
 		for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_LOAD)) {
-			BoolExpr orClause = ctx.mkFalse();
 			for(Event x : eventsLocal){
 				if(!(x.getMainThread().equals(e.getMainThread()) || e.getEId() <= x.getEId())){
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
@@ -109,11 +104,8 @@ public class Domain {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
 
 				} else {
-					orClause = ctx.mkOr(orClause, edge("idd", x, e, ctx));
+					enc = ctx.mkAnd(enc, edge("idd", x, e, ctx));
 				}
-			}
-			if(!orClause.equals(ctx.mkFalse())){
-				enc = ctx.mkAnd(enc, orClause);
 			}
 		}
 
@@ -124,7 +116,6 @@ public class Domain {
 			}
 
 			if(!mapEvents.isEmpty()){
-				BoolExpr orClause = ctx.mkFalse();
 				for(Event x : eventsLocal){
 					if(!(x.getMainThread().equals(e.getMainThread()) || e.getEId() <= x.getEId())){
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
@@ -132,11 +123,8 @@ public class Domain {
 					} else if(!mapEvents.contains(x)){
 						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
 					} else {
-						orClause = ctx.mkOr(orClause, edge("idd", x, e, ctx));
+						enc = ctx.mkAnd(enc, edge("idd", x, e, ctx));
 					}
-				}
-				if(!orClause.equals(ctx.mkFalse())){
-					enc = ctx.mkAnd(enc, orClause);
 				}
 			}
 		}
