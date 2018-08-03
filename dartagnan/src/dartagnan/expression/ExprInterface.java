@@ -12,6 +12,8 @@ public interface ExprInterface {
 
     Expr toZ3(MapSSA map, Context ctx);
 
+    BoolExpr toZ3Boolean(MapSSA map, Context ctx);
+
     Set<Register> getRegs();
 
     ExprInterface clone();

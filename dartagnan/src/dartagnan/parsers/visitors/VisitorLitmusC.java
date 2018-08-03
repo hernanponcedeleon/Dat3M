@@ -29,7 +29,7 @@ public class VisitorLitmusC
     private Map<String, List<Thread>> mapThreadEvents = new HashMap<String, List<Thread>>();
     private Map<String, Map<String, Register>> mapRegisters = new HashMap<String, Map<String, Register>>();
     private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<String, Map<String, Location>>();
-    private Stack<AExpr> returnStack = new Stack<>();
+    private Stack<ExprInterface> returnStack = new Stack<>();
     private String currentThread;
     private Program program = new Program("");
 
@@ -209,7 +209,7 @@ public class VisitorLitmusC
     // Return expressions (all other return expressions are reduced to these ones)
 
     // TODO: A separate class for this event (for compilation to other architectures)
-    private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, AExpr value, String op, String memoryOrder){
+    private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, ExprInterface value, String op, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
@@ -240,7 +240,7 @@ public class VisitorLitmusC
     }
 
     // TODO: A separate class for this event (for compilation to other architectures)
-    private Thread visitAtomicFetchOp(LitmusCParser.VariableContext varCtx, AExpr value, String op, String memoryOrder){
+    private Thread visitAtomicFetchOp(LitmusCParser.VariableContext varCtx, ExprInterface value, String op, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
@@ -271,7 +271,7 @@ public class VisitorLitmusC
     }
 
     // TODO: A separate class for this event (for compilation to other architectures)
-    private Thread visitAtomicXchg(LitmusCParser.VariableContext varCtx, AExpr value, String memoryOrder){
+    private Thread visitAtomicXchg(LitmusCParser.VariableContext varCtx, ExprInterface value, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
@@ -299,7 +299,7 @@ public class VisitorLitmusC
 
     }
 
-    private Thread visitAtomicCmpxchg(LitmusCParser.VariableContext varCtx, AExpr cmp, AExpr value, String memoryOrder){
+    private Thread visitAtomicCmpxchg(LitmusCParser.VariableContext varCtx, ExprInterface cmp, ExprInterface value, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
@@ -326,7 +326,7 @@ public class VisitorLitmusC
         return result;
     }
 
-    private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, AExpr value, String op){
+    private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, ExprInterface value, String op){
         throw new ParsingException("visitAtomicOpAndTest not implemented");
         /*
         // TODO: Implementation
@@ -379,16 +379,12 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
-        throw new ParsingException("visitReOpCompare not implemented");
-        /*
+        //throw new ParsingException("visitReOpCompare not implemented");
         Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
-        AExpr v1 = returnStack.pop();
+        ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
-        AExpr v2 = returnStack.pop();
-
-        // TODO: Conversion between BExpr and AExpr
-        //returnStack.push(new Atom(v1, ctx.opCompare().getText(), v2));
-        returnStack.push(new AConst(1));
+        ExprInterface v2 = returnStack.pop();
+        returnStack.push(new Atom(v1, ctx.opCompare().getText(), v2));
 
         if(t1 != null){
             if(t2 != null){
@@ -397,15 +393,14 @@ public class VisitorLitmusC
             return t1;
         }
         return t2;
-        */
     }
 
     @Override
     public Thread visitReOpArith(LitmusCParser.ReOpArithContext ctx){
         Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
-        AExpr v1 = returnStack.pop();
+        ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
-        AExpr v2 = returnStack.pop();
+        ExprInterface v2 = returnStack.pop();
         returnStack.push(new AExpr(v1, ctx.opArith().getText(), v2));
 
         if(t1 != null){
@@ -456,20 +451,19 @@ public class VisitorLitmusC
     // ----------------------------------------------------------------------------------------------------------------
     // NonReturn expressions (all other return expressions are reduced to these ones)
 
-    private Thread visitAtomicOp(LitmusCParser.VariableContext varCtx, AExpr value, String op){
+    private Thread visitAtomicOp(LitmusCParser.VariableContext varCtx, ExprInterface value, String op){
         // TODO: Implementation
         throw new ParsingException("visitAtomicOp is not implemented");
     }
 
-    private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, AExpr value, String memoryOrder){
+    private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, ExprInterface value, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         return new Write(location, value, memoryOrder);
     }
 
     private Thread visitFenceExpression(String fenceName){
-        throw new ParsingException("visitFenceExpression is not implemented");
-        //return new Fence(fenceName);
+        return new Fence(fenceName);
     }
 
     @Override
@@ -1073,32 +1067,37 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitNreSmpMbAfterSpinlock(LitmusCParser.NreSmpMbAfterSpinlockContext ctx){
-        return visitFenceExpression("After-spinlock");
+        throw new ParsingException("visitNreSmpMbAfterSpinlock is not implemented");
+        //return visitFenceExpression("After-spinlock");
     }
 
     @Override
     public Thread visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
-        return visitFenceExpression("Rcu-lock");
+        throw new ParsingException("visitNreRcuReadLock is not implemented");
+        //return visitFenceExpression("Rcu-lock");
     }
 
     @Override
     public Thread visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
-        return visitFenceExpression("Rcu-unlock");
+        throw new ParsingException("visitNreRcuReadUnlock is not implemented");
+        //return visitFenceExpression("Rcu-unlock");
     }
 
     @Override
     public Thread visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
-        return visitFenceExpression("Sync-rcu");
+        throw new ParsingException("visitNreSynchronizeRcu is not implemented");
+        //return visitFenceExpression("Sync-rcu");
     }
 
     @Override
     public Thread visitNreSynchronizeRcuExpedited(LitmusCParser.NreSynchronizeRcuExpeditedContext ctx){
-        return visitFenceExpression("Sync-rcu");
+        throw new ParsingException("visitNreSynchronizeRcuExpedited is not implemented");
+        //return visitFenceExpression("Sync-rcu");
     }
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Converting returnExpression to AExpr
+    // Converting returnExpression to ExprInterface
 
     private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
@@ -1125,9 +1124,9 @@ public class VisitorLitmusC
             String memoryOrder
     ){
         Thread t1 = (Thread)re1Ctx.accept(this);
-        AExpr v1 = returnStack.pop();
+        ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)re2Ctx.accept(this);
-        AExpr v2 = returnStack.pop();
+        ExprInterface v2 = returnStack.pop();
 
         Thread result = visitAtomicCmpxchg(varCtx, v1, v2, memoryOrder);
         if(t2 != null){

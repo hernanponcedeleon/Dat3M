@@ -16,9 +16,13 @@ public class AExpr implements ExprInterface {
 	
 	public AExpr() {};
 	
-	public AExpr(AExpr lhs, String op, AExpr rhs) {
-		this.lhs = lhs;
-		this.rhs = rhs;
+	public AExpr(ExprInterface lhs, String op, ExprInterface rhs) {
+	    if(!(lhs instanceof AExpr) || !(rhs instanceof AExpr)){
+	        // TODO: Implementation
+	        throw new RuntimeException("AExpr is not implemented for BExpr arguments");
+        }
+		this.lhs = (AExpr)lhs;
+		this.rhs = (AExpr)rhs;
 		this.op = op;
 	}
 	

@@ -42,6 +42,10 @@ public class BExpr implements ExprInterface {
 		return null;
 	}
 
+    public BoolExpr toZ3Boolean(MapSSA map, Context ctx){
+	    return toZ3(map, ctx);
+    }
+
 	public Set<Register> getRegs() {
 		Set<Register> setRegs = new HashSet<Register>();
 		setRegs.addAll(b1.getRegs());
