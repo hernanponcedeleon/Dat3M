@@ -1,4 +1,4 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -7,8 +7,7 @@ import java.util.Set;
 import com.microsoft.z3.*;
 
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.event.Event;
-import dartagnan.program.event.Skip;
+import dartagnan.program.Thread;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -17,7 +16,7 @@ import static dartagnan.utils.Encodings.encodeMissingIndexes;
 import static dartagnan.utils.Utils.mergeMaps;
 import static dartagnan.utils.Utils.mergeMapLastMod;
 
-public class If extends Thread {
+public class If extends Event {
 
     private ExprInterface pred;
     private Thread t1;
@@ -29,6 +28,10 @@ public class If extends Thread {
         this.t2 = t2;
         t1.incCondLevel();
         t2.incCondLevel();
+    }
+
+    public boolean is(String param){
+        return false;
     }
 
     public String toString() {
@@ -59,17 +62,10 @@ public class If extends Thread {
     }
 
     public LastModMap setLastModMap(LastModMap map) {
+        super.setLastModMap(map.clone());
         LastModMap map1 = t1.setLastModMap(map.clone());
         LastModMap map2 = t2.setLastModMap(map.clone());
         return mergeMapLastMod(map1, map2);
-    }
-
-    public void setCondRegs(Set<Register> setRegs) {
-        Set<Register> newSetRegs = new HashSet<Register>();
-        newSetRegs.addAll(setRegs);
-        newSetRegs.addAll(pred.getRegs());
-        t1.setCondRegs(newSetRegs);
-        t2.setCondRegs(newSetRegs);
     }
 
     public void incCondLevel() {
@@ -135,6 +131,7 @@ public class If extends Thread {
     }
 
     public Integer setEId(Integer i) {
+        i = super.setEId(i);
         i = t1.setEId(i);
         i = t2.setEId(i);
         return i;
@@ -152,6 +149,7 @@ public class If extends Thread {
         Set<Event> ret = new HashSet<Event>();
         ret.addAll(t1.getEvents());
         ret.addAll(t2.getEvents());
+        ret.add(this);
         return ret;
     }
 
@@ -176,6 +174,10 @@ public class If extends Thread {
             map = mergeMaps(map1, map2);
             return new Pair<BoolExpr, MapSSA>(enc, map);
         }
+    }
+
+    public ExprInterface getExpr(){
+        return pred;
     }
 
     public BoolExpr encodeCF(Context ctx) throws Z3Exception {

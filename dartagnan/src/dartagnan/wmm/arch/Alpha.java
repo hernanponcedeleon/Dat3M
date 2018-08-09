@@ -39,7 +39,7 @@ public class Alpha implements WmmInterface {
 
 		EventRepository eventRepository = program.getEventRepository();
 		Set<Event> events = eventRepository.getEvents(EventRepository.EVENT_MEMORY);
-		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
 		Set<Event> eventsS = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
 
 		BoolExpr enc = EncodingsCAT.satIntersection("ctrlisync", "ctrl", "isync", eventsS, ctx);
@@ -51,7 +51,7 @@ public class Alpha implements WmmInterface {
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("po-loc", "com", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("com-alpha", "(co+fr)", "rfe", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satTransFixPoint("idd", eventsL, approx, ctx));
-	    enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("data", "idd^+", "RW", eventsL, ctx));
+	    enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("data", "idd^+", "RW", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satIntersection("po-loc", "WR", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("data", "(po-loc&WR)", events, ctx));
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satTransFixPoint("(data+(po-loc&WR))", events, approx, ctx));

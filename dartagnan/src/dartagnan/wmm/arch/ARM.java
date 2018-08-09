@@ -51,7 +51,7 @@ public class ARM implements WmmInterface {
 
 		EventRepository eventRepository = program.getEventRepository();
 		Set<Event> events = eventRepository.getEvents(EventRepository.EVENT_MEMORY);
-		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
 		Set<Event> eventsS = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
 
 		BoolExpr enc = satIntersection("ctrlisb", "ctrl", "isb", eventsS, ctx);

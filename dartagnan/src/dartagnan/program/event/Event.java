@@ -20,7 +20,6 @@ public abstract class Event extends Thread {
 	private Integer unfCopy;
 	protected String atomic;
 
-	private Set<Register> condReg;
 	protected LastModMap lastModMap;
 	protected Set<String> filter = new HashSet<>();
 
@@ -134,17 +133,6 @@ public abstract class Event extends Thread {
 
 	public BoolExpr allExecute(Context ctx) throws Z3Exception {
 		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
-	}
-
-	public Set<Register> getCondRegs() {
-		if(condReg == null) {
-			System.out.println(String.format("Check getCondRegs for %s: null pointer!", repr()));
-		}
-		return condReg;
-	}
-	
-	public void setCondRegs(Set<Register> regSet) {
-		condReg = regSet;
 	}
 
 	public Register getReg() {

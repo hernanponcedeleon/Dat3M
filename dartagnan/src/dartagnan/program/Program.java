@@ -1,7 +1,6 @@
 package dartagnan.program;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
@@ -86,7 +85,7 @@ public class Program {
 		threads = unrolledThreads;
 		
 		Set<Location> locs = eventRepository.getEvents(EventRepository.EVENT_MEMORY).stream()
-				.map(e -> ((MemEvent) e).getLoc()).collect(Collectors.toSet());
+				.map(e -> e.getLoc()).collect(Collectors.toSet());
 		for(Location loc : locs) {
 			threads.add(new Init(loc));
 		}
@@ -132,11 +131,9 @@ public class Program {
 		iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-            t.setCondRegs(new HashSet<Register>());
             t.setLastModMap(new LastModMap());
-			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load || e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet());
 			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
 				reg.setMainThread(t.tid);
 			}
@@ -163,11 +160,9 @@ public class Program {
 		iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-            t.setCondRegs(new HashSet<Register>());
             t.setLastModMap(new LastModMap());
-			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load || e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet());
 			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
-			regs.addAll(t.getEvents().stream().filter(e -> e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
 				reg.setMainThread(t.tid);
 			}

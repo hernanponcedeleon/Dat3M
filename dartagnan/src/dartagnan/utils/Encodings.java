@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.program.HighLocation;
-import dartagnan.program.If;
 import dartagnan.program.event.*;
 import dartagnan.program.Location;
 import dartagnan.program.Program;

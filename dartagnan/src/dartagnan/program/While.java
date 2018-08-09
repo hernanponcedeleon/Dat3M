@@ -5,6 +5,7 @@ import java.util.Collections;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.BExpr;
+import dartagnan.program.event.If;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
 import dartagnan.program.event.Store;

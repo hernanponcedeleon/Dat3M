@@ -39,7 +39,7 @@ public class RMO implements WmmInterface {
 
 		EventRepository eventRepository = program.getEventRepository();
 		Set<Event> events = eventRepository.getEvents(EventRepository.EVENT_MEMORY);
-		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
 		Set<Event> eventsS = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
 
 		BoolExpr enc = satIntersection("ctrlisync", "ctrl", "isync", eventsS, ctx);
@@ -52,7 +52,7 @@ public class RMO implements WmmInterface {
 		enc = ctx.mkAnd(enc, satUnion("(po-loc\\RR)", "com", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com-rmo", "(co+fr)", "rfe", events, ctx));
 		enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));
-		enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", eventsL, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", events, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("po-loc", "WR", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("data", "(po-loc&WR)", events, ctx));
 		enc = ctx.mkAnd(enc, satTransFixPoint("(data+(po-loc&WR))", events, approx, ctx));

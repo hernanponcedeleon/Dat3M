@@ -19,6 +19,7 @@ public class EventRepository {
     public static final int EVENT_SKIP          = 32;
     public static final int EVENT_STORE         = 64;
     public static final int EVENT_RMW_STORE     = 128;
+    public static final int EVENT_IF            = 256;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
     private Program program;
@@ -54,6 +55,7 @@ public class EventRepository {
                 || ((mask & EVENT_FENCE) > 0 && event instanceof Fence)
                 || ((mask & EVENT_SKIP) > 0 && event instanceof Skip)
                 || ((mask & EVENT_STORE) > 0 && event instanceof Store)
-                || ((mask & EVENT_RMW_STORE) > 0 && event instanceof RMWStore);
+                || ((mask & EVENT_RMW_STORE) > 0 && event instanceof RMWStore)
+                || ((mask & EVENT_IF) > 0 && event instanceof If);
     }
 }

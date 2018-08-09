@@ -194,7 +194,7 @@ public class Wmm implements WmmInterface{
                     break;
                 case "data":
                     Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    Relation iddInv = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+                    Relation iddInv = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
                     addRelation(RW);
                     addRelation(iddInv);
                     relation = new RelInterSect(iddInv, RW, "data");

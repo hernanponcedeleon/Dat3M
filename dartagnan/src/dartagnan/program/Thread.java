@@ -105,11 +105,6 @@ public class Thread {
 		return "CF" + hashCode();
 	}
 
-	public void setCondRegs(Set<Register> setRegs) {
-		// TODO Auto-generated method stub
-		
-	}
-
 	public LastModMap setLastModMap(LastModMap newMap) {
 		// TODO Auto-generated method stub
 		return null;

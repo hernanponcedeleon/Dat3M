@@ -25,7 +25,6 @@ public class Domain {
 		EventRepository eventRepository = program.getEventRepository();
 		Set<Event> eventsMem = eventRepository.getEvents(EventRepository.EVENT_MEMORY);
 		Set<Event> eventsMemSkip = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
-		Set<Event> eventsMemSkipLocal = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP | EventRepository.EVENT_LOCAL);
 		Set<Event> eventsLocal = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
 		Set<Event> eventsStoreInit = eventRepository.getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT);
 		Set<Event> eventsInit = eventRepository.getEvents(EventRepository.EVENT_INIT);
@@ -109,7 +108,7 @@ public class Domain {
 			}
 		}
 
-		for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_LOCAL)) {
+		for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF)) {
 			Set<Event> mapEvents = new HashSet<>();
 			for(Register reg : e.getExpr().getRegs()) {
 				mapEvents.addAll(e.getLastModMap().get(reg));
@@ -142,16 +141,18 @@ public class Domain {
 			}
 		}
 
-		for(Event e1 : eventsLoadLocal) {
-			Set<Event> eventsMemSkipLocalSameThread = eventsMemSkipLocal.stream().filter(e2 -> e2.getMainThread().equals(e1.getMainThread())).collect(Collectors.toSet());
+		for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_IF)){
+			for(Event e2 : ((If) e1).getT1().getEvents()){
+				enc = ctx.mkAnd(enc, edge("ctrlDirect", e1, e2, ctx));
+			}
+			for(Event e2 : ((If) e1).getT2().getEvents()){
+				enc = ctx.mkAnd(enc, edge("ctrlDirect", e1, e2, ctx));
+			}
+		}
 
+		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF)) {
+			Set<Event> eventsMemSkipLocalSameThread = program.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e2 -> e2.getMainThread().equals(e1.getMainThread())).collect(Collectors.toSet());
 			for(Event e2 : eventsMemSkipLocalSameThread){
-				if(e2.getEId() > e1.getEId() && e2.getCondRegs().contains(e1.getReg())){
-					enc = ctx.mkAnd(enc, edge("ctrlDirect", e1, e2, ctx));
-				} else {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrlDirect", e1, e2, ctx)));
-				}
-
 				BoolExpr ctrlClause = edge("ctrlDirect", e1, e2, ctx);
 				for(Event e3 : eventsMemSkipLocalSameThread) {
 					ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("ctrl", e1, e3, ctx), edge("po", e3, e2, ctx)));

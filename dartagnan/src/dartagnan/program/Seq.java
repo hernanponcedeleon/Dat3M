@@ -47,11 +47,6 @@ public class Seq extends Thread {
 		return t2.setLastModMap(newMap);
 	}
 	
-	public void setCondRegs(Set<Register> setRegs) {
-		t1.setCondRegs(setRegs);
-		t2.setCondRegs(setRegs);
-	}
-	
 	public void incCondLevel() {
 		condLevel++;
 		t1.incCondLevel();

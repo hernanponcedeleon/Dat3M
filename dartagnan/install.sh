@@ -56,6 +56,7 @@ src/dartagnan/program/event/rmw/RMWStoreUnless.java \
 src/dartagnan/program/event/rmw/Xchg.java \
 src/dartagnan/program/event/Event.java \
 src/dartagnan/program/event/Fence.java \
+src/dartagnan/program/event/If.java \
 src/dartagnan/program/event/Init.java \
 src/dartagnan/program/event/Load.java \
 src/dartagnan/program/event/Local.java \
@@ -66,7 +67,6 @@ src/dartagnan/program/event/Skip.java  \
 src/dartagnan/program/event/Store.java \
 src/dartagnan/program/event/Write.java \
 src/dartagnan/program/HighLocation.java \
-src/dartagnan/program/If.java \
 src/dartagnan/program/Location.java \
 src/dartagnan/program/Program.java \
 src/dartagnan/program/Register.java \
