@@ -19,7 +19,7 @@ import dartagnan.program.utils.EventRepository;
 
 public class Domain {
 	
-	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
+	public static BoolExpr encode(Program program, Context ctx, boolean encCtrlPo) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 
 		EventRepository eventRepository = program.getEventRepository();
@@ -152,13 +152,24 @@ public class Domain {
 
 		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF)) {
 			Set<Event> eventsMemSkipLocalSameThread = program.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e2 -> e2.getMainThread().equals(e1.getMainThread())).collect(Collectors.toSet());
-			for(Event e2 : eventsMemSkipLocalSameThread){
-				BoolExpr ctrlClause = edge("ctrlDirect", e1, e2, ctx);
-				for(Event e3 : eventsMemSkipLocalSameThread) {
-					ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("ctrl", e1, e3, ctx), edge("po", e3, e2, ctx)));
-					ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("idd^+", e1, e3, ctx), edge("ctrl", e3, e2, ctx)));
+
+			if(encCtrlPo){
+				for(Event e2 : eventsMemSkipLocalSameThread){
+					BoolExpr ctrlClause = edge("ctrlDirect", e1, e2, ctx);
+					for(Event e3 : eventsMemSkipLocalSameThread) {
+						ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("ctrl", e1, e3, ctx), edge("po", e3, e2, ctx)));
+						ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("idd^+", e1, e3, ctx), edge("ctrl", e3, e2, ctx)));
+					}
+					enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrl", e1, e2, ctx), ctrlClause));
 				}
-				enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrl", e1, e2, ctx), ctrlClause));
+			} else {
+				for(Event e2 : eventsMemSkipLocalSameThread){
+					BoolExpr ctrlClause = edge("ctrlDirect", e1, e2, ctx);
+					for(Event e3 : eventsMemSkipLocalSameThread) {
+						ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("idd^+", e1, e3, ctx), edge("ctrl", e3, e2, ctx)));
+					}
+					enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrl", e1, e2, ctx), ctrlClause));
+				}
 			}
 		}
 

@@ -125,7 +125,7 @@ public class Dartagnan {
 		s.add(p.getAss().encode(ctx));
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
-		s.add(Domain.encode(p, ctx));
+		s.add(Domain.encode(p, ctx, wmmResolver.encodeCtrlPo(target)));
         s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcm.Consistent(p, ctx));
 
