@@ -42,9 +42,6 @@ public class VisitorLitmusC
         visitThreadList(ctx.threadList());
         visitAssertionFilter(ctx.assertionFilter());
         visitAssertionList(ctx.assertionList());
-
-        //System.out.println("\n\n" + ctx.getText());
-        //System.out.println(program);
         return program;
     }
 
@@ -491,8 +488,7 @@ public class VisitorLitmusC
     @Override
     public Object visitAssertionFilter(LitmusCParser.AssertionFilterContext ctx) {
         if(ctx != null){
-            // TODO: Implementation
-            throw new ParsingException("visitAssertionFilter is not implemented");
+            program.setAssFilter((AbstractAssert)visit(ctx.assertion()));
         }
         return null;
     }

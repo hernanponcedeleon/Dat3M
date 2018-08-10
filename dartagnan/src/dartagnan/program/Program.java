@@ -18,6 +18,7 @@ public class Program {
 
 	private String name;
 	private AbstractAssert ass;
+    private AbstractAssert assFilter;
 	private List<Thread> threads;
 	private EventRepository eventRepository = new EventRepository(this);
 
@@ -59,6 +60,14 @@ public class Program {
 	public void setAss(AbstractAssert ass) {
 		this.ass = ass;
 	}
+
+    public AbstractAssert getAssFilter() {
+        return assFilter;
+    }
+
+    public void setAssFilter(AbstractAssert ass) {
+        this.assFilter = ass;
+    }
 	
 	public Program clone() {
 		List<Thread> newThreads = new ArrayList<Thread>();

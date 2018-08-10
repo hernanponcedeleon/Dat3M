@@ -123,6 +123,9 @@ public class Dartagnan {
 
 		s.add(p.encodeDF(ctx));
 		s.add(p.getAss().encode(ctx));
+        if(p.getAssFilter() != null){
+            s.add(p.getAssFilter().encode(ctx));
+        }
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx, wmmResolver.encodeCtrlPo(target)));
@@ -134,6 +137,9 @@ public class Dartagnan {
 			result = !result;
 		}
 
+        if(p.getAssFilter() != null){
+            System.out.println("Filter " + (p.getAssFilter()));
+        }
 		System.out.println("Condition " + p.getAss().toStringWithType());
 		System.out.println(result ? "Ok" : "No");
 
