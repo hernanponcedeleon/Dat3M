@@ -161,21 +161,21 @@ public class Porthos {
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceDomain = Domain.encode(pSource, ctx, wmmResolver.encodeCtrlPo(source));
-        BoolExpr sourceMM = mcmS.encode(p, ctx, false, cmd.hasOption("idl"));
+        BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
 
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
         s.add(Domain.encode(pTarget, ctx, wmmResolver.encodeCtrlPo(target)));
-        s.add(mcmT.encode(p, ctx, false, cmd.hasOption("idl")));
-        s.add(mcmT.Consistent(p, ctx));
+        s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
+        s.add(mcmT.Consistent(pTarget, ctx));
 
         s.add(sourceDF);
         s.add(sourceCF);
         s.add(sourceDF_RF);
         s.add(sourceDomain);
         s.add(sourceMM);
-        s.add(mcmS.Inconsistent(p, ctx));
+        s.add(mcmS.Inconsistent(pSource, ctx));
 
         s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
@@ -184,7 +184,7 @@ public class Porthos {
         s2.add(sourceDF_RF);
         s2.add(sourceDomain);
         s2.add(sourceMM);
-        s2.add(mcmS.Consistent(p, ctx));
+        s2.add(mcmS.Consistent(pSource, ctx));
 
 
 //        if(!statePortability) {

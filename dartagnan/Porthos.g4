@@ -180,8 +180,8 @@ assertionType returns [String t]
 
 assertion returns [AbstractAssert ass]
     : '(' a = assertion ')' {$ass = $a.ass;}
-    | a1 = assertion AMP AMP a2 = assertion {$ass = new AssertCompositeAnd($a1.ass, $a2.ass);}
-    | a1 = assertion BAR BAR a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
+    | a1 = assertion AMPAMP a2 = assertion {$ass = new AssertCompositeAnd($a1.ass, $a2.ass);}
+    | a1 = assertion BARBAR a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
     | l = location '=' value = DIGIT{
         Location loc = $l.loc;
         $ass = new AssertLocation(loc, Integer.parseInt($value.getText()));
@@ -244,6 +244,8 @@ SUB : '-';
 MULT : '*';
 DIV : '/';
 MOD : '%';
+AMPAMP : '&&';
+BARBAR : '||';
 AMP : '&';
 BAR : '|';
 AND : 'and';
