@@ -11,6 +11,8 @@ import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
 import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.event.lock.RCULock;
+import dartagnan.program.event.lock.RCUUnlock;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.rmw.RMWStoreIf;
 import javafx.util.Pair;
@@ -30,6 +32,7 @@ public class VisitorLitmusC
     private Map<String, Map<String, Register>> mapRegisters = new HashMap<String, Map<String, Register>>();
     private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<String, Map<String, Location>>();
     private Stack<ExprInterface> returnStack = new Stack<>();
+    private Stack<RCULock> rcuLockStack = new Stack<>();
     private String currentThread;
     private Program program = new Program("");
 
@@ -102,6 +105,9 @@ public class VisitorLitmusC
         initThread(currentThread);
         List<Thread> initEvents = getThreadEvents(currentThread);
         Thread result = visitExpressionSequence(ctx);
+        if(!rcuLockStack.empty()){
+            throw new RuntimeException("Unbalanced RCU lock in thread " + currentThread);
+        }
         if (!(initEvents.isEmpty())) {
             result = new Seq(Utils.listToThread(initEvents), result);
         }
@@ -376,7 +382,6 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
-        //throw new ParsingException("visitReOpCompare not implemented");
         Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
         ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
@@ -479,6 +484,33 @@ public class VisitorLitmusC
     public Thread visitNreSpinUnlockWait(LitmusCParser.NreSpinUnlockWaitContext ctx){
         // TODO: Implementation
         throw new ParsingException("visitNreSpinUnlockWait is not implemented");
+    }
+
+    @Override
+    public Thread visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
+        RCULock lock = new RCULock();
+        rcuLockStack.push(lock);
+        return lock;
+    }
+
+    @Override
+    public Thread visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
+        try {
+            RCULock lock = rcuLockStack.pop();
+            return new RCUUnlock(lock);
+        } catch (EmptyStackException e){
+            throw new RuntimeException("Unbalanced RCU unlock in thread " + currentThread);
+        }
+    }
+
+    @Override
+    public Thread visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
+        return visitFenceExpression("Sync-rcu");
+    }
+
+    @Override
+    public Thread visitNreSynchronizeRcuExpedited(LitmusCParser.NreSynchronizeRcuExpeditedContext ctx){
+        return visitFenceExpression("Sync-rcu");
     }
 
 
@@ -1065,30 +1097,6 @@ public class VisitorLitmusC
     public Thread visitNreSmpMbAfterSpinlock(LitmusCParser.NreSmpMbAfterSpinlockContext ctx){
         throw new ParsingException("visitNreSmpMbAfterSpinlock is not implemented");
         //return visitFenceExpression("After-spinlock");
-    }
-
-    @Override
-    public Thread visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
-        throw new ParsingException("visitNreRcuReadLock is not implemented");
-        //return visitFenceExpression("Rcu-lock");
-    }
-
-    @Override
-    public Thread visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
-        throw new ParsingException("visitNreRcuReadUnlock is not implemented");
-        //return visitFenceExpression("Rcu-unlock");
-    }
-
-    @Override
-    public Thread visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
-        throw new ParsingException("visitNreSynchronizeRcu is not implemented");
-        //return visitFenceExpression("Sync-rcu");
-    }
-
-    @Override
-    public Thread visitNreSynchronizeRcuExpedited(LitmusCParser.NreSynchronizeRcuExpeditedContext ctx){
-        throw new ParsingException("visitNreSynchronizeRcuExpedited is not implemented");
-        //return visitFenceExpression("Sync-rcu");
     }
 
 

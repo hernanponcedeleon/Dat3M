@@ -3,6 +3,8 @@ package dartagnan.program.utils;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
+import dartagnan.program.event.lock.RCULock;
+import dartagnan.program.event.lock.RCUUnlock;
 import dartagnan.program.event.rmw.RMWStore;
 
 import java.util.*;
@@ -20,6 +22,8 @@ public class EventRepository {
     public static final int EVENT_STORE         = 64;
     public static final int EVENT_RMW_STORE     = 128;
     public static final int EVENT_IF            = 256;
+    public static final int EVENT_RCU_LOCK      = 512;
+    public static final int EVENT_RCU_UNLOCK    = 1024;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
     private Program program;
@@ -56,6 +60,8 @@ public class EventRepository {
                 || ((mask & EVENT_SKIP) > 0 && event instanceof Skip)
                 || ((mask & EVENT_STORE) > 0 && event instanceof Store)
                 || ((mask & EVENT_RMW_STORE) > 0 && event instanceof RMWStore)
-                || ((mask & EVENT_IF) > 0 && event instanceof If);
+                || ((mask & EVENT_IF) > 0 && event instanceof If)
+                || ((mask & EVENT_RCU_LOCK) > 0 && event instanceof RCULock)
+                || ((mask & EVENT_RCU_UNLOCK) > 0 && event instanceof RCUUnlock);
     }
 }
