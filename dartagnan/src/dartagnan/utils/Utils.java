@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
 
@@ -11,6 +13,8 @@ import dartagnan.program.event.*;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
+import dartagnan.program.event.lock.RCULock;
+import dartagnan.program.event.lock.RCUUnlock;
 import dartagnan.program.utils.EventRepository;
 
 public class Utils {
@@ -18,163 +22,29 @@ public class Utils {
 	public static void drawGraph(Program p, Context ctx, Model model, String filename, String[] relations) throws IOException {
         File newTextFile = new File(filename);
         FileWriter fw = new FileWriter(newTextFile);
-        GraphViz gv = new GraphViz();
+
+		GraphViz gv = new GraphViz();
 		gv.addln(gv.start_graph());
-		
 		gv.addln("  subgraph cluster_Source { rank=sink; fontsize=20; label = \"Program Compiled to Target Architecture\"; color=red; shape=box;");
-		int tid = 0;
-		for(dartagnan.program.Thread t : p.getThreads()) {
-			tid++;
-			if(!(t instanceof Init)) {
-				gv.addln("    subgraph cluster_Thread_Source" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
-			}
-			
-			for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-				String label = "";
-				if (!(e instanceof MemEvent)) {continue;}
-				if((e instanceof Store || e instanceof Init) && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					label = "W_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
-				}
-				if(e instanceof Load && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					label = "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
-				}
-				for(Event eHL : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
-					if(!(e instanceof Init) && e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
-						label = label + eHL.toString().replaceAll("\\s","");
-					}
-				}				
-				if((e instanceof Store || e instanceof Load) && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThread() + "];");	
-				}
-				if(e instanceof Init && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", root=true];");	
-				}
-			}
-			if(!(t instanceof Init)) {
-				gv.addln("    }");
-			}
-		}
-
-		for(Event e1 : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-			for(Event e2 : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-				if (!(e1 instanceof MemEvent && e2 instanceof MemEvent)) {continue;}
-				if (!(model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue())) {continue;}
-				if(model.getConstInterp(edge("rf", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"rf\", color=\"red\", fontcolor=\"red\", weight=1];");
-				}
-				if(model.getConstInterp(edge("fr", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"fr\", color=\"#ffa040\", fontcolor=\"#ffa040\", weight=1];");
-				}
-				if(e1.getLoc() == e2.getLoc() && (e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && Integer.parseInt(model.getConstInterp(intVar("co", e1, ctx)).toString()) == Integer.parseInt(model.getConstInterp(intVar("co", e2, ctx)).toString()) - 1 && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()	) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"co\", color=\"brown\", fontcolor=\"brown\", weight=1];");	
-				}
-                Expr syncExpr = model.getConstInterp(edge("sync", e1, e2, ctx));
-				if(syncExpr != null && syncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"sync\", color=\"black\", fontcolor=\"black\", weight=1];");
-				}
-                Expr lwsyncExpr = model.getConstInterp(edge("lwsync", e1, e2, ctx));
-				if(lwsyncExpr != null && lwsyncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"lwsync\", color=\"black\", fontcolor=\"black\", weight=1];");
-				}
-                Expr mfenceExpr = model.getConstInterp(edge("mfence", e1, e2, ctx));
-				if(mfenceExpr != null && mfenceExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"mfence\", color=\"black\", fontcolor=\"black\", weight=1];");
-				}
-			}
-		}
-		
+		addExecutionGraph(gv, p, ctx, model, relations);
 		gv.addln("  }");
-
 		gv.addln(gv.end_graph());
+
         fw.write(gv.getDotSource());
         fw.close();
-		return;
 	}
 	
 	public static void drawGraph(Program p, Program pSource, Program pTarget, Context ctx, Model model, String filename, String[] relations) throws IOException {
-        File newTextFile = new File(filename);
-        FileWriter fw = new FileWriter(newTextFile);
-        GraphViz gv = new GraphViz();
+		File newTextFile = new File(filename);
+		FileWriter fw = new FileWriter(newTextFile);
+		GraphViz gv = new GraphViz();
 		gv.addln(gv.start_graph());
-		
-		gv.addln("  subgraph cluster_Source { rank=sink; fontsize=20; label = \"Program Compiled to Source Architecture\"; color=red; shape=box;");
-		int tid = 0;
-		for(dartagnan.program.Thread t : pSource.getThreads()) {
-			tid++;
-			if(!(t instanceof Init)) {
-				gv.addln("    subgraph cluster_Thread_Source" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
-			}
-			
-			for(Event e : pSource.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-				String label = "";
-				if (!(e instanceof MemEvent)) {continue;}
-				if(e instanceof Store && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					label = "W_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
-				}
-				if(e instanceof Load && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					label = "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
-				}
-				for(Event eHL : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
-					if(e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
-						label = label + eHL.toString().replaceAll("\\s","");
-					}
-				}				
-				if(e instanceof Store && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThread() + "];");	
-				}
-				if(e instanceof Load && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThread() + "];");	
-				}
-				if(e instanceof Init && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"W_" + e.getLoc() + "_0\", shape=\"box\", color=\"blue\", root=true];");	
-				}
-			}
-			if(!(t instanceof Init)) {
-				gv.addln("    }");
-			}
-		}
 
-		for(Event e1 : pSource.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-			for(Event e2 : pSource.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-				if (!(e1 instanceof MemEvent && e2 instanceof MemEvent)) {continue;}
-				if (!(model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue())) {continue;}
-				if(model.getConstInterp(edge("rf", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"rf\", color=\"red\", fontcolor=\"red\", weight=1];");
-				}
-				if(model.getConstInterp(edge("fr", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"fr\", color=\"#ffa040\", fontcolor=\"#ffa040\", weight=1];");
-				}
-				if(e1.getLoc() == e2.getLoc() && (e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && Integer.parseInt(model.getConstInterp(intVar("co", e1, ctx)).toString()) == Integer.parseInt(model.getConstInterp(intVar("co", e2, ctx)).toString()) - 1 && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()	) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"co\", color=\"brown\", fontcolor=\"brown\", weight=1];");	
-				}
-                Expr syncExpr = model.getConstInterp(edge("sync", e1, e2, ctx));
-				if(syncExpr != null && syncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"sync\", color=\"black\", fontcolor=\"black\", weight=1];");
-				}
-                Expr lwsyncExpr = model.getConstInterp(edge("lwsync", e1, e2, ctx));
-				if(lwsyncExpr != null && lwsyncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"lwsync\", color=\"black\", fontcolor=\"black\", weight=1];");
-				}
-                Expr mfenceExpr = model.getConstInterp(edge("mfence", e1, e2, ctx));
-				if(mfenceExpr != null && mfenceExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"mfence\", color=\"black\", fontcolor=\"black\", weight=1];");
-				}
-				
-				for(String r : relations) {
-					if(r == null) {continue;}
-					if(!Arrays.asList(model.getDecls()).contains(edge(r, e1, e2, ctx).getFuncDecl())) {
-						continue;
-					}
-					if(model.getConstInterp(edge(r, e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-						gv.addln("    " + e1.repr() + " -> " + e2.repr() + " [label=\"" + r + "\", color=\"indigo\", fontcolor=\"indigo\"];");
-					}	
-				}
-			}
-		}
-		
+		gv.addln("  subgraph cluster_Source { rank=sink; fontsize=20; label = \"Program Compiled to Source Architecture\"; color=red; shape=box;");
+		addExecutionGraph(gv, pSource, ctx, model, relations);
 		gv.addln("      /* Cycle */");
 		for(FuncDecl m : model.getDecls()) {
-			String edge = m.getName().toString(); 
+			String edge = m.getName().toString();
 			if(edge.contains("Cycle:") && model.getConstInterp(m).isTrue()) {
 				String source = getSourceFromEdge(edge);
 				String target = getTargetFromEdge(edge);
@@ -184,35 +54,42 @@ public class Utils {
 		gv.addln("  }");
 
 		gv.addln("  subgraph cluster_Target { rank=sink; fontsize=20; label = \"Program Compiled to Target Architecture\"; color=red; shape=box;");
-		tid = 0;
-		for(dartagnan.program.Thread t : pTarget.getThreads()) {
+		addExecutionGraph(gv, pTarget, ctx, model, relations);
+		gv.addln("  }");
+
+		gv.addln(gv.end_graph());
+		fw.write(gv.getDotSource());
+		fw.close();
+	}
+
+	private static void addExecutionGraph(GraphViz gv, Program p, Context ctx, Model model, String[] relations) throws IOException {
+		int tid = 0;
+		for(dartagnan.program.Thread t : p.getThreads()) {
 			tid++;
 			if(!(t instanceof Init)) {
-				gv.addln("    subgraph cluster_Thread_Target" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
+				gv.addln("    subgraph cluster_Thread_Source" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
 			}
-			
-			for(Event e : pTarget.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-				String label = "";
-				if (!(e instanceof MemEvent)) {continue;}
-				if(e instanceof Store && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					label = "W_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
-				}
-				if(e instanceof Load && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					label = "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
+
+			for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
+				if (!model.getConstInterp(e.executes(ctx)).isTrue() || !e.getMainThread().equals(t.getTId())) {continue;}
+				String label = e.getEId() + ": ";
+				if(e instanceof Store || e instanceof Init) {
+					label += "W_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
+				} else if(e instanceof Load) {
+					label += "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
+				} else if(e instanceof Fence) {
+					label += ((Fence)e).getName() + "\\n";
 				}
 				for(Event eHL : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
-					if(e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
-						label = label + eHL.toString().replaceAll("\\s","");
+					if(!(e instanceof Init) && e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
+						label += eHL.toString().replaceAll("\\s","");
 					}
-				}				
-				if(e instanceof Store && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=t" + e.getMainThread() + "];");	
 				}
-				if(e instanceof Load && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=t" + e.getMainThread() + "];");	
+				if(e instanceof Store || e instanceof Load || e instanceof Fence) {
+					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThread() + "];");
 				}
-				if(e instanceof Init && e.getMainThread() == t.getTId() && model.getConstInterp(e.executes(ctx)).isTrue()) {
-					gv.addln("      " + e.repr() + " [label=\"W_" + e.getLoc() + "_0\", shape=\"box\", color=\"blue\", root=true];");	
+				if(e instanceof Init) {
+					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", root=true];");
 				}
 			}
 			if(!(t instanceof Init)) {
@@ -220,49 +97,73 @@ public class Utils {
 			}
 		}
 
-		for(Event e1 : pTarget.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-			for(Event e2 : pTarget.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-				if (!(e1 instanceof MemEvent && e2 instanceof MemEvent)) {continue;}
-				if (!(model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue())) {continue;}
-				if(model.getConstInterp(edge("rf", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+		for(Event e1 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
+			if (!(model.getConstInterp(e1.executes(ctx)).isTrue())) continue;
+			for(Event e2 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
+				if (!(model.getConstInterp(e2.executes(ctx)).isTrue())) continue;
+				if(model.getConstInterp(edge("rf", e1, e2, ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"rf\", color=\"red\", fontcolor=\"red\", weight=1];");
 				}
-				if(model.getConstInterp(edge("fr", e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+				if(model.getConstInterp(edge("fr", e1, e2, ctx)).isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"fr\", color=\"#ffa040\", fontcolor=\"#ffa040\", weight=1];");
 				}
-				if(e1.getLoc() == e2.getLoc() && (e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && Integer.parseInt(model.getConstInterp(intVar("co", e1, ctx)).toString()) == Integer.parseInt(model.getConstInterp(intVar("co", e2, ctx)).toString()) - 1 && model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue()) {
-					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"co\", color=\"brown\", fontcolor=\"brown\", weight=1];");	
+				if(e1.getLoc() == e2.getLoc() && (e1 instanceof Store || e1 instanceof Init) && (e2 instanceof Store || e2 instanceof Init) && Integer.parseInt(model.getConstInterp(intVar("co", e1, ctx)).toString()) == Integer.parseInt(model.getConstInterp(intVar("co", e2, ctx)).toString()) - 1) {
+					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"co\", color=\"blue\", fontcolor=\"blue\", weight=1];");
 				}
-                Expr syncExpr = model.getConstInterp(edge("sync", e1, e2, ctx));
-				if(syncExpr != null && syncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+			}
+		}
+
+		for(Event e1 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
+			if (!(model.getConstInterp(e1.executes(ctx)).isTrue())) continue;
+			for(Event e2 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
+				if (!(model.getConstInterp(e2.executes(ctx)).isTrue())) continue;
+				if(model.getConstInterp(edge("po", e1, e2, ctx)).isTrue() && e1.getEId().equals(e2.getEId() - 1)) {
+					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"po\", color=\"brown\", fontcolor=\"brown\", weight=1];");
+				}
+				Expr syncExpr = model.getConstInterp(edge("sync", e1, e2, ctx));
+				if(syncExpr != null && syncExpr.isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"sync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-                Expr lwsyncExpr = model.getConstInterp(edge("lwsync", e1, e2, ctx));
-				if(lwsyncExpr != null && lwsyncExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+				Expr lwsyncExpr = model.getConstInterp(edge("lwsync", e1, e2, ctx));
+				if(lwsyncExpr != null && lwsyncExpr.isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"lwsync\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
-                Expr mfenceExpr = model.getConstInterp(edge("mfence", e1, e2, ctx));
-				if(mfenceExpr != null && mfenceExpr.isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue()  && model.getConstInterp(e2.executes(ctx)).isTrue()) {
+				Expr mfenceExpr = model.getConstInterp(edge("mfence", e1, e2, ctx));
+				if(mfenceExpr != null && mfenceExpr.isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"mfence\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
+				Expr gpExpr = model.getConstInterp(edge("gp", e1, e2, ctx));
+				if(gpExpr != null && gpExpr.isTrue()) {
+					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"gp\", color=\"black\", fontcolor=\"black\", weight=1];");
+				}
+			}
+		}
 
-				for(String r : relations) {
-					if(r == null) {continue;}
+		Collection<Event> rcuLocks = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> e instanceof RCULock).collect(Collectors.toSet());
+		Collection<Event> rcuUnlocks = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> e instanceof RCUUnlock).collect(Collectors.toSet());
+		for(Event lock : rcuLocks){
+			if(model.getConstInterp(lock.executes(ctx)).isTrue()){
+				for(Event unlock : rcuUnlocks){
+					if(model.getConstInterp(unlock.executes(ctx)).isTrue() && model.getConstInterp(edge("crit", lock, unlock, ctx)).isTrue()){
+						gv.addln("      " + lock.repr() + " -> " + unlock.repr() + " [label=\"crit\", color=\"black\", fontcolor=\"black\", weight=1];");
+					}
+				}
+			}
+		}
+
+		for(String r : relations) {
+			if(r == null) {continue;}
+			for(Event e1 : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
+				for(Event e2 : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
 					if(!Arrays.asList(model.getDecls()).contains(edge(r, e1, e2, ctx).getFuncDecl())) {
 						continue;
 					}
 					if(model.getConstInterp(edge(r, e1, e2, ctx)).isTrue() && model.getConstInterp(e1.executes(ctx)).isTrue() && model.getConstInterp(e2.executes(ctx)).isTrue()) {
 						gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"" + r + "\", color=\"indigo\", fontcolor=\"indigo\"];");
-					}	
+					}
 				}
 			}
 		}
-		gv.addln("  }");
-
-		gv.addln(gv.end_graph());
-        fw.write(gv.getDotSource());
-        fw.close();
-		return;
 	}
 	
 	private static String getSourceFromEdge(String edge) {
