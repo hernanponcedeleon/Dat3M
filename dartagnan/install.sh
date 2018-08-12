@@ -49,6 +49,8 @@ src/dartagnan/program/event/filter/FilterIntersection.java \
 src/dartagnan/program/event/filter/FilterMinus.java \
 src/dartagnan/program/event/filter/FilterUnion.java \
 src/dartagnan/program/event/filter/FilterUtils.java \
+src/dartagnan/program/event/lock/RCULock.java \
+src/dartagnan/program/event/lock/RCUUnlock.java \
 src/dartagnan/program/event/rmw/AbstractRMW.java \
 src/dartagnan/program/event/rmw/RMWStore.java \
 src/dartagnan/program/event/rmw/RMWStoreIf.java \
