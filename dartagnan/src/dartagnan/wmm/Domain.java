@@ -247,7 +247,7 @@ public class Domain {
 			enc = ctx.mkAnd(enc, edge("crit", myLock, unlock, ctx));
 			for(Event lock : rcuLocks){
 				if(!lock.equals(myLock)){
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("crit", myLock, unlock, ctx)));
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("crit", lock, unlock, ctx)));
 				}
 			}
 		}
