@@ -16,7 +16,6 @@ import dartagnan.program.event.lock.RCUUnlock;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.rmw.RMWStoreIf;
 import dartagnan.program.event.rmw.RMWStoreUnless;
-import javafx.util.Pair;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -64,15 +63,12 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
-        Pair<String, String> data = visitThreadVariable(ctx.threadVariable());
-        String thread = data.getKey();
-        Register register = getOrCreateRegister(thread, data.getValue());
-
+        Register register = visitThreadVariable(ctx.threadVariable());
         int value = DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
         }
-        getThreadEvents(thread).add(new Local(register, new AConst(value)));
+        getThreadEvents(register.getPrintMainThread()).add(new Local(register, new AConst(value)));
         return null;
     }
 
@@ -86,12 +82,9 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        Pair<String, String> data = visitThreadVariable(ctx.threadVariable());
-        String thread = data.getKey();
-        String registerName = data.getValue();
-        getOrCreateRegister(thread, registerName);
+        Register register = visitThreadVariable(ctx.threadVariable());
         Location location = getOrCreateLocation(visitVariable(ctx.variable()));
-        getMapRegLoc(thread).put(registerName, location);
+        getMapRegLoc(register.getPrintMainThread()).put(register.getName(), location);
         return null;
     }
 
@@ -630,9 +623,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitAssertionLocationRegister(LitmusCParser.AssertionLocationRegisterContext ctx) {
-        Pair<String, String> data = visitThreadVariable(ctx.threadVariable());
-        String thread = data.getKey();
-        Register register = getOrCreateRegister(thread, data.getValue());
+        Register register = visitThreadVariable(ctx.threadVariable());
         Location location = getOrCreateLocation(visitVariable(ctx.variable()));
         return new AssertBasic(location, (String)ctx.assertionOp().accept(this), register);
     }
@@ -646,31 +637,21 @@ public class VisitorLitmusC
 
     @Override
     public Object visitAssertionRegister(LitmusCParser.AssertionRegisterContext ctx) {
-        Pair<String, String> data = visitThreadVariable(ctx.threadVariable());
-        String thread = data.getKey();
-        Register register = getOrCreateRegister(thread, data.getValue());
+        Register register = visitThreadVariable(ctx.threadVariable());
         AConst value = new AConst(Integer.parseInt(ctx.constantValue().getText()));
         return new AssertBasic(register, (String)ctx.assertionOp().accept(this), value);
     }
 
     @Override
     public Object visitAssertionRegisterRegister(LitmusCParser.AssertionRegisterRegisterContext ctx) {
-        Pair<String, String> data1 = visitThreadVariable(ctx.threadVariable(0));
-        String thread1 = data1.getKey();
-        Register register1 = getOrCreateRegister(thread1, data1.getValue());
-
-        Pair<String, String> data2 = visitThreadVariable(ctx.threadVariable(1));
-        String thread2 = data2.getKey();
-        Register register2 = getOrCreateRegister(thread2, data2.getValue());
-
+        Register register1 = visitThreadVariable(ctx.threadVariable(0));
+        Register register2 = visitThreadVariable(ctx.threadVariable(1));
         return new AssertBasic(register1, (String)ctx.assertionOp().accept(this), register2);
     }
 
     @Override
     public Object visitAssertionRegisterLocation(LitmusCParser.AssertionRegisterLocationContext ctx) {
-        Pair<String, String> data = visitThreadVariable(ctx.threadVariable());
-        String thread = data.getKey();
-        Register register = getOrCreateRegister(thread, data.getValue());
+        Register register = visitThreadVariable(ctx.threadVariable());
         Location location = getOrCreateLocation(visitVariable(ctx.variable()));
         return new AssertBasic(location, (String)ctx.assertionOp().accept(this), register);
     }
@@ -710,17 +691,19 @@ public class VisitorLitmusC
     // Utils
 
     @Override
-    public Pair<String, String> visitThreadVariable(LitmusCParser.ThreadVariableContext ctx) {
+    // Here we know that it is thread local variable (register)
+    public Register visitThreadVariable(LitmusCParser.ThreadVariableContext ctx) {
         if(ctx.threadIdentifier() != null && ctx.Identifier() != null){
-            // TODO: Can we return a register instead of a Pair in all cases?
             String thread = threadId(ctx.threadIdentifier().getText());
             String variableName = ctx.Identifier().getText();
-            return new Pair<String, String>(thread, variableName);
+            return getOrCreateRegister(thread, variableName);
         }
         return visitThreadVariable(ctx.threadVariable());
     }
 
     @Override
+    // Here we do not know if it is a local (register) or a global (location) variable,
+    // the calling method must decide it and instantiate a correct class
     public String visitVariable(LitmusCParser.VariableContext ctx) {
         if(ctx.Identifier() != null){
             return ctx.Identifier().getText();
