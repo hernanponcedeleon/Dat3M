@@ -1,4 +1,4 @@
-for file in litmus/X86/*.litmus;
+for file in $(find litmus/X86 -name '*.litmus' | sort);
 do
    java dartagnan/Dartagnan -t tso -i $file > ./dart_tso.out
    dart=$(grep -e 'No' dart_tso.out | wc -l)
@@ -20,5 +20,3 @@ do
       break
    fi
 done
-
-
