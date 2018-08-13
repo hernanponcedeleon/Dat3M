@@ -45,7 +45,7 @@ public class RMWStoreUnless extends RMWStore {
     }
 
     public String toString() {
-        return String.format("%s%s == %s ? %s := %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, cmp, loc, val);
+        return String.format("%s%s != %s ? %s := %s : %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, cmp, loc, val, loc);
     }
 
     public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {

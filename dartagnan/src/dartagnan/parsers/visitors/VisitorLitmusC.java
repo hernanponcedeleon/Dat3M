@@ -15,6 +15,7 @@ import dartagnan.program.event.lock.RCULock;
 import dartagnan.program.event.lock.RCUUnlock;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.rmw.RMWStoreIf;
+import dartagnan.program.event.rmw.RMWStoreUnless;
 import javafx.util.Pair;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -349,28 +350,53 @@ public class VisitorLitmusC
     }
 
     private Thread visitAtomicRead(LitmusCParser.VariableContext varCtx, String memoryOrder){
-        Register register = getOrCreateRegister(currentThread, null);
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
             throw new ParsingException("Uninitialized location " + varName);
         }
+        Register register = getOrCreateRegister(currentThread, null);
         returnStack.push(register);
         return new Read(register, location, memoryOrder);
     }
 
     @Override
     public Thread visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
-        throw new ParsingException("visitReAtomicAddUnless not implemented");
+        String varName = visitVariable(ctx.variable());
+        Location location = getLocation(varName);
+        if(location == null){
+            throw new ParsingException("Uninitialized location " + varName);
+        }
 
-        // Return
-        //      non-zero if added (if was not equal)
-        //      zero (if was equal)
-        /*
-        // TODO: Implementation
-        returnStack.push(new AConst(1));
-        return new Skip();
-        */
+        Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
+        ExprInterface value = returnStack.pop();
+
+        Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
+        ExprInterface cmp = returnStack.pop();
+
+        Register register1 = getOrCreateRegister(currentThread, null);
+        Register register2 = getOrCreateRegister(currentThread, null);
+        Load load = new Load(register1, location, "_rx");
+        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+        Local local = new Local(register2, new AExpr(register1, "+", value));
+        RMWStoreUnless store = new RMWStoreUnless(load, location, cmp, register2, "_rx");
+        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+
+        // Non-zero if was not equal (i.e. operation happened), zero otherwise
+        returnStack.push(new Atom(register1, "!=", cmp));
+
+        // TODO: Skipping barriers if cmp failed (values were equal)
+        Thread result = new Seq(load, new Seq(local, store));
+
+        result = new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
+
+        if(t2 != null){
+            result = new Seq(t2, result);
+        }
+        if(t1 != null){
+            result = new Seq(t1, result);
+        }
+        return result;
     }
 
     @Override
