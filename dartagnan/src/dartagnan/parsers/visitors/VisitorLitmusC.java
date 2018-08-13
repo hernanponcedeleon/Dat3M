@@ -458,9 +458,21 @@ public class VisitorLitmusC
     // ----------------------------------------------------------------------------------------------------------------
     // NonReturn expressions (all other return expressions are reduced to these ones)
 
+    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicOp(LitmusCParser.VariableContext varCtx, ExprInterface value, String op){
-        // TODO: Implementation
-        throw new ParsingException("visitAtomicOp is not implemented");
+        String varName = visitVariable(varCtx);
+        Location location = getLocation(varName);
+        if(location == null){
+            // TODO: In general, it can be also a local variable (register)
+            throw new ParsingException("Uninitialized location " + varName);
+        }
+
+        Register register1 = getOrCreateRegister(currentThread, null);
+        Load load = new Load(register1, location, "_rx");
+        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE, FilterUtils.EVENT_TYPE_RMW_NORETURN);
+        RMWStore store = new RMWStore(load, location, new AExpr(register1, op, value), "_rx");
+        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE, FilterUtils.EVENT_TYPE_RMW_NORETURN);
+        return new Seq(load, store);
     }
 
     private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, ExprInterface value, String memoryOrder){

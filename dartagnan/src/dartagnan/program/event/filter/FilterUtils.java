@@ -14,7 +14,7 @@ public class FilterUtils {
 
     public static final String EVENT_TYPE_ATOMIC = "A";
     public static final String EVENT_TYPE_READ_MODIFY_WRITE = "RMW";
-    public static final String EVENT_TYPE_RMW_READ_NORETURN = "Noreturn";
+    public static final String EVENT_TYPE_RMW_NORETURN = "Noreturn";
 
     public static final String EVENT_TYPE_LOCK = "LKW";
 
@@ -32,7 +32,7 @@ public class FilterUtils {
         // Atomic
         put(EVENT_TYPE_ATOMIC, EVENT_TYPE_ATOMIC);
         put(EVENT_TYPE_READ_MODIFY_WRITE, EVENT_TYPE_READ_MODIFY_WRITE);
-        put(EVENT_TYPE_RMW_READ_NORETURN, EVENT_TYPE_RMW_READ_NORETURN);
+        put(EVENT_TYPE_RMW_NORETURN, EVENT_TYPE_RMW_NORETURN);
 
         // Locks
         put(EVENT_TYPE_LOCK, EVENT_TYPE_LOCK);
