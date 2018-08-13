@@ -15,6 +15,7 @@ public class Register extends AExpr implements IntExprInterface {
 
 	private String name;
 	private Integer mainThread;
+	private String printMainThread;
 
 	public Register(String name) {
 		if(name == null){
@@ -28,8 +29,17 @@ public class Register extends AExpr implements IntExprInterface {
 	}
 	
 	public String toString() {
-		return name;
-		}
+        return name;
+	}
+
+	public Register setPrintMainThread(String thread){
+	    this.printMainThread = thread;
+	    return this;
+    }
+
+    public String getPrintMainThread(){
+	    return printMainThread;
+    }
 	
 	public Register clone() {
 		return this;

@@ -357,7 +357,7 @@ public class VisitorLitmusPPC
     public Object visitAssertionLocation(LitmusPPCParser.AssertionLocationContext ctx) {
         Location location = getLocation(ctx.location().getText());
         AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new AssertBasic(location, value);
+        return new AssertBasic(location, "==", value);
     }
 
     @Override
@@ -365,7 +365,7 @@ public class VisitorLitmusPPC
         String thread = threadId(ctx.thread().getText());
         Register register = getRegister(thread, ctx.r1().getText());
         AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new AssertBasic(register, value);
+        return new AssertBasic(register, "==", value);
     }
 
     @Override
@@ -540,7 +540,7 @@ public class VisitorLitmusPPC
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(!(registers.keySet().contains(registerName))) {
-            registers.put(registerName, new Register(registerName));
+            registers.put(registerName, new Register(registerName).setPrintMainThread(threadName));
         }
         return registers.get(registerName);
     }

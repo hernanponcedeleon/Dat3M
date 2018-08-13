@@ -174,7 +174,7 @@ public class Encodings {
 		AssertCompositeAnd ass = new AssertCompositeAnd();
 		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 		for(Location loc : locs) {
-			ass.addChild(new AssertBasic(loc, new AConst(Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString()))));
+			ass.addChild(new AssertBasic(loc, "==", new AConst(Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString()))));
 		}
 		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
@@ -187,7 +187,7 @@ public class Encodings {
 			}
 			Integer lastRegIndex = Collections.max(ssaRegIndexes);
 			String regVarName = format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
-			ass.addChild(new AssertBasic(reg, new AConst(Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString()))));
+			ass.addChild(new AssertBasic(reg, "==", new AConst(Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString()))));
 		}
 		return ass;
 	}

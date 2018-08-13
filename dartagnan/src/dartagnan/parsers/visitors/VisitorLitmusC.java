@@ -330,13 +330,22 @@ public class VisitorLitmusC
         return result;
     }
 
+    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, ExprInterface value, String op){
-        throw new ParsingException("visitAtomicOpAndTest not implemented");
-        /*
-        // TODO: Implementation
-        returnStack.push(new AConst(1));
-        return new Skip();
-        */
+        String varName = visitVariable(varCtx);
+        Location location = getLocation(varName);
+        if(location == null){
+            throw new ParsingException("Uninitialized location " + varName);
+        }
+
+        Register register = getOrCreateRegister(currentThread, null);
+        Load load = new Load(register, location, "_rx");
+        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+        Local local = new Local(register, new AExpr(register, op, value));
+        RMWStore store = new RMWStore(load, location, register, "_rx");
+        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+        returnStack.push(new Atom(register, "==", new AConst(0)));
+        return new Seq(new Fence("Mb"), new Seq(load, new Seq(local, new Seq(store, new Fence("Mb")))));
     }
 
     private Thread visitAtomicRead(LitmusCParser.VariableContext varCtx, String memoryOrder){
@@ -344,8 +353,7 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Atomic read is not implemented for register");
+            throw new ParsingException("Uninitialized location " + varName);
         }
         returnStack.push(register);
         return new Read(register, location, memoryOrder);
@@ -591,7 +599,7 @@ public class VisitorLitmusC
     public Object visitAssertionLocation(LitmusCParser.AssertionLocationContext ctx) {
         Location location = getOrCreateLocation(visitVariable(ctx.variable()));
         AConst value = new AConst(Integer.parseInt(ctx.constantValue().getText()));
-        return new AssertBasic(location, value);
+        return new AssertBasic(location, (String)ctx.assertionOp().accept(this), value);
     }
 
     @Override
@@ -600,14 +608,14 @@ public class VisitorLitmusC
         String thread = data.getKey();
         Register register = getOrCreateRegister(thread, data.getValue());
         Location location = getOrCreateLocation(visitVariable(ctx.variable()));
-        return new AssertBasic(location, register);
+        return new AssertBasic(location, (String)ctx.assertionOp().accept(this), register);
     }
 
     @Override
     public Object visitAssertionLocationLocation(LitmusCParser.AssertionLocationLocationContext ctx) {
         Location location1 = getOrCreateLocation(visitVariable(ctx.variable(0)));
         Location location2 = getOrCreateLocation(visitVariable(ctx.variable(1)));
-        return new AssertBasic(location1, location2);
+        return new AssertBasic(location1, (String)ctx.assertionOp().accept(this), location2);
     }
 
     @Override
@@ -616,7 +624,7 @@ public class VisitorLitmusC
         String thread = data.getKey();
         Register register = getOrCreateRegister(thread, data.getValue());
         AConst value = new AConst(Integer.parseInt(ctx.constantValue().getText()));
-        return new AssertBasic(register, value);
+        return new AssertBasic(register, (String)ctx.assertionOp().accept(this), value);
     }
 
     @Override
@@ -629,7 +637,7 @@ public class VisitorLitmusC
         String thread2 = data2.getKey();
         Register register2 = getOrCreateRegister(thread2, data2.getValue());
 
-        return new AssertBasic(register1, register2);
+        return new AssertBasic(register1, (String)ctx.assertionOp().accept(this), register2);
     }
 
     @Override
@@ -638,7 +646,17 @@ public class VisitorLitmusC
         String thread = data.getKey();
         Register register = getOrCreateRegister(thread, data.getValue());
         Location location = getOrCreateLocation(visitVariable(ctx.variable()));
-        return new AssertBasic(location, register);
+        return new AssertBasic(location, (String)ctx.assertionOp().accept(this), register);
+    }
+
+    @Override
+    public String visitAssertionOpEqual(LitmusCParser.AssertionOpEqualContext ctx){
+        return "==";
+    }
+
+    @Override
+    public String visitAssertionOpNotEqual(LitmusCParser.AssertionOpNotEqualContext ctx){
+        return "!=";
     }
 
     private String getAssertionType(LitmusCParser.AssertionListContext ctx){
@@ -705,7 +723,7 @@ public class VisitorLitmusC
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(registerName == null || !(registers.keySet().contains(registerName))) {
-            registers.put(registerName, new Register(registerName));
+            registers.put(registerName, new Register(registerName).setPrintMainThread(threadName));
         }
         return registers.get(registerName);
     }

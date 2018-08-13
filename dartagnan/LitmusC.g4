@@ -198,9 +198,8 @@ assertion
     ;
 
 assertionOp
-    :   Assign
-    |   Equal
-    |   NotEqual
+    :   (Assign | Equal)                                                                                                # assertionOpEqual
+    |   NotEqual                                                                                                        # assertionOpNotEqual
     ;
 
 assertionListExpectationList

@@ -63,7 +63,7 @@ local [String mainThread] returns [Thread t]:
 	r = register '<-' e = arith_expr [mainThread] {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
-			mapThreadRegs.put($r.reg.getName(), $r.reg);
+			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThread(mainThread));
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		$t = new Local(pointerReg, $e.expr);
@@ -72,7 +72,7 @@ load [String mainThread] returns [Thread t]:
 	r = register '<:-' l = location {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
-			mapThreadRegs.put($r.reg.getName(), $r.reg);
+			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThread(mainThread));
 		}
 		if(!(mapLocs.keySet().contains($l.loc.getName()))) {
 			System.out.println(String.format("Location %s must be initialized", $l.loc.getName()));
@@ -98,7 +98,7 @@ read [String mainThread] returns [Thread t]:
 	r = register '=' l = location POINT 'load' LPAR at = ATOMIC RPAR {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
-			mapThreadRegs.put($r.reg.getName(), $r.reg);
+			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThread(mainThread));
 		}
 		if(!(mapLocs.keySet().contains($l.loc.getName()))) {
 			System.out.println(String.format("Location %s must be initialized", $l.loc.getName()));
@@ -184,12 +184,12 @@ assertion returns [AbstractAssert ass]
     | a1 = assertion BARBAR a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
     | l = location '=' value = DIGIT{
         Location loc = $l.loc;
-        $ass = new AssertBasic(loc, new AConst(Integer.parseInt($value.getText())));
+        $ass = new AssertBasic(loc, "==", new AConst(Integer.parseInt($value.getText())));
       }
     | thrd = DIGIT ':' r = register '=' value = DIGIT {
         Register regPointer = $r.reg;
         Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
-        $ass = new AssertBasic(reg, new AConst(Integer.parseInt($value.getText())));
+        $ass = new AssertBasic(reg, "==", new AConst(Integer.parseInt($value.getText())));
       };
 
 program [String name] returns [Program p]:
