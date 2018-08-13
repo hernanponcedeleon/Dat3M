@@ -216,14 +216,6 @@ public class Utils {
 		return ctx.mkIntConst(String.format("%s(%s)", relName, e.repr()));
 	}
 	
-	public static IntExpr lastValueLoc(Location loc, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(loc.getName() + "_final");
-	}
-	
-	public static IntExpr lastValueReg(Register reg, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(reg.getName() + "_" + reg.getMainThread() + "_final");
-	}
-	
 	public static IntExpr ssaLoc(Location loc, Integer mainThread, Integer ssaIndex, Context ctx) throws Z3Exception {
 		return ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, loc.getName(), ssaIndex));
 	}

@@ -258,16 +258,16 @@ public class VisitorLitmusX86
     @Override
     public Object visitAssertionLocation(LitmusX86Parser.AssertionLocationContext ctx) {
         Location location = getLocation(ctx.location().getText());
-        int value = Integer.parseInt(ctx.value().getText());
-        return new AssertLocation(location, value);
+        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
+        return new AssertBasic(location, value);
     }
 
     @Override
     public Object visitAssertionRegister(LitmusX86Parser.AssertionRegisterContext ctx) {
         String thread = threadId(ctx.thread().getText());
         Register register = getRegister(thread, ctx.r1().getText());
-        int value = Integer.parseInt(ctx.value().getText());
-        return new AssertRegister(thread, register, value);
+        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
+        return new AssertBasic(register, value);
     }
 
     @Override

@@ -2,8 +2,6 @@ package dartagnan.wmm;
 
 import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.intVar;
-import static dartagnan.utils.Utils.lastValueLoc;
-import static dartagnan.utils.Utils.lastValueReg;
 import static dartagnan.utils.Utils.ssaReg;
 import static dartagnan.wmm.Encodings.satTO;
 import static dartagnan.wmm.Encodings.encodeEO;
@@ -218,7 +216,7 @@ public class Domain {
 			for(Event w2 : writeSameLoc) {
 				lastCoOrder = ctx.mkAnd(lastCoOrder, ctx.mkNot(edge("co", w1, w2, ctx)));
 			}
-			enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(lastValueLoc(w1.getLoc(), ctx), ((MemEvent) w1).ssaLoc)));
+			enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(w1.getLoc().getLastValueExpr(ctx), ((MemEvent) w1).ssaLoc)));
 		}
 		
 		for(Event r1 : eventsLoadLocal) {
@@ -227,7 +225,7 @@ public class Domain {
 			for(Event r2 : modRegLater) {
 				lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(r2.executes(ctx)));
 			}
-			enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg, ctx.mkEq(lastValueReg(r1.getReg(), ctx), ssaReg(r1.getReg(), r1.getSsaRegIndex(), ctx))));
+			enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg, ctx.mkEq(r1.getReg().getLastValueExpr(ctx), ssaReg(r1.getReg(), r1.getSsaRegIndex(), ctx))));
 		}
 
 		for(Event e : eventsLoad) {

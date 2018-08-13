@@ -6,11 +6,12 @@ import java.util.UUID;
 
 import com.microsoft.z3.*;
 
+import dartagnan.expression.IntExprInterface;
 import dartagnan.expression.AExpr;
 import dartagnan.utils.MapSSA;
 import static dartagnan.utils.Utils.ssaReg;
 
-public class Register extends AExpr {
+public class Register extends AExpr implements IntExprInterface {
 
 	private String name;
 	private Integer mainThread;
@@ -55,4 +56,7 @@ public class Register extends AExpr {
 		return mainThread;
 	}
 
+	public IntExpr getLastValueExpr(Context ctx){
+		return ctx.mkIntConst(getName() + "_" + getMainThread() + "_final");
+	}
 }

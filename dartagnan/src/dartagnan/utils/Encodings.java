@@ -1,8 +1,6 @@
 package dartagnan.utils;
 
 import static dartagnan.utils.Utils.edge;
-import static dartagnan.utils.Utils.lastValueLoc;
-import static dartagnan.utils.Utils.lastValueReg;
 import static dartagnan.utils.Utils.initValue;
 import static dartagnan.utils.Utils.initValue2;
 import static dartagnan.utils.Utils.uniqueValue;
@@ -99,12 +97,12 @@ public class Encodings {
 		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : locs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueLoc(loc, ctx), model.getConstInterp(lastValueLoc(loc, ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
 		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
 		for(Register reg : regs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueReg(reg, ctx), model.getConstInterp(lastValueReg(reg, ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx), model.getConstInterp(reg.getLastValueExpr(ctx))));
 		}
 		return reachedState;
 	}
@@ -113,7 +111,7 @@ public class Encodings {
 		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).filter(l -> !(l instanceof HighLocation)).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : locs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueLoc(loc, ctx), model.getConstInterp(lastValueLoc(loc, ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
 		return reachedState;
 	}
