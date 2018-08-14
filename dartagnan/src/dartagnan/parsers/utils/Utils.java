@@ -4,23 +4,27 @@ import dartagnan.program.Seq;
 import dartagnan.program.event.Skip;
 import dartagnan.program.Thread;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class Utils {
 
-    public static Thread listToThread(List<Thread> threads){
-        Thread partialThread;
+    public static Thread arrayToThread(boolean createSkipOnNull, Thread... threads) {
+        return listToThread(createSkipOnNull, Arrays.asList(threads));
+    }
 
-        if(threads.size() > 0){
-            partialThread = threads.get(0);
-        } else {
-            partialThread = new Skip();
+    public static Thread listToThread(boolean createSkipOnNull, List<Thread> threads) {
+        Thread result = null;
+        for (Thread t : threads) {
+            if(t != null){
+                result = result == null ? t : new Seq(result, t);
+            }
         }
 
-        for(int i = 1; i < threads.size(); i++){
-            partialThread = new Seq(partialThread, threads.get(i));
+        if(result == null && createSkipOnNull){
+            result = new Skip();
         }
 
-        return partialThread;
+        return result;
     }
 }

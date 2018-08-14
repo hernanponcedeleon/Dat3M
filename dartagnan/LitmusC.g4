@@ -5,7 +5,7 @@ package dartagnan;
 }
 
 main
-    :   header variableDeclaratorList threadList variableList? assertionFilter? assertionList? bottomComment? EOF
+    :   header variableDeclaratorList threadList variableList? assertionFilter? assertionList? comment? EOF
     ;
 
 header
@@ -13,7 +13,7 @@ header
     ;
 
 variableDeclaratorList
-    :   LeftBrace (globalDeclarator Semi)* RightBrace (Semi)?
+    :   LeftBrace (globalDeclarator Semi comment?)* RightBrace (Semi)?
     ;
 
 globalDeclarator
@@ -300,7 +300,7 @@ atomicTypeSpecifier
     |   'spinlock_t'
     ;
 
-bottomComment
+comment
     :   LeftParen Star .*? Star RightParen
     ;
 

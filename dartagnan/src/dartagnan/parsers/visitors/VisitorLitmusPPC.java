@@ -54,7 +54,7 @@ public class VisitorLitmusPPC
         }
 
         for(String i : mapThreadEvents.keySet()) {
-            program.add(Utils.listToThread(mapThreadEvents.get(i)));
+            program.add(Utils.listToThread(true, mapThreadEvents.get(i)));
         }
         return program;
     }
@@ -279,7 +279,7 @@ public class VisitorLitmusPPC
 
     private Thread closeBranch(){
         List<Thread> branchingThreadInstructions = mapThreadEvents.remove(effectiveThread);
-        Thread branchingThread = Utils.listToThread(branchingThreadInstructions);
+        Thread branchingThread = Utils.listToThread(true, branchingThreadInstructions);
         branchingStacks.get(mainThread).pop();
         return branchingThread;
     }

@@ -48,7 +48,7 @@ public class VisitorLitmusX86
         visitAssertionList(ctx.assertionList());
 
         for(String i : mapThreadEvents.keySet()) {
-            program.add(Utils.listToThread(mapThreadEvents.get(i)));
+            program.add(Utils.listToThread(true, mapThreadEvents.get(i)));
         }
         return program;
     }

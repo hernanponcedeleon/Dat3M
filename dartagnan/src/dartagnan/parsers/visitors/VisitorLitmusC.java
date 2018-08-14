@@ -103,7 +103,7 @@ public class VisitorLitmusC
             throw new ParsingException("Unbalanced RCU lock in thread " + currentThread);
         }
         if (!(initEvents.isEmpty())) {
-            result = new Seq(Utils.listToThread(initEvents), result);
+            result = new Seq(Utils.listToThread(false, initEvents), result);
         }
         program.add(result);
         return null;
@@ -135,10 +135,7 @@ public class VisitorLitmusC
         Thread t1 = visitExpressionSequence(ctx);
         Thread t2 = ctx.elseExpression() == null ? new Skip() : visitExpressionSequence(ctx.elseExpression());
         Thread result = new If(returnStack.pop(), t1, t2);
-        if(evalThread != null){
-            result = new Seq(evalThread, result);
-        }
-        return result;
+        return Utils.arrayToThread(false, evalThread, result);
     }
 
     @Override
@@ -152,10 +149,7 @@ public class VisitorLitmusC
         if(ctx.returnExpression() != null){
             Thread t = (Thread)ctx.returnExpression().accept(this);
             Thread result = new Local(register, returnStack.pop());
-            if(t != null){
-                result = new Seq(t, result);
-            }
-            return result;
+            return Utils.arrayToThread(false, t, result);
         }
         return null;
     }
@@ -180,10 +174,7 @@ public class VisitorLitmusC
             result = new Local(register, returnStack.pop());
         }
 
-        if(t != null) {
-            return new Seq(t, result);
-        }
-        return result;
+        return Utils.arrayToThread(false, t, result);
     }
 
     private Thread visitExpressionSequence(RuleContext ctx) {
@@ -198,7 +189,7 @@ public class VisitorLitmusC
                 }
             }
         }
-        return Utils.listToThread(events);
+        return Utils.listToThread(true, events);
     }
 
 
@@ -229,11 +220,10 @@ public class VisitorLitmusC
 
         returnStack.push(register2);
 
-        Thread result = new Seq(new Seq(load, local), store);
         if(memoryOrder.equals("_sc")){
-            result = new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
+            return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
         }
-        return result;
+        return Utils.arrayToThread(false, load, local, store);
     }
 
     // TODO: A separate class for this event (for compilation to other architectures)
@@ -260,11 +250,10 @@ public class VisitorLitmusC
 
         returnStack.push(register1);
 
-        Thread result = new Seq(new Seq(load, local), store);
         if(memoryOrder.equals("_sc")){
-            result = new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
+            return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
         }
-        return result;
+        return Utils.arrayToThread(false, load, local, store);
     }
 
     // TODO: A separate class for this event (for compilation to other architectures)
@@ -288,12 +277,10 @@ public class VisitorLitmusC
 
         returnStack.push(register);
 
-        Thread result = new Seq(load, store);
         if(memoryOrder.equals("_sc")){
-            result = new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
+            return Utils.arrayToThread(false, new Fence("Mb"), load, store, new Fence("Mb"));
         }
-        return result;
-
+        return Utils.arrayToThread(false, load, store);
     }
 
     // TODO: A separate class for this event (for compilation to other architectures)
@@ -317,11 +304,10 @@ public class VisitorLitmusC
 
         returnStack.push(register);
 
-        Thread result = new Seq(load, store);
         if(memoryOrder.equals("_sc")){
-            result = new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
+            return Utils.arrayToThread(false, new Fence("Mb"), load, store, new Fence("Mb"));
         }
-        return result;
+        return Utils.arrayToThread(false, load, store);
     }
 
     // TODO: A separate class for this event (for compilation to other architectures)
@@ -339,7 +325,7 @@ public class VisitorLitmusC
         RMWStore store = new RMWStore(load, location, register, "_rx");
         store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
         returnStack.push(new Atom(register, "==", new AConst(0)));
-        return new Seq(new Fence("Mb"), new Seq(load, new Seq(local, new Seq(store, new Fence("Mb")))));
+        return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
     }
 
     private Thread visitAtomicRead(LitmusCParser.VariableContext varCtx, String memoryOrder){
@@ -379,37 +365,19 @@ public class VisitorLitmusC
         returnStack.push(new Atom(register1, "!=", cmp));
 
         // TODO: Skipping barriers if cmp failed (values were equal)
-        Thread result = new Seq(load, new Seq(local, store));
-
-        result = new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
-
-        if(t2 != null){
-            result = new Seq(t2, result);
-        }
-        if(t1 != null){
-            result = new Seq(t1, result);
-        }
-        return result;
+        return Utils.arrayToThread(false, t1, t2, new Fence("Mb"), load, local, store, new Fence("Mb"));
     }
 
     @Override
     public Thread visitReSpinTryLock(LitmusCParser.ReSpinTryLockContext ctx){
-        throw new ParsingException("visitReSpinTryLock not implemented");
-        /*
         // TODO: Implementation
-        returnStack.push(new AConst(1));
-        return new Skip();
-        */
+        throw new ParsingException("visitReSpinTryLock not implemented");
     }
 
     @Override
     public Thread visitReSpinIsLocked(LitmusCParser.ReSpinIsLockedContext ctx){
-        throw new ParsingException("visitReSpinIsLocked not implemented");
-        /*
         // TODO: Implementation
-        returnStack.push(new AConst(1));
-        return new Skip();
-        */
+        throw new ParsingException("visitReSpinIsLocked not implemented");
     }
 
     @Override
@@ -419,14 +387,7 @@ public class VisitorLitmusC
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
         returnStack.push(new Atom(v1, ctx.opCompare().getText(), v2));
-
-        if(t1 != null){
-            if(t2 != null){
-                return new Seq(t1, t2);
-            }
-            return t1;
-        }
-        return t2;
+        return Utils.arrayToThread(false, t1, t2);
     }
 
     @Override
@@ -436,14 +397,7 @@ public class VisitorLitmusC
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
         returnStack.push(new AExpr(v1, ctx.opArith().getText(), v2));
-
-        if(t1 != null){
-            if(t2 != null){
-                return new Seq(t1, t2);
-            }
-            return t1;
-        }
-        return t2;
+        return Utils.arrayToThread(false, t1, t2);
     }
 
     @Override
@@ -499,7 +453,7 @@ public class VisitorLitmusC
         load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE, FilterUtils.EVENT_TYPE_RMW_NORETURN);
         RMWStore store = new RMWStore(load, location, new AExpr(register1, op, value), "_rx");
         store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE, FilterUtils.EVENT_TYPE_RMW_NORETURN);
-        return new Seq(load, store);
+        return Utils.arrayToThread(false, load, store);
     }
 
     private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, ExprInterface value, String memoryOrder){
@@ -1165,19 +1119,19 @@ public class VisitorLitmusC
     private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicOpReturn(varCtx, returnStack.pop(), op, memoryOrder);
-        return t == null ? result : new Seq(t, result);
+        return Utils.arrayToThread(false, t, result);
     }
 
     private Thread visitAtomicFetchOp(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicFetchOp(varCtx, returnStack.pop(), op, memoryOrder);
-        return t == null ? result : new Seq(t, result);
+        return Utils.arrayToThread(false, t, result);
     }
 
     private Thread visitAtomicXchg(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicXchg(varCtx, returnStack.pop(), memoryOrder);
-        return t == null ? result : new Seq(t, result);
+        return Utils.arrayToThread(false, t, result);
     }
 
     private Thread visitAtomicCmpxchg(
@@ -1190,32 +1144,25 @@ public class VisitorLitmusC
         ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)re2Ctx.accept(this);
         ExprInterface v2 = returnStack.pop();
-
         Thread result = visitAtomicCmpxchg(varCtx, v1, v2, memoryOrder);
-        if(t2 != null){
-            result = new Seq(t2, result);
-        }
-        if(t1 != null){
-            result = new Seq(t1, result);
-        }
-        return result;
+        return Utils.arrayToThread(false, t1, t2, result);
     }
 
     private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicOpAndTest(varCtx, returnStack.pop(), op);
-        return t == null ? result : new Seq(t, result);
+        return Utils.arrayToThread(false, t, result);
     }
 
     private Thread visitAtomicOp(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicOp(varCtx, returnStack.pop(), op);
-        return t == null ? result : new Seq(t, result);
+        return Utils.arrayToThread(false, t, result);
     }
 
     private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicWrite(varCtx, returnStack.pop(), memoryOrder);
-        return t == null ? result : new Seq(t, result);
+        return Utils.arrayToThread(false, t, result);
     }
 }
