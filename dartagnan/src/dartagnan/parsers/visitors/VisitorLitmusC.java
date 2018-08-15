@@ -13,9 +13,11 @@ import dartagnan.program.event.*;
 import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.event.lock.RCULock;
 import dartagnan.program.event.lock.RCUUnlock;
-import dartagnan.program.event.rmw.RMWStore;
-import dartagnan.program.event.rmw.RMWStoreIf;
-import dartagnan.program.event.rmw.RMWStoreUnless;
+import dartagnan.program.event.rmw.*;
+import dartagnan.program.event.rmw.cond.FenceCond;
+import dartagnan.program.event.rmw.cond.RMWReadCondCmp;
+import dartagnan.program.event.rmw.cond.RMWReadCondUnless;
+import dartagnan.program.event.rmw.cond.RMWStoreCond;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -295,17 +297,17 @@ public class VisitorLitmusC
         Register register = getOrCreateRegister(currentThread, null);
 
         String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
-        Load load = new Load(register, location, loadMO);
+        RMWReadCondCmp load = new RMWReadCondCmp(register, cmp, location, loadMO);
         load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
 
         String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
-        RMWStoreIf store = new RMWStoreIf(load, location, cmp, value, storeMO, true);
+        RMWStoreCond store = new RMWStoreCond(load, location, value, storeMO);
         store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
 
         returnStack.push(register);
 
         if(memoryOrder.equals("_sc")){
-            return Utils.arrayToThread(false, new Fence("Mb"), load, store, new Fence("Mb"));
+            return Utils.arrayToThread(false, new FenceCond(load, "Mb"), load, store, new FenceCond(load, "Mb"));
         }
         return Utils.arrayToThread(false, load, store);
     }
@@ -354,18 +356,14 @@ public class VisitorLitmusC
         ExprInterface cmp = returnStack.pop();
 
         Register register1 = getOrCreateRegister(currentThread, null);
-        Register register2 = getOrCreateRegister(currentThread, null);
-        Load load = new Load(register1, location, "_rx");
+        RMWReadCondUnless load = new RMWReadCondUnless(register1, cmp, location, "_rx");
         load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-        Local local = new Local(register2, new AExpr(register1, "+", value));
-        RMWStoreUnless store = new RMWStoreUnless(load, location, cmp, register2, "_rx");
+        RMWStoreCond store = new RMWStoreCond(load, location, new AExpr(register1, "+", value), "_rx");
         store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
 
         // Non-zero if was not equal (i.e. operation happened), zero otherwise
         returnStack.push(new Atom(register1, "!=", cmp));
-
-        // TODO: Skipping barriers if cmp failed (values were equal)
-        return Utils.arrayToThread(false, t1, t2, new Fence("Mb"), load, local, store, new Fence("Mb"));
+        return Utils.arrayToThread(false, t1, t2, new FenceCond(load, "Mb"), load, store, new FenceCond(load, "Mb"));
     }
 
     @Override

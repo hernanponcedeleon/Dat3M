@@ -54,9 +54,12 @@ src/dartagnan/program/event/lock/RCULock.java \
 src/dartagnan/program/event/lock/RCUUnlock.java \
 src/dartagnan/program/event/rmw/AbstractRMW.java \
 src/dartagnan/program/event/rmw/RMWStore.java \
-src/dartagnan/program/event/rmw/RMWStoreIf.java \
-src/dartagnan/program/event/rmw/RMWStoreUnless.java \
 src/dartagnan/program/event/rmw/Xchg.java \
+src/dartagnan/program/event/rmw/cond/FenceCond.java \
+src/dartagnan/program/event/rmw/cond/RMWReadCond.java \
+src/dartagnan/program/event/rmw/cond/RMWReadCondCmp.java \
+src/dartagnan/program/event/rmw/cond/RMWReadCondUnless.java \
+src/dartagnan/program/event/rmw/cond/RMWStoreCond.java \
 src/dartagnan/program/event/Event.java \
 src/dartagnan/program/event/Fence.java \
 src/dartagnan/program/event/If.java \
