@@ -147,6 +147,7 @@ public class Porthos {
         Program pSource = p.clone();
         Program pTarget = p.clone();
 
+        p.compile("SC", false, true);
         pSource.compile(source, false, true);
         Integer startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
         pTarget.compile(target, false, true, startEId);
