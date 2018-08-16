@@ -26,7 +26,7 @@ public class ParserLitmusC implements ParserInterface {
         VisitorLitmusC visitor = new VisitorLitmusC();
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        //program.setName(inputFilePath);
+        program.setName(inputFilePath);
         return program;
     }
 }
