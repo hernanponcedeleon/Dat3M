@@ -15,7 +15,7 @@ public class RelCartesian extends Relation {
 
     private FilterAbstract filter1;
     private FilterAbstract filter2;
-    private int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE;
+    private int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU;
 
     public RelCartesian(FilterAbstract filter1, FilterAbstract filter2) {
         this.filter1 = filter1;

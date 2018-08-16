@@ -15,7 +15,7 @@ import static dartagnan.utils.Utils.edge;
 public class RelSetIdentity extends Relation {
 
     protected FilterAbstract filter;
-    protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE;
+    protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU;
 
     public RelSetIdentity(FilterAbstract filter) {
         this.filter = filter;

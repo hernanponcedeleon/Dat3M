@@ -17,7 +17,7 @@ public class FilterUtils {
     public static final String EVENT_TYPE_RMW_NORETURN = "Noreturn";
 
     public static final String EVENT_TYPE_LOCK = "LKW";
-
+    public static final String EVENT_TYPE_SYNC_RCU = "Sync-rcu";
 
     public static final Map<String, String> map = new HashMap<String, String>() {{
 

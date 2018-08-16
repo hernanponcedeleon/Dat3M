@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
 
@@ -13,8 +12,6 @@ import dartagnan.program.event.*;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
-import dartagnan.program.event.lock.RCULock;
-import dartagnan.program.event.lock.RCUUnlock;
 import dartagnan.program.utils.EventRepository;
 
 public class Utils {
@@ -70,7 +67,7 @@ public class Utils {
 				gv.addln("    subgraph cluster_Thread_Source" + t.getTId() + " { rank=sink; fontsize=15; label = \"Thread " + tid + "\"; color=magenta; shape=box;");
 			}
 
-			for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
+			for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU)) {
 				if (!model.getConstInterp(e.executes(ctx)).isTrue() || !e.getMainThread().equals(t.getTId())) {continue;}
 				String label = e.getEId() + ": ";
 				if(e instanceof Store || e instanceof Init) {
@@ -79,18 +76,20 @@ public class Utils {
 					label += "R_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
 				} else if(e instanceof Fence) {
 					label += ((Fence)e).getName() + "\\n";
-				}
+				} else {
+                    label += e + "\\n";
+                }
 				for(Event eHL : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
 					if(!(e instanceof Init) && e.getHLId() != null && e.getHLId() == eHL.hashCode()) {
 						label += eHL.toString().replaceAll("\\s","");
 					}
 				}
-				if(e instanceof Store || e instanceof Load || e instanceof Fence) {
+                if(e instanceof Init) {
+                    gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", root=true];");
+                } else {
 					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThread() + "];");
 				}
-				if(e instanceof Init) {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", root=true];");
-				}
+
 			}
 			if(!(t instanceof Init)) {
 				gv.addln("    }");
@@ -113,9 +112,9 @@ public class Utils {
 			}
 		}
 
-		for(Event e1 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
+		for(Event e1 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU)) {
 			if (!(model.getConstInterp(e1.executes(ctx)).isTrue())) continue;
-			for(Event e2 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
+			for(Event e2 : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU)) {
 				if (!(model.getConstInterp(e2.executes(ctx)).isTrue())) continue;
 				if(model.getConstInterp(edge("po", e1, e2, ctx)).isTrue() && e1.getEId().equals(e2.getEId() - 1)) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"po\", color=\"brown\", fontcolor=\"brown\", weight=1];");
@@ -139,8 +138,8 @@ public class Utils {
 			}
 		}
 
-		Collection<Event> rcuLocks = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> e instanceof RCULock).collect(Collectors.toSet());
-		Collection<Event> rcuUnlocks = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> e instanceof RCUUnlock).collect(Collectors.toSet());
+		Collection<Event> rcuLocks = p.getEventRepository().getEvents(EventRepository.EVENT_RCU_LOCK);
+		Collection<Event> rcuUnlocks = p.getEventRepository().getEvents(EventRepository.EVENT_RCU_UNLOCK);
 		for(Event lock : rcuLocks){
 			if(model.getConstInterp(lock.executes(ctx)).isTrue()){
 				for(Event unlock : rcuUnlocks){

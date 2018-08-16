@@ -24,7 +24,7 @@ public class Wmm implements WmmInterface{
             "id", "int", "ext", "loc", "po",
             "rf", "fr", "co",
             "idd", "ctrlDirect", "ctrl",
-            "crit"  // TODO: Implementation
+            "crit"
     ));
 
     private static Map<String, String> basicFenceRelations = new HashMap<String, String>();

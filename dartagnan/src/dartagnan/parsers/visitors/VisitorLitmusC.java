@@ -11,8 +11,9 @@ import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.program.event.lock.RCULock;
-import dartagnan.program.event.lock.RCUUnlock;
+import dartagnan.program.event.rcu.RCUReadLock;
+import dartagnan.program.event.rcu.RCUReadUnlock;
+import dartagnan.program.event.rcu.RCUSync;
 import dartagnan.program.event.rmw.*;
 import dartagnan.program.event.rmw.cond.FenceCond;
 import dartagnan.program.event.rmw.cond.RMWReadCondCmp;
@@ -34,7 +35,7 @@ public class VisitorLitmusC
     private Map<String, Map<String, Register>> mapRegisters = new HashMap<String, Map<String, Register>>();
     private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<String, Map<String, Location>>();
     private Stack<ExprInterface> returnStack = new Stack<>();
-    private Stack<RCULock> rcuLockStack = new Stack<>();
+    private Stack<RCUReadLock> rcuLockStack = new Stack<>();
     private String currentThread;
     private Program program = new Program("");
 
@@ -487,7 +488,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
-        RCULock lock = new RCULock();
+        RCUReadLock lock = new RCUReadLock();
         rcuLockStack.push(lock);
         return lock;
     }
@@ -495,8 +496,8 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
         try {
-            RCULock lock = rcuLockStack.pop();
-            return new RCUUnlock(lock);
+            RCUReadLock lock = rcuLockStack.pop();
+            return new RCUReadUnlock(lock);
         } catch (EmptyStackException e){
             throw new ParsingException("Unbalanced RCU unlock in thread " + currentThread);
         }
@@ -504,12 +505,12 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
-        return visitFenceExpression("Sync-rcu");
+        return new RCUSync();
     }
 
     @Override
     public Thread visitNreSynchronizeRcuExpedited(LitmusCParser.NreSynchronizeRcuExpeditedContext ctx){
-        return visitFenceExpression("Sync-rcu");
+        return new RCUSync();
     }
 
 

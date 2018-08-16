@@ -13,12 +13,12 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.*;
 import dartagnan.program.event.*;
-import dartagnan.program.event.lock.RCULock;
-import dartagnan.program.event.lock.RCUUnlock;
+import dartagnan.program.event.rcu.RCUReadLock;
+import dartagnan.program.event.rcu.RCUReadUnlock;
 import dartagnan.program.utils.EventRepository;
 
 public class Domain {
-	
+
 	public static BoolExpr encode(Program program, Context ctx, boolean encCtrlPo) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 
@@ -37,8 +37,8 @@ public class Domain {
 				enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e, e, ctx)));
 		}
 
-		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
-			for(Event e2 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE)) {
+		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU)) {
+			for(Event e2 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU)) {
 				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("rf", e1, e2, ctx), ctx.mkAnd(e1.executes(ctx), e2.executes(ctx))));
 				enc = ctx.mkAnd(enc, ctx.mkImplies(edge("co", e1, e2, ctx), ctx.mkAnd(e1.executes(ctx), e2.executes(ctx))));
 
@@ -61,7 +61,7 @@ public class Domain {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e2, ctx)));
 				}
 
-				if(!(e1 instanceof Fence || e2 instanceof Fence) && e1.getLoc() == e2.getLoc()) {
+				if(e1 instanceof MemEvent && e2 instanceof MemEvent && e1.getLoc() == e2.getLoc()) {
 					enc = ctx.mkAnd(enc, edge("loc", e1, e2, ctx));
 				}
 				else {
@@ -127,13 +127,13 @@ public class Domain {
 			}
 		}
 
-		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_INIT)){
+		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_INIT | EventRepository.EVENT_RCU)){
 			for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
 				enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
 				enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e2, e1, ctx)));
 			}
 		}
-		
+
 		for(Event e1 : eventsMem) {
 			for(Event e2 : eventsMem) {
 				BoolExpr orClause = ctx.mkFalse();
@@ -183,8 +183,8 @@ public class Domain {
 			}
 		}
 
-		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_SKIP)) {
-			for(Event e2 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_SKIP)) {
+		for(Event e1 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_SKIP | EventRepository.EVENT_RCU)) {
+			for(Event e2 : eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_SKIP | EventRepository.EVENT_RCU)) {
 				if(e1.getMainThread() == e2.getMainThread()) {
 					enc = ctx.mkAnd(enc, edge("int", e1, e2, ctx));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ext", e1, e2, ctx)));
@@ -205,7 +205,7 @@ public class Domain {
 			Set<Event> writesEventsLoc = eventsStoreInit.stream().filter(e -> e.getLoc() == loc).collect(Collectors.toSet());
 			enc = ctx.mkAnd(enc, satTO("co", writesEventsLoc, ctx));
 		}
-		
+
 		for(Event e : eventsInit) {
 			enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
 		}
@@ -218,7 +218,7 @@ public class Domain {
 			}
 			enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(w1.getLoc().getLastValueExpr(ctx), ((MemEvent) w1).ssaLoc)));
 		}
-		
+
 		for(Event r1 : eventsLoadLocal) {
 			Set<Event> modRegLater = eventsLoadLocal.stream().filter(e -> r1.getReg() == e.getReg() && r1.getEId() < e.getEId()).collect(Collectors.toSet());
 			BoolExpr lastModReg = r1.executes(ctx);
@@ -237,13 +237,11 @@ public class Domain {
 			enc = ctx.mkAnd(enc, ctx.mkImplies(e.executes(ctx), encodeEO(rfPairs, ctx)));
 		}
 
-		Collection<Event> rcuLocks = eventRepository.getEvents(EventRepository.EVENT_RCU_LOCK);
-		Collection<Event> rcuUnlocks = eventRepository.getEvents(EventRepository.EVENT_RCU_UNLOCK);
 
-		for(Event unlock : rcuUnlocks){
-			RCULock myLock = ((RCUUnlock)unlock).getLockEvent();
+		for(Event unlock : eventRepository.getEvents(EventRepository.EVENT_RCU_UNLOCK)){
+			RCUReadLock myLock = ((RCUReadUnlock)unlock).getLockEvent();
 			enc = ctx.mkAnd(enc, edge("crit", myLock, unlock, ctx));
-			for(Event lock : rcuLocks){
+			for(Event lock : eventRepository.getEvents(EventRepository.EVENT_RCU_LOCK)){
 				if(!lock.equals(myLock)){
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("crit", lock, unlock, ctx)));
 				}

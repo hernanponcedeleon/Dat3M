@@ -3,8 +3,7 @@ package dartagnan.program.utils;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
-import dartagnan.program.event.lock.RCULock;
-import dartagnan.program.event.lock.RCUUnlock;
+import dartagnan.program.event.rcu.*;
 import dartagnan.program.event.rmw.RMWStore;
 
 import java.util.*;
@@ -16,14 +15,17 @@ public class EventRepository {
     public static final int EVENT_INIT          = 1;
     public static final int EVENT_LOAD          = 2;
     public static final int EVENT_LOCAL         = 4;
-    public static final int EVENT_MEMORY        = 8;
-    public static final int EVENT_FENCE         = 16;
-    public static final int EVENT_SKIP          = 32;
-    public static final int EVENT_STORE         = 64;
-    public static final int EVENT_RMW_STORE     = 128;
-    public static final int EVENT_IF            = 256;
-    public static final int EVENT_RCU_LOCK      = 512;
-    public static final int EVENT_RCU_UNLOCK    = 1024;
+    public static final int EVENT_FENCE         = 8;
+    public static final int EVENT_SKIP          = 16;
+    public static final int EVENT_STORE         = 32;
+    public static final int EVENT_RMW_STORE     = 64;
+    public static final int EVENT_IF            = 128;
+    public static final int EVENT_RCU_LOCK      = 256;
+    public static final int EVENT_RCU_UNLOCK    = 512;
+    public static final int EVENT_RCU_SYNC      = 1024;
+
+    public static final int EVENT_MEMORY = EVENT_INIT | EVENT_LOAD | EVENT_STORE;
+    public static final int EVENT_RCU = EVENT_RCU_LOCK | EVENT_RCU_UNLOCK | EVENT_RCU_SYNC;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
     private Program program;
@@ -53,15 +55,15 @@ public class EventRepository {
 
     private boolean is(Event event, int mask){
         return ((mask & EVENT_INIT) > 0 && event instanceof Init)
-                || ((mask & EVENT_LOAD) > 0 && event instanceof Load)
+                || ((mask & EVENT_LOAD) > 0 && (event instanceof Load || event instanceof Read))
                 || ((mask & EVENT_LOCAL) > 0 && event instanceof Local)
-                || ((mask & EVENT_MEMORY) > 0 && event instanceof MemEvent)
                 || ((mask & EVENT_FENCE) > 0 && event instanceof Fence)
                 || ((mask & EVENT_SKIP) > 0 && event instanceof Skip)
-                || ((mask & EVENT_STORE) > 0 && event instanceof Store)
+                || ((mask & EVENT_STORE) > 0 && (event instanceof Store || event instanceof Write))
                 || ((mask & EVENT_RMW_STORE) > 0 && event instanceof RMWStore)
                 || ((mask & EVENT_IF) > 0 && event instanceof If)
-                || ((mask & EVENT_RCU_LOCK) > 0 && event instanceof RCULock)
-                || ((mask & EVENT_RCU_UNLOCK) > 0 && event instanceof RCUUnlock);
+                || ((mask & EVENT_RCU_LOCK) > 0 && event instanceof RCUReadLock)
+                || ((mask & EVENT_RCU_UNLOCK) > 0 && event instanceof RCUReadUnlock)
+                || ((mask & EVENT_RCU_SYNC) > 0 && event instanceof RCUSync);
     }
 }

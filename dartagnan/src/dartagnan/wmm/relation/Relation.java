@@ -26,7 +26,7 @@ public abstract class Relation {
     protected String term;
     protected boolean containsRec;
     protected boolean isNamed;
-    protected int eventMask = EventRepository.EVENT_MEMORY;
+    protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_RCU;
 
     /**
      * Creates a relation with an automatically generated identifier.
