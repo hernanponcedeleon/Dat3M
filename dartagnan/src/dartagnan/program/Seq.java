@@ -108,7 +108,7 @@ public class Seq extends Thread {
 		}
 	}
 	
-	public void setMainThread(Integer t) {
+	public void setMainThread(Thread t) {
 		this.mainThread = t;
 		t1.setMainThread(t);
 		t2.setMainThread(t);

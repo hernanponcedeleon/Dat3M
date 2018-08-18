@@ -1,6 +1,5 @@
 package dartagnan.program.utils;
 
-import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
 import dartagnan.program.event.rcu.*;
@@ -28,20 +27,16 @@ public class EventRepository {
     public static final int EVENT_RCU = EVENT_RCU_LOCK | EVENT_RCU_UNLOCK | EVENT_RCU_SYNC;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
-    private Program program;
+    private Thread thread;
 
-    public EventRepository(Program program){
-        this.program = program;
+    public EventRepository(Thread thread){
+        this.thread = thread;
     }
 
     public Set<Event> getEvents(int mask){
         if(!sets.containsKey(mask)){
             if(mask == EVENT_ALL){
-                Set<Event> events = new HashSet<>();
-                for(Thread t : program.getThreads()){
-                    events.addAll(t.getEvents());
-                }
-                sets.put(EVENT_ALL, events);
+                sets.put(EVENT_ALL, thread.getEvents());
             } else {
                 sets.put(mask, getEvents(EVENT_ALL).stream().filter(e -> is(e, mask)).collect(Collectors.toSet()));
             }

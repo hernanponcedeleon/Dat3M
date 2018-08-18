@@ -540,7 +540,7 @@ public class VisitorLitmusPPC
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(!(registers.keySet().contains(registerName))) {
-            registers.put(registerName, new Register(registerName).setPrintMainThread(threadName));
+            registers.put(registerName, new Register(registerName).setPrintMainThreadId(threadName));
         }
         return registers.get(registerName);
     }

@@ -36,13 +36,13 @@ public class RelFencerel extends Relation {
 
         for(Event e1 : mEvents) {
             for(Event e2 : mEvents) {
-                if(!(e1.getMainThread() == e2.getMainThread() && e1.getEId() < e2.getEId())) {
+                if(!(e1.getMainThreadId() == e2.getMainThreadId() && e1.getEId() < e2.getEId())) {
                     enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(this.getName(), e1, e2, ctx)));
 
                 } else {
                     BoolExpr fenceEnc = ctx.mkFalse();
 
-                    for(Fence f : barriers.stream().filter(e -> e.getMainThread() == e1.getMainThread()
+                    for(Fence f : barriers.stream().filter(e -> e.getMainThreadId() == e1.getMainThreadId()
                             && e1.getEId() < e.getEId()
                             && e.getEId() < e2.getEId()
                             && e.getName().equals(getFenceName())).collect(Collectors.toSet())) {

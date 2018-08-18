@@ -68,7 +68,7 @@ public class Utils {
 			}
 
 			for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU)) {
-				if (!model.getConstInterp(e.executes(ctx)).isTrue() || !e.getMainThread().equals(t.getTId())) {continue;}
+				if (!model.getConstInterp(e.executes(ctx)).isTrue() || !e.getMainThreadId().equals(t.getTId())) {continue;}
 				String label = e.getEId() + ": ";
 				if(e instanceof Store || e instanceof Init) {
 					label += "W_" + e.getLoc() + "_" + model.getConstInterp(((MemEvent) e).ssaLoc).toString() + "\\n";
@@ -87,7 +87,7 @@ public class Utils {
                 if(e instanceof Init) {
                     gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", root=true];");
                 } else {
-					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThread() + "];");
+					gv.addln("      " + e.repr() + " [label=\"" + label + "\", shape=\"box\", color=\"blue\", group=s" + e.getMainThreadId() + "];");
 				}
 
 			}
@@ -135,6 +135,11 @@ public class Utils {
 				if(gpExpr != null && gpExpr.isTrue()) {
 					gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"gp\", color=\"black\", fontcolor=\"black\", weight=1];");
 				}
+
+                Expr dataExpr = model.getConstInterp(edge("data", e1, e2, ctx));
+                if(dataExpr != null && dataExpr.isTrue()) {
+                    gv.addln("      " + e1.repr() + " -> " + e2.repr() + " [label=\"data\", color=\"black\", fontcolor=\"black\", weight=1];");
+                }
 			}
 		}
 
@@ -215,12 +220,12 @@ public class Utils {
 		return ctx.mkIntConst(String.format("%s(%s)", relName, e.repr()));
 	}
 	
-	public static IntExpr ssaLoc(Location loc, Integer mainThread, Integer ssaIndex, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(String.format("T%s_%s_%s", mainThread, loc.getName(), ssaIndex));
+	public static IntExpr ssaLoc(Location loc, Integer mainThreadId, Integer ssaIndex, Context ctx) throws Z3Exception {
+		return ctx.mkIntConst(String.format("T%s_%s_%s", mainThreadId, loc.getName(), ssaIndex));
 	}
 	
 	public static IntExpr ssaReg(Register reg, Integer ssaIndex, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(String.format("T%s_%s_%s", reg.getMainThread(), reg.getName(), ssaIndex));
+		return ctx.mkIntConst(String.format("T%s_%s_%s", reg.getMainThreadId(), reg.getName(), ssaIndex));
 	}
 	
 	public static IntExpr uniqueValue(Event e, Context ctx) throws Z3Exception {

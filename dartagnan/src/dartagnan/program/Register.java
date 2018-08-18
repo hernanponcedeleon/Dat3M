@@ -14,8 +14,8 @@ import static dartagnan.utils.Utils.ssaReg;
 public class Register extends AExpr implements IntExprInterface {
 
 	private String name;
-	private Integer mainThread;
-	private String printMainThread;
+	private Integer mainThreadId;
+	private String printMainThreadId;
 
 	public Register(String name) {
 		if(name == null){
@@ -32,25 +32,25 @@ public class Register extends AExpr implements IntExprInterface {
         return name;
 	}
 
-	public Register setPrintMainThread(String thread){
-	    this.printMainThread = thread;
+	public Register setPrintMainThreadId(String threadId){
+	    this.printMainThreadId = threadId;
 	    return this;
     }
 
-    public String getPrintMainThread(){
-	    return printMainThread;
+    public String getPrintMainThreadId(){
+	    return printMainThreadId;
     }
 	
 	public Register clone() {
 		return this;
 	}
 	
-	public void setMainThread(Integer t) {
-		this.mainThread = t;
+	public void setMainThreadId(Integer t) {
+		this.mainThreadId = t;
 	}
 
 	public ArithExpr toZ3(MapSSA map, Context ctx) throws Z3Exception {
-		if(getMainThread() == null) {
+		if(getMainThreadId() == null) {
 			System.out.println(String.format("Check toZ3() for %s: null pointer!", this));
 		}
 		return ssaReg(this, map.get(this), ctx);
@@ -62,11 +62,11 @@ public class Register extends AExpr implements IntExprInterface {
 		return setRegs;
 	}
 
-	public Integer getMainThread() {
-		return mainThread;
+	public Integer getMainThreadId() {
+		return mainThreadId;
 	}
 
 	public IntExpr getLastValueExpr(Context ctx){
-		return ctx.mkIntConst(getName() + "_" + getMainThread() + "_final");
+		return ctx.mkIntConst(getName() + "_" + getMainThreadId() + "_final");
 	}
 }

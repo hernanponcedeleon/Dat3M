@@ -124,7 +124,7 @@ public class If extends Event {
         t2.setGuard(ctx.mkAnd(guard, ctx.mkNot(myGuard)), ctx);
     }
 
-    public void setMainThread(Integer t) {
+    public void setMainThread(Thread t) {
         this.mainThread = t;
         t1.setMainThread(t);
         t2.setMainThread(t);
@@ -183,13 +183,15 @@ public class If extends Event {
     public BoolExpr encodeCF(Context ctx) throws Z3Exception {
         return ctx.mkAnd(
                 ctx.mkEq(ctx.mkBoolConst(cfVar()), ctx.mkXor(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar()))),
+                ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx)),
                 t1.encodeCF(ctx),
                 t2.encodeCF(ctx));
     }
 
     public BoolExpr allExecute(Context ctx) throws Z3Exception {
         return ctx.mkAnd(
-                ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),				t1.allExecute(ctx),
+                ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),
+                t1.allExecute(ctx),
                 t2.allExecute(ctx));
     }
 }

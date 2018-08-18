@@ -63,7 +63,7 @@ local [String mainThread] returns [Thread t]:
 	r = register '<-' e = arith_expr [mainThread] {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
-			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThread(mainThread));
+			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThreadId(mainThread));
 		}
 		Register pointerReg = mapThreadRegs.get($r.reg.getName());
 		$t = new Local(pointerReg, $e.expr);
@@ -72,7 +72,7 @@ load [String mainThread] returns [Thread t]:
 	r = register '<:-' l = location {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
-			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThread(mainThread));
+			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThreadId(mainThread));
 		}
 		if(!(mapLocs.keySet().contains($l.loc.getName()))) {
 			System.out.println(String.format("Location %s must be initialized", $l.loc.getName()));
@@ -98,7 +98,7 @@ read [String mainThread] returns [Thread t]:
 	r = register '=' l = location POINT 'load' LPAR at = ATOMIC RPAR {
 		Map<String, Register> mapThreadRegs = mapRegs.get(mainThread);
 		if(!(mapThreadRegs.keySet().contains($r.reg.getName()))) {
-			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThread(mainThread));
+			mapThreadRegs.put($r.reg.getName(), $r.reg.setPrintMainThreadId(mainThread));
 		}
 		if(!(mapLocs.keySet().contains($l.loc.getName()))) {
 			System.out.println(String.format("Location %s must be initialized", $l.loc.getName()));

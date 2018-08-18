@@ -42,6 +42,10 @@ public class Store extends MemEvent {
         return String.format("%s%s := %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, val);
 	}
 
+	public ExprInterface getExpr(){
+		return val;
+	}
+
 	public LastModMap setLastModMap(LastModMap map) {
 		this.lastModMap = map;
 		LastModMap retMap = map.clone();
@@ -67,7 +71,7 @@ public class Store extends MemEvent {
 		}
 
 		Expr z3Expr = val.toZ3(map, ctx);
-		Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
+		Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 		this.ssaLoc = z3Loc;
 		return new Pair<>(ctx.mkImplies(executes(ctx), val.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
 	}

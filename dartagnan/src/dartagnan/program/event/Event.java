@@ -107,10 +107,6 @@ public abstract class Event extends Thread {
 		return new Pair<BoolExpr, MapSSA>(ctx.mkTrue(), map);
 	}
 	
-	public void setMainThread(Integer t) {
-		this.mainThread = t;
-	}
-	
 	public Integer setEId(Integer i) {
 		this.eid = i;
 		return i+1;

@@ -57,7 +57,7 @@ public class Init extends MemEvent {
 			return null;
 		}
 		else {
-			Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
+			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLoc = z3Loc;
 			Expr initValue;
 			if(loc.getIValue() == null) {

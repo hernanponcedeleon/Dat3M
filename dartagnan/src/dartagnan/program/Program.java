@@ -1,9 +1,6 @@
 package dartagnan.program;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.microsoft.z3.*;
@@ -14,7 +11,7 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
 
-public class Program {
+public class Program extends Thread {
 
 	private String name;
 	private AbstractAssert ass;
@@ -37,6 +34,14 @@ public class Program {
 
     public void add(Thread t) {
 		threads.add(t);
+	}
+
+	public Set<Event> getEvents(){
+		Set<Event> events = new HashSet<>();
+		for(Thread t : getThreads()){
+			events.addAll(t.getEvents());
+		}
+		return events;
 	}
 	
 	public String toString() {
@@ -113,15 +118,17 @@ public class Program {
 		}		
 	}
 
-	public void compile(String target, boolean ctrl, boolean leading) {
+	public Thread compile(String target, boolean ctrl, boolean leading) {
 		compile(target, ctrl, leading, 0, 0);
+		return this;
 	}
 
-	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid) {
+	public Thread compile(String target, boolean ctrl, boolean leading, int firstEid) {
 		compile(target, ctrl, leading, firstEid, 0);
+		return this;
 	}
 
-	public void compile(String target, boolean ctrl, boolean leading, Integer firstEid, Integer firstTid) {
+	public Thread compile(String target, boolean ctrl, boolean leading, int firstEid, int firstTid) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
 
 		ListIterator<Thread> iter = threads.listIterator();
@@ -144,13 +151,14 @@ public class Program {
 			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load || e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet());
 			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
-				reg.setMainThread(t.tid);
+				reg.setMainThreadId(t.tid);
 			}
 		}
 		eventRepository.clear();
+		return this;
 	}
 
-	public void optCompile(Integer firstEId, boolean ctrl, boolean leading) {
+	public void optCompile(int firstEId, boolean ctrl, boolean leading) {
 		List<Thread> compiledThreads = new ArrayList<Thread>();
 		
 		ListIterator<Thread> iter = threads.listIterator();
@@ -173,7 +181,7 @@ public class Program {
 			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load || e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet());
 			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
-				reg.setMainThread(t.tid);
+				reg.setMainThreadId(t.tid);
 			}
 		}
 		eventRepository.clear();
@@ -191,16 +199,17 @@ public class Program {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-		    t.setMainThread(t.tid);
+		    t.setMainThread(t);
 		}
 	}
 
-	private void setEId(Integer lastId) {
+	public Integer setEId(Integer lastId) {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
 		    lastId = t.setEId(lastId);
 		}
+		return lastId;
 	}
 
 	private void setTId() {
@@ -212,12 +221,13 @@ public class Program {
 		}
 	}
 
-	private void setTId(Integer lastId) {
+	public Integer setTId(Integer lastId) {
 		ListIterator<Thread> iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
 		    lastId = t.setTId(lastId);
 		}
+		return lastId;
 	}
 
 	public BoolExpr encodeDF(Context ctx) throws Z3Exception {

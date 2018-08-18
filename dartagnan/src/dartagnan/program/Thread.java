@@ -5,6 +5,7 @@ import java.util.Set;
 import com.microsoft.z3.*;
 
 import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -13,9 +14,18 @@ public class Thread {
 
 	protected int condLevel;
 	// Main thread where this Event, Seq, etc belongs
-	protected Integer mainThread;
+	protected Thread mainThread;
 	protected Integer tid;
 	protected BoolExpr myGuard;
+
+	private EventRepository eventRepository;
+
+	public EventRepository getEventRepository(){
+		if(eventRepository == null){
+			eventRepository = new EventRepository(this);
+		}
+		return eventRepository;
+	}
 	
 	public int getCondLevel() {
 		return condLevel;
@@ -67,8 +77,22 @@ public class Thread {
 		return new Thread();
 	}
 
-	public Integer getMainThread() {
+	public void setMainThread(Thread t) {
+		this.mainThread = t;
+	}
+
+	public Thread getMainThread() {
+		if(mainThread == null){
+			throw new RuntimeException("Main thread is not initialised for \n" + this + "\n");
+		}
 		return mainThread;
+	}
+
+	public Integer getMainThreadId() {
+		if(mainThread == null){
+			throw new RuntimeException("Main thread is not initialised for \n" + this + "\n");
+		}
+		return mainThread.getTId();
 	}
 	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
@@ -80,10 +104,6 @@ public class Thread {
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	public void setMainThread(Integer t) {
-		// TODO Auto-generated method stub
 	}
 
 	public Integer setEId(Integer i) {

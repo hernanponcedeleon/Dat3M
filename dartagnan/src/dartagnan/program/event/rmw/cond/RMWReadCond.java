@@ -39,7 +39,7 @@ public abstract class RMWReadCond extends Load {
         }
         else {
             Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-            Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
+            Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
             this.ssaLoc = z3Loc;
             this.ssaRegIndex = map.get(reg);
             this.z3Cond = ctx.mkEq(z3Reg, encodeValue(map, ctx, cmp));

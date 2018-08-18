@@ -71,7 +71,7 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
         }
-        getThreadEvents(register.getPrintMainThread()).add(new Local(register, new AConst(value)));
+        getThreadEvents(register.getPrintMainThreadId()).add(new Local(register, new AConst(value)));
         return null;
     }
 
@@ -87,7 +87,7 @@ public class VisitorLitmusC
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
         Register register = visitThreadVariable(ctx.threadVariable());
         Location location = getOrCreateLocation(visitVariable(ctx.variable()));
-        getMapRegLoc(register.getPrintMainThread()).put(register.getName(), location);
+        getMapRegLoc(register.getPrintMainThreadId()).put(register.getName(), location);
         return null;
     }
 
@@ -685,7 +685,7 @@ public class VisitorLitmusC
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(registerName == null || !(registers.keySet().contains(registerName))) {
-            registers.put(registerName, new Register(registerName).setPrintMainThread(threadName));
+            registers.put(registerName, new Register(registerName).setPrintMainThreadId(threadName));
         }
         return registers.get(registerName);
     }
