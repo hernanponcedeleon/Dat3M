@@ -102,6 +102,10 @@ src/dartagnan/wmm/EncodingsCAT.java \
 src/dartagnan/wmm/axiom/Irreflexive.java \
 src/dartagnan/wmm/arch/Power.java \
 src/dartagnan/wmm/arch/PSO.java \
+src/dartagnan/wmm/relation/basic/RelCrit.java \
+src/dartagnan/wmm/relation/basic/RelCtrl.java \
+src/dartagnan/wmm/relation/basic/RelIdd.java \
+src/dartagnan/wmm/relation/basic/RelRMW.java \
 src/dartagnan/wmm/relation/Relation.java \
 src/dartagnan/wmm/relation/RelCartesian.java \
 src/dartagnan/wmm/relation/RelComposition.java \
@@ -110,7 +114,6 @@ src/dartagnan/wmm/relation/RelFencerel.java \
 src/dartagnan/wmm/relation/RelInterSect.java \
 src/dartagnan/wmm/relation/RelInverse.java \
 src/dartagnan/wmm/relation/RelMinus.java \
-src/dartagnan/wmm/relation/RelRMW.java \
 src/dartagnan/wmm/relation/RelSetIdentity.java \
 src/dartagnan/wmm/relation/RelTrans.java \
 src/dartagnan/wmm/relation/RelTransRef.java \
