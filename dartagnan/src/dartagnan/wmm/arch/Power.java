@@ -32,10 +32,14 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.RelFencerel;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.basic.RelCtrl;
+import dartagnan.wmm.relation.basic.RelIdd;
 
 public class Power implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
+			new RelIdd(),
+			new RelCtrl(),
 			new RelFencerel("Sync", "sync"),
 			new RelFencerel("Lwsync", "lwsync"),
 			new RelFencerel("Isync", "isync"),

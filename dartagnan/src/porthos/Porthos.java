@@ -160,13 +160,15 @@ public class Porthos {
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
-        BoolExpr sourceDomain = Domain.encode(pSource, ctx, wmmResolver.encodeCtrlPo(source));
+        BoolExpr sourceDomain = Domain.encode(pSource, ctx);
+        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(source);
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
 
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
-        s.add(Domain.encode(pTarget, ctx, wmmResolver.encodeCtrlPo(target)));
+        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
+        s.add(Domain.encode(pTarget, ctx));
         s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
         s.add(mcmT.Consistent(pTarget, ctx));
 

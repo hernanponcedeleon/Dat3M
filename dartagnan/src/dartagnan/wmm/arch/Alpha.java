@@ -20,10 +20,14 @@ import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.RelFencerel;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.basic.RelCtrl;
+import dartagnan.wmm.relation.basic.RelIdd;
 
 public class Alpha implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
+			new RelIdd(),
+			new RelCtrl(),
 			new RelFencerel("Mfence", "mfence"),
 			new RelFencerel("Isync", "isync"),
 			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW").setEventMask(EventRepository.EVENT_MEMORY),

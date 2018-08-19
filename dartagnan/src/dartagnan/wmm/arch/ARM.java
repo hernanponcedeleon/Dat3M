@@ -33,10 +33,14 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.RelFencerel;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.basic.RelCtrl;
+import dartagnan.wmm.relation.basic.RelIdd;
 
 public class ARM implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
+			new RelIdd(),
+			new RelCtrl(),
 			new RelFencerel("Isb", "isb"),
 			new RelFencerel("Ish", "ish"),
 			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW").setEventMask(EventRepository.EVENT_MEMORY),

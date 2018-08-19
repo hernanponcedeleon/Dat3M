@@ -21,6 +21,7 @@ public abstract class Relation {
     public static boolean Approx = false;
     public static boolean CloseApprox = false;
     public static boolean PostFixApprox = false;
+    public static boolean EncodeCtrlPo = false; // depends on target architecture
 
     protected String name;
     protected String term;

@@ -23,9 +23,10 @@ public class Domain {
 	private static String[] threadInternalRelations = {
 			"id", "po",
 			"ii", "ic", "ci", "cc",
-			"idd", "data", "ctrlDirect", "ctrl", "idd^+"};
+			"idd", "data", "ctrlDirect", "ctrl", "idd^+"
+	};
 
-	public static BoolExpr encode(Program program, Context ctx, boolean encCtrlPo) throws Z3Exception {
+	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
 
 		for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL)) {
@@ -47,8 +48,6 @@ public class Domain {
 
 		enc = ctx.mkAnd(enc, encodeStaticRelations(program, ctx));
 		enc = ctx.mkAnd(enc, encodeCommunicationRelations(program, ctx));
-		enc = ctx.mkAnd(enc, encodeIdd(program, ctx));
-		enc = ctx.mkAnd(enc, encodeCtrl(program, ctx, encCtrlPo));
 		return enc;
 	}
 
@@ -179,91 +178,6 @@ public class Domain {
 
 		for(Event e : eventRepository.getEvents(EventRepository.EVENT_INIT)) {
 			enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
-		}
-
-		return enc;
-	}
-
-	private static BoolExpr encodeIdd(Program program, Context ctx){
-		BoolExpr enc = ctx.mkTrue();
-
-		for(Thread t : program.getThreads()){
-			Collection<Event> nonRegWriters = t.getEventRepository().getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU | EventRepository.EVENT_SKIP | EventRepository.EVENT_INIT | EventRepository.EVENT_STORE | EventRepository.EVENT_IF);
-			Collection<Event> nonRegReaders = t.getEventRepository().getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU | EventRepository.EVENT_SKIP | EventRepository.EVENT_INIT);
-			for(Event e1 : nonRegWriters){
-				for(Event e2 : nonRegReaders){
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
-				}
-			}
-
-			// TODO: Load can be also a regReader (for address dependency)
-			Collection<Event> events = t.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL);
-			Set<Register> registers = events.stream().filter(e -> e.getReg() != null).map(e -> e.getReg()).collect(Collectors.toSet());
-			Set<Event> eventsLoadLocal = t.getEventRepository().getEvents(EventRepository.EVENT_LOCAL | EventRepository.EVENT_LOAD);
-			Set<Event> eventsStoreLocalIf = t.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-
-			for(Event regReader : eventsStoreLocalIf){
-				Set<Register> readerRegisters = regReader.getExpr().getRegs();
-				for(Event regWriter : eventsLoadLocal){
-					if(!readerRegisters.contains(regWriter.getReg())){
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", regWriter, regReader, ctx)));
-					}
-				}
-			}
-
-			for(Register r : registers){
-				Set<Event> regWriters = eventsLoadLocal.stream().filter(e -> e.getReg().equals(r)).collect(Collectors.toSet());
-				Set<Event> regReaders = eventsStoreLocalIf.stream().filter(e -> e.getExpr().getRegs().contains(r)).collect(Collectors.toSet());
-
-				for(Event e1 : regWriters){
-					for(Event e2 : regReaders){
-						if(e1.getEId() >= e2.getEId()){
-							enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
-						} else {
-							BoolExpr clause = ctx.mkAnd(e1.executes(ctx), e2.executes(ctx));
-							for(Event e3 : regWriters){
-								if(e3.getEId() > e1.getEId() && e3.getEId() < e2.getEId()){
-									clause = ctx.mkAnd(clause, ctx.mkNot(e3.executes(ctx)));
-								}
-							}
-							enc = ctx.mkAnd(enc, ctx.mkEq(clause, edge("idd", e1, e2, ctx)));
-						}
-					}
-				}
-			}
-		}
-
-		return enc;
-	}
-
-	private static BoolExpr encodeCtrl(Program program, Context ctx, boolean encCtrlPo){
-		BoolExpr enc = ctx.mkTrue();
-
-		for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_IF)){
-			Set<Event> branchEvents = ((If) e1).getT1().getEvents();
-			branchEvents.addAll(((If) e1).getT2().getEvents());
-			for(Event e2 : e1.getMainThread().getEventRepository().getEvents(EventRepository.EVENT_ALL)){
-				if(branchEvents.contains(e2)){
-					enc = ctx.mkAnd(enc, edge("ctrlDirect", e1, e2, ctx));
-				} else {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrlDirect", e1, e2, ctx)));
-				}
-			}
-		}
-
-		for(Thread t : program.getThreads()){
-			for(Event e1 : t.getEventRepository().getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF)) {
-				for(Event e2 : t.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
-					BoolExpr ctrlClause = edge("ctrlDirect", e1, e2, ctx);
-					for(Event e3 : t.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-						ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("idd^+", e1, e3, ctx), edge("ctrl", e3, e2, ctx)));
-						if(encCtrlPo) {
-							ctrlClause = ctx.mkOr(ctrlClause, ctx.mkAnd(edge("ctrl", e1, e3, ctx), edge("po", e3, e2, ctx)));
-						}
-					}
-					enc = ctx.mkAnd(enc, ctx.mkEq(edge("ctrl", e1, e2, ctx), ctrlClause));
-				}
-			}
 		}
 
 		return enc;

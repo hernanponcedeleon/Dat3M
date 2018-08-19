@@ -12,6 +12,8 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
 import dartagnan.wmm.relation.basic.RelCrit;
+import dartagnan.wmm.relation.basic.RelCtrl;
+import dartagnan.wmm.relation.basic.RelIdd;
 import dartagnan.wmm.relation.basic.RelRMW;
 
 import java.util.*;
@@ -24,8 +26,7 @@ public class Wmm implements WmmInterface{
 
     private static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
             "id", "int", "ext", "loc", "po",
-            "rf", "fr", "co",
-            "idd", "ctrlDirect", "ctrl"
+            "rf", "fr", "co"
     ));
 
     private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
@@ -160,6 +161,8 @@ public class Wmm implements WmmInterface{
     // TODO: Later these relations should come from included cat files, e.g., "stdlib.cat" or "fences.cat"
     private Relation resolveRelation(String name){
         Relation relation = null;
+        Relation idd;
+        Relation iddTrans;
 
         if(basicFenceRelations.containsKey(name)) {
             relation = new RelFencerel(basicFenceRelations.get(name), name);
@@ -195,10 +198,19 @@ public class Wmm implements WmmInterface{
                     break;
                 case "data":
                     Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    Relation iddInv = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
                     addRelation(RW);
-                    addRelation(iddInv);
-                    relation = new RelInterSect(iddInv, RW, "data");
+                    addRelation(iddTrans);
+                    relation = new RelInterSect(iddTrans, RW, "data");
+                    break;
+                case "ctrl":
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
+                    addRelation(iddTrans);
+                    relation = new RelCtrl();
                     break;
                 case "ctrlisync":
                     Relation isync = new RelFencerel("Isync", "isync");
