@@ -14,28 +14,12 @@ import com.microsoft.z3.*;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
-import dartagnan.program.event.rcu.RCUReadLock;
-import dartagnan.program.event.rcu.RCUReadUnlock;
 import dartagnan.program.utils.EventRepository;
 
 public class Domain {
 
-	private static String[] threadInternalRelations = {
-			"id", "po",
-			"ii", "ic", "ci", "cc",
-			"idd", "data", "ctrlDirect", "ctrl", "idd^+"
-	};
-
 	public static BoolExpr encode(Program program, Context ctx) throws Z3Exception {
 		BoolExpr enc = ctx.mkTrue();
-
-		for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL)) {
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e, e, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e, e, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e, e, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e, e, ctx)));
-		}
-
 		Set<Event> eventsLoadLocal = program.getEventRepository().getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL);
 		for(Event r1 : eventsLoadLocal) {
 			Set<Event> modRegLater = eventsLoadLocal.stream().filter(e -> r1.getReg() == e.getReg() && r1.getEId() < e.getEId()).collect(Collectors.toSet());
@@ -54,6 +38,21 @@ public class Domain {
 	private static BoolExpr encodeStaticRelations(Program program, Context ctx){
 		BoolExpr enc = ctx.mkTrue();
 
+		for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL)){
+			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e1, e1, ctx)));
+			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e1, e1, ctx)));
+			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e1, ctx)));
+			enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e1, ctx)));
+			for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
+				if(!e1.getMainThreadId().equals(e2.getMainThreadId())) {
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e1, e2, ctx)));
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e1, e2, ctx)));
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e2, ctx)));
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e2, ctx)));
+				}
+			}
+		}
+
 		for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
 			for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
 				if(e1.getMainThreadId() == e2.getMainThreadId()) {
@@ -63,9 +62,8 @@ public class Domain {
 				else {
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("int", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, edge("ext", e1, e2, ctx));
-					for(String rel : threadInternalRelations){
-						enc = ctx.mkAnd(enc, ctx.mkNot(edge(rel, e1, e2, ctx)));
-					}
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("po", e1, e2, ctx)));
+					enc = ctx.mkAnd(enc, ctx.mkNot(edge("id", e1, e2, ctx)));
 				}
 			}
 		}

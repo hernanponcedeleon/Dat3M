@@ -26,6 +26,16 @@ public class RelIdd extends Relation {
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
+        for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+            for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+                if(!e1.getMainThreadId().equals(e2.getMainThreadId()) || e1.getEId() >= e2.getEId()){
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd^+", e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("data", e1, e2, ctx)));
+                }
+            }
+        }
+
         for(Thread t : program.getThreads()){
             Collection<Event> nonRegWriters = t.getEventRepository().getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU | EventRepository.EVENT_SKIP | EventRepository.EVENT_INIT | EventRepository.EVENT_STORE | EventRepository.EVENT_IF);
             Collection<Event> nonRegReaders = t.getEventRepository().getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU | EventRepository.EVENT_SKIP | EventRepository.EVENT_INIT);

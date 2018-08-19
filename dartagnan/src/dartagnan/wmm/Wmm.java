@@ -228,6 +228,9 @@ public class Wmm implements WmmInterface{
                 case "crit":
                     relation = new RelCrit();
                     break;
+                case "idd":
+                    relation = new RelIdd();
+                    break;
             }
         }
 

@@ -167,8 +167,8 @@ public class Porthos {
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
-        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(Domain.encode(pTarget, ctx));
+        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
         s.add(mcmT.Consistent(pTarget, ctx));
 

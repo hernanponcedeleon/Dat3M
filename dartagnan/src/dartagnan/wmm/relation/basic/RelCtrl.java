@@ -24,6 +24,15 @@ public class RelCtrl extends Relation {
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
+        for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+            for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+                if(!e1.getMainThreadId().equals(e2.getMainThreadId()) || e1.getEId() >= e2.getEId()){
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrlDirect", e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("ctrl", e1, e2, ctx)));
+                }
+            }
+        }
+
         for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_IF)){
             Set<Event> branchEvents = ((If) e1).getT1().getEvents();
             branchEvents.addAll(((If) e1).getT2().getEvents());
