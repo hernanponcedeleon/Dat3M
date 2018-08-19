@@ -1,4 +1,4 @@
-package dartagnan.wmm.relation;
+package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -9,6 +9,7 @@ import dartagnan.program.event.Load;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.Relation;
 
 import java.util.Collection;
 
@@ -27,7 +28,6 @@ public class RelRMW extends Relation {
         if(!events.isEmpty()){
             for(Event w : events){
                 Load r = ((RMWStore)w).getLoadEvent();
-                enc = ctx.mkAnd(enc, ctx.mkEq(r.executes(ctx), w.executes(ctx)));
                 enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge("rf", w, r, ctx)));
                 enc = ctx.mkAnd(enc, Utils.edge("rmw", r, w, ctx));
             }

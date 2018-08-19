@@ -11,6 +11,8 @@ import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
+import dartagnan.wmm.relation.basic.RelCrit;
+import dartagnan.wmm.relation.basic.RelRMW;
 
 import java.util.*;
 
@@ -23,8 +25,7 @@ public class Wmm implements WmmInterface{
     private static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
             "id", "int", "ext", "loc", "po",
             "rf", "fr", "co",
-            "idd", "ctrlDirect", "ctrl",
-            "crit"
+            "idd", "ctrlDirect", "ctrl"
     ));
 
     private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
@@ -211,6 +212,9 @@ public class Wmm implements WmmInterface{
                     break;
                 case "rmw":
                     relation = new RelRMW();
+                    break;
+                case "crit":
+                    relation = new RelCrit();
                     break;
             }
         }

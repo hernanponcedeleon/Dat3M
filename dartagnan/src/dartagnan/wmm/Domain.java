@@ -21,7 +21,7 @@ import dartagnan.program.utils.EventRepository;
 public class Domain {
 
 	private static String[] threadInternalRelations = {
-			"id", "po", "crit",
+			"id", "po",
 			"ii", "ic", "ci", "cc",
 			"idd", "data", "ctrlDirect", "ctrl", "idd^+"};
 
@@ -49,7 +49,6 @@ public class Domain {
 		enc = ctx.mkAnd(enc, encodeCommunicationRelations(program, ctx));
 		enc = ctx.mkAnd(enc, encodeIdd(program, ctx));
 		enc = ctx.mkAnd(enc, encodeCtrl(program, ctx, encCtrlPo));
-		enc = ctx.mkAnd(enc, encodeCrit(program, ctx));
 		return enc;
 	}
 
@@ -267,20 +266,6 @@ public class Domain {
 			}
 		}
 
-		return enc;
-	}
-
-	private static BoolExpr encodeCrit(Program program, Context ctx){
-		BoolExpr enc = ctx.mkTrue();
-		for(Event unlock : program.getEventRepository().getEvents(EventRepository.EVENT_RCU_UNLOCK)){
-			RCUReadLock myLock = ((RCUReadUnlock)unlock).getLockEvent();
-			enc = ctx.mkAnd(enc, edge("crit", myLock, unlock, ctx));
-			for(Event lock : program.getEventRepository().getEvents(EventRepository.EVENT_RCU_LOCK)){
-				if(!lock.equals(myLock)){
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("crit", lock, unlock, ctx)));
-				}
-			}
-		}
 		return enc;
 	}
 }

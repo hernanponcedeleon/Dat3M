@@ -16,6 +16,7 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.*;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.axiom.Empty;
+import dartagnan.wmm.relation.basic.RelRMW;
 
 public class TSO implements WmmInterface {
 
