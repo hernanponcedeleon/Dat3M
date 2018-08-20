@@ -215,12 +215,14 @@ public class Wmm implements WmmInterface{
                 case "ctrlisync":
                     Relation isync = new RelFencerel("Isync", "isync");
                     addRelation(isync);
-                    relation = new RelInterSect(new BasicRelation("ctrl"), isync, "ctrlisync");
+                    addRelation(new RelCtrl());
+                    relation = new RelInterSect(new RelCtrl(), isync, "ctrlisync");
                     break;
                 case "ctrlisb":
                     Relation isb = new RelFencerel("Isb", "isb");
                     addRelation(isb);
-                    relation = new RelInterSect(new BasicRelation("ctrl"), isb, "ctrlisb");
+                    addRelation(new RelCtrl());
+                    relation = new RelInterSect(new RelCtrl(), isb, "ctrlisb");
                     break;
                 case "rmw":
                     relation = new RelRMW();
