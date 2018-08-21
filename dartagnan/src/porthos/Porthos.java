@@ -68,6 +68,16 @@ public class Porthos {
                 .desc("Unrolling steps")
                 .build());
 
+        options.addOption(Option.builder("scat")
+                .hasArg()
+                .desc("Path to the CAT file of the source memory model")
+                .build());
+
+        options.addOption(Option.builder("tcat")
+                .hasArg()
+                .desc("Path to the CAT file of the target memory model")
+                .build());
+
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
@@ -103,16 +113,6 @@ public class Porthos {
             return;
         }
 
-        options.addOption(Option.builder("scat")
-        		.hasArg()
-        		.desc("Path to the CAT file of the source memory model")
-        		.build());
-
-        options.addOption(Option.builder("tcat")
-        		.hasArg()
-        		.desc("Path to the CAT file of the target memory model")
-        		.build());
-
         String[] rels = new String[100];
         if(cmd.hasOption("rels")) {
             rels = cmd.getOptionValues("rels");
@@ -147,7 +147,6 @@ public class Porthos {
         Program pSource = p.clone();
         Program pTarget = p.clone();
 
-        p.compile("SC", false, true);
         pSource.compile(source, false, true);
         Integer startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
         pTarget.compile(target, false, true, startEId);
@@ -161,21 +160,21 @@ public class Porthos {
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceDomain = Domain.encode(pSource, ctx);
-        BoolExpr sourceMM = mcmS.encode(p, ctx, false, cmd.hasOption("idl"));
+        BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
 
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
         s.add(Domain.encode(pTarget, ctx));
-        s.add(mcmT.encode(p, ctx, false, cmd.hasOption("idl")));
-        s.add(mcmT.Consistent(p, ctx));
+        s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
+        s.add(mcmT.Consistent(pTarget, ctx));
 
         s.add(sourceDF);
         s.add(sourceCF);
         s.add(sourceDF_RF);
         s.add(sourceDomain);
         s.add(sourceMM);
-        s.add(mcmS.Inconsistent(p, ctx));
+        s.add(mcmS.Inconsistent(pSource, ctx));
 
         s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
@@ -184,7 +183,7 @@ public class Porthos {
         s2.add(sourceDF_RF);
         s2.add(sourceDomain);
         s2.add(sourceMM);
-        s2.add(mcmS.Consistent(p, ctx));
+        s2.add(mcmS.Consistent(pSource, ctx));
 
 
 //        if(!statePortability) {
