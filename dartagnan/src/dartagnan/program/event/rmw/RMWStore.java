@@ -1,16 +1,9 @@
 package dartagnan.program.event.rmw;
 
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Register;
 import dartagnan.program.event.Load;
 import dartagnan.program.Location;
 import dartagnan.program.event.Store;
-import dartagnan.utils.MapSSA;
-
-import static dartagnan.utils.Utils.ssaReg;
 
 public class RMWStore extends Store {
 
@@ -34,12 +27,5 @@ public class RMWStore extends Store {
         newStore.setHLId(getHLId());
         newStore.setUnfCopy(getUnfCopy());
         return newStore;
-    }
-
-    protected Expr encodeValue(MapSSA map, Context ctx, Register r, AExpr v){
-        if(r != null){
-            return ssaReg(r, map.get(r), ctx);
-        }
-        return ctx.mkInt(v.toString());
     }
 }

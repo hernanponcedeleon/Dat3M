@@ -187,7 +187,7 @@ public class VisitorLitmusX86
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = getRegister(mainThread, ctx.r1().getText(), true);
         Location location = getLocation(ctx.location().getText());
-        return new Xchg(location, register, "_rx");
+        return new Xchg(location, register, register,"_rx");
     }
 
     @Override

@@ -11,6 +11,8 @@ import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
 import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.event.rmw.RMWFetchOp;
+import dartagnan.program.event.rmw.RMWOpReturn;
 import dartagnan.program.event.rcu.RCUReadLock;
 import dartagnan.program.event.rcu.RCUReadUnlock;
 import dartagnan.program.event.rcu.RCUSync;
@@ -197,7 +199,7 @@ public class VisitorLitmusC
     // ----------------------------------------------------------------------------------------------------------------
     // Return expressions (all other return expressions are reduced to these ones)
 
-    // TODO: A separate class for this event (for compilation to other architectures)
+    // Returns new value (the value after computation)
     private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, ExprInterface value, String op, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
@@ -206,28 +208,13 @@ public class VisitorLitmusC
             throw new ParsingException("Pointers are not implemented");
         }
 
-        Register register1 = getOrCreateRegister(currentThread, null);
-        Register register2 = getOrCreateRegister(currentThread, null);
-
-        String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
-        Load load = new Load(register1, location, loadMO);
-        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        Local local = new Local(register2, new AExpr(register1, op, value));
-
-        String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
-        RMWStore store = new RMWStore(load, location, register2, storeMO);
-        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        returnStack.push(register2);
-
-        if(memoryOrder.equals("_mb")){
-            return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
-        }
-        return Utils.arrayToThread(false, load, local, store);
+        Register register = getOrCreateRegister(currentThread, null);
+        RMWOpReturn result = new RMWOpReturn(location, register, value, op, memoryOrder);
+        returnStack.push(result.getReg());
+        return result;
     }
 
-    // TODO: A separate class for this event (for compilation to other architectures)
+    // Returns old value (the value before computation)
     private Thread visitAtomicFetchOp(LitmusCParser.VariableContext varCtx, ExprInterface value, String op, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
@@ -236,28 +223,12 @@ public class VisitorLitmusC
             throw new ParsingException("Pointers are not implemented");
         }
 
-        Register register1 = getOrCreateRegister(currentThread, null);
-        Register register2 = getOrCreateRegister(currentThread, null);
-
-        String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
-        Load load = new Load(register1, location, loadMO);
-        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        Local local = new Local(register2, new AExpr(register1, op, value));
-
-        String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
-        RMWStore store = new RMWStore(load, location, register2, storeMO);
-        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        returnStack.push(register1);
-
-        if(memoryOrder.equals("_mb")){
-            return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
-        }
-        return Utils.arrayToThread(false, load, local, store);
+        Register register = getOrCreateRegister(currentThread, null);
+        RMWFetchOp result = new RMWFetchOp(location, register, value, op, memoryOrder);
+        returnStack.push(result.getReg());
+        return result;
     }
 
-    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicXchg(LitmusCParser.VariableContext varCtx, ExprInterface value, String memoryOrder){
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
@@ -267,21 +238,9 @@ public class VisitorLitmusC
         }
 
         Register register = getOrCreateRegister(currentThread, null);
-
-        String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
-        Load load = new Load(register, location, loadMO);
-        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
-        RMWStore store = new RMWStore(load, location, value, storeMO);
-        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        returnStack.push(register);
-
-        if(memoryOrder.equals("_mb")){
-            return Utils.arrayToThread(false, new Fence("Mb"), load, store, new Fence("Mb"));
-        }
-        return Utils.arrayToThread(false, load, store);
+        Xchg result = new Xchg(location, register, value, memoryOrder);
+        returnStack.push(result.getReg());
+        return result;
     }
 
     // TODO: A separate class for this event (for compilation to other architectures)
@@ -343,6 +302,7 @@ public class VisitorLitmusC
     }
 
     @Override
+    // TODO: A separate class for compilation
     public Thread visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
         String varName = visitVariable(ctx.variable());
         Location location = getLocation(varName);
