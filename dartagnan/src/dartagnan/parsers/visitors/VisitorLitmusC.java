@@ -30,10 +30,9 @@ public class VisitorLitmusC
 
     public static final int DEFAULT_INIT_VALUE = 0;
 
-    private Map<String, Location> mapLocations = new HashMap<String, Location>();
     private Map<String, List<Thread>> mapThreadEvents = new HashMap<String, List<Thread>>();
+    private Map<String, Location> mapLocations = new HashMap<String, Location>();
     private Map<String, Map<String, Register>> mapRegisters = new HashMap<String, Map<String, Register>>();
-    private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<String, Map<String, Location>>();
     private Stack<ExprInterface> returnStack = new Stack<>();
     private Stack<RCUReadLock> rcuLockStack = new Stack<>();
     private String currentThread;
@@ -85,10 +84,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        Register register = visitThreadVariable(ctx.threadVariable());
-        Location location = getOrCreateLocation(visitVariable(ctx.variable()));
-        getMapRegLoc(register.getPrintMainThreadId()).put(register.getName(), location);
-        return null;
+        throw new RuntimeException("Pointer assignment is not implemented");
     }
 
 
@@ -102,6 +98,8 @@ public class VisitorLitmusC
         initThread(currentThread);
         List<Thread> initEvents = getThreadEvents(currentThread);
         Thread result = visitExpressionSequence(ctx);
+
+        // TODO: A separate lock stack for each branch
         if(!rcuLockStack.empty()){
             throw new ParsingException("Unbalanced RCU lock in thread " + currentThread);
         }
@@ -204,8 +202,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            // TODO: In general, it can be also a local variable (register)
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
 
         Register register1 = getOrCreateRegister(currentThread, null);
@@ -234,8 +232,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            // TODO: In general, it can be also a local variable (register)
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
 
         Register register1 = getOrCreateRegister(currentThread, null);
@@ -264,8 +262,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            // TODO: In general, it can be also a local variable (register)
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
 
         Register register = getOrCreateRegister(currentThread, null);
@@ -291,8 +289,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            // TODO: In general, it can be also a local variable (register)
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
 
         Register register = getOrCreateRegister(currentThread, null);
@@ -318,7 +316,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
 
         Register register = getOrCreateRegister(currentThread, null);
@@ -335,7 +334,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
         Register register = getOrCreateRegister(currentThread, null);
         returnStack.push(register);
@@ -347,7 +347,8 @@ public class VisitorLitmusC
         String varName = visitVariable(ctx.variable());
         Location location = getLocation(varName);
         if(location == null){
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
 
         Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
@@ -443,8 +444,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            // TODO: In general, it can be also a local variable (register)
-            throw new ParsingException("Uninitialized location " + varName);
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
 
         Register register1 = getOrCreateRegister(currentThread, null);
@@ -459,7 +460,8 @@ public class VisitorLitmusC
         String varName = visitVariable(varCtx);
         Location location = getLocation(varName);
         if(location == null){
-            throw new ParsingException("Atomic write is not implemented for register");
+            // TODO: Implementation
+            throw new ParsingException("Pointers are not implemented");
         }
         return new Write(location, value, memoryOrder);
     }
@@ -706,24 +708,6 @@ public class VisitorLitmusC
         return mapLocations.get(locationName);
     }
 
-    private Location getLocationForRegister(String threadName, String registerName){
-        if(!mapRegistersLocations.containsKey(threadName)){
-            initThread(threadName);
-        }
-        Map<String, Location> registerLocationMap = mapRegistersLocations.get(threadName);
-        if(!registerLocationMap.containsKey(registerName)){
-            throw new ParsingException("Register " + registerName + " must be initialized to a location");
-        }
-        return registerLocationMap.get(registerName);
-    }
-
-    private Map<String, Location> getMapRegLoc(String threadName){
-        if(!(mapRegistersLocations.keySet().contains(threadName))) {
-            initThread(threadName);
-        }
-        return mapRegistersLocations.get(threadName);
-    }
-
     private List<Thread> getThreadEvents(String threadName){
         if(!(mapThreadEvents.keySet().contains(threadName))) {
             initThread(threadName);
@@ -737,9 +721,6 @@ public class VisitorLitmusC
         }
         if(!(mapRegisters.containsKey(thread))){
             mapRegisters.put(thread, new HashMap<String, Register>());
-        }
-        if(!(mapRegistersLocations.containsKey(thread))){
-            mapRegistersLocations.put(thread, new HashMap<String, Location>());
         }
     }
 
@@ -1108,7 +1089,6 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreSmpMbAfterSpinlock(LitmusCParser.NreSmpMbAfterSpinlockContext ctx){
         throw new ParsingException("visitNreSmpMbAfterSpinlock is not implemented");
-        //return visitFenceExpression("After-spinlock");
     }
 
 
