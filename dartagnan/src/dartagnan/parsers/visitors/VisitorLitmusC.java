@@ -730,22 +730,22 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicAddReturn(LitmusCParser.ReAtomicAddReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_sc");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_sc");
     }
 
     @Override
     public Thread visitReAtomicAddReturnRelaxed(LitmusCParser.ReAtomicAddReturnRelaxedContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_rx");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_rx");
     }
 
     @Override
     public Thread visitReAtomicAddReturnAcquire(LitmusCParser.ReAtomicAddReturnAcquireContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_acq");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_acq");
     }
 
     @Override
     public Thread visitReAtomicAddReturnRelease(LitmusCParser.ReAtomicAddReturnReleaseContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_rel");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_rel");
     }
 
     @Override
