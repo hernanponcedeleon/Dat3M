@@ -221,7 +221,7 @@ public class VisitorLitmusC
 
         returnStack.push(register2);
 
-        if(memoryOrder.equals("_sc")){
+        if(memoryOrder.equals("_mb")){
             return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
         }
         return Utils.arrayToThread(false, load, local, store);
@@ -251,7 +251,7 @@ public class VisitorLitmusC
 
         returnStack.push(register1);
 
-        if(memoryOrder.equals("_sc")){
+        if(memoryOrder.equals("_mb")){
             return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
         }
         return Utils.arrayToThread(false, load, local, store);
@@ -278,7 +278,7 @@ public class VisitorLitmusC
 
         returnStack.push(register);
 
-        if(memoryOrder.equals("_sc")){
+        if(memoryOrder.equals("_mb")){
             return Utils.arrayToThread(false, new Fence("Mb"), load, store, new Fence("Mb"));
         }
         return Utils.arrayToThread(false, load, store);
@@ -305,7 +305,7 @@ public class VisitorLitmusC
 
         returnStack.push(register);
 
-        if(memoryOrder.equals("_sc")){
+        if(memoryOrder.equals("_mb")){
             return Utils.arrayToThread(false, new FenceCond(load, "Mb"), load, store, new FenceCond(load, "Mb"));
         }
         return Utils.arrayToThread(false, load, store);
@@ -730,7 +730,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicAddReturn(LitmusCParser.ReAtomicAddReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_sc");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_mb");
     }
 
     @Override
@@ -750,7 +750,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicSubReturn(LitmusCParser.ReAtomicSubReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_sc");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_mb");
     }
 
     @Override
@@ -770,7 +770,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicIncReturn(LitmusCParser.ReAtomicIncReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "_sc");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "_mb");
     }
 
     @Override
@@ -790,7 +790,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicDecReturn(LitmusCParser.ReAtomicDecReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "_sc");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "_mb");
     }
 
     @Override
@@ -810,7 +810,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicFetchAdd(LitmusCParser.ReAtomicFetchAddContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "_sc");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "_mb");
     }
 
     @Override
@@ -830,7 +830,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicFetchSub(LitmusCParser.ReAtomicFetchSubContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "_sc");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "_mb");
     }
 
     @Override
@@ -850,7 +850,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicFetchInc(LitmusCParser.ReAtomicFetchIncContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "_sc");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "_mb");
     }
 
     @Override
@@ -870,7 +870,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicFetchDec(LitmusCParser.ReAtomicFetchDecContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "_sc");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "_mb");
     }
 
     @Override
@@ -890,7 +890,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicXchg(LitmusCParser.ReAtomicXchgContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_sc");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_mb");
     }
 
     @Override
@@ -900,7 +900,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicXchgAcquire(LitmusCParser.ReAtomicXchgAcquireContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_scq");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_acq");
     }
 
     @Override
@@ -910,7 +910,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReXchg(LitmusCParser.ReXchgContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_sc");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_mb");
     }
 
     @Override
@@ -930,7 +930,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicCmpxchg(LitmusCParser.ReAtomicCmpxchgContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_sc");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_mb");
     }
 
     @Override
@@ -950,7 +950,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReCmpxchg(LitmusCParser.ReCmpxchgContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_sc");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_mb");
     }
 
     @Override
@@ -1058,7 +1058,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitNreSmpStoreMb(LitmusCParser.NreSmpStoreMbContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_sc");
+        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_mb");
     }
 
     @Override
