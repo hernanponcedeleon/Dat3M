@@ -50,7 +50,7 @@ public class Porthos {
         options.addOption(inputOpt);
 
         options.addOption(Option.builder("relax")
-        		.desc("Uses relax encoding for transitive closure")
+        		.desc("Uses relax encoding for recursive relations")
         		.build());
 
         options.addOption(Option.builder("draw")
