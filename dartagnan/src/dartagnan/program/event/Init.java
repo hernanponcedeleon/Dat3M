@@ -5,13 +5,10 @@ import com.microsoft.z3.*;
 import dartagnan.program.HighLocation;
 import dartagnan.program.Location;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.initValue;;
@@ -40,15 +37,6 @@ public class Init extends MemEvent {
 		newInit.condLevel = condLevel;
 		newInit.setHLId(getHLId());
 		return newInit;
-	}
-
-	public LastModMap setLastModMap(LastModMap map) {
-		this.lastModMap = map;
-		LastModMap retMap = map.clone();
-		Set<Event> set = new HashSet<Event>();
-		set.add(this);
-		retMap.put(loc, set);
-		return retMap;
 	}
 	
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {

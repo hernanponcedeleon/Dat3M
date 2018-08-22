@@ -8,13 +8,11 @@ import com.microsoft.z3.*;
 
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Thread;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 import static dartagnan.utils.Encodings.encodeMissingIndexes;
 import static dartagnan.utils.Utils.mergeMaps;
-import static dartagnan.utils.Utils.mergeMapLastMod;
 
 public class If extends Event {
 
@@ -59,13 +57,6 @@ public class If extends Event {
 
     public void setT2(Thread t) {
         t2 = t;
-    }
-
-    public LastModMap setLastModMap(LastModMap map) {
-        super.setLastModMap(map.clone());
-        LastModMap map1 = t1.setLastModMap(map.clone());
-        LastModMap map2 = t2.setLastModMap(map.clone());
-        return mergeMapLastMod(map1, map2);
     }
 
     public void incCondLevel() {

@@ -1,8 +1,6 @@
 package dartagnan.program.event;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import com.microsoft.z3.*;
 
@@ -10,7 +8,6 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -39,15 +36,6 @@ public class Write extends MemEvent {
 
 	public String toString() {
         return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, val);
-	}
-
-	public LastModMap setLastModMap(LastModMap map) {
-		this.lastModMap = map;
-		LastModMap retMap = map.clone();
-		Set<Event> set = new HashSet<Event>();
-		set.add(this);
-		retMap.put(loc, set);
-		return retMap;
 	}
 	
 	public Write clone() {
@@ -151,5 +139,4 @@ public class Write extends MemEvent {
 		OptFence olws = new OptFence("Lwsync", this.condLevel);
 		return new Seq(os, new Seq(olws, st));
 	}
-
 }

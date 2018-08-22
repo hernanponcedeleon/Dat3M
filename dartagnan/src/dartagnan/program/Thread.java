@@ -6,7 +6,6 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -123,11 +122,6 @@ public class Thread {
 
 	public String cfVar() {
 		return "CF" + hashCode();
-	}
-
-	public LastModMap setLastModMap(LastModMap newMap) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	public Integer getTId() {

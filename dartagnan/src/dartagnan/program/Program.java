@@ -147,7 +147,6 @@ public class Program extends Thread {
 		iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-            t.setLastModMap(new LastModMap());
 			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load || e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet());
 			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {
@@ -177,7 +176,6 @@ public class Program extends Thread {
 		iter = threads.listIterator();
 		while (iter.hasNext()) {
 			Thread t = iter.next();
-            t.setLastModMap(new LastModMap());
 			Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load || e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet());
 			regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
 			for(Register reg : regs) {

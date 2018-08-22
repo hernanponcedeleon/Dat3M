@@ -3,16 +3,12 @@ package dartagnan.program.event.rmw;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
-import dartagnan.program.event.Event;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.LastModMap;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Xchg extends AbstractRMW {
 
@@ -34,17 +30,6 @@ public class Xchg extends AbstractRMW {
 
     public String toString() {
         return String.join("", Collections.nCopies(condLevel, "  ")) + loc + ".xchg(" + atomic + ", " + reg + ")";
-    }
-
-    public LastModMap setLastModMap(LastModMap map) {
-        this.lastModMap = map;
-        LastModMap retMap = map.clone();
-        Set<Event> set = new HashSet<Event>();
-        set.add(this);
-        retMap.put(loc, set);
-        retMap.put(reg, set);
-        retMap.put(dummyReg, set);
-        return retMap;
     }
 
     // TODO: Should we clone loc, reg, value?

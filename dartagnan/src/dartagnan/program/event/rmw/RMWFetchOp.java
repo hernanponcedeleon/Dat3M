@@ -6,15 +6,11 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.Event;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.LastModMap;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 // TODO: After removing "extra" register in C parser, handle a situation when value == register,
 // e.g. C-atomic-fetch-simple-05.litmus
@@ -41,19 +37,6 @@ public class RMWFetchOp extends AbstractRMW {
     public String toString() {
         return String.join("", Collections.nCopies(condLevel, "  "))
                 + reg + " := atomic_fetch_" + opToText(op) + atomicToString(atomic) + "(" + value + ", " + loc + ")";
-    }
-
-    public LastModMap setLastModMap(LastModMap map) {
-        this.lastModMap = map;
-        LastModMap retMap = map.clone();
-        Set<Event> set = new HashSet<Event>();
-        set.add(this);
-        retMap.put(loc, set);
-        retMap.put(reg, set);
-        if(value instanceof Register){
-            retMap.put(value, set);
-        }
-        return retMap;
     }
 
     // TODO: Should we clone loc, reg, value?

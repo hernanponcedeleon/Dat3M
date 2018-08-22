@@ -177,9 +177,9 @@ public class Utils {
 	private static String getTargetFromEdge(String edge) {
 		return edge.split("\\(")[1].split(",")[1].split("\\)")[0];
 	}
-	
+
 	public static MapSSA mergeMaps(MapSSA map1, MapSSA map2) {
-		MapSSA map = new MapSSA(); 
+		MapSSA map = new MapSSA();
 		for(Object o : map1.keySet()) {
 	        if(map2.keySet().contains(o)) {
 				map.put(o, Math.max(map1.get(o), map2.get(o)));
@@ -197,19 +197,6 @@ public class Utils {
 	        }
 		}
 		return map;
-	}
-	
-	public static LastModMap mergeMapLastMod(LastModMap map1, LastModMap map2) {
-		LastModMap retMap = map1.clone();
-		for(Object o : map2.keySet()) {
-			if(retMap.keySet().contains(o)) {
-				retMap.get(o).addAll(map2.get(o));
-			}
-			else {
-				retMap.put(o, map2.get(o));
-			}
-		}
-		return retMap;
 	}
 	
 	public static BoolExpr edge(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {

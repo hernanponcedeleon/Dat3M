@@ -9,7 +9,6 @@ import com.microsoft.z3.*;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -20,7 +19,6 @@ public abstract class Event extends Thread {
 	private Integer unfCopy;
 	protected String atomic;
 
-	protected LastModMap lastModMap;
 	protected Set<String> filter = new HashSet<>();
 
 	public boolean is(String param){
@@ -49,16 +47,6 @@ public abstract class Event extends Thread {
 
 	public Integer getUnfCopy() {
 		return unfCopy;
-	}
-	
-	public LastModMap getLastModMap() {
-		assert(lastModMap.size() != 0);
-		return lastModMap;
-	}
-		
-	public LastModMap setLastModMap(LastModMap map) {
-		this.lastModMap =  map;
-		return map;
 	}
 	
 	public void setGuard(BoolExpr guard, Context ctx) {
