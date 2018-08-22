@@ -31,11 +31,11 @@ Usage
 ======
 For checking reachability:
 ```
-java dartagnan/Dartagnan -t <target> [-cat <CAT file>] -i <input>
+java dartagnan/Dartagnan -t <target> [-cat <CAT file>] -i <input> [options]
 ```
 For checking state inclusion:
 ```
-java porthos/Porthos -s <source> [-scat <CAT file>] -t <target> [-tcat <CAT file>] -i <input>
+java porthos/Porthos -s <source> [-scat <CAT file>] -t <target> [-tcat <CAT file>] -i <input> [options]
 ```
 Programs shall be written in the .pts format (see below). The path to the .pts file shall be provided in \<input>.
 
@@ -49,6 +49,10 @@ Strings \<source> and \<target> specify the architectures to which the program w
 - arm
 
 The optional -cat,-scat,-tcat options specify the paths to the CAT files. When they are not provided, the memory model is extracted from the compilation options \<source> and \<target>.
+
+Other optional arguments include:
+- -relax: uses the relax encodnig for recursive relations,
+- -unroll: unrollifng bound for the BMC.
 
 The .pts format
 ======
