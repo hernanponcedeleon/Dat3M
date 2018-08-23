@@ -1,10 +1,13 @@
 package dartagnan.program;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import com.microsoft.z3.*;
 
 import dartagnan.program.event.Event;
+import dartagnan.program.event.Skip;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -133,4 +136,23 @@ public class Thread {
 		System.out.println("Check allExecute!");
 		return null;
 	}
+
+    public static Thread fromArray(boolean createSkipOnNull, Thread... threads){
+        return fromList(createSkipOnNull, Arrays.asList(threads));
+    }
+
+    public static Thread fromList(boolean createSkipOnNull, List<Thread> threads) {
+        Thread result = null;
+        for (Thread t : threads) {
+            if(t != null){
+                result = result == null ? t : new Seq(result, t);
+            }
+        }
+
+        if(result == null && createSkipOnNull){
+            result = new Skip();
+        }
+
+        return result;
+    }
 }

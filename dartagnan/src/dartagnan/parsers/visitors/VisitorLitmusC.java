@@ -1,26 +1,21 @@
 package dartagnan.parsers.visitors;
 
 import dartagnan.LitmusCBaseVisitor;
-import dartagnan.LitmusCVisitor;
 import dartagnan.LitmusCParser;
+import dartagnan.LitmusCVisitor;
 import dartagnan.asserts.*;
-import dartagnan.expression.*;
+import dartagnan.expression.AConst;
+import dartagnan.expression.AExpr;
+import dartagnan.expression.Atom;
+import dartagnan.expression.ExprInterface;
 import dartagnan.parsers.utils.ParsingException;
-import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
-import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.program.event.rmw.RMWFetchOp;
-import dartagnan.program.event.rmw.RMWOpReturn;
-import dartagnan.program.event.rcu.RCUReadLock;
-import dartagnan.program.event.rcu.RCUReadUnlock;
-import dartagnan.program.event.rcu.RCUSync;
-import dartagnan.program.event.rmw.*;
-import dartagnan.program.event.rmw.cond.FenceCond;
-import dartagnan.program.event.rmw.cond.RMWReadCondCmp;
-import dartagnan.program.event.rmw.cond.RMWReadCondUnless;
-import dartagnan.program.event.rmw.cond.RMWStoreCond;
+import dartagnan.program.event.linux.rcu.RCUReadLock;
+import dartagnan.program.event.linux.rcu.RCUReadUnlock;
+import dartagnan.program.event.linux.rcu.RCUSync;
+import dartagnan.program.event.linux.rmw.*;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -106,7 +101,7 @@ public class VisitorLitmusC
             throw new ParsingException("Unbalanced RCU lock in thread " + currentThread);
         }
         if (!(initEvents.isEmpty())) {
-            result = new Seq(Utils.listToThread(false, initEvents), result);
+            result = new Seq(Thread.fromList(false, initEvents), result);
         }
         program.add(result);
         return null;
@@ -138,7 +133,7 @@ public class VisitorLitmusC
         Thread t1 = visitExpressionSequence(ctx);
         Thread t2 = ctx.elseExpression() == null ? new Skip() : visitExpressionSequence(ctx.elseExpression());
         Thread result = new If(returnStack.pop(), t1, t2);
-        return Utils.arrayToThread(false, evalThread, result);
+        return Thread.fromArray(false, evalThread, result);
     }
 
     @Override
@@ -152,7 +147,7 @@ public class VisitorLitmusC
         if(ctx.returnExpression() != null){
             Thread t = (Thread)ctx.returnExpression().accept(this);
             Thread result = new Local(register, returnStack.pop());
-            return Utils.arrayToThread(false, t, result);
+            return Thread.fromArray(false, t, result);
         }
         return null;
     }
@@ -177,7 +172,7 @@ public class VisitorLitmusC
             result = new Local(register, returnStack.pop());
         }
 
-        return Utils.arrayToThread(false, t, result);
+        return Thread.fromArray(false, t, result);
     }
 
     private Thread visitExpressionSequence(RuleContext ctx) {
@@ -192,7 +187,7 @@ public class VisitorLitmusC
                 }
             }
         }
-        return Utils.listToThread(true, events);
+        return Thread.fromList(true, events);
     }
 
 
@@ -201,115 +196,38 @@ public class VisitorLitmusC
 
     // Returns new value (the value after computation)
     private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, ExprInterface value, String op, String memoryOrder){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
-
+        Location location = getLocationOrError(visitVariable(varCtx));
         Register register = getOrCreateRegister(currentThread, null);
-        RMWOpReturn result = new RMWOpReturn(location, register, value, op, memoryOrder);
-        returnStack.push(result.getReg());
-        return result;
+        returnStack.push(register);
+        return new RMWOpReturn(location, register, value, op, memoryOrder);
     }
 
     // Returns old value (the value before computation)
     private Thread visitAtomicFetchOp(LitmusCParser.VariableContext varCtx, ExprInterface value, String op, String memoryOrder){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
-
+        Location location = getLocationOrError(visitVariable(varCtx));
         Register register = getOrCreateRegister(currentThread, null);
-        RMWFetchOp result = new RMWFetchOp(location, register, value, op, memoryOrder);
-        returnStack.push(result.getReg());
-        return result;
+        returnStack.push(register);
+        return new RMWFetchOp(location, register, value, op, memoryOrder);
     }
 
     private Thread visitAtomicXchg(LitmusCParser.VariableContext varCtx, ExprInterface value, String memoryOrder){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
-
+        Location location = getLocationOrError(visitVariable(varCtx));
         Register register = getOrCreateRegister(currentThread, null);
-        Xchg result = new Xchg(location, register, value, memoryOrder);
-        returnStack.push(result.getReg());
-        return result;
+        returnStack.push(register);
+        return new RMWXchg(location, register, value, memoryOrder);
     }
 
-    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicCmpxchg(LitmusCParser.VariableContext varCtx, ExprInterface cmp, ExprInterface value, String memoryOrder){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
-
-        Register register = getOrCreateRegister(currentThread, null);
-
-        String loadMO = memoryOrder.equals("_acq") ? "_acq" : "_rx";
-        RMWReadCondCmp load = new RMWReadCondCmp(register, cmp, location, loadMO);
-        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        String storeMO = memoryOrder.equals("_rel") ? "_rel" : "_rx";
-        RMWStoreCond store = new RMWStoreCond(load, location, value, storeMO);
-        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-
-        returnStack.push(register);
-
-        if(memoryOrder.equals("_mb")){
-            return Utils.arrayToThread(false, new FenceCond(load, "Mb"), load, store, new FenceCond(load, "Mb"));
-        }
-        return Utils.arrayToThread(false, load, store);
-    }
-
-    // TODO: A separate class for this event (for compilation to other architectures)
-    private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, ExprInterface value, String op){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
-
-        Register register = getOrCreateRegister(currentThread, null);
-        Load load = new Load(register, location, "_rx");
-        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-        Local local = new Local(register, new AExpr(register, op, value));
-        RMWStore store = new RMWStore(load, location, register, "_rx");
-        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-        returnStack.push(new Atom(register, "==", new AConst(0)));
-        return Utils.arrayToThread(false, new Fence("Mb"), load, local, store, new Fence("Mb"));
-    }
-
-    private Thread visitAtomicRead(LitmusCParser.VariableContext varCtx, String memoryOrder){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
+        Location location = getLocationOrError(visitVariable(varCtx));
         Register register = getOrCreateRegister(currentThread, null);
         returnStack.push(register);
-        return new Read(register, location, memoryOrder);
+        return new RMWCmpXchg(location, register,cmp, value, memoryOrder);
     }
 
     @Override
-    // TODO: A separate class for compilation
+    // Returns non-zero if the addition was executed, zero otherwise
     public Thread visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
-        String varName = visitVariable(ctx.variable());
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
+        Location location = getLocationOrError(visitVariable(ctx.variable()));
 
         Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
         ExprInterface value = returnStack.pop();
@@ -317,15 +235,23 @@ public class VisitorLitmusC
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface cmp = returnStack.pop();
 
-        Register register1 = getOrCreateRegister(currentThread, null);
-        RMWReadCondUnless load = new RMWReadCondUnless(register1, cmp, location, "_rx");
-        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
-        RMWStoreCond store = new RMWStoreCond(load, location, new AExpr(register1, "+", value), "_rx");
-        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+        Register register = getOrCreateRegister(currentThread, null);
+        returnStack.push(register);
+        return Thread.fromArray(false, t1, t2, new RMWAddUnless(location, register,cmp, value));
+    }
 
-        // Non-zero if was not equal (i.e. operation happened), zero otherwise
-        returnStack.push(new Atom(register1, "!=", cmp));
-        return Utils.arrayToThread(false, t1, t2, new FenceCond(load, "Mb"), load, store, new FenceCond(load, "Mb"));
+    private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, ExprInterface value, String op){
+        Location location = getLocationOrError(visitVariable(varCtx));
+        Register register = getOrCreateRegister(currentThread, null);
+        returnStack.push(register);
+        return new RMWOpAndTest(location, register, value, op);
+    }
+
+    private Thread visitAtomicRead(LitmusCParser.VariableContext varCtx, String memoryOrder){
+        Location location = getLocationOrError(visitVariable(varCtx));
+        Register register = getOrCreateRegister(currentThread, null);
+        returnStack.push(register);
+        return new Read(register, location, memoryOrder);
     }
 
     @Override
@@ -347,7 +273,7 @@ public class VisitorLitmusC
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
         returnStack.push(new Atom(v1, ctx.opCompare().getText(), v2));
-        return Utils.arrayToThread(false, t1, t2);
+        return Thread.fromArray(false, t1, t2);
     }
 
     @Override
@@ -357,7 +283,7 @@ public class VisitorLitmusC
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
         returnStack.push(new AExpr(v1, ctx.opArith().getText(), v2));
-        return Utils.arrayToThread(false, t1, t2);
+        return Thread.fromArray(false, t1, t2);
     }
 
     @Override
@@ -399,30 +325,13 @@ public class VisitorLitmusC
     // ----------------------------------------------------------------------------------------------------------------
     // NonReturn expressions (all other return expressions are reduced to these ones)
 
-    // TODO: A separate class for this event (for compilation to other architectures)
     private Thread visitAtomicOp(LitmusCParser.VariableContext varCtx, ExprInterface value, String op){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
-
-        Register register1 = getOrCreateRegister(currentThread, null);
-        Load load = new Load(register1, location, "_rx");
-        load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE, FilterUtils.EVENT_TYPE_RMW_NORETURN);
-        RMWStore store = new RMWStore(load, location, new AExpr(register1, op, value), "_rx");
-        store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE, FilterUtils.EVENT_TYPE_RMW_NORETURN);
-        return Utils.arrayToThread(false, load, store);
+        Location location = getLocationOrError(visitVariable(varCtx));
+        return new RMWOp(location, value, op);
     }
 
     private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, ExprInterface value, String memoryOrder){
-        String varName = visitVariable(varCtx);
-        Location location = getLocation(varName);
-        if(location == null){
-            // TODO: Implementation
-            throw new ParsingException("Pointers are not implemented");
-        }
+        Location location = getLocationOrError(visitVariable(varCtx));
         return new Write(location, value, memoryOrder);
     }
 
@@ -666,6 +575,15 @@ public class VisitorLitmusC
             mapLocations.put(locationName, location);
         }
         return mapLocations.get(locationName);
+    }
+
+    private Location getLocationOrError(String locationName){
+        Location location = getLocation(locationName);
+        if(location == null){
+            // TODO: Implementation for pointers
+            throw new ParsingException("Cannot resolve location for " + locationName);
+        }
+        return location;
     }
 
     private List<Thread> getThreadEvents(String threadName){
@@ -1018,7 +936,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitNreSmpStoreMb(LitmusCParser.NreSmpStoreMbContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_mb");
+        return Thread.fromArray(false, visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rx"), new Fence("Mb"));
     }
 
     @Override
@@ -1058,19 +976,19 @@ public class VisitorLitmusC
     private Thread visitAtomicOpReturn(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicOpReturn(varCtx, returnStack.pop(), op, memoryOrder);
-        return Utils.arrayToThread(false, t, result);
+        return Thread.fromArray(false, t, result);
     }
 
     private Thread visitAtomicFetchOp(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicFetchOp(varCtx, returnStack.pop(), op, memoryOrder);
-        return Utils.arrayToThread(false, t, result);
+        return Thread.fromArray(false, t, result);
     }
 
     private Thread visitAtomicXchg(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicXchg(varCtx, returnStack.pop(), memoryOrder);
-        return Utils.arrayToThread(false, t, result);
+        return Thread.fromArray(false, t, result);
     }
 
     private Thread visitAtomicCmpxchg(
@@ -1084,24 +1002,24 @@ public class VisitorLitmusC
         Thread t2 = (Thread)re2Ctx.accept(this);
         ExprInterface v2 = returnStack.pop();
         Thread result = visitAtomicCmpxchg(varCtx, v1, v2, memoryOrder);
-        return Utils.arrayToThread(false, t1, t2, result);
+        return Thread.fromArray(false, t1, t2, result);
     }
 
     private Thread visitAtomicOpAndTest(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicOpAndTest(varCtx, returnStack.pop(), op);
-        return Utils.arrayToThread(false, t, result);
+        return Thread.fromArray(false, t, result);
     }
 
     private Thread visitAtomicOp(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String op){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicOp(varCtx, returnStack.pop(), op);
-        return Utils.arrayToThread(false, t, result);
+        return Thread.fromArray(false, t, result);
     }
 
     private Thread visitAtomicWrite(LitmusCParser.VariableContext varCtx, LitmusCParser.ReturnExpressionContext reCtx, String memoryOrder){
         Thread t = (Thread)reCtx.accept(this);
         Thread result = visitAtomicWrite(varCtx, returnStack.pop(), memoryOrder);
-        return Utils.arrayToThread(false, t, result);
+        return Thread.fromArray(false, t, result);
     }
 }

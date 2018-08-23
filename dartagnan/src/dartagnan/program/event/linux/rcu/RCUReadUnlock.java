@@ -1,4 +1,4 @@
-package dartagnan.program.event.rcu;
+package dartagnan.program.event.linux.rcu;
 
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterUtils;

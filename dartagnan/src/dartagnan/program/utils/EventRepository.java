@@ -2,9 +2,10 @@ package dartagnan.program.utils;
 
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
-import dartagnan.program.event.rcu.*;
-import dartagnan.program.event.rmw.AbstractRMW;
+import dartagnan.program.event.linux.rcu.*;
+import dartagnan.program.event.linux.rmw.RMWAbstract;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.rmw.Xchg;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,11 +53,11 @@ public class EventRepository {
 
     private boolean is(Event event, int mask){
         return ((mask & EVENT_INIT) > 0 && event instanceof Init)
-                || ((mask & EVENT_LOAD) > 0 && (event instanceof Load || event instanceof Read || event instanceof AbstractRMW))
+                || ((mask & EVENT_LOAD) > 0 && (event instanceof Load || event instanceof Read || event instanceof RMWAbstract || event instanceof Xchg))
                 || ((mask & EVENT_LOCAL) > 0 && event instanceof Local)
                 || ((mask & EVENT_FENCE) > 0 && event instanceof Fence)
                 || ((mask & EVENT_SKIP) > 0 && event instanceof Skip)
-                || ((mask & EVENT_STORE) > 0 && (event instanceof Store || event instanceof Write || event instanceof AbstractRMW))
+                || ((mask & EVENT_STORE) > 0 && (event instanceof Store || event instanceof Write || event instanceof RMWAbstract || event instanceof Xchg))
                 || ((mask & EVENT_RMW_STORE) > 0 && event instanceof RMWStore)
                 || ((mask & EVENT_IF) > 0 && event instanceof If)
                 || ((mask & EVENT_RCU_LOCK) > 0 && event instanceof RCUReadLock)

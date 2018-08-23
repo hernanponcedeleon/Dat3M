@@ -7,7 +7,6 @@ import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
 import dartagnan.parsers.utils.branch.BareIf;
 import dartagnan.parsers.utils.ParsingException;
-import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Fence;
@@ -54,7 +53,7 @@ public class VisitorLitmusPPC
         }
 
         for(String i : mapThreadEvents.keySet()) {
-            program.add(Utils.listToThread(true, mapThreadEvents.get(i)));
+            program.add(Thread.fromList(true, mapThreadEvents.get(i)));
         }
         return program;
     }
@@ -279,7 +278,7 @@ public class VisitorLitmusPPC
 
     private Thread closeBranch(){
         List<Thread> branchingThreadInstructions = mapThreadEvents.remove(effectiveThread);
-        Thread branchingThread = Utils.listToThread(true, branchingThreadInstructions);
+        Thread branchingThread = Thread.fromList(true, branchingThreadInstructions);
         branchingStacks.get(mainThread).pop();
         return branchingThread;
     }

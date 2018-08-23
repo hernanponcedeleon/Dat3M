@@ -5,8 +5,8 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
-import dartagnan.program.event.rcu.RCUReadLock;
-import dartagnan.program.event.rcu.RCUReadUnlock;
+import dartagnan.program.event.linux.rcu.RCUReadLock;
+import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
 

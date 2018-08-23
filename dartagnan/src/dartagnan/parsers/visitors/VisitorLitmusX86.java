@@ -5,7 +5,6 @@ import dartagnan.LitmusX86Visitor;
 import dartagnan.asserts.*;
 import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ParsingException;
-import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
@@ -48,7 +47,7 @@ public class VisitorLitmusX86
         visitAssertionList(ctx.assertionList());
 
         for(String i : mapThreadEvents.keySet()) {
-            program.add(Utils.listToThread(true, mapThreadEvents.get(i)));
+            program.add(Thread.fromList(true, mapThreadEvents.get(i)));
         }
         return program;
     }
@@ -187,7 +186,7 @@ public class VisitorLitmusX86
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = getRegister(mainThread, ctx.r1().getText(), true);
         Location location = getLocation(ctx.location().getText());
-        return new Xchg(location, register, register,"_rx");
+        return new Xchg(location, register,"_rx");
     }
 
     @Override
