@@ -1,0 +1,17 @@
+C data-race-of-execution
+
+{}
+
+P0(int *x)
+{
+	WRITE_ONCE(*x, 17);
+}
+
+P1(int *x)
+{
+	int r1;
+
+	r1 = *x;
+}
+
+exists (1:r1 = 16)

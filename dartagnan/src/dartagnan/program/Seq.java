@@ -7,7 +7,6 @@ import com.microsoft.z3.*;
 
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Skip;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -40,16 +39,6 @@ public class Seq extends Thread {
 	public void setGuard(BoolExpr guard, Context ctx) {
 		t1.setGuard(guard, ctx);
 		t2.setGuard(guard, ctx);
-	}
-	
-	public LastModMap setLastModMap(LastModMap map) {
-		LastModMap newMap = t1.setLastModMap(map);
-		return t2.setLastModMap(newMap);
-	}
-	
-	public void setCondRegs(Set<Register> setRegs) {
-		t1.setCondRegs(setRegs);
-		t2.setCondRegs(setRegs);
 	}
 	
 	public void incCondLevel() {
@@ -113,7 +102,7 @@ public class Seq extends Thread {
 		}
 	}
 	
-	public void setMainThread(Integer t) {
+	public void setMainThread(Thread t) {
 		this.mainThread = t;
 		t1.setMainThread(t);
 		t2.setMainThread(t);

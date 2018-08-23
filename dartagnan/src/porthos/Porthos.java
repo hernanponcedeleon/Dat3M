@@ -156,12 +156,14 @@ public class Porthos {
         Solver s = ctx.mkSolver();
         Solver s2 = ctx.mkSolver();
 
+        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(source);
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceDomain = Domain.encode(pSource, ctx);
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
 
+        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));

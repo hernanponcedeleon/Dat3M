@@ -1,0 +1,22 @@
+C C-tearstore
+
+(* Expected result: Sometimes.  Plain stores tear, so that concurrent
+   stores to the same variable result in a final value different than
+   either value stored.  Note: Involves data race. *)
+
+{
+int x = 0;
+}
+
+P0(int *x)
+{
+	*x = 6;
+}
+
+P1(int *x)
+{
+	*x = 12;
+}
+
+exists
+(~x=0 /\ ~x=6 /\ ~x=12)

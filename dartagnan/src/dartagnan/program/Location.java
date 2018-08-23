@@ -1,6 +1,10 @@
 package dartagnan.program;
 
-public class Location {
+import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
+import dartagnan.expression.IntExprInterface;
+
+public class Location implements IntExprInterface {
 
 	private String name;
 	private Integer iValue;
@@ -45,5 +49,9 @@ public class Location {
 	
 	public Location clone() {
 		return this;
+	}
+
+	public IntExpr getLastValueExpr(Context ctx){
+		return ctx.mkIntConst(getName() + "_final");
 	}
 }

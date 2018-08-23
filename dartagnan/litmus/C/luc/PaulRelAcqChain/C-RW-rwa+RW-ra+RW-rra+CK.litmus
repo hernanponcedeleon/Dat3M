@@ -1,0 +1,35 @@
+C C-RW-rwa+RW-ra+RW-rra+CK
+(*
+ * Result: Sometimes, due to release-acquire being only locally transitive.
+ * I believe that this is allowed by PowerPC.
+ *)
+{
+}
+
+P0(int *x1, int *y)
+{
+	WRITE_ONCE(*y, 1);
+	smp_store_release(x1, 1);
+}
+
+P1(int *x1, int *x2)
+{
+	r1 = smp_load_acquire(x1);
+	smp_store_release(x2, 1);
+}
+
+P2(int *x2, int *z)
+{
+	r1 = smp_load_acquire(x2);
+	r2 = READ_ONCE(*z);
+}
+
+P3(int *y, int *z)
+{
+	WRITE_ONCE(*z, 1);
+	smp_mb();
+	r1 = READ_ONCE(*y);
+}
+
+exists
+(1:r1=1 /\ 2:r1=1 /\ 2:r2=0 /\ 3:r1=0)

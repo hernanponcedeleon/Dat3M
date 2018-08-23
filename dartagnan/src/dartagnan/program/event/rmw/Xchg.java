@@ -1,22 +1,25 @@
 package dartagnan.program.event.rmw;
 
 import dartagnan.program.*;
-import dartagnan.program.event.Event;
+import dartagnan.program.Thread;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
+import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.LastModMap;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
-public class Xchg extends AbstractRMW {
+public class Xchg extends MemEvent {
 
-    private Register dummyReg = new Register("DUMMY_REG_" + hashCode());
+    private Register reg;
+    private String atomic;
 
     public Xchg(Location location, Register register, String atomic) {
-        super(location, register, atomic);
+        this.loc = location;
+        this.reg = register;
+        this.atomic = atomic;
+        this.condLevel = 0;
+        this.memId = hashCode();
         addFilters(
                 FilterUtils.EVENT_TYPE_ANY,
                 FilterUtils.EVENT_TYPE_MEMORY,
@@ -27,31 +30,9 @@ public class Xchg extends AbstractRMW {
         );
     }
 
-    public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  ")) + loc + ".xchg(" + atomic + ", " + reg + ")";
-    }
-
-    public LastModMap setLastModMap(LastModMap map) {
-        this.lastModMap = map;
-        LastModMap retMap = map.clone();
-        Set<Event> set = new HashSet<Event>();
-        set.add(this);
-        retMap.put(loc, set);
-        retMap.put(reg, set);
-        retMap.put(dummyReg, set);
-        return retMap;
-    }
-
-    public Xchg clone() {
-        Xchg newXchg = new Xchg(loc, reg, atomic);
-        newXchg.setCondLevel(condLevel);
-        newXchg.memId = memId;
-        newXchg.setUnfCopy(getUnfCopy());
-        return newXchg;
-    }
-
     public dartagnan.program.Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("tso") && atomic.equals("_rx")) {
+            Register dummyReg = new Register(null);
             Load load = new Load(dummyReg, loc, atomic);
             load.setHLId(memId);
             load.setUnfCopy(getUnfCopy());
@@ -64,9 +45,27 @@ public class Xchg extends AbstractRMW {
             store.setCondLevel(condLevel);
             store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
 
-            return new Seq(new Seq(load, store), new Local(reg, dummyReg));
+            return Thread.fromArray(false, load, store, new Local(reg, dummyReg));
         }
-        throw new RuntimeException("Xchg " + atomic + " is not implemented for " + target);
+        throw new RuntimeException("xchg " + atomic + " is not implemented for " + target);
+    }
+
+    public String toString() {
+        return String.join("", Collections.nCopies(condLevel, "  ")) + loc + ".xchg(" + atomic + ", " + reg + ")";
+    }
+
+    public Register getReg() {
+        return reg;
+    }
+
+    public Xchg clone() {
+        Location newLoc = loc.clone();
+        Register newReg = reg.clone();
+        Xchg newXchg = new Xchg(newLoc, newReg, atomic);
+        newXchg.setCondLevel(condLevel);
+        newXchg.memId = memId;
+        newXchg.setUnfCopy(getUnfCopy());
+        return newXchg;
     }
 
     public dartagnan.program.Thread optCompile(String target, boolean ctrl, boolean leading) {

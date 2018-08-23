@@ -8,7 +8,7 @@ import com.microsoft.z3.*;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
-public class BConst extends BExpr {
+public class BConst extends BExpr implements ExprInterface {
 
 	private boolean value;
 	
@@ -37,6 +37,6 @@ public class BConst extends BExpr {
 	}
 	
 	public Set<Register> getRegs() {
-		return new HashSet<Register>();
+		return new HashSet<>();
 	}
 }

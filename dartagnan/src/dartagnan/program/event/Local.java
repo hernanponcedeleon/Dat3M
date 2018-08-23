@@ -1,14 +1,11 @@
 package dartagnan.program.event;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 import static dartagnan.utils.Utils.ssaReg;
@@ -16,10 +13,10 @@ import static dartagnan.utils.Utils.ssaReg;
 public class Local extends Event {
 	
 	private Register reg;
-	private AExpr expr;
+	private ExprInterface expr;
 	private Integer ssaRegIndex;
 	
-	public Local(Register reg, AExpr expr) {
+	public Local(Register reg, ExprInterface expr) {
 		this.reg = reg;
 		this.expr = expr;
 		this.condLevel = 0;
@@ -29,26 +26,17 @@ public class Local extends Event {
 		return reg;
 	}
 	
-	public AExpr getExpr() {
+	public ExprInterface getExpr() {
 		return expr;
 	}
-	
-	public LastModMap setLastModMap(LastModMap map) {
-		this.lastModMap = map;
-		LastModMap retMap = map.clone();
-		Set<Event> set = new HashSet<Event>();
-		set.add(this);
-		retMap.put(reg, set);
-		return retMap;
-	}
-	
+
 	public String toString() {
 		return String.format("%s%s <- %s", String.join("", Collections.nCopies(condLevel, "  ")), reg, expr);
 	}
 	
 	public Local clone() {
 		Register newReg = reg.clone();
-		AExpr newExpr = expr.clone();
+		ExprInterface newExpr = expr.clone();
 		Local newLocal = new Local(newReg, newExpr);
 		newLocal.condLevel = condLevel;
 		newLocal.setHLId(hashCode());
@@ -65,7 +53,7 @@ public class Local extends Event {
 			Expr z3Expr = expr.toZ3(map, ctx);
 			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
 			this.ssaRegIndex = map.get(reg);
-			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
+			return new Pair<>(ctx.mkImplies(executes(ctx), expr.encodeAssignment(map, ctx, z3Reg, z3Expr)), map);
 		}		
 	}
 	

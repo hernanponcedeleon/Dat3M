@@ -8,7 +8,7 @@ import com.microsoft.z3.*;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
-public class BExpr {
+public class BExpr implements ExprInterface {
 	
 	private BExpr b1;
 	private BExpr b2;
@@ -42,10 +42,22 @@ public class BExpr {
 		return null;
 	}
 
+    public BoolExpr toZ3Boolean(MapSSA map, Context ctx){
+	    return toZ3(map, ctx);
+    }
+
 	public Set<Register> getRegs() {
 		Set<Register> setRegs = new HashSet<Register>();
 		setRegs.addAll(b1.getRegs());
 		setRegs.addAll(b2.getRegs());
 		return setRegs;
+	}
+
+	// TODO: Setting for (true -> 1) vs (true -> not 0)
+	public BoolExpr encodeAssignment(MapSSA map, Context ctx, Expr target, Expr value){
+		return ctx.mkOr(
+				ctx.mkAnd((BoolExpr) value, ctx.mkEq(target, ctx.mkInt(1))),
+				ctx.mkAnd(ctx.mkNot((BoolExpr) value), ctx.mkEq(target, ctx.mkInt(0)))
+		);
 	}
 }

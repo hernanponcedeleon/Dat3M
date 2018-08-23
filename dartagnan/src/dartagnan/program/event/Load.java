@@ -1,15 +1,12 @@
 package dartagnan.program.event;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import com.microsoft.z3.*;
 
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 import static dartagnan.utils.Utils.ssaLoc;
@@ -40,15 +37,6 @@ public class Load extends MemEvent {
 		return String.format("%s%s <- %s", String.join("", Collections.nCopies(condLevel, "  ")), reg, loc);
 	}
 	
-	public LastModMap setLastModMap(LastModMap map) {
-		this.lastModMap = map;
-		LastModMap retMap = map.clone();
-		Set<Event> set = new HashSet<Event>();
-		set.add(this);
-		retMap.put(reg, set);
-		return retMap;
-	}
-	
 	public Load clone() {
 		Register newReg = reg.clone();
 		Location newLoc = loc.clone();
@@ -66,7 +54,7 @@ public class Load extends MemEvent {
 		}
 		else {
 			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-			Expr z3Loc = ssaLoc(loc, mainThread, map.getFresh(loc), ctx);
+			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLoc = z3Loc;
 			this.ssaRegIndex = map.get(reg);
 			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);

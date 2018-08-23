@@ -1,4 +1,4 @@
-for file in litmus/PPC/*.litmus;
+for file in $(find litmus/PPC -name '*.litmus' | sort);
 do
    java -Xmx128m dartagnan/Dartagnan -t power -i $file > ./dart_power.out
    dart=$(grep -e 'No' dart_power.out | wc -l)
@@ -20,5 +20,3 @@ do
       break
    fi
 done
-
-

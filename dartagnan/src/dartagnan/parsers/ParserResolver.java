@@ -18,6 +18,9 @@ public class ParserResolver {
         if(inputFilePath.endsWith("litmus")){
             String header = readFirstLine(inputFilePath).toUpperCase();
 
+            if(header.indexOf(TYPE_LITMUS_C) == 0){
+                return new ParserLitmusC();
+            }
             if(header.indexOf(TYPE_LITMUS_PPC) == 0){
                 return new ParserLitmusPPC();
             }

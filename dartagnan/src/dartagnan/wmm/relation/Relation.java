@@ -21,12 +21,13 @@ public abstract class Relation {
     public static boolean Approx = false;
     public static boolean CloseApprox = false;
     public static boolean PostFixApprox = false;
+    public static boolean EncodeCtrlPo = false; // depends on target architecture
 
     protected String name;
     protected String term;
     protected boolean containsRec;
     protected boolean isNamed;
-    protected int eventMask = EventRepository.EVENT_MEMORY;
+    protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_RCU;
 
     /**
      * Creates a relation with an automatically generated identifier.

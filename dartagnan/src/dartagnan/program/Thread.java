@@ -1,11 +1,14 @@
 package dartagnan.program;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import com.microsoft.z3.*;
 
 import dartagnan.program.event.Event;
-import dartagnan.utils.LastModMap;
+import dartagnan.program.event.Skip;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -13,9 +16,18 @@ public class Thread {
 
 	protected int condLevel;
 	// Main thread where this Event, Seq, etc belongs
-	protected Integer mainThread;
+	protected Thread mainThread;
 	protected Integer tid;
 	protected BoolExpr myGuard;
+
+	private EventRepository eventRepository;
+
+	public EventRepository getEventRepository(){
+		if(eventRepository == null){
+			eventRepository = new EventRepository(this);
+		}
+		return eventRepository;
+	}
 	
 	public int getCondLevel() {
 		return condLevel;
@@ -67,8 +79,22 @@ public class Thread {
 		return new Thread();
 	}
 
-	public Integer getMainThread() {
+	public void setMainThread(Thread t) {
+		this.mainThread = t;
+	}
+
+	public Thread getMainThread() {
+		if(mainThread == null){
+			throw new RuntimeException("Main thread is not initialised for \n" + this + "\n");
+		}
 		return mainThread;
+	}
+
+	public Integer getMainThreadId() {
+		if(mainThread == null){
+			throw new RuntimeException("Main thread is not initialised for \n" + this + "\n");
+		}
+		return mainThread.getTId();
 	}
 	
 	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
@@ -80,10 +106,6 @@ public class Thread {
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	public void setMainThread(Integer t) {
-		// TODO Auto-generated method stub
 	}
 
 	public Integer setEId(Integer i) {
@@ -105,16 +127,6 @@ public class Thread {
 		return "CF" + hashCode();
 	}
 
-	public void setCondRegs(Set<Register> setRegs) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public LastModMap setLastModMap(LastModMap newMap) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	public Integer getTId() {
 		return this.tid;
 	}
@@ -124,4 +136,23 @@ public class Thread {
 		System.out.println("Check allExecute!");
 		return null;
 	}
+
+    public static Thread fromArray(boolean createSkipOnNull, Thread... threads){
+        return fromList(createSkipOnNull, Arrays.asList(threads));
+    }
+
+    public static Thread fromList(boolean createSkipOnNull, List<Thread> threads) {
+        Thread result = null;
+        for (Thread t : threads) {
+            if(t != null){
+                result = result == null ? t : new Seq(result, t);
+            }
+        }
+
+        if(result == null && createSkipOnNull){
+            result = new Skip();
+        }
+
+        return result;
+    }
 }

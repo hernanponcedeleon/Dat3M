@@ -6,10 +6,9 @@ import java.util.Set;
 
 import com.microsoft.z3.*;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.ExprInterface;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
-import dartagnan.utils.LastModMap;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -20,8 +19,6 @@ public abstract class Event extends Thread {
 	private Integer unfCopy;
 	protected String atomic;
 
-	private Set<Register> condReg;
-	protected LastModMap lastModMap;
 	protected Set<String> filter = new HashSet<>();
 
 	public boolean is(String param){
@@ -50,16 +47,6 @@ public abstract class Event extends Thread {
 
 	public Integer getUnfCopy() {
 		return unfCopy;
-	}
-	
-	public LastModMap getLastModMap() {
-		assert(lastModMap.size() != 0);
-		return lastModMap;
-	}
-		
-	public LastModMap setLastModMap(LastModMap map) {
-		this.lastModMap =  map;
-		return map;
 	}
 	
 	public void setGuard(BoolExpr guard, Context ctx) {
@@ -108,10 +95,6 @@ public abstract class Event extends Thread {
 		return new Pair<BoolExpr, MapSSA>(ctx.mkTrue(), map);
 	}
 	
-	public void setMainThread(Integer t) {
-		this.mainThread = t;
-	}
-	
 	public Integer setEId(Integer i) {
 		this.eid = i;
 		return i+1;
@@ -136,17 +119,6 @@ public abstract class Event extends Thread {
 		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
 	}
 
-	public Set<Register> getCondRegs() {
-		if(condReg == null) {
-			System.out.println(String.format("Check getCondRegs for %s: null pointer!", repr()));
-		}
-		return condReg;
-	}
-	
-	public void setCondRegs(Set<Register> regSet) {
-		condReg = regSet;
-	}
-
 	public Register getReg() {
 		// This should be never executes; should match a more concrete class
 		System.out.println(String.format("Check getReg for %s", this));
@@ -164,7 +136,7 @@ public abstract class Event extends Thread {
 		return null;
 	}
 
-	public AExpr getExpr() {
+	public ExprInterface getExpr() {
 		// This should be never executes; should match a more concrete class
 		System.out.println(String.format("Check getExpr for %s", this));
 		return null;

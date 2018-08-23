@@ -17,12 +17,12 @@ public class RelInverse extends UnaryRelation {
 
     public RelInverse(Relation r1){
         super(r1);
-        term = r1.getName() + "^+";
+        term = r1.getName() + "^-1";
     }
 
     public RelInverse(Relation r1, String name) {
         super(r1, name);
-        term = r1.getName() + "^+";
+        term = r1.getName() + "^-1";
     }
 
     @Override
@@ -32,8 +32,8 @@ public class RelInverse extends UnaryRelation {
         for (Event e1 : events) {
             for (Event e2 : events) {
                 //allow for recursion in r1:
-                BoolExpr temp=Utils.edge(this.getName(), e2, e1, ctx);
-                if(r1.containsRec) temp=ctx.mkAnd(temp,ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e2, e1, ctx)));
+                BoolExpr temp = Utils.edge(r1.getName(), e2, e1, ctx);
+                if(r1.containsRec) temp = ctx.mkAnd(temp, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e2, e1, ctx)));
                 enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx),temp));
             }
         }
@@ -48,8 +48,8 @@ public class RelInverse extends UnaryRelation {
         for (Event e1 : events) {
             for (Event e2 : events) {
                 //allow for recursion in r1:
-                BoolExpr temp=Utils.edge(this.getName(), e2, e1, ctx);
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx),temp));
+                BoolExpr temp = Utils.edge(r1.getName(), e2, e1, ctx);
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), temp));
             }
         }
         return enc;

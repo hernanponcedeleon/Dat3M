@@ -14,10 +14,10 @@ public class FilterUtils {
 
     public static final String EVENT_TYPE_ATOMIC = "A";
     public static final String EVENT_TYPE_READ_MODIFY_WRITE = "RMW";
-    public static final String EVENT_TYPE_RMW_READ_NORETURN = "Noreturn";
+    public static final String EVENT_TYPE_RMW_NORETURN = "Noreturn";
 
     public static final String EVENT_TYPE_LOCK = "LKW";
-
+    public static final String EVENT_TYPE_SYNC_RCU = "Sync-rcu";
 
     public static final Map<String, String> map = new HashMap<String, String>() {{
 
@@ -32,7 +32,7 @@ public class FilterUtils {
         // Atomic
         put(EVENT_TYPE_ATOMIC, EVENT_TYPE_ATOMIC);
         put(EVENT_TYPE_READ_MODIFY_WRITE, EVENT_TYPE_READ_MODIFY_WRITE);
-        put(EVENT_TYPE_RMW_READ_NORETURN, EVENT_TYPE_RMW_READ_NORETURN);
+        put(EVENT_TYPE_RMW_NORETURN, EVENT_TYPE_RMW_NORETURN);
 
         // Locks
         put(EVENT_TYPE_LOCK, EVENT_TYPE_LOCK);
@@ -63,8 +63,9 @@ public class FilterUtils {
         put("Mb", "Mb");
         put("Before-atomic", "Before-atomic");
         put("After-atomic", "After-atomic");
-        put("Before-spinlock", "Before-spinlock");
         put("After-spinlock", "After-spinlock");
+        put("Rcu-lock", "Rcu-lock");
+        put("Rcu-unlock", "Rcu-unlock");
         put("Sync-rcu", "Sync-rcu");
 
     }};

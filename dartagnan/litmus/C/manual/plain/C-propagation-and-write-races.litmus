@@ -1,0 +1,29 @@
+C propagation-and-write-races
+
+(* Because the cycle is permitted, there is a data race. *)
+
+{}
+
+P0(int *x)
+{
+	WRITE_ONCE(*x, 1);
+}
+
+P1(int *x, int *y)
+{
+	int r1;
+
+	r1 = READ_ONCE(*x);
+	WRITE_ONCE(*y, r1);
+}
+
+P2(int *x, int *y)
+{
+	int r2;
+
+	r2 = READ_ONCE(*y);
+	smp_mb();
+	*x = 2;
+}
+
+exists (1:r1=1 /\ 2:r2=1 /\ x=1)

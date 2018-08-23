@@ -8,7 +8,7 @@ import com.microsoft.z3.*;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
-public class AExpr {
+public class AExpr implements ExprInterface {
 
 	private AExpr lhs;
 	private AExpr rhs;
@@ -16,9 +16,13 @@ public class AExpr {
 	
 	public AExpr() {};
 	
-	public AExpr(AExpr lhs, String op, AExpr rhs) {
-		this.lhs = lhs;
-		this.rhs = rhs;
+	public AExpr(ExprInterface lhs, String op, ExprInterface rhs) {
+	    if(!(lhs instanceof AExpr) || !(rhs instanceof AExpr)){
+	        // TODO: Implementation
+	        throw new RuntimeException("AExpr is not implemented for BExpr arguments");
+        }
+		this.lhs = (AExpr)lhs;
+		this.rhs = (AExpr)rhs;
 		this.op = op;
 	}
 	
@@ -38,10 +42,16 @@ public class AExpr {
 		case "-": return ctx.mkSub(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
 		case "*": return ctx.mkMul(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
 		case "/": return ctx.mkDiv(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
+		case "&": return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, (IntExpr) lhs.toZ3(map, ctx)), ctx.mkInt2BV(32, (IntExpr) rhs.toZ3(map, ctx))), false);
+		case "|": return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr) lhs.toZ3(map, ctx)), ctx.mkInt2BV(32, (IntExpr) rhs.toZ3(map, ctx))), false);
 		case "xor": return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr) lhs.toZ3(map, ctx)), ctx.mkInt2BV(32, (IntExpr) rhs.toZ3(map, ctx))), false);
 		}
 		System.out.println(String.format("Check toZ3() for %s", this));
 		return null;
+	}
+
+	public BoolExpr toZ3Boolean(MapSSA map, Context ctx) throws Z3Exception {
+		return ctx.mkGt(toZ3(map, ctx), ctx.mkInt(0));
 	}
 
 	public Set<Register> getRegs() {
@@ -49,6 +59,10 @@ public class AExpr {
 		setRegs.addAll(lhs.getRegs());
 		setRegs.addAll(rhs.getRegs());
 		return setRegs;
+	}
+
+	public BoolExpr encodeAssignment(MapSSA map, Context ctx, Expr target, Expr value){
+		return ctx.mkEq(target, value);
 	}
 }
 

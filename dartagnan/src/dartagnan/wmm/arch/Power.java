@@ -32,10 +32,14 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.RelFencerel;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.basic.RelCtrl;
+import dartagnan.wmm.relation.basic.RelIdd;
 
 public class Power implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
+			new RelIdd(),
+			new RelCtrl(),
 			new RelFencerel("Sync", "sync"),
 			new RelFencerel("Lwsync", "lwsync"),
 			new RelFencerel("Isync", "isync"),
@@ -52,7 +56,7 @@ public class Power implements WmmInterface {
 
 		EventRepository eventRepository = program.getEventRepository();
 		Set<Event> events = eventRepository.getEvents(EventRepository.EVENT_MEMORY);
-		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
 		Set<Event> eventsS = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
 
 		BoolExpr enc = satIntersection("ctrlisync", "ctrl", "isync", eventsS, ctx);

@@ -20,10 +20,14 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.RelFencerel;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.basic.RelCtrl;
+import dartagnan.wmm.relation.basic.RelIdd;
 
 public class RMO implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
+			new RelIdd(),
+			new RelCtrl(),
 			new RelFencerel("Mfence", "mfence"),
 			new RelFencerel("Isync", "isync"),
 			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR").setEventMask(EventRepository.EVENT_MEMORY),
@@ -39,7 +43,7 @@ public class RMO implements WmmInterface {
 
 		EventRepository eventRepository = program.getEventRepository();
 		Set<Event> events = eventRepository.getEvents(EventRepository.EVENT_MEMORY);
-		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+		Set<Event> eventsL = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
 		Set<Event> eventsS = eventRepository.getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_SKIP);
 
 		BoolExpr enc = satIntersection("ctrlisync", "ctrl", "isync", eventsS, ctx);
@@ -52,7 +56,7 @@ public class RMO implements WmmInterface {
 		enc = ctx.mkAnd(enc, satUnion("(po-loc\\RR)", "com", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("com-rmo", "(co+fr)", "rfe", events, ctx));
 		enc = ctx.mkAnd(enc, satTransFixPoint("idd", eventsL, approx, ctx));
-		enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", eventsL, ctx));
+		enc = ctx.mkAnd(enc, satIntersection("data", "idd^+", "RW", events, ctx));
 		enc = ctx.mkAnd(enc, satIntersection("po-loc", "WR", events, ctx));
 		enc = ctx.mkAnd(enc, satUnion("data", "(po-loc&WR)", events, ctx));
 		enc = ctx.mkAnd(enc, satTransFixPoint("(data+(po-loc&WR))", events, approx, ctx));
