@@ -35,7 +35,6 @@ src/dartagnan/expression/IntExprInterface.java \
 src/dartagnan/parsers/utils/branch/BareIf.java \
 src/dartagnan/parsers/utils/ParserErrorListener.java \
 src/dartagnan/parsers/utils/ParsingException.java \
-src/dartagnan/parsers/utils/Utils.java \
 src/dartagnan/parsers/visitors/VisitorLitmusC.java \
 src/dartagnan/parsers/visitors/VisitorLitmusPPC.java \
 src/dartagnan/parsers/visitors/VisitorLitmusX86.java \
@@ -50,10 +49,17 @@ src/dartagnan/program/event/filter/FilterIntersection.java \
 src/dartagnan/program/event/filter/FilterMinus.java \
 src/dartagnan/program/event/filter/FilterUnion.java \
 src/dartagnan/program/event/filter/FilterUtils.java \
-src/dartagnan/program/event/rcu/RCUReadLock.java \
-src/dartagnan/program/event/rcu/RCUReadUnlock.java \
-src/dartagnan/program/event/rcu/RCUSync.java \
-src/dartagnan/program/event/rmw/AbstractRMW.java \
+src/dartagnan/program/event/linux/rcu/RCUReadLock.java \
+src/dartagnan/program/event/linux/rcu/RCUReadUnlock.java \
+src/dartagnan/program/event/linux/rcu/RCUSync.java \
+src/dartagnan/program/event/linux/rmw/RMWAbstract.java \
+src/dartagnan/program/event/linux/rmw/RMWAddUnless.java \
+src/dartagnan/program/event/linux/rmw/RMWCmpXchg.java \
+src/dartagnan/program/event/linux/rmw/RMWFetchOp.java \
+src/dartagnan/program/event/linux/rmw/RMWOp.java \
+src/dartagnan/program/event/linux/rmw/RMWOpAndTest.java \
+src/dartagnan/program/event/linux/rmw/RMWOpReturn.java \
+src/dartagnan/program/event/linux/rmw/RMWXchg.java \
 src/dartagnan/program/event/rmw/RMWStore.java \
 src/dartagnan/program/event/rmw/Xchg.java \
 src/dartagnan/program/event/rmw/cond/FenceCond.java \
@@ -83,7 +89,6 @@ src/dartagnan/program/While.java \
 src/dartagnan/program/utils/EventRepository.java \
 src/dartagnan/utils/Encodings.java \
 src/dartagnan/utils/GraphViz.java \
-src/dartagnan/utils/LastModMap.java \
 src/dartagnan/utils/MapSSA.java \
 src/dartagnan/utils/Pair.java \
 src/dartagnan/utils/PredicateUtils.java \
