@@ -185,24 +185,6 @@ public class Porthos {
         s2.add(sourceMM);
         s2.add(mcmS.Consistent(pSource, ctx));
 
-
-//        if(!statePortability) {
-//            if(s.check() == Status.SATISFIABLE) {
-//                //System.out.println("The program is not portable");
-//                System.out.println("       0");
-//                if(cmd.hasOption("draw")) {
-//                    String outputPath = cmd.getOptionValue("draw");
-//                    Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
-//                }
-//                return;
-//            }
-//            else {
-//                //System.out.println("The program is portable");
-//                System.out.println("       1");
-//                return;
-//            }
-//        }
-
         int iterations = 0;
         Status lastCheck = Status.SATISFIABLE;
         Set<Expr> visited = new HashSet<Expr>();
