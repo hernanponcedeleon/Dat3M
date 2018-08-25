@@ -4,7 +4,7 @@ X86 x86/n7 (LitmusNSeven)
   mov [a], 1      |  mov [b], 1   | mov ECX, [b]    ;
   mov EAX, [a]    |               | mov EDX, [a]    ;
   mov EBX, [b]    |               |                 ;
-exists (P0:EAX = 1 /\ P0:EBX = 0 /\ P2:ECX=1 /\ P1:EDX=0);
+exists (P0:EAX = 1 /\ P0:EBX = 0 /\ P2:ECX=1 /\ P2:EDX=0);
 <<
 show flags false
 show 0
