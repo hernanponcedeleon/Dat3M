@@ -157,6 +157,7 @@ public class Porthos {
         Solver s2 = ctx.mkSolver();
 
         Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(source);
+        Relation.BreakIddOnNewLoad = wmmResolver.breakIddOnNewLoad(source);
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
@@ -164,6 +165,7 @@ public class Porthos {
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
 
         Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
+        Relation.BreakIddOnNewLoad = wmmResolver.breakIddOnNewLoad(target);
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));

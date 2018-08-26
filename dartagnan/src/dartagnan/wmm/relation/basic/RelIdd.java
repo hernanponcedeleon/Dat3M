@@ -26,33 +26,19 @@ public class RelIdd extends Relation {
     @Override
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-
-        for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
-            for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
-                if(!e1.getMainThreadId().equals(e2.getMainThreadId()) || e1.getEId() >= e2.getEId()){
-                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd^+", e1, e2, ctx)));
-                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("data", e1, e2, ctx)));
-                }
-            }
+        if(Relation.EncodeAllNegativeConstraintsForIdd){
+            enc = encodeAllNegativeConstraints(program, ctx);
         }
+        if(Relation.BreakIddOnNewLoad){
+            return ctx.mkAnd(enc, encodeBreakOnNewLoad(program, ctx));
+        }
+        return ctx.mkAnd(enc, encodePreserveOnNewLoad(program, ctx));
+    }
+
+    private BoolExpr encodeBreakOnNewLoad(Program program, Context ctx) throws Z3Exception{
+        BoolExpr enc = ctx.mkTrue();
 
         for(Thread t : program.getThreads()){
-            // Idd is impossible by type
-            for(Event e1 : t.getEventRepository().getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU | EventRepository.EVENT_SKIP | EventRepository.EVENT_IF)){
-                for(Event e2 : t.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
-                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
-                }
-            }
-            for(Event e1 : t.getEventRepository().getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL)){
-                for(Event e2 : t.getEventRepository().getEvents(EventRepository.EVENT_LOAD)){
-                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
-                }
-            }
-            for(Event e1 : t.getEventRepository().getEvents(EventRepository.EVENT_STORE)){
-                for(Event e2 : t.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF)){
-                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
-                }
-            }
 
             // Idd via register
             // TODO: Load can be also a regReader (for address dependency)
@@ -127,6 +113,85 @@ public class RelIdd extends Relation {
                 }
             }
         }
+        return enc;
+    }
+
+    private BoolExpr encodePreserveOnNewLoad(Program program, Context ctx) throws Z3Exception{
+        BoolExpr enc = ctx.mkTrue();
+
+        for(Thread t : program.getThreads()){
+
+            // Idd via register
+            Collection<Event> regWriters = t.getEventRepository().getEvents(EventRepository.EVENT_LOCAL | EventRepository.EVENT_LOAD);
+            Collection<Event> regReaders = t.getEventRepository().getEvents(EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF | EventRepository.EVENT_STORE);
+
+            for(Event e : regReaders) {
+                for(Event x : regWriters){
+                    if(e.getEId() > x.getEId()){
+                        if(e.getExpr().getRegs().isEmpty() || !e.getExpr().getRegs().contains(x.getReg())){
+                            enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
+                        } else if(Relation.SkipIddForNotExecutedEvents){
+                            enc = ctx.mkAnd(enc, ctx.mkEq(edge("idd", x, e, ctx), x.executes(ctx)));
+                        } else {
+                            enc = ctx.mkAnd(enc, edge("idd", x, e, ctx));
+                        }
+                    }
+                }
+            }
+
+            // Idd via location
+            Collection<Event> eventsLocation = t.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_LOAD);
+            Set<Event> eventsStore = t.getEventRepository().getEvents(EventRepository.EVENT_STORE);
+            Set<Event> eventsLoad = t.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
+
+            for(Event e : eventsLoad){
+                Location location = e.getLoc();
+                for(Event x : eventsStore){
+                    if(e.getEId() >= x.getEId() || !x.getLoc().equals(location)){
+                        enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
+                    } else if(Relation.SkipIddForNotExecutedEvents){
+                        enc = ctx.mkAnd(enc, ctx.mkEq(edge("idd", x, e, ctx), x.executes(ctx)));
+                    } else {
+                        enc = ctx.mkAnd(enc, edge("idd", x, e, ctx));
+                    }
+                }
+            }
+        }
+        return enc;
+    }
+
+    private BoolExpr encodeAllNegativeConstraints(Program program, Context ctx){
+        BoolExpr enc = ctx.mkTrue();
+
+        for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
+            for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
+                if(!e1.getMainThreadId().equals(e2.getMainThreadId()) || e1.getEId() >= e2.getEId()){
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd^+", e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("data", e1, e2, ctx)));
+                }
+            }
+        }
+
+        // Idd is impossible by type
+        for(Thread t : program.getThreads()) {
+            for (Event e1 : t.getEventRepository().getEvents(EventRepository.EVENT_FENCE | EventRepository.EVENT_RCU | EventRepository.EVENT_SKIP | EventRepository.EVENT_IF)) {
+                for (Event e2 : t.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                }
+            }
+            for (Event e1 : t.getEventRepository().getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL)) {
+                for (Event e2 : t.getEventRepository().getEvents(EventRepository.EVENT_LOAD)) {
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                }
+            }
+            for (Event e1 : t.getEventRepository().getEvents(EventRepository.EVENT_STORE)) {
+                for (Event e2 : t.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF)) {
+                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                }
+            }
+        }
+
         return enc;
     }
 

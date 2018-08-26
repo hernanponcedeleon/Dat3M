@@ -130,6 +130,7 @@ public class Dartagnan {
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
 		Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
+		Relation.BreakIddOnNewLoad = wmmResolver.breakIddOnNewLoad(target);
         s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcm.Consistent(p, ctx));
 
