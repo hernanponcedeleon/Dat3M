@@ -24,7 +24,6 @@ public abstract class Relation {
     public static boolean EncodeCtrlPo = false; // depends on target architecture
     public static boolean BreakIddOnNewLoad = false; // depends on target architecture
     public static boolean SkipIddForNotExecutedEvents = true;
-    public static boolean EncodeAllNegativeConstraintsForIdd = false;
 
     protected String name;
     protected String term;
