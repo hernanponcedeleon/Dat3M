@@ -26,10 +26,7 @@ public class RelIdd extends Relation {
     @Override
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
         BoolExpr enc = encodeAllNegativeConstraints(program, ctx);
-        if(Relation.BreakIddOnNewLoad){
-            return ctx.mkAnd(enc, encodeBreakOnNewLoad(program, ctx));
-        }
-        return ctx.mkAnd(enc, encodePreserveOnNewLoad(program, ctx));
+        return ctx.mkAnd(enc, encodeBreakOnNewLoad(program, ctx));
     }
 
     private BoolExpr encodeBreakOnNewLoad(Program program, Context ctx) throws Z3Exception{
@@ -106,50 +103,6 @@ public class RelIdd extends Relation {
                             }
                             enc = ctx.mkAnd(enc, ctx.mkEq(clause, edge("idd", e1, e2, ctx)));
                         }
-                    }
-                }
-            }
-        }
-        return enc;
-    }
-
-    private BoolExpr encodePreserveOnNewLoad(Program program, Context ctx) throws Z3Exception{
-        BoolExpr enc = ctx.mkTrue();
-
-        for(Thread t : program.getThreads()){
-
-            // Idd via register
-            Collection<Event> regWriters = t.getEventRepository().getEvents(EventRepository.EVENT_LOCAL | EventRepository.EVENT_LOAD);
-            Collection<Event> regReaders = t.getEventRepository().getEvents(EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF | EventRepository.EVENT_STORE);
-
-            for(Event e : regReaders) {
-                for(Event x : regWriters){
-                    if(e.getEId() > x.getEId()){
-                        if(e.getExpr().getRegs().isEmpty() || !e.getExpr().getRegs().contains(x.getReg())){
-                            enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
-                        } else if(Relation.SkipIddForNotExecutedEvents){
-                            enc = ctx.mkAnd(enc, ctx.mkEq(edge("idd", x, e, ctx), x.executes(ctx)));
-                        } else {
-                            enc = ctx.mkAnd(enc, edge("idd", x, e, ctx));
-                        }
-                    }
-                }
-            }
-
-            // Idd via location
-            Collection<Event> eventsLocation = t.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_LOAD);
-            Set<Event> eventsStore = t.getEventRepository().getEvents(EventRepository.EVENT_STORE);
-            Set<Event> eventsLoad = t.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
-
-            for(Event e : eventsLoad){
-                Location location = e.getLoc();
-                for(Event x : eventsStore){
-                    if(e.getEId() >= x.getEId() || !x.getLoc().equals(location)){
-                        enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", x, e, ctx)));
-                    } else if(Relation.SkipIddForNotExecutedEvents){
-                        enc = ctx.mkAnd(enc, ctx.mkEq(edge("idd", x, e, ctx), x.executes(ctx)));
-                    } else {
-                        enc = ctx.mkAnd(enc, edge("idd", x, e, ctx));
                     }
                 }
             }

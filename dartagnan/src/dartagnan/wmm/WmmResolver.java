@@ -13,9 +13,6 @@ public class WmmResolver {
     // Architectures where ctrl = ctrl ; po
     private final Set<String> ctrlPo = new HashSet<String>(Arrays.asList("alpha", "arm", "power", "rmo"));
 
-    // Architectures where dependency (idd) is not preserved when a register loads a new value
-    private final Set<String> breakIddOnNewLoad = new HashSet<String>(Arrays.asList("sc"));
-
     public Set<String> getArchSet(){
         return archSet;
     }
@@ -43,18 +40,6 @@ public class WmmResolver {
 
     public boolean encodeCtrlPo(String arch){
         if(ctrlPo.contains(arch)){
-            return true;
-        }
-
-        if(archSet.contains(arch)){
-            return false;
-        }
-
-        throw new RuntimeException("Unrecognised architecture " + arch);
-    }
-
-    public boolean breakIddOnNewLoad(String arch){
-        if(breakIddOnNewLoad.contains(arch)){
             return true;
         }
 
