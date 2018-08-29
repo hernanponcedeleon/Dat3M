@@ -215,12 +215,20 @@ public class Wmm implements WmmInterface{
                 case "ctrlisync":
                     Relation isync = new RelFencerel("Isync", "isync");
                     addRelation(isync);
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
+                    addRelation(iddTrans);
                     addRelation(new RelCtrl());
                     relation = new RelIntersection(new RelCtrl(), isync, "ctrlisync");
                     break;
                 case "ctrlisb":
                     Relation isb = new RelFencerel("Isb", "isb");
                     addRelation(isb);
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
+                    addRelation(iddTrans);
                     addRelation(new RelCtrl());
                     relation = new RelIntersection(new RelCtrl(), isb, "ctrlisb");
                     break;

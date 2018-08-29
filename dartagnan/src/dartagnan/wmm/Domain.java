@@ -38,13 +38,11 @@ public class Domain {
 	private static BoolExpr encodeStaticRelations(Program program, Context ctx){
 		BoolExpr enc = ctx.mkTrue();
 
-		for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL)){
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e1, e1, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e1, e1, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e1, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e1, ctx)));
-			for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
-				if(!e1.getMainThreadId().equals(e2.getMainThreadId())) {
+		for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+			for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+				if(!(e1 instanceof MemEvent) || !(e2 instanceof MemEvent)
+						|| !(e1.getMainThreadId() == e2.getMainThreadId())
+						|| e1.getEId() == e2.getEId()){
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e1, e2, ctx)));
 					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e2, ctx)));

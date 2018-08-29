@@ -22,8 +22,6 @@ public abstract class Relation {
     public static boolean CloseApprox = false;
     public static boolean PostFixApprox = false;
     public static boolean EncodeCtrlPo = false; // depends on target architecture
-    public static boolean BreakIddOnNewLoad = false; // depends on target architecture
-    public static boolean SkipIddForNotExecutedEvents = true;
 
     protected String name;
     protected String term;

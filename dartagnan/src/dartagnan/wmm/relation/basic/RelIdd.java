@@ -25,8 +25,7 @@ public class RelIdd extends Relation {
 
     @Override
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        BoolExpr enc = encodeAllNegativeConstraints(program, ctx);
-        return ctx.mkAnd(enc, encodeBreakOnNewLoad(program, ctx));
+        return ctx.mkAnd(encodeAllNegativeConstraints(program, ctx), encodeBreakOnNewLoad(program, ctx));
     }
 
     private BoolExpr encodeBreakOnNewLoad(Program program, Context ctx) throws Z3Exception{
@@ -118,7 +117,6 @@ public class RelIdd extends Relation {
                 if(!(e1.getMainThreadId().equals(e2.getMainThreadId()) || e2.getEId() <= e1.getEId())){
                     enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
                     enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd^+", e1, e2, ctx)));
-                    enc = ctx.mkAnd(enc, ctx.mkNot(edge("data", e1, e2, ctx)));
                 }
             }
         }
