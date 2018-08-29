@@ -16,6 +16,7 @@ let hb = (
   (* Happens-before between atomic ops to the
      same location, if not both reads *)
   [M & A]; com; [M & A]
+)+
 
 acyclic (hb | po | rf) as Causality
 acyclic (com | (hb & loc)) as Coherence
