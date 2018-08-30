@@ -131,7 +131,7 @@ public class Domain {
 					for(Event e3 : memEvents) {
 						orClause = ctx.mkOr(orClause, ctx.mkAnd(edge("rf", e3, e1, ctx), edge("co", e3, e2, ctx)));
 					}
-					enc = ctx.mkAnd(enc, ctx.mkEq(edge("fr", e1, e2, ctx), orClause));
+
 					if(!orClause.equals(ctx.mkFalse())) {
 						enc = ctx.mkAnd(enc, ctx.mkEq(edge("fr", e1, e2, ctx), orClause));
 					}
