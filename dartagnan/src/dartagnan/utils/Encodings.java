@@ -1,8 +1,6 @@
 package dartagnan.utils;
 
 import static dartagnan.utils.Utils.edge;
-import static dartagnan.utils.Utils.lastValueLoc;
-import static dartagnan.utils.Utils.lastValueReg;
 import static dartagnan.utils.Utils.initValue;
 import static dartagnan.utils.Utils.initValue2;
 import static dartagnan.utils.Utils.uniqueValue;
@@ -14,7 +12,6 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.program.HighLocation;
-import dartagnan.program.If;
 import dartagnan.program.event.*;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
@@ -81,8 +78,8 @@ public class Encodings {
 				if(e1P1.getHLId().equals(e1P2.getHLId())) {
 					for(Event e2P1 : memEventsP1) {
 						for(Event e2P2 : memEventsP2) {
-							if(e1P1.getMainThread() != e2P1.getMainThread()) {continue;}
-							if(e1P2.getMainThread() != e2P2.getMainThread()) {continue;}
+							if(e1P1.getMainThreadId() != e2P1.getMainThreadId()) {continue;}
+							if(e1P2.getMainThreadId() != e2P2.getMainThreadId()) {continue;}
 							if(e1P1.getEId() >= e2P1.getEId() | e1P2.getEId() >= e2P2.getEId()) {continue;}
 							if(e2P1.getHLId().equals(e2P2.getHLId())) {
 								enc = ctx.mkAnd(enc, ctx.mkImplies(edge("sync", e1P1, e2P1, ctx), edge("sync", e1P2, e2P2, ctx)));
@@ -100,12 +97,12 @@ public class Encodings {
 		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : locs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueLoc(loc, ctx), model.getConstInterp(lastValueLoc(loc, ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
 		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
 		for(Register reg : regs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueReg(reg, ctx), model.getConstInterp(lastValueReg(reg, ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx), model.getConstInterp(reg.getLastValueExpr(ctx))));
 		}
 		return reachedState;
 	}
@@ -114,7 +111,7 @@ public class Encodings {
 		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).filter(l -> !(l instanceof HighLocation)).collect(Collectors.toSet());
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : locs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(lastValueLoc(loc, ctx), model.getConstInterp(lastValueLoc(loc, ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
 		return reachedState;
 	}

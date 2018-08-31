@@ -11,6 +11,10 @@ import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
+import dartagnan.wmm.relation.basic.RelCrit;
+import dartagnan.wmm.relation.basic.RelCtrl;
+import dartagnan.wmm.relation.basic.RelIdd;
+import dartagnan.wmm.relation.basic.RelRMW;
 
 import java.util.*;
 
@@ -22,9 +26,7 @@ public class Wmm implements WmmInterface{
 
     private static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
             "id", "int", "ext", "loc", "po",
-            "rf", "fr", "co",
-            "idd", "ctrlDirect", "ctrl",
-            "crit"  // TODO: Implementation
+            "rf", "fr", "co"
     ));
 
     private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
@@ -159,6 +161,8 @@ public class Wmm implements WmmInterface{
     // TODO: Later these relations should come from included cat files, e.g., "stdlib.cat" or "fences.cat"
     private Relation resolveRelation(String name){
         Relation relation = null;
+        Relation idd;
+        Relation iddTrans;
 
         if(basicFenceRelations.containsKey(name)) {
             relation = new RelFencerel(basicFenceRelations.get(name), name);
@@ -194,23 +198,48 @@ public class Wmm implements WmmInterface{
                     break;
                 case "data":
                     Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    Relation iddTrans = new RelTrans(new BasicRelation("idd")).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
                     addRelation(RW);
                     addRelation(iddTrans);
                     relation = new RelIntersection(iddTrans, RW, "data");
                     break;
+                case "ctrl":
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
+                    addRelation(iddTrans);
+                    relation = new RelCtrl();
+                    break;
                 case "ctrlisync":
                     Relation isync = new RelFencerel("Isync", "isync");
                     addRelation(isync);
-                    relation = new RelIntersection(new BasicRelation("ctrl"), isync, "ctrlisync");
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
+                    addRelation(iddTrans);
+                    addRelation(new RelCtrl());
+                    relation = new RelIntersection(new RelCtrl(), isync, "ctrlisync");
                     break;
                 case "ctrlisb":
                     Relation isb = new RelFencerel("Isb", "isb");
                     addRelation(isb);
-                    relation = new RelIntersection(new BasicRelation("ctrl"), isb, "ctrlisb");
+                    idd = new RelIdd();
+                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                    addRelation(idd);
+                    addRelation(iddTrans);
+                    addRelation(new RelCtrl());
+                    relation = new RelIntersection(new RelCtrl(), isb, "ctrlisb");
                     break;
                 case "rmw":
                     relation = new RelRMW();
+                    break;
+                case "crit":
+                    relation = new RelCrit();
+                    break;
+                case "idd":
+                    relation = new RelIdd();
                     break;
             }
         }

@@ -3,17 +3,18 @@ package dartagnan.program;
 import java.util.Collections;
 
 import dartagnan.expression.AConst;
-import dartagnan.expression.BExpr;
+import dartagnan.expression.ExprInterface;
+import dartagnan.program.event.If;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
 import dartagnan.program.event.Store;
 
 public class While extends Thread {
-	
-	private BExpr pred;
+
+	private ExprInterface pred;
 	private Thread t;
 	
-	public While(BExpr pred, Thread t) {
+	public While(ExprInterface pred, Thread t) {
 		this.pred = pred;
 		this.t = t;
 		t.incCondLevel();
@@ -36,15 +37,15 @@ public class While extends Thread {
 	public Thread unroll(int steps, boolean obsNoTermination) {
 		if(steps == 0) {
 			if(obsNoTermination) {
-				int oldCondLevel = condLevel;
 				Register rTerm = new Register("rTerm");
 				Local newLocal = new Local(rTerm, new AConst(1));
 				newLocal.condLevel = condLevel;
 				Location termination = new Location(String.format("termination_%s", hashCode()));
 				Store newStore = new Store(termination, rTerm, "_rx");
 				newStore.condLevel = condLevel;
-				Thread newThread = new If(pred, new Seq(newLocal, newStore), new Skip());
-				newThread.condLevel = oldCondLevel;
+				ExprInterface newPred = pred.clone();
+				Thread newThread = new If(newPred, new Seq(newLocal, newStore), new Skip());
+				newThread.condLevel = condLevel;
 				return newThread;				
 			}
 			return new Skip();
@@ -53,9 +54,9 @@ public class While extends Thread {
 			Thread copyT = t.clone();
 			copyT.decCondLevel();
 			copyT = copyT.unroll(steps);
-			int oldCondLevel = condLevel;
-			Thread newThread = new If(pred, new Seq(copyT, unroll(steps - 1, obsNoTermination)), new Skip());
-			newThread.condLevel = oldCondLevel;
+			ExprInterface newPred = pred.clone();
+			Thread newThread = new If(newPred, new Seq(copyT, unroll(steps - 1, obsNoTermination)), new Skip());
+			newThread.condLevel = condLevel;
 			return newThread;
 		}
 	}
@@ -65,9 +66,9 @@ public class While extends Thread {
 	}
 
 	public While clone() {
-		BExpr newPred = pred.clone();
 		Thread newT = t.clone();
 		newT.decCondLevel();
+		ExprInterface newPred = pred.clone();
 		While newWhile = new While(newPred, newT);
 		newWhile.condLevel = condLevel;
 		return newWhile;

@@ -5,7 +5,6 @@ import dartagnan.LitmusX86Visitor;
 import dartagnan.asserts.*;
 import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ParsingException;
-import dartagnan.parsers.utils.Utils;
 import dartagnan.program.*;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
@@ -48,7 +47,7 @@ public class VisitorLitmusX86
         visitAssertionList(ctx.assertionList());
 
         for(String i : mapThreadEvents.keySet()) {
-            program.add(Utils.listToThread(mapThreadEvents.get(i)));
+            program.add(Thread.fromList(true, mapThreadEvents.get(i)));
         }
         return program;
     }
@@ -187,7 +186,7 @@ public class VisitorLitmusX86
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = getRegister(mainThread, ctx.r1().getText(), true);
         Location location = getLocation(ctx.location().getText());
-        return new Xchg(location, register, "_rx");
+        return new Xchg(location, register,"_rx");
     }
 
     @Override
@@ -258,16 +257,16 @@ public class VisitorLitmusX86
     @Override
     public Object visitAssertionLocation(LitmusX86Parser.AssertionLocationContext ctx) {
         Location location = getLocation(ctx.location().getText());
-        int value = Integer.parseInt(ctx.value().getText());
-        return new AssertLocation(location, value);
+        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
+        return new AssertBasic(location, "==", value);
     }
 
     @Override
     public Object visitAssertionRegister(LitmusX86Parser.AssertionRegisterContext ctx) {
         String thread = threadId(ctx.thread().getText());
         Register register = getRegister(thread, ctx.r1().getText());
-        int value = Integer.parseInt(ctx.value().getText());
-        return new AssertRegister(thread, register, value);
+        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
+        return new AssertBasic(register, "==", value);
     }
 
     @Override
@@ -416,7 +415,7 @@ public class VisitorLitmusX86
         }
         Map<String, Register> registers = mapRegisters.get(threadName);
         if(!(registers.keySet().contains(registerName))) {
-            registers.put(registerName, new Register(registerName));
+            registers.put(registerName, new Register(registerName).setPrintMainThreadId(threadName));
         }
         return registers.get(registerName);
     }

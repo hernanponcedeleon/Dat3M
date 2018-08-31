@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import com.microsoft.z3.*;
 
 import dartagnan.asserts.*;
+import dartagnan.expression.AConst;
 import dartagnan.program.*;
 import dartagnan.program.event.*;
 import dartagnan.program.utils.EventRepository;
@@ -154,8 +155,8 @@ public class Encodings {
 				if(e1P1.getHLId().equals(e1P2.getHLId())) {
 					for(Event e2P1 : memEventsP1) {
 						for(Event e2P2 : memEventsP2) {
-							if(e1P1.getMainThread() != e2P1.getMainThread()) {continue;}
-							if(e1P2.getMainThread() != e2P2.getMainThread()) {continue;}
+							if(e1P1.getMainThreadId() != e2P1.getMainThreadId()) {continue;}
+							if(e1P2.getMainThreadId() != e2P2.getMainThreadId()) {continue;}
 							if(e1P1.getEId() >= e2P1.getEId() | e1P2.getEId() >= e2P2.getEId()) {continue;}
 							if(e2P1.getHLId().equals(e2P2.getHLId())) {
 								enc = ctx.mkAnd(enc, ctx.mkImplies(edge("sync", e1P1, e2P1, ctx), edge("sync", e1P2, e2P2, ctx)));
@@ -173,7 +174,7 @@ public class Encodings {
 		AssertCompositeAnd ass = new AssertCompositeAnd();
 		Set<Location> locs = p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 		for(Location loc : locs) {
-			ass.addChild(new AssertLocation(loc, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString())));
+			ass.addChild(new AssertBasic(loc, "==", new AConst(Integer.valueOf(model.getConstInterp(ctx.mkIntConst(loc.getName() + "_final")).toString()))));
 		}
 		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.EVENT_ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
 		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
@@ -185,8 +186,8 @@ public class Encodings {
 				ssaRegIndexes.add(e.getSsaRegIndex());
 			}
 			Integer lastRegIndex = Collections.max(ssaRegIndexes);
-			String regVarName = format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
-			ass.addChild(new AssertRegister(reg.getMainThread().toString(), reg, Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString())));
+			String regVarName = format("T%s_%s_%s", reg.getMainThreadId(), reg.getName(), lastRegIndex);
+			ass.addChild(new AssertBasic(reg, "==", new AConst(Integer.valueOf(model.getConstInterp(ctx.mkIntConst(regVarName)).toString()))));
 		}
 		return ass;
 	}
@@ -207,7 +208,7 @@ public class Encodings {
 				ssaRegIndexes.add(e.getSsaRegIndex());
 			}
 			Integer lastRegIndex = Collections.max(ssaRegIndexes);
-			String regVarName = format("T%s_%s_%s", reg.getMainThread(), reg.getName(), lastRegIndex);
+			String regVarName = format("T%s_%s_%s", reg.getMainThreadId(), reg.getName(), lastRegIndex);
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(ctx.mkIntConst(regVarName), model.getConstInterp(ctx.mkIntConst(regVarName))));
 		}
 		return reachedState;

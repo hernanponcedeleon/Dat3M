@@ -1,0 +1,30 @@
+C C-tearload
+
+(* Expected result: Sometimes.  Plain loads tear, so that a load from
+   a variable that is being concurrently stored to can result in a final
+   value different than any of the value stored.  Note: Involves data
+   race. *)
+
+{
+int x = 0;
+}
+
+P0(int *x)
+{
+	WRITE_ONCE(*x, 6);
+}
+
+P1(int *x)
+{
+	WRITE_ONCE(*x, 12);
+}
+
+P2(int *x)
+{
+	int r1;
+
+	r1 = *x;
+}
+
+exists
+(~2:r1=0 /\ ~2:r1=6 /\ ~2:r1=12)

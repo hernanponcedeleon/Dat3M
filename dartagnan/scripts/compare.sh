@@ -1,7 +1,7 @@
 timeout=180
 
 echo "TSO"
-for file in benchmarks/*.pts;
+for file in $(find benchmarks -name '*.pts' | sort);
 do
    START=$(python -c 'import time; print time.time()')
    EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t tso -i $file -unroll 2)
@@ -54,7 +54,7 @@ do
 done
 
 echo "POWER"
-for file in benchmarks/*.pts;
+for file in $(find benchmarks -name '*.pts' | sort);
 do
    START=$(python -c 'import time; print time.time()')
    EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t power -i $file -unroll 2)
@@ -107,7 +107,7 @@ do
 done
 
 echo "ARM"
-for file in benchmarks/*.pts;
+for file in $(find benchmarks -name '*.pts' | sort);
 do
    START=$(python -c 'import time; print time.time()')
    EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t arm -i $file -unroll 2)
