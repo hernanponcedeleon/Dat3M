@@ -21,4 +21,8 @@ public class FilterMinus extends FilterAbstract {
                 + " \\ "
                 + ((filterAbsent instanceof FilterBasic) ? filterAbsent : "( " + filterAbsent + " )");
     }
+
+    public Integer toRepositoryCode(){
+        return filterPresent.toRepositoryCode() & (Integer.MAX_VALUE ^ filterAbsent.toRepositoryCode());
+    }
 }

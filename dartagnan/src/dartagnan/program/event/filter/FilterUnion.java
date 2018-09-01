@@ -35,4 +35,12 @@ public class FilterUnion extends FilterAbstract {
                 .map(f -> (f instanceof FilterBasic) ? f.toString() : "( " + f.toString() + " )")
                 .collect(Collectors.joining(" | "));
     }
+
+    public Integer toRepositoryCode(){
+        Integer result = 0;
+        for(FilterAbstract filter : filters){
+            result |= filter.toRepositoryCode();
+        }
+        return result;
+    }
 }
