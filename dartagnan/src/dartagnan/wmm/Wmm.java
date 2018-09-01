@@ -11,10 +11,8 @@ import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
-import dartagnan.wmm.relation.basic.RelCrit;
-import dartagnan.wmm.relation.basic.RelCtrl;
-import dartagnan.wmm.relation.basic.RelIdd;
-import dartagnan.wmm.relation.basic.RelRMW;
+import dartagnan.wmm.relation.basic.*;
+import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.*;
 
@@ -24,10 +22,6 @@ import java.util.*;
  */
 public class Wmm implements WmmInterface{
 
-    private static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
-            "id", "int", "ext", "loc", "po",
-            "rf", "fr", "co"
-    ));
 
     private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
     static {
@@ -56,11 +50,6 @@ public class Wmm implements WmmInterface{
         if(relation != null){
             return relation;
         }
-
-        if(basicRelations.contains(name)) {
-            return new BasicRelation(name);
-        }
-
         return resolveRelation(name);
     }
 
@@ -79,23 +68,23 @@ public class Wmm implements WmmInterface{
         return filter;
     }
 
-    /**
-     * Encodes  all relations in the model according to the predicate and approximate settings.
-     * @param program
-     * @param ctx
-     * @return the encoding of the relations.
-     * @throws Z3Exception
-     */
+
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
+        Map<Relation, Set<Tuple>> map = new HashMap<>();
+        for (Axiom ax : axioms) {
+            map.put(ax.getRel(), ax.getRel().getMaxTupleSet(program));
+        }
+
+        for (Axiom ax : axioms) {
+            ax.getRel().addEncodeTupleSet(map.get(ax.getRel()));
+        }
+
         BoolExpr enc = ctx.mkTrue();
         Set<String> encodedRels = new HashSet<>();
-
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
         }
-        for (Map.Entry<String, Relation> relation : relations.entrySet()){
-            enc = ctx.mkAnd(enc, relation.getValue().encode(program, ctx, encodedRels));
-        }
+
         return enc;
     }
 
@@ -161,34 +150,59 @@ public class Wmm implements WmmInterface{
     // TODO: Later these relations should come from included cat files, e.g., "stdlib.cat" or "fences.cat"
     private Relation resolveRelation(String name){
         Relation relation = null;
-        Relation idd;
-        Relation iddTrans;
 
         if(basicFenceRelations.containsKey(name)) {
             relation = new RelFencerel(basicFenceRelations.get(name), name);
 
         } else {
             switch (name){
+                case "po":
+                    relation = new RelPo();
+                    break;
+                case "loc":
+                    relation = new RelLoc();
+                    break;
+                case "id":
+                    relation = new RelId();
+                    break;
+                case "int":
+                    relation = new RelInt();
+                    break;
+                case "ext":
+                    relation = new RelExt();
+                    break;
+                case "co":
+                    relation = new RelCo();
+                    break;
+                case "rf":
+                    relation = new RelRf();
+                    break;
+                case "rf^-1":
+                    relation = new RelInverse(getRelation("rf"));
+                    break;
+                case "fr":
+                    relation = new RelComposition(getRelation("rf^-1"), getRelation("co"), "fr");
+                    break;
                 case "rfe":
-                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("ext"), "rfe");
+                    relation = new RelIntersection(getRelation("rf"), getRelation("ext"), "rfe");
                     break;
                 case "rfi":
-                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("int"), "rfi");
+                    relation = new RelIntersection(getRelation("rf"), getRelation("int"), "rfi");
                     break;
                 case "coe":
-                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("ext"), "coe");
+                    relation = new RelIntersection(getRelation("co"), getRelation("ext"), "coe");
                     break;
                 case "coi":
-                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("int"), "coi");
+                    relation = new RelIntersection(getRelation("co"), getRelation("int"), "coi");
                     break;
                 case "fre":
-                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("ext"), "fre");
+                    relation = new RelIntersection(getRelation("fr"), getRelation("ext"), "fre");
                     break;
                 case "fri":
-                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("int"), "fri");
+                    relation = new RelIntersection(getRelation("fr"), getRelation("int"), "fri");
                     break;
                 case "po-loc":
-                    relation = new RelIntersection(new BasicRelation("po"), new BasicRelation("loc"), "po-loc");
+                    relation = new RelIntersection(getRelation("po"), getRelation("loc"), "po-loc");
                     break;
                 case "addr":
                     relation = new EmptyRel("addr");
@@ -196,50 +210,39 @@ public class Wmm implements WmmInterface{
                 case "0":
                     relation = new EmptyRel("0");
                     break;
+                case "(R*W)":
+                    relation = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
+                    break;
+                case "idd":
+                    relation = new RelIdd();
+                    break;
+                case "idd^+":
+                    relation = new RelTrans(getRelation("idd"));
+                    break;
                 case "data":
-                    Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(RW);
-                    addRelation(iddTrans);
-                    relation = new RelIntersection(iddTrans, RW, "data");
+                    relation = new RelIntersection(getRelation("idd^+"), getRelation("(R*W)"), "data");
                     break;
                 case "ctrl":
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(iddTrans);
-                    relation = new RelCtrl();
+                    if(Relation.EncodeCtrlPo){
+                        relation = new RelComposition(new RelComposition(getRelation("idd^+"), getRelation("ctrlDirect")), new RelUnion(getRelation("id"), getRelation("po")), "ctrl");
+                    } else {
+                        relation = new RelComposition(getRelation("idd^+"), getRelation("ctrlDirect"), "ctrl");
+                    }
+                    break;
+                case "ctrlDirect":
+                    relation = new RelCtrlDirect();
                     break;
                 case "ctrlisync":
-                    Relation isync = new RelFencerel("Isync", "isync");
-                    addRelation(isync);
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(iddTrans);
-                    addRelation(new RelCtrl());
-                    relation = new RelIntersection(new RelCtrl(), isync, "ctrlisync");
+                    relation = new RelIntersection(getRelation("ctrl"), getRelation("isync"), "ctrlisync");
                     break;
                 case "ctrlisb":
-                    Relation isb = new RelFencerel("Isb", "isb");
-                    addRelation(isb);
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(iddTrans);
-                    addRelation(new RelCtrl());
-                    relation = new RelIntersection(new RelCtrl(), isb, "ctrlisb");
+                    relation = new RelIntersection(getRelation("ctrl"), getRelation("isb"), "ctrlisync");
                     break;
                 case "rmw":
                     relation = new RelRMW();
                     break;
                 case "crit":
                     relation = new RelCrit();
-                    break;
-                case "idd":
-                    relation = new RelIdd();
                     break;
             }
         }

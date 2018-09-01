@@ -9,6 +9,7 @@ import dartagnan.program.event.Event;
 import dartagnan.program.event.If;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.Set;
 
@@ -65,5 +66,10 @@ public class RelCtrl extends Relation {
     @Override
     protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
         return encodeBasic(program, ctx);
+    }
+
+    @Override
+    public Set<Tuple> getMaxTupleSet(Program program){
+        throw new RuntimeException("not implemented");
     }
 }

@@ -6,8 +6,13 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.PredicateUtils;
+import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import static dartagnan.utils.Utils.edge;
 
 /**
  *
@@ -21,13 +26,15 @@ public abstract class Relation {
     public static boolean Approx = false;
     public static boolean CloseApprox = false;
     public static boolean PostFixApprox = false;
-    public static boolean EncodeCtrlPo = false; // depends on target architecture
+    public static boolean EncodeCtrlPo = true; // depends on target architecture
 
     protected String name;
     protected String term;
     protected boolean containsRec;
     protected boolean isNamed;
     protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_RCU;
+    protected Set<Tuple> maxTupleSet;
+    protected Set<Tuple> encodeTupleSet = new HashSet<>();
 
     /**
      * Creates a relation with an automatically generated identifier.
@@ -46,6 +53,12 @@ public abstract class Relation {
     public Relation setEventMask(int mask){
         this.eventMask = mask;
         return this;
+    }
+
+    public abstract Set<Tuple> getMaxTupleSet(Program program);
+
+    public void addEncodeTupleSet(Set<Tuple> tuples){
+        encodeTupleSet.addAll(tuples);
     }
 
     /**
@@ -102,7 +115,7 @@ public abstract class Relation {
     }
 
     protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodeApprox is not implemented for " + getClass().getName());
+        return encodeBasic(program, ctx);
     }
 
     protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
@@ -114,16 +127,34 @@ public abstract class Relation {
     }
 
     protected BoolExpr doEncode(Program program, Context ctx){
-        if(PredicateUtils.getUsePredicate()){
-            if(Relation.Approx){
-                return encodePredicateApprox(program, ctx);
-            }
-            return encodePredicateBasic(program, ctx);
-        }
+        BoolExpr enc = encodeNoSet(ctx);
 
-        if(Relation.Approx){
-            return encodeApprox(program, ctx);
+        if(!encodeTupleSet.isEmpty()){
+            if(PredicateUtils.getUsePredicate()){
+                if(Relation.Approx){
+                    return ctx.mkAnd(enc, encodePredicateApprox(program, ctx));
+                }
+                return ctx.mkAnd(enc, encodePredicateBasic(program, ctx));
+            }
+
+            if(Relation.Approx){
+                return ctx.mkAnd(enc, encodeApprox(program, ctx));
+            }
+            return ctx.mkAnd(enc, encodeBasic(program, ctx));
         }
-        return encodeBasic(program, ctx);
+        return enc;
+    }
+
+    protected BoolExpr encodeNoSet(Context ctx){
+        BoolExpr enc = ctx.mkTrue();
+        if(!encodeTupleSet.isEmpty()){
+            Set<Tuple> noTupleSet = new HashSet<>(encodeTupleSet);
+            noTupleSet.removeAll(maxTupleSet);
+            for(Tuple tuple : noTupleSet){
+                enc = ctx.mkAnd(enc, ctx.mkNot(edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx)));
+            }
+            encodeTupleSet.removeAll(noTupleSet);
+        }
+        return enc;
     }
 }

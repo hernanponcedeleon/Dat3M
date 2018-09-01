@@ -5,9 +5,11 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.utils.Tuple;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  *
@@ -26,8 +28,55 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
+    public Set<Tuple> getMaxTupleSet(Program program){
+        if(maxTupleSet == null){
+            maxTupleSet = new HashSet<>();
+            Map<Event, Set<Event>> map = new HashMap<>();
+            for(Tuple pair : r1.getMaxTupleSet(program)){
+                map.putIfAbsent(pair.getFirst(), new HashSet<>());
+                map.putIfAbsent(pair.getSecond(), new HashSet<>());
+                Set<Event> events = map.get(pair.getFirst());
+                events.add(pair.getSecond());
+            }
+
+            int count = 0;
+            for(int i = 0; i < map.size(); i++){
+                int oldCount = count;
+                for(Event e1 : map.keySet()){
+                    for(Event e2 : map.get(e1)){
+                        if(!(e1.equals(e2))){
+                            for(Event e3 : map.get(e2)){
+                                if(map.get(e1).add(e3)) count++;
+                            }
+                        }
+                    }
+                }
+                if(count == oldCount) break;
+            }
+
+            for(Event e1 : map.keySet()){
+                for(Event e2 : map.get(e1)){
+                    maxTupleSet.add(new Tuple(e1, e2));
+                }
+            }
+        }
+        return maxTupleSet;
+    }
+
+    @Override
+    public void addEncodeTupleSet(Set<Tuple> tuples){
+        encodeTupleSet.addAll(tuples);
+        Set<Tuple> activeSet = new HashSet<>(tuples);
+        activeSet.retainAll(maxTupleSet);
+        if(!activeSet.isEmpty()){
+            // TODO: Implementation
+            r1.addEncodeTupleSet(r1.maxTupleSet);
+        }
+    }
+
+    @Override
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
             for (Event e2 : events) {
@@ -52,7 +101,7 @@ public class RelTrans extends UnaryRelation {
 
     @Override
     protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
         BoolExpr enc = ctx.mkTrue();
         BoolExpr orclose1 = ctx.mkFalse();
         BoolExpr orclose2 = ctx.mkFalse();
@@ -72,12 +121,12 @@ public class RelTrans extends UnaryRelation {
                 orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
                 //putting it together:
                 if(Relation.CloseApprox){
-                	enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
                 }
                 if(Relation.PostFixApprox) {
-                	enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
                 } else {
-                	enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
+                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
                 }
             }
         }

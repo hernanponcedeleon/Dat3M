@@ -6,8 +6,9 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.utils.Tuple;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  *
@@ -71,7 +72,7 @@ public class RelTransRef extends UnaryRelation {
                     BoolExpr orClause = ctx.mkFalse();
                     for (Event e3 : events) {
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
-                                                if(Relation.CloseApprox){
+                        if(Relation.CloseApprox){
                             orclose1=ctx.mkOr(orclose1, Utils.edge(r1.getName(), e1, e3, ctx));
                             orclose2=ctx.mkOr(orclose2, Utils.edge(r1.getName(), e3, e2, ctx));
                         }
@@ -86,5 +87,74 @@ public class RelTransRef extends UnaryRelation {
             }
         }
         return enc;
+    }
+
+    @Override
+    public Set<Tuple> getMaxTupleSet(Program program){
+        if(maxTupleSet == null){
+            maxTupleSet = new HashSet<>();
+            Map<Event, Set<Event>> map = new HashMap<>();
+            for(Tuple pair : r1.getMaxTupleSet(program)){
+                map.putIfAbsent(pair.getFirst(), new HashSet<>());
+                map.putIfAbsent(pair.getSecond(), new HashSet<>());
+
+                Set<Event> events = map.get(pair.getFirst());
+                events.add(pair.getFirst());
+                events.add(pair.getSecond());
+                map.get(pair.getSecond()).add(pair.getSecond());
+            }
+
+            /*
+            int count = 0;
+            for(int i = 0; i < map.size(); i++){
+                int oldCount = count;
+                for(Event e1 : map.keySet()){
+                    for(Event e2 : map.get(e1)){
+                        if(!(e1.equals(e2))){
+                            for(Event e3 : map.get(e2)){
+                                if(map.get(e1).add(e3)) count++;
+                            }
+                        }
+                    }
+                }
+                if(count == oldCount) break;
+            }*/
+
+
+            boolean changed = false;
+            for(int i = 0; i < map.size(); i++){
+                for(Event e1 : map.keySet()){
+                    Set<Event> newEls = new HashSet<>();
+                    for(Event e2 : map.get(e1)){
+                        if(!(e1.equals(e2))){
+                            newEls.addAll(map.get(e2));
+                        }
+                    }
+                    if(map.get(e1).addAll(newEls))
+                        changed = true;
+                }
+                if(!changed) break;
+            }
+
+
+            for(Event e1 : map.keySet()){
+                for(Event e2 : map.get(e1)){
+                    maxTupleSet.add(new Tuple(e1, e2));
+                }
+            }
+        }
+        return maxTupleSet;
+    }
+
+    @Override
+    public void addEncodeTupleSet(Set<Tuple> tuples){
+        encodeTupleSet.addAll(tuples);
+        Set<Tuple> activeSet = new HashSet<>(tuples);
+        activeSet.retainAll(maxTupleSet);
+        if(!activeSet.isEmpty()){
+            // TODO: Implementation
+            r1.addEncodeTupleSet(r1.maxTupleSet);
+        }
+
     }
 }

@@ -6,8 +6,10 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.utils.Tuple;
 
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -26,31 +28,55 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
-        BoolExpr enc = ctx.mkTrue();
-        for (Event e1 : events) {
-            for (Event e2 : events) {
-                //allow for recursion in r1:
-                BoolExpr temp = Utils.edge(r1.getName(), e2, e1, ctx);
-                if(r1.containsRec) temp = ctx.mkAnd(temp, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e2, e1, ctx)));
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx),temp));
+    public Set<Tuple> getMaxTupleSet(Program program){
+        if(maxTupleSet == null){
+            maxTupleSet = new HashSet<>();
+            for(Tuple pair : r1.getMaxTupleSet(program)){
+                maxTupleSet.add(new Tuple(pair.getSecond(), pair.getFirst()));
             }
+        }
+        return maxTupleSet;
+    }
+
+    @Override
+    public void addEncodeTupleSet(Set<Tuple> tuples){
+        encodeTupleSet.addAll(tuples);
+        Set<Tuple> activeSet = new HashSet<>(tuples);
+        activeSet.retainAll(maxTupleSet);
+        if(!activeSet.isEmpty()){
+            Set<Tuple> invSet = new HashSet<>();
+            for(Tuple pair : activeSet){
+                invSet.add(new Tuple(pair.getSecond(), pair.getFirst()));
+            }
+            r1.addEncodeTupleSet(invSet);
+        }
+    }
+
+    @Override
+    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        BoolExpr enc = ctx.mkTrue();
+
+        for(Tuple tuple : encodeTupleSet){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+            BoolExpr opt = Utils.edge(r1.getName(), e2, e1, ctx);
+            if (r1.containsRec) {
+                opt = ctx.mkAnd(opt, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e2, e1, ctx)));
+            }
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), opt));
         }
         return enc;
     }
 
-    
     @Override
     protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
-        for (Event e1 : events) {
-            for (Event e2 : events) {
-                //allow for recursion in r1:
-                BoolExpr temp = Utils.edge(r1.getName(), e2, e1, ctx);
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), temp));
-            }
+
+        for(Tuple tuple : encodeTupleSet){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+            BoolExpr opt = Utils.edge(r1.getName(), e2, e1, ctx);
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), opt));
         }
         return enc;
     }

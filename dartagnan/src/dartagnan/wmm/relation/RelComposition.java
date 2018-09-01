@@ -5,9 +5,13 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -23,6 +27,49 @@ public class RelComposition extends BinaryRelation {
     public RelComposition(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = "(" + r1.getName() + ";" + r2.getName() + ")";
+    }
+
+    @Override
+    public Set<Tuple> getMaxTupleSet(Program program){
+        if(maxTupleSet == null){
+            maxTupleSet = new HashSet<>();
+            for(Tuple rel1 : r1.getMaxTupleSet(program)){
+                for(Tuple rel2 : r2.getMaxTupleSet(program)){
+                    if(rel1.getSecond().getEId().equals(rel2.getFirst().getEId())){
+                        maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                    }
+                }
+            }
+        }
+        return maxTupleSet;
+    }
+
+    public void addEncodeTupleSet(Set<Tuple> tuples){
+        encodeTupleSet.addAll(tuples);
+
+        Set<Tuple> activeSet = new HashSet<>(tuples);
+        activeSet.retainAll(maxTupleSet);
+
+        if(!activeSet.isEmpty()){
+            Set<Tuple> r1NewSet = new HashSet<>();
+            Set<Tuple> r2NewSet = new HashSet<>();
+
+            // TODO: Sort tuples and O(n^2)
+            for(Tuple newRel : activeSet){
+                for(Tuple rel1 : r1.maxTupleSet){
+                    if(newRel.getFirst().getEId().equals(rel1.getFirst().getEId())){
+                        for(Tuple rel2 : r2.maxTupleSet){
+                            if(rel1.getSecond().getEId().equals(rel2.getFirst().getEId()) && newRel.getSecond().getEId().equals(rel2.getSecond().getEId())){
+                                r1NewSet.add(rel1);
+                                r2NewSet.add(rel2);
+                            }
+                        }
+                    }
+                }
+            }
+            r1.addEncodeTupleSet(r1NewSet);
+            r2.addEncodeTupleSet(r2NewSet);
+        }
     }
 
     @Override
@@ -42,7 +89,6 @@ public class RelComposition extends BinaryRelation {
                         opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r2.getName(), e3, e2, ctx)));
                     }
                     orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
-
                 }
                 enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(getName(), e1, e2, ctx), orClause));
             }
@@ -52,7 +98,7 @@ public class RelComposition extends BinaryRelation {
 
     @Override
     protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_SKIP | EventRepository.EVENT_IF | EventRepository.EVENT_LOCAL);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
             for (Event e2 : events) {
