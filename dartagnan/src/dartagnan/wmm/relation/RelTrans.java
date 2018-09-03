@@ -5,7 +5,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
-import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.utils.Tuple;
 
@@ -17,11 +16,11 @@ import java.util.*;
  */
 public class RelTrans extends UnaryRelation {
 
+    private Map<Event, Set<Event>> reachabilityMap;
+
     public static String makeTerm(Relation r1){
         return r1.getName() + "^+";
     }
-
-    private Map<Event, Set<Event>> reachabilityMap;
 
     public RelTrans(Relation r1) {
         super(r1);
@@ -38,15 +37,16 @@ public class RelTrans extends UnaryRelation {
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             reachabilityMap = new HashMap<>();
-            for(Tuple pair : r1.getMaxTupleSet(program)){
-                reachabilityMap.putIfAbsent(pair.getFirst(), new HashSet<>());
-                reachabilityMap.putIfAbsent(pair.getSecond(), new HashSet<>());
-                Set<Event> events = reachabilityMap.get(pair.getFirst());
-                events.add(pair.getSecond());
+            for(Tuple tuple : r1.getMaxTupleSet(program)){
+                reachabilityMap.putIfAbsent(tuple.getFirst(), new HashSet<>());
+                reachabilityMap.putIfAbsent(tuple.getSecond(), new HashSet<>());
+                Set<Event> events = reachabilityMap.get(tuple.getFirst());
+                events.add(tuple.getSecond());
             }
 
-            boolean changed = false;
-            for(int i = 0; i < reachabilityMap.size(); i++){
+            boolean changed;
+            do {
+                changed = false;
                 for(Event e1 : reachabilityMap.keySet()){
                     Set<Event> newEls = new HashSet<>();
                     for(Event e2 : reachabilityMap.get(e1)){
@@ -57,8 +57,7 @@ public class RelTrans extends UnaryRelation {
                     if(reachabilityMap.get(e1).addAll(newEls))
                         changed = true;
                 }
-                if(!changed) break;
-            }
+            } while (changed);
 
             for(Event e1 : reachabilityMap.keySet()){
                 for(Event e2 : reachabilityMap.get(e1)){
@@ -82,6 +81,8 @@ public class RelTrans extends UnaryRelation {
 
     @Override
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+        return encodeApprox(program, ctx);
+        /*
         Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
@@ -103,38 +104,68 @@ public class RelTrans extends UnaryRelation {
             }
         }
         return enc;
+        */
     }
 
     @Override
     protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
         BoolExpr enc = ctx.mkTrue();
-        BoolExpr orclose1 = ctx.mkFalse();
-        BoolExpr orclose2 = ctx.mkFalse();
 
-        for (Event e1 : events) {
-            for (Event e2 : events) {
-                //transitive
+        // TODO: Add necessary tuples to r1 for CloseApprox option
+        //BoolExpr orClose1 = ctx.mkFalse();
+        //BoolExpr orClose2 = ctx.mkFalse();
+
+        Set<Tuple> allEncoded = new HashSet<>(encodeTupleSet);
+        Set<Tuple> encodeNow = new HashSet<>(encodeTupleSet);
+
+        while(true){
+            Set<Tuple> encodeNext = new HashSet<>();
+
+            for(Tuple tuple : encodeNow){
                 BoolExpr orClause = ctx.mkFalse();
-                for (Event e3 : events) {
-                    orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
-                    if(Relation.CloseApprox){
-                        orclose1 = ctx.mkOr(orclose1, Utils.edge(r1.getName(), e1, e3, ctx));
-                        orclose2 = ctx.mkOr(orclose2, Utils.edge(r1.getName(), e3, e2, ctx));
+                Event e1 = tuple.getFirst();
+                Event e2 = tuple.getSecond();
+
+                Set<Event> reachableEvents = reachabilityMap.get(e1);
+                if(r1.maxTupleSet.contains(new Tuple(e1, e2))){
+                    orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
+                }
+
+                for(Event e3 : reachableEvents){
+                    if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId())){
+                        orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
+
+                        //if(Relation.CloseApprox){
+                        //    orclose1 = ctx.mkOr(orclose1, Utils.edge(r1.getName(), e1, e3, ctx));
+                        //    orclose2 = ctx.mkOr(orclose2, Utils.edge(r1.getName(), e3, e2, ctx));
+                        //}
+
+                        if(!allEncoded.contains(new Tuple(e1, e3))){
+                            encodeNext.add(new Tuple(e1, e3));
+                        }
+                        if(!allEncoded.contains(new Tuple(e3, e2))){
+                            encodeNext.add(new Tuple(e3, e2));
+                        }
                     }
                 }
-                //original relation
-                orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
-                //putting it together:
-                if(Relation.CloseApprox){
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
-                }
+
+                //if(Relation.CloseApprox){
+                //    enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
+                //}
+
                 if(Relation.PostFixApprox) {
                     enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
                 } else {
                     enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
                 }
             }
+
+            if(encodeNext.isEmpty())
+                break;
+
+            encodeNow.clear();
+            encodeNow.addAll(encodeNext);
+            allEncoded.addAll(encodeNext);
         }
         return enc;
     }

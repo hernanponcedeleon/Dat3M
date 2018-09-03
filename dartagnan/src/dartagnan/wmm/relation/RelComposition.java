@@ -78,7 +78,7 @@ public class RelComposition extends BinaryRelation {
 
     @Override
     protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_SKIP | EventRepository.EVENT_IF | EventRepository.EVENT_LOCAL);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
             for (Event e2 : events) {
@@ -102,21 +102,31 @@ public class RelComposition extends BinaryRelation {
 
     @Override
     protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_SKIP | EventRepository.EVENT_IF | EventRepository.EVENT_LOCAL);
         BoolExpr enc = ctx.mkTrue();
-        for (Event e1 : events) {
-            for (Event e2 : events) {
-                BoolExpr orClause = ctx.mkFalse();
-                for (Event e3 : events) {
-                    BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                    BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
-                    orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
+
+        for(Tuple tuple : encodeTupleSet){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+
+            BoolExpr orClause = ctx.mkFalse();
+            for(Tuple tuple1 : r1.encodeTupleSet){
+                if(tuple1.getFirst().getEId().equals(e1.getEId())){
+                    Event e3 = tuple1.getSecond();
+                    for(Tuple tuple2 : r2.encodeTupleSet){
+                        if(tuple2.getSecond().getEId().equals(e2.getEId())
+                        && tuple2.getFirst().getEId().equals(e3.getEId())){
+                            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
+                            BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
+                            orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
+                        }
+                    }
                 }
-                if (Relation.PostFixApprox) {
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
-                } else {
-                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
-                }
+            }
+
+            if (Relation.PostFixApprox) {
+                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
+            } else {
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
             }
         }
         return enc;

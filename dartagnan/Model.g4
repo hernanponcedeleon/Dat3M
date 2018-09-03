@@ -104,7 +104,7 @@ expression returns [Object value]
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = wmm.getRelUnion(new BasicRelation("id"), (Relation)$e.value);
+            $value = wmm.getRelUnion(wmm.getRelation("id"), (Relation)$e.value);
         }
     |   NOT e = expression {
             // TODO: Implementation for relation and filter
