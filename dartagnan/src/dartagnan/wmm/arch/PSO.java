@@ -12,7 +12,7 @@ import dartagnan.program.*;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.relation.basic.RelCartesian;
+import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.basic.RelFencerel;

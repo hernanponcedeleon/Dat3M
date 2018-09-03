@@ -16,14 +16,18 @@ import java.util.*;
  */
 public class RelTransRef extends UnaryRelation {
 
+    public static String makeTerm(Relation r1){
+        return r1.getName() + "^*";
+    }
+
     public RelTransRef(Relation r1) {
         super(r1);
-        term = r1.getName() + "^*";
+        term = makeTerm(r1);
     }
 
     public RelTransRef(Relation r1, String name) {
         super(r1, name);
-        term = r1.getName() + "^*";
+        term = makeTerm(r1);
     }
 
     @Override
@@ -104,29 +108,12 @@ public class RelTransRef extends UnaryRelation {
                 map.get(pair.getSecond()).add(pair.getSecond());
             }
 
-            /*
-            int count = 0;
-            for(int i = 0; i < map.size(); i++){
-                int oldCount = count;
-                for(Event e1 : map.keySet()){
-                    for(Event e2 : map.get(e1)){
-                        if(!(e1.equals(e2))){
-                            for(Event e3 : map.get(e2)){
-                                if(map.get(e1).add(e3)) count++;
-                            }
-                        }
-                    }
-                }
-                if(count == oldCount) break;
-            }*/
-
-
             boolean changed = false;
             for(int i = 0; i < map.size(); i++){
                 for(Event e1 : map.keySet()){
                     Set<Event> newEls = new HashSet<>();
                     for(Event e2 : map.get(e1)){
-                        if(!(e1.equals(e2))){
+                        if(!(e1.getEId().equals(e2.getEId()))){
                             newEls.addAll(map.get(e2));
                         }
                     }

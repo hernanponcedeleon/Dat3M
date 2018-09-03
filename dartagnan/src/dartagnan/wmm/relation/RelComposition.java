@@ -19,14 +19,18 @@ import java.util.Set;
  */
 public class RelComposition extends BinaryRelation {
 
+    public static String makeTerm(Relation r1, Relation r2){
+        return "(" + r1.getName() + ";" + r2.getName() + ")";
+    }
+
     public RelComposition(Relation r1, Relation r2) {
         super(r1, r2);
-        term = "(" + r1.getName() + ";" + r2.getName() + ")";
+        term = makeTerm(r1, r2);
     }
 
     public RelComposition(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
-        term = "(" + r1.getName() + ";" + r2.getName() + ")";
+        term = makeTerm(r1, r2);
     }
 
     @Override

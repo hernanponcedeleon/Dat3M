@@ -18,9 +18,13 @@ import java.util.Set;
  */
 public class RelMinus extends BinaryRelation {
 
+    public static String makeTerm(Relation r1, Relation r2){
+        return "(" + r1.getName() + "\\" + r2.getName() + ")";
+    }
+
     public RelMinus(Relation r1, Relation r2) {
         super(r1, r2);
-        term = "(" + r1.getName() + "\\" + r2.getName() + ")";
+        term = makeTerm(r1, r2);
         if(r2.containsRec){
             throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
         }
@@ -28,7 +32,7 @@ public class RelMinus extends BinaryRelation {
 
     public RelMinus(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
-        term = "(" + r1.getName() + "\\" + r2.getName() + ")";
+        term = makeTerm(r1, r2);
         if(r2.containsRec){
             throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
         }

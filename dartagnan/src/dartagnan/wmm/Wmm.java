@@ -42,6 +42,7 @@ public class Wmm implements WmmInterface{
     }
 
     public void addRelation(Relation rel) {
+        relations.put(rel.getTerm(), rel);
         relations.put(rel.getName(), rel);
     }
 
@@ -51,6 +52,96 @@ public class Wmm implements WmmInterface{
             return relation;
         }
         return resolveRelation(name);
+    }
+
+    public Relation getRelCartesian(FilterAbstract f1, FilterAbstract f2){
+        String term = RelCartesian.makeTerm(f1, f2);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelCartesian(f1, f2);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelSetIdentity(FilterAbstract f){
+        String term = RelSetIdentity.makeTerm(f);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelSetIdentity(f);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelComposition(Relation r1, Relation r2){
+        String term = RelComposition.makeTerm(r1, r2);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelComposition(r1, r2);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelIntersection(Relation r1, Relation r2){
+        String term = RelIntersection.makeTerm(r1, r2);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelIntersection(r1, r2);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelMinus(Relation r1, Relation r2){
+        String term = RelMinus.makeTerm(r1, r2);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelMinus(r1, r2);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelUnion(Relation r1, Relation r2){
+        String term = RelUnion.makeTerm(r1, r2);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelUnion(r1, r2);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelInverse(Relation r1){
+        String term = RelInverse.makeTerm(r1);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelInverse(r1);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelTrans(Relation r1){
+        String term = RelTrans.makeTerm(r1);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelTrans(r1);
+            addRelation(relation);
+        }
+        return relation;
+    }
+
+    public Relation getRelTransRef(Relation r1){
+        String term = RelTransRef.makeTerm(r1);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelTransRef(r1);
+            addRelation(relation);
+        }
+        return relation;
     }
 
     public void addFilter(FilterAbstract filter) {

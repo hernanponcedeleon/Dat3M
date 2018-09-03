@@ -17,14 +17,18 @@ import java.util.Set;
  */
 public class RelInverse extends UnaryRelation {
 
+    public static String makeTerm(Relation r1){
+        return r1.getName() + "^-1";
+    }
+
     public RelInverse(Relation r1){
         super(r1);
-        term = r1.getName() + "^-1";
+        term = makeTerm(r1);
     }
 
     public RelInverse(Relation r1, String name) {
         super(r1, name);
-        term = r1.getName() + "^-1";
+        term = makeTerm(r1);
     }
 
     @Override

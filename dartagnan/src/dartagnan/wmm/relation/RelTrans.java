@@ -17,45 +17,51 @@ import java.util.*;
  */
 public class RelTrans extends UnaryRelation {
 
+    public static String makeTerm(Relation r1){
+        return r1.getName() + "^+";
+    }
+
+    private Map<Event, Set<Event>> reachabilityMap;
+
     public RelTrans(Relation r1) {
         super(r1);
-        term = r1.getName() + "^+";
+        term = makeTerm(r1);
     }
 
     public RelTrans(Relation r1, String name) {
         super(r1, name);
-        term = r1.getName() + "^+";
+        term = makeTerm(r1);
     }
 
     @Override
     public Set<Tuple> getMaxTupleSet(Program program){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
-            Map<Event, Set<Event>> map = new HashMap<>();
+            reachabilityMap = new HashMap<>();
             for(Tuple pair : r1.getMaxTupleSet(program)){
-                map.putIfAbsent(pair.getFirst(), new HashSet<>());
-                map.putIfAbsent(pair.getSecond(), new HashSet<>());
-                Set<Event> events = map.get(pair.getFirst());
+                reachabilityMap.putIfAbsent(pair.getFirst(), new HashSet<>());
+                reachabilityMap.putIfAbsent(pair.getSecond(), new HashSet<>());
+                Set<Event> events = reachabilityMap.get(pair.getFirst());
                 events.add(pair.getSecond());
             }
 
-            int count = 0;
-            for(int i = 0; i < map.size(); i++){
-                int oldCount = count;
-                for(Event e1 : map.keySet()){
-                    for(Event e2 : map.get(e1)){
-                        if(!(e1.equals(e2))){
-                            for(Event e3 : map.get(e2)){
-                                if(map.get(e1).add(e3)) count++;
-                            }
+            boolean changed = false;
+            for(int i = 0; i < reachabilityMap.size(); i++){
+                for(Event e1 : reachabilityMap.keySet()){
+                    Set<Event> newEls = new HashSet<>();
+                    for(Event e2 : reachabilityMap.get(e1)){
+                        if(!(e1.getEId().equals(e2.getEId()))){
+                            newEls.addAll(reachabilityMap.get(e2));
                         }
                     }
+                    if(reachabilityMap.get(e1).addAll(newEls))
+                        changed = true;
                 }
-                if(count == oldCount) break;
+                if(!changed) break;
             }
 
-            for(Event e1 : map.keySet()){
-                for(Event e2 : map.get(e1)){
+            for(Event e1 : reachabilityMap.keySet()){
+                for(Event e2 : reachabilityMap.get(e1)){
                     maxTupleSet.add(new Tuple(e1, e2));
                 }
             }

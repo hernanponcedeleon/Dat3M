@@ -79,6 +79,10 @@ public abstract class Relation {
         return term;
     }
 
+    public String getTerm(){
+        return term;
+    }
+
     /**
      * This is only used by the parser where a relation is defined and named later.
      * Only use this method before relations depending on this one are encoded!!!

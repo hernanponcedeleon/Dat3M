@@ -1,8 +1,9 @@
-package dartagnan.wmm.relation.basic;
+package dartagnan.wmm.relation;
 
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
+import dartagnan.wmm.relation.basic.StaticRelation;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.Collection;
@@ -13,17 +14,21 @@ public class RelCartesian extends StaticRelation {
     private FilterAbstract filter1;
     private FilterAbstract filter2;
 
+    public static String makeTerm(FilterAbstract filter1, FilterAbstract filter2){
+        return "(" + filter1 + "*" + filter2 + ")";
+    }
+
     public RelCartesian(FilterAbstract filter1, FilterAbstract filter2) {
         this.filter1 = filter1;
         this.filter2 = filter2;
-        this.term = "(" + filter1 + "*" + filter2 + ")";
+        this.term = makeTerm(filter1, filter2);
     }
 
     public RelCartesian(FilterAbstract filter1, FilterAbstract filter2, String name) {
         super(name);
         this.filter1 = filter1;
         this.filter2 = filter2;
-        this.term = "(" + filter1 + " * " + filter2 + ")";
+        this.term = makeTerm(filter1, filter2);
     }
 
     @Override

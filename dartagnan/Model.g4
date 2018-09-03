@@ -5,6 +5,7 @@ import dartagnan.program.event.Fence;
 import dartagnan.program.event.filter.*;
 import dartagnan.wmm.axiom.*;
 import dartagnan.wmm.relation.*;
+import dartagnan.wmm.relation.basic.*;
 import dartagnan.wmm.Wmm;
 
 import java.util.List;
@@ -79,31 +80,31 @@ expression returns [Object value]
             if(!($e1.value instanceof FilterAbstract) || !($e2.value instanceof FilterAbstract)){
                 throw new RuntimeException("Invalid syntax at " + $e1.text + " * " + $e2.text);
             }
-            $value = new RelCartesian((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
+            $value = wmm.getRelCartesian((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
         }
     |   e = expression (POW)? STAR {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = new RelTransRef((Relation)$e.value);
+            $value = wmm.getRelTransRef((Relation)$e.value);
         }
     |   e = expression (POW)? PLUS {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = new RelTrans((Relation)$e.value);
+            $value = wmm.getRelTrans((Relation)$e.value);
         }
     |   e = expression (POW)? INV {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = new RelInverse((Relation)$e.value);
+            $value = wmm.getRelInverse((Relation)$e.value);
         }
     |   e = expression OPT {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = new RelUnion(new BasicRelation("id"), (Relation)$e.value);
+            $value = wmm.getRelUnion(new BasicRelation("id"), (Relation)$e.value);
         }
     |   NOT e = expression {
             // TODO: Implementation for relation and filter
@@ -113,11 +114,11 @@ expression returns [Object value]
             if(!($e1.value instanceof Relation) || !($e2.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e1.text + " ; " + $e2.text);
             }
-            $value = new RelComposition((Relation)$e1.value, (Relation)$e2.value);
+            $value = wmm.getRelComposition((Relation)$e1.value, (Relation)$e2.value);
         }
     |   e1 = expression BAR e2 = expression {
             if($e1.value instanceof Relation && $e2.value instanceof Relation){
-                $value = new RelUnion((Relation)$e1.value, (Relation)$e2.value);
+                $value = wmm.getRelUnion((Relation)$e1.value, (Relation)$e2.value);
             } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
                 $value = new FilterUnion((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
             } else {
@@ -126,7 +127,7 @@ expression returns [Object value]
         }
     |   e1 = expression BSLASH e2 = expression {
             if($e1.value instanceof Relation && $e2.value instanceof Relation){
-                $value = new RelMinus((Relation)$e1.value, (Relation)$e2.value);
+                $value = wmm.getRelMinus((Relation)$e1.value, (Relation)$e2.value);
             } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
                 $value = new FilterMinus((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
             } else {
@@ -135,7 +136,7 @@ expression returns [Object value]
         }
     |   e1 = expression AMP e2 = expression {
             if($e1.value instanceof Relation && $e2.value instanceof Relation){
-                $value = new RelIntersection((Relation)$e1.value, (Relation)$e2.value);
+                $value = wmm.getRelIntersection((Relation)$e1.value, (Relation)$e2.value);
             } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
                 $value = new FilterIntersection((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
             } else {
@@ -146,7 +147,7 @@ expression returns [Object value]
             if(!($e.value instanceof FilterAbstract)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = new RelSetIdentity((FilterAbstract)$e.value);
+            $value = wmm.getRelSetIdentity((FilterAbstract)$e.value);
         }
     |   FENCEREL LPAR e = expression RPAR {
             if(!($e.value instanceof FilterAbstract)){

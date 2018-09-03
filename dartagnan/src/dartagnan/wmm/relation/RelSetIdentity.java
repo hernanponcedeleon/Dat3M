@@ -1,8 +1,9 @@
-package dartagnan.wmm.relation.basic;
+package dartagnan.wmm.relation;
 
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
+import dartagnan.wmm.relation.basic.StaticRelation;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.HashSet;
@@ -12,15 +13,19 @@ public class RelSetIdentity extends StaticRelation {
 
     protected FilterAbstract filter;
 
+    public static String makeTerm(FilterAbstract filter){
+        return "[" + filter + "]";
+    }
+
     public RelSetIdentity(FilterAbstract filter) {
         this.filter = filter;
-        term = "[" + filter + "]";
+        term = makeTerm(filter);
     }
 
     public RelSetIdentity(FilterAbstract filter, String name) {
         super(name);
         this.filter = filter;
-        term = "[" + filter + "]";
+        term = makeTerm(filter);
     }
 
     @Override
