@@ -9,11 +9,14 @@ import dartagnan.wmm.relation.basic.*;
 import dartagnan.wmm.Wmm;
 
 import java.util.List;
+import java.util.Set;
 import java.util.ArrayList;
+import java.util.HashSet;
 }
 @parser::members
 {
     Wmm wmm = new Wmm();
+    Set<RelDummy> recursiveGroup;
     boolean createDummy = false;
 }
 
@@ -65,13 +68,25 @@ letDefinition
     ;
 
 letRecDefinition
-    :   (LET REC | AND) { createDummy = true; } n = NAME EQ e = expression {
-            if($e.value instanceof Relation){
-                ((Relation)$e.value).setName($n.text);
-                wmm.addRelation((Relation)$e.value);
-            } else {
+    :   LET REC { createDummy = true; recursiveGroup = new HashSet<>(); } n = NAME EQ e = expression letRecAndDefinition* {
+            Relation relation = wmm.getRelation($n.text);
+            if(!(relation instanceof RelDummy) || !($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid definition of " + $n.text);
             }
+            ((RelDummy)relation).setConcreteRelation((Relation)$e.value);
+            recursiveGroup.add((RelDummy)relation);
+            wmm.addRecursiveGroup(recursiveGroup);
+        }
+    ;
+
+letRecAndDefinition
+    :   AND n = NAME EQ e = expression {
+            Relation relation = wmm.getRelation($n.text);
+            if(!(relation instanceof RelDummy) || !($e.value instanceof Relation)){
+                throw new RuntimeException("Invalid definition of " + $n.text);
+            }
+            ((RelDummy)relation).setConcreteRelation((Relation)$e.value);
+            recursiveGroup.add((RelDummy)relation);
         }
     ;
 
@@ -154,7 +169,7 @@ expression returns [Object value]
                 throw new RuntimeException("Invalid syntax at fencerel(" + $e.text + ")");
             }
             // TODO: In general, this should be a filter (consider fence + MO rel_acq)
-            $value = new RelFencerel($e.text);
+            $value = wmm.getRelFencerel($e.text);
         }
     |   LPAR e = expression RPAR {
                 $value = $e.value;
@@ -165,6 +180,7 @@ expression returns [Object value]
                 $value = wmm.getFilter($n.text);
                 if($value == null && createDummy){
                     $value = new RelDummy($n.text);
+                    wmm.addRelation((Relation)$value);
                 }
             }
         }

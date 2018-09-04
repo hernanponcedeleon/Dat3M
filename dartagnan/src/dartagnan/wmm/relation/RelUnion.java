@@ -41,6 +41,18 @@ public class RelUnion extends BinaryRelation {
         return maxTupleSet;
     }
 
+
+    @Override
+    public Set<Tuple> getMaxTupleSet(Program program, boolean forceUpdate){
+        if(maxTupleSet == null || !forceUpdate) {
+            return getMaxTupleSet(program);
+        }
+
+        maxTupleSet.addAll(r1.getMaxTupleSet(program, true));
+        maxTupleSet.addAll(r2.getMaxTupleSet(program, true));
+        return maxTupleSet;
+    }
+
     @Override
     public void addEncodeTupleSet(Set<Tuple> tuples){
         encodeTupleSet.addAll(tuples);

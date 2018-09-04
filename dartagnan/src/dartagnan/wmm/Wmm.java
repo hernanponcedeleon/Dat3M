@@ -36,6 +36,7 @@ public class Wmm implements WmmInterface{
     private ArrayList<Axiom> axioms = new ArrayList<>();
     private Map<String, Relation> relations = new HashMap<String, Relation>();
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
+    private List<Set<RelDummy>> recGroups = new ArrayList<>();
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
@@ -52,6 +53,16 @@ public class Wmm implements WmmInterface{
             return relation;
         }
         return resolveRelation(name);
+    }
+
+    public Relation getRelFencerel(String fenceName){
+        String term = RelFencerel.makeTerm(fenceName);
+        Relation relation = relations.get(term);
+        if(relation == null){
+            relation = new RelFencerel(fenceName);
+            addRelation(relation);
+        }
+        return relation;
     }
 
     public Relation getRelCartesian(FilterAbstract f1, FilterAbstract f2){
@@ -159,8 +170,38 @@ public class Wmm implements WmmInterface{
         return filter;
     }
 
+    public void addRecursiveGroup(Set<RelDummy> group){
+        Set<RelDummy> newGroup = new HashSet<>(group);
+        recGroups.add(newGroup);
+    }
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
+
+        for(Set<RelDummy> group : recGroups){
+            Map<Relation, Set<Tuple>> relMaxSetMap = new HashMap<>();
+            for(Relation relation : group){
+                relMaxSetMap.put(relation, new HashSet<>());
+            }
+
+            boolean changed = true;
+
+            while(changed){
+                changed = false;
+                for(RelDummy relation : group){
+                    Set<Tuple> set = relMaxSetMap.get(relation);
+                    int oldSize = set.size();
+                    relation.isActive = true;
+                    set.addAll(relation.getMaxTupleSet(program, true));
+                    int newSize = relMaxSetMap.get(relation).size();
+                    if(oldSize != newSize) {
+                        changed = true;
+                    }
+
+                    relation.setMaxTupleSet(set);
+                }
+            }
+        }
+
         Map<Relation, Set<Tuple>> map = new HashMap<>();
         for (Axiom ax : axioms) {
             map.put(ax.getRel(), ax.getRel().getMaxTupleSet(program));
@@ -168,6 +209,27 @@ public class Wmm implements WmmInterface{
 
         for (Axiom ax : axioms) {
             ax.getRel().addEncodeTupleSet(map.get(ax.getRel()));
+        }
+
+        for(Set<RelDummy> group : recGroups){
+            Map<Relation, Set<Tuple>> relMaxSetMap = new HashMap<>();
+            for(Relation relation : group){
+                relMaxSetMap.put(relation, new HashSet<>());
+            }
+
+            boolean changed = true;
+            while(changed){
+                changed = false;
+                for(RelDummy relation : group){
+                    Set<Tuple> set = relMaxSetMap.get(relation);
+                    int oldSize = set.size();
+                    set.addAll(relation.updateEncodeTupleSet());
+                    int newSize = relMaxSetMap.get(relation).size();
+                    if(oldSize != newSize){
+                        changed = true;
+                    }
+                }
+            }
         }
 
         BoolExpr enc = ctx.mkTrue();
@@ -269,31 +331,39 @@ public class Wmm implements WmmInterface{
                     relation = new RelRf();
                     break;
                 case "rf^-1":
-                    relation = new RelInverse(getRelation("rf"));
+                    relation = getRelInverse(getRelation("rf"));
                     break;
                 case "fr":
-                    relation = new RelComposition(getRelation("rf^-1"), getRelation("co"), "fr");
+                    relation = getRelComposition(getRelation("rf^-1"), getRelation("co"));
+                    relation.setName("fr");
                     break;
                 case "rfe":
-                    relation = new RelIntersection(getRelation("rf"), getRelation("ext"), "rfe");
+                    relation = getRelIntersection(getRelation("rf"), getRelation("ext"));
+                    relation.setName("rfe");
                     break;
                 case "rfi":
-                    relation = new RelIntersection(getRelation("rf"), getRelation("int"), "rfi");
+                    relation = getRelIntersection(getRelation("rf"), getRelation("int"));
+                    relation.setName("rfi");
                     break;
                 case "coe":
-                    relation = new RelIntersection(getRelation("co"), getRelation("ext"), "coe");
+                    relation = getRelIntersection(getRelation("co"), getRelation("ext"));
+                    relation.setName("coe");
                     break;
                 case "coi":
-                    relation = new RelIntersection(getRelation("co"), getRelation("int"), "coi");
+                    relation = getRelIntersection(getRelation("co"), getRelation("int"));
+                    relation.setName("coi");
                     break;
                 case "fre":
-                    relation = new RelIntersection(getRelation("fr"), getRelation("ext"), "fre");
+                    relation = getRelIntersection(getRelation("fr"), getRelation("ext"));
+                    relation.setName("fre");
                     break;
                 case "fri":
-                    relation = new RelIntersection(getRelation("fr"), getRelation("int"), "fri");
+                    relation = getRelIntersection(getRelation("fr"), getRelation("int"));
+                    relation.setName("fri");
                     break;
                 case "po-loc":
-                    relation = new RelIntersection(getRelation("po"), getRelation("loc"), "po-loc");
+                    relation = getRelIntersection(getRelation("po"), getRelation("loc"));
+                    relation.setName("po-loc");
                     break;
                 case "addr":
                     relation = new EmptyRel("addr");
@@ -302,32 +372,37 @@ public class Wmm implements WmmInterface{
                     relation = new EmptyRel("0");
                     break;
                 case "(R*W)":
-                    relation = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
+                    relation = getRelCartesian(new FilterBasic("R"), new FilterBasic("W"));
                     break;
                 case "idd":
                     relation = new RelIdd();
                     break;
                 case "idd^+":
-                    relation = new RelTrans(getRelation("idd"));
+                    relation = getRelTrans(getRelation("idd"));
                     break;
                 case "data":
-                    relation = new RelIntersection(getRelation("idd^+"), getRelation("(R*W)"), "data");
+                    relation = getRelIntersection(getRelation("idd^+"), getRelation("(R*W)"));
+                    relation.setName("data");
                     break;
                 case "ctrl":
                     if(Relation.EncodeCtrlPo){
-                        relation = new RelComposition(new RelComposition(getRelation("idd^+"), getRelation("ctrlDirect")), new RelUnion(getRelation("id"), getRelation("po")), "ctrl");
+                        relation = getRelComposition(getRelComposition(getRelation("idd^+"), getRelation("ctrlDirect")), getRelUnion(getRelation("id"), getRelation("po")));
+                        relation.setName("ctrl");
                     } else {
-                        relation = new RelComposition(getRelation("idd^+"), getRelation("ctrlDirect"), "ctrl");
+                        relation = getRelComposition(getRelation("idd^+"), getRelation("ctrlDirect"));
+                        relation.setName("ctrl");
                     }
                     break;
                 case "ctrlDirect":
                     relation = new RelCtrlDirect();
                     break;
                 case "ctrlisync":
-                    relation = new RelIntersection(getRelation("ctrl"), getRelation("isync"), "ctrlisync");
+                    relation = getRelIntersection(getRelation("ctrl"), getRelation("isync"));
+                    relation.setName("ctrlisync");
                     break;
                 case "ctrlisb":
-                    relation = new RelIntersection(getRelation("ctrl"), getRelation("isb"), "ctrlisync");
+                    relation = getRelIntersection(getRelation("ctrl"), getRelation("isb"));
+                    relation.setName("ctrlisb");
                     break;
                 case "rmw":
                     relation = new RelRMW();

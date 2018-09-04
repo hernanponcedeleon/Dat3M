@@ -5,6 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.utils.Tuple;
 
@@ -64,6 +65,13 @@ public class RelTransRef extends UnaryRelation {
                 for(Event e2 : reachabilityMap.get(e1)){
                     maxTupleSet.add(new Tuple(e1, e2));
                 }
+            }
+
+            // TODO: Better version
+            for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+                reachabilityMap.putIfAbsent(e, new HashSet<>());
+                reachabilityMap.get(e).add(e);
+                maxTupleSet.add(new Tuple(e, e));
             }
         }
         return maxTupleSet;

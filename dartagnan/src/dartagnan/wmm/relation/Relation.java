@@ -57,6 +57,10 @@ public abstract class Relation {
 
     public abstract Set<Tuple> getMaxTupleSet(Program program);
 
+    public Set<Tuple> getMaxTupleSet(Program program, boolean forceUpdate){
+        return getMaxTupleSet(program);
+    }
+
     public void addEncodeTupleSet(Set<Tuple> tuples){
         encodeTupleSet.addAll(tuples);
     }

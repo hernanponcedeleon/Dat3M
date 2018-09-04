@@ -20,15 +20,19 @@ public class RelFencerel extends Relation {
 
     private String fenceName;
 
+    public static String makeTerm(String fenceName){
+        return "fencerel(" + fenceName + ")";
+    }
+
     public RelFencerel(String fenceName) {
         this.fenceName = fenceName;
-        term = "fencerel(" + fenceName + ")";
+        term = makeTerm(fenceName);
     }
 
     public RelFencerel(String fenceName, String name) {
         super(name);
         this.fenceName = fenceName;
-        term = "fencerel(" + fenceName + ")";
+        term = makeTerm(fenceName);
     }
 
     @Override

@@ -48,6 +48,30 @@ public class RelComposition extends BinaryRelation {
         return maxTupleSet;
     }
 
+
+    @Override
+    public Set<Tuple> getMaxTupleSet(Program program, boolean forceUpdate){
+        if(maxTupleSet == null || !forceUpdate) {
+            return getMaxTupleSet(program);
+        }
+
+        Set<Tuple> set1 = r1.getMaxTupleSet(program, true);
+        Set<Tuple> set2 = r2.getMaxTupleSet(program, true);
+
+        Set<Tuple> newSet = new HashSet<>();
+        for(Tuple rel1 : set1){
+            for(Tuple rel2 : set2){
+                if(rel1.getSecond().getEId().equals(rel2.getFirst().getEId())){
+                    newSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                }
+            }
+        }
+
+        maxTupleSet.addAll(newSet);
+
+        return maxTupleSet;
+    }
+
     public void addEncodeTupleSet(Set<Tuple> tuples){
         encodeTupleSet.addAll(tuples);
 

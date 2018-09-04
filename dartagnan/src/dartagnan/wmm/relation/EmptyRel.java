@@ -16,13 +16,9 @@ import java.util.Set;
  */
 public class EmptyRel extends Relation {
 
-    public EmptyRel() {
-        term = "0";
-    }
-
     public EmptyRel(String name) {
         super(name);
-        term = "0";
+        term = name;
     }
 
     @Override
