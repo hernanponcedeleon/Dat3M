@@ -102,6 +102,8 @@ public class Dartagnan {
 		}
 
         WmmInterface mcm;
+		Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
+
 		if (cmd.hasOption("cat")) {
 			mcm = parseCat(cmd.getOptionValue("cat"));
             Relation.Approx = true;
@@ -129,7 +131,6 @@ public class Dartagnan {
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
-		Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcm.Consistent(p, ctx));
 
