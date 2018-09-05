@@ -3,7 +3,6 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.utils.Tuple;
@@ -39,11 +38,11 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
-            maxTupleSet.addAll(r1.getMaxTupleSet(program));
-            r2.getMaxTupleSet(program);
+            maxTupleSet.addAll(r1.getMaxTupleSet());
+            r2.getMaxTupleSet();
         }
         return maxTupleSet;
     }
@@ -60,23 +59,23 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+    public BoolExpr encode(Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
             if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
             encodedRels.add(this.getName());
         }
-        BoolExpr enc = r1.encode(program, ctx, encodedRels);
+        BoolExpr enc = r1.encode(ctx, encodedRels);
         boolean approx = Relation.Approx;
         Relation.Approx = false;
-        enc = ctx.mkAnd(enc, r2.encode(program, ctx, encodedRels));
+        enc = ctx.mkAnd(enc, r2.encode(ctx, encodedRels));
         Relation.Approx = approx;
-        return ctx.mkAnd(enc, doEncode(program, ctx));
+        return ctx.mkAnd(enc, doEncode(ctx));
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -94,7 +93,7 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();

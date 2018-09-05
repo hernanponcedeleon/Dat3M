@@ -4,7 +4,6 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Location;
-import dartagnan.program.Program;
 import dartagnan.program.event.*;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
@@ -26,7 +25,7 @@ public class RelCo extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.EVENT_STORE);
@@ -47,13 +46,12 @@ public class RelCo extends Relation {
                     }
                 }
             }
-
         }
         return maxTupleSet;
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         if(!encodeTupleSet.isEmpty()){

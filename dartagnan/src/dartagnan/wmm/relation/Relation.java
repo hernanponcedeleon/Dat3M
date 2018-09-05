@@ -35,6 +35,7 @@ public abstract class Relation {
     protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_RCU;
     protected Set<Tuple> maxTupleSet;
     protected Set<Tuple> encodeTupleSet = new HashSet<>();
+    protected Program program;
 
     /**
      * Creates a relation with an automatically generated identifier.
@@ -43,7 +44,6 @@ public abstract class Relation {
 
     /**
      * Creates a relation that is explicitly named either for recursion or readability.
-     * @param name (manually chosen)
      */
     public Relation(String name) {
         this.name = name;
@@ -55,10 +55,18 @@ public abstract class Relation {
         return this;
     }
 
-    public abstract Set<Tuple> getMaxTupleSet(Program program);
+    // TODO: Verify and test multiple initialisation for different programs
+    public Relation initialise(Program program){
+        this.program = program;
+        this.maxTupleSet = null;
+        encodeTupleSet = new HashSet<>();
+        return this;
+    }
 
-    public Set<Tuple> getMaxTupleSet(Program program, boolean forceUpdate){
-        return getMaxTupleSet(program);
+    public abstract Set<Tuple> getMaxTupleSet();
+
+    public Set<Tuple> getMaxTupleSet(boolean forceUpdate){
+        return getMaxTupleSet();
     }
 
     public void addEncodeTupleSet(Set<Tuple> tuples){
@@ -108,47 +116,47 @@ public abstract class Relation {
         return term;
     }
 
-    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+    public BoolExpr encode(Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
             if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
             encodedRels.add(this.getName());
         }
-        return doEncode(program, ctx);
+        return doEncode(ctx);
     }
 
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         throw new RuntimeException("Method encodeBasic is not implemented for " + getClass().getName());
     }
 
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        return encodeBasic(program, ctx);
+    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+        return encodeBasic(ctx);
     }
 
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodePredicateBasic(Context ctx) throws Z3Exception {
         throw new RuntimeException("Method encodePredicateBasic is not implemented for " + getClass().getName());
     }
 
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodePredicateApprox(Context ctx) throws Z3Exception {
         throw new RuntimeException("Method encodePredicateApprox is not implemented for " + getClass().getName());
     }
 
-    protected BoolExpr doEncode(Program program, Context ctx){
+    protected BoolExpr doEncode(Context ctx){
         BoolExpr enc = encodeNoSet(ctx);
 
         if(!encodeTupleSet.isEmpty()){
             if(PredicateUtils.getUsePredicate()){
                 if(Relation.Approx){
-                    return ctx.mkAnd(enc, encodePredicateApprox(program, ctx));
+                    return ctx.mkAnd(enc, encodePredicateApprox(ctx));
                 }
-                return ctx.mkAnd(enc, encodePredicateBasic(program, ctx));
+                return ctx.mkAnd(enc, encodePredicateBasic(ctx));
             }
 
             if(Relation.Approx){
-                return ctx.mkAnd(enc, encodeApprox(program, ctx));
+                return ctx.mkAnd(enc, encodeApprox(ctx));
             }
-            return ctx.mkAnd(enc, encodeBasic(program, ctx));
+            return ctx.mkAnd(enc, encodeBasic(ctx));
         }
         return enc;
     }

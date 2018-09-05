@@ -1,6 +1,5 @@
 package dartagnan.wmm.relation.basic;
 
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.utils.EventRepository;
@@ -16,7 +15,7 @@ public class RelCrit extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             for(Event unlock : program.getEventRepository().getEvents(EventRepository.EVENT_RCU_UNLOCK)){

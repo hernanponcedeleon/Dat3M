@@ -1,6 +1,5 @@
 package dartagnan.wmm.relation.basic;
 
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.If;
 import dartagnan.program.utils.EventRepository;
@@ -16,7 +15,7 @@ public class RelCtrlDirect extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_IF)){

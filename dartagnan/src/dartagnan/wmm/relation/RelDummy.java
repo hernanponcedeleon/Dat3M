@@ -3,7 +3,6 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.Collection;
@@ -31,7 +30,7 @@ public class RelDummy extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
         }
@@ -39,12 +38,12 @@ public class RelDummy extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program, boolean forceUpdate){
+    public Set<Tuple> getMaxTupleSet(boolean forceUpdate){
         if(forceUpdate && isActive){
             isActive = false;
-            return r1.getMaxTupleSet(program, true);
+            return r1.getMaxTupleSet(true);
         }
-        return getMaxTupleSet(program);
+        return getMaxTupleSet();
     }
 
     public void setMaxTupleSet(Set<Tuple> set){
@@ -63,22 +62,22 @@ public class RelDummy extends Relation {
 
     // TODO: Set difference and use "encode" of the parent
     @Override
-    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
+    public BoolExpr encode(Context ctx, Collection<String> encodedRels) throws Z3Exception {
         if(encodedRels != null){
             if(encodedRels.contains(this.getName())){
                 return ctx.mkTrue();
             }
         }
-        return r1.encode(program, ctx, encodedRels);
+        return r1.encode(ctx, encodedRels);
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        return r1.encodeBasic(program, ctx);
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+        return r1.encodeBasic(ctx);
     }
 
     @Override
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        return r1.encodeApprox(program, ctx);
+    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+        return r1.encodeApprox(ctx);
     }
 }

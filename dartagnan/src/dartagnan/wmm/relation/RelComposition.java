@@ -28,17 +28,17 @@ public class RelComposition extends BinaryRelation {
         term = makeTerm(r1, r2);
     }
 
-    public RelComposition(Relation r1, Relation r2, String name) {
+    public RelComposition(Program program, Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
-            for(Tuple rel1 : r1.getMaxTupleSet(program)){
-                for(Tuple rel2 : r2.getMaxTupleSet(program)){
+            for(Tuple rel1 : r1.getMaxTupleSet()){
+                for(Tuple rel2 : r2.getMaxTupleSet()){
                     if(rel1.getSecond().getEId().equals(rel2.getFirst().getEId())){
                         maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
                     }
@@ -50,13 +50,13 @@ public class RelComposition extends BinaryRelation {
 
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program, boolean forceUpdate){
+    public Set<Tuple> getMaxTupleSet(boolean forceUpdate){
         if(maxTupleSet == null || !forceUpdate) {
-            return getMaxTupleSet(program);
+            return getMaxTupleSet();
         }
 
-        Set<Tuple> set1 = r1.getMaxTupleSet(program, true);
-        Set<Tuple> set2 = r2.getMaxTupleSet(program, true);
+        Set<Tuple> set1 = r1.getMaxTupleSet(true);
+        Set<Tuple> set2 = r2.getMaxTupleSet(true);
 
         Set<Tuple> newSet = new HashSet<>();
         for(Tuple rel1 : set1){
@@ -101,7 +101,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_SKIP | EventRepository.EVENT_IF | EventRepository.EVENT_LOCAL);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
@@ -125,7 +125,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){

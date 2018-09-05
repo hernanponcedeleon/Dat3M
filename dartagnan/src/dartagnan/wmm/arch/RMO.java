@@ -20,14 +20,13 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.basic.RelFencerel;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.basic.RelCtrl;
 import dartagnan.wmm.relation.basic.RelIdd;
 
 public class RMO implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelIdd(),
-			new RelCtrl(),
+			// new RelCtrl(), // TODO: removed, use composite relation
 			new RelFencerel("Mfence", "mfence"),
 			new RelFencerel("Isync", "isync"),
 			new RelCartesian(new FilterBasic("R"), new FilterBasic("R"), "RR").setEventMask(EventRepository.EVENT_MEMORY),
@@ -68,7 +67,7 @@ public class RMO implements WmmInterface {
 		enc = ctx.mkAnd(enc, satUnion("ghb-rmo", "po-rmo", "com-rmo", events, ctx));
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
 		}
 
 		return enc;

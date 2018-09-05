@@ -43,7 +43,7 @@ public class TSO implements WmmInterface {
 			relations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA").setEventMask(EventRepository.EVENT_MEMORY));
 			relations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM").setEventMask(EventRepository.EVENT_MEMORY));
 
-			enc = ctx.mkAnd(enc, new RelRMW().encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, new RelRMW().encode(ctx, null));
 			enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));
 			enc = ctx.mkAnd(enc, satIntersection("fre", "fr", "ext", events, ctx));
 			enc = ctx.mkAnd(enc, satComp("fre", "coe", events, ctx));
@@ -58,7 +58,7 @@ public class TSO implements WmmInterface {
 		}
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
 		}
 
 		return enc;
@@ -68,8 +68,9 @@ public class TSO implements WmmInterface {
 		Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
 		BoolExpr enc = ctx.mkAnd(satAcyclic("(po-loc+com)", events, ctx), satAcyclic("ghb-tso", events, ctx));
 		if(program.hasRMWEvents()){
-			Empty rmw = new Empty(new BasicRelation("(rmw&(fre;coe))"));
-			enc = ctx.mkAnd(enc, rmw.Consistent(events, ctx));
+			// TODO: BasicRelation removed, use composite relation
+			// Empty rmw = new Empty(new BasicRelation("(rmw&(fre;coe))"));
+			// enc = ctx.mkAnd(enc, rmw.Consistent(events, ctx));
 		}
 		return enc;
 	}
@@ -79,8 +80,9 @@ public class TSO implements WmmInterface {
 		BoolExpr enc = ctx.mkAnd(satCycleDef("(po-loc+com)", events, ctx), satCycleDef("ghb-tso", events, ctx));
 		enc = ctx.mkAnd(enc, ctx.mkOr(satCycle("(po-loc+com)", events, ctx), satCycle("ghb-tso", events, ctx)));
 		if(program.hasRMWEvents()){
-			Empty rmw = new Empty(new BasicRelation("(rmw&(fre;coe))"));
-			enc = ctx.mkAnd(enc, rmw.Inconsistent(events, ctx));
+			// TODO: BasicRelation removed, use composite relation
+			// Empty rmw = new Empty(new BasicRelation("(rmw&(fre;coe))"));
+			// enc = ctx.mkAnd(enc, rmw.Inconsistent(events, ctx));
 		}
 		return enc;
 	}

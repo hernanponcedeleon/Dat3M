@@ -44,7 +44,7 @@ public class PSO implements WmmInterface {
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("ghb-pso", "po-pso", "com-pso", events, ctx));
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
 		}
 
 		return enc;

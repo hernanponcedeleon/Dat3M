@@ -3,7 +3,6 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
@@ -34,11 +33,11 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             reachabilityMap = new HashMap<>();
-            for(Tuple tuple : r1.getMaxTupleSet(program)){
+            for(Tuple tuple : r1.getMaxTupleSet()){
                 reachabilityMap.putIfAbsent(tuple.getFirst(), new HashSet<>());
                 reachabilityMap.putIfAbsent(tuple.getSecond(), new HashSet<>());
                 Set<Event> events = reachabilityMap.get(tuple.getFirst());
@@ -89,7 +88,7 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
@@ -119,7 +118,7 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         // TODO: Add necessary tuples to r1 for CloseApprox option

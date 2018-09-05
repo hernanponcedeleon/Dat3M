@@ -3,7 +3,6 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.relation.utils.Tuple;
 
@@ -22,27 +21,27 @@ public class EmptyRel extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         return EncodingsCAT.satEmpty(this.getName(), program.getEventRepository().getEvents(this.eventMask), ctx);
     }
 
     @Override
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        return encodeBasic(program, ctx);
+    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+        return encodeBasic(ctx);
     }
 
     @Override
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-        return encodeBasic(program, ctx);
+    protected BoolExpr encodePredicateBasic(Context ctx) throws Z3Exception {
+        return encodeBasic(ctx);
     }
 
     @Override
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-        return encodeBasic(program, ctx);
+    protected BoolExpr encodePredicateApprox(Context ctx) throws Z3Exception {
+        return encodeBasic(ctx);
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
         }

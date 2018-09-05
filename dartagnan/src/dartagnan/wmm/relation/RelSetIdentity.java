@@ -1,6 +1,5 @@
 package dartagnan.wmm.relation;
 
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.wmm.relation.basic.StaticRelation;
@@ -29,7 +28,7 @@ public class RelSetIdentity extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             for(Event e1 : program.getEventRepository().getEvents(filter.toRepositoryCode())){

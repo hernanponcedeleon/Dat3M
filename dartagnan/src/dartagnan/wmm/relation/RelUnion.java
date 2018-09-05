@@ -3,7 +3,6 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.utils.Tuple;
@@ -32,24 +31,24 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
-            maxTupleSet.addAll(r1.getMaxTupleSet(program));
-            maxTupleSet.addAll(r2.getMaxTupleSet(program));
+            maxTupleSet.addAll(r1.getMaxTupleSet());
+            maxTupleSet.addAll(r2.getMaxTupleSet());
         }
         return maxTupleSet;
     }
 
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program, boolean forceUpdate){
+    public Set<Tuple> getMaxTupleSet(boolean forceUpdate){
         if(maxTupleSet == null || !forceUpdate) {
-            return getMaxTupleSet(program);
+            return getMaxTupleSet();
         }
 
-        maxTupleSet.addAll(r1.getMaxTupleSet(program, true));
-        maxTupleSet.addAll(r2.getMaxTupleSet(program, true));
+        maxTupleSet.addAll(r1.getMaxTupleSet(true));
+        maxTupleSet.addAll(r2.getMaxTupleSet(true));
         return maxTupleSet;
     }
 
@@ -65,7 +64,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -86,7 +85,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){

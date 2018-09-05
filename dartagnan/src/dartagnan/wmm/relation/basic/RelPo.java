@@ -1,6 +1,5 @@
 package dartagnan.wmm.relation.basic;
 
-import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
@@ -16,7 +15,7 @@ public class RelPo extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             for(Thread t : program.getThreads()){

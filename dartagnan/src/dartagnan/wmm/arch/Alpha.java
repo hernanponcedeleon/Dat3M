@@ -20,14 +20,13 @@ import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.basic.RelFencerel;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.basic.RelCtrl;
 import dartagnan.wmm.relation.basic.RelIdd;
 
 public class Alpha implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelIdd(),
-			new RelCtrl(),
+			// new RelCtrl(),  // TODO: removed, use composite relation
 			new RelFencerel("Mfence", "mfence"),
 			new RelFencerel("Isync", "isync"),
 			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW").setEventMask(EventRepository.EVENT_MEMORY),
@@ -71,7 +70,7 @@ public class Alpha implements WmmInterface {
 	    enc = ctx.mkAnd(enc, EncodingsCAT.satUnion("ghb-alpha", "po-alpha", "com-alpha", events, ctx));
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
 		}
 
 	    return enc;

@@ -177,6 +177,10 @@ public class Wmm implements WmmInterface{
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 
+        for(String name : relations.keySet()){
+            relations.get(name).initialise(program);
+        }
+
         for(Set<RelDummy> group : recGroups){
             Map<Relation, Set<Tuple>> relMaxSetMap = new HashMap<>();
             for(Relation relation : group){
@@ -191,7 +195,7 @@ public class Wmm implements WmmInterface{
                     Set<Tuple> set = relMaxSetMap.get(relation);
                     int oldSize = set.size();
                     relation.isActive = true;
-                    set.addAll(relation.getMaxTupleSet(program, true));
+                    set.addAll(relation.getMaxTupleSet(true));
                     int newSize = relMaxSetMap.get(relation).size();
                     if(oldSize != newSize) {
                         changed = true;
@@ -204,7 +208,7 @@ public class Wmm implements WmmInterface{
 
         Map<Relation, Set<Tuple>> map = new HashMap<>();
         for (Axiom ax : axioms) {
-            map.put(ax.getRel(), ax.getRel().getMaxTupleSet(program));
+            map.put(ax.getRel(), ax.getRel().getMaxTupleSet());
         }
 
         for (Axiom ax : axioms) {
@@ -235,7 +239,7 @@ public class Wmm implements WmmInterface{
         BoolExpr enc = ctx.mkTrue();
         Set<String> encodedRels = new HashSet<>();
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
+            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx, encodedRels));
         }
 
         return enc;

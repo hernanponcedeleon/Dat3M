@@ -3,7 +3,6 @@ package dartagnan.wmm.relation.basic;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Fence;
@@ -36,7 +35,7 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(Program program){
+    public Set<Tuple> getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new HashSet<>();
             for(Thread t : program.getThreads()){
@@ -75,7 +74,7 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         Collection<Event> fences = program.getEventRepository()

@@ -32,14 +32,13 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.basic.RelFencerel;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.basic.RelCtrl;
 import dartagnan.wmm.relation.basic.RelIdd;
 
 public class Power implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelIdd(),
-			new RelCtrl(),
+			// new RelCtrl(),  // TODO: removed, use composite relation
 			new RelFencerel("Sync", "sync"),
 			new RelFencerel("Lwsync", "lwsync"),
 			new RelFencerel("Isync", "isync"),
@@ -135,7 +134,7 @@ public class Power implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satUnion("co", "prop", events, ctx));
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
 		}
 
 	    return enc;

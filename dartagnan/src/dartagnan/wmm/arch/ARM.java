@@ -33,14 +33,13 @@ import dartagnan.wmm.relation.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.basic.RelFencerel;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.basic.RelCtrl;
 import dartagnan.wmm.relation.basic.RelIdd;
 
 public class ARM implements WmmInterface {
 
 	private Collection<Relation> relations = new ArrayList<>(Arrays.asList(
 			new RelIdd(),
-			new RelCtrl(),
+			//new RelCtrl(), // TODO: removed, use composite relation
 			new RelFencerel("Isb", "isb"),
 			new RelFencerel("Ish", "ish"),
 			new RelCartesian(new FilterBasic("R"), new FilterBasic("W"), "RW").setEventMask(EventRepository.EVENT_MEMORY),
@@ -130,7 +129,7 @@ public class ARM implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satUnion("co", "prop", events, ctx));
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(program, ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
 		}
 
 	    return enc;
