@@ -100,9 +100,10 @@ public abstract class Relation {
      * Only use this method before relations depending on this one are encoded!!!
      * @param name
      */
-    public void setName(String name){
+    public Relation setName(String name){
         this.name = name;
         isNamed = true;
+        return this;
     }
 
     /**

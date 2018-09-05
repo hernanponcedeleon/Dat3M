@@ -11,7 +11,7 @@ import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
-import dartagnan.wmm.relation.basic.*;
+import dartagnan.wmm.relation.utils.RelationRepository;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.*;
@@ -22,137 +22,13 @@ import java.util.*;
  */
 public class Wmm implements WmmInterface{
 
-
-    private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
-    static {
-        basicFenceRelations.put("mfence", "Mfence");
-        basicFenceRelations.put("ish", "Ish");
-        basicFenceRelations.put("isb", "Isb");
-        basicFenceRelations.put("sync", "Sync");
-        basicFenceRelations.put("lwsync", "Lwsync");
-        basicFenceRelations.put("isync", "Isync");
-    }
-
     private ArrayList<Axiom> axioms = new ArrayList<>();
-    private Map<String, Relation> relations = new HashMap<String, Relation>();
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
     private List<Set<RelDummy>> recGroups = new ArrayList<>();
+    private RelationRepository relationRepository = new RelationRepository();
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
-    }
-
-    public void addRelation(Relation rel) {
-        relations.put(rel.getTerm(), rel);
-        relations.put(rel.getName(), rel);
-    }
-
-    public Relation getRelation(String name){
-        Relation relation = relations.get(name);
-        if(relation != null){
-            return relation;
-        }
-        return resolveRelation(name);
-    }
-
-    public Relation getRelFencerel(String fenceName){
-        String term = RelFencerel.makeTerm(fenceName);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelFencerel(fenceName);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelCartesian(FilterAbstract f1, FilterAbstract f2){
-        String term = RelCartesian.makeTerm(f1, f2);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelCartesian(f1, f2);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelSetIdentity(FilterAbstract f){
-        String term = RelSetIdentity.makeTerm(f);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelSetIdentity(f);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelComposition(Relation r1, Relation r2){
-        String term = RelComposition.makeTerm(r1, r2);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelComposition(r1, r2);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelIntersection(Relation r1, Relation r2){
-        String term = RelIntersection.makeTerm(r1, r2);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelIntersection(r1, r2);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelMinus(Relation r1, Relation r2){
-        String term = RelMinus.makeTerm(r1, r2);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelMinus(r1, r2);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelUnion(Relation r1, Relation r2){
-        String term = RelUnion.makeTerm(r1, r2);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelUnion(r1, r2);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelInverse(Relation r1){
-        String term = RelInverse.makeTerm(r1);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelInverse(r1);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelTrans(Relation r1){
-        String term = RelTrans.makeTerm(r1);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelTrans(r1);
-            addRelation(relation);
-        }
-        return relation;
-    }
-
-    public Relation getRelTransRef(Relation r1){
-        String term = RelTransRef.makeTerm(r1);
-        Relation relation = relations.get(term);
-        if(relation == null){
-            relation = new RelTransRef(r1);
-            addRelation(relation);
-        }
-        return relation;
     }
 
     public void addFilter(FilterAbstract filter) {
@@ -170,6 +46,10 @@ public class Wmm implements WmmInterface{
         return filter;
     }
 
+    public RelationRepository getRelationRepository(){
+        return relationRepository;
+    }
+
     public void addRecursiveGroup(Set<RelDummy> group){
         Set<RelDummy> newGroup = new HashSet<>(group);
         recGroups.add(newGroup);
@@ -177,8 +57,8 @@ public class Wmm implements WmmInterface{
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
 
-        for(String name : relations.keySet()){
-            relations.get(name).initialise(program);
+        for(Relation relation : relationRepository.getRelations()){
+            relation.initialise(program);
         }
 
         for(Set<RelDummy> group : recGroups){
@@ -289,9 +169,9 @@ public class Wmm implements WmmInterface{
             result.append("\n");
         }
 
-        for (Map.Entry<String, Relation> relation : relations.entrySet()) {
-            if(relation.getValue().getIsNamed()){
-                result.append(relation.getValue());
+        for (Relation relation : relationRepository.getRelations()) {
+            if(relation.getIsNamed()){
+                result.append(relation);
                 result.append("\n");
             }
         }
@@ -302,124 +182,5 @@ public class Wmm implements WmmInterface{
         }
 
         return result.toString();
-    }
-
-    // TODO: Later these relations should come from included cat files, e.g., "stdlib.cat" or "fences.cat"
-    private Relation resolveRelation(String name){
-        Relation relation = null;
-
-        if(basicFenceRelations.containsKey(name)) {
-            relation = new RelFencerel(basicFenceRelations.get(name), name);
-
-        } else {
-            switch (name){
-                case "po":
-                    relation = new RelPo();
-                    break;
-                case "loc":
-                    relation = new RelLoc();
-                    break;
-                case "id":
-                    relation = new RelId();
-                    break;
-                case "int":
-                    relation = new RelInt();
-                    break;
-                case "ext":
-                    relation = new RelExt();
-                    break;
-                case "co":
-                    relation = new RelCo();
-                    break;
-                case "rf":
-                    relation = new RelRf();
-                    break;
-                case "rf^-1":
-                    relation = getRelInverse(getRelation("rf"));
-                    break;
-                case "fr":
-                    relation = getRelComposition(getRelation("rf^-1"), getRelation("co"));
-                    relation.setName("fr");
-                    break;
-                case "rfe":
-                    relation = getRelIntersection(getRelation("rf"), getRelation("ext"));
-                    relation.setName("rfe");
-                    break;
-                case "rfi":
-                    relation = getRelIntersection(getRelation("rf"), getRelation("int"));
-                    relation.setName("rfi");
-                    break;
-                case "coe":
-                    relation = getRelIntersection(getRelation("co"), getRelation("ext"));
-                    relation.setName("coe");
-                    break;
-                case "coi":
-                    relation = getRelIntersection(getRelation("co"), getRelation("int"));
-                    relation.setName("coi");
-                    break;
-                case "fre":
-                    relation = getRelIntersection(getRelation("fr"), getRelation("ext"));
-                    relation.setName("fre");
-                    break;
-                case "fri":
-                    relation = getRelIntersection(getRelation("fr"), getRelation("int"));
-                    relation.setName("fri");
-                    break;
-                case "po-loc":
-                    relation = getRelIntersection(getRelation("po"), getRelation("loc"));
-                    relation.setName("po-loc");
-                    break;
-                case "addr":
-                    relation = new EmptyRel("addr");
-                    break;
-                case "0":
-                    relation = new EmptyRel("0");
-                    break;
-                case "(R*W)":
-                    relation = getRelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    break;
-                case "idd":
-                    relation = new RelIdd();
-                    break;
-                case "idd^+":
-                    relation = getRelTrans(getRelation("idd"));
-                    break;
-                case "data":
-                    relation = getRelIntersection(getRelation("idd^+"), getRelation("(R*W)"));
-                    relation.setName("data");
-                    break;
-                case "ctrl":
-                    if(Relation.EncodeCtrlPo){
-                        relation = getRelComposition(getRelComposition(getRelation("idd^+"), getRelation("ctrlDirect")), getRelUnion(getRelation("id"), getRelation("po")));
-                        relation.setName("ctrl");
-                    } else {
-                        relation = getRelComposition(getRelation("idd^+"), getRelation("ctrlDirect"));
-                        relation.setName("ctrl");
-                    }
-                    break;
-                case "ctrlDirect":
-                    relation = new RelCtrlDirect();
-                    break;
-                case "ctrlisync":
-                    relation = getRelIntersection(getRelation("ctrl"), getRelation("isync"));
-                    relation.setName("ctrlisync");
-                    break;
-                case "ctrlisb":
-                    relation = getRelIntersection(getRelation("ctrl"), getRelation("isb"));
-                    relation.setName("ctrlisb");
-                    break;
-                case "rmw":
-                    relation = new RelRMW();
-                    break;
-                case "crit":
-                    relation = new RelCrit();
-                    break;
-            }
-        }
-
-        if(relation != null){
-            addRelation(relation);
-        }
-        return relation;
     }
 }

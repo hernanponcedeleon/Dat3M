@@ -5,6 +5,7 @@ import dartagnan.program.event.Fence;
 import dartagnan.program.event.filter.*;
 import dartagnan.wmm.axiom.*;
 import dartagnan.wmm.relation.*;
+import dartagnan.wmm.relation.utils.RelationRepository;
 import dartagnan.wmm.relation.basic.*;
 import dartagnan.wmm.Wmm;
 
@@ -16,6 +17,7 @@ import java.util.HashSet;
 @parser::members
 {
     Wmm wmm = new Wmm();
+    RelationRepository relationRepository = wmm.getRelationRepository();
     Set<RelDummy> recursiveGroup;
     boolean createDummy = false;
 }
@@ -57,7 +59,7 @@ letDefinition
     :   LET { createDummy = false; } n = NAME EQ e = expression {
             if($e.value instanceof Relation){
                 ((Relation)$e.value).setName($n.text);
-                wmm.addRelation((Relation)$e.value);
+                relationRepository.updateRelation((Relation)$e.value);
             } else if ($e.value instanceof FilterAbstract){
                 ((FilterAbstract)$e.value).setName($n.text);
                 wmm.addFilter((FilterAbstract)$e.value);
@@ -69,7 +71,7 @@ letDefinition
 
 letRecDefinition
     :   LET REC { createDummy = true; recursiveGroup = new HashSet<>(); } n = NAME EQ e = expression letRecAndDefinition* {
-            Relation relation = wmm.getRelation($n.text);
+            Relation relation = relationRepository.getRelation($n.text);
             if(!(relation instanceof RelDummy) || !($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid definition of " + $n.text);
             }
@@ -81,7 +83,7 @@ letRecDefinition
 
 letRecAndDefinition
     :   AND n = NAME EQ e = expression {
-            Relation relation = wmm.getRelation($n.text);
+            Relation relation = relationRepository.getRelation($n.text);
             if(!(relation instanceof RelDummy) || !($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid definition of " + $n.text);
             }
@@ -95,31 +97,31 @@ expression returns [Object value]
             if(!($e1.value instanceof FilterAbstract) || !($e2.value instanceof FilterAbstract)){
                 throw new RuntimeException("Invalid syntax at " + $e1.text + " * " + $e2.text);
             }
-            $value = wmm.getRelCartesian((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
+            $value = relationRepository.getRelation(RelCartesian.class, (FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
         }
     |   e = expression (POW)? STAR {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = wmm.getRelTransRef((Relation)$e.value);
+            $value = relationRepository.getRelation(RelTransRef.class, (Relation)$e.value);
         }
     |   e = expression (POW)? PLUS {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = wmm.getRelTrans((Relation)$e.value);
+            $value = relationRepository.getRelation(RelTrans.class, (Relation)$e.value);
         }
     |   e = expression (POW)? INV {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = wmm.getRelInverse((Relation)$e.value);
+            $value = relationRepository.getRelation(RelInverse.class, (Relation)$e.value);
         }
     |   e = expression OPT {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = wmm.getRelUnion(wmm.getRelation("id"), (Relation)$e.value);
+            $value = relationRepository.getRelation(RelUnion.class, relationRepository.getRelation("id"), (Relation)$e.value);
         }
     |   NOT e = expression {
             // TODO: Implementation for relation and filter
@@ -129,11 +131,11 @@ expression returns [Object value]
             if(!($e1.value instanceof Relation) || !($e2.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e1.text + " ; " + $e2.text);
             }
-            $value = wmm.getRelComposition((Relation)$e1.value, (Relation)$e2.value);
+            $value = relationRepository.getRelation(RelComposition.class, (Relation)$e1.value, (Relation)$e2.value);
         }
     |   e1 = expression BAR e2 = expression {
             if($e1.value instanceof Relation && $e2.value instanceof Relation){
-                $value = wmm.getRelUnion((Relation)$e1.value, (Relation)$e2.value);
+                $value = relationRepository.getRelation(RelUnion.class, (Relation)$e1.value, (Relation)$e2.value);
             } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
                 $value = new FilterUnion((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
             } else {
@@ -142,7 +144,7 @@ expression returns [Object value]
         }
     |   e1 = expression BSLASH e2 = expression {
             if($e1.value instanceof Relation && $e2.value instanceof Relation){
-                $value = wmm.getRelMinus((Relation)$e1.value, (Relation)$e2.value);
+                $value = relationRepository.getRelation(RelMinus.class, (Relation)$e1.value, (Relation)$e2.value);
             } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
                 $value = new FilterMinus((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
             } else {
@@ -151,7 +153,7 @@ expression returns [Object value]
         }
     |   e1 = expression AMP e2 = expression {
             if($e1.value instanceof Relation && $e2.value instanceof Relation){
-                $value = wmm.getRelIntersection((Relation)$e1.value, (Relation)$e2.value);
+                $value = relationRepository.getRelation(RelIntersection.class, (Relation)$e1.value, (Relation)$e2.value);
             } else if($e1.value instanceof FilterAbstract && $e2.value instanceof FilterAbstract){
                 $value = new FilterIntersection((FilterAbstract)$e1.value, (FilterAbstract)$e2.value);
             } else {
@@ -162,25 +164,24 @@ expression returns [Object value]
             if(!($e.value instanceof FilterAbstract)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
-            $value = wmm.getRelSetIdentity((FilterAbstract)$e.value);
+            $value = relationRepository.getRelation(RelSetIdentity.class, (FilterAbstract)$e.value);
         }
     |   FENCEREL LPAR e = expression RPAR {
             if(!($e.value instanceof FilterAbstract)){
                 throw new RuntimeException("Invalid syntax at fencerel(" + $e.text + ")");
             }
             // TODO: In general, this should be a filter (consider fence + MO rel_acq)
-            $value = wmm.getRelFencerel($e.text);
+            $value = relationRepository.getRelation(RelFencerel.class, $e.text);
         }
     |   LPAR e = expression RPAR {
                 $value = $e.value;
             }
     |   n = NAME {
-            $value = wmm.getRelation($n.text);
+            $value = relationRepository.getRelation($n.text);
             if($value == null){
                 $value = wmm.getFilter($n.text);
                 if($value == null && createDummy){
-                    $value = new RelDummy($n.text);
-                    wmm.addRelation((Relation)$value);
+                    $value = relationRepository.getRelation(RelDummy.class, $n.text);
                 }
             }
         }

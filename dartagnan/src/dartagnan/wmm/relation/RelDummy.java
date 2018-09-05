@@ -18,6 +18,11 @@ public class RelDummy extends Relation {
     private Relation r1;
     public boolean isActive = false;
 
+    public static String makeTerm(String name){
+        return name;
+    }
+
+
     public RelDummy(String name) {
         super(name);
         containsRec = true;
