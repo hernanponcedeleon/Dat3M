@@ -65,7 +65,7 @@ public abstract class Relation {
 
     public abstract Set<Tuple> getMaxTupleSet();
 
-    public Set<Tuple> getMaxTupleSet(boolean forceUpdate){
+    public Set<Tuple> getMaxTupleSetRecursive(){
         return getMaxTupleSet();
     }
 

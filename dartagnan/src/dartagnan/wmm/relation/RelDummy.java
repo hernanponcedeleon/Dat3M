@@ -38,10 +38,10 @@ public class RelDummy extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(boolean forceUpdate){
-        if(forceUpdate && isActive){
+    public Set<Tuple> getMaxTupleSetRecursive(){
+        if(isActive){
             isActive = false;
-            return r1.getMaxTupleSet(true);
+            return r1.getMaxTupleSetRecursive();
         }
         return getMaxTupleSet();
     }

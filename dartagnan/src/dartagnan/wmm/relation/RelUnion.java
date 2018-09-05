@@ -42,14 +42,13 @@ public class RelUnion extends BinaryRelation {
 
 
     @Override
-    public Set<Tuple> getMaxTupleSet(boolean forceUpdate){
-        if(maxTupleSet == null || !forceUpdate) {
-            return getMaxTupleSet();
+    public Set<Tuple> getMaxTupleSetRecursive(){
+        if(containsRec && maxTupleSet != null){
+            maxTupleSet.addAll(r1.getMaxTupleSetRecursive());
+            maxTupleSet.addAll(r2.getMaxTupleSetRecursive());
+            return maxTupleSet;
         }
-
-        maxTupleSet.addAll(r1.getMaxTupleSet(true));
-        maxTupleSet.addAll(r2.getMaxTupleSet(true));
-        return maxTupleSet;
+        return getMaxTupleSet();
     }
 
     @Override

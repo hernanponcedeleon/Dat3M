@@ -195,7 +195,7 @@ public class Wmm implements WmmInterface{
                     Set<Tuple> set = relMaxSetMap.get(relation);
                     int oldSize = set.size();
                     relation.isActive = true;
-                    set.addAll(relation.getMaxTupleSet(true));
+                    set.addAll(relation.getMaxTupleSetRecursive());
                     int newSize = relMaxSetMap.get(relation).size();
                     if(oldSize != newSize) {
                         changed = true;
