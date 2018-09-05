@@ -1,8 +1,7 @@
-package dartagnan.wmm.relation;
+package dartagnan.wmm.relation.basic;
 
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
-import dartagnan.wmm.relation.basic.StaticRelation;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.HashSet;

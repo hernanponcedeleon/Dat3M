@@ -1,6 +1,5 @@
 package dartagnan.wmm;
 
-import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.ssaReg;
 
 import java.util.*;
@@ -25,29 +24,6 @@ public class Domain {
 			}
 			enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg, ctx.mkEq(r1.getReg().getLastValueExpr(ctx), ssaReg(r1.getReg(), r1.getSsaRegIndex(), ctx))));
 		}
-
-		enc = ctx.mkAnd(enc, encodeStaticRelations(program, ctx));
-		return enc;
-	}
-
-	private static BoolExpr encodeStaticRelations(Program program, Context ctx){
-		BoolExpr enc = ctx.mkTrue();
-
-		for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL)){
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e1, e1, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e1, e1, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e1, ctx)));
-			enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e1, ctx)));
-			for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
-				if(!e1.getMainThreadId().equals(e2.getMainThreadId())) {
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ii", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ic", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("ci", e1, e2, ctx)));
-					enc = ctx.mkAnd(enc, ctx.mkNot(edge("cc", e1, e2, ctx)));
-				}
-			}
-		}
-
 		return enc;
 	}
 }

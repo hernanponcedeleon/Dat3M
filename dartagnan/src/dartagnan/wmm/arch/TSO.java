@@ -15,8 +15,7 @@ import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.*;
 import dartagnan.wmm.WmmInterface;
-import dartagnan.wmm.axiom.Empty;
-import dartagnan.wmm.relation.RelCartesian;
+import dartagnan.wmm.relation.basic.RelCartesian;
 import dartagnan.wmm.relation.basic.RelFencerel;
 import dartagnan.wmm.relation.basic.RelRMW;
 
@@ -43,7 +42,7 @@ public class TSO implements WmmInterface {
 			relations.add(new RelCartesian(new FilterBasic("M"), new FilterBasic("A"), "MA").setEventMask(EventRepository.EVENT_MEMORY));
 			relations.add(new RelCartesian(new FilterBasic("A"), new FilterBasic("M"), "AM").setEventMask(EventRepository.EVENT_MEMORY));
 
-			enc = ctx.mkAnd(enc, new RelRMW().encode(ctx, null));
+			enc = ctx.mkAnd(enc, new RelRMW().encode(ctx));
 			enc = ctx.mkAnd(enc, satIntersection("coe", "co", "ext", events, ctx));
 			enc = ctx.mkAnd(enc, satIntersection("fre", "fr", "ext", events, ctx));
 			enc = ctx.mkAnd(enc, satComp("fre", "coe", events, ctx));
@@ -58,7 +57,7 @@ public class TSO implements WmmInterface {
 		}
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx));
 		}
 
 		return enc;

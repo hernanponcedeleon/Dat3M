@@ -28,7 +28,7 @@ import dartagnan.program.event.Event;
 import dartagnan.program.Program;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.relation.RelCartesian;
+import dartagnan.wmm.relation.basic.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.basic.RelFencerel;
 import dartagnan.wmm.relation.Relation;
@@ -134,7 +134,7 @@ public class Power implements WmmInterface {
 	    enc = ctx.mkAnd(enc, satUnion("co", "prop", events, ctx));
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx));
 		}
 
 	    return enc;

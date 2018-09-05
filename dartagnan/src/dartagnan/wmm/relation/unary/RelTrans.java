@@ -1,11 +1,11 @@
-package dartagnan.wmm.relation;
+package dartagnan.wmm.relation.unary;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
-import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.*;
@@ -14,20 +14,20 @@ import java.util.*;
  *
  * @author Florian Furbach
  */
-public class RelTransRef extends UnaryRelation {
+public class RelTrans extends UnaryRelation {
 
     private Map<Event, Set<Event>> reachabilityMap;
 
     public static String makeTerm(Relation r1){
-        return r1.getName() + "^*";
+        return r1.getName() + "^+";
     }
 
-    public RelTransRef(Relation r1) {
+    public RelTrans(Relation r1) {
         super(r1);
         term = makeTerm(r1);
     }
 
-    public RelTransRef(Relation r1, String name) {
+    public RelTrans(Relation r1, String name) {
         super(r1, name);
         term = makeTerm(r1);
     }
@@ -60,17 +60,9 @@ public class RelTransRef extends UnaryRelation {
             } while (changed);
 
             for(Event e1 : reachabilityMap.keySet()){
-                reachabilityMap.get(e1).add(e1);
                 for(Event e2 : reachabilityMap.get(e1)){
                     maxTupleSet.add(new Tuple(e1, e2));
                 }
-            }
-
-            // TODO: Better version
-            for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
-                reachabilityMap.putIfAbsent(e, new HashSet<>());
-                reachabilityMap.get(e).add(e);
-                maxTupleSet.add(new Tuple(e, e));
             }
         }
         return maxTupleSet;
@@ -91,38 +83,36 @@ public class RelTransRef extends UnaryRelation {
         activeSet.retainAll(maxTupleSet);
         if(!activeSet.isEmpty()){
             // TODO: Implementation
-            r1.addEncodeTupleSet(r1.maxTupleSet);
+            r1.addEncodeTupleSet(r1.getMaxTupleSet());
         }
     }
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
+        return encodeApprox(ctx);
+        /*
+        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
             for (Event e2 : events) {
-                //reflexive
-                if (e1 == e2) {
-                    enc = ctx.mkAnd(enc, Utils.edge(this.getName(), e1, e2, ctx));
-                } else {
-                    BoolExpr orTrans = ctx.mkFalse();
-                    for (Event e3 : events) {
-                        //e1e2 caused by transitivity:
-                        orTrans = ctx.mkOr(orTrans, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx),
-                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
-                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
-                    }
-                    //e1e2 caused by r1:
-                    BoolExpr orr1 = Utils.edge(r1.getName(), e1, e2, ctx);
-                    //allow for recursion in r1:
-                    if (r1.containsRec) {
-                        orr1 = ctx.mkAnd(orr1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
-                    }
-                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkOr(orTrans, orr1)));
+                BoolExpr orTrans = ctx.mkFalse();
+                for (Event e3 : events) {
+                    //e1e2 caused by transitivity:
+                    orTrans = ctx.mkOr(orTrans, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx),
+                            ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
+                            ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
                 }
+                //r(e1,e2) caused by r1:
+                BoolExpr orr1 = Utils.edge(r1.getName(), e1, e2, ctx);
+                //allow for recursion in r1:
+                if(r1.containsRec){
+                    orr1 = ctx.mkAnd(orr1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
+                }
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkOr(orTrans, orr1)));
             }
         }
         return enc;
+        */
     }
 
     @Override
@@ -144,11 +134,8 @@ public class RelTransRef extends UnaryRelation {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
 
-                if(e1.getEId().equals(e2.getEId()))
-                    continue;
-
                 Set<Event> reachableEvents = reachabilityMap.get(e1);
-                if(r1.maxTupleSet.contains(new Tuple(e1, e2))){
+                if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
                     orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
                 }
 
@@ -188,17 +175,6 @@ public class RelTransRef extends UnaryRelation {
             encodeNow.addAll(encodeNext);
             allEncoded.addAll(encodeNext);
         }
-
-        Set<Event> events = new HashSet<>();
-        for(Tuple tuple : encodeTupleSet){
-            events.add(tuple.getFirst());
-            events.add(tuple.getSecond());
-        }
-
-        for(Event e : events){
-            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), e, e, ctx));
-        }
-
         return enc;
     }
 }

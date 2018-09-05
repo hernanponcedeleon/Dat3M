@@ -5,7 +5,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.utils.Tuple;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,25 +12,18 @@ import java.util.Set;
  *
  * @author Florian Furbach
  */
-public class RelDummy extends Relation {
-
-    private Relation r1;
-    public boolean isActive = false;
+public class RecursiveRelation extends Relation {
 
     public static String makeTerm(String name){
         return name;
     }
 
+    private Relation r1;
+    private boolean isActive = false;
 
-    public RelDummy(String name) {
+    public RecursiveRelation(String name) {
         super(name);
         containsRec = true;
-    }
-
-    public void setConcreteRelation(Relation r1){
-        this.r1 = r1;
-        r1.setName(name);
-        term = r1.term;
     }
 
     @Override
@@ -46,34 +38,24 @@ public class RelDummy extends Relation {
     public Set<Tuple> getMaxTupleSetRecursive(){
         if(isActive){
             isActive = false;
-            return r1.getMaxTupleSetRecursive();
+            maxTupleSet = r1.getMaxTupleSetRecursive();
+            return maxTupleSet;
         }
         return getMaxTupleSet();
     }
 
-    public void setMaxTupleSet(Set<Tuple> set){
-        maxTupleSet = set;
-    }
-
+    @Override
     public void addEncodeTupleSet(Set<Tuple> tuples){
         encodeTupleSet.addAll(tuples);
     }
 
-    // TODO: Set difference
-    public Set<Tuple> updateEncodeTupleSet(){
-        r1.addEncodeTupleSet(encodeTupleSet);
-        return encodeTupleSet;
-    }
-
-    // TODO: Set difference and use "encode" of the parent
     @Override
-    public BoolExpr encode(Context ctx, Collection<String> encodedRels) throws Z3Exception {
-        if(encodedRels != null){
-            if(encodedRels.contains(this.getName())){
-                return ctx.mkTrue();
-            }
+    public BoolExpr encode(Context ctx) throws Z3Exception {
+        if(isEncoded){
+            return ctx.mkTrue();
         }
-        return r1.encode(ctx, encodedRels);
+        isEncoded = true;
+        return r1.encode(ctx);
     }
 
     @Override
@@ -84,5 +66,29 @@ public class RelDummy extends Relation {
     @Override
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         return r1.encodeApprox(ctx);
+    }
+
+    @Override
+    protected BoolExpr encodePredicateBasic(Context ctx) throws Z3Exception {
+        return r1.encodePredicateBasic(ctx);
+    }
+
+    @Override
+    protected BoolExpr encodePredicateApprox(Context ctx) throws Z3Exception {
+        return r1.encodePredicateApprox(ctx);
+    }
+
+    public void setConcreteRelation(Relation r1){
+        this.r1 = r1;
+        r1.setName(name);
+        term = r1.term;
+    }
+
+    public void setIsActive(){
+        isActive = true;
+    }
+
+    public void updateEncodeTupleSet(){
+        r1.addEncodeTupleSet(encodeTupleSet);
     }
 }

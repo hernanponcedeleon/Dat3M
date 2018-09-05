@@ -16,7 +16,7 @@ import dartagnan.program.*;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.relation.RelCartesian;
+import dartagnan.wmm.relation.basic.RelCartesian;
 import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.relation.basic.RelFencerel;
 import dartagnan.wmm.relation.Relation;
@@ -67,7 +67,7 @@ public class RMO implements WmmInterface {
 		enc = ctx.mkAnd(enc, satUnion("ghb-rmo", "po-rmo", "com-rmo", events, ctx));
 
 		for(Relation relation : relations){
-			enc = ctx.mkAnd(enc, relation.encode(ctx, null));
+			enc = ctx.mkAnd(enc, relation.encode(ctx));
 		}
 
 		return enc;

@@ -2,8 +2,16 @@ package dartagnan.wmm.relation.utils;
 
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.program.event.filter.FilterBasic;
-import dartagnan.wmm.relation.*;
+import dartagnan.wmm.relation.RecursiveRelation;
+import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.basic.*;
+import dartagnan.wmm.relation.binary.BinaryRelation;
+import dartagnan.wmm.relation.binary.RelComposition;
+import dartagnan.wmm.relation.binary.RelIntersection;
+import dartagnan.wmm.relation.binary.RelUnion;
+import dartagnan.wmm.relation.unary.RelInverse;
+import dartagnan.wmm.relation.unary.RelTrans;
+import dartagnan.wmm.relation.unary.UnaryRelation;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -86,7 +94,7 @@ public class RelationRepository {
         } else if(RelSetIdentity.class.isAssignableFrom(cls)){
             return new Class<?>[]{FilterAbstract.class};
 
-        } else if(RelFencerel.class.isAssignableFrom(cls) || RelDummy.class.isAssignableFrom(cls)) {
+        } else if(RelFencerel.class.isAssignableFrom(cls) || RecursiveRelation.class.isAssignableFrom(cls)) {
             return new Class<?>[]{String.class};
         }
 
@@ -118,9 +126,9 @@ public class RelationRepository {
             case "ctrlDirect":
                 return new RelCtrlDirect();
             case "addr":
-                return new EmptyRel("addr");
+                return new RelEmpty("addr");
             case "0":
-                return new EmptyRel("0");
+                return new RelEmpty("0");
             case "rf^-1":
                 return getRelation(RelInverse.class, getRelation("rf"));
             case "fr":

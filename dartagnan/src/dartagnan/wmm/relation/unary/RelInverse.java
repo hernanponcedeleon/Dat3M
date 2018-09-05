@@ -1,10 +1,11 @@
-package dartagnan.wmm.relation;
+package dartagnan.wmm.relation.unary;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.HashSet;
@@ -71,7 +72,7 @@ public class RelInverse extends UnaryRelation {
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
             BoolExpr opt = Utils.edge(r1.getName(), e2, e1, ctx);
-            if (r1.containsRec) {
+            if (r1.getContainsRec()) {
                 opt = ctx.mkAnd(opt, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e2, e1, ctx)));
             }
             enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), opt));

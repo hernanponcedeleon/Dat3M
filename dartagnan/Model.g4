@@ -5,8 +5,10 @@ import dartagnan.program.event.Fence;
 import dartagnan.program.event.filter.*;
 import dartagnan.wmm.axiom.*;
 import dartagnan.wmm.relation.*;
-import dartagnan.wmm.relation.utils.RelationRepository;
 import dartagnan.wmm.relation.basic.*;
+import dartagnan.wmm.relation.binary.*;
+import dartagnan.wmm.relation.unary.*;
+import dartagnan.wmm.relation.utils.*;
 import dartagnan.wmm.Wmm;
 
 import java.util.List;
@@ -18,8 +20,8 @@ import java.util.HashSet;
 {
     Wmm wmm = new Wmm();
     RelationRepository relationRepository = wmm.getRelationRepository();
-    Set<RelDummy> recursiveGroup;
-    boolean createDummy = false;
+    Set<RecursiveRelation> recursiveGroup;
+    boolean isRecursive = false;
 }
 
 mcm returns [Wmm value]
@@ -35,19 +37,19 @@ definition
     ;
 
 axiomDefinition returns [Axiom value]
-    :   (negate = NOT)? ACYCLIC { createDummy = false; } e = expression (AS NAME)? {
+    :   (negate = NOT)? ACYCLIC { isRecursive = false; } e = expression (AS NAME)? {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
             wmm.addAxiom(new Acyclic((Relation)$e.value, $negate != null));
         }
-    |   (negate = NOT)? IRREFLEXIVE { createDummy = false; } e = expression (AS NAME)? {
+    |   (negate = NOT)? IRREFLEXIVE { isRecursive = false; } e = expression (AS NAME)? {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
             wmm.addAxiom(new Irreflexive((Relation)$e.value, $negate != null));
         }
-    |   (negate = NOT)? EMPTY { createDummy = false; } e = expression (AS NAME)? {
+    |   (negate = NOT)? EMPTY { isRecursive = false; } e = expression (AS NAME)? {
             if(!($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid syntax at " + $e.text);
             }
@@ -56,7 +58,7 @@ axiomDefinition returns [Axiom value]
     ;
 
 letDefinition
-    :   LET { createDummy = false; } n = NAME EQ e = expression {
+    :   LET { isRecursive = false; } n = NAME EQ e = expression {
             if($e.value instanceof Relation){
                 ((Relation)$e.value).setName($n.text);
                 relationRepository.updateRelation((Relation)$e.value);
@@ -70,13 +72,13 @@ letDefinition
     ;
 
 letRecDefinition
-    :   LET REC { createDummy = true; recursiveGroup = new HashSet<>(); } n = NAME EQ e = expression letRecAndDefinition* {
+    :   LET REC { isRecursive = true; recursiveGroup = new HashSet<>(); } n = NAME EQ e = expression letRecAndDefinition* {
             Relation relation = relationRepository.getRelation($n.text);
-            if(!(relation instanceof RelDummy) || !($e.value instanceof Relation)){
+            if(!(relation instanceof RecursiveRelation) || !($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid definition of " + $n.text);
             }
-            ((RelDummy)relation).setConcreteRelation((Relation)$e.value);
-            recursiveGroup.add((RelDummy)relation);
+            ((RecursiveRelation)relation).setConcreteRelation((Relation)$e.value);
+            recursiveGroup.add((RecursiveRelation)relation);
             wmm.addRecursiveGroup(recursiveGroup);
         }
     ;
@@ -84,11 +86,11 @@ letRecDefinition
 letRecAndDefinition
     :   AND n = NAME EQ e = expression {
             Relation relation = relationRepository.getRelation($n.text);
-            if(!(relation instanceof RelDummy) || !($e.value instanceof Relation)){
+            if(!(relation instanceof RecursiveRelation) || !($e.value instanceof Relation)){
                 throw new RuntimeException("Invalid definition of " + $n.text);
             }
-            ((RelDummy)relation).setConcreteRelation((Relation)$e.value);
-            recursiveGroup.add((RelDummy)relation);
+            ((RecursiveRelation)relation).setConcreteRelation((Relation)$e.value);
+            recursiveGroup.add((RecursiveRelation)relation);
         }
     ;
 
@@ -180,8 +182,8 @@ expression returns [Object value]
             $value = relationRepository.getRelation($n.text);
             if($value == null){
                 $value = wmm.getFilter($n.text);
-                if($value == null && createDummy){
-                    $value = relationRepository.getRelation(RelDummy.class, $n.text);
+                if($value == null && isRecursive){
+                    $value = relationRepository.getRelation(RecursiveRelation.class, $n.text);
                 }
             }
         }

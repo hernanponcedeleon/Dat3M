@@ -24,7 +24,7 @@ public class Wmm implements WmmInterface{
 
     private ArrayList<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
-    private List<Set<RelDummy>> recGroups = new ArrayList<>();
+    private List<Set<RecursiveRelation>> recGroups = new ArrayList<>();
     private RelationRepository relationRepository = new RelationRepository();
 
     public void addAxiom(Axiom ax) {
@@ -50,8 +50,8 @@ public class Wmm implements WmmInterface{
         return relationRepository;
     }
 
-    public void addRecursiveGroup(Set<RelDummy> group){
-        Set<RelDummy> newGroup = new HashSet<>(group);
+    public void addRecursiveGroup(Set<RecursiveRelation> group){
+        Set<RecursiveRelation> newGroup = new HashSet<>(group);
         recGroups.add(newGroup);
     }
 
@@ -61,27 +61,16 @@ public class Wmm implements WmmInterface{
             relation.initialise(program);
         }
 
-        for(Set<RelDummy> group : recGroups){
-            Map<Relation, Set<Tuple>> relMaxSetMap = new HashMap<>();
-            for(Relation relation : group){
-                relMaxSetMap.put(relation, new HashSet<>());
-            }
-
+        for(Set<RecursiveRelation> group : recGroups){
             boolean changed = true;
-
             while(changed){
                 changed = false;
-                for(RelDummy relation : group){
-                    Set<Tuple> set = relMaxSetMap.get(relation);
-                    int oldSize = set.size();
-                    relation.isActive = true;
-                    set.addAll(relation.getMaxTupleSetRecursive());
-                    int newSize = relMaxSetMap.get(relation).size();
-                    if(oldSize != newSize) {
+                for(RecursiveRelation relation : group){
+                    relation.setIsActive();
+                    int oldSize = relation.getMaxTupleSet().size();
+                    if(oldSize != relation.getMaxTupleSetRecursive().size()){
                         changed = true;
                     }
-
-                    relation.setMaxTupleSet(set);
                 }
             }
         }
@@ -95,21 +84,20 @@ public class Wmm implements WmmInterface{
             ax.getRel().addEncodeTupleSet(map.get(ax.getRel()));
         }
 
-        for(Set<RelDummy> group : recGroups){
-            Map<Relation, Set<Tuple>> relMaxSetMap = new HashMap<>();
+        for(Set<RecursiveRelation> group : recGroups){
+            Map<Relation, Integer> encodeSetSizes = new HashMap<>();
             for(Relation relation : group){
-                relMaxSetMap.put(relation, new HashSet<>());
+                encodeSetSizes.put(relation, 0);
             }
 
             boolean changed = true;
             while(changed){
                 changed = false;
-                for(RelDummy relation : group){
-                    Set<Tuple> set = relMaxSetMap.get(relation);
-                    int oldSize = set.size();
-                    set.addAll(relation.updateEncodeTupleSet());
-                    int newSize = relMaxSetMap.get(relation).size();
-                    if(oldSize != newSize){
+                for(RecursiveRelation relation : group){
+                    relation.updateEncodeTupleSet();
+                    int newSize = relation.getEncodeTupleSet().size();
+                    if(newSize != encodeSetSizes.get(relation)){
+                        encodeSetSizes.put(relation, newSize);
                         changed = true;
                     }
                 }
@@ -117,9 +105,8 @@ public class Wmm implements WmmInterface{
         }
 
         BoolExpr enc = ctx.mkTrue();
-        Set<String> encodedRels = new HashSet<>();
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx, encodedRels));
+            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx));
         }
 
         return enc;

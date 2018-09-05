@@ -1,4 +1,4 @@
-package dartagnan.wmm.relation;
+package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -7,6 +7,7 @@ import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
+import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.Collection;
@@ -78,9 +79,9 @@ public class RelComposition extends BinaryRelation {
 
             // TODO: Sort tuples and O(n^2)
             for(Tuple newRel : activeSet){
-                for(Tuple rel1 : r1.maxTupleSet){
+                for(Tuple rel1 : r1.getMaxTupleSet()){
                     if(newRel.getFirst().getEId().equals(rel1.getFirst().getEId())){
-                        for(Tuple rel2 : r2.maxTupleSet){
+                        for(Tuple rel2 : r2.getMaxTupleSet()){
                             if(rel1.getSecond().getEId().equals(rel2.getFirst().getEId()) && newRel.getSecond().getEId().equals(rel2.getSecond().getEId())){
                                 r1NewSet.add(rel1);
                                 r2NewSet.add(rel2);
@@ -103,11 +104,11 @@ public class RelComposition extends BinaryRelation {
                 BoolExpr orClause = ctx.mkFalse();
                 for (Event e3 : events) {
                     BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                    if (r1.containsRec) {
+                    if (r1.getContainsRec()) {
                         opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e3, ctx)));
                     }
                     BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
-                    if (r2.containsRec) {
+                    if (r2.getContainsRec()) {
                         opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r2.getName(), e3, e2, ctx)));
                     }
                     orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
@@ -127,10 +128,10 @@ public class RelComposition extends BinaryRelation {
             Event e2 = tuple.getSecond();
 
             BoolExpr orClause = ctx.mkFalse();
-            for(Tuple tuple1 : r1.encodeTupleSet){
+            for(Tuple tuple1 : r1.getMaxTupleSet()){
                 if(tuple1.getFirst().getEId().equals(e1.getEId())){
                     Event e3 = tuple1.getSecond();
-                    for(Tuple tuple2 : r2.encodeTupleSet){
+                    for(Tuple tuple2 : r2.getMaxTupleSet()){
                         if(tuple2.getSecond().getEId().equals(e2.getEId())
                         && tuple2.getFirst().getEId().equals(e3.getEId())){
                             BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);

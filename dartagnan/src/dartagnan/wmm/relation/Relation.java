@@ -8,7 +8,6 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.PredicateUtils;
 import dartagnan.wmm.relation.utils.Tuple;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,6 +35,7 @@ public abstract class Relation {
     protected Set<Tuple> maxTupleSet;
     protected Set<Tuple> encodeTupleSet = new HashSet<>();
     protected Program program;
+    protected boolean isEncoded = false;
 
     /**
      * Creates a relation with an automatically generated identifier.
@@ -55,6 +55,10 @@ public abstract class Relation {
         return this;
     }
 
+    public boolean getContainsRec(){
+        return containsRec;
+    }
+
     // TODO: Verify and test multiple initialisation for different programs
     public Relation initialise(Program program){
         this.program = program;
@@ -71,6 +75,10 @@ public abstract class Relation {
 
     public void addEncodeTupleSet(Set<Tuple> tuples){
         encodeTupleSet.addAll(tuples);
+    }
+
+    public Set<Tuple> getEncodeTupleSet(){
+        return encodeTupleSet;
     }
 
     /**
@@ -117,13 +125,11 @@ public abstract class Relation {
         return term;
     }
 
-    public BoolExpr encode(Context ctx, Collection<String> encodedRels) throws Z3Exception {
-        if(encodedRels != null){
-            if(encodedRels.contains(this.getName())){
-                return ctx.mkTrue();
-            }
-            encodedRels.add(this.getName());
+    public BoolExpr encode(Context ctx) throws Z3Exception {
+        if(isEncoded){
+            return ctx.mkTrue();
         }
+        isEncoded = true;
         return doEncode(ctx);
     }
 
