@@ -2,8 +2,7 @@
 
 thread t0 {
 while True {
-  a <- 1;
-  x.store(_rx,a);
+  x.store(_rx,1);
   chk = y.load(_rx);
   while (chk != 0) {
     chk = y.load(_rx)
@@ -16,8 +15,7 @@ while True {
   while (chk != 0) {
     chk = x.load(_rx)
   };
-  b <- 1;
-  y.store(_rx,b);
+  y.store(_rx,1);
   chk = x.load(_rx)
 }}
 

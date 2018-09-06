@@ -5,19 +5,17 @@ int flag0 = 0, flag1 = 0, turn = 0;
 
 void *thrd0(void *args) {
   while (1) {
-    int a = 1;
-    int b = 0;
-    flag0 = a;
+    flag0 = 1;
     int f1 = flag1;
     while (f1 == 1) {
       int t1 = turn;
       if (t1 != 0) {
-        flag0 = b;
+        flag0 = 0;
         t1 = turn;
         while (t1 != 0) {
           t1 = turn;
         };
-        flag0 = a;
+        flag0 = 1;
       }
     }
   }
@@ -26,19 +24,17 @@ void *thrd0(void *args) {
 
 void *thrd1(void *args) {
   while (1) {
-    int c = 1;
-    int d = 0;
-    flag1 = c;
+    flag1 = 1;
     int f2 = flag0;
     while (f2 == 1) {
       int t2 = turn;
       if (t2 != 1) {
-        flag1 = d;
+        flag1 = 0;
         t2 = turn;
         while (t2 != 1) {
           t2 = turn;
         };
-        flag1 = c;
+        flag1 = 1;
       }
     }
   }
