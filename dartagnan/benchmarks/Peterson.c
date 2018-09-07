@@ -4,9 +4,8 @@
 int flag0 = 0, flag1 = 0, turn = 0;
 
 void *thrd0(void *args) {
-  int a = 1;
-  flag0 = a;
-  turn = a;
+  flag0 = 1;
+  turn = 1;
   int f1 = flag1;
   int t0 = turn;
   while ((f1 == 1) && (t0 == 1)) {
@@ -17,10 +16,8 @@ void *thrd0(void *args) {
 }
 
 void *thrd1(void *args) {
-  int b = 1;
-  int c = 0;
-  flag1 = b;
-  turn = c;
+  flag1 = 1;
+  turn = 0;
   int f0 = flag0;
   int t1 = turn;
   while ((f0 == 1) && (t1 == 0)) {

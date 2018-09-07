@@ -5,8 +5,7 @@ int x = 0, y = 0;
 
 void *thrd0(void *args) {
   while (1) {
-    int a = 1;
-    x = a;
+    x = 1;
     int chk = y;
     while (chk != 0) {
       chk = y;
@@ -21,8 +20,7 @@ void *thrd1(void *args) {
     while (chk != 0) {
       chk = x;
     };
-    int b = 1;
-    y = b;
+    y = 1;
     chk = x;
   }
   return NULL;

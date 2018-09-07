@@ -120,6 +120,15 @@ write [String mainThread] returns [Thread t]:
 		Location pointerLoc = mapLocs.get($l.loc.getName());
 		$t = new Write(pointerLoc, pointerReg, $at.getText());
 	};
+writeDirect [String mainThread] returns [Thread t]:
+	l = location POINT 'store' LPAR at = ATOMIC COMMA r = DIGIT RPAR {
+		if(!(mapLocs.keySet().contains($l.loc.getName()))) {
+			System.out.println(String.format("Location %s must be initialized", $l.loc.getName()));
+		}
+		Location pointerLoc = mapLocs.get($l.loc.getName());
+		ExprInterface val = new AConst(Integer.parseInt($r.getText()));
+		$t = new Write(pointerLoc, val, $at.getText());
+	};
 fence returns [Thread t]:
 	| mfence {$t = new Fence("Mfence");}
 	| sync {$t = new Fence("Sync");}
@@ -147,6 +156,7 @@ atom [String mainThread] returns [Thread t]:
 	| t4 = fence {$t = $t4.t;}
 	| t5 = read [mainThread] {$t = $t5.t;}
 	| t6 = write [mainThread] {$t = $t6.t;}
+	| t7 = writeDirect [mainThread] {$t = $t7.t;}
 	| t10 = skip {$t = $t10.t;};
 seq [String mainThread] returns [Thread t]: 
 	| t1 = atom [mainThread] ';' t2 = inst[mainThread] {$t = new Seq($t1.t, $t2.t);} 

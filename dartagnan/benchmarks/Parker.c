@@ -7,16 +7,14 @@ void *thrd0(void *args) {
   int c = cond;
   while (c == 0) {
     int counter = parkCounter;
-    int a = 0;
-    parkCounter = a;
+    parkCounter = 0;
     c = cond;
   }
   return NULL;
 }
 
 void *thrd1(void *args) {
-  int b = 1;
-  cond = b;
+  cond = 1;
   parkCounter = b;
   return NULL;
 }

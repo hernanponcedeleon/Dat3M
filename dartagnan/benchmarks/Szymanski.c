@@ -5,25 +5,21 @@ int flag1 = 0, flag2 = 0;
 
 void *thrd0(void *args) {
   while (1) {
-    int a = 1;
-    flag1 = a;
+    flag1 = 1;
     int f2 = flag2;
     while (f2 >= 3) {
       f2 = flag2;
     };
-    a = 3;
-    flag1 = a;
+    flag1 = 3;
     f2 = flag2;
     if (f2 == 1) {
-      a = 2;
-      flag1 = a;
+      flag1 = 2;
       f2 = flag2;
       while (f2 != 4) {
         f2 = flag2;
       }
     };
-    a = 4;
-    flag1 = a;
+    flag1 = 4;
     f2 = flag2;
     while (f2 >= 2) {
       f2 = flag2;
@@ -38,25 +34,21 @@ void *thrd0(void *args) {
 
 void *thrd1(void *args) {
   while (1) {
-    int a = 1;
-    flag2 = a;
+    flag2 = 1;
     int f1 = flag1;
     while (f1 >= 3) {
       f1 = flag1;
     };
-    a = 3;
-    flag2 = a;
+    flag2 = 3;
     f1 = flag1;
     if (f1 == 1) {
-      a = 2;
-      flag2 = a;
+      flag2 = 2;
       f1 = flag1;
       while (f1 != 4) {
         f1 = flag1;
       }
     };
-    a = 4;
-    flag2 = a;
+    flag2 = 4;
     f1 = flag1;
     while (f1 >= 2) {
       f1 = flag1;
