@@ -6,7 +6,9 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.utils.Tuple;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -24,10 +26,23 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
+    public Set<Tuple> filterTupleSet(Set<Tuple> set){
+        Set<Tuple> newSet = new HashSet<>();
+        for(Tuple tuple : set){
+            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+                newSet.add(tuple);
+            }
+        }
+        return newSet;
+    }
+
+    @Override
     protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        for(Event e : events){
-            enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(rel.getName(), e, e, ctx)));
+        for(Tuple tuple : rel.getEncodeTupleSet()){
+            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+                enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(rel.getName(), tuple.getFirst(), tuple.getFirst(), ctx)));
+            }
         }
         return enc;
     }
@@ -35,8 +50,10 @@ public class Irreflexive extends Axiom {
     @Override
     protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        for(Event e : events){
-            enc = ctx.mkOr(enc, Utils.edge(rel.getName(), e, e, ctx));
+        for(Tuple tuple : rel.getEncodeTupleSet()){
+            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+                enc = ctx.mkOr(enc, Utils.edge(rel.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
+            }
         }
         return enc;
     }

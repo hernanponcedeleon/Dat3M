@@ -1,16 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.axiom;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.Encodings;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.utils.Tuple;
 
 import java.util.Set;
 
@@ -29,12 +26,26 @@ public class Acyclic extends Axiom {
     }
 
     @Override
+    public Set<Tuple> filterTupleSet(Set<Tuple> set){
+        // TODO: Implementation
+        return set;
+    }
+
+    @Override
     protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
-        return Encodings.satAcyclic(rel.getName(), events, ctx);
+        BoolExpr enc = ctx.mkTrue();
+        for(Tuple tuple : rel.getEncodeTupleSet()){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(rel.getName(), e1, ctx), ctx.mkInt(0))));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(rel.getName(), e1, e2, ctx), ctx.mkLt(Utils.intVar(rel.getName(), e1, ctx), Utils.intVar(rel.getName(), e2, ctx))));
+        }
+        return enc;
     }
 
     @Override
     protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
+        // TODO: Tuples
         return ctx.mkAnd(Encodings.satCycleDef(rel.getName(), events, ctx), Encodings.satCycle(rel.getName(), events, ctx));
     }
 

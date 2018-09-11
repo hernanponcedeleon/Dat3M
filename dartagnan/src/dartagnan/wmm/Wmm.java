@@ -81,6 +81,10 @@ public class Wmm implements WmmInterface{
         }
 
         for (Axiom ax : axioms) {
+            map.put(ax.getRel(), ax.filterTupleSet(ax.getRel().getMaxTupleSet()));
+        }
+
+        for (Axiom ax : axioms) {
             ax.getRel().addEncodeTupleSet(map.get(ax.getRel()));
         }
 
