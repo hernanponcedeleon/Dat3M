@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dartagnan.wmm.axiom;
 
 import com.microsoft.z3.BoolExpr;
@@ -11,8 +6,6 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
-
-import static dartagnan.wmm.EncodingsCAT.satIrref;
 
 import java.util.Set;
 
@@ -32,7 +25,11 @@ public class Irreflexive extends Axiom {
 
     @Override
     protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
-        return satIrref(rel.getName(), events, ctx);
+        BoolExpr enc = ctx.mkTrue();
+        for(Event e : events){
+            enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(rel.getName(), e, e, ctx)));
+        }
+        return enc;
     }
 
     @Override

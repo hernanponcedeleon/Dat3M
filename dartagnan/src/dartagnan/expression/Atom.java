@@ -19,7 +19,7 @@ public class Atom extends BExpr implements ExprInterface {
 	public Atom (ExprInterface lhs, String op, ExprInterface rhs) {
         if(!(lhs instanceof AExpr) || !(rhs instanceof AExpr)){
             // TODO: Implementation
-            throw new RuntimeException("AExpr is not implemented for BExpr arguments");
+            throw new RuntimeException("Atom is not implemented for BExpr arguments");
         }
 		this.lhs = (AExpr)lhs;
 		this.rhs = (AExpr)rhs;

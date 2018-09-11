@@ -3,7 +3,6 @@ package dartagnan.wmm.relation.basic;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.wmm.EncodingsCAT;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
 
@@ -31,21 +30,21 @@ public class RelEmpty extends Relation {
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return EncodingsCAT.satEmpty(this.getName(), program.getEventRepository().getEvents(this.eventMask), ctx);
+        return ctx.mkTrue();
     }
 
     @Override
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
-        return encodeBasic(ctx);
+        return ctx.mkTrue();
     }
 
     @Override
     protected BoolExpr encodePredicateBasic(Context ctx) throws Z3Exception {
-        return encodeBasic(ctx);
+        return ctx.mkTrue();
     }
 
     @Override
     protected BoolExpr encodePredicateApprox(Context ctx) throws Z3Exception {
-        return encodeBasic(ctx);
+        return ctx.mkTrue();
     }
 }

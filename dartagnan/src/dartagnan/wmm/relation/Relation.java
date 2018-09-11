@@ -133,9 +133,7 @@ public abstract class Relation {
         return doEncode(ctx);
     }
 
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodeBasic is not implemented for " + getClass().getName());
-    }
+    protected abstract BoolExpr encodeBasic(Context ctx) throws Z3Exception;
 
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         return encodeBasic(ctx);
