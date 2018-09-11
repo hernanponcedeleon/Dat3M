@@ -153,8 +153,8 @@ public class Porthos {
 
         Context ctx = new Context();
         ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-        Solver s = ctx.mkSolver();
-        Solver s2 = ctx.mkSolver();
+        Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
+        Solver s2 = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 
         Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(source);
         BoolExpr sourceDF = pSource.encodeDF(ctx);

@@ -121,7 +121,7 @@ public class Dartagnan {
 		p.compile(target, false, true);
 
 		Context ctx = new Context();
-		Solver s = ctx.mkSolver();
+		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 
 		s.add(p.encodeDF(ctx));
 		s.add(p.getAss().encode(ctx));
