@@ -117,6 +117,8 @@ public class RelIdd extends Relation {
             for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
                 if(!(e1.getMainThreadId().equals(e2.getMainThreadId())) || e2.getEId() <= e1.getEId()){
                     enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
+                    //TODO(HP): we might be able to get rid of this constraint once IDL works correctly.
+                    //Then the loops might go back to EVENT_MEMORY
                     enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd^+", e1, e2, ctx)));
                 }
             }

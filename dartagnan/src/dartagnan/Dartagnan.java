@@ -16,6 +16,8 @@ import org.apache.commons.io.FileUtils;
 
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.Program;
+import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.relation.Relation;
@@ -119,8 +121,8 @@ public class Dartagnan {
 		p.compile(target, false, true);
 
 		Context ctx = new Context();
-		Solver s = ctx.mkSolver();
-
+		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
+		
 		s.add(p.encodeDF(ctx));
 		s.add(p.getAss().encode(ctx));
         if(p.getAssFilter() != null){
@@ -138,7 +140,7 @@ public class Dartagnan {
 			result = !result;
 		}
 
-        if(p.getAssFilter() != null){
+		if(p.getAssFilter() != null){
             System.out.println("Filter " + (p.getAssFilter()));
         }
 		System.out.println("Condition " + p.getAss().toStringWithType());
