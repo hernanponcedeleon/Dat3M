@@ -90,87 +90,74 @@ public class RelTrans extends UnaryRelation {
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-        Map<Tuple, Set<BoolExpr>> encodeMap = new HashMap<>();
+        int iteration = 0;
 
-        for(Tuple tuple : encodeTupleSet){
-            encodeMap.put(tuple, new HashSet<>());
+        // Encode initial iteration
+        Set<Tuple> currentTupleSet = new HashSet<>(r1.getEncodeTupleSet());
+        for(Tuple tuple : currentTupleSet){
+            enc = ctx.mkAnd(enc, ctx.mkEq(
+                    Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx),
+                    Utils.edge(r1.getName(), tuple.getFirst(), tuple.getSecond(), ctx)
+            ));
         }
 
-        Set<Tuple> currentSet = new HashSet<>(r1.getEncodeTupleSet());
-
-        for(Tuple tuple : currentSet){
-            BoolExpr currentEdge =  Utils.edge(r1.getName() + 0, tuple.getFirst(), tuple.getSecond(), ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(currentEdge, Utils.edge(r1.getName(), tuple.getFirst(), tuple.getSecond(), ctx)));
-            if(encodeMap.containsKey(tuple)){
-                encodeMap.get(tuple).add(currentEdge);
-            }
-        }
-
-        int i = 0;
         while(true){
+            Map<Tuple, Set<BoolExpr>> currentTupleMap = new HashMap<>();
+            Set<Tuple> newTupleSet = new HashSet<>();
 
-            int oldSize = currentSet.size();
-            Map<Tuple, Set<BoolExpr>> tempMap = new HashMap<>();
-
-            for(Tuple tuple : currentSet){
-                tempMap.putIfAbsent(tuple, new HashSet<>());
-                tempMap.get(tuple).add(
-                        Utils.edge(r1.getName() + i, tuple.getFirst(), tuple.getSecond(), ctx)
+            // Original tuples from the previous iteration
+            for(Tuple tuple : currentTupleSet){
+                currentTupleMap.putIfAbsent(tuple, new HashSet<>());
+                currentTupleMap.get(tuple).add(
+                        Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
                 );
             }
 
-            Set<Tuple> newSet = new HashSet<>();
-
-            for(Tuple tuple1 : currentSet){
+            // Combine tuples from the previous iteration
+            for(Tuple tuple1 : currentTupleSet){
                 Event e1 = tuple1.getFirst();
                 Event e3 = tuple1.getSecond();
-                for(Tuple tuple2 : currentSet){
+                for(Tuple tuple2 : currentTupleSet){
                     if(e3.getEId().equals(tuple2.getFirst().getEId())){
                         Event e2 = tuple2.getSecond();
                         Tuple newTuple = new Tuple(e1, e2);
-                        tempMap.putIfAbsent(newTuple, new HashSet<>());
-
-                        tempMap.get(newTuple).add(ctx.mkAnd(
-                                Utils.edge(r1.getName() + i, e1, e3, ctx),
-                                Utils.edge(r1.getName() + i, e3, e2, ctx)
+                        currentTupleMap.putIfAbsent(newTuple, new HashSet<>());
+                        currentTupleMap.get(newTuple).add(ctx.mkAnd(
+                                Utils.edge(r1.getName() + iteration, e1, e3, ctx),
+                                Utils.edge(r1.getName() + iteration, e3, e2, ctx)
                         ));
 
                         if(!newTuple.getFirst().getEId().equals(newTuple.getSecond().getEId())){
-                            newSet.add(newTuple);
+                            newTupleSet.add(newTuple);
                         }
                     }
                 }
             }
 
-            currentSet.addAll(newSet);
+            iteration++;
 
-            for(Tuple tuple : tempMap.keySet()){
+            // Encode this iteration
+            for(Tuple tuple : currentTupleMap.keySet()){
                 BoolExpr orClause = ctx.mkFalse();
-                for(BoolExpr expr : tempMap.get(tuple)){
+                for(BoolExpr expr : currentTupleMap.get(tuple)){
                     orClause = ctx.mkOr(orClause, expr);
                 }
 
-                BoolExpr edge = Utils.edge(r1.getName() + (i + 1), tuple.getFirst(), tuple.getSecond(), ctx);
+                BoolExpr edge = Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx);
                 enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
-
-                if(encodeMap.containsKey(tuple)){
-                    encodeMap.get(tuple).add(edge);
-                }
             }
 
-            if(currentSet.size() == oldSize) break;
-
-            i++;
+            if(!currentTupleSet.addAll(newTupleSet)){
+                break;
+            }
         }
 
-        for(Tuple tuple : encodeMap.keySet()){
-            BoolExpr orClause = ctx.mkFalse();
-            for(BoolExpr expr : encodeMap.get(tuple)){
-                orClause = ctx.mkOr(orClause, expr);
-            }
-
-            BoolExpr edge = Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
+        // Encode that transitive relation equals the relation at the last iteration
+        for(Tuple tuple : encodeTupleSet){
+            enc = ctx.mkAnd(enc, ctx.mkEq(
+                    Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
+                    Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
+            ));
         }
 
         return enc;
@@ -180,10 +167,6 @@ public class RelTrans extends UnaryRelation {
     @Override
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-
-        // TODO: Add necessary tuples to r1 for CloseApprox option
-        //BoolExpr orClose1 = ctx.mkFalse();
-        //BoolExpr orClose2 = ctx.mkFalse();
 
         Set<Tuple> allEncoded = new HashSet<>(encodeTupleSet);
         Set<Tuple> encodeNow = new HashSet<>(encodeTupleSet);
@@ -204,12 +187,6 @@ public class RelTrans extends UnaryRelation {
                 for(Event e3 : reachableEvents){
                     if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId())){
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
-
-                        //if(Relation.CloseApprox){
-                        //    orclose1 = ctx.mkOr(orclose1, Utils.edge(r1.getName(), e1, e3, ctx));
-                        //    orclose2 = ctx.mkOr(orclose2, Utils.edge(r1.getName(), e3, e2, ctx));
-                        //}
-
                         if(!allEncoded.contains(new Tuple(e1, e3))){
                             encodeNext.add(new Tuple(e1, e3));
                         }
@@ -218,10 +195,6 @@ public class RelTrans extends UnaryRelation {
                         }
                     }
                 }
-
-                //if(Relation.CloseApprox){
-                //    enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
-                //}
 
                 if(Relation.PostFixApprox) {
                     enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
