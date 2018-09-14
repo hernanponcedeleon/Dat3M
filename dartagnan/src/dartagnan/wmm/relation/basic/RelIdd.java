@@ -9,6 +9,7 @@ import dartagnan.program.event.Store;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +26,7 @@ public class RelIdd extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
 
             for(Thread t : program.getThreads()){
@@ -52,7 +53,8 @@ public class RelIdd extends Relation {
                 }
             }
 
-            maxTupleSet = new HashSet<>(maxRegTupleSet);
+            maxTupleSet = new TupleSet();
+            maxTupleSet.addAll(maxRegTupleSet);
             maxTupleSet.addAll(maxLocTupleSet);
         }
         return maxTupleSet;

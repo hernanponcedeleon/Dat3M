@@ -9,6 +9,7 @@ import dartagnan.program.event.Fence;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,9 +36,9 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
                 List<Fence> fences = t.getEventRepository()
                         .getEvents(EventRepository.EVENT_FENCE)

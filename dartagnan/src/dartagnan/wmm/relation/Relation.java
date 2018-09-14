@@ -7,6 +7,7 @@ import dartagnan.program.Program;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.PredicateUtils;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,8 +33,8 @@ public abstract class Relation {
     protected boolean containsRec;
     protected boolean isNamed;
     protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_RCU;
-    protected Set<Tuple> maxTupleSet;
-    protected Set<Tuple> encodeTupleSet = new HashSet<>();
+    protected TupleSet maxTupleSet;
+    protected TupleSet encodeTupleSet = new TupleSet();
     protected Program program;
     protected boolean isEncoded = false;
 
@@ -63,21 +64,21 @@ public abstract class Relation {
     public Relation initialise(Program program){
         this.program = program;
         this.maxTupleSet = null;
-        encodeTupleSet = new HashSet<>();
+        encodeTupleSet = new TupleSet();
         return this;
     }
 
-    public abstract Set<Tuple> getMaxTupleSet();
+    public abstract TupleSet getMaxTupleSet();
 
-    public Set<Tuple> getMaxTupleSetRecursive(){
+    public TupleSet getMaxTupleSetRecursive(){
         return getMaxTupleSet();
     }
 
-    public void addEncodeTupleSet(Set<Tuple> tuples){
+    public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
     }
 
-    public Set<Tuple> getEncodeTupleSet(){
+    public TupleSet getEncodeTupleSet(){
         return encodeTupleSet;
     }
 

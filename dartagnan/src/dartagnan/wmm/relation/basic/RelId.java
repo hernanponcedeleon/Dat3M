@@ -3,9 +3,7 @@ package dartagnan.wmm.relation.basic;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.utils.Tuple;
-
-import java.util.HashSet;
-import java.util.Set;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 public class RelId extends StaticRelation {
 
@@ -14,9 +12,9 @@ public class RelId extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
                 maxTupleSet.add(new Tuple(e, e));
             }

@@ -4,10 +4,9 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 public class RelExt extends StaticRelation {
 
@@ -16,9 +15,9 @@ public class RelExt extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             for(Thread t1 : program.getThreads()){
                 Collection<Event> eventsT1 = t1.getEventRepository().getEvents(EventRepository.EVENT_ALL);
                 for(Thread t2 : program.getThreads()){

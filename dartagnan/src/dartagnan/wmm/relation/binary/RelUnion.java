@@ -7,9 +7,7 @@ import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
-
-import java.util.HashSet;
-import java.util.Set;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 /**
  *
@@ -32,9 +30,9 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             maxTupleSet.addAll(r1.getMaxTupleSet());
             maxTupleSet.addAll(r2.getMaxTupleSet());
         }
@@ -43,7 +41,7 @@ public class RelUnion extends BinaryRelation {
 
 
     @Override
-    public Set<Tuple> getMaxTupleSetRecursive(){
+    public TupleSet getMaxTupleSetRecursive(){
         if(containsRec && maxTupleSet != null){
             maxTupleSet.addAll(r1.getMaxTupleSetRecursive());
             maxTupleSet.addAll(r2.getMaxTupleSetRecursive());
@@ -53,9 +51,16 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(Set<Tuple> tuples){
+    public void addEncodeTupleSet(TupleSet tuples){
+        if(tuples == null){
+            System.out.println("tuples is null");
+        }
+        if(encodeTupleSet == null){
+            System.out.println("encodeTupleSet is null");
+        }
         encodeTupleSet.addAll(tuples);
-        Set<Tuple> activeSet = new HashSet<>(tuples);
+        TupleSet activeSet = new TupleSet();
+        activeSet.addAll(tuples);
         activeSet.retainAll(maxTupleSet);
         if(!activeSet.isEmpty()){
             r1.addEncodeTupleSet(activeSet);

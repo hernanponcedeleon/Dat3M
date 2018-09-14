@@ -3,10 +3,7 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.wmm.relation.utils.Tuple;
-
-import java.util.HashSet;
-import java.util.Set;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 /**
  *
@@ -27,15 +24,15 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
         }
         return maxTupleSet;
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSetRecursive(){
+    public TupleSet getMaxTupleSetRecursive(){
         if(isActive){
             isActive = false;
             maxTupleSet = r1.getMaxTupleSetRecursive();
@@ -45,7 +42,7 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public void addEncodeTupleSet(Set<Tuple> tuples){
+    public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
     }
 

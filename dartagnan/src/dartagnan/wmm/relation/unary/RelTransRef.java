@@ -8,6 +8,7 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.*;
 
@@ -34,9 +35,9 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             reachabilityMap = new HashMap<>();
             for(Tuple tuple : r1.getMaxTupleSet()){
                 reachabilityMap.putIfAbsent(tuple.getFirst(), new HashSet<>());
@@ -78,7 +79,7 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSetRecursive(){
+    public TupleSet getMaxTupleSetRecursive(){
         if(containsRec && maxTupleSet != null){
             throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
         }
@@ -86,7 +87,7 @@ public class RelTransRef extends UnaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(Set<Tuple> tuples){
+    public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
         Set<Tuple> activeSet = new HashSet<>(tuples);
         activeSet.retainAll(maxTupleSet);

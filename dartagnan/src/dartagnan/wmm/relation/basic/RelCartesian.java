@@ -3,10 +3,9 @@ package dartagnan.wmm.relation.basic;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 public class RelCartesian extends StaticRelation {
     private FilterAbstract filter1;
@@ -30,9 +29,9 @@ public class RelCartesian extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             Collection<Event> eventsStart = program.getEventRepository().getEvents(filter1.toRepositoryCode());
             Collection<Event> eventsEnd = program.getEventRepository().getEvents(filter2.toRepositoryCode());
             for(Event e1 : eventsStart){

@@ -7,6 +7,7 @@ import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,9 +33,9 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             for(Tuple pair : r1.getMaxTupleSet()){
                 maxTupleSet.add(new Tuple(pair.getSecond(), pair.getFirst()));
             }
@@ -43,7 +44,7 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSetRecursive(){
+    public TupleSet getMaxTupleSetRecursive(){
         if(containsRec && maxTupleSet != null){
             throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
         }
@@ -51,12 +52,12 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(Set<Tuple> tuples){
+    public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
         Set<Tuple> activeSet = new HashSet<>(tuples);
         activeSet.retainAll(maxTupleSet);
         if(!activeSet.isEmpty()){
-            Set<Tuple> invSet = new HashSet<>();
+            TupleSet invSet = new TupleSet();
             for(Tuple pair : activeSet){
                 invSet.add(new Tuple(pair.getSecond(), pair.getFirst()));
             }

@@ -9,10 +9,9 @@ import dartagnan.program.event.MemEvent;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dartagnan.utils.Utils.edge;
@@ -26,9 +25,9 @@ public class RelCo extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.EVENT_STORE);
             Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.EVENT_INIT);
 

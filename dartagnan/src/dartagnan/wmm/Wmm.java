@@ -13,6 +13,7 @@ import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
 import dartagnan.wmm.relation.utils.RelationRepository;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.*;
 
@@ -85,7 +86,9 @@ public class Wmm implements WmmInterface{
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().addEncodeTupleSet(map.get(ax.getRel()));
+            TupleSet set = new TupleSet();
+            set.addAll(map.get(ax.getRel()));
+            ax.getRel().addEncodeTupleSet(set);
         }
 
         for(Set<RecursiveRelation> group : recGroups){

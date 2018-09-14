@@ -3,10 +3,9 @@ package dartagnan.wmm.relation.basic;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 public class RelLoc extends StaticRelation {
 
@@ -15,9 +14,9 @@ public class RelLoc extends StaticRelation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             Collection<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
             for(Event e1 : events){
                 for(Event e2 : events){

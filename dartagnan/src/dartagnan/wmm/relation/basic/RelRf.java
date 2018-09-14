@@ -8,6 +8,7 @@ import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -24,9 +25,9 @@ public class RelRf extends Relation {
     }
 
     @Override
-    public Set<Tuple> getMaxTupleSet(){
+    public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new HashSet<>();
+            maxTupleSet = new TupleSet();
             Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.EVENT_INIT);
             Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.EVENT_STORE);
             Collection<Event> eventsLoad = program.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
