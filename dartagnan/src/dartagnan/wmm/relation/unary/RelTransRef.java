@@ -98,6 +98,9 @@ public class RelTransRef extends UnaryRelation {
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+        return encodeApprox(ctx);
+
+        /*
         Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
         BoolExpr enc = ctx.mkTrue();
         for (Event e1 : events) {
@@ -124,6 +127,7 @@ public class RelTransRef extends UnaryRelation {
             }
         }
         return enc;
+        */
     }
 
     @Override

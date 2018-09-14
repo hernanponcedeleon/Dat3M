@@ -65,6 +65,8 @@ public class RelUnion extends BinaryRelation {
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+        return encodeApprox(ctx);
+        /*
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -82,6 +84,7 @@ public class RelUnion extends BinaryRelation {
             enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkOr(opt1, opt2)));
         }
         return enc;
+        */
     }
 
     @Override

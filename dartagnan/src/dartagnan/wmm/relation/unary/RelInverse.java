@@ -66,6 +66,9 @@ public class RelInverse extends UnaryRelation {
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+        return encodeApprox(ctx);
+
+        /*
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -78,6 +81,7 @@ public class RelInverse extends UnaryRelation {
             enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), opt));
         }
         return enc;
+        */
     }
 
     @Override
