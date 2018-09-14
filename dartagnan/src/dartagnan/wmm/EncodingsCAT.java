@@ -151,15 +151,23 @@ public class EncodingsCAT {
                 } else {
 					BoolExpr orClause = ctx.mkFalse();
 					for(Event e3 : events) {
-						orClause = ctx.mkOr(orClause, ctx.mkAnd(edge(format("%s^+", name), e1, e3, ctx), edge(format("%s^+", name), e3, e2, ctx),
-									ctx.mkGt(intCount(format("(%s^+;%s^+)", name, name),e1,e2, ctx), intCount(format("%s^+", name),e1,e3, ctx)),
-									ctx.mkGt(intCount(format("(%s^+;%s^+)", name, name),e1,e2, ctx), intCount(format("%s^+", name),e3,e2, ctx))));
+						orClause = ctx.mkOr(orClause, ctx.mkAnd(
+								edge(format("%s^+", name),e1,e3, ctx),
+								edge(format("%s^+", name),e3,e2, ctx),
+								ctx.mkGt(intCount(format("(%s^+;%s^+)", name, name),e1,e2, ctx), intCount(format("%s^+", name),e1,e3, ctx)),
+								ctx.mkGt(intCount(format("(%s^+;%s^+)", name, name),e1,e2, ctx), intCount(format("%s^+", name),e3,e2, ctx))));
 					}
 					enc = ctx.mkAnd(enc, ctx.mkEq(edge(format("(%s^+;%s^+)", name, name), e1, e2, ctx), orClause));
+					orClause = ctx.mkFalse();
+					for(Event e3 : events) {
+						orClause = ctx.mkOr(orClause, ctx.mkAnd(edge(format("%s^+", name),e1,e3, ctx),edge(format("%s^+", name),e3,e2, ctx)));
+					}
+					enc = ctx.mkAnd(enc, ctx.mkEq(edge(format("(%s^+;%s^+)", name, name), e1, e2, ctx), orClause));
+
 	    	        enc = ctx.mkAnd(enc, ctx.mkEq(edge(format("%s^+", name),e1,e2, ctx), ctx.mkOr(
 	    	        		ctx.mkAnd(edge(name,e1,e2, ctx), ctx.mkGt(intCount(format("%s^+", name),e1,e2, ctx), intCount(name,e1,e2, ctx))),
 	                        ctx.mkAnd(edge(format("(%s^+;%s^+)", name, name),e1,e2, ctx), ctx.mkGt(intCount(format("%s^+", name),e1,e2, ctx), intCount(format("(%s^+;%s^+)", name, name),e1,e2, ctx))))));			
-	    	        enc = ctx.mkAnd(enc, ctx.mkEq(edge(format("%s^+", name),e1,e2, ctx), ctx.mkOr(edge(name,e1,e2, ctx), edge(format("(%s^+;%s^+)", name, name),e1,e2, ctx))));			
+	    	        enc = ctx.mkAnd(enc, ctx.mkEq(edge(format("%s^+", name),e1,e2, ctx), ctx.mkOr(edge(name,e1,e2, ctx), edge(format("(%s^+;%s^+)", name, name),e1,e2, ctx))));
                 }
 			}
 		}

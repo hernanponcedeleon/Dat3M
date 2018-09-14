@@ -9,6 +9,7 @@ import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 
 import java.util.Collection;
@@ -114,7 +115,7 @@ public class RelIdd extends Relation {
 
         for(Event e1 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
             for(Event e2 : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)){
-                if(!(e1.getMainThreadId().equals(e2.getMainThreadId()) || e2.getEId() <= e1.getEId())){
+                if(!(e1.getMainThreadId().equals(e2.getMainThreadId())) || e2.getEId() <= e1.getEId()){
                     enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd", e1, e2, ctx)));
                     enc = ctx.mkAnd(enc, ctx.mkNot(edge("idd^+", e1, e2, ctx)));
                 }
