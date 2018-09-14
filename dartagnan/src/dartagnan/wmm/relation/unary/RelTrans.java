@@ -89,31 +89,93 @@ public class RelTrans extends UnaryRelation {
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return encodeApprox(ctx);
-        /*
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
         BoolExpr enc = ctx.mkTrue();
-        for (Event e1 : events) {
-            for (Event e2 : events) {
-                BoolExpr orTrans = ctx.mkFalse();
-                for (Event e3 : events) {
-                    //e1e2 caused by transitivity:
-                    orTrans = ctx.mkOr(orTrans, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx),
-                            ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
-                            ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
-                }
-                //r(e1,e2) caused by r1:
-                BoolExpr orr1 = Utils.edge(r1.getName(), e1, e2, ctx);
-                //allow for recursion in r1:
-                if(r1.containsRec){
-                    orr1 = ctx.mkAnd(orr1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
-                }
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkOr(orTrans, orr1)));
+        Map<Tuple, Set<BoolExpr>> encodeMap = new HashMap<>();
+
+        for(Tuple tuple : encodeTupleSet){
+            encodeMap.put(tuple, new HashSet<>());
+        }
+
+        Set<Tuple> currentSet = new HashSet<>(r1.getEncodeTupleSet());
+
+        for(Tuple tuple : currentSet){
+            BoolExpr currentEdge =  Utils.edge(r1.getName() + 0, tuple.getFirst(), tuple.getSecond(), ctx);
+            enc = ctx.mkAnd(enc, ctx.mkEq(currentEdge, Utils.edge(r1.getName(), tuple.getFirst(), tuple.getSecond(), ctx)));
+            if(encodeMap.containsKey(tuple)){
+                encodeMap.get(tuple).add(currentEdge);
             }
         }
+
+        int i = 0;
+        while(true){
+
+            int oldSize = currentSet.size();
+            Map<Tuple, Set<BoolExpr>> tempMap = new HashMap<>();
+
+            for(Tuple tuple : currentSet){
+                tempMap.putIfAbsent(tuple, new HashSet<>());
+                tempMap.get(tuple).add(
+                        Utils.edge(r1.getName() + i, tuple.getFirst(), tuple.getSecond(), ctx)
+                );
+            }
+
+            Set<Tuple> newSet = new HashSet<>();
+
+            for(Tuple tuple1 : currentSet){
+                Event e1 = tuple1.getFirst();
+                Event e3 = tuple1.getSecond();
+                for(Tuple tuple2 : currentSet){
+                    if(e3.getEId().equals(tuple2.getFirst().getEId())){
+                        Event e2 = tuple2.getSecond();
+                        Tuple newTuple = new Tuple(e1, e2);
+                        tempMap.putIfAbsent(newTuple, new HashSet<>());
+
+                        tempMap.get(newTuple).add(ctx.mkAnd(
+                                Utils.edge(r1.getName() + i, e1, e3, ctx),
+                                Utils.edge(r1.getName() + i, e3, e2, ctx)
+                        ));
+
+                        if(!newTuple.getFirst().getEId().equals(newTuple.getSecond().getEId())){
+                            newSet.add(newTuple);
+                        }
+                    }
+                }
+            }
+
+            currentSet.addAll(newSet);
+
+            for(Tuple tuple : tempMap.keySet()){
+                BoolExpr orClause = ctx.mkFalse();
+                for(BoolExpr expr : tempMap.get(tuple)){
+                    orClause = ctx.mkOr(orClause, expr);
+                }
+
+                BoolExpr edge = Utils.edge(r1.getName() + (i + 1), tuple.getFirst(), tuple.getSecond(), ctx);
+                enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
+
+                if(encodeMap.containsKey(tuple)){
+                    encodeMap.get(tuple).add(edge);
+                }
+            }
+
+            if(currentSet.size() == oldSize) break;
+
+            i++;
+        }
+
+        for(Tuple tuple : encodeMap.keySet()){
+            BoolExpr orClause = ctx.mkFalse();
+            for(BoolExpr expr : encodeMap.get(tuple)){
+                orClause = ctx.mkOr(orClause, expr);
+            }
+
+            BoolExpr edge = Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx);
+            enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
+        }
+
         return enc;
-        */
     }
+
 
     @Override
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
