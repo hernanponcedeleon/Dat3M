@@ -79,12 +79,37 @@ public class RelTrans extends UnaryRelation {
     @Override
     public void addEncodeTupleSet(Set<Tuple> tuples){
         encodeTupleSet.addAll(tuples);
-        Set<Tuple> activeSet = new HashSet<>(tuples);
-        activeSet.retainAll(maxTupleSet);
-        if(!activeSet.isEmpty()){
-            // TODO: Implementation
-            r1.addEncodeTupleSet(r1.getMaxTupleSet());
+        Set<Tuple> r1NewSet = new HashSet<>();
+        Set<Tuple> currentSet = new HashSet<>(encodeTupleSet);
+
+        while(true){
+            Set<Tuple> newSet = new HashSet<>();
+
+            for(Tuple tuple1 : currentSet){
+                Event e1 = tuple1.getFirst();
+                Event e2 = tuple1.getSecond();
+
+                for(Tuple tuple2 : r1.getMaxTupleSet()){
+                    if(tuple2.getFirst().getEId().equals(e1.getEId())){
+                        if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                            r1NewSet.add(tuple2);
+                        } else if(reachabilityMap.get(tuple2.getSecond()).contains(e2)){
+                            newSet.add(new Tuple(e1, tuple2.getSecond()));
+                            newSet.add(new Tuple(tuple2.getSecond(), e2));
+                            r1NewSet.add(tuple2);
+                        }
+                    }
+                }
+            }
+
+            newSet.removeAll(currentSet);
+            currentSet = newSet;
+            if(currentSet.isEmpty()){
+                break;
+            }
         }
+
+        r1.addEncodeTupleSet(r1NewSet);
     }
 
     @Override
