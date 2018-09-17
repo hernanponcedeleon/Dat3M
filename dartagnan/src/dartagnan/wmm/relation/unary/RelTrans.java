@@ -17,7 +17,7 @@ import java.util.*;
  */
 public class RelTrans extends UnaryRelation {
 
-    private Map<Event, Set<Event>> reachabilityMap;
+    protected Map<Event, Set<Event>> transReachabilityMap;
 
     public static String makeTerm(Relation r1){
         return r1.getName() + "^+";
@@ -36,32 +36,10 @@ public class RelTrans extends UnaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+            transReachabilityMap = getTransitiveReachabilityMap(r1.getMaxTupleSet());
             maxTupleSet = new TupleSet();
-            reachabilityMap = new HashMap<>();
-            for(Tuple tuple : r1.getMaxTupleSet()){
-                reachabilityMap.putIfAbsent(tuple.getFirst(), new HashSet<>());
-                reachabilityMap.putIfAbsent(tuple.getSecond(), new HashSet<>());
-                Set<Event> events = reachabilityMap.get(tuple.getFirst());
-                events.add(tuple.getSecond());
-            }
-
-            boolean changed;
-            do {
-                changed = false;
-                for(Event e1 : reachabilityMap.keySet()){
-                    Set<Event> newEls = new HashSet<>();
-                    for(Event e2 : reachabilityMap.get(e1)){
-                        if(!(e1.getEId().equals(e2.getEId()))){
-                            newEls.addAll(reachabilityMap.get(e2));
-                        }
-                    }
-                    if(reachabilityMap.get(e1).addAll(newEls))
-                        changed = true;
-                }
-            } while (changed);
-
-            for(Event e1 : reachabilityMap.keySet()){
-                for(Event e2 : reachabilityMap.get(e1)){
+            for(Event e1 : transReachabilityMap.keySet()){
+                for(Event e2 : transReachabilityMap.get(e1)){
                     maxTupleSet.add(new Tuple(e1, e2));
                 }
             }
@@ -77,38 +55,41 @@ public class RelTrans extends UnaryRelation {
         return getMaxTupleSet();
     }
 
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(tuples);
-        TupleSet r1NewSet = new TupleSet();
-        Set<Tuple> currentSet = new HashSet<>(encodeTupleSet);
+        TupleSet r1EncodeTupleSet = new TupleSet();
+        TupleSet allProcessed = new TupleSet();
 
-        while(true){
-            Set<Tuple> newSet = new HashSet<>();
+        TupleSet processNow = new TupleSet();
+        processNow.addAll(tuples);
 
-            for(Tuple tuple1 : currentSet){
+        while(!processNow.isEmpty()){
+            TupleSet processNext = new TupleSet();
+            allProcessed.addAll(processNow);
+
+            for(Tuple tuple1 : processNow){
                 Event e1 = tuple1.getFirst();
                 Event e2 = tuple1.getSecond();
 
                 for(Tuple tuple2 : r1.getMaxTupleSet().getByFirst(e1)){
                     if(tuple2.getSecond().getEId().equals(e2.getEId())){
-                        r1NewSet.add(tuple2);
-                    } else if(reachabilityMap.get(tuple2.getSecond()).contains(e2)){
-                        newSet.add(new Tuple(e1, tuple2.getSecond()));
-                        newSet.add(new Tuple(tuple2.getSecond(), e2));
-                        r1NewSet.add(tuple2);
+                        r1EncodeTupleSet.add(tuple2);
+
+                    } else if(transReachabilityMap.get(tuple2.getSecond()).contains(e2)){
+                        processNext.add(new Tuple(e1, tuple2.getSecond()));
+                        processNext.add(new Tuple(tuple2.getSecond(), e2));
+                        r1EncodeTupleSet.add(tuple2);
                     }
                 }
             }
 
-            newSet.removeAll(currentSet);
-            currentSet = newSet;
-            if(currentSet.isEmpty()){
-                break;
-            }
+            processNext.removeAll(allProcessed);
+            processNow = processNext;
         }
 
-        r1.addEncodeTupleSet(r1NewSet);
+        r1.addEncodeTupleSet(r1EncodeTupleSet);
+        encodeTupleSet.addAll(tuples);
     }
 
     @Override
@@ -187,7 +168,6 @@ public class RelTrans extends UnaryRelation {
         return enc;
     }
 
-
     @Override
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
@@ -195,7 +175,9 @@ public class RelTrans extends UnaryRelation {
         Set<Tuple> allEncoded = new HashSet<>(encodeTupleSet);
         Set<Tuple> encodeNow = new HashSet<>(encodeTupleSet);
 
-        while(true){
+        while(!encodeNow.isEmpty()){
+
+            // Intermediate relations, which will be encoded during the next iteration
             Set<Tuple> encodeNext = new HashSet<>();
 
             for(Tuple tuple : encodeNow){
@@ -203,11 +185,13 @@ public class RelTrans extends UnaryRelation {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
 
-                Set<Event> reachableEvents = reachabilityMap.get(e1);
+                // Directly related via r1
+                Set<Event> reachableEvents = transReachabilityMap.get(e1);
                 if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
                     orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
                 }
 
+                // Transitive relation
                 for(Event e3 : reachableEvents){
                     if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId())){
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
@@ -227,13 +211,39 @@ public class RelTrans extends UnaryRelation {
                 }
             }
 
-            if(encodeNext.isEmpty())
-                break;
-
-            encodeNow.clear();
-            encodeNow.addAll(encodeNext);
             allEncoded.addAll(encodeNext);
+            encodeNow = encodeNext;
         }
+
         return enc;
+    }
+
+    private Map<Event, Set<Event>> getTransitiveReachabilityMap(Set<Tuple> tuples){
+        Map<Event, Set<Event>> map = new HashMap<>();
+
+        for(Tuple tuple : tuples){
+            map.putIfAbsent(tuple.getFirst(), new HashSet<>());
+            map.putIfAbsent(tuple.getSecond(), new HashSet<>());
+            Set<Event> events = map.get(tuple.getFirst());
+            events.add(tuple.getSecond());
+        }
+
+        boolean changed = true;
+
+        while (changed){
+            changed = false;
+            for(Event e1 : map.keySet()){
+                Set<Event> newEls = new HashSet<>();
+                for(Event e2 : map.get(e1)){
+                    if(!(e1.getEId().equals(e2.getEId()))){
+                        newEls.addAll(map.get(e2));
+                    }
+                }
+                if(map.get(e1).addAll(newEls))
+                    changed = true;
+            }
+        }
+
+        return map;
     }
 }

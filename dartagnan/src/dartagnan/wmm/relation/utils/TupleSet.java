@@ -103,6 +103,11 @@ public class TupleSet implements Set<Tuple>{
         return tuples.toArray(a);
     }
 
+    @Override
+    public String toString(){
+        return tuples.toString();
+    }
+
     public Set<Tuple> getByFirst(Event e){
         if(isUpdated){
             updateAuxiliary();

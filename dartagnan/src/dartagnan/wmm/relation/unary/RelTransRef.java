@@ -16,9 +16,10 @@ import java.util.*;
  *
  * @author Florian Furbach
  */
-public class RelTransRef extends UnaryRelation {
+public class RelTransRef extends RelTrans {
 
-    private Map<Event, Set<Event>> reachabilityMap;
+    private TupleSet identityEncodeTupleSet = new TupleSet();
+    private TupleSet transEncodeTupleSet = new TupleSet();
 
     public static String makeTerm(Relation r1){
         return r1.getName() + "^*";
@@ -37,41 +38,14 @@ public class RelTransRef extends UnaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            reachabilityMap = new HashMap<>();
-            for(Tuple tuple : r1.getMaxTupleSet()){
-                reachabilityMap.putIfAbsent(tuple.getFirst(), new HashSet<>());
-                reachabilityMap.putIfAbsent(tuple.getSecond(), new HashSet<>());
-                Set<Event> events = reachabilityMap.get(tuple.getFirst());
-                events.add(tuple.getSecond());
+
+            super.getMaxTupleSet();
+
+            for (Map.Entry<Event, Set<Event>> entry : transReachabilityMap.entrySet()) {
+                entry.getValue().remove(entry.getKey());
             }
 
-            boolean changed;
-            do {
-                changed = false;
-                for(Event e1 : reachabilityMap.keySet()){
-                    Set<Event> newEls = new HashSet<>();
-                    for(Event e2 : reachabilityMap.get(e1)){
-                        if(!(e1.getEId().equals(e2.getEId()))){
-                            newEls.addAll(reachabilityMap.get(e2));
-                        }
-                    }
-                    if(reachabilityMap.get(e1).addAll(newEls))
-                        changed = true;
-                }
-            } while (changed);
-
-            for(Event e1 : reachabilityMap.keySet()){
-                reachabilityMap.get(e1).add(e1);
-                for(Event e2 : reachabilityMap.get(e1)){
-                    maxTupleSet.add(new Tuple(e1, e2));
-                }
-            }
-
-            // TODO: Better version
             for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
-                reachabilityMap.putIfAbsent(e, new HashSet<>());
-                reachabilityMap.get(e).add(e);
                 maxTupleSet.add(new Tuple(e, e));
             }
         }
@@ -86,125 +60,48 @@ public class RelTransRef extends UnaryRelation {
         return getMaxTupleSet();
     }
 
+
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(tuples);
-        Set<Tuple> activeSet = new HashSet<>(tuples);
-        activeSet.retainAll(maxTupleSet);
-        if(!activeSet.isEmpty()){
-            // TODO: Implementation
-            r1.addEncodeTupleSet(r1.getMaxTupleSet());
+        for(Tuple tuple : tuples){
+            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+                identityEncodeTupleSet.add(tuple);
+            }
         }
+
+        tuples.removeAll(encodeTupleSet);
+        tuples.removeAll(identityEncodeTupleSet);
+
+        encodeTupleSet.removeAll(identityEncodeTupleSet);
+        super.addEncodeTupleSet(tuples);
+
+        transEncodeTupleSet.addAll(tuples);
+        encodeTupleSet.addAll(identityEncodeTupleSet);
     }
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return encodeApprox(ctx);
+        TupleSet temp = encodeTupleSet;
+        encodeTupleSet = transEncodeTupleSet;
+        BoolExpr enc = super.encodeBasic(ctx);
+        encodeTupleSet = temp;
 
-        /*
-        Collection<Event> events = program.getEventRepository().getEvents(this.eventMask);
-        BoolExpr enc = ctx.mkTrue();
-        for (Event e1 : events) {
-            for (Event e2 : events) {
-                //reflexive
-                if (e1 == e2) {
-                    enc = ctx.mkAnd(enc, Utils.edge(this.getName(), e1, e2, ctx));
-                } else {
-                    BoolExpr orTrans = ctx.mkFalse();
-                    for (Event e3 : events) {
-                        //e1e2 caused by transitivity:
-                        orTrans = ctx.mkOr(orTrans, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx),
-                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e1, e3, ctx)),
-                                ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(this.getName(), e3, e2, ctx))));
-                    }
-                    //e1e2 caused by r1:
-                    BoolExpr orr1 = Utils.edge(r1.getName(), e1, e2, ctx);
-                    //allow for recursion in r1:
-                    if (r1.getContainsRec()) {
-                        orr1 = ctx.mkAnd(orr1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
-                    }
-                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkOr(orTrans, orr1)));
-                }
-            }
+        for(Tuple tuple : identityEncodeTupleSet){
+            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
         }
         return enc;
-        */
     }
 
     @Override
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
-        BoolExpr enc = ctx.mkTrue();
+        TupleSet temp = encodeTupleSet;
+        encodeTupleSet = transEncodeTupleSet;
+        BoolExpr enc = super.encodeApprox(ctx);
+        encodeTupleSet = temp;
 
-        // TODO: Add necessary tuples to r1 for CloseApprox option
-        //BoolExpr orClose1 = ctx.mkFalse();
-        //BoolExpr orClose2 = ctx.mkFalse();
-
-        Set<Tuple> allEncoded = new HashSet<>(encodeTupleSet);
-        Set<Tuple> encodeNow = new HashSet<>(encodeTupleSet);
-
-        while(true){
-            Set<Tuple> encodeNext = new HashSet<>();
-
-            for(Tuple tuple : encodeNow){
-                BoolExpr orClause = ctx.mkFalse();
-                Event e1 = tuple.getFirst();
-                Event e2 = tuple.getSecond();
-
-                if(e1.getEId().equals(e2.getEId()))
-                    continue;
-
-                Set<Event> reachableEvents = reachabilityMap.get(e1);
-                if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
-                    orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
-                }
-
-                for(Event e3 : reachableEvents){
-                    if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId())){
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
-
-                        //if(Relation.CloseApprox){
-                        //    orclose1 = ctx.mkOr(orclose1, Utils.edge(r1.getName(), e1, e3, ctx));
-                        //    orclose2 = ctx.mkOr(orclose2, Utils.edge(r1.getName(), e3, e2, ctx));
-                        //}
-
-                        if(!allEncoded.contains(new Tuple(e1, e3))){
-                            encodeNext.add(new Tuple(e1, e3));
-                        }
-                        if(!allEncoded.contains(new Tuple(e3, e2))){
-                            encodeNext.add(new Tuple(e3, e2));
-                        }
-                    }
-                }
-
-                //if(Relation.CloseApprox){
-                //    enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(orclose1, orclose2)));
-                //}
-
-                if(Relation.PostFixApprox) {
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
-                } else {
-                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
-                }
-            }
-
-            if(encodeNext.isEmpty())
-                break;
-
-            encodeNow.clear();
-            encodeNow.addAll(encodeNext);
-            allEncoded.addAll(encodeNext);
+        for(Tuple tuple : identityEncodeTupleSet){
+            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
         }
-
-        Set<Event> events = new HashSet<>();
-        for(Tuple tuple : encodeTupleSet){
-            events.add(tuple.getFirst());
-            events.add(tuple.getSecond());
-        }
-
-        for(Event e : events){
-            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), e, e, ctx));
-        }
-
         return enc;
     }
 }
