@@ -11,6 +11,7 @@ import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.*;
+import dartagnan.wmm.relation.utils.RecursiveGroup;
 import dartagnan.wmm.relation.utils.RelationRepository;
 import dartagnan.wmm.relation.utils.Tuple;
 import dartagnan.wmm.relation.utils.TupleSet;
@@ -25,8 +26,8 @@ public class Wmm {
 
     private ArrayList<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
-    private List<List<RecursiveRelation>> recGroups = new ArrayList<>();
     private RelationRepository relationRepository = new RelationRepository();
+    private Set<RecursiveGroup> recursiveGroups = new HashSet<>();
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
@@ -51,9 +52,8 @@ public class Wmm {
         return relationRepository;
     }
 
-    public void addRecursiveGroup(Set<RecursiveRelation> group){
-        List<RecursiveRelation> newGroup = new ArrayList<>(group);
-        recGroups.add(newGroup);
+    public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
+        recursiveGroups.add(new RecursiveGroup(recursiveGroup));
     }
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
@@ -62,18 +62,8 @@ public class Wmm {
             relation.initialise(program);
         }
 
-        for(List<RecursiveRelation> group : recGroups){
-            boolean changed = true;
-            while(changed){
-                changed = false;
-                for(RecursiveRelation relation : group){
-                    relation.setIsActive();
-                    int oldSize = relation.getMaxTupleSet().size();
-                    if(oldSize != relation.getMaxTupleSetRecursive().size()){
-                        changed = true;
-                    }
-                }
-            }
+        for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.initMaxTupleSets();
         }
 
         Map<Relation, Set<Tuple>> map = new HashMap<>();
@@ -91,24 +81,8 @@ public class Wmm {
             ax.getRel().addEncodeTupleSet(set);
         }
 
-        for(List<RecursiveRelation> group : recGroups){
-            Map<Relation, Integer> encodeSetSizes = new HashMap<>();
-            for(Relation relation : group){
-                encodeSetSizes.put(relation, 0);
-            }
-
-            boolean changed = true;
-            while(changed){
-                changed = false;
-                for(RecursiveRelation relation : group){
-                    relation.updateEncodeTupleSet();
-                    int newSize = relation.getEncodeTupleSet().size();
-                    if(newSize != encodeSetSizes.get(relation)){
-                        encodeSetSizes.put(relation, newSize);
-                        changed = true;
-                    }
-                }
-            }
+        for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.updateEncodeTupleSets();
         }
 
         BoolExpr enc = ctx.mkTrue();
