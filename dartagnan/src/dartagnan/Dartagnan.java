@@ -6,7 +6,6 @@ import java.io.IOException;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.wmm.WmmInterface;
 import dartagnan.wmm.WmmResolver;
 import dartagnan.wmm.Wmm;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -28,60 +27,38 @@ import org.apache.commons.cli.*;
 public class Dartagnan {
 
 	public static void main(String[] args) throws Z3Exception, IOException {
-        WmmResolver wmmResolver = new WmmResolver();
-		
+
 		Options options = new Options();
 
-        Option targetOpt = new Option("t", "target", true, "Target architecture to compile the program");
-        targetOpt.setRequired(true);
-        options.addOption(targetOpt);
+		Option targetOption = new Option("t", "target", true, "Target architecture to compile the program");
+		targetOption.setRequired(true);
+		options.addOption(targetOption);
 
-		Option inputOpt = new Option("i", "input", true, "Path to the file containing the input program");
-        inputOpt.setRequired(true);
-        options.addOption(inputOpt);
+		Option inputOption = new Option("i", "input", true, "Path to the file containing the input program");
+		inputOption.setRequired(true);
+		options.addOption(inputOption);
 
-        options.addOption(Option.builder("unroll")
-        		.hasArg()
-        		.desc("Unrolling steps")
-        		.build());
+		Option catOption = new Option("cat", true, "Path to the CAT file");
+		catOption.setRequired(true);
+		options.addOption(catOption);
 
-        options.addOption(Option.builder("idl")
-        		.desc("Uses IDL encoding for transitive closure")
-        		.build());
+		options.addOption(new Option("unroll", "Unrolling steps"));
+		options.addOption(new Option("idl", "Uses IDL encoding for transitive closure"));
+		options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
+		options.addOption(new Option("draw", "Path to save the execution graph if the state is reachable"));
+		options.addOption(new Option("rels", "Relations to be drawn in the graph"));
 
-        options.addOption(Option.builder("cat")
-        		.hasArg()
-        		.desc("Path to the CAT file")
-        		.build());
-
-        options.addOption(Option.builder("relax")
-        		.desc("Uses relax encoding for recursive relations")
-        		.build());
-
-        options.addOption(Option.builder("draw")
-        		.hasArg()
-        		.desc("Path to save the execution graph if the state is reachable")
-        		.build());
-        
-        options.addOption(Option.builder("rels")
-        		.hasArgs()
-        		.desc("Relations to be drawn in the graph")
-        		.build());
-
-        CommandLineParser parserCmd = new DefaultParser();
-        HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
-
         try {
-        	cmd = parserCmd.parse(options, args);
+        	cmd = new DefaultParser().parse(options, args);
         }
         catch (ParseException e) {
-        	System.out.println(e.getMessage());
-        	formatter.printHelp("DARTAGNAN", options);
+			new HelpFormatter().printHelp("DARTAGNAN", options);
         	System.exit(1);
         	return;
         }
 
+		WmmResolver wmmResolver = new WmmResolver();
 		String target = cmd.getOptionValue("target").trim();
         if(!(wmmResolver.getArchSet().contains(target))){
             System.out.println("Unrecognized target");
@@ -101,16 +78,12 @@ public class Dartagnan {
 			throw new RuntimeException("Assert is required for Dartagnan tests");
 		}
 
-        WmmInterface mcm;
 		Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
+		Relation.Approx = cmd.hasOption("relax");
 
-		if (cmd.hasOption("cat")) {
-			mcm = parseCat(cmd.getOptionValue("cat"));
-            Relation.Approx = true;
-		} else {
-            mcm = wmmResolver.getWmmForArch(target);
-            Relation.Approx = cmd.hasOption("relax");
-        }
+		Context ctx = new Context();
+		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
+		Wmm mcm = parseCat(cmd.getOptionValue("cat"));
 
 		int steps = 1;
 		if(cmd.hasOption("unroll")) {
@@ -119,9 +92,6 @@ public class Dartagnan {
 
 		p.initialize(steps);
 		p.compile(target, false, true);
-
-		Context ctx = new Context();
-		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 
 		s.add(p.encodeDF(ctx));
 		s.add(p.getAss().encode(ctx));

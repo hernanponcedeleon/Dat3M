@@ -5,7 +5,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.PredicateUtils;
 import dartagnan.wmm.relation.utils.Tuple;
 import dartagnan.wmm.relation.utils.TupleSet;
 
@@ -20,11 +19,7 @@ import static dartagnan.utils.Utils.edge;
  */
 public abstract class Relation {
 
-    /**
-     * Describes whether the encoding process uses an over-approximation which is only suitable for checking consistency, NOT inconsistency.
-     */
     public static boolean Approx = false;
-    public static boolean CloseApprox = false;
     public static boolean PostFixApprox = false;
     public static boolean EncodeCtrlPo = true; // depends on target architecture
 
@@ -140,25 +135,9 @@ public abstract class Relation {
         return encodeBasic(ctx);
     }
 
-    protected BoolExpr encodePredicateBasic(Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodePredicateBasic is not implemented for " + getClass().getName());
-    }
-
-    protected BoolExpr encodePredicateApprox(Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodePredicateApprox is not implemented for " + getClass().getName());
-    }
-
     protected BoolExpr doEncode(Context ctx){
         BoolExpr enc = encodeNoSet(ctx);
-
         if(!encodeTupleSet.isEmpty()){
-            if(PredicateUtils.getUsePredicate()){
-                if(Relation.Approx){
-                    return ctx.mkAnd(enc, encodePredicateApprox(ctx));
-                }
-                return ctx.mkAnd(enc, encodePredicateBasic(ctx));
-            }
-
             if(Relation.Approx){
                 return ctx.mkAnd(enc, encodeApprox(ctx));
             }

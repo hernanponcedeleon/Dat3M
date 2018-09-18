@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import dartagnan.*;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.WmmInterface;
+import dartagnan.wmm.Wmm;
 import dartagnan.wmm.WmmResolver;
 
 import com.microsoft.z3.BoolExpr;
@@ -24,7 +24,6 @@ import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.Domain;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.Wmm;
 import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;
 
@@ -33,50 +32,34 @@ import org.apache.commons.cli.*;
 public class Porthos {
 
     public static void main(String[] args) throws Z3Exception, IOException {
-        WmmResolver wmmResolver = new WmmResolver();
 
         Options options = new Options();
 
-        Option sourceOpt = new Option("s", "source", true, "Source architecture to compile the program");
-        sourceOpt.setRequired(true);
-        options.addOption(sourceOpt);
+        Option sourceOption = new Option("s", "source", true, "Source architecture to compile the program");
+        sourceOption.setRequired(true);
+        options.addOption(sourceOption);
 
-        Option targetOpt = new Option("t", "target", true, "Target architecture to compile the program");
-        targetOpt.setRequired(true);
-        options.addOption(targetOpt);
+        Option targetOption = new Option("t", "target", true, "Target architecture to compile the program");
+        targetOption.setRequired(true);
+        options.addOption(targetOption);
 
-		Option inputOpt = new Option("i", "input", true, "Path to the file containing the input program");
-        inputOpt.setRequired(true);
-        options.addOption(inputOpt);
+        Option inputOption = new Option("i", "input", true, "Path to the file containing the input program");
+        inputOption.setRequired(true);
+        options.addOption(inputOption);
 
-        options.addOption(Option.builder("relax")
-        		.desc("Uses relax encoding for recursive relations")
-        		.build());
+        Option sourceCatOption = new Option("scat", true, "Path to the CAT file of the source memory model");
+        sourceCatOption.setRequired(true);
+        options.addOption(sourceCatOption);
 
-        options.addOption(Option.builder("draw")
-                .hasArg()
-        		.desc("Path to save the execution graphs if a porting bug is found")
-                .build());
+        Option targetCatOption = new Option("tcat", true, "Path to the CAT file of the target memory model");
+        targetCatOption.setRequired(true);
+        options.addOption(targetCatOption);
 
-        options.addOption(Option.builder("rels")
-                .hasArgs()
-                .desc("Relations to be drawn in the graph")
-                .build());
-
-        options.addOption(Option.builder("unroll")
-                .hasArg()
-                .desc("Unrolling steps")
-                .build());
-
-        options.addOption(Option.builder("scat")
-                .hasArg()
-                .desc("Path to the CAT file of the source memory model")
-                .build());
-
-        options.addOption(Option.builder("tcat")
-                .hasArg()
-                .desc("Path to the CAT file of the target memory model")
-                .build());
+        options.addOption(new Option("unroll", "Unrolling steps"));
+        options.addOption(new Option("idl", "Uses IDL encoding for transitive closure"));
+        options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
+        options.addOption(new Option("draw", "Path to save the execution graph if the state is reachable"));
+        options.addOption(new Option("rels", "Relations to be drawn in the graph"));
 
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -91,6 +74,8 @@ public class Porthos {
             System.exit(1);
             return;
         }
+
+        WmmResolver wmmResolver = new WmmResolver();
 
         String source = cmd.getOptionValue("source").trim();
         if(!(wmmResolver.getArchSet().contains(source))){
@@ -118,21 +103,10 @@ public class Porthos {
             rels = cmd.getOptionValues("rels");
         }
 
-        WmmInterface mcmS;
-        if (cmd.hasOption("scat")) {
-            mcmS = Dartagnan.parseCat(cmd.getOptionValue("scat"));
-        } else {
-            mcmS = wmmResolver.getWmmForArch(source);
-        }
+        Wmm mcmS = Dartagnan.parseCat(cmd.getOptionValue("scat"));
+        Wmm mcmT = Dartagnan.parseCat(cmd.getOptionValue("tcat"));
 
-        WmmInterface mcmT;
-        if (cmd.hasOption("tcat")) {
-            mcmT = Dartagnan.parseCat(cmd.getOptionValue("tcat"));
-        } else {
-            mcmT = wmmResolver.getWmmForArch(target);
-        }
-
-        if (cmd.hasOption("relax") || mcmS instanceof Wmm || mcmT instanceof Wmm) {
+        if (cmd.hasOption("relax")) {
             Relation.Approx = true;
         }
 

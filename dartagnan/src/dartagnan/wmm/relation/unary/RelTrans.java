@@ -101,7 +101,7 @@ public class RelTrans extends UnaryRelation {
         Set<Tuple> currentTupleSet = new HashSet<>(r1.getEncodeTupleSet());
         for(Tuple tuple : currentTupleSet){
             enc = ctx.mkAnd(enc, ctx.mkEq(
-                    Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx),
+                    Utils.edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx),
                     Utils.edge(r1.getName(), tuple.getFirst(), tuple.getSecond(), ctx)
             ));
         }
@@ -114,7 +114,7 @@ public class RelTrans extends UnaryRelation {
             for(Tuple tuple : currentTupleSet){
                 currentTupleMap.putIfAbsent(tuple, new HashSet<>());
                 currentTupleMap.get(tuple).add(
-                        Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
+                        Utils.edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
                 );
             }
 
@@ -128,8 +128,8 @@ public class RelTrans extends UnaryRelation {
                         Tuple newTuple = new Tuple(e1, e2);
                         currentTupleMap.putIfAbsent(newTuple, new HashSet<>());
                         currentTupleMap.get(newTuple).add(ctx.mkAnd(
-                                Utils.edge(r1.getName() + iteration, e1, e3, ctx),
-                                Utils.edge(r1.getName() + iteration, e3, e2, ctx)
+                                Utils.edge(r1.getName() + "_" + iteration, e1, e3, ctx),
+                                Utils.edge(r1.getName() + "_" + iteration, e3, e2, ctx)
                         ));
 
                         if(!newTuple.getFirst().getEId().equals(newTuple.getSecond().getEId())){
@@ -148,7 +148,7 @@ public class RelTrans extends UnaryRelation {
                     orClause = ctx.mkOr(orClause, expr);
                 }
 
-                BoolExpr edge = Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx);
+                BoolExpr edge = Utils.edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx);
                 enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
             }
 
@@ -161,7 +161,7 @@ public class RelTrans extends UnaryRelation {
         for(Tuple tuple : encodeTupleSet){
             enc = ctx.mkAnd(enc, ctx.mkEq(
                     Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
-                    Utils.edge(r1.getName() + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
+                    Utils.edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
             ));
         }
 

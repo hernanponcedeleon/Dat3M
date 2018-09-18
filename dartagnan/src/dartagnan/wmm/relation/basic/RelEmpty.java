@@ -30,14 +30,4 @@ public class RelEmpty extends Relation {
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         return ctx.mkTrue();
     }
-
-    @Override
-    protected BoolExpr encodePredicateBasic(Context ctx) throws Z3Exception {
-        return ctx.mkTrue();
-    }
-
-    @Override
-    protected BoolExpr encodePredicateApprox(Context ctx) throws Z3Exception {
-        return ctx.mkTrue();
-    }
 }

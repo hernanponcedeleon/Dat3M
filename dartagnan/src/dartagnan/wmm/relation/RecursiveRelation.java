@@ -65,16 +65,6 @@ public class RecursiveRelation extends Relation {
         return r1.encodeApprox(ctx);
     }
 
-    @Override
-    protected BoolExpr encodePredicateBasic(Context ctx) throws Z3Exception {
-        return r1.encodePredicateBasic(ctx);
-    }
-
-    @Override
-    protected BoolExpr encodePredicateApprox(Context ctx) throws Z3Exception {
-        return r1.encodePredicateApprox(ctx);
-    }
-
     public void setConcreteRelation(Relation r1){
         this.r1 = r1;
         r1.setName(name);

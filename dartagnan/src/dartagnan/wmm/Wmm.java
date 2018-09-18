@@ -21,11 +21,11 @@ import java.util.*;
  *
  * @author Florian Furbach
  */
-public class Wmm implements WmmInterface{
+public class Wmm {
 
     private ArrayList<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
-    private List<Set<RecursiveRelation>> recGroups = new ArrayList<>();
+    private List<List<RecursiveRelation>> recGroups = new ArrayList<>();
     private RelationRepository relationRepository = new RelationRepository();
 
     public void addAxiom(Axiom ax) {
@@ -52,7 +52,7 @@ public class Wmm implements WmmInterface{
     }
 
     public void addRecursiveGroup(Set<RecursiveRelation> group){
-        Set<RecursiveRelation> newGroup = new HashSet<>(group);
+        List<RecursiveRelation> newGroup = new ArrayList<>(group);
         recGroups.add(newGroup);
     }
 
@@ -62,7 +62,7 @@ public class Wmm implements WmmInterface{
             relation.initialise(program);
         }
 
-        for(Set<RecursiveRelation> group : recGroups){
+        for(List<RecursiveRelation> group : recGroups){
             boolean changed = true;
             while(changed){
                 changed = false;
@@ -91,7 +91,7 @@ public class Wmm implements WmmInterface{
             ax.getRel().addEncodeTupleSet(set);
         }
 
-        for(Set<RecursiveRelation> group : recGroups){
+        for(List<RecursiveRelation> group : recGroups){
             Map<Relation, Integer> encodeSetSizes = new HashMap<>();
             for(Relation relation : group){
                 encodeSetSizes.put(relation, 0);
