@@ -8,8 +8,8 @@ import dartagnan.program.event.Event;
 import dartagnan.program.event.Store;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 import java.util.HashSet;
 import java.util.Set;

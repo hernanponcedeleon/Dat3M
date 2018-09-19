@@ -3,7 +3,7 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.TupleSet;
 
 /**
  *

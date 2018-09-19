@@ -2,12 +2,12 @@ package dartagnan.wmm.relation.basic;
 
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collection;
 
-public class RelCartesian extends StaticRelation {
+public class RelCartesian extends BasicRelation {
     private FilterAbstract filter1;
     private FilterAbstract filter2;
 

@@ -8,10 +8,13 @@ import dartagnan.program.event.Event;
 import dartagnan.program.event.Fence;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.stream.Collectors;
 
 import static dartagnan.utils.Utils.edge;

@@ -1,4 +1,4 @@
-package dartagnan.wmm.relation.utils;
+package dartagnan.wmm.utils;
 
 import dartagnan.program.event.Event;
 

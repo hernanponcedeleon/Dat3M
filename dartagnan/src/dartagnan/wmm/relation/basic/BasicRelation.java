@@ -4,17 +4,17 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.utils.Tuple;
 
 import static dartagnan.utils.Utils.edge;
 
-public abstract class StaticRelation extends Relation {
+public abstract class BasicRelation extends Relation {
 
-    public StaticRelation() {
+    public BasicRelation() {
         super();
     }
 
-    public StaticRelation(String name) {
+    public BasicRelation(String name) {
         super(name);
     }
 

@@ -5,8 +5,8 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 import java.util.HashSet;
 import java.util.Set;

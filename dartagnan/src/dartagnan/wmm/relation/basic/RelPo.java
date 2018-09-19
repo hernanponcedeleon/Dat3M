@@ -3,13 +3,15 @@ package dartagnan.wmm.relation.basic;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.stream.Collectors;
 
-public class RelPo extends StaticRelation {
+public class RelPo extends BasicRelation {
 
     public RelPo(){
         term = "po";

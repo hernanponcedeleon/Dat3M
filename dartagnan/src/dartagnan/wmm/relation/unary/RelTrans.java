@@ -6,10 +6,13 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *

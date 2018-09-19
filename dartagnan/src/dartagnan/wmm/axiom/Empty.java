@@ -6,7 +6,7 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.utils.Tuple;
+import dartagnan.wmm.utils.Tuple;
 
 import java.util.Set;
 

@@ -3,10 +3,10 @@ package dartagnan.wmm.relation.basic;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-public class RelCrit extends StaticRelation {
+public class RelCrit extends BasicRelation {
 
     public RelCrit(){
         term = "crit";

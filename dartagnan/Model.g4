@@ -8,7 +8,7 @@ import dartagnan.wmm.relation.*;
 import dartagnan.wmm.relation.basic.*;
 import dartagnan.wmm.relation.binary.*;
 import dartagnan.wmm.relation.unary.*;
-import dartagnan.wmm.relation.utils.*;
+import dartagnan.wmm.utils.*;
 import dartagnan.wmm.Wmm;
 
 import java.util.List;

@@ -96,6 +96,7 @@ src/dartagnan/wmm/axiom/Acyclic.java \
 src/dartagnan/wmm/axiom/Axiom.java \
 src/dartagnan/wmm/axiom/Empty.java \
 src/dartagnan/wmm/axiom/Irreflexive.java \
+src/dartagnan/wmm/relation/basic/BasicRelation.java \
 src/dartagnan/wmm/relation/basic/RelCartesian.java \
 src/dartagnan/wmm/relation/basic/RelCo.java \
 src/dartagnan/wmm/relation/basic/RelCrit.java \
@@ -111,7 +112,6 @@ src/dartagnan/wmm/relation/basic/RelPo.java \
 src/dartagnan/wmm/relation/basic/RelRf.java \
 src/dartagnan/wmm/relation/basic/RelRMW.java \
 src/dartagnan/wmm/relation/basic/RelSetIdentity.java \
-src/dartagnan/wmm/relation/basic/StaticRelation.java \
 src/dartagnan/wmm/relation/binary/BinaryRelation.java \
 src/dartagnan/wmm/relation/binary/RelComposition.java \
 src/dartagnan/wmm/relation/binary/RelIntersection.java \
@@ -121,13 +121,13 @@ src/dartagnan/wmm/relation/unary/RelInverse.java \
 src/dartagnan/wmm/relation/unary/RelTrans.java \
 src/dartagnan/wmm/relation/unary/RelTransRef.java \
 src/dartagnan/wmm/relation/unary/UnaryRelation.java \
-src/dartagnan/wmm/relation/utils/RelationRepository.java \
-src/dartagnan/wmm/relation/utils/Tuple.java \
-src/dartagnan/wmm/relation/utils/TupleSet.java \
 src/dartagnan/wmm/relation/RecursiveRelation.java \
 src/dartagnan/wmm/relation/Relation.java \
+src/dartagnan/wmm/utils/RecursiveGroup.java \
+src/dartagnan/wmm/utils/RelationRepository.java \
+src/dartagnan/wmm/utils/Tuple.java \
+src/dartagnan/wmm/utils/TupleSet.java \
 src/dartagnan/wmm/Encodings.java \
-src/dartagnan/wmm/EncodingsCAT.java \
 src/dartagnan/wmm/WmmResolver.java \
 src/dartagnan/wmm/Wmm.java \
 src/porthos/Porthos.java \

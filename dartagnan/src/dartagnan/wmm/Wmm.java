@@ -12,10 +12,10 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.relation.utils.RecursiveGroup;
-import dartagnan.wmm.relation.utils.RelationRepository;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.RecursiveGroup;
+import dartagnan.wmm.utils.RelationRepository;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 import java.util.*;
 

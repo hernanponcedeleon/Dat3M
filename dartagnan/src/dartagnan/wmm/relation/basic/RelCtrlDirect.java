@@ -3,10 +3,10 @@ package dartagnan.wmm.relation.basic;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.If;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.relation.utils.Tuple;
-import dartagnan.wmm.relation.utils.TupleSet;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-public class RelCtrlDirect extends StaticRelation {
+public class RelCtrlDirect extends BasicRelation {
 
     public RelCtrlDirect(){
         term = "ctrlDirect";
