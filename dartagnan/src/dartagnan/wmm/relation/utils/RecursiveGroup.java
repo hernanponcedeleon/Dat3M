@@ -69,7 +69,9 @@ public class RecursiveGroup {
             encodeIterations++;
             changed = false;
             for(RecursiveRelation relation : relations){
-                relation.updateEncodeTupleSet();
+                relation.setIsActive();
+                relation.addEncodeTupleSet(relation.getEncodeTupleSet());
+                //relation.updateEncodeTupleSet();
                 int newSize = relation.getEncodeTupleSet().size();
                 if(newSize != encodeSetSizes.get(relation)){
                     encodeSetSizes.put(relation, newSize);

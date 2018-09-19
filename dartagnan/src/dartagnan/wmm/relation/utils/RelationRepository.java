@@ -68,7 +68,7 @@ public class RelationRepository {
     public void updateRelation(Relation relation){
         if(relation.getIsNamed()){
             if(relationMap.get(relation.getName()) != null){
-                throw new RuntimeException("Relation " + relation.getName() + " is been already declared");
+                throw new RuntimeException("Relation " + relation.getName() + " is already declared");
             }
             relationMap.put(relation.getName(), relation);
         }

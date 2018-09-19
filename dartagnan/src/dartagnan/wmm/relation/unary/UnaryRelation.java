@@ -31,6 +31,7 @@ public abstract class UnaryRelation extends Relation {
         return ctx.mkAnd(r1.encode(ctx), doEncode(ctx));
     }
 
+    @Override
     public int updateRecursiveGroupId(int parentId){
         if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
             forceUpdateRecursiveGroupId = false;

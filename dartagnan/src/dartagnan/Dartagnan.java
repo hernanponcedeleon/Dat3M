@@ -102,7 +102,7 @@ public class Dartagnan {
 		s.add(p.encodeDF_RF(ctx));
 		s.add(Domain.encode(p, ctx));
         s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
-        s.add(mcm.Consistent(p, ctx));
+        s.add(mcm.consistent(p, ctx));
 
 		boolean result = (s.check() == Status.SATISFIABLE);
 		if(p.getAss().getInvert()){

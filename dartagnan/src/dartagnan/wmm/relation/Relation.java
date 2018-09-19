@@ -25,43 +25,24 @@ public abstract class Relation {
 
     protected String name;
     protected String term;
-    protected boolean isNamed;
+    private boolean isNamed;
+
     protected TupleSet maxTupleSet;
     protected TupleSet encodeTupleSet = new TupleSet();
-    protected Program program;
-    protected boolean isEncoded = false;
 
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;
-    public boolean isRecursive = false;
+    protected boolean isRecursive = false;
 
-    /**
-     * Creates a relation with an automatically generated identifier.
-     */
+    protected Program program;
+
+    protected boolean isEncoded = false;
+
     public Relation() {}
 
-    /**
-     * Creates a relation that is explicitly named either for recursion or readability.
-     */
     public Relation(String name) {
         this.name = name;
         isNamed = true;
-    }
-
-    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
-        return ctx.mkTrue();
-    }
-
-    public BoolExpr encodeFinalIteration(int recGroupId, Context ctx, int iteration){
-        BoolExpr enc = ctx.mkTrue();
-        for(Tuple tuple : encodeTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(
-                    Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
-                    Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
-            ));
-        }
-
-        return enc;
     }
 
     // TODO: Verify and test multiple initialisation for different programs
@@ -86,9 +67,7 @@ public abstract class Relation {
         return encodeTupleSet;
     }
 
-    /**
-     * @return boolean
-     */
+
     public boolean getIsNamed(){
         return isNamed;
     }
@@ -119,10 +98,6 @@ public abstract class Relation {
         return this;
     }
 
-    /**
-     * The term that defines the relation.
-     * @return String
-     */
     public String toString(){
         if(isNamed){
             return name + " := " + term;
@@ -144,16 +119,23 @@ public abstract class Relation {
         return encodeBasic(ctx);
     }
 
+    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
+        return ctx.mkTrue();
+    }
+
+    public BoolExpr encodeFinalIteration(int recGroupId, Context ctx, int iteration){
+        BoolExpr enc = ctx.mkTrue();
+        for(Tuple tuple : encodeTupleSet){
+            enc = ctx.mkAnd(enc, ctx.mkEq(
+                    Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
+                    Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
+            ));
+        }
+
+        return enc;
+    }
+
     protected BoolExpr doEncode(Context ctx){
-        //System.out.println(getName() + ": " + recursiveGroupId);
-
-        /*
-        System.out.println(getName());
-        System.out.println("max: " + maxTupleSet);
-        System.out.println("enc: " + encodeTupleSet);
-        System.out.println();
-        */
-
         BoolExpr enc = encodeNoSet(ctx);
         if(!encodeTupleSet.isEmpty()){
             if(Relation.Approx){
@@ -164,7 +146,7 @@ public abstract class Relation {
         return enc;
     }
 
-    protected BoolExpr encodeNoSet(Context ctx){
+    private BoolExpr encodeNoSet(Context ctx){
         BoolExpr enc = ctx.mkTrue();
         if(!encodeTupleSet.isEmpty()){
             Set<Tuple> noTupleSet = new HashSet<>(encodeTupleSet);
@@ -177,16 +159,20 @@ public abstract class Relation {
         return enc;
     }
 
+    public int getRecursiveGroupId(){
+        return recursiveGroupId;
+    }
+
     public void setRecursiveGroupId(int id){
         forceUpdateRecursiveGroupId = true;
         recursiveGroupId = id;
     }
 
-    public int getRecursiveGroupId(){
+    public int updateRecursiveGroupId(int parentId){
         return recursiveGroupId;
     }
 
-    public int updateRecursiveGroupId(int parentId){
-        return recursiveGroupId;
+    public void setIsRecursive(boolean flag){
+        isRecursive = flag;
     }
 }

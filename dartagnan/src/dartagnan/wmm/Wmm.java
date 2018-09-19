@@ -2,16 +2,16 @@ package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
 import dartagnan.program.Program;
+import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
-import dartagnan.wmm.relation.*;
+import dartagnan.wmm.relation.RecursiveRelation;
+import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.utils.RecursiveGroup;
 import dartagnan.wmm.relation.utils.RelationRepository;
 import dartagnan.wmm.relation.utils.Tuple;
@@ -25,10 +25,10 @@ import java.util.*;
  */
 public class Wmm {
 
-    private ArrayList<Axiom> axioms = new ArrayList<>();
+    private List<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
     private RelationRepository relationRepository = new RelationRepository();
-    private Set<RecursiveGroup> recursiveGroups = new HashSet<>();
+    private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
@@ -104,47 +104,27 @@ public class Wmm {
             enc = ctx.mkAnd(enc, group.encode(ctx));
         }
 
-        //System.out.println(enc);
-
         return enc;
     }
 
-    /**
-     *
-     * @param program
-     * @param ctx
-     * @return encoding that ensures all axioms are satisfied and the execution is consistent.
-     * @throws Z3Exception
-     */
-    public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr consistent(Program program, Context ctx) throws Z3Exception {
         Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkTrue();
         for (Axiom ax : axioms) {
-            expr = ctx.mkAnd(expr, ax.Consistent(events, ctx));
+            expr = ctx.mkAnd(expr, ax.consistent(events, ctx));
         }
         return expr;
     }
 
-    /**
-     *
-     * @param program
-     * @param ctx
-     * @return encoding that ensures one axiom is not satisfied and the execution is not consistent.
-     * @throws Z3Exception
-     */
-    public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr inconsistent(Program program, Context ctx) throws Z3Exception {
         Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
         BoolExpr expr = ctx.mkFalse();
         for (Axiom ax : axioms) {
-            expr = ctx.mkOr(expr, ax.Inconsistent(events, ctx));
+            expr = ctx.mkOr(expr, ax.inconsistent(events, ctx));
         }
         return expr;
     }
 
-    /**
-     * A string representation of the model.
-     * @return String
-     */
     public String toString() {
         StringBuilder result = new StringBuilder();
 

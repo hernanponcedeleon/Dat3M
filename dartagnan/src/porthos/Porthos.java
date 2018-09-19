@@ -143,14 +143,14 @@ public class Porthos {
         s.add(pTarget.encodeDF_RF(ctx));
         s.add(Domain.encode(pTarget, ctx));
         s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
-        s.add(mcmT.Consistent(pTarget, ctx));
+        s.add(mcmT.consistent(pTarget, ctx));
 
         s.add(sourceDF);
         s.add(sourceCF);
         s.add(sourceDF_RF);
         s.add(sourceDomain);
         s.add(sourceMM);
-        s.add(mcmS.Inconsistent(pSource, ctx));
+        s.add(mcmS.inconsistent(pSource, ctx));
 
         s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
@@ -159,7 +159,7 @@ public class Porthos {
         s2.add(sourceDF_RF);
         s2.add(sourceDomain);
         s2.add(sourceMM);
-        s2.add(mcmS.Consistent(pSource, ctx));
+        s2.add(mcmS.consistent(pSource, ctx));
 
         int iterations = 0;
         Status lastCheck = Status.SATISFIABLE;

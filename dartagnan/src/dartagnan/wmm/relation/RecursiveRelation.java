@@ -11,15 +11,27 @@ import dartagnan.wmm.relation.utils.TupleSet;
  */
 public class RecursiveRelation extends Relation {
 
-    public static String makeTerm(String name){
-        return name;
-    }
-
     private Relation r1;
     private boolean isActive = false;
 
     public RecursiveRelation(String name) {
         super(name);
+    }
+
+    public static String makeTerm(String name){
+        return name;
+    }
+
+    public void setConcreteRelation(Relation r1){
+        r1.isRecursive = true;
+        r1.setName(name);
+        this.r1 = r1;
+        this.isRecursive = true;
+        this.term = r1.getTerm();
+    }
+
+    public void setIsActive(){
+        isActive = true;
     }
 
     @Override
@@ -42,7 +54,35 @@ public class RecursiveRelation extends Relation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(tuples);
+        if(encodeTupleSet != tuples){
+            encodeTupleSet.addAll(tuples);
+        }
+        if(isActive){
+            isActive = false;
+            r1.addEncodeTupleSet(encodeTupleSet);
+        }
+    }
+
+    /*
+    public void updateEncodeTupleSet(){
+        r1.addEncodeTupleSet(encodeTupleSet);
+    }*/
+
+    @Override
+    public void setRecursiveGroupId(int id){
+        forceUpdateRecursiveGroupId = true;
+        recursiveGroupId = id;
+        r1.setRecursiveGroupId(id);
+    }
+
+    @Override
+    public int updateRecursiveGroupId(int parentId){
+        if(forceUpdateRecursiveGroupId){
+            forceUpdateRecursiveGroupId = false;
+            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
+            recursiveGroupId |= r1Id & parentId;
+        }
+        return recursiveGroupId;
     }
 
     @Override
@@ -64,39 +104,8 @@ public class RecursiveRelation extends Relation {
         return r1.encodeApprox(ctx);
     }
 
-    public void setConcreteRelation(Relation r1){
-        isRecursive = true;
-        r1.isRecursive = true;
-        this.r1 = r1;
-        r1.setName(name);
-        term = r1.term;
-    }
-
-    public void setIsActive(){
-        isActive = true;
-    }
-
-    public void updateEncodeTupleSet(){
-        r1.addEncodeTupleSet(encodeTupleSet);
-    }
-
+    @Override
     public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
         return r1.encodeIteration(recGroupId, ctx, iteration);
-    }
-
-    @Override
-    public void setRecursiveGroupId(int id){
-        forceUpdateRecursiveGroupId = true;
-        recursiveGroupId = id;
-        r1.setRecursiveGroupId(id);
-    }
-
-    public int updateRecursiveGroupId(int parentId){
-        if(forceUpdateRecursiveGroupId){
-            forceUpdateRecursiveGroupId = false;
-            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
-            recursiveGroupId |= r1Id & parentId;
-        }
-        return recursiveGroupId;
     }
 }

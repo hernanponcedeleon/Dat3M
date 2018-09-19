@@ -32,14 +32,14 @@ public abstract class Axiom {
         return rel;
     }
 
-    public BoolExpr Consistent(Set<Event> events, Context ctx) throws Z3Exception{
+    public BoolExpr consistent(Set<Event> events, Context ctx) throws Z3Exception{
         if(negate){
             return _inconsistent(events, ctx);
         }
         return _consistent(events, ctx);
     }
 
-    public BoolExpr Inconsistent(Set<Event> events, Context ctx) throws Z3Exception{
+    public BoolExpr inconsistent(Set<Event> events, Context ctx) throws Z3Exception{
         if(negate){
             return _consistent(events, ctx);
         }
