@@ -16,7 +16,6 @@ import org.apache.commons.io.FileUtils;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
-import dartagnan.wmm.Domain;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
@@ -100,7 +99,7 @@ public class Dartagnan {
         }
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
-		s.add(Domain.encode(p, ctx));
+		s.add(p.encodeFinalValues(ctx));
         s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcm.consistent(p, ctx));
 

@@ -22,7 +22,6 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
-import dartagnan.wmm.Domain;
 import dartagnan.wmm.relation.Relation;
 import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;
@@ -134,21 +133,21 @@ public class Porthos {
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
-        BoolExpr sourceDomain = Domain.encode(pSource, ctx);
+        BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
 
         Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
-        s.add(Domain.encode(pTarget, ctx));
+        s.add(pTarget.encodeFinalValues(ctx));
         s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
         s.add(mcmT.consistent(pTarget, ctx));
 
         s.add(sourceDF);
         s.add(sourceCF);
         s.add(sourceDF_RF);
-        s.add(sourceDomain);
+        s.add(sourceFV);
         s.add(sourceMM);
         s.add(mcmS.inconsistent(pSource, ctx));
 
@@ -157,7 +156,7 @@ public class Porthos {
         s2.add(sourceDF);
         s2.add(sourceCF);
         s2.add(sourceDF_RF);
-        s2.add(sourceDomain);
+        s2.add(sourceFV);
         s2.add(sourceMM);
         s2.add(mcmS.consistent(pSource, ctx));
 

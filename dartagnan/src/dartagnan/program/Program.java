@@ -10,6 +10,7 @@ import dartagnan.program.event.*;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
+import static dartagnan.utils.Utils.ssaReg;
 
 public class Program extends Thread {
 
@@ -250,6 +251,21 @@ public class Program extends Thread {
 		    // Main threads are active
 		    enc = ctx.mkAnd(enc, ctx.mkBoolConst(t.cfVar()));
 		}
+		return enc;
+	}
+
+	public BoolExpr encodeFinalValues(Context ctx){
+		BoolExpr enc = ctx.mkTrue();
+		Set<Event> eventsLoadLocal = getEventRepository().getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL);
+		for(Event r1 : eventsLoadLocal) {
+			Set<Event> modRegLater = eventsLoadLocal.stream().filter(e -> r1.getReg() == e.getReg() && r1.getEId() < e.getEId()).collect(Collectors.toSet());
+			BoolExpr lastModReg = r1.executes(ctx);
+			for(Event r2 : modRegLater) {
+				lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(r2.executes(ctx)));
+			}
+			enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg, ctx.mkEq(r1.getReg().getLastValueExpr(ctx), ssaReg(r1.getReg(), r1.getSsaRegIndex(), ctx))));
+		}
+
 		return enc;
 	}
 	

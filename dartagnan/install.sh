@@ -126,7 +126,6 @@ src/dartagnan/wmm/relation/utils/Tuple.java \
 src/dartagnan/wmm/relation/utils/TupleSet.java \
 src/dartagnan/wmm/relation/RecursiveRelation.java \
 src/dartagnan/wmm/relation/Relation.java \
-src/dartagnan/wmm/Domain.java \
 src/dartagnan/wmm/Encodings.java \
 src/dartagnan/wmm/EncodingsCAT.java \
 src/dartagnan/wmm/WmmResolver.java \
