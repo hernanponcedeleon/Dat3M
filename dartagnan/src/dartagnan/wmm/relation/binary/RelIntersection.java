@@ -40,14 +40,6 @@ public class RelIntersection extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
-        }
-        return getMaxTupleSet();
-    }
-
-    @Override
     public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
         TupleSet activeSet = new TupleSet();
@@ -57,11 +49,6 @@ public class RelIntersection extends BinaryRelation {
             r1.addEncodeTupleSet(activeSet);
             r2.addEncodeTupleSet(activeSet);
         }
-    }
-
-    @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return encodeApprox(ctx);
     }
 
     @Override

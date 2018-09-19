@@ -46,14 +46,6 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
-        }
-        return getMaxTupleSet();
-    }
-
-    @Override
     public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
         TupleSet activeSet = new TupleSet();
@@ -77,11 +69,6 @@ public class RelMinus extends BinaryRelation {
         enc = ctx.mkAnd(enc, r2.encode(ctx));
         Relation.Approx = approx;
         return ctx.mkAnd(enc, doEncode(ctx));
-    }
-
-    @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return encodeApprox(ctx);
     }
 
     @Override

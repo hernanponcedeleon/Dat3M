@@ -4,6 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 /**
  *
@@ -26,14 +27,6 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) throws Z3Exception {
-        if(isEncoded){
-            return ctx.mkTrue();
-        }
-        isEncoded = true;
-        return ctx.mkAnd(r1.encode(ctx), r2.encode(ctx), doEncode(ctx));
-    }
-
     public int updateRecursiveGroupId(int parentId){
         if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
             forceUpdateRecursiveGroupId = false;
@@ -42,5 +35,38 @@ public abstract class BinaryRelation extends Relation {
             recursiveGroupId |= (r1Id | r2Id) & parentId;
         }
         return recursiveGroupId;
+    }
+
+    @Override
+    public TupleSet getMaxTupleSetRecursive(){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
+            throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
+        }
+        return getMaxTupleSet();
+    }
+
+    @Override
+    public BoolExpr encode(Context ctx) throws Z3Exception {
+        if(isEncoded){
+            return ctx.mkTrue();
+        }
+        isEncoded = true;
+        return ctx.mkAnd(r1.encode(ctx), r2.encode(ctx), doEncode(ctx));
+    }
+
+    @Override
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+        if(recursiveGroupId > 0){
+            return ctx.mkTrue();
+        }
+        return encodeApprox(ctx);
+    }
+
+    @Override
+    public BoolExpr encodeIteration(int groupId, Context ctx, int iteration){
+        if((groupId & recursiveGroupId) > 0){
+            throw new RuntimeException("Method encodeIteration is not implemented for " + this.getClass().getName());
+        }
+        return ctx.mkTrue();
     }
 }

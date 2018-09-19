@@ -41,62 +41,6 @@ public class RelUnion extends BinaryRelation {
         return maxTupleSet;
     }
 
-    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
-
-        BoolExpr enc = ctx.mkTrue();
-
-        if(iteration <= lastEncodedIteration){
-            return enc;
-        }
-        lastEncodedIteration = iteration;
-
-        if((recGroupId & recursiveGroupId) > 0){
-            if(iteration == 0 && isRecursive){
-                for(Tuple tuple : encodeTupleSet){
-                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(this.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)));
-                }
-
-            } else {
-
-                int myIteration = iteration;
-                int childIteration = iteration;
-                if(isRecursive){
-                    childIteration--;
-                }
-
-                for(Tuple tuple : encodeTupleSet){
-                    BoolExpr edge = Utils.edge(this.getName() + "_" + myIteration, tuple.getFirst(), tuple.getSecond(), ctx);
-
-                    BoolExpr opt1;
-                    if(r1.getRecursiveGroupId() == recGroupId){
-                        opt1 = Utils.edge(r1.getName() + "_" + childIteration, tuple.getFirst(), tuple.getSecond(), ctx);
-                    } else {
-                        opt1 = Utils.edge(r1.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
-                    }
-
-                    BoolExpr opt2;
-                    if(r2.getRecursiveGroupId() == recGroupId){
-                        opt2 = Utils.edge(r2.getName() + "_" + childIteration, tuple.getFirst(), tuple.getSecond(), ctx);
-                    } else {
-                        opt2 = Utils.edge(r2.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
-                    }
-
-                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkOr(opt1, opt2)));
-                }
-
-                if((r1.getRecursiveGroupId() & recGroupId) > 0){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(recGroupId, ctx, childIteration));
-                }
-
-                if((r2.getRecursiveGroupId() & recGroupId) > 0){
-                    enc = ctx.mkAnd(enc, r2.encodeIteration(recGroupId, ctx, childIteration));
-                }
-            }
-        }
-
-        return enc;
-    }
-
     @Override
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
@@ -109,12 +53,6 @@ public class RelUnion extends BinaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        if(tuples == null){
-            System.out.println("tuples is null");
-        }
-        if(encodeTupleSet == null){
-            System.out.println("encodeTupleSet is null");
-        }
         encodeTupleSet.addAll(tuples);
         TupleSet activeSet = new TupleSet();
         activeSet.addAll(tuples);
@@ -123,14 +61,6 @@ public class RelUnion extends BinaryRelation {
             r1.addEncodeTupleSet(activeSet);
             r2.addEncodeTupleSet(activeSet);
         }
-    }
-
-    @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        if(recursiveGroupId > 0){
-            return ctx.mkTrue();
-        }
-        return encodeApprox(ctx);
     }
 
     @Override
@@ -149,6 +79,49 @@ public class RelUnion extends BinaryRelation {
                 enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkOr(opt1, opt2)));
             }
         }
+        return enc;
+    }
+
+    @Override
+    public BoolExpr encodeIteration(int groupId, Context ctx, int iteration){
+        BoolExpr enc = ctx.mkTrue();
+
+        if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){
+            lastEncodedIteration = iteration;
+
+            String name = this.getName() + "_" + iteration;
+
+            if(iteration == 0 && isRecursive){
+                for(Tuple tuple : encodeTupleSet){
+                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
+                }
+
+            } else {
+                int childIteration = isRecursive ? iteration - 1 : iteration;
+
+                boolean recurseInR1 = (r1.getRecursiveGroupId() & groupId) > 0;
+                boolean recurseInR2 = (r2.getRecursiveGroupId() & groupId) > 0;
+
+                String r1Name = recurseInR1 ? r1.getName() + "_" + childIteration : r1.getName();
+                String r2Name = recurseInR2 ? r2.getName() + "_" + childIteration : r2.getName();
+
+                for(Tuple tuple : encodeTupleSet){
+                    BoolExpr edge = Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx);
+                    BoolExpr opt1 = Utils.edge(r1Name, tuple.getFirst(), tuple.getSecond(), ctx);
+                    BoolExpr opt2 = Utils.edge(r2Name, tuple.getFirst(), tuple.getSecond(), ctx);
+                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkOr(opt1, opt2)));
+                }
+
+                if(recurseInR1){
+                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, ctx, childIteration));
+                }
+
+                if(recurseInR2){
+                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, ctx, childIteration));
+                }
+            }
+        }
+
         return enc;
     }
 }

@@ -37,8 +37,6 @@ public class RecursiveGroup {
             enc = ctx.mkAnd(enc, relation.encodeFinalIteration(id, ctx, encodeIterations - 1));
         }
 
-        //System.out.println(enc);
-
         return enc;
     }
 
@@ -48,7 +46,7 @@ public class RecursiveGroup {
         while(changed){
             changed = false;
             for(RecursiveRelation relation : relations){
-                relation.setIsActive();
+                relation.setDoRecurse();
                 int oldSize = relation.getMaxTupleSet().size();
                 if(oldSize != relation.getMaxTupleSetRecursive().size()){
                     changed = true;
@@ -69,9 +67,8 @@ public class RecursiveGroup {
             encodeIterations++;
             changed = false;
             for(RecursiveRelation relation : relations){
-                relation.setIsActive();
+                relation.setDoRecurse();
                 relation.addEncodeTupleSet(relation.getEncodeTupleSet());
-                //relation.updateEncodeTupleSet();
                 int newSize = relation.getEncodeTupleSet().size();
                 if(newSize != encodeSetSizes.get(relation)){
                     encodeSetSizes.put(relation, newSize);

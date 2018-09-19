@@ -12,7 +12,7 @@ import dartagnan.wmm.relation.utils.TupleSet;
 public class RecursiveRelation extends Relation {
 
     private Relation r1;
-    private boolean isActive = false;
+    private boolean doRecurse = false;
 
     public RecursiveRelation(String name) {
         super(name);
@@ -30,8 +30,8 @@ public class RecursiveRelation extends Relation {
         this.term = r1.getTerm();
     }
 
-    public void setIsActive(){
-        isActive = true;
+    public void setDoRecurse(){
+        doRecurse = true;
     }
 
     @Override
@@ -44,8 +44,8 @@ public class RecursiveRelation extends Relation {
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
-        if(isActive){
-            isActive = false;
+        if(doRecurse){
+            doRecurse = false;
             maxTupleSet = r1.getMaxTupleSetRecursive();
             return maxTupleSet;
         }
@@ -57,16 +57,11 @@ public class RecursiveRelation extends Relation {
         if(encodeTupleSet != tuples){
             encodeTupleSet.addAll(tuples);
         }
-        if(isActive){
-            isActive = false;
+        if(doRecurse){
+            doRecurse = false;
             r1.addEncodeTupleSet(encodeTupleSet);
         }
     }
-
-    /*
-    public void updateEncodeTupleSet(){
-        r1.addEncodeTupleSet(encodeTupleSet);
-    }*/
 
     @Override
     public void setRecursiveGroupId(int id){
