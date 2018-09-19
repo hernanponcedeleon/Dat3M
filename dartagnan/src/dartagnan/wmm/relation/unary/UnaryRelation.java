@@ -4,6 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.relation.utils.TupleSet;
 
 /**
  *
@@ -23,15 +24,6 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) throws Z3Exception {
-        if(isEncoded){
-            return ctx.mkTrue();
-        }
-        isEncoded = true;
-        return ctx.mkAnd(r1.encode(ctx), doEncode(ctx));
-    }
-
-    @Override
     public int updateRecursiveGroupId(int parentId){
         if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
             forceUpdateRecursiveGroupId = false;
@@ -39,5 +31,22 @@ public abstract class UnaryRelation extends Relation {
             recursiveGroupId |= r1Id & parentId;
         }
         return recursiveGroupId;
+    }
+
+    @Override
+    public TupleSet getMaxTupleSetRecursive(){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
+            throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
+        }
+        return getMaxTupleSet();
+    }
+
+    @Override
+    public BoolExpr encode(Context ctx) throws Z3Exception {
+        if(isEncoded){
+            return ctx.mkTrue();
+        }
+        isEncoded = true;
+        return ctx.mkAnd(r1.encode(ctx), doEncode(ctx));
     }
 }

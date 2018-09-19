@@ -48,15 +48,6 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
-        }
-        return getMaxTupleSet();
-    }
-
-
-    @Override
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet r1EncodeTupleSet = new TupleSet();
         TupleSet allProcessed = new TupleSet();

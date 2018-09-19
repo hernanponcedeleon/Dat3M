@@ -68,9 +68,8 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().updateRecursiveGroupId(0);
+            ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
-
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
             recursiveGroup.initMaxTupleSets();
@@ -100,8 +99,10 @@ public class Wmm {
             enc = ctx.mkAnd(enc, ax.getRel().encode(ctx));
         }
 
-        for(RecursiveGroup group : recursiveGroups){
-            enc = ctx.mkAnd(enc, group.encode(ctx));
+        if(!Relation.Approx){
+            for(RecursiveGroup group : recursiveGroups){
+                enc = ctx.mkAnd(enc, group.encode(ctx));
+            }
         }
 
         return enc;

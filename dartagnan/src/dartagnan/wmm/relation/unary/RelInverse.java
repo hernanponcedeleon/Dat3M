@@ -44,14 +44,6 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
-        }
-        return getMaxTupleSet();
-    }
-
-    @Override
     public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
         Set<Tuple> activeSet = new HashSet<>(tuples);
@@ -68,21 +60,6 @@ public class RelInverse extends UnaryRelation {
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         return encodeApprox(ctx);
-
-        /*
-        BoolExpr enc = ctx.mkTrue();
-
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-            BoolExpr opt = Utils.edge(r1.getName(), e2, e1, ctx);
-            if (r1.getContainsRec()) {
-                opt = ctx.mkAnd(opt, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e2, e1, ctx)));
-            }
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), opt));
-        }
-        return enc;
-        */
     }
 
     @Override
