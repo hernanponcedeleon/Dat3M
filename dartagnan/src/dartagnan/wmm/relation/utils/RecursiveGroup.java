@@ -41,8 +41,9 @@ public class RecursiveGroup {
     }
 
     public void initMaxTupleSets(){
+        int iterationCounter = 0;
         boolean changed = true;
-        int i = 0;
+
         while(changed){
             changed = false;
             for(RecursiveRelation relation : relations){
@@ -52,8 +53,9 @@ public class RecursiveGroup {
                     changed = true;
                 }
             }
-            i++;
+            iterationCounter++;
         }
+        encodeIterations = iterationCounter + 1;
     }
 
     public void updateEncodeTupleSets(){
@@ -64,7 +66,6 @@ public class RecursiveGroup {
 
         boolean changed = true;
         while(changed){
-            encodeIterations++;
             changed = false;
             for(RecursiveRelation relation : relations){
                 relation.setDoRecurse();
@@ -76,8 +77,5 @@ public class RecursiveGroup {
                 }
             }
         }
-
-        // TODO: Precise number
-        encodeIterations += 3;
     }
 }
