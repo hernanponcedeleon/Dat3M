@@ -22,7 +22,7 @@ public class RelMinus extends BinaryRelation {
     public RelMinus(Relation r1, Relation r2) {
         super(r1, r2);
         term = makeTerm(r1, r2);
-        if(r2.getContainsRec()){
+        if((recursiveGroupId & r2.getRecursiveGroupId()) > 0){
             throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
         }
     }
@@ -30,7 +30,7 @@ public class RelMinus extends BinaryRelation {
     public RelMinus(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
-        if(r2.getContainsRec()){
+        if((recursiveGroupId & r2.getRecursiveGroupId()) > 0){
             throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
         }
     }
@@ -47,7 +47,7 @@ public class RelMinus extends BinaryRelation {
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
-        if(containsRec && maxTupleSet != null){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
             throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
         }
         return getMaxTupleSet();
@@ -82,22 +82,6 @@ public class RelMinus extends BinaryRelation {
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         return encodeApprox(ctx);
-        /*
-        BoolExpr enc = ctx.mkTrue();
-
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
-            if(r1.getContainsRec()) {
-                opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
-            }
-            BoolExpr opt2 = ctx.mkNot(Utils.edge(r2.getName(), e1, e2, ctx));
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
-        }
-        return enc;
-        */
     }
 
     @Override

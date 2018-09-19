@@ -41,7 +41,7 @@ public class RelIntersection extends BinaryRelation {
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
-        if(containsRec && maxTupleSet != null){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
             throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
         }
         return getMaxTupleSet();
@@ -62,25 +62,6 @@ public class RelIntersection extends BinaryRelation {
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         return encodeApprox(ctx);
-        /*
-        BoolExpr enc = ctx.mkTrue();
-
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
-            if(r1.getContainsRec()) {
-                opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
-            }
-            BoolExpr opt2 = Utils.edge(r2.getName(), e1, e2, ctx);
-            if(r2.getContainsRec()){
-                opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r2.getName(), e1, e2, ctx)));
-            }
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
-        }
-        return enc;
-        */
     }
 
     @Override

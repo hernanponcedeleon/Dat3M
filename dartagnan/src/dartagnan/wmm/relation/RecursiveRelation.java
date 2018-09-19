@@ -20,7 +20,6 @@ public class RecursiveRelation extends Relation {
 
     public RecursiveRelation(String name) {
         super(name);
-        containsRec = true;
     }
 
     @Override
@@ -66,6 +65,8 @@ public class RecursiveRelation extends Relation {
     }
 
     public void setConcreteRelation(Relation r1){
+        isRecursive = true;
+        r1.isRecursive = true;
         this.r1 = r1;
         r1.setName(name);
         term = r1.term;
@@ -77,5 +78,25 @@ public class RecursiveRelation extends Relation {
 
     public void updateEncodeTupleSet(){
         r1.addEncodeTupleSet(encodeTupleSet);
+    }
+
+    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
+        return r1.encodeIteration(recGroupId, ctx, iteration);
+    }
+
+    @Override
+    public void setRecursiveGroupId(int id){
+        forceUpdateRecursiveGroupId = true;
+        recursiveGroupId = id;
+        r1.setRecursiveGroupId(id);
+    }
+
+    public int updateRecursiveGroupId(int parentId){
+        if(forceUpdateRecursiveGroupId){
+            forceUpdateRecursiveGroupId = false;
+            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
+            recursiveGroupId |= r1Id & parentId;
+        }
+        return recursiveGroupId;
     }
 }

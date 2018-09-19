@@ -4,7 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
-import dartagnan.program.utils.EventRepository;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.utils.Tuple;
 import dartagnan.wmm.relation.utils.TupleSet;
 
@@ -25,13 +25,15 @@ public abstract class Relation {
 
     protected String name;
     protected String term;
-    protected boolean containsRec;
     protected boolean isNamed;
-    protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_RCU;
     protected TupleSet maxTupleSet;
     protected TupleSet encodeTupleSet = new TupleSet();
     protected Program program;
     protected boolean isEncoded = false;
+
+    protected int recursiveGroupId = 0;
+    protected boolean forceUpdateRecursiveGroupId = false;
+    public boolean isRecursive = false;
 
     /**
      * Creates a relation with an automatically generated identifier.
@@ -46,13 +48,20 @@ public abstract class Relation {
         isNamed = true;
     }
 
-    public Relation setEventMask(int mask){
-        this.eventMask = mask;
-        return this;
+    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
+        return ctx.mkTrue();
     }
 
-    public boolean getContainsRec(){
-        return containsRec;
+    public BoolExpr encodeFinalIteration(int recGroupId, Context ctx, int iteration){
+        BoolExpr enc = ctx.mkTrue();
+        for(Tuple tuple : encodeTupleSet){
+            enc = ctx.mkAnd(enc, ctx.mkEq(
+                    Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
+                    Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
+            ));
+        }
+
+        return enc;
     }
 
     // TODO: Verify and test multiple initialisation for different programs
@@ -136,6 +145,15 @@ public abstract class Relation {
     }
 
     protected BoolExpr doEncode(Context ctx){
+        //System.out.println(getName() + ": " + recursiveGroupId);
+
+        /*
+        System.out.println(getName());
+        System.out.println("max: " + maxTupleSet);
+        System.out.println("enc: " + encodeTupleSet);
+        System.out.println();
+        */
+
         BoolExpr enc = encodeNoSet(ctx);
         if(!encodeTupleSet.isEmpty()){
             if(Relation.Approx){
@@ -157,5 +175,18 @@ public abstract class Relation {
             encodeTupleSet.removeAll(noTupleSet);
         }
         return enc;
+    }
+
+    public void setRecursiveGroupId(int id){
+        forceUpdateRecursiveGroupId = true;
+        recursiveGroupId = id;
+    }
+
+    public int getRecursiveGroupId(){
+        return recursiveGroupId;
+    }
+
+    public int updateRecursiveGroupId(int parentId){
+        return recursiveGroupId;
     }
 }

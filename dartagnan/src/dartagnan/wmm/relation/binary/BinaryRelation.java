@@ -17,14 +17,12 @@ public abstract class BinaryRelation extends Relation {
     BinaryRelation(Relation r1, Relation r2) {
         this.r1 = r1;
         this.r2 = r2;
-        containsRec = r1.getContainsRec() || r2.getContainsRec();
     }
 
     BinaryRelation(Relation r1, Relation r2, String name) {
         super(name);
         this.r1 = r1;
         this.r2 = r2;
-        containsRec = r1.getContainsRec() || r2.getContainsRec();
     }
 
     @Override
@@ -34,5 +32,15 @@ public abstract class BinaryRelation extends Relation {
         }
         isEncoded = true;
         return ctx.mkAnd(r1.encode(ctx), r2.encode(ctx), doEncode(ctx));
+    }
+
+    public int updateRecursiveGroupId(int parentId){
+        if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
+            forceUpdateRecursiveGroupId = false;
+            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
+            int r2Id = r2.updateRecursiveGroupId(parentId | recursiveGroupId);
+            recursiveGroupId |= (r1Id | r2Id) & parentId;
+        }
+        return recursiveGroupId;
     }
 }

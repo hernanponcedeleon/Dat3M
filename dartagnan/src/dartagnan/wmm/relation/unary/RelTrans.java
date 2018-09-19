@@ -49,7 +49,7 @@ public class RelTrans extends UnaryRelation {
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
-        if(containsRec && maxTupleSet != null){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
             throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
         }
         return getMaxTupleSet();

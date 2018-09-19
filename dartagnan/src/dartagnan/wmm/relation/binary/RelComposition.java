@@ -22,6 +22,8 @@ public class RelComposition extends BinaryRelation {
         return "(" + r1.getName() + ";" + r2.getName() + ")";
     }
 
+    private int lastEncodedIteration = -1;
+
     public RelComposition(Relation r1, Relation r2) {
         super(r1, r2);
         term = makeTerm(r1, r2);
@@ -49,7 +51,7 @@ public class RelComposition extends BinaryRelation {
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
-        if(containsRec && maxTupleSet != null){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
             TupleSet set1 = r1.getMaxTupleSetRecursive();
             TupleSet set2 = r2.getMaxTupleSetRecursive();
             for(Tuple rel1 : set1){
@@ -110,46 +112,93 @@ public class RelComposition extends BinaryRelation {
         }
     }
 
-    @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return encodeApprox(ctx);
-        /*
+
+    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
         BoolExpr enc = ctx.mkTrue();
 
-        // TODO: A new attribute for this type of set
-        Set<Tuple> r1Set = new HashSet<>(r1.getEncodeTupleSet());
-        r1Set.retainAll(r1.getMaxTupleSet());
-        Set<Tuple> r2Set = new HashSet<>(r2.getEncodeTupleSet());
-        r2Set.retainAll(r2.getMaxTupleSet());
+        if(iteration <= lastEncodedIteration){
+            return enc;
+        }
+        lastEncodedIteration = iteration;
 
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
 
-            BoolExpr orClause = ctx.mkFalse();
-            for(Tuple tuple1 : r1Set){
-                if(tuple1.getFirst().getEId().equals(e1.getEId())){
-                    Event e3 = tuple1.getSecond();
-                    for(Tuple tuple2 : r2Set){
-                        if(tuple2.getSecond().getEId().equals(e2.getEId())
-                                && tuple2.getFirst().getEId().equals(e3.getEId())){
-                            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                            if (r1.getContainsRec()) {
-                                opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e3, ctx)));
+        if((recGroupId & recursiveGroupId) > 0){
+            if(iteration == 0 && isRecursive){
+                for(Tuple tuple : encodeTupleSet){
+                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(this.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)));
+                }
+
+            } else {
+
+                int myIteration = iteration;
+                int childIteration = iteration;
+                if(isRecursive){
+                    childIteration--;
+                }
+
+                TupleSet r1Set = new TupleSet();
+                r1Set.addAll(r1.getEncodeTupleSet());
+                r1Set.retainAll(r1.getMaxTupleSet());
+
+
+                TupleSet r2Set = new TupleSet();
+                r2Set.addAll(r2.getEncodeTupleSet());
+                r2Set.retainAll(r2.getMaxTupleSet());
+
+                for(Tuple tuple : encodeTupleSet){
+
+                    BoolExpr edge = Utils.edge(this.getName() + "_" + myIteration, tuple.getFirst(), tuple.getSecond(), ctx);
+                    Event e1 = tuple.getFirst();
+                    Event e2 = tuple.getSecond();
+
+                    BoolExpr orClause = ctx.mkFalse();
+                    for(Tuple tuple1 : r1Set.getByFirst(e1)){
+                        Event e3 = tuple1.getSecond();
+                        for(Tuple tuple2 : r2Set.getByFirst(e3)){
+                            if(tuple2.getSecond().getEId().equals(e2.getEId())){
+
+                                BoolExpr opt1;
+                                if(r1.getRecursiveGroupId() == recGroupId){
+                                    opt1 = Utils.edge(r1.getName() + "_" + childIteration, e1, e3, ctx);
+                                } else {
+                                    opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
+                                }
+
+                                BoolExpr opt2;
+                                if(r2.getRecursiveGroupId() == recGroupId){
+                                    opt2 = Utils.edge(r2.getName() + "_" + childIteration, e3, e2, ctx);
+                                } else {
+                                    opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
+                                }
+
+                                orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
                             }
-                            BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
-                            if (r2.getContainsRec()) {
-                                opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r2.getName(), e3, e2, ctx)));
-                            }
-                            orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
                         }
                     }
+
+                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
+                }
+
+
+                if((r1.getRecursiveGroupId() & recGroupId) > 0){
+                    enc = ctx.mkAnd(enc, r1.encodeIteration(recGroupId, ctx, childIteration));
+                }
+
+                if((r2.getRecursiveGroupId() & recGroupId) > 0){
+                    enc = ctx.mkAnd(enc, r2.encodeIteration(recGroupId, ctx, childIteration));
                 }
             }
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
         }
+
         return enc;
-        */
+    }
+
+    @Override
+    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+        if(recursiveGroupId > 0){
+            return ctx.mkTrue();
+        }
+        return encodeApprox(ctx);
     }
 
     @Override

@@ -15,6 +15,8 @@ import dartagnan.wmm.relation.utils.TupleSet;
  */
 public class RelUnion extends BinaryRelation {
 
+    private int lastEncodedIteration = -1;
+
     public static String makeTerm(Relation r1, Relation r2){
         return "(" + r1.getName() + "+" + r2.getName() + ")";
     }
@@ -39,10 +41,65 @@ public class RelUnion extends BinaryRelation {
         return maxTupleSet;
     }
 
+    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
+
+        BoolExpr enc = ctx.mkTrue();
+
+        if(iteration <= lastEncodedIteration){
+            return enc;
+        }
+        lastEncodedIteration = iteration;
+
+        if((recGroupId & recursiveGroupId) > 0){
+            if(iteration == 0 && isRecursive){
+                for(Tuple tuple : encodeTupleSet){
+                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(this.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)));
+                }
+
+            } else {
+
+                int myIteration = iteration;
+                int childIteration = iteration;
+                if(isRecursive){
+                    childIteration--;
+                }
+
+                for(Tuple tuple : encodeTupleSet){
+                    BoolExpr edge = Utils.edge(this.getName() + "_" + myIteration, tuple.getFirst(), tuple.getSecond(), ctx);
+
+                    BoolExpr opt1;
+                    if(r1.getRecursiveGroupId() == recGroupId){
+                        opt1 = Utils.edge(r1.getName() + "_" + childIteration, tuple.getFirst(), tuple.getSecond(), ctx);
+                    } else {
+                        opt1 = Utils.edge(r1.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
+                    }
+
+                    BoolExpr opt2;
+                    if(r2.getRecursiveGroupId() == recGroupId){
+                        opt2 = Utils.edge(r2.getName() + "_" + childIteration, tuple.getFirst(), tuple.getSecond(), ctx);
+                    } else {
+                        opt2 = Utils.edge(r2.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
+                    }
+
+                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkOr(opt1, opt2)));
+                }
+
+                if((r1.getRecursiveGroupId() & recGroupId) > 0){
+                    enc = ctx.mkAnd(enc, r1.encodeIteration(recGroupId, ctx, childIteration));
+                }
+
+                if((r2.getRecursiveGroupId() & recGroupId) > 0){
+                    enc = ctx.mkAnd(enc, r2.encodeIteration(recGroupId, ctx, childIteration));
+                }
+            }
+        }
+
+        return enc;
+    }
 
     @Override
     public TupleSet getMaxTupleSetRecursive(){
-        if(containsRec && maxTupleSet != null){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
             maxTupleSet.addAll(r1.getMaxTupleSetRecursive());
             maxTupleSet.addAll(r2.getMaxTupleSetRecursive());
             return maxTupleSet;
@@ -70,26 +127,10 @@ public class RelUnion extends BinaryRelation {
 
     @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return encodeApprox(ctx);
-        /*
-        BoolExpr enc = ctx.mkTrue();
-
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
-            if (r1.getContainsRec()) {
-                opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
-            }
-            BoolExpr opt2 = Utils.edge(r2.getName(), e1, e2, ctx);
-            if (r2.getContainsRec()) {
-                opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r2.getName(), e1, e2, ctx)));
-            }
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkOr(opt1, opt2)));
+        if(recursiveGroupId > 0){
+            return ctx.mkTrue();
         }
-        return enc;
-        */
+        return encodeApprox(ctx);
     }
 
     @Override

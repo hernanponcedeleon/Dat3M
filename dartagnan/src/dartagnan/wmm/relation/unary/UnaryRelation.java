@@ -15,13 +15,11 @@ public abstract class UnaryRelation extends Relation {
 
     UnaryRelation(Relation r1) {
         this.r1 = r1;
-        containsRec = r1.getContainsRec();
     }
 
     UnaryRelation(Relation r1, String name) {
         super(name);
         this.r1 = r1;
-        containsRec = r1.getContainsRec();
     }
 
     @Override
@@ -31,5 +29,14 @@ public abstract class UnaryRelation extends Relation {
         }
         isEncoded = true;
         return ctx.mkAnd(r1.encode(ctx), doEncode(ctx));
+    }
+
+    public int updateRecursiveGroupId(int parentId){
+        if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
+            forceUpdateRecursiveGroupId = false;
+            int r1Id = r1.updateRecursiveGroupId(parentId | recursiveGroupId);
+            recursiveGroupId |= r1Id & parentId;
+        }
+        return recursiveGroupId;
     }
 }

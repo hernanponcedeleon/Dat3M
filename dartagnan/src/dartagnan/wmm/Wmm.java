@@ -2,6 +2,7 @@ package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.program.Program;
@@ -53,7 +54,11 @@ public class Wmm {
     }
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
-        recursiveGroups.add(new RecursiveGroup(recursiveGroup));
+        int id = 1 << recursiveGroups.size();
+        if(id < 0){
+            throw new RuntimeException("Exceeded maximum number of recursive relations");
+        }
+        recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
@@ -61,6 +66,11 @@ public class Wmm {
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program);
         }
+
+        for (Axiom ax : axioms) {
+            ax.getRel().updateRecursiveGroupId(0);
+        }
+
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
             recursiveGroup.initMaxTupleSets();
@@ -89,6 +99,12 @@ public class Wmm {
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode(ctx));
         }
+
+        for(RecursiveGroup group : recursiveGroups){
+            enc = ctx.mkAnd(enc, group.encode(ctx));
+        }
+
+        //System.out.println(enc);
 
         return enc;
     }
