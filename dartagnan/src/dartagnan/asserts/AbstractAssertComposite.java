@@ -19,7 +19,7 @@ public abstract class AbstractAssertComposite extends AbstractAssert {
             return newAssert;
 
         } catch (ReflectiveOperationException e){
-            throw new RuntimeException("some meaningful text");
+            throw new RuntimeException("Cloning assert failed for " + this + " (" + getClass().getName() + ")");
         }
     }
 }
