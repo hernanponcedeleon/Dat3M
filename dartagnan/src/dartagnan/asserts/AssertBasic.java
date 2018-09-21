@@ -9,7 +9,7 @@ import dartagnan.program.Register;
 public class AssertBasic extends AbstractAssert{
 
     private IntExprInterface e1;
-    private String op;
+    private final String op;
     private IntExprInterface e2;
 
     public AssertBasic(IntExprInterface e1, String op, IntExprInterface e2){
@@ -30,6 +30,10 @@ public class AssertBasic extends AbstractAssert{
 
     public String toString(){
         return valueToString(e1) + op + valueToString(e2);
+    }
+
+    public AbstractAssert clone(){
+        return new AssertBasic(e1.clone(), op, e2.clone());
     }
 
     private String valueToString(IntExprInterface value){

@@ -85,6 +85,10 @@ public class Program extends Thread {
 		}
 		Program newP = new Program(name);
 		newP.setThreads(newThreads);
+		newP.setAss(ass.clone());
+		if(assFilter != null){
+			newP.setAssFilter(assFilter.clone());
+		}
 		return newP;
 	}
 	
