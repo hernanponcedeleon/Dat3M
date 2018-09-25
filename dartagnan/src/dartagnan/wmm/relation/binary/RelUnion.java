@@ -3,6 +3,7 @@ package dartagnan.wmm.relation.binary;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -29,6 +30,13 @@ public class RelUnion extends BinaryRelation {
     public RelUnion(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
+    }
+
+    @Override
+    public Relation initialise(Program program){
+        super.initialise(program);
+        lastEncodedIteration = -1;
+        return this;
     }
 
     @Override

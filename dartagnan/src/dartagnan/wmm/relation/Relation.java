@@ -52,6 +52,7 @@ public abstract class Relation {
     public Relation initialise(Program program){
         this.program = program;
         this.maxTupleSet = null;
+        this.isEncoded = false;
         encodeTupleSet = new TupleSet();
         return this;
     }

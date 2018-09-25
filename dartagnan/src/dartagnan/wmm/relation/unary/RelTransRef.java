@@ -3,6 +3,7 @@ package dartagnan.wmm.relation.unary;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
@@ -34,6 +35,14 @@ public class RelTransRef extends RelTrans {
     public RelTransRef(Relation r1, String name) {
         super(r1, name);
         term = makeTerm(r1);
+    }
+
+    @Override
+    public Relation initialise(Program program){
+        super.initialise(program);
+        identityEncodeTupleSet = new TupleSet();
+        transEncodeTupleSet = new TupleSet();
+        return this;
     }
 
     @Override

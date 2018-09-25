@@ -3,6 +3,7 @@ package dartagnan.wmm.relation.unary;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -41,6 +42,14 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
+    public Relation initialise(Program program){
+        super.initialise(program);
+        transReachabilityMap = null;
+        fullEncodeTupleSet = null;
+        return this;
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             transReachabilityMap = makeTransitiveReachabilityMap(r1.getMaxTupleSet());
@@ -70,8 +79,48 @@ public class RelTrans extends UnaryRelation {
         for(Tuple tuple : fullEncodeSet){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
-            BoolExpr orClause = ctx.mkFalse();
 
+            BoolExpr orClause = ctx.mkFalse();
+            for(Tuple tuple2 : fullEncodeSet.getByFirst(e1)){
+                if (!tuple2.equals(tuple)) {
+                    Event e3 = tuple2.getSecond();
+                    if (transReachabilityMap.get(e3).contains(e2)) {
+                        orClause = ctx.mkOr(orClause, ctx.mkAnd(
+                                edge(this.getName(), e1, e3, ctx),
+                                edge(this.getName(), e3, e2, ctx),
+                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e1, e3, ctx)),
+                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e3, e2, ctx))));
+                    }
+                }
+            }
+
+            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
+
+            orClause = ctx.mkFalse();
+            for(Tuple tuple2 : fullEncodeSet.getByFirst(e1)){
+                if (!tuple2.equals(tuple)) {
+                    Event e3 = tuple2.getSecond();
+                    if (transReachabilityMap.get(e3).contains(e2)) {
+                        orClause = ctx.mkOr(orClause, ctx.mkAnd(
+                                edge(this.getName(), e1, e3, ctx),
+                                edge(this.getName(), e3, e2, ctx)));
+                    }
+                }
+            }
+
+            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
+
+            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), ctx.mkOr(
+                    edge(r1.getName(), e1,e2, ctx),
+                    ctx.mkAnd(edge(this.idlConcatName(), e1, e2, ctx), ctx.mkGt(intCount(this.getName(), e1, e2, ctx), intCount(this.idlConcatName(), e1, e2, ctx)))
+            )));
+
+            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(),e1,e2, ctx), ctx.mkOr(
+                    edge(r1.getName(), e1,e2, ctx),
+                    edge(this.idlConcatName(), e1, e2, ctx)
+            )));
+
+            /*
             for(Tuple tuple2 : fullEncodeSet.getByFirst(e1)){
                 if(!tuple2.equals(tuple)){
                     Event e3 = tuple2.getSecond();
@@ -105,7 +154,7 @@ public class RelTrans extends UnaryRelation {
             )));
 
             enc = ctx.mkAnd(enc, ctx.mkOr(baseEdgeClause, ctx.mkEq(edgeClause, countClause)));
-
+            */
         }
 
         return enc;
