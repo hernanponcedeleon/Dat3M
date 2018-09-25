@@ -78,7 +78,6 @@ public class Dartagnan {
 		}
 
 		Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
-		Relation.Approx = cmd.hasOption("relax");
 
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));

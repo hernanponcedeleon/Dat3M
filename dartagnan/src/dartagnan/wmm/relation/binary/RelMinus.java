@@ -58,17 +58,14 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) throws Z3Exception {
+    public BoolExpr encode(Context ctx, int option) throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        BoolExpr enc = r1.encode(ctx);
-        boolean approx = Relation.Approx;
-        Relation.Approx = false;
-        enc = ctx.mkAnd(enc, r2.encode(ctx));
-        Relation.Approx = approx;
-        return ctx.mkAnd(enc, doEncode(ctx));
+        BoolExpr enc = r1.encode(ctx, option);
+        enc = ctx.mkAnd(enc, r2.encode(ctx, Relation.APPROX));
+        return ctx.mkAnd(enc, doEncode(ctx, option));
     }
 
     @Override

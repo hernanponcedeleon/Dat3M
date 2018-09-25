@@ -81,12 +81,12 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) throws Z3Exception {
+    public BoolExpr encode(Context ctx, int option) throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return r1.encode(ctx);
+        return r1.encode(ctx, option);
     }
 
     @Override

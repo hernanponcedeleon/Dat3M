@@ -72,6 +72,19 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
+    protected BoolExpr encodeIdl(Context ctx) throws Z3Exception {
+        TupleSet temp = encodeTupleSet;
+        encodeTupleSet = transEncodeTupleSet;
+        BoolExpr enc = super.encodeIdl(ctx);
+        encodeTupleSet = temp;
+
+        for(Tuple tuple : identityEncodeTupleSet){
+            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
+        }
+        return enc;
+    }
+
+    @Override
     protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;

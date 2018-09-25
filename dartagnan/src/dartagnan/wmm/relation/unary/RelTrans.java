@@ -14,6 +14,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static dartagnan.utils.Utils.edge;
+import static dartagnan.utils.Utils.intCount;
+
 /**
  *
  * @author Florian Furbach
@@ -21,6 +24,7 @@ import java.util.Set;
 public class RelTrans extends UnaryRelation {
 
     protected Map<Event, Set<Event>> transReachabilityMap;
+    private TupleSet fullEncodeTupleSet;
 
     public static String makeTerm(Relation r1){
         return r1.getName() + "^+";
@@ -39,7 +43,7 @@ public class RelTrans extends UnaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            transReachabilityMap = getTransitiveReachabilityMap(r1.getMaxTupleSet());
+            transReachabilityMap = makeTransitiveReachabilityMap(r1.getMaxTupleSet());
             maxTupleSet = new TupleSet();
             for(Event e1 : transReachabilityMap.keySet()){
                 for(Event e2 : transReachabilityMap.get(e1)){
@@ -52,38 +56,59 @@ public class RelTrans extends UnaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet r1EncodeTupleSet = new TupleSet();
-        TupleSet allProcessed = new TupleSet();
+        if(encodeTupleSet.addAll(tuples)){
+            r1.addEncodeTupleSet(getFullEncodeTupleSet(true));
+        }
+    }
 
-        TupleSet processNow = new TupleSet();
-        processNow.addAll(tuples);
+    @Override
+    protected BoolExpr encodeIdl(Context ctx) throws Z3Exception {
+        BoolExpr enc = ctx.mkTrue();
 
-        while(!processNow.isEmpty()){
-            TupleSet processNext = new TupleSet();
-            allProcessed.addAll(processNow);
+        TupleSet fullEncodeSet = getFullEncodeTupleSet(false);
 
-            for(Tuple tuple1 : processNow){
-                Event e1 = tuple1.getFirst();
-                Event e2 = tuple1.getSecond();
+        for(Tuple tuple : fullEncodeSet){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+            BoolExpr orClause = ctx.mkFalse();
 
-                for(Tuple tuple2 : r1.getMaxTupleSet().getByFirst(e1)){
-                    if(tuple2.getSecond().getEId().equals(e2.getEId())){
-                        r1EncodeTupleSet.add(tuple2);
+            for(Tuple tuple2 : fullEncodeSet.getByFirst(e1)){
+                if(!tuple2.equals(tuple)){
+                    Event e3 = tuple2.getSecond();
+                    if(transReachabilityMap.get(e3).contains(e2)){
+                        BoolExpr edgeClause = ctx.mkAnd(
+                                edge(this.getName(), e1, e3, ctx),
+                                edge(this.getName(), e3, e2, ctx)
+                        );
 
-                    } else if(transReachabilityMap.get(tuple2.getSecond()).contains(e2)){
-                        processNext.add(new Tuple(e1, tuple2.getSecond()));
-                        processNext.add(new Tuple(tuple2.getSecond(), e2));
-                        r1EncodeTupleSet.add(tuple2);
+                        BoolExpr countClause = ctx.mkAnd(
+                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e1, e3, ctx)),
+                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e3, e2, ctx))
+                        );
+
+                        enc = ctx.mkAnd(enc, ctx.mkEq(edgeClause, countClause));
+
+                        orClause = ctx.mkOr(orClause, ctx.mkAnd(edgeClause, countClause));
                     }
                 }
             }
 
-            processNext.removeAll(allProcessed);
-            processNow = processNext;
+            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
+
+            BoolExpr baseEdgeClause = edge(r1.getName(), e1, e2, ctx);
+            BoolExpr edgeClause = edge(this.idlConcatName(), e1, e2, ctx);
+            BoolExpr countClause = ctx.mkGt(intCount(this.getName(), e1, e2, ctx), intCount(this.idlConcatName(), e1, e2, ctx));
+
+            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), ctx.mkOr(
+                    baseEdgeClause,
+                    ctx.mkAnd(edgeClause, countClause)
+            )));
+
+            enc = ctx.mkAnd(enc, ctx.mkOr(baseEdgeClause, ctx.mkEq(edgeClause, countClause)));
+
         }
 
-        r1.addEncodeTupleSet(r1EncodeTupleSet);
-        encodeTupleSet.addAll(tuples);
+        return enc;
     }
 
     @Override
@@ -212,7 +237,39 @@ public class RelTrans extends UnaryRelation {
         return enc;
     }
 
-    private Map<Event, Set<Event>> getTransitiveReachabilityMap(Set<Tuple> tuples){
+    private TupleSet getFullEncodeTupleSet(boolean forceUpdate){
+        if(fullEncodeTupleSet == null || forceUpdate){
+            fullEncodeTupleSet = new TupleSet();
+
+            TupleSet processNow = new TupleSet();
+            processNow.addAll(encodeTupleSet);
+            processNow.retainAll(getMaxTupleSet());
+
+            while(!processNow.isEmpty()){
+                TupleSet processNext = new TupleSet();
+                for(Tuple tuple : processNow){
+                    fullEncodeTupleSet.add(tuple);
+                    Event e1 = tuple.getFirst();
+                    Event e2 = tuple.getSecond();
+
+                    for(Event e3 : transReachabilityMap.get(e1)){
+                        if(!e3.getEId().equals(e1.getEId())
+                                && !e3.getEId().equals(e2.getEId())
+                                && transReachabilityMap.get(e3).contains(e2)){
+                            processNext.add(new Tuple(e1, e3));
+                            processNext.add(new Tuple(e3, e2));
+                        }
+                    }
+                }
+
+                processNext.removeAll(fullEncodeTupleSet);
+                processNow = processNext;
+            }
+        }
+        return fullEncodeTupleSet;
+    }
+
+    private Map<Event, Set<Event>> makeTransitiveReachabilityMap(Set<Tuple> tuples){
         Map<Event, Set<Event>> map = new HashMap<>();
 
         for(Tuple tuple : tuples){
@@ -239,5 +296,9 @@ public class RelTrans extends UnaryRelation {
         }
 
         return map;
+    }
+
+    private String idlConcatName(){
+        return "(" + getName() + ";" + getName() + ")";
     }
 }

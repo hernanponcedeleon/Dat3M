@@ -105,10 +105,6 @@ public class Porthos {
         Wmm mcmS = Dartagnan.parseCat(cmd.getOptionValue("scat"));
         Wmm mcmT = Dartagnan.parseCat(cmd.getOptionValue("tcat"));
 
-        if (cmd.hasOption("relax")) {
-            Relation.Approx = true;
-        }
-
         int steps = 1;
         if(cmd.hasOption("unroll")) {
             steps = Integer.parseInt(cmd.getOptionValue("unroll"));
@@ -134,14 +130,14 @@ public class Porthos {
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
-        BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
+        BoolExpr sourceMM = mcmS.encode(pSource, ctx, cmd.hasOption("relax"), cmd.hasOption("idl"));
 
         Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
         s.add(pTarget.encodeFinalValues(ctx));
-        s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
+        s.add(mcmT.encode(pTarget, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcmT.consistent(pTarget, ctx));
 
         s.add(sourceDF);

@@ -19,7 +19,10 @@ import static dartagnan.utils.Utils.edge;
  */
 public abstract class Relation {
 
-    public static boolean Approx = false;
+    public static final int FIXPOINT    = 0;
+    public static final int IDL         = 1;
+    public static final int APPROX      = 2;
+
     public static boolean PostFixApprox = false;
     public static boolean EncodeCtrlPo = true; // depends on target architecture
 
@@ -67,7 +70,6 @@ public abstract class Relation {
         return encodeTupleSet;
     }
 
-
     public boolean getIsNamed(){
         return isNamed;
     }
@@ -105,15 +107,19 @@ public abstract class Relation {
         return term;
     }
 
-    public BoolExpr encode(Context ctx) throws Z3Exception {
+    public BoolExpr encode(Context ctx, int option) throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return doEncode(ctx);
+        return doEncode(ctx, option);
     }
 
     protected abstract BoolExpr encodeBasic(Context ctx) throws Z3Exception;
+
+    protected BoolExpr encodeIdl(Context ctx) throws Z3Exception{
+        return encodeBasic(ctx);
+    }
 
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         return encodeBasic(ctx);
@@ -135,13 +141,15 @@ public abstract class Relation {
         return enc;
     }
 
-    protected BoolExpr doEncode(Context ctx){
+    protected BoolExpr doEncode(Context ctx, int option){
         BoolExpr enc = encodeNoSet(ctx);
         if(!encodeTupleSet.isEmpty()){
-            if(Relation.Approx){
-                return ctx.mkAnd(enc, encodeApprox(ctx));
+            if(option == FIXPOINT) {
+                return ctx.mkAnd(enc, encodeBasic(ctx));
+            } else if(option == IDL) {
+                return ctx.mkAnd(enc, encodeIdl(ctx));
             }
-            return ctx.mkAnd(enc, encodeBasic(ctx));
+            return ctx.mkAnd(enc, encodeApprox(ctx));
         }
         return enc;
     }

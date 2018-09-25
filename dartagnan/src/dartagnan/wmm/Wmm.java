@@ -62,6 +62,7 @@ public class Wmm {
     }
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
+        int encodingOption = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.FIXPOINT;
 
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program);
@@ -96,10 +97,11 @@ public class Wmm {
 
         BoolExpr enc = ctx.mkTrue();
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx));
+            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx, encodingOption));
         }
 
-        if(!Relation.Approx){
+        // TODO: Remove IDL after it is fully implemented
+        if(encodingOption == Relation.FIXPOINT || encodingOption == Relation.IDL){
             for(RecursiveGroup group : recursiveGroups){
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }

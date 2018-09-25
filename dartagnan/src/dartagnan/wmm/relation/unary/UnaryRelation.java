@@ -42,11 +42,11 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) throws Z3Exception {
+    public BoolExpr encode(Context ctx, int option) throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return ctx.mkAnd(r1.encode(ctx), doEncode(ctx));
+        return ctx.mkAnd(r1.encode(ctx, option), doEncode(ctx, option));
     }
 }
