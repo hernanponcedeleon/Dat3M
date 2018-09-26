@@ -119,42 +119,6 @@ public class RelTrans extends UnaryRelation {
                     edge(r1.getName(), e1,e2, ctx),
                     edge(this.idlConcatName(), e1, e2, ctx)
             )));
-
-            /*
-            for(Tuple tuple2 : fullEncodeSet.getByFirst(e1)){
-                if(!tuple2.equals(tuple)){
-                    Event e3 = tuple2.getSecond();
-                    if(transReachabilityMap.get(e3).contains(e2)){
-                        BoolExpr edgeClause = ctx.mkAnd(
-                                edge(this.getName(), e1, e3, ctx),
-                                edge(this.getName(), e3, e2, ctx)
-                        );
-
-                        BoolExpr countClause = ctx.mkAnd(
-                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e1, e3, ctx)),
-                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e3, e2, ctx))
-                        );
-
-                        enc = ctx.mkAnd(enc, ctx.mkEq(edgeClause, countClause));
-
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(edgeClause, countClause));
-                    }
-                }
-            }
-
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
-
-            BoolExpr baseEdgeClause = edge(r1.getName(), e1, e2, ctx);
-            BoolExpr edgeClause = edge(this.idlConcatName(), e1, e2, ctx);
-            BoolExpr countClause = ctx.mkGt(intCount(this.getName(), e1, e2, ctx), intCount(this.idlConcatName(), e1, e2, ctx));
-
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), ctx.mkOr(
-                    baseEdgeClause,
-                    ctx.mkAnd(edgeClause, countClause)
-            )));
-
-            enc = ctx.mkAnd(enc, ctx.mkOr(baseEdgeClause, ctx.mkEq(edgeClause, countClause)));
-            */
         }
 
         return enc;
@@ -236,51 +200,35 @@ public class RelTrans extends UnaryRelation {
         return enc;
     }
 
+
     @Override
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
+        TupleSet encodeSet = getFullEncodeTupleSet(false);
 
-        Set<Tuple> allEncoded = new HashSet<>(encodeTupleSet);
-        Set<Tuple> encodeNow = new HashSet<>(encodeTupleSet);
+        for(Tuple tuple : encodeSet){
+            BoolExpr orClause = ctx.mkFalse();
 
-        while(!encodeNow.isEmpty()){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
 
-            // Intermediate relations, which will be encoded during the next iteration
-            Set<Tuple> encodeNext = new HashSet<>();
+            // Directly related via r1
+            if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
+                orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
+            }
 
-            for(Tuple tuple : encodeNow){
-                BoolExpr orClause = ctx.mkFalse();
-                Event e1 = tuple.getFirst();
-                Event e2 = tuple.getSecond();
-
-                // Directly related via r1
-                Set<Event> reachableEvents = transReachabilityMap.get(e1);
-                if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
-                    orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
-                }
-
-                // Transitive relation
-                for(Event e3 : reachableEvents){
-                    if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId())){
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
-                        if(!allEncoded.contains(new Tuple(e1, e3))){
-                            encodeNext.add(new Tuple(e1, e3));
-                        }
-                        if(!allEncoded.contains(new Tuple(e3, e2))){
-                            encodeNext.add(new Tuple(e3, e2));
-                        }
-                    }
-                }
-
-                if(Relation.PostFixApprox) {
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
-                } else {
-                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
+            // Transitive relation
+            for(Event e3 : transReachabilityMap.get(e1)){
+                if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId()) && transReachabilityMap.get(e3).contains(e2)){
+                    orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
                 }
             }
 
-            allEncoded.addAll(encodeNext);
-            encodeNow = encodeNext;
+            if(Relation.PostFixApprox) {
+                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
+            } else {
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
+            }
         }
 
         return enc;
