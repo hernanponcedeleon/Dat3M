@@ -8,8 +8,8 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
+import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 
 import java.util.Collections;
@@ -26,7 +26,7 @@ public class RMWOpAndTest extends RMWAbstract {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
-            Load load = new Load(dummy, loc, "_rx");
+            RMWLoad load = new RMWLoad(dummy, loc, "_rx");
             Local local1 = new Local(dummy, new AExpr(dummy, op, value));
             RMWStore store = new RMWStore(load, loc, dummy, "_rx");
             Local local2 = new Local(reg, new Atom(dummy, "==", new AConst(0)));

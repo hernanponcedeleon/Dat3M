@@ -60,4 +60,9 @@ public class BareIf extends Thread {
         }
         return new If(pred, t1, t2);
     }
+
+    // TODO: Implement or remove
+    public BareIf clone(){
+        throw new RuntimeException("Clone not supported for " + this.getClass().getName());
+    }
 }

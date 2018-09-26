@@ -2,7 +2,6 @@ package dartagnan.program.event.rmw;
 
 import dartagnan.program.*;
 import dartagnan.program.Thread;
-import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.filter.FilterUtils;
@@ -33,7 +32,7 @@ public class Xchg extends MemEvent {
     public dartagnan.program.Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("tso") && atomic.equals("_rx")) {
             Register dummyReg = new Register(null);
-            Load load = new Load(dummyReg, loc, atomic);
+            RMWLoad load = new RMWLoad(dummyReg, loc, atomic);
             load.setHLId(memId);
             load.setUnfCopy(getUnfCopy());
             load.setCondLevel(condLevel);

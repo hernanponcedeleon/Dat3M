@@ -26,6 +26,6 @@ public class RCUReadUnlock extends Event {
     }
 
     public RCUReadUnlock clone() {
-        return new RCUReadUnlock(lockEvent, condLevel);
+        return new RCUReadUnlock(lockEvent.clone(), condLevel);
     }
 }

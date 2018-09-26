@@ -7,6 +7,7 @@ import com.microsoft.z3.*;
 
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.event.*;
+import dartagnan.program.utils.ClonableWithMemorisation;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.*;
 import static dartagnan.utils.Utils.edge;
@@ -76,6 +77,12 @@ public class Program extends Thread {
     }
 	
 	public Program clone() {
+		for(Thread thread : threads){
+			if(thread instanceof ClonableWithMemorisation){
+				((ClonableWithMemorisation) thread).resetPreparedClone();
+			}
+		}
+
 		List<Thread> newThreads = new ArrayList<Thread>();
 		
 		ListIterator<Thread> iter = threads.listIterator();
