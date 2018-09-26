@@ -7,6 +7,7 @@ import dartagnan.wmm.Wmm;
 import dartagnan.wmm.WmmResolver;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +18,12 @@ import java.util.stream.Stream;
 
 public class DartagnanIdlTest {
 
-    private static String[] relations = {"idd^+", "hb^*"};
+    private static String[] relations = {
+            "idd^+", "ctrl",
+            "hb^*", "com^*", "propbase^*", "cumul-fence^*", "pb^*",
+            "ii", "ic", "ci", "cc", "rcu-fence"
+    };
+
     private static final int STEPS = 2;
     private static final boolean WARN_ON_IMPOSSIBLE_EXECUTION = true;
 
@@ -34,8 +40,6 @@ public class DartagnanIdlTest {
                     .filter(f -> (f.toString().endsWith("litmus") || f.toString().endsWith("pts")))
                     .forEach(f -> {
                         try{
-                            System.out.println(f.toString());
-
                             Context ctx = new Context();
                             Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
                             Program p = Dartagnan.parseProgram(f.toString());
@@ -86,24 +90,28 @@ public class DartagnanIdlTest {
 
                             for(String relName : relations){
                                 Relation relation = mcm.getRelationRepository().getRelation(relName);
-                                BoolExpr enc = ctx.mkFalse();
-
-                                for(Tuple tuple : relation.getEncodeTupleSet()){
-                                    int eidFirst = tuple.getFirst().getEId();
-                                    int eidSecond = tuple.getSecond().getEId();
-                                    if(eidFirst < startEId){
-                                        enc = ctx.mkOr(enc, ctx.mkNot(ctx.mkEq(
-                                                ctx.mkConst(mkEdgeString(relName, eidFirst, eidSecond), ctx.mkBoolSort()),
-                                                ctx.mkConst(mkEdgeString(relName, eidFirst + startEId, eidSecond + startEId), ctx.mkBoolSort())
-                                        )));
+                                if(relation != null){
+                                    TupleSet tupleSet = relation.getEncodeTupleSet();
+                                    if(tupleSet != null){
+                                        BoolExpr enc = ctx.mkFalse();
+                                        for(Tuple tuple : relation.getEncodeTupleSet()){
+                                            int eidFirst = tuple.getFirst().getEId();
+                                            int eidSecond = tuple.getSecond().getEId();
+                                            if(eidFirst < startEId){
+                                                enc = ctx.mkOr(enc, ctx.mkNot(ctx.mkEq(
+                                                        ctx.mkConst(mkEdgeString(relName, eidFirst, eidSecond), ctx.mkBoolSort()),
+                                                        ctx.mkConst(mkEdgeString(relName, eidFirst + startEId, eidSecond + startEId), ctx.mkBoolSort())
+                                                )));
+                                            }
+                                        }
+                                        s.add(enc);
                                     }
                                 }
-
-                                s.add(enc);
                             }
 
                             if(s.check() == Status.SATISFIABLE) {
                                 Model model = s.getModel();
+                                StringBuilder sb = new StringBuilder();
 
                                 for(String relName : relations){
                                     Relation relation = mcm.getRelationRepository().getRelation(relName);
@@ -120,19 +128,18 @@ public class DartagnanIdlTest {
                                             boolean status2 = expr2 != null && expr2.isTrue();
 
                                             if (status1 != status2) {
-                                                System.out.println("FP  " + mkEdgeString(relName, eidFirst, eidSecond) + ": " + status1);
-                                                System.out.println("IDL " + mkEdgeString(relName, eidFirst, eidSecond) + ": " + status2);
+                                                sb.append("FP  ").append(mkEdgeString(relName, eidFirst, eidSecond)).append(": ").append(status1).append("\n");
+                                                sb.append("IDL ").append(mkEdgeString(relName, eidFirst, eidSecond)).append(": ").append(status2).append("\n");
                                             }
                                         }
                                     }
                                 }
 
-                                throw new RuntimeException("Mismatched relation sets");
+                                throw new RuntimeException("Mismatched relation sets\n" + sb);
                             }
 
                         } catch (Exception e){
                             System.err.println(f.toString() + "Error : " + e.getMessage());
-                            e.printStackTrace();
                         }
                     });
 
