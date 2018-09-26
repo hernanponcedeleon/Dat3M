@@ -100,8 +100,7 @@ public class Wmm {
             enc = ctx.mkAnd(enc, ax.getRel().encode(ctx, encodingOption));
         }
 
-        // TODO: Remove IDL after it is fully implemented
-        if(encodingOption == Relation.FIXPOINT || encodingOption == Relation.IDL){
+        if(encodingOption == Relation.FIXPOINT){
             for(RecursiveGroup group : recursiveGroups){
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }

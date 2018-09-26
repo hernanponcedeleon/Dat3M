@@ -119,7 +119,7 @@ public abstract class Relation {
     protected abstract BoolExpr encodeBasic(Context ctx) throws Z3Exception;
 
     protected BoolExpr encodeIdl(Context ctx) throws Z3Exception{
-        return encodeBasic(ctx);
+        return encodeApprox(ctx);
     }
 
     protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
