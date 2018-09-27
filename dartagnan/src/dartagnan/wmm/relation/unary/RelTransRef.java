@@ -38,11 +38,10 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public Relation initialise(Program program){
+    public void initialise(Program program){
         super.initialise(program);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
-        return this;
     }
 
     @Override

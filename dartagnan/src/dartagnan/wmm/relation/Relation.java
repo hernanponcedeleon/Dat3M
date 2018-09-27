@@ -47,13 +47,24 @@ public abstract class Relation {
         isNamed = true;
     }
 
-    // TODO: Verify and test multiple initialisation for different programs
-    public Relation initialise(Program program){
+    public int getRecursiveGroupId(){
+        return recursiveGroupId;
+    }
+
+    public void setRecursiveGroupId(int id){
+        forceUpdateRecursiveGroupId = true;
+        recursiveGroupId = id;
+    }
+
+    public int updateRecursiveGroupId(int parentId){
+        return recursiveGroupId;
+    }
+
+    public void initialise(Program program){
         this.program = program;
         this.maxTupleSet = null;
         this.isEncoded = false;
         encodeTupleSet = new TupleSet();
-        return this;
     }
 
     public abstract TupleSet getMaxTupleSet();
@@ -165,22 +176,5 @@ public abstract class Relation {
             encodeTupleSet.removeAll(noTupleSet);
         }
         return enc;
-    }
-
-    public int getRecursiveGroupId(){
-        return recursiveGroupId;
-    }
-
-    public void setRecursiveGroupId(int id){
-        forceUpdateRecursiveGroupId = true;
-        recursiveGroupId = id;
-    }
-
-    public int updateRecursiveGroupId(int parentId){
-        return recursiveGroupId;
-    }
-
-    public void setIsRecursive(boolean flag){
-        isRecursive = flag;
     }
 }

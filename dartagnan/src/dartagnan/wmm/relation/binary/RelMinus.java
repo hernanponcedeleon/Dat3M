@@ -3,6 +3,7 @@ package dartagnan.wmm.relation.binary;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -22,16 +23,18 @@ public class RelMinus extends BinaryRelation {
     public RelMinus(Relation r1, Relation r2) {
         super(r1, r2);
         term = makeTerm(r1, r2);
-        if((recursiveGroupId & r2.getRecursiveGroupId()) > 0){
-            throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
-        }
     }
 
     public RelMinus(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
-        if((recursiveGroupId & r2.getRecursiveGroupId()) > 0){
-            throw new RuntimeException(r2.getName() + " is not allowed to be recursive since it occurs in a setminus.");
+    }
+
+    @Override
+    public void initialise(Program program){
+        super.initialise(program);
+        if(r2.getRecursiveGroupId() > 0){
+            throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
         }
     }
 
@@ -64,7 +67,7 @@ public class RelMinus extends BinaryRelation {
         }
         isEncoded = true;
         BoolExpr enc = r1.encode(ctx, option);
-        enc = ctx.mkAnd(enc, r2.encode(ctx, Relation.APPROX));
+        enc = ctx.mkAnd(enc, r2.encode(ctx, option));
         return ctx.mkAnd(enc, doEncode(ctx, option));
     }
 

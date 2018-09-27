@@ -36,10 +36,9 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public Relation initialise(Program program){
+    public void initialise(Program program){
         super.initialise(program);
         lastEncodedIteration = -1;
-        return this;
     }
 
     @Override

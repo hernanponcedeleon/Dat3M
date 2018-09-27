@@ -42,11 +42,10 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public Relation initialise(Program program){
+    public void initialise(Program program){
         super.initialise(program);
         transReachabilityMap = null;
         fullEncodeTupleSet = null;
-        return this;
     }
 
     @Override

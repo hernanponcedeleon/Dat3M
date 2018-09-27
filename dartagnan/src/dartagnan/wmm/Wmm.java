@@ -73,15 +73,15 @@ public class Wmm {
     }
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
-        int encodingOption = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.FIXPOINT;
+        for (Axiom ax : axioms) {
+            ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
+        }
 
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program);
         }
 
-        for (Axiom ax : axioms) {
-            ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
-        }
+        int encodingOption = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.FIXPOINT;
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
             recursiveGroup.initMaxTupleSets();
