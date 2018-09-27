@@ -139,26 +139,23 @@ public class Wmm {
     }
 
     public String toString() {
-        StringBuilder result = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
 
         for (Axiom axiom : axioms) {
-            result.append(axiom);
-            result.append("\n");
+            sb.append(axiom).append("\n");
         }
 
         for (Relation relation : relationRepository.getRelations()) {
             if(relation.getIsNamed()){
-                result.append(relation);
-                result.append("\n");
+                sb.append(relation).append("\n");
             }
         }
 
         for (Map.Entry<String, FilterAbstract> filter : filters.entrySet()){
-            result.append(filter.getValue());
-            result.append("\n");
+            sb.append(filter.getValue()).append("\n");
         }
 
-        return result.toString();
+        return sb.toString();
     }
 
     private void parse(String filePath) throws IOException{

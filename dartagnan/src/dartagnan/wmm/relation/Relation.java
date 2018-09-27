@@ -74,16 +74,12 @@ public abstract class Relation {
         return getMaxTupleSet();
     }
 
-    public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(tuples);
-    }
-
     public TupleSet getEncodeTupleSet(){
         return encodeTupleSet;
     }
 
-    public boolean getIsNamed(){
-        return !term.equals(name);
+    public void addEncodeTupleSet(TupleSet tuples){
+        encodeTupleSet.addAll(tuples);
     }
 
     public String getName() {
@@ -93,13 +89,17 @@ public abstract class Relation {
         return term;
     }
 
+    public Relation setName(String name){
+        this.name = name;
+        return this;
+    }
+
     public String getTerm(){
         return term;
     }
 
-    public Relation setName(String name){
-        this.name = name;
-        return this;
+    public boolean getIsNamed(){
+        return name != null;
     }
 
     public String toString(){
