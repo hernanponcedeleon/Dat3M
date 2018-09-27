@@ -54,14 +54,6 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
-        if(recursiveGroupId > 0){
-            return ctx.mkTrue();
-        }
-        return encodeApprox();
-    }
-
-    @Override
     public BoolExpr encodeIteration(int groupId, int iteration){
         if((groupId & recursiveGroupId) > 0){
             throw new RuntimeException("Method encodeIteration is not implemented for " + this.getClass().getName());

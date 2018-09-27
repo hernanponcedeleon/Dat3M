@@ -57,14 +57,8 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
-        return encodeApprox();
-    }
-
-    @Override
     protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
-
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();

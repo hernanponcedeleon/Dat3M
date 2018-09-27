@@ -77,7 +77,7 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
+    protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         Collection<Event> fences = program.getEventRepository()

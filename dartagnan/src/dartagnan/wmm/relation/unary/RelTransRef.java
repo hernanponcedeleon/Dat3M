@@ -80,10 +80,10 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeIdl() throws Z3Exception {
+    protected BoolExpr encodeIDL() throws Z3Exception {
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeIdl();
+        BoolExpr enc = super.encodeIDL();
         encodeTupleSet = temp;
 
         for(Tuple tuple : identityEncodeTupleSet){
@@ -93,10 +93,10 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
+    protected BoolExpr encodeLFP() throws Z3Exception {
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeBasic();
+        BoolExpr enc = super.encodeLFP();
         encodeTupleSet = temp;
 
         for(Tuple tuple : identityEncodeTupleSet){

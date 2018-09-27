@@ -4,7 +4,6 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
-import dartagnan.utils.Utils;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
@@ -19,15 +18,20 @@ import static dartagnan.utils.Utils.edge;
  */
 public abstract class Relation {
 
-    public static final int FIXPOINT    = 0;
-    public static final int IDL         = 1;
-    public static final int APPROX      = 2;
+    public static final int LFP     = 0;
+    public static final int IDL     = 1;
+    public static final int APPROX  = 2;
 
     public static boolean PostFixApprox = false;
 
     protected String name;
     protected String term;
-    private boolean isNamed;
+
+    protected Program program;
+    protected Context ctx;
+
+    protected boolean isEncoded = false;
+    private int encodingMode;
 
     protected TupleSet maxTupleSet;
     protected TupleSet encodeTupleSet = new TupleSet();
@@ -36,17 +40,10 @@ public abstract class Relation {
     protected boolean forceUpdateRecursiveGroupId = false;
     protected boolean isRecursive = false;
 
-    protected Program program;
-    protected Context ctx;
-    protected int encodingMode;
-
-    protected boolean isEncoded = false;
-
     public Relation() {}
 
     public Relation(String name) {
         this.name = name;
-        isNamed = true;
     }
 
     public int getRecursiveGroupId(){
@@ -86,15 +83,11 @@ public abstract class Relation {
     }
 
     public boolean getIsNamed(){
-        return isNamed;
+        return !term.equals(name);
     }
 
-    /**
-     *
-     * @return the name of the relation (with a prefix if that was set for aramis)
-     */
     public String getName() {
-        if(isNamed){
+        if(name != null){
             return name;
         }
         return term;
@@ -104,19 +97,13 @@ public abstract class Relation {
         return term;
     }
 
-    /**
-     * This is only used by the parser where a relation is defined and named later.
-     * Only use this method before relations depending on this one are encoded!!!
-     * @param name
-     */
     public Relation setName(String name){
         this.name = name;
-        isNamed = true;
         return this;
     }
 
     public String toString(){
-        if(isNamed){
+        if(name != null){
             return name + " := " + term;
         }
         return term;
@@ -130,39 +117,30 @@ public abstract class Relation {
         return doEncode();
     }
 
-    protected abstract BoolExpr encodeBasic() throws Z3Exception;
-
-    protected BoolExpr encodeIdl() throws Z3Exception{
+    protected BoolExpr encodeLFP() throws Z3Exception {
+        if(recursiveGroupId > 0){
+            return ctx.mkTrue();
+        }
         return encodeApprox();
     }
 
-    protected BoolExpr encodeApprox() throws Z3Exception {
-        return encodeBasic();
+    protected BoolExpr encodeIDL() throws Z3Exception{
+        return encodeApprox();
     }
+
+    protected abstract BoolExpr encodeApprox() throws Z3Exception;
 
     public BoolExpr encodeIteration(int recGroupId, int iteration){
         return ctx.mkTrue();
     }
 
-    public BoolExpr encodeFinalIteration(int recGroupId, int iteration){
-        BoolExpr enc = ctx.mkTrue();
-        for(Tuple tuple : encodeTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(
-                    Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
-                    Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
-            ));
-        }
-
-        return enc;
-    }
-
     protected BoolExpr doEncode(){
         BoolExpr enc = encodeNegations();
         if(!encodeTupleSet.isEmpty()){
-            if(encodingMode == FIXPOINT) {
-                return ctx.mkAnd(enc, encodeBasic());
+            if(encodingMode == LFP) {
+                return ctx.mkAnd(enc, encodeLFP());
             } else if(encodingMode == IDL) {
-                return ctx.mkAnd(enc, encodeIdl());
+                return ctx.mkAnd(enc, encodeIDL());
             }
             return ctx.mkAnd(enc, encodeApprox());
         }

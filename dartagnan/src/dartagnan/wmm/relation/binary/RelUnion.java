@@ -71,7 +71,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIdl() throws Z3Exception {
+    protected BoolExpr encodeIDL() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;

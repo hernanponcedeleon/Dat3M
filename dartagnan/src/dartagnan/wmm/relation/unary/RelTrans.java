@@ -70,7 +70,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIdl() throws Z3Exception {
+    protected BoolExpr encodeIDL() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         TupleSet fullEncodeSet = getFullEncodeTupleSet(false);
@@ -124,7 +124,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
+    protected BoolExpr encodeLFP() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         int iteration = 0;
 

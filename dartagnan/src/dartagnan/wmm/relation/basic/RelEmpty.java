@@ -21,11 +21,6 @@ public class RelEmpty extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
-        return ctx.mkTrue();
-    }
-
-    @Override
     protected BoolExpr encodeApprox() throws Z3Exception {
         return ctx.mkTrue();
     }

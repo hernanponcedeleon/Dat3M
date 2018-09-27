@@ -61,7 +61,7 @@ public class RelIdd extends Relation {
 
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
+    protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple1 : encodeTupleSet) {

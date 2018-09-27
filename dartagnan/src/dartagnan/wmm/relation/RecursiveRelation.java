@@ -4,6 +4,8 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
+import dartagnan.utils.Utils;
+import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
 /**
@@ -17,6 +19,7 @@ public class RecursiveRelation extends Relation {
 
     public RecursiveRelation(String name) {
         super(name);
+        term = name;
     }
 
     public static String makeTerm(String name){
@@ -96,8 +99,13 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeBasic() throws Z3Exception {
-        return r1.encodeBasic();
+    protected BoolExpr encodeLFP() throws Z3Exception {
+        return r1.encodeLFP();
+    }
+
+    @Override
+    protected BoolExpr encodeIDL() throws Z3Exception {
+        return r1.encodeIDL();
     }
 
     @Override
@@ -108,5 +116,16 @@ public class RecursiveRelation extends Relation {
     @Override
     public BoolExpr encodeIteration(int recGroupId, int iteration){
         return r1.encodeIteration(recGroupId, iteration);
+    }
+
+    public BoolExpr encodeFinalIteration(int iteration){
+        BoolExpr enc = ctx.mkTrue();
+        for(Tuple tuple : encodeTupleSet){
+            enc = ctx.mkAnd(enc, ctx.mkEq(
+                    Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
+                    Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
+            ));
+        }
+        return enc;
     }
 }

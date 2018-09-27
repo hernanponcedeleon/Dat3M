@@ -28,13 +28,13 @@ public class RecursiveGroup {
     public BoolExpr encode(Context ctx){
         BoolExpr enc = ctx.mkTrue();
         for(int i = 0; i < encodeIterations; i++){
-            for(Relation relation : relations){
+            for(RecursiveRelation relation : relations){
                 enc = ctx.mkAnd(enc, relation.encodeIteration(id, i));
             }
         }
 
-        for(Relation relation : relations){
-            enc = ctx.mkAnd(enc, relation.encodeFinalIteration(id, encodeIterations - 1));
+        for(RecursiveRelation relation : relations){
+            enc = ctx.mkAnd(enc, relation.encodeFinalIteration(encodeIterations - 1));
         }
 
         return enc;

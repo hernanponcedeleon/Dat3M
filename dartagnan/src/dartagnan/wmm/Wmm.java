@@ -77,7 +77,7 @@ public class Wmm {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
 
-        int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.FIXPOINT;
+        int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.LFP;
 
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program, ctx, encodingMode);
@@ -111,7 +111,7 @@ public class Wmm {
             enc = ctx.mkAnd(enc, ax.getRel().encode());
         }
 
-        if(encodingMode == Relation.FIXPOINT){
+        if(encodingMode == Relation.LFP){
             for(RecursiveGroup group : recursiveGroups){
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }
