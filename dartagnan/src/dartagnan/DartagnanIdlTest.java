@@ -4,7 +4,6 @@ import com.microsoft.z3.*;
 import dartagnan.program.Program;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.Wmm;
-import dartagnan.wmm.WmmResolver;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
@@ -44,8 +43,7 @@ public class DartagnanIdlTest {
                             Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
                             Program p = Dartagnan.parseProgram(f.toString());
 
-                            Wmm mcm = Dartagnan.parseCat(catFilePath);
-                            Relation.EncodeCtrlPo = new WmmResolver().encodeCtrlPo(target);
+                            Wmm mcm = new Wmm(catFilePath, target);
 
                             Program pFP = p.clone();
                             Program pIDL = p.clone();

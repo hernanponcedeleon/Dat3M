@@ -16,7 +16,6 @@ import org.apache.commons.io.FileUtils;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
-import dartagnan.wmm.relation.Relation;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
 
@@ -77,11 +76,9 @@ public class Dartagnan {
 			throw new RuntimeException("Assert is required for Dartagnan tests");
 		}
 
-		Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
-
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
-		Wmm mcm = parseCat(cmd.getOptionValue("cat"));
+		Wmm mcm = new Wmm(cmd.getOptionValue("cat"), target);
 
 		int steps = 1;
 		if(cmd.hasOption("unroll")) {
@@ -147,16 +144,6 @@ public class Dartagnan {
 		}
 
 		return program;
-	}
-
-	public static Wmm parseCat(String catPath) throws IOException{
-		File modelfile = new File(catPath);
-		String mcmtext = FileUtils.readFileToString(modelfile, "UTF-8");
-		ANTLRInputStream mcminput = new ANTLRInputStream(mcmtext);
-		ModelLexer lexer = new ModelLexer(mcminput);
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		ModelParser parser = new ModelParser(tokens);
-		return parser.mcm().value;
 	}
 
 	private static boolean canDrawGraph(AbstractAssert ass, boolean result){

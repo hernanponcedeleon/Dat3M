@@ -18,16 +18,14 @@ import java.util.HashSet;
 }
 @parser::members
 {
-    Wmm wmm = new Wmm();
-    RelationRepository relationRepository = wmm.getRelationRepository();
+    Wmm wmm;
+    RelationRepository relationRepository;
     Set<RecursiveRelation> recursiveGroup;
     boolean isRecursive = false;
 }
 
-mcm returns [Wmm value]
-    :   (NAME)? definition+ EOF {
-            $value =  wmm;
-        }
+mcm [Wmm w]
+    :   { wmm = w; relationRepository = wmm.getRelationRepository(); } (NAME)? definition+ EOF
     ;
 
 definition

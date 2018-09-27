@@ -23,6 +23,11 @@ import java.util.Set;
 public class RelationRepository {
 
     private Map<String, Relation> relationMap = new HashMap<>();
+    private boolean includePoToCtrl;
+
+    public RelationRepository(boolean includePoToCtrl){
+        this.includePoToCtrl = includePoToCtrl;
+    }
 
     public Set<Relation> getRelations(){
         Set<Relation> set = new HashSet<>();
@@ -140,7 +145,7 @@ public class RelationRepository {
             case "data":
                 return getRelation(RelIntersection.class, getRelation("idd^+"), getRelation("(R*W)")).setName("data");
             case "ctrl":
-                if(Relation.EncodeCtrlPo){
+                if(includePoToCtrl){
                     return getRelation(RelComposition.class,
                             getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")),
                             getRelation(RelUnion.class, getRelation("id"), getRelation("po"))

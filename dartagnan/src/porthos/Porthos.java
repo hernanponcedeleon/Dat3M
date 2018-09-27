@@ -22,7 +22,6 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
-import dartagnan.wmm.relation.Relation;
 import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;
 
@@ -102,8 +101,8 @@ public class Porthos {
             rels = cmd.getOptionValues("rels");
         }
 
-        Wmm mcmS = Dartagnan.parseCat(cmd.getOptionValue("scat"));
-        Wmm mcmT = Dartagnan.parseCat(cmd.getOptionValue("tcat"));
+        Wmm mcmS = new Wmm(cmd.getOptionValue("scat"), source);
+        Wmm mcmT = new Wmm(cmd.getOptionValue("tcat"), target);
 
         int steps = 1;
         if(cmd.hasOption("unroll")) {
@@ -125,14 +124,12 @@ public class Porthos {
         Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
         Solver s2 = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 
-        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(source);
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, cmd.hasOption("relax"), cmd.hasOption("idl"));
 
-        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));

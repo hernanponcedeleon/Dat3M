@@ -3,6 +3,8 @@ package dartagnan.wmm;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.ModelLexer;
+import dartagnan.ModelParser;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
@@ -16,7 +18,11 @@ import dartagnan.wmm.utils.RecursiveGroup;
 import dartagnan.wmm.utils.RelationRepository;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
+import org.antlr.v4.runtime.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -27,8 +33,13 @@ public class Wmm {
 
     private List<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
-    private RelationRepository relationRepository = new RelationRepository();
+    private RelationRepository relationRepository;
     private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
+
+    public Wmm(String filePath, String target) throws IOException{
+        relationRepository = new RelationRepository(new WmmResolver().encodeCtrlPo(target));
+        parse(filePath);
+    }
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
@@ -148,5 +159,16 @@ public class Wmm {
         }
 
         return result.toString();
+    }
+
+    private void parse(String filePath) throws IOException{
+        File file = new File(filePath);
+        FileInputStream stream = new FileInputStream(file);
+        CharStream charStream = CharStreams.fromStream(stream);
+        ModelLexer lexer = new ModelLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        ModelParser parser = new ModelParser(tokenStream);
+        parser.setErrorHandler(new BailErrorStrategy());
+        parser.mcm(this);
     }
 }
