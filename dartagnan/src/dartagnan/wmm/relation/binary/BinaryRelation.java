@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.TupleSet;
@@ -46,24 +45,24 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx, int option) throws Z3Exception {
+    public BoolExpr encode() throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return ctx.mkAnd(r1.encode(ctx, option), r2.encode(ctx, option), doEncode(ctx, option));
+        return ctx.mkAnd(r1.encode(), r2.encode(), doEncode());
     }
 
     @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic() throws Z3Exception {
         if(recursiveGroupId > 0){
             return ctx.mkTrue();
         }
-        return encodeApprox(ctx);
+        return encodeApprox();
     }
 
     @Override
-    public BoolExpr encodeIteration(int groupId, Context ctx, int iteration){
+    public BoolExpr encodeIteration(int groupId, int iteration){
         if((groupId & recursiveGroupId) > 0){
             throw new RuntimeException("Method encodeIteration is not implemented for " + this.getClass().getName());
         }

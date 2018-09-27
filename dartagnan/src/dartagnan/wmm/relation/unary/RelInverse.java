@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.unary;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
@@ -58,12 +57,12 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return encodeApprox(ctx);
+    protected BoolExpr encodeBasic() throws Z3Exception {
+        return encodeApprox();
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){

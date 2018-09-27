@@ -3,6 +3,7 @@ package dartagnan.wmm.relation;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.wmm.utils.TupleSet;
 
 /**
@@ -20,6 +21,11 @@ public class RecursiveRelation extends Relation {
 
     public static String makeTerm(String name){
         return name;
+    }
+
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
+        r1.initialise(program, ctx, encodingMode);
     }
 
     public void setConcreteRelation(Relation r1){
@@ -81,26 +87,26 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx, int option) throws Z3Exception {
+    public BoolExpr encode() throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return r1.encode(ctx, option);
+        return r1.encode();
     }
 
     @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
-        return r1.encodeBasic(ctx);
+    protected BoolExpr encodeBasic() throws Z3Exception {
+        return r1.encodeBasic();
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
-        return r1.encodeApprox(ctx);
+    protected BoolExpr encodeApprox() throws Z3Exception {
+        return r1.encodeApprox();
     }
 
     @Override
-    public BoolExpr encodeIteration(int recGroupId, Context ctx, int iteration){
-        return r1.encodeIteration(recGroupId, ctx, iteration);
+    public BoolExpr encodeIteration(int recGroupId, int iteration){
+        return r1.encodeIteration(recGroupId, iteration);
     }
 }

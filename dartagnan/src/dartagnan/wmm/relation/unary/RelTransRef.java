@@ -38,8 +38,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(Program program){
-        super.initialise(program);
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }
@@ -80,10 +80,10 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeIdl(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeIdl() throws Z3Exception {
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeIdl(ctx);
+        BoolExpr enc = super.encodeIdl();
         encodeTupleSet = temp;
 
         for(Tuple tuple : identityEncodeTupleSet){
@@ -93,10 +93,10 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic() throws Z3Exception {
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeBasic(ctx);
+        BoolExpr enc = super.encodeBasic();
         encodeTupleSet = temp;
 
         for(Tuple tuple : identityEncodeTupleSet){
@@ -106,10 +106,10 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox() throws Z3Exception {
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeApprox(ctx);
+        BoolExpr enc = super.encodeApprox();
         encodeTupleSet = temp;
 
         for(Tuple tuple : identityEncodeTupleSet){

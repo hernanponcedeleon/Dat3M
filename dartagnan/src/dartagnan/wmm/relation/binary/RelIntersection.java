@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
@@ -52,7 +51,7 @@ public class RelIntersection extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+    public BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){

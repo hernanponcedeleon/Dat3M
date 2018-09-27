@@ -42,8 +42,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(Program program){
-        super.initialise(program);
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
         transReachabilityMap = null;
         fullEncodeTupleSet = null;
     }
@@ -70,7 +70,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIdl(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeIdl() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         TupleSet fullEncodeSet = getFullEncodeTupleSet(false);
@@ -124,7 +124,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         int iteration = 0;
 
@@ -201,7 +201,7 @@ public class RelTrans extends UnaryRelation {
 
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         TupleSet encodeSet = getFullEncodeTupleSet(false);
 

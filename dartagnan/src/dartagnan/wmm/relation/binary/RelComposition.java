@@ -36,8 +36,8 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public void initialise(Program program){
-        super.initialise(program);
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
         lastEncodedIteration = -1;
     }
 
@@ -120,7 +120,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIdl(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeIdl() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
@@ -180,7 +180,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         // TODO: A new attribute for this type of set
@@ -218,7 +218,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeIteration(int groupId, Context ctx, int iteration){
+    public BoolExpr encodeIteration(int groupId, int iteration){
         BoolExpr enc = ctx.mkTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration) {
@@ -270,11 +270,11 @@ public class RelComposition extends BinaryRelation {
                 }
 
                 if(recurseInR1){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, ctx, childIteration));
+                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration));
                 }
 
                 if(recurseInR2){
-                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, ctx, childIteration));
+                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, childIteration));
                 }
             }
         }

@@ -77,11 +77,11 @@ public class Wmm {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
 
-        for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(program);
-        }
+        int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.FIXPOINT;
 
-        int encodingOption = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.FIXPOINT;
+        for(Relation relation : relationRepository.getRelations()){
+            relation.initialise(program, ctx, encodingMode);
+        }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
             recursiveGroup.initMaxTupleSets();
@@ -108,10 +108,10 @@ public class Wmm {
 
         BoolExpr enc = ctx.mkTrue();
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx, encodingOption));
+            enc = ctx.mkAnd(enc, ax.getRel().encode());
         }
 
-        if(encodingOption == Relation.FIXPOINT){
+        if(encodingMode == Relation.FIXPOINT){
             for(RecursiveGroup group : recursiveGroups){
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }

@@ -31,8 +31,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public void initialise(Program program){
-        super.initialise(program);
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
         }
@@ -61,18 +61,18 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx, int option) throws Z3Exception {
+    public BoolExpr encode() throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        BoolExpr enc = r1.encode(ctx, option);
-        enc = ctx.mkAnd(enc, r2.encode(ctx, option));
-        return ctx.mkAnd(enc, doEncode(ctx, option));
+        BoolExpr enc = r1.encode();
+        enc = ctx.mkAnd(enc, r2.encode());
+        return ctx.mkAnd(enc, doEncode());
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();

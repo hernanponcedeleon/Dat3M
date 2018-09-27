@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
@@ -62,7 +61,7 @@ public class RelIdd extends Relation {
 
 
     @Override
-    protected BoolExpr encodeBasic(Context ctx) throws Z3Exception {
+    protected BoolExpr encodeBasic() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple1 : encodeTupleSet) {

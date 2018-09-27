@@ -29,12 +29,12 @@ public class RecursiveGroup {
         BoolExpr enc = ctx.mkTrue();
         for(int i = 0; i < encodeIterations; i++){
             for(Relation relation : relations){
-                enc = ctx.mkAnd(enc, relation.encodeIteration(id, ctx, i));
+                enc = ctx.mkAnd(enc, relation.encodeIteration(id, i));
             }
         }
 
         for(Relation relation : relations){
-            enc = ctx.mkAnd(enc, relation.encodeFinalIteration(id, ctx, encodeIterations - 1));
+            enc = ctx.mkAnd(enc, relation.encodeFinalIteration(id, encodeIterations - 1));
         }
 
         return enc;
