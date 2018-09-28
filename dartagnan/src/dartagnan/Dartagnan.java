@@ -40,11 +40,11 @@ public class Dartagnan {
 		catOption.setRequired(true);
 		options.addOption(catOption);
 
-		options.addOption(new Option("unroll", "Unrolling steps"));
+		options.addOption(new Option("unroll", true, "Unrolling steps"));
 		options.addOption(new Option("idl", "Uses IDL encoding for transitive closure"));
 		options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
-		options.addOption(new Option("draw", "Path to save the execution graph if the state is reachable"));
-		options.addOption(new Option("rels", "Relations to be drawn in the graph"));
+		options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
+		options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
 
         CommandLine cmd;
         try {

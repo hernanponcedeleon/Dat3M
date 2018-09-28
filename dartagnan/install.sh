@@ -19,6 +19,7 @@ java -jar import/antlr-4.7-complete.jar LitmusX86.g4 -no-listener -visitor -o ta
 
 javac \
 src/dartagnan/Dartagnan.java \
+src/dartagnan/DartagnanIdlTest.java \
 src/dartagnan/asserts/AbstractAssert.java \
 src/dartagnan/asserts/AbstractAssertComposite.java \
 src/dartagnan/asserts/AssertBasic.java \
