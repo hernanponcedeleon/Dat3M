@@ -3,7 +3,6 @@ package dartagnan.wmm.relation.binary;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.utils.TupleSet;
 
 /**
  *
@@ -37,27 +36,11 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public TupleSet getMaxTupleSetRecursive(){
-        if(recursiveGroupId > 0 && maxTupleSet != null){
-            throw new RuntimeException("Method getMaxTupleSetRecursive is not implemented for " + this.getClass().getName());
-        }
-        return getMaxTupleSet();
-    }
-
-    @Override
     public BoolExpr encode() throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
         return ctx.mkAnd(r1.encode(), r2.encode(), doEncode());
-    }
-
-    @Override
-    public BoolExpr encodeIteration(int groupId, int iteration){
-        if((groupId & recursiveGroupId) > 0){
-            throw new RuntimeException("Method encodeIteration is not implemented for " + this.getClass().getName());
-        }
-        return ctx.mkTrue();
     }
 }

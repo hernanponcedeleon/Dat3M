@@ -16,6 +16,8 @@ import dartagnan.wmm.utils.TupleSet;
  */
 public class RelMinus extends BinaryRelation {
 
+    private int lastEncodedIteration = -1;
+
     public static String makeTerm(Relation r1, Relation r2){
         return "(" + r1.getName() + "\\" + r2.getName() + ")";
     }
@@ -33,6 +35,7 @@ public class RelMinus extends BinaryRelation {
     @Override
     public void initialise(Program program, Context ctx, int encodingMode){
         super.initialise(program, ctx, encodingMode);
+        lastEncodedIteration = -1;
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
         }
@@ -49,6 +52,15 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
+    public TupleSet getMaxTupleSetRecursive(){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
+            maxTupleSet.addAll(r1.getMaxTupleSetRecursive());
+            return maxTupleSet;
+        }
+        return getMaxTupleSet();
+    }
+
+    @Override
     public void addEncodeTupleSet(TupleSet tuples){
         encodeTupleSet.addAll(tuples);
         TupleSet activeSet = new TupleSet();
@@ -61,14 +73,24 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encode() throws Z3Exception {
-        if(isEncoded){
-            return ctx.mkTrue();
+    protected BoolExpr encodeIDL() throws Z3Exception {
+        BoolExpr enc = ctx.mkTrue();
+        boolean recurse = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
+
+        for(Tuple tuple : encodeTupleSet){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+
+            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
+            BoolExpr opt2 = ctx.mkNot(Utils.edge(r2.getName(), e1, e2, ctx));
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
+
+            if(recurse){
+                opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
+            }
         }
-        isEncoded = true;
-        BoolExpr enc = r1.encode();
-        enc = ctx.mkAnd(enc, r2.encode());
-        return ctx.mkAnd(enc, doEncode());
+        return enc;
     }
 
     @Override
@@ -86,6 +108,44 @@ public class RelMinus extends BinaryRelation {
                 enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
             }
         }
+        return enc;
+    }
+
+    @Override
+    public BoolExpr encodeIteration(int groupId, int iteration){
+        BoolExpr enc = ctx.mkTrue();
+
+        if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){
+            lastEncodedIteration = iteration;
+
+            String name = this.getName() + "_" + iteration;
+
+            if(iteration == 0 && isRecursive){
+                for(Tuple tuple : encodeTupleSet){
+                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
+                }
+
+            } else {
+                int childIteration = isRecursive ? iteration - 1 : iteration;
+                boolean recurse = (r1.getRecursiveGroupId() & groupId) > 0;
+
+                String r1Name = recurse ? r1.getName() + "_" + childIteration : r1.getName();
+                String r2Name = r2.getName();
+
+                for(Tuple tuple : encodeTupleSet){
+                    BoolExpr edge = Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx);
+                    BoolExpr opt1 = Utils.edge(r1Name, tuple.getFirst(), tuple.getSecond(), ctx);
+                    BoolExpr opt2 = ctx.mkNot(Utils.edge(r2Name, tuple.getFirst(), tuple.getSecond(), ctx));
+                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkAnd(opt1, opt2)));
+                }
+
+                if(recurse){
+                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration));
+                }
+
+            }
+        }
+
         return enc;
     }
 }
