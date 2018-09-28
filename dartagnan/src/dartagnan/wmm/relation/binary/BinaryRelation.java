@@ -5,6 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.utils.TupleSet;
 
 /**
  *
@@ -46,11 +47,32 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
+    public void addEncodeTupleSet(TupleSet tuples){
+        TupleSet activeSet = new TupleSet();
+        activeSet.addAll(tuples);
+        activeSet.removeAll(encodeTupleSet);
+        encodeTupleSet.addAll(activeSet);
+        activeSet.retainAll(maxTupleSet);
+        if(!activeSet.isEmpty()){
+            r1.addEncodeTupleSet(activeSet);
+            r2.addEncodeTupleSet(activeSet);
+        }
+    }
+
+    @Override
     public BoolExpr encode() throws Z3Exception {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
         return ctx.mkAnd(r1.encode(), r2.encode(), doEncode());
+    }
+
+    @Override
+    protected BoolExpr encodeLFP() throws Z3Exception {
+        if(recursiveGroupId > 0){
+            return ctx.mkTrue();
+        }
+        return encodeApprox();
     }
 }

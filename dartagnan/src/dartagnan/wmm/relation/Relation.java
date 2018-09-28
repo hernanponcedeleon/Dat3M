@@ -118,9 +118,6 @@ public abstract class Relation {
     }
 
     protected BoolExpr encodeLFP() throws Z3Exception {
-        if(recursiveGroupId > 0){
-            return ctx.mkTrue();
-        }
         return encodeApprox();
     }
 

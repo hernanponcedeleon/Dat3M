@@ -77,8 +77,8 @@ public class RelComposition extends BinaryRelation {
                 Event e2 = tuple.getSecond();
 
                 for(Tuple tuple1 : r1.getMaxTupleSet().getByFirst(e1)){
-                    for(Tuple tuple2 : r2.getMaxTupleSet().getBySecond(e2)){
-                        if(tuple1.getSecond().getEId().equals(tuple2.getFirst().getEId())){
+                    for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
+                        if(tuple2.getSecond().getEId().equals(e2.getEId())){
                             r1Set.add(tuple1);
                             r2Set.add(tuple2);
                         }
@@ -91,70 +91,9 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
-        BoolExpr enc = ctx.mkTrue();
-
-        boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
-        boolean recurseInR2 = (r2.getRecursiveGroupId() & recursiveGroupId) > 0;
-
-        // TODO: A new attribute for this type of set
-        TupleSet r1Set = new TupleSet();
-        r1Set.addAll(r1.getEncodeTupleSet());
-        r1Set.retainAll(r1.getMaxTupleSet());
-
-        TupleSet r2Set = new TupleSet();
-        r2Set.addAll(r2.getEncodeTupleSet());
-        r2Set.retainAll(r2.getMaxTupleSet());
-
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BoolExpr orClause = ctx.mkFalse();
-            for(Tuple tuple1 : r1Set.getByFirst(e1)){
-                Event e3 = tuple1.getSecond();
-                for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                    if(tuple2.getSecond().getEId().equals(e2.getEId())){
-                        BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                        BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
-                    }
-                }
-            }
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
-
-            if(recurseInR1 || recurseInR2){
-                orClause = ctx.mkFalse();
-                for(Tuple tuple1 : r1Set.getByFirst(e1)){
-                    Event e3 = tuple1.getSecond();
-                    for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                        if(tuple2.getSecond().getEId().equals(e2.getEId())){
-                            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                            if(recurseInR1){
-                                opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e3, ctx)));
-                            }
-
-                            BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
-                            if(recurseInR2){
-                                opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e3, e2, ctx)));
-                            }
-
-                            orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
-                        }
-                    }
-                }
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
-            }
-
-        }
-        return enc;
-    }
-
-    @Override
     protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
-        // TODO: A new attribute for this type of set
         TupleSet r1Set = new TupleSet();
         r1Set.addAll(r1.getEncodeTupleSet());
         r1Set.retainAll(r1.getMaxTupleSet());
@@ -184,6 +123,58 @@ public class RelComposition extends BinaryRelation {
             } else {
                 enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
             }
+        }
+        return enc;
+    }
+
+    @Override
+    protected BoolExpr encodeIDL() throws Z3Exception {
+        if(recursiveGroupId == 0){
+            return encodeApprox();
+        }
+
+        BoolExpr enc = ctx.mkTrue();
+
+        boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
+        boolean recurseInR2 = (r2.getRecursiveGroupId() & recursiveGroupId) > 0;
+
+        TupleSet r1Set = new TupleSet();
+        r1Set.addAll(r1.getEncodeTupleSet());
+        r1Set.retainAll(r1.getMaxTupleSet());
+
+        TupleSet r2Set = new TupleSet();
+        r2Set.addAll(r2.getEncodeTupleSet());
+        r2Set.retainAll(r2.getMaxTupleSet());
+
+        for(Tuple tuple : encodeTupleSet){
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+
+            BoolExpr orClause = ctx.mkFalse();
+            BoolExpr orClauseIDL = ctx.mkFalse();
+
+            for(Tuple tuple1 : r1Set.getByFirst(e1)){
+                Event e3 = tuple1.getSecond();
+
+                for(Tuple tuple2 : r2Set.getByFirst(e3)){
+                    if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                        BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
+                        BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
+                        orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
+
+                        if(recurseInR1){
+                            opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e3, ctx)));
+                        }
+                        if(recurseInR2){
+                            opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e3, e2, ctx)));
+                        }
+                        orClauseIDL = ctx.mkOr(orClauseIDL, ctx.mkAnd(opt1, opt2));
+                    }
+                }
+            }
+
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClauseIDL));
         }
         return enc;
     }
