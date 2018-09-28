@@ -24,7 +24,7 @@ import static dartagnan.utils.Utils.intCount;
  */
 public class RelTrans extends UnaryRelation {
 
-    protected Map<Event, Set<Event>> transReachabilityMap;
+    protected Map<Event, Set<Event>> transitiveReachabilityMap;
     private TupleSet fullEncodeTupleSet;
 
     public static String makeTerm(Relation r1){
@@ -44,17 +44,17 @@ public class RelTrans extends UnaryRelation {
     @Override
     public void initialise(Program program, Context ctx, int encodingMode){
         super.initialise(program, ctx, encodingMode);
-        transReachabilityMap = null;
-        fullEncodeTupleSet = null;
+        fullEncodeTupleSet = new TupleSet();
+        transitiveReachabilityMap = null;
     }
 
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            transReachabilityMap = makeTransitiveReachabilityMap(r1.getMaxTupleSet());
+            transitiveReachabilityMap = makeTransitiveReachabilityMap(r1.getMaxTupleSet());
             maxTupleSet = new TupleSet();
-            for(Event e1 : transReachabilityMap.keySet()){
-                for(Event e2 : transReachabilityMap.get(e1)){
+            for(Event e1 : transitiveReachabilityMap.keySet()){
+                for(Event e2 : transitiveReachabilityMap.get(e1)){
                     maxTupleSet.add(new Tuple(e1, e2));
                 }
             }
@@ -64,26 +64,61 @@ public class RelTrans extends UnaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        if(encodeTupleSet.addAll(tuples)){
-            r1.addEncodeTupleSet(getFullEncodeTupleSet(true));
+        TupleSet activeSet = new TupleSet();
+        activeSet.addAll(tuples);
+        activeSet.removeAll(encodeTupleSet);
+        encodeTupleSet.addAll(activeSet);
+        activeSet.retainAll(maxTupleSet);
+
+        TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
+        if(fullEncodeTupleSet.addAll(fullActiveSet)){
+            r1.addEncodeTupleSet(fullActiveSet);
         }
+    }
+
+    @Override
+    protected BoolExpr encodeApprox() throws Z3Exception {
+        BoolExpr enc = ctx.mkTrue();
+
+        for(Tuple tuple : fullEncodeTupleSet){
+            BoolExpr orClause = ctx.mkFalse();
+
+            Event e1 = tuple.getFirst();
+            Event e2 = tuple.getSecond();
+
+            if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
+                orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
+            }
+
+            for(Event e3 : transitiveReachabilityMap.get(e1)){
+                if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId()) && transitiveReachabilityMap.get(e3).contains(e2)){
+                    orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
+                }
+            }
+
+            if(Relation.PostFixApprox) {
+                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
+            } else {
+                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
+            }
+        }
+
+        return enc;
     }
 
     @Override
     protected BoolExpr encodeIDL() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
 
-        TupleSet fullEncodeSet = getFullEncodeTupleSet(false);
-
-        for(Tuple tuple : fullEncodeSet){
+        for(Tuple tuple : fullEncodeTupleSet){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 
             BoolExpr orClause = ctx.mkFalse();
-            for(Tuple tuple2 : fullEncodeSet.getByFirst(e1)){
+            for(Tuple tuple2 : fullEncodeTupleSet.getByFirst(e1)){
                 if (!tuple2.equals(tuple)) {
                     Event e3 = tuple2.getSecond();
-                    if (transReachabilityMap.get(e3).contains(e2)) {
+                    if (transitiveReachabilityMap.get(e3).contains(e2)) {
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(
                                 edge(this.getName(), e1, e3, ctx),
                                 edge(this.getName(), e3, e2, ctx),
@@ -96,10 +131,10 @@ public class RelTrans extends UnaryRelation {
             enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
 
             orClause = ctx.mkFalse();
-            for(Tuple tuple2 : fullEncodeSet.getByFirst(e1)){
+            for(Tuple tuple2 : fullEncodeTupleSet.getByFirst(e1)){
                 if (!tuple2.equals(tuple)) {
                     Event e3 = tuple2.getSecond();
-                    if (transReachabilityMap.get(e3).contains(e2)) {
+                    if (transitiveReachabilityMap.get(e3).contains(e2)) {
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(
                                 edge(this.getName(), e1, e3, ctx),
                                 edge(this.getName(), e3, e2, ctx)));
@@ -199,70 +234,33 @@ public class RelTrans extends UnaryRelation {
         return enc;
     }
 
+    private TupleSet getFullEncodeTupleSet(TupleSet tuples){
+        TupleSet processNow = new TupleSet();
+        processNow.addAll(tuples);
+        processNow.retainAll(getMaxTupleSet());
 
-    @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
-        BoolExpr enc = ctx.mkTrue();
-        TupleSet encodeSet = getFullEncodeTupleSet(false);
+        TupleSet result = new TupleSet();
 
-        for(Tuple tuple : encodeSet){
-            BoolExpr orClause = ctx.mkFalse();
+        while(!processNow.isEmpty()) {
+            TupleSet processNext = new TupleSet();
+            result.addAll(processNow);
 
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            // Directly related via r1
-            if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
-                orClause = ctx.mkOr(orClause, Utils.edge(r1.getName(), e1, e2, ctx));
-            }
-
-            // Transitive relation
-            for(Event e3 : transReachabilityMap.get(e1)){
-                if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId()) && transReachabilityMap.get(e3).contains(e2)){
-                    orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
-                }
-            }
-
-            if(Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
-            } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
-            }
-        }
-
-        return enc;
-    }
-
-    private TupleSet getFullEncodeTupleSet(boolean forceUpdate){
-        if(fullEncodeTupleSet == null || forceUpdate){
-            fullEncodeTupleSet = new TupleSet();
-
-            TupleSet processNow = new TupleSet();
-            processNow.addAll(encodeTupleSet);
-            processNow.retainAll(getMaxTupleSet());
-
-            while(!processNow.isEmpty()){
-                TupleSet processNext = new TupleSet();
-                for(Tuple tuple : processNow){
-                    fullEncodeTupleSet.add(tuple);
-                    Event e1 = tuple.getFirst();
-                    Event e2 = tuple.getSecond();
-
-                    for(Event e3 : transReachabilityMap.get(e1)){
-                        if(!e3.getEId().equals(e1.getEId())
-                                && !e3.getEId().equals(e2.getEId())
-                                && transReachabilityMap.get(e3).contains(e2)){
-                            processNext.add(new Tuple(e1, e3));
-                            processNext.add(new Tuple(e3, e2));
-                        }
+            for (Tuple tuple : processNow) {
+                Event e1 = tuple.getFirst();
+                Event e2 = tuple.getSecond();
+                for (Event e3 : transitiveReachabilityMap.get(e1)) {
+                    if (!e3.getEId().equals(e1.getEId())
+                            && !e3.getEId().equals(e2.getEId())
+                            && transitiveReachabilityMap.get(e3).contains(e2)) {
+                        processNext.add(new Tuple(e1, e3));
+                        processNext.add(new Tuple(e3, e2));
                     }
                 }
-
-                processNext.removeAll(fullEncodeTupleSet);
-                processNow = processNext;
             }
+            processNext.removeAll(result);
+            processNow = processNext;
         }
-        return fullEncodeTupleSet;
+        return result;
     }
 
     private Map<Event, Set<Event>> makeTransitiveReachabilityMap(Set<Tuple> tuples){

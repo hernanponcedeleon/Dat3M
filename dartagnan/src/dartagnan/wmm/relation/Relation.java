@@ -30,11 +30,11 @@ public abstract class Relation {
     protected Program program;
     protected Context ctx;
 
-    protected boolean isEncoded = false;
+    protected boolean isEncoded;
     private int encodingMode;
 
     protected TupleSet maxTupleSet;
-    protected TupleSet encodeTupleSet = new TupleSet();
+    protected TupleSet encodeTupleSet;
 
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;

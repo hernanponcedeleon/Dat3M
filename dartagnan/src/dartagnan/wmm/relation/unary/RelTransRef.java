@@ -11,6 +11,9 @@ import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,13 +50,10 @@ public class RelTransRef extends RelTrans {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-
             super.getMaxTupleSet();
-
-            for (Map.Entry<Event, Set<Event>> entry : transReachabilityMap.entrySet()) {
+            for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
                 entry.getValue().remove(entry.getKey());
             }
-
             for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
                 maxTupleSet.add(new Tuple(e, e));
             }
@@ -63,58 +63,58 @@ public class RelTransRef extends RelTrans {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        for(Tuple tuple : tuples){
+        TupleSet activeSet = new TupleSet();
+        activeSet.addAll(tuples);
+        activeSet.removeAll(encodeTupleSet);
+        encodeTupleSet.addAll(activeSet);
+        activeSet.retainAll(maxTupleSet);
+
+        for(Tuple tuple : activeSet){
             if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
                 identityEncodeTupleSet.add(tuple);
             }
         }
+        activeSet.removeAll(identityEncodeTupleSet);
 
-        tuples.removeAll(encodeTupleSet);
-        tuples.removeAll(identityEncodeTupleSet);
-
-        encodeTupleSet.removeAll(identityEncodeTupleSet);
-        super.addEncodeTupleSet(tuples);
-
-        transEncodeTupleSet.addAll(tuples);
-        encodeTupleSet.addAll(identityEncodeTupleSet);
-    }
-
-    @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
         TupleSet temp = encodeTupleSet;
         encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeIDL();
+        super.addEncodeTupleSet(activeSet);
         encodeTupleSet = temp;
-
-        for(Tuple tuple : identityEncodeTupleSet){
-            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
-        }
-        return enc;
-    }
-
-    @Override
-    protected BoolExpr encodeLFP() throws Z3Exception {
-        TupleSet temp = encodeTupleSet;
-        encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeLFP();
-        encodeTupleSet = temp;
-
-        for(Tuple tuple : identityEncodeTupleSet){
-            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
-        }
-        return enc;
     }
 
     @Override
     protected BoolExpr encodeApprox() throws Z3Exception {
-        TupleSet temp = encodeTupleSet;
-        encodeTupleSet = transEncodeTupleSet;
-        BoolExpr enc = super.encodeApprox();
-        encodeTupleSet = temp;
+        return invokeEncode("encodeApprox");
+    }
 
-        for(Tuple tuple : identityEncodeTupleSet){
-            enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
+    @Override
+    protected BoolExpr encodeIDL() throws Z3Exception {
+        return invokeEncode("encodeIDL");
+    }
+
+    @Override
+    protected BoolExpr encodeLFP() throws Z3Exception {
+        return invokeEncode("encodeLFP");
+    }
+
+    private BoolExpr invokeEncode(String methodName){
+        try{
+            MethodHandle method = MethodHandles.lookup().findSpecial(RelTrans.class, methodName,
+                    MethodType.methodType(BoolExpr.class), RelTransRef.class);
+
+            TupleSet temp = encodeTupleSet;
+            encodeTupleSet = transEncodeTupleSet;
+            BoolExpr enc = (BoolExpr)method.invoke(this);
+            encodeTupleSet = temp;
+
+            for(Tuple tuple : identityEncodeTupleSet){
+                enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
+            }
+            return enc;
+
+        } catch (Throwable e){
+            e.printStackTrace();
+            throw new RuntimeException("Failed to encode relation " + this.getName());
         }
-        return enc;
     }
 }
