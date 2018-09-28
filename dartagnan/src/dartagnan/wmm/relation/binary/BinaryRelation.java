@@ -1,7 +1,9 @@
 package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
+import dartagnan.program.Program;
 import dartagnan.wmm.relation.Relation;
 
 /**
@@ -12,6 +14,8 @@ public abstract class BinaryRelation extends Relation {
 
     protected Relation r1;
     protected Relation r2;
+
+    protected int lastEncodedIteration = -1;
 
     BinaryRelation(Relation r1, Relation r2) {
         this.r1 = r1;
@@ -33,6 +37,12 @@ public abstract class BinaryRelation extends Relation {
             recursiveGroupId |= (r1Id | r2Id) & parentId;
         }
         return recursiveGroupId;
+    }
+
+    @Override
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
+        lastEncodedIteration = -1;
     }
 
     @Override

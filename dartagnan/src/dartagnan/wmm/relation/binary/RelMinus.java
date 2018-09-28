@@ -16,8 +16,6 @@ import dartagnan.wmm.utils.TupleSet;
  */
 public class RelMinus extends BinaryRelation {
 
-    private int lastEncodedIteration = -1;
-
     public static String makeTerm(Relation r1, Relation r2){
         return "(" + r1.getName() + "\\" + r2.getName() + ")";
     }
@@ -35,7 +33,6 @@ public class RelMinus extends BinaryRelation {
     @Override
     public void initialise(Program program, Context ctx, int encodingMode){
         super.initialise(program, ctx, encodingMode);
-        lastEncodedIteration = -1;
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
         }

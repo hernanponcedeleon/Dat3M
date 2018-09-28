@@ -1,9 +1,7 @@
 package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -23,8 +21,6 @@ public class RelComposition extends BinaryRelation {
         return "(" + r1.getName() + ";" + r2.getName() + ")";
     }
 
-    private int lastEncodedIteration = -1;
-
     public RelComposition(Relation r1, Relation r2) {
         super(r1, r2);
         term = makeTerm(r1, r2);
@@ -33,12 +29,6 @@ public class RelComposition extends BinaryRelation {
     public RelComposition(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
-    }
-
-    @Override
-    public void initialise(Program program, Context ctx, int encodingMode){
-        super.initialise(program, ctx, encodingMode);
-        lastEncodedIteration = -1;
     }
 
     @Override
@@ -73,49 +63,30 @@ public class RelComposition extends BinaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
+        Set<Tuple> activeSet = new HashSet<>(tuples);
+        activeSet.removeAll(encodeTupleSet);
+        activeSet.retainAll(maxTupleSet);
         encodeTupleSet.addAll(tuples);
 
-        Set<Tuple> activeSet = new HashSet<>(tuples);
-        activeSet.retainAll(maxTupleSet);
-
         if(!activeSet.isEmpty()){
-
-            Set<Event> startEvents = new HashSet<>();
-            Set<Event> endEvents = new HashSet<>();
-            for(Tuple tuple : activeSet){
-                startEvents.add(tuple.getFirst());
-                endEvents.add(tuple.getSecond());
-            }
-
-            TupleSet r1Candidates = new TupleSet();
-            for(Tuple tuple : r1.getMaxTupleSet()){
-                if(startEvents.contains(tuple.getFirst())){
-                    r1Candidates.add(tuple);
-                }
-            }
-
-            TupleSet r2Candidates = new TupleSet();
-            for(Tuple tuple : r2.getMaxTupleSet()){
-                if(endEvents.contains(tuple.getSecond())){
-                    r2Candidates.add(tuple);
-                }
-            }
-
-            TupleSet r1NewSet = new TupleSet();
-            TupleSet r2NewSet = new TupleSet();
+            TupleSet r1Set = new TupleSet();
+            TupleSet r2Set = new TupleSet();
 
             for(Tuple tuple : activeSet){
-                for(Tuple tuple1 : r1Candidates.getByFirst(tuple.getFirst())){
-                    for(Tuple tuple2 : r2Candidates.getByFirst(tuple1.getSecond())){
-                        if(tuple.getSecond().getEId().equals(tuple2.getSecond().getEId())){
-                            r1NewSet.add(tuple1);
-                            r2NewSet.add(tuple2);
+                Event e1 = tuple.getFirst();
+                Event e2 = tuple.getSecond();
+
+                for(Tuple tuple1 : r1.getMaxTupleSet().getByFirst(e1)){
+                    for(Tuple tuple2 : r2.getMaxTupleSet().getBySecond(e2)){
+                        if(tuple1.getSecond().getEId().equals(tuple2.getFirst().getEId())){
+                            r1Set.add(tuple1);
+                            r2Set.add(tuple2);
                         }
                     }
                 }
             }
-            r1.addEncodeTupleSet(r1NewSet);
-            r2.addEncodeTupleSet(r2NewSet);
+            r1.addEncodeTupleSet(r1Set);
+            r2.addEncodeTupleSet(r2Set);
         }
     }
 

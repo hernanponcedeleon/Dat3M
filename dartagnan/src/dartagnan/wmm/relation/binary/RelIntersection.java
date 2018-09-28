@@ -1,9 +1,7 @@
 package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -15,8 +13,6 @@ import dartagnan.wmm.utils.TupleSet;
  * @author Florian Furbach
  */
 public class RelIntersection extends BinaryRelation {
-
-    private int lastEncodedIteration = -1;
 
     public static String makeTerm(Relation r1, Relation r2){
         return "(" + r1.getName() + "&" + r2.getName() + ")";
@@ -30,12 +26,6 @@ public class RelIntersection extends BinaryRelation {
     public RelIntersection(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
-    }
-
-    @Override
-    public void initialise(Program program, Context ctx, int encodingMode){
-        super.initialise(program, ctx, encodingMode);
-        lastEncodedIteration = -1;
     }
 
     @Override
