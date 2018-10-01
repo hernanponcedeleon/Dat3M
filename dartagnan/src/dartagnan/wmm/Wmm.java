@@ -14,10 +14,7 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.utils.RecursiveGroup;
-import dartagnan.wmm.utils.RelationRepository;
-import dartagnan.wmm.utils.Tuple;
-import dartagnan.wmm.utils.TupleSet;
+import dartagnan.wmm.utils.*;
 import org.antlr.v4.runtime.*;
 
 import java.io.File;
@@ -37,7 +34,7 @@ public class Wmm {
     private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     public Wmm(String filePath, String target) throws IOException{
-        relationRepository = new RelationRepository(new WmmResolver().encodeCtrlPo(target));
+        relationRepository = new RelationRepository(Arch.encodeCtrlPo(target));
         parse(filePath);
     }
 
@@ -102,6 +99,7 @@ public class Wmm {
             ax.getRel().addEncodeTupleSet(set);
         }
 
+        Collections.reverse(recursiveGroups);
         for(RecursiveGroup recursiveGroup : recursiveGroups){
             recursiveGroup.updateEncodeTupleSets();
         }

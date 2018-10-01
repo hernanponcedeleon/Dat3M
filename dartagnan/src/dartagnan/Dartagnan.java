@@ -6,8 +6,8 @@ import java.io.IOException;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
-import dartagnan.wmm.WmmResolver;
 import dartagnan.wmm.Wmm;
+import dartagnan.wmm.utils.Arch;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.DiagnosticErrorListener;
@@ -56,9 +56,8 @@ public class Dartagnan {
         	return;
         }
 
-		WmmResolver wmmResolver = new WmmResolver();
 		String target = cmd.getOptionValue("target").trim();
-        if(!(wmmResolver.getArchSet().contains(target))){
+        if(!(Arch.targets.contains(target))){
             System.out.println("Unrecognized target");
             System.exit(0);
             return;

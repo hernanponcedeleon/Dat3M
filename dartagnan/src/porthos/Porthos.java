@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import dartagnan.*;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.Wmm;
-import dartagnan.wmm.WmmResolver;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -25,6 +24,7 @@ import dartagnan.utils.Utils;
 import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;
 
+import dartagnan.wmm.utils.Arch;
 import org.apache.commons.cli.*;
 
 public class Porthos {
@@ -73,17 +73,15 @@ public class Porthos {
             return;
         }
 
-        WmmResolver wmmResolver = new WmmResolver();
-
         String source = cmd.getOptionValue("source").trim();
-        if(!(wmmResolver.getArchSet().contains(source))){
+        if(!(Arch.targets.contains(source))){
             System.out.println("Unrecognized source");
             System.exit(0);
             return;
         }
 
         String target = cmd.getOptionValue("target").trim();
-        if(!(wmmResolver.getArchSet().contains(target))){
+        if(!(Arch.targets.contains(target))){
             System.out.println("Unrecognized target");
             System.exit(0);
             return;
