@@ -1,50 +1,141 @@
 timeout=1800
 
-echo "TSO"
+echo "SC -> TSO"
+echo ""
+
 for file in $(find benchmarks -name '*.pts' | sort);
 do
+   echo $file
+
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t tso -i $file -unroll 2 -relax)
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/sc.cat -tcat cat/tso.cat -unroll 2 -i $file)
    END=$(python -c 'import time; print time.time()')
-   if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
-      then
-         diffPort1=$(echo "$END - $START" | bc)
-      else
-         diffPort1='T/O'
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "LFP   iterations: %d  time: %s\n" $it $diff
+       else
+          printf "LFP   T/0\n"
    fi
-   echo "log - relax"
-   echo \\bench{$file} $diffPort1
+
+   START=$(python -c 'import time; print time.time()')
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/sc.cat -tcat cat/tso.cat -unroll 2 -i $file -idl)
+   END=$(python -c 'import time; print time.time()')
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "IDL   iterations: %d  time: %s\n" $it $diff
+       else
+          printf "IDL   T/0\n"
+   fi
+
+   START=$(python -c 'import time; print time.time()')
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/sc.cat -tcat cat/tso.cat -unroll 2 -i $file -relax)
+   END=$(python -c 'import time; print time.time()')
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "RELAX iterations: %d  time: %s\n" $it $diff
+       else
+          printf "RELAX T/0\n"
+   fi
+
+   echo ""
 done
 
-echo "POWER"
+
+echo "TSO -> ARM"
+echo ""
+
 for file in $(find benchmarks -name '*.pts' | sort);
 do
+   echo $file
+
    START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t power -i $file -unroll 2 -relax)
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/tso.cat -tcat cat/arm.cat -unroll 2 -i $file)
    END=$(python -c 'import time; print time.time()')
-   if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
-      then
-         diffPort1=$(echo "$END - $START" | bc)
-      else
-         diffPort1='T/O'
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "LFP   iterations: %d  time: %s\n" $it $diff
+       else
+          printf "LFP   T/0\n"
    fi
-   echo "log - relax"
-   echo \\bench{$file} $diffPort1
+
+   START=$(python -c 'import time; print time.time()')
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/tso.cat -tcat cat/arm.cat -unroll 2 -i $file -idl)
+   END=$(python -c 'import time; print time.time()')
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "IDL   iterations: %d  time: %s\n" $it $diff
+       else
+          printf "IDL   T/0\n"
+   fi
+
+   START=$(python -c 'import time; print time.time()')
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/tso.cat -tcat cat/arm.cat -unroll 2 -i $file -relax)
+   END=$(python -c 'import time; print time.time()')
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "RELAX iterations: %d  time: %s\n" $it $diff
+       else
+          printf "RELAX T/0\n"
+   fi
+
+   echo ""
 done
 
-echo "ARM"
+
+echo "TSO -> POWER"
+echo ""
+
 for file in $(find benchmarks -name '*.pts' | sort);
 do
-   START=$(python -c 'import time; print time.time()')
-   EXEC=$(timeout $timeout java -Xmx128m dartagnan/Dartagnan -t arm -i $file -unroll 2 -relax)
-   END=$(python -c 'import time; print time.time()')
-   if [ $(echo $EXEC | grep -e "Condition" | wc -l) = 1 ]
-      then
-         diffPort1=$(echo "$END - $START" | bc)
-      else
-         diffPort1='T/O'
-   fi
-   echo "log - relax"
-   echo \\bench{$file} $diffPort1
-done
+   echo $file
 
+   START=$(python -c 'import time; print time.time()')
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/tso.cat -tcat cat/power.cat -unroll 2 -i $file)
+   END=$(python -c 'import time; print time.time()')
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "LFP   iterations: %d  time: %s\n" $it $diff
+       else
+          printf "LFP   T/0\n"
+   fi
+
+   START=$(python -c 'import time; print time.time()')
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/tso.cat -tcat cat/power.cat -unroll 2 -i $file -idl)
+   END=$(python -c 'import time; print time.time()')
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "IDL   iterations: %d  time: %s\n" $it $diff
+       else
+          printf "IDL   T/0\n"
+   fi
+
+   START=$(python -c 'import time; print time.time()')
+   EXEC=$(timeout $timeout java -Xmx128m porthos/Porthos -s sc -t tso -scat cat/tso.cat -tcat cat/power.cat -unroll 2 -i $file -relax)
+   END=$(python -c 'import time; print time.time()')
+   it=$(echo $EXEC | grep -e "Iterations" | grep -oE "[1-9]+$")
+   diff=$(echo "$END - $START" | bc)
+   if [[ $it ]]
+       then
+          printf "RELAX iterations: %d  time: %s\n" $it $diff
+       else
+          printf "RELAX T/0\n"
+   fi
+
+   echo ""
+done
