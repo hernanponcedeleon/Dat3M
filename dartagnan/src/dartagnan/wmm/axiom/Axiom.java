@@ -5,7 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 import java.util.Set;
 
@@ -53,9 +53,7 @@ public abstract class Axiom {
         return _toString();
     }
 
-    public Set<Tuple> filterTupleSet(Set<Tuple> set){
-        return set;
-    }
+    public abstract TupleSet getEncodeTupleSet();
 
     protected abstract BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception;
 

@@ -7,8 +7,8 @@ import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -26,14 +26,14 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    public Set<Tuple> filterTupleSet(Set<Tuple> set){
-        Set<Tuple> newSet = new HashSet<>();
-        for(Tuple tuple : set){
+    public TupleSet getEncodeTupleSet(){
+        TupleSet set = new TupleSet();
+        for(Tuple tuple : rel.getMaxTupleSet()){
             if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
-                newSet.add(tuple);
+                set.add(tuple);
             }
         }
-        return newSet;
+        return set;
     }
 
     @Override

@@ -8,8 +8,9 @@ import dartagnan.utils.Utils;
 import dartagnan.wmm.Encodings;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -26,9 +27,28 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    public Set<Tuple> filterTupleSet(Set<Tuple> set){
-        // TODO: Implementation
-        return set;
+    public TupleSet getEncodeTupleSet(){
+        Map<Event, Set<Event>> transMap = rel.getMaxTupleSet().transMap();
+        TupleSet result = new TupleSet();
+
+        for(Event e1 : transMap.keySet()){
+            if(transMap.get(e1).contains(e1)){
+                for(Event e2 : transMap.get(e1)){
+                    if(!e2.getEId().equals(e1.getEId()) && transMap.get(e2).contains(e1)){
+                        result.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+        }
+
+        for(Tuple tuple : rel.getMaxTupleSet()){
+            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+                result.add(tuple);
+            }
+        }
+
+        result.retainAll(rel.getMaxTupleSet());
+        return result;
     }
 
     @Override

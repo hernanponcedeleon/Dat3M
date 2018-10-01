@@ -126,6 +126,35 @@ public class TupleSet implements Set<Tuple>{
         return bySecond.get(e);
     }
 
+    public Map<Event, Set<Event>> transMap(){
+        Map<Event, Set<Event>> map = new HashMap<>();
+
+        for(Tuple tuple : tuples){
+            map.putIfAbsent(tuple.getFirst(), new HashSet<>());
+            map.putIfAbsent(tuple.getSecond(), new HashSet<>());
+            Set<Event> events = map.get(tuple.getFirst());
+            events.add(tuple.getSecond());
+        }
+
+        boolean changed = true;
+
+        while (changed){
+            changed = false;
+            for(Event e1 : map.keySet()){
+                Set<Event> newEls = new HashSet<>();
+                for(Event e2 : map.get(e1)){
+                    if(!(e1.getEId().equals(e2.getEId()))){
+                        newEls.addAll(map.get(e2));
+                    }
+                }
+                if(map.get(e1).addAll(newEls))
+                    changed = true;
+            }
+        }
+
+        return map;
+    }
+
     private void updateAuxiliary(){
         byFirst.clear();
         bySecond.clear();

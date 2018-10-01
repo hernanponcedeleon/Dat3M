@@ -84,19 +84,8 @@ public class Wmm {
             recursiveGroup.initMaxTupleSets();
         }
 
-        Map<Relation, Set<Tuple>> map = new HashMap<>();
         for (Axiom ax : axioms) {
-            map.put(ax.getRel(), ax.getRel().getMaxTupleSet());
-        }
-
-        for (Axiom ax : axioms) {
-            map.put(ax.getRel(), ax.filterTupleSet(ax.getRel().getMaxTupleSet()));
-        }
-
-        for (Axiom ax : axioms) {
-            TupleSet set = new TupleSet();
-            set.addAll(map.get(ax.getRel()));
-            ax.getRel().addEncodeTupleSet(set);
+            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
         }
 
         Collections.reverse(recursiveGroups);

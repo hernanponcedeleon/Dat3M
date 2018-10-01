@@ -7,6 +7,7 @@ import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 import java.util.Set;
 
@@ -18,6 +19,11 @@ public class Empty extends Axiom {
 
     public Empty(Relation rel, boolean negate) {
         super(rel, negate);
+    }
+
+    @Override
+    public TupleSet getEncodeTupleSet(){
+        return rel.getMaxTupleSet();
     }
 
     @Override
