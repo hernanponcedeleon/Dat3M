@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dartagnan.utils.Utils.edge;
-import static dartagnan.wmm.Encodings.encodeEO;
 
 public class RelRf extends Relation {
 
@@ -73,12 +72,24 @@ public class RelRf extends Relation {
                                 rfPairs.add(edge("rf", w, r, ctx));
                             }
                         }
-                        enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs, ctx)));
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));
                     }
                 }
             }
         }
 
+        return enc;
+    }
+
+    private BoolExpr encodeEO(Collection<BoolExpr> set) throws Z3Exception {
+        BoolExpr enc = ctx.mkFalse();
+        for(BoolExpr exp : set) {
+            BoolExpr thisYesOthersNot = exp;
+            for(BoolExpr x : set.stream().filter(x -> x != exp).collect(Collectors.toSet())) {
+                thisYesOthersNot = ctx.mkAnd(thisYesOthersNot, ctx.mkNot(x));
+            }
+            enc = ctx.mkOr(enc, thisYesOthersNot);
+        }
         return enc;
     }
 }

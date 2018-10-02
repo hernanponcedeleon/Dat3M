@@ -6,6 +6,7 @@ import dartagnan.program.Location;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.utils.EventRepository;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
@@ -15,7 +16,6 @@ import java.util.stream.Collectors;
 
 import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.intVar;
-import static dartagnan.wmm.Encodings.satTO;
 
 public class RelCo extends Relation {
 
@@ -69,7 +69,7 @@ public class RelCo extends Relation {
 
             for(Location loc : locations) {
                 Collection<Event> eventsStoreInitByLocation = eventsStoreInit.stream().filter(e -> e.getLoc() == loc).collect(Collectors.toSet());
-                enc = ctx.mkAnd(enc, satTO("co", eventsStoreInitByLocation, ctx));
+                enc = ctx.mkAnd(enc, satTO(eventsStoreInitByLocation));
                 for(Event w1 : eventsStoreInitByLocation){
                     BoolExpr lastCoOrder = w1.executes(ctx);
                     for(Event w2 : eventsStoreInitByLocation){
@@ -80,6 +80,30 @@ public class RelCo extends Relation {
             }
         }
 
+        return enc;
+    }
+
+    private BoolExpr satTO(Collection<Event> events) throws Z3Exception {
+        BoolExpr enc = ctx.mkTrue();
+        String name = getName();
+
+        for(Event e1 : events) {
+            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0))));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkLe(Utils.intVar(name, e1, ctx), ctx.mkInt(events.size()))));
+            for(Event e2 : events) {
+                enc = ctx.mkAnd(enc, ctx.mkImplies(edge(name, e1, e2, ctx),
+                        ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))));
+                enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
+                        ctx.mkImplies(ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)),
+                                edge(name, e1, e2, ctx))));
+                if(e1 != e2) {
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
+                            ctx.mkNot(ctx.mkEq(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)))));
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
+                            ctx.mkOr(edge(name, e1, e2, ctx), edge(name, e2, e1, ctx))));
+                }
+            }
+        }
         return enc;
     }
 }
