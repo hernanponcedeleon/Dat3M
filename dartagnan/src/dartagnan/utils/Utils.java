@@ -230,12 +230,4 @@ public class Utils {
 	public static IntExpr intCount(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {
 		return ctx.mkIntConst(String.format("%s(%s,%s)", relName, e1.repr(), e2.repr()));
 	}
-
-	public static BoolExpr cycleVar(String relName, Event e, Context ctx) throws Z3Exception {
-		return ctx.mkBoolConst(String.format("Cycle(%s)(%s)", e.repr(), relName));
-	}
-	
-	public static BoolExpr cycleEdge(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {
-		return ctx.mkBoolConst(String.format("Cycle:%s(%s,%s)", relName, e1.repr(), e2.repr()));
-	}
 }

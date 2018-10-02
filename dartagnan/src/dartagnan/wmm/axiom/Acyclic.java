@@ -82,7 +82,7 @@ public class Acyclic extends Axiom {
 
         BoolExpr cycle = ctx.mkFalse();
         for(Event e : cycleEvents){
-            cycle = ctx.mkOr(cycle, Utils.cycleVar(rel.getName(), e, ctx));
+            cycle = ctx.mkOr(cycle, cycleVar(rel.getName(), e, ctx));
         }
 
         return cycle;
@@ -98,13 +98,13 @@ public class Acyclic extends Axiom {
             Event e2 = t.getSecond();
 
             enc = ctx.mkAnd(enc, ctx.mkImplies(
-                    Utils.cycleEdge(name, e1, e2, ctx),
+                    cycleEdge(name, e1, e2, ctx),
                     ctx.mkAnd(
                             e1.executes(ctx),
                             e2.executes(ctx),
                             edge(name, e1, e2, ctx),
-                            Utils.cycleVar(name, e1, ctx),
-                            Utils.cycleVar(name, e2, ctx)
+                            cycleVar(name, e1, ctx),
+                            cycleVar(name, e2, ctx)
             )));
 
             if(!encoded.contains(e1)){
@@ -112,10 +112,10 @@ public class Acyclic extends Axiom {
 
                 BoolExpr source = ctx.mkFalse();
                 for(Tuple tuple1 : rel.getEncodeTupleSet().getByFirst(e1)){
-                    BoolExpr opt = Utils.cycleEdge(name, e1, tuple1.getSecond(), ctx);
+                    BoolExpr opt = cycleEdge(name, e1, tuple1.getSecond(), ctx);
                     for(Tuple tuple2 : rel.getEncodeTupleSet().getByFirst(e1)){
                         if(!tuple1.getSecond().getEId().equals(tuple2.getSecond().getEId())){
-                            opt = ctx.mkAnd(opt, ctx.mkNot(Utils.cycleEdge(name, e1, tuple2.getSecond(), ctx)));
+                            opt = ctx.mkAnd(opt, ctx.mkNot(cycleEdge(name, e1, tuple2.getSecond(), ctx)));
                         }
                     }
                     source = ctx.mkOr(source, opt);
@@ -123,19 +123,27 @@ public class Acyclic extends Axiom {
 
                 BoolExpr target = ctx.mkFalse();
                 for(Tuple tuple1 : rel.getEncodeTupleSet().getBySecond(e1)){
-                    BoolExpr opt = Utils.cycleEdge(name, tuple1.getFirst(), e1, ctx);
+                    BoolExpr opt = cycleEdge(name, tuple1.getFirst(), e1, ctx);
                     for(Tuple tuple2 : rel.getEncodeTupleSet().getBySecond(e1)){
                         if(!tuple1.getFirst().getEId().equals(tuple2.getFirst().getEId())){
-                            opt = ctx.mkAnd(opt, ctx.mkNot(Utils.cycleEdge(name, tuple2.getFirst(), e1, ctx)));
+                            opt = ctx.mkAnd(opt, ctx.mkNot(cycleEdge(name, tuple2.getFirst(), e1, ctx)));
                         }
                     }
                     target = ctx.mkOr(target, opt);
                 }
 
-                enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.cycleVar(name, e1, ctx), ctx.mkAnd(source, target)));
+                enc = ctx.mkAnd(enc, ctx.mkImplies(cycleVar(name, e1, ctx), ctx.mkAnd(source, target)));
             }
         }
 
         return enc;
+    }
+
+    private BoolExpr cycleVar(String relName, Event e, Context ctx) throws Z3Exception {
+        return ctx.mkBoolConst("Cycle(" + e.repr() + ")(" + relName + ")");
+    }
+
+    private BoolExpr cycleEdge(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {
+        return ctx.mkBoolConst("Cycle:" + relName + "(" + e1.repr() + "," + e2.repr() + ")");
     }
 }
