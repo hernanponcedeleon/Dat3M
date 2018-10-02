@@ -108,6 +108,8 @@ public class RelationRepository {
 
     private Relation getBasicRelation(String name){
         switch (name){
+            case "_po":
+                return new RelPo(true);
             case "po":
                 return new RelPo();
             case "loc":
@@ -148,7 +150,7 @@ public class RelationRepository {
                 if(includePoToCtrl){
                     return getRelation(RelComposition.class,
                             getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")),
-                            getRelation(RelUnion.class, getRelation("id"), getRelation("po"))
+                            getRelation(RelUnion.class, getRelation("id"), getRelation("_po"))
                     ).setName("ctrl");
                 } else {
                     return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");

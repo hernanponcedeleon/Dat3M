@@ -13,8 +13,20 @@ import java.util.stream.Collectors;
 
 public class RelPo extends BasicRelation {
 
+    private int eventMask;
+
     public RelPo(){
-        term = "po";
+        this(false);
+    }
+
+    public RelPo(boolean includeLocalEvents){
+        if(includeLocalEvents){
+            term = "_po";
+            eventMask = EventRepository.EVENT_ALL;
+        } else {
+            term = "po";
+            eventMask = EventRepository.EVENT_VISIBLE;
+        }
     }
 
     @Override
@@ -22,7 +34,7 @@ public class RelPo extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Event> events = t.getEventRepository().getEvents(EventRepository.EVENT_ALL)
+                List<Event> events = t.getEventRepository().getEvents(eventMask)
                         .stream().sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
 
                 ListIterator<Event> it1 = events.listIterator();

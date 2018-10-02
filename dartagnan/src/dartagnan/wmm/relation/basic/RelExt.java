@@ -19,10 +19,10 @@ public class RelExt extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t1 : program.getThreads()){
-                Collection<Event> eventsT1 = t1.getEventRepository().getEvents(EventRepository.EVENT_ALL);
+                Collection<Event> eventsT1 = t1.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE);
                 for(Thread t2 : program.getThreads()){
                     if(t1 != t2){
-                        Collection<Event> eventsT2 = t2.getEventRepository().getEvents(EventRepository.EVENT_ALL);
+                        Collection<Event> eventsT2 = t2.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE);
                         for(Event e1 : eventsT1){
                             for(Event e2 : eventsT2){
                                 maxTupleSet.add(new Tuple(e1, e2));
