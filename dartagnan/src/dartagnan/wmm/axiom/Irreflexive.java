@@ -3,13 +3,10 @@ package dartagnan.wmm.axiom;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
-
-import java.util.Set;
 
 /**
  *
@@ -37,7 +34,7 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr _consistent(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
@@ -48,7 +45,7 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr _inconsistent(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){

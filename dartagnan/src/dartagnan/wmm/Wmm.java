@@ -6,11 +6,9 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.ModelLexer;
 import dartagnan.ModelParser;
 import dartagnan.program.Program;
-import dartagnan.program.event.Event;
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
@@ -32,6 +30,8 @@ public class Wmm {
     private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
     private RelationRepository relationRepository;
     private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
+
+    private Program program;
 
     public Wmm(String filePath, String target) throws IOException{
         relationRepository = new RelationRepository(Arch.encodeCtrlPo(target));
@@ -70,6 +70,8 @@ public class Wmm {
     }
 
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
+        this.program = program;
+
         for (Axiom ax : axioms) {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
@@ -112,19 +114,23 @@ public class Wmm {
     }
 
     public BoolExpr consistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+        if(this.program != program){
+            throw new RuntimeException("Wmm relations must be encoded before consistency predicate");
+        }
         BoolExpr expr = ctx.mkTrue();
         for (Axiom ax : axioms) {
-            expr = ctx.mkAnd(expr, ax.consistent(events, ctx));
+            expr = ctx.mkAnd(expr, ax.consistent(ctx));
         }
         return expr;
     }
 
     public BoolExpr inconsistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+        if(this.program != program){
+            throw new RuntimeException("Wmm relations must be encoded before inconsistency predicate");
+        }
         BoolExpr expr = ctx.mkFalse();
         for (Axiom ax : axioms) {
-            expr = ctx.mkOr(expr, ax.inconsistent(events, ctx));
+            expr = ctx.mkOr(expr, ax.inconsistent(ctx));
         }
         return expr;
     }

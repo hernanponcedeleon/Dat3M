@@ -3,11 +3,8 @@ package dartagnan.wmm.axiom;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.TupleSet;
-
-import java.util.Set;
 
 /**
  *
@@ -32,18 +29,18 @@ public abstract class Axiom {
         return rel;
     }
 
-    public BoolExpr consistent(Set<Event> events, Context ctx) throws Z3Exception{
+    public BoolExpr consistent(Context ctx) throws Z3Exception{
         if(negate){
-            return _inconsistent(events, ctx);
+            return _inconsistent(ctx);
         }
-        return _consistent(events, ctx);
+        return _consistent(ctx);
     }
 
-    public BoolExpr inconsistent(Set<Event> events, Context ctx) throws Z3Exception{
+    public BoolExpr inconsistent(Context ctx) throws Z3Exception{
         if(negate){
-            return _consistent(events, ctx);
+            return _consistent(ctx);
         }
-        return _inconsistent(events, ctx);
+        return _inconsistent(ctx);
     }
 
     public String toString(){
@@ -55,9 +52,9 @@ public abstract class Axiom {
 
     public abstract TupleSet getEncodeTupleSet();
 
-    protected abstract BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception;
+    protected abstract BoolExpr _consistent(Context ctx) throws Z3Exception;
 
-    protected abstract BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception;
+    protected abstract BoolExpr _inconsistent(Context ctx) throws Z3Exception;
 
     protected abstract String _toString();
 }

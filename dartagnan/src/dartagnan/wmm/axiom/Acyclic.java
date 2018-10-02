@@ -53,7 +53,7 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
+    protected BoolExpr _consistent(Context ctx) throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
@@ -65,8 +65,8 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
-        return ctx.mkAnd(satCycleDef(ctx), satCycle(rel.getName(), events, ctx));
+    protected BoolExpr _inconsistent(Context ctx) throws Z3Exception {
+        return ctx.mkAnd(satCycleDef(ctx), satCycle(ctx));
     }
 
     @Override
@@ -74,7 +74,7 @@ public class Acyclic extends Axiom {
         return String.format("acyclic %s", rel.getName());
     }
 
-    private BoolExpr satCycle(String name, Collection<Event> events, Context ctx) throws Z3Exception {
+    private BoolExpr satCycle(Context ctx) throws Z3Exception {
         Set<Event> cycleEvents = new HashSet<>();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             cycleEvents.add(tuple.getFirst());
