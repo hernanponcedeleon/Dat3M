@@ -85,6 +85,10 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
+            ax.getRel().getMaxTupleSet();
+        }
+
+        for (Axiom ax : axioms) {
             ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
         }
 

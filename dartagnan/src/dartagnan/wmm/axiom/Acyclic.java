@@ -5,12 +5,13 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
-import dartagnan.wmm.Encodings;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
 import java.util.*;
+
+import static dartagnan.utils.Utils.edge;
 
 /**
  *
@@ -65,12 +66,76 @@ public class Acyclic extends Axiom {
 
     @Override
     protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
-        // TODO: Tuples
-        return ctx.mkAnd(Encodings.satCycleDef(rel.getName(), events, ctx), Encodings.satCycle(rel.getName(), events, ctx));
+        return ctx.mkAnd(satCycleDef(ctx), satCycle(rel.getName(), events, ctx));
     }
 
     @Override
     protected String _toString() {
         return String.format("acyclic %s", rel.getName());
+    }
+
+    private BoolExpr satCycle(String name, Collection<Event> events, Context ctx) throws Z3Exception {
+        Set<Event> cycleEvents = new HashSet<>();
+        for(Tuple tuple : rel.getEncodeTupleSet()){
+            cycleEvents.add(tuple.getFirst());
+        }
+
+        BoolExpr cycle = ctx.mkFalse();
+        for(Event e : cycleEvents){
+            cycle = ctx.mkOr(cycle, Utils.cycleVar(rel.getName(), e, ctx));
+        }
+
+        return cycle;
+    }
+
+    private BoolExpr satCycleDef(Context ctx){
+        BoolExpr enc = ctx.mkTrue();
+        Set<Event> encoded = new HashSet<>();
+        String name = rel.getName();
+
+        for(Tuple t : rel.getEncodeTupleSet()){
+            Event e1 = t.getFirst();
+            Event e2 = t.getSecond();
+
+            enc = ctx.mkAnd(enc, ctx.mkImplies(
+                    Utils.cycleEdge(name, e1, e2, ctx),
+                    ctx.mkAnd(
+                            e1.executes(ctx),
+                            e2.executes(ctx),
+                            edge(name, e1, e2, ctx),
+                            Utils.cycleVar(name, e1, ctx),
+                            Utils.cycleVar(name, e2, ctx)
+            )));
+
+            if(!encoded.contains(e1)){
+                encoded.add(e1);
+
+                BoolExpr source = ctx.mkFalse();
+                for(Tuple tuple1 : rel.getEncodeTupleSet().getByFirst(e1)){
+                    BoolExpr opt = Utils.cycleEdge(name, e1, tuple1.getSecond(), ctx);
+                    for(Tuple tuple2 : rel.getEncodeTupleSet().getByFirst(e1)){
+                        if(!tuple1.getSecond().getEId().equals(tuple2.getSecond().getEId())){
+                            opt = ctx.mkAnd(opt, ctx.mkNot(Utils.cycleEdge(name, e1, tuple2.getSecond(), ctx)));
+                        }
+                    }
+                    source = ctx.mkOr(source, opt);
+                }
+
+                BoolExpr target = ctx.mkFalse();
+                for(Tuple tuple1 : rel.getEncodeTupleSet().getBySecond(e1)){
+                    BoolExpr opt = Utils.cycleEdge(name, tuple1.getFirst(), e1, ctx);
+                    for(Tuple tuple2 : rel.getEncodeTupleSet().getBySecond(e1)){
+                        if(!tuple1.getFirst().getEId().equals(tuple2.getFirst().getEId())){
+                            opt = ctx.mkAnd(opt, ctx.mkNot(Utils.cycleEdge(name, tuple2.getFirst(), e1, ctx)));
+                        }
+                    }
+                    target = ctx.mkOr(target, opt);
+                }
+
+                enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.cycleVar(name, e1, ctx), ctx.mkAnd(source, target)));
+            }
+        }
+
+        return enc;
     }
 }
