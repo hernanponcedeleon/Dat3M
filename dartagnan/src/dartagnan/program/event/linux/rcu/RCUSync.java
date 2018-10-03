@@ -14,10 +14,17 @@ public class RCUSync extends Event {
         this.addFilters(FilterUtils.EVENT_TYPE_ANY, FilterUtils.EVENT_TYPE_SYNC_RCU);
     }
 
+    @Override
     public String toString() {
         return "synchronize_rcu";
     }
 
+    @Override
+    public String label(){
+        return "F[sync-rcu]";
+    }
+
+    @Override
     public RCUSync clone() {
         return new RCUSync(condLevel);
     }

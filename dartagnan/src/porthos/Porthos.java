@@ -1,6 +1,7 @@
 package porthos;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -8,6 +9,7 @@ import java.util.stream.Collectors;
 
 import dartagnan.*;
 import dartagnan.program.utils.EventRepository;
+import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
 
 import com.microsoft.z3.BoolExpr;
@@ -170,9 +172,15 @@ public class Porthos {
                     System.out.println("The program is not state-portable");
                     System.out.println("Iterations: " + iterations);
                     if(cmd.hasOption("draw")) {
-                  	  String outputPath = cmd.getOptionValue("draw");
-                  	  Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
-                      }
+                        Graph graph = new Graph(s.getModel(), ctx);
+                        String outputPath = cmd.getOptionValue("draw");
+                        ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+                        if(cmd.hasOption("rels")) {
+                            graph.addRelations(Arrays.asList(cmd.getOptionValues("rels")));
+                        }
+                        graph.build(pSource, pTarget).draw(outputPath);
+                        System.out.println("Execution graph is written to " + outputPath);
+                    }
                     return;
                 }
                 else {

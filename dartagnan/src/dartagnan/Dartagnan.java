@@ -2,10 +2,12 @@ package dartagnan;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
+import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
 import dartagnan.wmm.utils.Arch;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -15,7 +17,6 @@ import org.apache.commons.io.FileUtils;
 
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.Program;
-import dartagnan.utils.Utils;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
 
@@ -110,14 +111,13 @@ public class Dartagnan {
 		System.out.println(result ? "Ok" : "No");
 
 		if(cmd.hasOption("draw") && canDrawGraph(p.getAss(), result)) {
-			String[] rels = new String[100];
-			if(cmd.hasOption("rels")) {
-				rels = cmd.getOptionValues("rels");
-			}
-
-			ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+			Graph graph = new Graph(s.getModel(), ctx);
 			String outputPath = cmd.getOptionValue("draw");
-			Utils.drawGraph(p, ctx, s.getModel(), outputPath, rels);
+			ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+			if(cmd.hasOption("rels")) {
+				graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+			}
+			graph.build(p).draw(outputPath);
 			System.out.println("Execution graph is written to " + outputPath);
 		}
 	}

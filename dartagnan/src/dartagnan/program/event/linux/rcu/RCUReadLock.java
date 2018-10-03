@@ -17,14 +17,22 @@ public class RCUReadLock extends Event implements ClonableWithMemorisation {
         this.addFilters(FilterUtils.EVENT_TYPE_ANY);
     }
 
+    @Override
     public String toString() {
         return "rcu_read_lock";
     }
 
+    @Override
+    public String label(){
+        return "F[rcu-lock]";
+    }
+
+    @Override
     public void resetPreparedClone(){
         clone = null;
     }
 
+    @Override
     public RCUReadLock clone() {
         if(clone == null){
             clone = new RCUReadLock(condLevel);

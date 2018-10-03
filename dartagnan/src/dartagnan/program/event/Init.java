@@ -26,11 +26,18 @@ public class Init extends MemEvent {
 				FilterUtils.EVENT_TYPE_WRITE
 		);
 	}
-	
+
+	@Override
 	public String toString() {
 		return String.format("%s%s := 0", String.join("", Collections.nCopies(condLevel, "  ")), loc);
 	}
-	
+
+	@Override
+	public String label(){
+		return "W " + getLoc();
+	}
+
+	@Override
 	public Init clone() {
 		Location newLoc = loc.clone();
 		Init newInit = new Init(newLoc);
@@ -38,7 +45,8 @@ public class Init extends MemEvent {
 		newInit.setHLId(getHLId());
 		return newInit;
 	}
-	
+
+	@Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
 		if(mainThread == null){
 			System.out.println(String.format("Check encodeDF for %s", this));
