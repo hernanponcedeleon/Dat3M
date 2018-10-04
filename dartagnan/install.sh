@@ -127,8 +127,6 @@ src/dartagnan/wmm/utils/RecursiveGroup.java \
 src/dartagnan/wmm/utils/RelationRepository.java \
 src/dartagnan/wmm/utils/Tuple.java \
 src/dartagnan/wmm/utils/TupleSet.java \
-src/dartagnan/wmm/Encodings.java \
-src/dartagnan/wmm/WmmResolver.java \
 src/dartagnan/wmm/Wmm.java \
 src/porthos/Porthos.java \
 target/generated-sources/antlr4/dartagnan/LitmusCBaseVisitor.java \
