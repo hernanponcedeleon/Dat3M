@@ -51,6 +51,10 @@ public class Graph {
         this.relations.addAll(relations);
     }
 
+    public static Set<String> getDefaultRelations(){
+        return new HashSet<>(Arrays.asList("po", "co", "rf"));
+    }
+
     public Graph build(Program program){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n")
@@ -112,20 +116,11 @@ public class Graph {
                         .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
 
                 for(Event e2 : events) {
-                    String label;
-                    if(e2 instanceof MemEvent){
-                        label = e2.label() + " = " + model.getConstInterp(((MemEvent) e2).ssaLoc).toString();
-                        for(Event eHL : program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
-                            if(!(e2 instanceof Init) && e2.getHLId() != null && e2.getHLId() == eHL.hashCode()) {
-                                label += eHL.toString().replaceAll("\\s","");
-                            }
-                        }
-                    } else {
-                        label = e2.label();
+                    String label = e2.label();
+                    if(e2 instanceof MemEvent) {
+                        label += " = " + model.getConstInterp(((MemEvent) e2).ssaLoc).toString();
                     }
-
                     sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
-
                 }
                 sb.append(L2).append("}\n");
             }

@@ -32,10 +32,20 @@ public class Wmm {
     private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     private Program program;
+    private boolean drawExecutionGraph = false;
+    private Set<String> forceEncodeMaxSet = new HashSet<>();
 
     public Wmm(String filePath, String target) throws IOException{
         relationRepository = new RelationRepository(Arch.encodeCtrlPo(target));
         parse(filePath);
+    }
+
+    public void setDrawExecutionGraph(){
+        drawExecutionGraph = true;
+    }
+
+    public void setForceEncodeMaxSet(Collection<String> relNames){
+        forceEncodeMaxSet.addAll(relNames);
     }
 
     public void addAxiom(Axiom ax) {
@@ -76,6 +86,7 @@ public class Wmm {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
 
+        approx = approx & !drawExecutionGraph;
         int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.LFP;
 
         for(Relation relation : relationRepository.getRelations()){
@@ -88,6 +99,15 @@ public class Wmm {
 
         for (Axiom ax : axioms) {
             ax.getRel().getMaxTupleSet();
+        }
+
+        if(drawExecutionGraph){
+            for(String relName : forceEncodeMaxSet){
+                Relation relation = relationRepository.getRelation(relName);
+                if(relation != null){
+                    relation.addEncodeTupleSet(relation.getMaxTupleSet());
+                }
+            }
         }
 
         for (Axiom ax : axioms) {

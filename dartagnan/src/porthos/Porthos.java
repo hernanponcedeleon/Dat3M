@@ -22,7 +22,6 @@ import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 import dartagnan.program.Program;
-import dartagnan.utils.Utils;
 import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;
 
@@ -96,13 +95,19 @@ public class Porthos {
             return;
         }
 
-        String[] rels = new String[100];
-        if(cmd.hasOption("rels")) {
-            rels = cmd.getOptionValues("rels");
-        }
-
         Wmm mcmS = new Wmm(cmd.getOptionValue("scat"), source);
         Wmm mcmT = new Wmm(cmd.getOptionValue("tcat"), target);
+
+        if(cmd.hasOption("draw")) {
+            mcmS.setDrawExecutionGraph();
+            mcmT.setDrawExecutionGraph();
+            mcmS.setForceEncodeMaxSet(Graph.getDefaultRelations());
+            mcmT.setForceEncodeMaxSet(Graph.getDefaultRelations());
+            if(cmd.hasOption("rels")) {
+                mcmS.setForceEncodeMaxSet(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+                mcmT.setForceEncodeMaxSet(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+            }
+        }
 
         int steps = 1;
         if(cmd.hasOption("unroll")) {
@@ -176,7 +181,7 @@ public class Porthos {
                         String outputPath = cmd.getOptionValue("draw");
                         ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
                         if(cmd.hasOption("rels")) {
-                            graph.addRelations(Arrays.asList(cmd.getOptionValues("rels")));
+                            graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
                         }
                         graph.build(pSource, pTarget).draw(outputPath);
                         System.out.println("Execution graph is written to " + outputPath);

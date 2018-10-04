@@ -80,6 +80,14 @@ public class Dartagnan {
 		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 		Wmm mcm = new Wmm(cmd.getOptionValue("cat"), target);
 
+        if(cmd.hasOption("draw")) {
+            mcm.setDrawExecutionGraph();
+            mcm.setForceEncodeMaxSet(Graph.getDefaultRelations());
+            if(cmd.hasOption("rels")) {
+                mcm.setForceEncodeMaxSet(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+            }
+        }
+
 		int steps = 1;
 		if(cmd.hasOption("unroll")) {
 			steps = Integer.parseInt(cmd.getOptionValue("unroll"));
