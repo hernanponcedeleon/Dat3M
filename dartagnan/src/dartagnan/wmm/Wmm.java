@@ -33,7 +33,7 @@ public class Wmm {
 
     private Program program;
     private boolean drawExecutionGraph = false;
-    private Set<String> forceEncodeMaxSet = new HashSet<>();
+    private Set<String> drawRelations = new HashSet<>();
 
     public Wmm(String filePath, String target) throws IOException{
         relationRepository = new RelationRepository(Arch.encodeCtrlPo(target));
@@ -44,8 +44,8 @@ public class Wmm {
         drawExecutionGraph = true;
     }
 
-    public void setForceEncodeMaxSet(Collection<String> relNames){
-        forceEncodeMaxSet.addAll(relNames);
+    public void addDrawRelations(Collection<String> relNames){
+        drawRelations.addAll(relNames);
     }
 
     public void addAxiom(Axiom ax) {
@@ -102,7 +102,7 @@ public class Wmm {
         }
 
         if(drawExecutionGraph){
-            for(String relName : forceEncodeMaxSet){
+            for(String relName : drawRelations){
                 Relation relation = relationRepository.getRelation(relName);
                 if(relation != null){
                     relation.addEncodeTupleSet(relation.getMaxTupleSet());

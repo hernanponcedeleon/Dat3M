@@ -18,14 +18,23 @@ import java.util.stream.Collectors;
 
 public class Graph {
 
-    private Set<String> relations = new HashSet<String>(){{
-        add("rf");
-    }};
+    private Set<String> relations = new HashSet<>(Arrays.asList(
+            "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
+    );
 
     private Map<String, String> colorMap = new HashMap<String, String>(){{
         put("rf", "red");
         put("co", "blue");
-        put("po", "black");
+        put("po", "brown");
+        put("mfence", "black");
+        put("sync", "black");
+        put("isync", "black");
+        put("lwsync", "black");
+        put("isb", "black");
+        put("ish", "black");
+        put("mb", "black");
+        put("rmb", "black");
+        put("wmb", "black");
     }};
 
     private Model model;
@@ -40,7 +49,7 @@ public class Graph {
     private final String sourceLabel = "Program Compiled to Source Architecture";
     private final String targetLabel = "Program Compiled to Target Architecture";
 
-    private final String DEFAULT_EDGE_COLOR = "brown";
+    private final String DEFAULT_EDGE_COLOR = "indigo";
 
     public Graph(Model model, Context ctx){
         this.model = model;
@@ -225,7 +234,7 @@ public class Graph {
     }
 
     private String getProgramDef(String label){
-        return "rank=sink; fontsize=20; label=\"" + label + "\"; color=red; shape=box; weight=1;";
+        return "rank=sink; fontsize=20; label=\"" + label + "\"; color=grey; shape=box; weight=1;";
     }
 
     private String getThreadDef(int tId){

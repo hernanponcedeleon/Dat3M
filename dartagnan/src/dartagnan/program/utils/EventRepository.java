@@ -28,7 +28,7 @@ public class EventRepository {
 
     public static final int EVENT_MEMORY = EVENT_INIT | EVENT_LOAD | EVENT_STORE;
     public static final int EVENT_RCU = EVENT_RCU_LOCK | EVENT_RCU_UNLOCK | EVENT_RCU_SYNC;
-    public static final int EVENT_VISIBLE = EVENT_MEMORY | EVENT_FENCE | EVENT_RCU;
+    public static final int EVENT_VISIBLE = EVENT_MEMORY | EVENT_RCU;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
     private Thread thread;

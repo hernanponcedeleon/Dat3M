@@ -101,11 +101,11 @@ public class Porthos {
         if(cmd.hasOption("draw")) {
             mcmS.setDrawExecutionGraph();
             mcmT.setDrawExecutionGraph();
-            mcmS.setForceEncodeMaxSet(Graph.getDefaultRelations());
-            mcmT.setForceEncodeMaxSet(Graph.getDefaultRelations());
+            mcmS.addDrawRelations(Graph.getDefaultRelations());
+            mcmT.addDrawRelations(Graph.getDefaultRelations());
             if(cmd.hasOption("rels")) {
-                mcmS.setForceEncodeMaxSet(Arrays.asList(cmd.getOptionValue("rels").split(",")));
-                mcmT.setForceEncodeMaxSet(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+                mcmS.addDrawRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+                mcmT.addDrawRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
             }
         }
 

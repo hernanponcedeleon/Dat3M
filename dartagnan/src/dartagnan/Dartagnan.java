@@ -82,9 +82,9 @@ public class Dartagnan {
 
         if(cmd.hasOption("draw")) {
             mcm.setDrawExecutionGraph();
-            mcm.setForceEncodeMaxSet(Graph.getDefaultRelations());
+            mcm.addDrawRelations(Graph.getDefaultRelations());
             if(cmd.hasOption("rels")) {
-                mcm.setForceEncodeMaxSet(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+                mcm.addDrawRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
             }
         }
 
