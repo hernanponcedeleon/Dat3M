@@ -225,7 +225,6 @@ public class Graph {
         for(FuncDecl m : model.getDecls()) {
             String edge = m.getName().toString();
             if(edge.contains("Cycle:") && model.getConstInterp(m).isTrue()) {
-                System.out.println(edge);
                 String source = getSourceFromEdge(edge);
                 String target = getTargetFromEdge(edge);
                 sb.append(L2).append(source).append(" -> ").append(target).append("[style=bold, color=green, weight=1];\n");
