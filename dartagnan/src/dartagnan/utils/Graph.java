@@ -85,7 +85,7 @@ public class Graph {
 
         buffer.append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
                 .append(buildProgramGraph(pTarget))
-                .append(L1).append("\n");
+                .append(L1).append("}\n");
 
         buffer.append("}\n");
 
@@ -225,6 +225,7 @@ public class Graph {
         for(FuncDecl m : model.getDecls()) {
             String edge = m.getName().toString();
             if(edge.contains("Cycle:") && model.getConstInterp(m).isTrue()) {
+                System.out.println(edge);
                 String source = getSourceFromEdge(edge);
                 String target = getTargetFromEdge(edge);
                 sb.append(L2).append(source).append(" -> ").append(target).append("[style=bold, color=green, weight=1];\n");
@@ -255,12 +256,10 @@ public class Graph {
     }
 
     private String getSourceFromEdge(String edge) {
-        // TODO: Proper regex
         return edge.split("\\(")[1].split(",")[0];
     }
 
     private String getTargetFromEdge(String edge) {
-        // TODO: Proper regex
         return edge.replace(")", "").split(",")[1];
     }
 }
