@@ -9,7 +9,9 @@ import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static dartagnan.utils.Utils.edge;
 

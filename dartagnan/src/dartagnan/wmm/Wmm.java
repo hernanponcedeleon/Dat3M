@@ -12,8 +12,13 @@ import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.utils.*;
-import org.antlr.v4.runtime.*;
+import dartagnan.wmm.utils.Arch;
+import dartagnan.wmm.utils.RecursiveGroup;
+import dartagnan.wmm.utils.RelationRepository;
+import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 
 import java.io.File;
 import java.io.FileInputStream;

@@ -112,7 +112,6 @@ public class TupleSet implements Set<Tuple>{
         if(isUpdated){
             updateAuxiliary();
         }
-        //return new HashSet<>(byFirst.get(e));
         byFirst.putIfAbsent(e, new HashSet<>());
         return byFirst.get(e);
     }
@@ -121,7 +120,6 @@ public class TupleSet implements Set<Tuple>{
         if(isUpdated){
             updateAuxiliary();
         }
-        //return new HashSet<>(bySecond.get(e));
         bySecond.putIfAbsent(e, new HashSet<>());
         return bySecond.get(e);
     }
