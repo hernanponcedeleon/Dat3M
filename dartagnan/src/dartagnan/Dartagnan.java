@@ -112,7 +112,7 @@ public class Dartagnan {
 			result = !result;
 		}
 
-        if(p.getAssFilter() != null){
+		if(p.getAssFilter() != null){
             System.out.println("Filter " + (p.getAssFilter()));
         }
 		System.out.println("Condition " + p.getAss().toStringWithType());

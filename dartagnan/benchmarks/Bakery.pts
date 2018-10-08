@@ -2,13 +2,11 @@
 
 thread t0 {
 while True {
-  a0 <- 1;
-  c0.store(_rx,a0);
+  c0.store(_rx,1);
   r0 = n1.load(_rx);
   r1 <- (r0 + 1);
   n0.store(_rx,r1);
-  a1 <- 0;
-  c0.store(_rx,a1);
+  c0.store(_rx,0);
   chk = c1.load(_rx);
   while (chk != 0) {
     chk = c1.load(_rx)
@@ -22,13 +20,11 @@ while True {
 
 thread t1 {
 while True {
-  b0 <- 1;
-  c1.store(_rx,b0);
+  c1.store(_rx,1);
   q0 = n0.load(_rx);
   q1 <- (q0 + 1);
   n1.store(_rx,q1);
-  b1 <- 0;
-  c1.store(_rx,b1);
+  c1.store(_rx,0);
   chk = c0.load(_rx);
   while (chk != 0) {
     chk = c0.load(_rx)

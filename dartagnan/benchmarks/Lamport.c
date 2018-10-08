@@ -5,19 +5,16 @@ int x = 0, y = 0, b1 = 0, b2 = 0, b3 = 0;
 
 void *thrd0(void *args) {
   while (1) {
-    int t = 1;
-    int f = 0;
-    b1 = t;
-    int i = 1;
-    x = i;
+    b1 = 1;
+    x = 1;
     int y1 = y;
     if (y1 != 0) {
-      b1 = f;
+      b1 = 0;
     };
-    y = i;
+    y = 1;
     int x1 = x;
     if (x1 != 1) {
-      b1 = f;
+      b1 = 0;
     }
   }
   return NULL;
@@ -25,19 +22,16 @@ void *thrd0(void *args) {
 
 void *thrd1(void *args) {
   while (1) {
-    int t = 1;
-    int f = 0;
-    b2 = t;
-    int i = 2;
-    x = i;
+    b2 = 1;
+    x = 2;
     int y1 = y;
     if (y1 != 0) {
-      b2 = f;
+      b2 = 0;
     };
-    y = i;
+    y = 2;
     int x1 = x;
     if (x1 != 2) {
-      b2 = f;
+      b2 = 0;
     }
   }
   return NULL;
@@ -45,19 +39,16 @@ void *thrd1(void *args) {
 
 void *thrd2(void *args) {
   while (1) {
-    int t = 1;
-    int f = 0;
-    b3 = t;
-    int i = 3;
-    x = i;
+    b3 = 1;
+    x = 3;
     int y1 = y;
     if (y1 != 0) {
-      b3 = f;
+      b3 = 0;
     };
-    y = i;
+    y = 3;
     int x1 = x;
     if (x1 != 3) {
-      b3 = f;
+      b3 = 0;
     }
   }
   return NULL;

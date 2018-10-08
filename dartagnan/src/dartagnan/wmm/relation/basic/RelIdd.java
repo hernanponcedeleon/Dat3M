@@ -59,7 +59,6 @@ public class RelIdd extends Relation {
         return maxTupleSet;
     }
 
-
     @Override
     protected BoolExpr encodeApprox() throws Z3Exception {
         BoolExpr enc = ctx.mkTrue();
