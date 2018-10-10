@@ -28,7 +28,7 @@ public class AssertCompositeAnd extends AbstractAssertComposite {
 
     public String toString() {
         return children.stream()
-                .map(child -> child.toString())
+                .map(AbstractAssert::toString)
                 .collect(Collectors.joining(" && " ));
     }
 }

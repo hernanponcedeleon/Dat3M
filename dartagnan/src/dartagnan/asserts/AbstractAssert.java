@@ -40,4 +40,6 @@ public abstract class AbstractAssert {
     }
 
     public abstract BoolExpr encode(Context ctx) throws Z3Exception;
+
+    public abstract AbstractAssert clone();
 }

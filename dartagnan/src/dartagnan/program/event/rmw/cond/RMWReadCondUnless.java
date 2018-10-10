@@ -6,10 +6,13 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
+import dartagnan.program.utils.ClonableWithMemorisation;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-public class RMWReadCondUnless extends RMWReadCond{
+public class RMWReadCondUnless extends RMWReadCond implements ClonableWithMemorisation {
+
+    private RMWReadCondUnless clone;
 
     public RMWReadCondUnless(Register reg, ExprInterface cmp, Location loc, String atomic) {
         super(reg, cmp, loc, atomic);
@@ -22,13 +25,15 @@ public class RMWReadCondUnless extends RMWReadCond{
     }
 
     public RMWReadCondUnless clone() {
-        Register newReg = reg.clone();
-        Location newLoc = loc.clone();
-        ExprInterface newCmp = cmp.clone();
-        RMWReadCondUnless newLoad = new RMWReadCondUnless(newReg, newCmp, newLoc, atomic);
-        newLoad.condLevel = condLevel;
-        newLoad.setHLId(getHLId());
-        newLoad.setUnfCopy(getUnfCopy());
-        return newLoad;
+        if(clone == null){
+            Register newReg = reg.clone();
+            Location newLoc = loc.clone();
+            ExprInterface newCmp = cmp.clone();
+            clone = new RMWReadCondUnless(newReg, newCmp, newLoc, atomic);
+            clone.setCondLevel(condLevel);
+            clone.setHLId(getHLId());
+            clone.setUnfCopy(getUnfCopy());
+        }
+        return clone;
     }
 }

@@ -86,6 +86,10 @@ public abstract class Event extends Thread {
 	public String repr() {
 		return String.format("E%s", eid);
 	}
+
+	public String label(){
+		throw new RuntimeException("Method label is not implemented for " + this.getClass().getName());
+	}
 	
 	public BoolExpr executes(Context ctx) throws Z3Exception {
 		return ctx.mkBoolConst(String.format("ex(%s)", repr()));

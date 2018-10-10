@@ -21,11 +21,18 @@ public class RCUReadUnlock extends Event {
         return lockEvent;
     }
 
+    @Override
     public String toString() {
         return "rcu_read_unlock";
     }
 
+    @Override
+    public String label(){
+        return "F[rcu-unlock]";
+    }
+
+    @Override
     public RCUReadUnlock clone() {
-        return new RCUReadUnlock(lockEvent, condLevel);
+        return new RCUReadUnlock(lockEvent.clone(), condLevel);
     }
 }

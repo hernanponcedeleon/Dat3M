@@ -5,7 +5,7 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.Load;
+import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 
 import java.util.Collections;
@@ -19,7 +19,7 @@ public class RMWXchg extends RMWAbstract {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = reg == value ? new Register(null) : reg;
-            Load load = new Load(dummy, loc, getLoadMO());
+            RMWLoad load = new RMWLoad(dummy, loc, getLoadMO());
             RMWStore store = new RMWStore(load, loc, value, getStoreMO());
 
             compileBasic(load);

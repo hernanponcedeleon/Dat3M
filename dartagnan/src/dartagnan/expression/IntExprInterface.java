@@ -6,4 +6,6 @@ import com.microsoft.z3.IntExpr;
 public interface IntExprInterface {
 
     IntExpr getLastValueExpr(Context ctx);
+
+    IntExprInterface clone();
 }

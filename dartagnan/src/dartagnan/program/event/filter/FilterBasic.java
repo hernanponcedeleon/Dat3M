@@ -17,4 +17,8 @@ public class FilterBasic extends FilterAbstract {
     public String toString(){
         return param;
     }
+
+    public Integer toRepositoryCode(){
+        return FilterUtils.toRepositoryCode.get(param);
+    }
 }

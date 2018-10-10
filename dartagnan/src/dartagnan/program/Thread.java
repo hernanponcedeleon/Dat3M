@@ -12,7 +12,7 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-public class Thread {
+public abstract class Thread {
 
 	protected int condLevel;
 	// Main thread where this Event, Seq, etc belongs
@@ -74,10 +74,7 @@ public class Thread {
 		return null;
 	}
 
-	public Thread clone() {
-		System.out.println("Problem with clone!");
-		return new Thread();
-	}
+	public abstract Thread clone();
 
 	public void setMainThread(Thread t) {
 		this.mainThread = t;

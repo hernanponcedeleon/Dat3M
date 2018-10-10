@@ -12,7 +12,8 @@ import java.util.stream.Collectors;
 
 public class EventRepository {
 
-    public static final int EVENT_ALL           = 0;
+    public static final int EVENT_ALL           = -1;
+    public static final int EVENT_EMPTY         = 0;
     public static final int EVENT_INIT          = 1;
     public static final int EVENT_LOAD          = 2;
     public static final int EVENT_LOCAL         = 4;
@@ -27,7 +28,7 @@ public class EventRepository {
 
     public static final int EVENT_MEMORY = EVENT_INIT | EVENT_LOAD | EVENT_STORE;
     public static final int EVENT_RCU = EVENT_RCU_LOCK | EVENT_RCU_UNLOCK | EVENT_RCU_SYNC;
-    public static final int EVENT_VISIBLE = EVENT_MEMORY | EVENT_FENCE | EVENT_RCU;
+    public static final int EVENT_VISIBLE = EVENT_MEMORY | EVENT_RCU;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
     private Thread thread;
@@ -38,7 +39,9 @@ public class EventRepository {
 
     public Set<Event> getEvents(int mask){
         if(!sets.containsKey(mask)){
-            if(mask == EVENT_ALL){
+            if(mask == EVENT_EMPTY){
+                return new HashSet<>();
+            } else if(mask == EVENT_ALL){
                 sets.put(EVENT_ALL, thread.getEvents());
             } else {
                 sets.put(mask, getEvents(EVENT_ALL).stream().filter(e -> is(e, mask)).collect(Collectors.toSet()));

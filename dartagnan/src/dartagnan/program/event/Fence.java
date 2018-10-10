@@ -41,4 +41,9 @@ public class Fence extends Event {
 	public Fence clone() {
 		return new Fence(name, condLevel, atomic);
 	}
+
+	@Override
+	public String label(){
+		return getName();
+	}
 }

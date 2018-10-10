@@ -26,4 +26,8 @@ public class AssertNot extends AbstractAssert {
     public String toString() {
         return "!" + child.toString();
     }
+
+    public AbstractAssert clone(){
+        return new AssertNot(child.clone());
+    }
 }

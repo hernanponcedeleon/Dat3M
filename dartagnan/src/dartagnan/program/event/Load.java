@@ -28,15 +28,23 @@ public class Load extends MemEvent {
 				FilterUtils.EVENT_TYPE_READ
 		);
 	}
-	
+
+	@Override
 	public Register getReg() {
 		return reg;
 	}
-	
+
+	@Override
 	public String toString() {
 		return String.format("%s%s <- %s", String.join("", Collections.nCopies(condLevel, "  ")), reg, loc);
 	}
-	
+
+	@Override
+	public String label(){
+		return "R[" + atomic + "] " + getLoc();
+	}
+
+	@Override
 	public Load clone() {
 		Register newReg = reg.clone();
 		Location newLoc = loc.clone();
@@ -46,7 +54,8 @@ public class Load extends MemEvent {
 		newLoad.setUnfCopy(getUnfCopy());
 		return newLoad;
 	}
-	
+
+	@Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
 		if(mainThread == null){
 			System.out.println(String.format("Check encodeDF for %s", this));
@@ -60,7 +69,8 @@ public class Load extends MemEvent {
 			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
 		}		
 	}
-	
+
+	@Override
 	public Integer getSsaRegIndex() {
 		return ssaRegIndex;
 	}

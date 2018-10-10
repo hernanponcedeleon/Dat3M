@@ -3,65 +3,58 @@ package dartagnan.wmm;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
+import dartagnan.ModelLexer;
+import dartagnan.ModelParser;
 import dartagnan.program.Program;
 import dartagnan.program.event.filter.FilterAbstract;
 import dartagnan.program.event.filter.FilterBasic;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.axiom.Axiom;
-import dartagnan.wmm.relation.*;
-import dartagnan.wmm.relation.basic.RelCrit;
-import dartagnan.wmm.relation.basic.RelCtrl;
-import dartagnan.wmm.relation.basic.RelIdd;
-import dartagnan.wmm.relation.basic.RelRMW;
+import dartagnan.wmm.relation.RecursiveRelation;
+import dartagnan.wmm.relation.Relation;
+import dartagnan.wmm.utils.Arch;
+import dartagnan.wmm.utils.RecursiveGroup;
+import dartagnan.wmm.utils.RelationRepository;
+import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.*;
 
 /**
  *
  * @author Florian Furbach
  */
-public class Wmm implements WmmInterface{
+public class Wmm {
 
-    private static Set<String> basicRelations = new HashSet<String>(Arrays.asList(
-            "id", "int", "ext", "loc", "po",
-            "rf", "fr", "co"
-    ));
+    private List<Axiom> axioms = new ArrayList<>();
+    private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
+    private RelationRepository relationRepository;
+    private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
-    private static Map<String, String> basicFenceRelations = new HashMap<String, String>();
-    static {
-        basicFenceRelations.put("mfence", "Mfence");
-        basicFenceRelations.put("ish", "Ish");
-        basicFenceRelations.put("isb", "Isb");
-        basicFenceRelations.put("sync", "Sync");
-        basicFenceRelations.put("lwsync", "Lwsync");
-        basicFenceRelations.put("isync", "Isync");
+    private Program program;
+    private boolean drawExecutionGraph = false;
+    private Set<String> drawRelations = new HashSet<>();
+
+    public Wmm(String filePath, String target) throws IOException{
+        relationRepository = new RelationRepository(Arch.encodeCtrlPo(target));
+        parse(filePath);
     }
 
-    private ArrayList<Axiom> axioms = new ArrayList<>();
-    private Map<String, Relation> relations = new HashMap<String, Relation>();
-    private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
+    public void setDrawExecutionGraph(){
+        drawExecutionGraph = true;
+    }
+
+    public void addDrawRelations(Collection<String> relNames){
+        drawRelations.addAll(relNames);
+    }
 
     public void addAxiom(Axiom ax) {
         axioms.add(ax);
-    }
-
-    public void addRelation(Relation rel) {
-        relations.put(rel.getName(), rel);
-    }
-
-    public Relation getRelation(String name){
-        Relation relation = relations.get(name);
-        if(relation != null){
-            return relation;
-        }
-
-        if(basicRelations.contains(name)) {
-            return new BasicRelation(name);
-        }
-
-        return resolveRelation(name);
     }
 
     public void addFilter(FilterAbstract filter) {
@@ -79,174 +72,122 @@ public class Wmm implements WmmInterface{
         return filter;
     }
 
-    /**
-     * Encodes  all relations in the model according to the predicate and approximate settings.
-     * @param program
-     * @param ctx
-     * @return the encoding of the relations.
-     * @throws Z3Exception
-     */
+    public RelationRepository getRelationRepository(){
+        return relationRepository;
+    }
+
+    public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
+        int id = 1 << recursiveGroups.size();
+        if(id < 0){
+            throw new RuntimeException("Exceeded maximum number of recursive relations");
+        }
+        recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
+    }
+
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
-        BoolExpr enc = ctx.mkTrue();
-        Set<String> encodedRels = new HashSet<>();
+        this.program = program;
 
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode(program, ctx, encodedRels));
+            ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
-        for (Map.Entry<String, Relation> relation : relations.entrySet()){
-            enc = ctx.mkAnd(enc, relation.getValue().encode(program, ctx, encodedRels));
+
+        approx = approx & !drawExecutionGraph;
+        int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.LFP;
+
+        for(Relation relation : relationRepository.getRelations()){
+            relation.initialise(program, ctx, encodingMode);
         }
+
+        for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.initMaxTupleSets();
+        }
+
+        for (Axiom ax : axioms) {
+            ax.getRel().getMaxTupleSet();
+        }
+
+        if(drawExecutionGraph){
+            for(String relName : drawRelations){
+                Relation relation = relationRepository.getRelation(relName);
+                if(relation != null){
+                    relation.addEncodeTupleSet(relation.getMaxTupleSet());
+                }
+            }
+        }
+
+        for (Axiom ax : axioms) {
+            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
+        }
+
+        Collections.reverse(recursiveGroups);
+        for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.updateEncodeTupleSets();
+        }
+
+        BoolExpr enc = ctx.mkTrue();
+        for (Axiom ax : axioms) {
+            enc = ctx.mkAnd(enc, ax.getRel().encode());
+        }
+
+        if(encodingMode == Relation.LFP){
+            for(RecursiveGroup group : recursiveGroups){
+                enc = ctx.mkAnd(enc, group.encode(ctx));
+            }
+        }
+
         return enc;
     }
 
-    /**
-     *
-     * @param program
-     * @param ctx
-     * @return encoding that ensures all axioms are satisfied and the execution is consistent.
-     * @throws Z3Exception
-     */
-    public BoolExpr Consistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+    public BoolExpr consistent(Program program, Context ctx) throws Z3Exception {
+        if(this.program != program){
+            throw new RuntimeException("Wmm relations must be encoded before consistency predicate");
+        }
         BoolExpr expr = ctx.mkTrue();
         for (Axiom ax : axioms) {
-            expr = ctx.mkAnd(expr, ax.Consistent(events, ctx));
+            expr = ctx.mkAnd(expr, ax.consistent(ctx));
         }
         return expr;
     }
 
-    /**
-     *
-     * @param program
-     * @param ctx
-     * @return encoding that ensures one axiom is not satisfied and the execution is not consistent.
-     * @throws Z3Exception
-     */
-    public BoolExpr Inconsistent(Program program, Context ctx) throws Z3Exception {
-        Set<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+    public BoolExpr inconsistent(Program program, Context ctx) throws Z3Exception {
+        if(this.program != program){
+            throw new RuntimeException("Wmm relations must be encoded before inconsistency predicate");
+        }
         BoolExpr expr = ctx.mkFalse();
         for (Axiom ax : axioms) {
-            expr = ctx.mkOr(expr, ax.Inconsistent(events, ctx));
+            expr = ctx.mkOr(expr, ax.inconsistent(ctx));
         }
         return expr;
     }
 
-    /**
-     * A string representation of the model.
-     * @return String
-     */
     public String toString() {
-        StringBuilder result = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
 
         for (Axiom axiom : axioms) {
-            result.append(axiom);
-            result.append("\n");
+            sb.append(axiom).append("\n");
         }
 
-        for (Map.Entry<String, Relation> relation : relations.entrySet()) {
-            if(relation.getValue().getIsNamed()){
-                result.append(relation.getValue());
-                result.append("\n");
+        for (Relation relation : relationRepository.getRelations()) {
+            if(relation.getIsNamed()){
+                sb.append(relation).append("\n");
             }
         }
 
         for (Map.Entry<String, FilterAbstract> filter : filters.entrySet()){
-            result.append(filter.getValue());
-            result.append("\n");
+            sb.append(filter.getValue()).append("\n");
         }
 
-        return result.toString();
+        return sb.toString();
     }
 
-    // TODO: Later these relations should come from included cat files, e.g., "stdlib.cat" or "fences.cat"
-    private Relation resolveRelation(String name){
-        Relation relation = null;
-        Relation idd;
-        Relation iddTrans;
-
-        if(basicFenceRelations.containsKey(name)) {
-            relation = new RelFencerel(basicFenceRelations.get(name), name);
-
-        } else {
-            switch (name){
-                case "rfe":
-                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("ext"), "rfe");
-                    break;
-                case "rfi":
-                    relation = new RelIntersection(new BasicRelation("rf"), new BasicRelation("int"), "rfi");
-                    break;
-                case "coe":
-                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("ext"), "coe");
-                    break;
-                case "coi":
-                    relation = new RelIntersection(new BasicRelation("co"), new BasicRelation("int"), "coi");
-                    break;
-                case "fre":
-                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("ext"), "fre");
-                    break;
-                case "fri":
-                    relation = new RelIntersection(new BasicRelation("fr"), new BasicRelation("int"), "fri");
-                    break;
-                case "po-loc":
-                    relation = new RelIntersection(new BasicRelation("po"), new BasicRelation("loc"), "po-loc");
-                    break;
-                case "addr":
-                    relation = new EmptyRel("addr");
-                    break;
-                case "0":
-                    relation = new EmptyRel("0");
-                    break;
-                case "data":
-                    Relation RW = new RelCartesian(new FilterBasic("R"), new FilterBasic("W"));
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(RW);
-                    addRelation(iddTrans);
-                    relation = new RelIntersection(iddTrans, RW, "data");
-                    break;
-                case "ctrl":
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(iddTrans);
-                    relation = new RelCtrl();
-                    break;
-                case "ctrlisync":
-                    Relation isync = new RelFencerel("Isync", "isync");
-                    addRelation(isync);
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(iddTrans);
-                    addRelation(new RelCtrl());
-                    relation = new RelIntersection(new RelCtrl(), isync, "ctrlisync");
-                    break;
-                case "ctrlisb":
-                    Relation isb = new RelFencerel("Isb", "isb");
-                    addRelation(isb);
-                    idd = new RelIdd();
-                    iddTrans = new RelTrans(idd).setEventMask(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
-                    addRelation(idd);
-                    addRelation(iddTrans);
-                    addRelation(new RelCtrl());
-                    relation = new RelIntersection(new RelCtrl(), isb, "ctrlisb");
-                    break;
-                case "rmw":
-                    relation = new RelRMW();
-                    break;
-                case "crit":
-                    relation = new RelCrit();
-                    break;
-                case "idd":
-                    relation = new RelIdd();
-                    break;
-            }
-        }
-
-        if(relation != null){
-            addRelation(relation);
-        }
-        return relation;
+    private void parse(String filePath) throws IOException{
+        File file = new File(filePath);
+        FileInputStream stream = new FileInputStream(file);
+        CharStream charStream = CharStreams.fromStream(stream);
+        ModelLexer lexer = new ModelLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        ModelParser parser = new ModelParser(tokenStream);
+        parser.setErrorHandler(new BailErrorStrategy());
+        parser.mcm(this);
     }
 }

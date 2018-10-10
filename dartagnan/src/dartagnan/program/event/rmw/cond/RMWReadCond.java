@@ -7,14 +7,15 @@ import com.microsoft.z3.Z3Exception;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.event.Load;
+import dartagnan.program.utils.ClonableWithMemorisation;
+import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
-public abstract class RMWReadCond extends Load {
+public abstract class RMWReadCond extends RMWLoad implements ClonableWithMemorisation {
 
     protected ExprInterface cmp;
     protected BoolExpr z3Cond;
@@ -43,9 +44,11 @@ public abstract class RMWReadCond extends Load {
             this.ssaLoc = z3Loc;
             this.ssaRegIndex = map.get(reg);
             this.z3Cond = ctx.mkEq(z3Reg, encodeValue(map, ctx, cmp));
-            return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
+            return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
         }
     }
+
+    public abstract RMWReadCond clone();
 
     private Expr encodeValue(MapSSA map, Context ctx, ExprInterface v){
         if(v instanceof Register){

@@ -1,5 +1,7 @@
 package dartagnan.program.event.filter;
 
+import dartagnan.program.utils.EventRepository;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,4 +75,53 @@ public class FilterUtils {
     public static String resolve(String key){
         return map.get(key);
     }
+
+    public static final Map<String, Integer> toRepositoryCode = new HashMap<String, Integer>() {{
+
+        // Basic types
+        put(EVENT_TYPE_ANY,                 EventRepository.EVENT_ALL);         // Probably we can remove Skip and Local
+        put(EVENT_TYPE_INIT,                EventRepository.EVENT_INIT);
+        put(EVENT_TYPE_READ,                EventRepository.EVENT_LOAD);
+        put(EVENT_TYPE_WRITE,               EventRepository.EVENT_STORE);
+        put(EVENT_TYPE_MEMORY,              EventRepository.EVENT_MEMORY);
+        put(EVENT_TYPE_FENCE,               EventRepository.EVENT_FENCE);
+
+        // Atomic
+        put(EVENT_TYPE_ATOMIC,              EventRepository.EVENT_MEMORY);
+        put(EVENT_TYPE_READ_MODIFY_WRITE,   EventRepository.EVENT_MEMORY);      // Tighten up
+        put(EVENT_TYPE_RMW_NORETURN,        EventRepository.EVENT_LOAD);        // Tighten up
+
+        // Locks
+        put(EVENT_TYPE_LOCK,                EventRepository.EVENT_ALL);         // Not implemented
+
+        // Fences
+        put("Mfence",                       EventRepository.EVENT_FENCE);
+        put("Sync",                         EventRepository.EVENT_FENCE);
+        put("Isync",                        EventRepository.EVENT_FENCE);
+        put("Lwsync",                       EventRepository.EVENT_FENCE);
+        put("Isb",                          EventRepository.EVENT_FENCE);
+        put("Ish",                          EventRepository.EVENT_FENCE);
+
+        // Memory order
+        put("_sc",                          EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE);
+        put("_rx",                          EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE);
+        put("_acq",                         EventRepository.EVENT_LOAD   | EventRepository.EVENT_FENCE);
+        put("_rel",                         EventRepository.EVENT_STORE  | EventRepository.EVENT_FENCE);
+        put("_rel_acq",                                                    EventRepository.EVENT_FENCE);
+        put("_con",                         EventRepository.EVENT_LOAD   | EventRepository.EVENT_FENCE);
+
+        // Linux
+        put("Rmb",                          EventRepository.EVENT_FENCE);
+        put("Wmb",                          EventRepository.EVENT_FENCE);
+        put("Mb",                           EventRepository.EVENT_FENCE);
+        put("Before-atomic",                EventRepository.EVENT_FENCE);
+        put("After-atomic",                 EventRepository.EVENT_FENCE);
+        put("After-spinlock",               EventRepository.EVENT_FENCE);
+
+        // RCU
+        put("Rcu-lock",                     EventRepository.EVENT_RCU_LOCK);
+        put("Rcu-unlock",                   EventRepository.EVENT_RCU_UNLOCK);
+        put("Sync-rcu",                     EventRepository.EVENT_RCU_SYNC);
+
+    }};
 }

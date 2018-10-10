@@ -3,11 +3,10 @@ package dartagnan.wmm.axiom;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
-import dartagnan.program.event.Event;
-import dartagnan.wmm.EncodingsCAT;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
-
-import java.util.Set;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
 public class Empty extends Axiom {
 
@@ -20,13 +19,26 @@ public class Empty extends Axiom {
     }
 
     @Override
-    protected BoolExpr _consistent(Set<Event> events, Context ctx) throws Z3Exception {
-        return EncodingsCAT.satEmpty(rel.getName(), events, ctx);
+    public TupleSet getEncodeTupleSet(){
+        return rel.getMaxTupleSet();
     }
 
     @Override
-    protected BoolExpr _inconsistent(Set<Event> events, Context ctx) throws Z3Exception {
-        return ctx.mkNot(_consistent(events, ctx));
+    protected BoolExpr _consistent(Context ctx) throws Z3Exception {
+        BoolExpr enc = ctx.mkTrue();
+        for(Tuple tuple : rel.getEncodeTupleSet()){
+            enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(rel.getName(), tuple.getFirst(), tuple.getSecond(), ctx)));
+        }
+        return enc;
+    }
+
+    @Override
+    protected BoolExpr _inconsistent(Context ctx) throws Z3Exception {
+        BoolExpr enc = ctx.mkFalse();
+        for(Tuple tuple : rel.getEncodeTupleSet()){
+            enc = ctx.mkOr(enc, Utils.edge(rel.getName(), tuple.getFirst(), tuple.getSecond(), ctx));
+        }
+        return enc;
     }
 
     @Override

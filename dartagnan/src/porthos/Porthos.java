@@ -1,6 +1,7 @@
 package porthos;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -8,8 +9,8 @@ import java.util.stream.Collectors;
 
 import dartagnan.*;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.WmmInterface;
-import dartagnan.wmm.WmmResolver;
+import dartagnan.utils.Graph;
+import dartagnan.wmm.Wmm;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -21,62 +22,43 @@ import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 import dartagnan.program.Program;
-import dartagnan.utils.Utils;
-import dartagnan.wmm.Domain;
-import dartagnan.wmm.relation.Relation;
-import dartagnan.wmm.Wmm;
 import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;
 
+import dartagnan.wmm.utils.Arch;
 import org.apache.commons.cli.*;
 
 public class Porthos {
 
     public static void main(String[] args) throws Z3Exception, IOException {
-        WmmResolver wmmResolver = new WmmResolver();
 
         Options options = new Options();
 
-        Option sourceOpt = new Option("s", "source", true, "Source architecture to compile the program");
-        sourceOpt.setRequired(true);
-        options.addOption(sourceOpt);
+        Option sourceOption = new Option("s", "source", true, "Source architecture to compile the program");
+        sourceOption.setRequired(true);
+        options.addOption(sourceOption);
 
-        Option targetOpt = new Option("t", "target", true, "Target architecture to compile the program");
-        targetOpt.setRequired(true);
-        options.addOption(targetOpt);
+        Option targetOption = new Option("t", "target", true, "Target architecture to compile the program");
+        targetOption.setRequired(true);
+        options.addOption(targetOption);
 
-		Option inputOpt = new Option("i", "input", true, "Path to the file containing the input program");
-        inputOpt.setRequired(true);
-        options.addOption(inputOpt);
+        Option inputOption = new Option("i", "input", true, "Path to the file containing the input program");
+        inputOption.setRequired(true);
+        options.addOption(inputOption);
 
-        options.addOption(Option.builder("relax")
-        		.desc("Uses relax encoding for recursive relations")
-        		.build());
+        Option sourceCatOption = new Option("scat", true, "Path to the CAT file of the source memory model");
+        sourceCatOption.setRequired(true);
+        options.addOption(sourceCatOption);
 
-        options.addOption(Option.builder("draw")
-                .hasArg()
-        		.desc("Path to save the execution graphs if a porting bug is found")
-                .build());
+        Option targetCatOption = new Option("tcat", true, "Path to the CAT file of the target memory model");
+        targetCatOption.setRequired(true);
+        options.addOption(targetCatOption);
 
-        options.addOption(Option.builder("rels")
-                .hasArgs()
-                .desc("Relations to be drawn in the graph")
-                .build());
-
-        options.addOption(Option.builder("unroll")
-                .hasArg()
-                .desc("Unrolling steps")
-                .build());
-
-        options.addOption(Option.builder("scat")
-                .hasArg()
-                .desc("Path to the CAT file of the source memory model")
-                .build());
-
-        options.addOption(Option.builder("tcat")
-                .hasArg()
-                .desc("Path to the CAT file of the target memory model")
-                .build());
+        options.addOption(new Option("unroll", true, "Unrolling steps"));
+        options.addOption(new Option("idl", "Uses IDL encoding for transitive closure"));
+        options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
+        options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
+        options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
 
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -93,14 +75,14 @@ public class Porthos {
         }
 
         String source = cmd.getOptionValue("source").trim();
-        if(!(wmmResolver.getArchSet().contains(source))){
+        if(!(Arch.targets.contains(source))){
             System.out.println("Unrecognized source");
             System.exit(0);
             return;
         }
 
         String target = cmd.getOptionValue("target").trim();
-        if(!(wmmResolver.getArchSet().contains(target))){
+        if(!(Arch.targets.contains(target))){
             System.out.println("Unrecognized target");
             System.exit(0);
             return;
@@ -113,27 +95,18 @@ public class Porthos {
             return;
         }
 
-        String[] rels = new String[100];
-        if(cmd.hasOption("rels")) {
-            rels = cmd.getOptionValues("rels");
-        }
+        Wmm mcmS = new Wmm(cmd.getOptionValue("scat"), source);
+        Wmm mcmT = new Wmm(cmd.getOptionValue("tcat"), target);
 
-        WmmInterface mcmS;
-        if (cmd.hasOption("scat")) {
-            mcmS = Dartagnan.parseCat(cmd.getOptionValue("scat"));
-        } else {
-            mcmS = wmmResolver.getWmmForArch(source);
-        }
-
-        WmmInterface mcmT;
-        if (cmd.hasOption("tcat")) {
-            mcmT = Dartagnan.parseCat(cmd.getOptionValue("tcat"));
-        } else {
-            mcmT = wmmResolver.getWmmForArch(target);
-        }
-
-        if (cmd.hasOption("relax") || mcmS instanceof Wmm || mcmT instanceof Wmm) {
-            Relation.Approx = true;
+        if(cmd.hasOption("draw")) {
+            mcmS.setDrawExecutionGraph();
+            mcmT.setDrawExecutionGraph();
+            mcmS.addDrawRelations(Graph.getDefaultRelations());
+            mcmT.addDrawRelations(Graph.getDefaultRelations());
+            if(cmd.hasOption("rels")) {
+                mcmS.addDrawRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+                mcmT.addDrawRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+            }
         }
 
         int steps = 1;
@@ -153,39 +126,37 @@ public class Porthos {
 
         Context ctx = new Context();
         ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-        Solver s = ctx.mkSolver();
-        Solver s2 = ctx.mkSolver();
+        Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
+        Solver s2 = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 
-        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(source);
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
-        BoolExpr sourceDomain = Domain.encode(pSource, ctx);
-        BoolExpr sourceMM = mcmS.encode(pSource, ctx, false, cmd.hasOption("idl"));
+        BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
+        BoolExpr sourceMM = mcmS.encode(pSource, ctx, cmd.hasOption("relax"), cmd.hasOption("idl"));
 
-        Relation.EncodeCtrlPo = wmmResolver.encodeCtrlPo(target);
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeDF_RF(ctx));
-        s.add(Domain.encode(pTarget, ctx));
-        s.add(mcmT.encode(pTarget, ctx, false, cmd.hasOption("idl")));
-        s.add(mcmT.Consistent(pTarget, ctx));
+        s.add(pTarget.encodeFinalValues(ctx));
+        s.add(mcmT.encode(pTarget, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
+        s.add(mcmT.consistent(pTarget, ctx));
 
         s.add(sourceDF);
         s.add(sourceCF);
         s.add(sourceDF_RF);
-        s.add(sourceDomain);
+        s.add(sourceFV);
         s.add(sourceMM);
-        s.add(mcmS.Inconsistent(pSource, ctx));
+        s.add(mcmS.inconsistent(pSource, ctx));
 
         s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
         s2.add(sourceDF);
         s2.add(sourceCF);
         s2.add(sourceDF_RF);
-        s2.add(sourceDomain);
+        s2.add(sourceFV);
         s2.add(sourceMM);
-        s2.add(mcmS.Consistent(pSource, ctx));
+        s2.add(mcmS.consistent(pSource, ctx));
 
         int iterations = 0;
         Status lastCheck = Status.SATISFIABLE;
@@ -206,9 +177,15 @@ public class Porthos {
                     System.out.println("The program is not state-portable");
                     System.out.println("Iterations: " + iterations);
                     if(cmd.hasOption("draw")) {
-                  	  String outputPath = cmd.getOptionValue("draw");
-                  	  Utils.drawGraph(p, pSource, pTarget, ctx, s.getModel(), outputPath, rels);
-                      }
+                        Graph graph = new Graph(s.getModel(), ctx);
+                        String outputPath = cmd.getOptionValue("draw");
+                        ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+                        if(cmd.hasOption("rels")) {
+                            graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+                        }
+                        graph.build(pSource, pTarget).draw(outputPath);
+                        System.out.println("Execution graph is written to " + outputPath);
+                    }
                     return;
                 }
                 else {

@@ -5,7 +5,7 @@ do
    then
       continue
    fi
-   java -Xmx128m porthos/Porthos -s sc -t tso -i $file > ./port_sc_tso.out
+   java -Xmx128m porthos/Porthos -s sc -t tso -i $file -scat cat/sc.cat -tcat cat/tso.cat > ./port_sc_tso.out
    port=$(grep -e 'not' port_sc_tso.out | wc -l)
    herd7 -model cat/sc.cat $file > ./herd_sc.out
    herd1=$(grep -e 'States' herd_sc.out)

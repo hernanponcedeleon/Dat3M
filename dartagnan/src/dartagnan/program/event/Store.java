@@ -31,18 +31,27 @@ public class Store extends MemEvent {
 		);
 	}
 
+	@Override
 	public Register getReg() {
 		return reg;
 	}
 
+	@Override
 	public String toString() {
         return String.format("%s%s := %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, val);
 	}
 
+	@Override
+	public String label(){
+		return "W[" + atomic + "] " + getLoc();
+	}
+
+	@Override
 	public ExprInterface getExpr(){
 		return val;
 	}
-	
+
+	@Override
 	public Store clone() {
         Location newLoc = loc.clone();
         ExprInterface newVal = val.clone();
@@ -53,6 +62,7 @@ public class Store extends MemEvent {
 		return newStore;
 	}
 
+	@Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
 		if(mainThread == null){
 			throw new RuntimeException("Main thread is not set in " + this);

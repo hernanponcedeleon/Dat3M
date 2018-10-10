@@ -4,10 +4,13 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
-import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.PredicateUtils;
+import dartagnan.wmm.utils.Tuple;
+import dartagnan.wmm.utils.TupleSet;
 
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import static dartagnan.utils.Utils.edge;
 
 /**
  *
@@ -15,115 +18,142 @@ import java.util.Collection;
  */
 public abstract class Relation {
 
-    /**
-     * Describes whether the encoding process uses an over-approximation which is only suitable for checking consistency, NOT inconsistency.
-     */
-    public static boolean Approx = false;
-    public static boolean CloseApprox = false;
+    public static final int LFP     = 0;
+    public static final int IDL     = 1;
+    public static final int APPROX  = 2;
+
     public static boolean PostFixApprox = false;
-    public static boolean EncodeCtrlPo = false; // depends on target architecture
 
     protected String name;
     protected String term;
-    protected boolean containsRec;
-    protected boolean isNamed;
-    protected int eventMask = EventRepository.EVENT_MEMORY | EventRepository.EVENT_RCU;
 
-    /**
-     * Creates a relation with an automatically generated identifier.
-     */
+    protected Program program;
+    protected Context ctx;
+
+    protected boolean isEncoded;
+    private int encodingMode;
+
+    protected TupleSet maxTupleSet;
+    protected TupleSet encodeTupleSet;
+
+    protected int recursiveGroupId = 0;
+    protected boolean forceUpdateRecursiveGroupId = false;
+    protected boolean isRecursive = false;
+
     public Relation() {}
 
-    /**
-     * Creates a relation that is explicitly named either for recursion or readability.
-     * @param name (manually chosen)
-     */
     public Relation(String name) {
         this.name = name;
-        isNamed = true;
     }
 
-    public Relation setEventMask(int mask){
-        this.eventMask = mask;
-        return this;
+    public int getRecursiveGroupId(){
+        return recursiveGroupId;
     }
 
-    /**
-     * @return boolean
-     */
-    public boolean getIsNamed(){
-        return isNamed;
+    public void setRecursiveGroupId(int id){
+        forceUpdateRecursiveGroupId = true;
+        recursiveGroupId = id;
     }
 
-    /**
-     *
-     * @return the name of the relation (with a prefix if that was set for aramis)
-     */
+    public int updateRecursiveGroupId(int parentId){
+        return recursiveGroupId;
+    }
+
+    public void initialise(Program program, Context ctx, int encodingMode){
+        this.program = program;
+        this.ctx = ctx;
+        this.encodingMode = encodingMode;
+        this.maxTupleSet = null;
+        this.isEncoded = false;
+        encodeTupleSet = new TupleSet();
+    }
+
+    public abstract TupleSet getMaxTupleSet();
+
+    public TupleSet getMaxTupleSetRecursive(){
+        return getMaxTupleSet();
+    }
+
+    public TupleSet getEncodeTupleSet(){
+        return encodeTupleSet;
+    }
+
+    public void addEncodeTupleSet(TupleSet tuples){
+        encodeTupleSet.addAll(tuples);
+    }
+
     public String getName() {
-        if(isNamed){
+        if(name != null){
             return name;
         }
         return term;
     }
 
-    /**
-     * This is only used by the parser where a relation is defined and named later.
-     * Only use this method before relations depending on this one are encoded!!!
-     * @param name
-     */
-    public void setName(String name){
+    public Relation setName(String name){
         this.name = name;
-        isNamed = true;
+        return this;
     }
 
-    /**
-     * The term that defines the relation.
-     * @return String
-     */
+    public String getTerm(){
+        return term;
+    }
+
+    public boolean getIsNamed(){
+        return name != null;
+    }
+
     public String toString(){
-        if(isNamed){
+        if(name != null){
             return name + " := " + term;
         }
         return term;
     }
 
-    public BoolExpr encode(Program program, Context ctx, Collection<String> encodedRels) throws Z3Exception {
-        if(encodedRels != null){
-            if(encodedRels.contains(this.getName())){
-                return ctx.mkTrue();
+    public BoolExpr encode() throws Z3Exception {
+        if(isEncoded){
+            return ctx.mkTrue();
+        }
+        isEncoded = true;
+        return doEncode();
+    }
+
+    protected BoolExpr encodeLFP() throws Z3Exception {
+        return encodeApprox();
+    }
+
+    protected BoolExpr encodeIDL() throws Z3Exception{
+        return encodeApprox();
+    }
+
+    protected abstract BoolExpr encodeApprox() throws Z3Exception;
+
+    public BoolExpr encodeIteration(int recGroupId, int iteration){
+        return ctx.mkTrue();
+    }
+
+    protected BoolExpr doEncode(){
+        BoolExpr enc = encodeNegations();
+        if(!encodeTupleSet.isEmpty()){
+            if(encodingMode == LFP) {
+                return ctx.mkAnd(enc, encodeLFP());
+            } else if(encodingMode == IDL) {
+                return ctx.mkAnd(enc, encodeIDL());
             }
-            encodedRels.add(this.getName());
+            return ctx.mkAnd(enc, encodeApprox());
         }
-        return doEncode(program, ctx);
+        return enc;
     }
 
-    protected BoolExpr encodeBasic(Program program, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodeBasic is not implemented for " + getClass().getName());
-    }
-
-    protected BoolExpr encodeApprox(Program program, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodeApprox is not implemented for " + getClass().getName());
-    }
-
-    protected BoolExpr encodePredicateBasic(Program program, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodePredicateBasic is not implemented for " + getClass().getName());
-    }
-
-    protected BoolExpr encodePredicateApprox(Program program, Context ctx) throws Z3Exception {
-        throw new RuntimeException("Method encodePredicateApprox is not implemented for " + getClass().getName());
-    }
-
-    protected BoolExpr doEncode(Program program, Context ctx){
-        if(PredicateUtils.getUsePredicate()){
-            if(Relation.Approx){
-                return encodePredicateApprox(program, ctx);
+    private BoolExpr encodeNegations(){
+        BoolExpr enc = ctx.mkTrue();
+        if(!encodeTupleSet.isEmpty()){
+            Set<Tuple> negations = new HashSet<>(encodeTupleSet);
+            negations.removeAll(maxTupleSet);
+            for(Tuple tuple : negations){
+                enc = ctx.mkAnd(enc, ctx.mkNot(edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx)));
             }
-            return encodePredicateBasic(program, ctx);
+            encodeTupleSet.removeAll(negations);
         }
-
-        if(Relation.Approx){
-            return encodeApprox(program, ctx);
-        }
-        return encodeBasic(program, ctx);
+        return enc;
     }
 }

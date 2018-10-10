@@ -7,7 +7,7 @@ import dartagnan.program.event.Fence;
 
 public class FenceCond extends Fence {
 
-    protected RMWReadCond loadEvent;
+    private RMWReadCond loadEvent;
 
     public FenceCond (RMWReadCond loadEvent, String name){
         super(name);
@@ -29,6 +29,6 @@ public class FenceCond extends Fence {
     }
 
     public FenceCond clone() {
-        return new FenceCond(loadEvent, name, condLevel, atomic);
+        return new FenceCond(loadEvent.clone(), name, condLevel, atomic);
     }
 }
