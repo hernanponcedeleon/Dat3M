@@ -1,6 +1,8 @@
-package dartagnan;
+package dartagnan.tests;
 
 import com.microsoft.z3.*;
+
+import dartagnan.Dartagnan;
 import dartagnan.program.Program;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.Wmm;
