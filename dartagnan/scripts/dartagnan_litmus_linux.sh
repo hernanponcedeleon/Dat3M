@@ -1,5 +1,9 @@
 for file in $(find litmus/C -name '*.litmus' | sort);
 do
+   if [[ $file == *"mutual"* ]];
+   then
+      continue
+   fi
    herd7 -I cat -model cat/linux-kernel.cat -bell cat/linux-kernel.bell -macros cat/linux-kernel.def $file > ./herd_linux.out
    herd=$(grep -e 'No' herd_linux.out | wc -l)
    rm herd_linux.out
