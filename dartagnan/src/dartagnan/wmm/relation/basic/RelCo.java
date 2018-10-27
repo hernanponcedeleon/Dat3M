@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Location;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
@@ -50,7 +49,7 @@ public class RelCo extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
         if(!encodeTupleSet.isEmpty()){
@@ -83,7 +82,7 @@ public class RelCo extends Relation {
         return enc;
     }
 
-    private BoolExpr satTO(Collection<Event> events) throws Z3Exception {
+    private BoolExpr satTO(Collection<Event> events) {
         BoolExpr enc = ctx.mkTrue();
         String name = getName();
 

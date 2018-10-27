@@ -1,12 +1,11 @@
 package dartagnan.program.event.rmw;
 
-import dartagnan.program.*;
+import dartagnan.program.Location;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.filter.FilterUtils;
-
-import java.util.Collections;
 
 public class Xchg extends MemEvent {
 
@@ -29,7 +28,8 @@ public class Xchg extends MemEvent {
         );
     }
 
-    public dartagnan.program.Thread compile(String target, boolean ctrl, boolean leading) {
+    @Override
+    public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("tso") && atomic.equals("_rx")) {
             Register dummyReg = new Register(null);
             RMWLoad load = new RMWLoad(dummyReg, loc, atomic);
@@ -49,14 +49,17 @@ public class Xchg extends MemEvent {
         throw new RuntimeException("xchg " + atomic + " is not implemented for " + target);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  ")) + loc + ".xchg(" + atomic + ", " + reg + ")";
+        return nTimesCondLevel() + loc + ".xchg(" + atomic + ", " + reg + ")";
     }
 
+    @Override
     public Register getReg() {
         return reg;
     }
 
+    @Override
     public Xchg clone() {
         Location newLoc = loc.clone();
         Register newReg = reg.clone();
@@ -65,13 +68,5 @@ public class Xchg extends MemEvent {
         newXchg.memId = memId;
         newXchg.setUnfCopy(getUnfCopy());
         return newXchg;
-    }
-
-    public dartagnan.program.Thread optCompile(String target, boolean ctrl, boolean leading) {
-        throw new RuntimeException("Method optCompile is not implemented for Xchg");
-    }
-
-    public dartagnan.program.Thread allCompile() {
-        throw new RuntimeException("Method allCompile is not implemented for Xchg");
     }
 }

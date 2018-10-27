@@ -3,11 +3,9 @@ package dartagnan.program.event.rmw.cond;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.utils.ClonableWithMemorisation;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -15,7 +13,7 @@ import dartagnan.utils.Pair;
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
-public abstract class RMWReadCond extends RMWLoad implements ClonableWithMemorisation {
+public abstract class RMWReadCond extends RMWLoad {
 
     protected ExprInterface cmp;
     protected BoolExpr z3Cond;
@@ -26,19 +24,16 @@ public abstract class RMWReadCond extends RMWLoad implements ClonableWithMemoris
     }
 
     public BoolExpr getCond(){
-        if(z3Cond == null){
-            // encodeDF must be called before encodeCF, otherwise this exception will be thrown
-            throw new RuntimeException("z3Cond is requested before it has been initialised in " + this.getClass().getName());
+        if(z3Cond != null){
+            return z3Cond;
         }
-        return z3Cond;
+        // encodeDF must be called before encodeCF, otherwise this exception will be thrown
+        throw new RuntimeException("z3Cond is requested before it has been initialised in " + this.getClass().getName());
     }
 
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-        if(mainThread == null){
-            System.out.println(String.format("Check encodeDF for %s", this));
-            return null;
-        }
-        else {
+    @Override
+    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
+        if(mainThread != null){
             Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
             Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
             this.ssaLoc = z3Loc;
@@ -46,8 +41,10 @@ public abstract class RMWReadCond extends RMWLoad implements ClonableWithMemoris
             this.z3Cond = ctx.mkEq(z3Reg, encodeValue(map, ctx, cmp));
             return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
         }
+        throw new RuntimeException("Main thread is not set for " + toString());
     }
 
+    @Override
     public abstract RMWReadCond clone();
 
     private Expr encodeValue(MapSSA map, Context ctx, ExprInterface v){

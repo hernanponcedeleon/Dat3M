@@ -14,8 +14,11 @@ java -jar import/antlr-4.7-complete.jar LitmusPPC.g4 -no-listener -visitor -o ta
 java -jar import/antlr-4.7-complete.jar LitmusX86.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 
 mkdir -p $OUT
+find src -name *.java > sources.txt
+find target -name *.java >> sources.txt
 javac -d $OUT @sources.txt
-export CLASSPATH=$CLASSPATH:$OUT
+rm sources.txt
 
+export CLASSPATH=$CLASSPATH:$OUT
 echo "Installation finished. Set CLASSPATH:"
 echo "export CLASSPATH=$CLASSPATH"

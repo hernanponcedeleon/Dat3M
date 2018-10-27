@@ -2,7 +2,6 @@ package dartagnan.asserts;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 
 public class AssertNot extends AbstractAssert {
 
@@ -16,17 +15,20 @@ public class AssertNot extends AbstractAssert {
         return child;
     }
 
-    public BoolExpr encode(Context ctx) throws Z3Exception {
-        if(child == null){
-            throw new RuntimeException("Empty assertion clause");
+    @Override
+    public BoolExpr encode(Context ctx) {
+        if(child != null){
+            return ctx.mkNot(child.encode(ctx));
         }
-        return ctx.mkNot(child.encode(ctx));
+        throw new RuntimeException("Empty assertion clause in " + this.getClass().getName());
     }
 
+    @Override
     public String toString() {
         return "!" + child.toString();
     }
 
+    @Override
     public AbstractAssert clone(){
         return new AssertNot(child.clone());
     }

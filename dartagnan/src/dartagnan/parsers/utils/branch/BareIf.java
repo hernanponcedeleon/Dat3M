@@ -3,9 +3,9 @@ package dartagnan.parsers.utils.branch;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.Atom;
 import dartagnan.expression.BExpr;
+import dartagnan.program.Thread;
 import dartagnan.program.event.If;
 import dartagnan.program.event.Skip;
-import dartagnan.program.Thread;
 
 public class BareIf extends Thread {
 
@@ -59,10 +59,5 @@ public class BareIf extends Thread {
             t2 = new Skip();
         }
         return new If(pred, t1, t2);
-    }
-
-    // TODO: Implement or remove
-    public BareIf clone(){
-        throw new RuntimeException("Clone not supported for " + this.getClass().getName());
     }
 }

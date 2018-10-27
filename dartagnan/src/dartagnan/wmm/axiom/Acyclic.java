@@ -2,7 +2,6 @@ package dartagnan.wmm.axiom;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -55,7 +54,7 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    protected BoolExpr _consistent(Context ctx) throws Z3Exception {
+    protected BoolExpr _consistent(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
@@ -67,16 +66,16 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    protected BoolExpr _inconsistent(Context ctx) throws Z3Exception {
+    protected BoolExpr _inconsistent(Context ctx) {
         return ctx.mkAnd(satCycleDef(ctx), satCycle(ctx));
     }
 
     @Override
     protected String _toString() {
-        return String.format("acyclic %s", rel.getName());
+        return "acyclic" + rel.getName();
     }
 
-    private BoolExpr satCycle(Context ctx) throws Z3Exception {
+    private BoolExpr satCycle(Context ctx) {
         Set<Event> cycleEvents = new HashSet<>();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             cycleEvents.add(tuple.getFirst());
@@ -141,11 +140,11 @@ public class Acyclic extends Axiom {
         return enc;
     }
 
-    private BoolExpr cycleVar(String relName, Event e, Context ctx) throws Z3Exception {
+    private BoolExpr cycleVar(String relName, Event e, Context ctx) {
         return ctx.mkBoolConst("Cycle(" + e.repr() + ")(" + relName + ")");
     }
 
-    private BoolExpr cycleEdge(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {
+    private BoolExpr cycleEdge(String relName, Event e1, Event e2, Context ctx) {
         return ctx.mkBoolConst("Cycle:" + relName + "(" + e1.repr() + "," + e2.repr() + ")");
     }
 }

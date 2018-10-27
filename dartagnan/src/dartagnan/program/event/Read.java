@@ -1,14 +1,10 @@
 package dartagnan.program.event;
 
-import java.util.Collections;
-
-import com.microsoft.z3.*;
-
-import dartagnan.program.*;
+import dartagnan.program.Location;
+import dartagnan.program.Register;
+import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 public class Read extends MemEvent {
 
@@ -26,15 +22,18 @@ public class Read extends MemEvent {
                 FilterUtils.EVENT_TYPE_READ
         );
 	}
-	
+
+	@Override
 	public Register getReg() {
 		return reg;
 	}
-	
+
+	@Override
 	public String toString() {
-		return String.format("%s%s = %s.load(%s)", String.join("", Collections.nCopies(condLevel, "  ")), reg, loc, atomic);
+		return nTimesCondLevel() + reg + " = " + loc + ".load(" +  atomic + ")";
 	}
-	
+
+	@Override
 	public Read clone() {
 		Read newRead = new Read(reg, loc, atomic);
 		newRead.condLevel = condLevel;
@@ -43,11 +42,7 @@ public class Read extends MemEvent {
 		return newRead;
 	}
 
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		System.out.println(String.format("Check encodeDF for %s", this));
-		return null;
-	}
-
+	@Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
 		Load ld = new Load(reg, loc, atomic);
 		ld.setHLId(memId);
@@ -83,43 +78,7 @@ public class Read extends MemEvent {
 				return new Seq(ld, ish);
 			}			
 		}
-		
-		else System.out.println(String.format("Error in the atomic operation type of %s", this));
-		return null;
-	}
-	
-	public Thread optCompile(boolean ctrl, boolean leading) {
-		Load ld = new Load(reg, loc, atomic);
-		ld.setHLId(hashCode());
-		ld.setCondLevel(this.condLevel);
 
-        if(atomic.equals("_rx") || atomic.equals("_na")) {
-            return ld;
-        }
-
-        OptFence lwsync = new OptFence("Lwsync", this.condLevel);
-        if(atomic.equals("_con") || atomic.equals("_acq")) {
-            return new Seq(ld, lwsync);
-        }
-
-		if(atomic.equals("_sc")) {
-			if(leading) {
-                OptFence sync = new OptFence("Sync", this.condLevel);
-				return new Seq(sync, new Seq(ld, lwsync));
-			}
-			return new Seq(ld, lwsync);
-		}
-
-		else System.out.println(String.format("Error in the atomic operation type of %s", this));
-		return null;
-	}
-	
-	public Thread allCompile() {
-		Load ld = new Load(reg, loc, atomic);
-		ld.setHLId(hashCode());
-		ld.setCondLevel(this.condLevel);
-		OptFence os = new OptFence("Sync", this.condLevel);
-		OptFence olws = new OptFence("Lwsync",  this.condLevel);
-		return new Seq(os, new Seq(olws, ld));
+		throw new RuntimeException("Compilation is not supported for " + this);
 	}
 }

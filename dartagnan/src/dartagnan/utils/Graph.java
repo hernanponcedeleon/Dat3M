@@ -7,7 +7,9 @@ import com.microsoft.z3.Model;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
-import dartagnan.program.event.*;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.Init;
+import dartagnan.program.event.MemEvent;
 import dartagnan.program.utils.EventRepository;
 
 import java.io.File;
@@ -22,7 +24,7 @@ public class Graph {
             "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
     );
 
-    private Map<String, String> colorMap = new HashMap<String, String>(){{
+    private Map<String, String> colorMap = new HashMap<>(){{
         put("rf", "red");
         put("co", "blue");
         put("po", "brown");

@@ -2,7 +2,6 @@ package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.TupleSet;
@@ -60,7 +59,7 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode() throws Z3Exception {
+    public BoolExpr encode() {
         if(isEncoded){
             return ctx.mkTrue();
         }
@@ -69,7 +68,7 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeLFP() throws Z3Exception {
+    protected BoolExpr encodeLFP() {
         if(recursiveGroupId > 0){
             return ctx.mkTrue();
         }

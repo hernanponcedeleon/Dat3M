@@ -2,7 +2,6 @@ package dartagnan.asserts;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 
 public abstract class AbstractAssert {
 
@@ -39,7 +38,7 @@ public abstract class AbstractAssert {
         return toString();
     }
 
-    public abstract BoolExpr encode(Context ctx) throws Z3Exception;
+    public abstract BoolExpr encode(Context ctx);
 
     public abstract AbstractAssert clone();
 }

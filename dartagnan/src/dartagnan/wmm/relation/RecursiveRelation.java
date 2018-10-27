@@ -2,7 +2,6 @@ package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.utils.Tuple;
@@ -90,7 +89,7 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode() throws Z3Exception {
+    public BoolExpr encode() {
         if(isEncoded){
             return ctx.mkTrue();
         }
@@ -99,17 +98,17 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeLFP() throws Z3Exception {
+    protected BoolExpr encodeLFP() {
         return r1.encodeLFP();
     }
 
     @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
+    protected BoolExpr encodeIDL() {
         return r1.encodeIDL();
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         return r1.encodeApprox();
     }
 

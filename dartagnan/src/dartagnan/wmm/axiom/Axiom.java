@@ -2,7 +2,6 @@ package dartagnan.wmm.axiom;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.TupleSet;
 
@@ -29,20 +28,21 @@ public abstract class Axiom {
         return rel;
     }
 
-    public BoolExpr consistent(Context ctx) throws Z3Exception{
+    public BoolExpr consistent(Context ctx) {
         if(negate){
             return _inconsistent(ctx);
         }
         return _consistent(ctx);
     }
 
-    public BoolExpr inconsistent(Context ctx) throws Z3Exception{
+    public BoolExpr inconsistent(Context ctx) {
         if(negate){
             return _consistent(ctx);
         }
         return _inconsistent(ctx);
     }
 
+    @Override
     public String toString(){
         if(negate){
             return "~" + _toString();
@@ -52,9 +52,9 @@ public abstract class Axiom {
 
     public abstract TupleSet getEncodeTupleSet();
 
-    protected abstract BoolExpr _consistent(Context ctx) throws Z3Exception;
+    protected abstract BoolExpr _consistent(Context ctx);
 
-    protected abstract BoolExpr _inconsistent(Context ctx) throws Z3Exception;
+    protected abstract BoolExpr _inconsistent(Context ctx);
 
     protected abstract String _toString();
 }

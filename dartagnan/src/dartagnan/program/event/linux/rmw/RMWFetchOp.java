@@ -9,8 +9,6 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 
-import java.util.Collections;
-
 public class RMWFetchOp extends RMWAbstract {
 
     private String op;
@@ -20,6 +18,7 @@ public class RMWFetchOp extends RMWAbstract {
         this.op = op;
     }
 
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = reg == value ? new Register(null) : reg;
@@ -36,11 +35,12 @@ public class RMWFetchOp extends RMWAbstract {
         return super.compile(target, ctrl, leading);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  "))
-                + reg + " := atomic_fetch_" + opToText(op) + atomicToText(atomic) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + reg + " := atomic_fetch_" + opToText(op) + atomicToText(atomic) + "(" + value + ", " + loc + ")";
     }
 
+    @Override
     public RMWFetchOp clone() {
         Location newLoc = loc.clone();
         Register newReg = reg.clone();

@@ -10,14 +10,17 @@ public class FilterBasic extends FilterAbstract {
         this.param = param;
     }
 
+    @Override
     public boolean filter(Event e){
         return e.is(param);
     }
 
+    @Override
     public String toString(){
         return param;
     }
 
+    @Override
     public Integer toRepositoryCode(){
         return FilterUtils.toRepositoryCode.get(param);
     }

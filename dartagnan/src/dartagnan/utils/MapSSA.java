@@ -1,12 +1,12 @@
 package dartagnan.utils;
 
+import dartagnan.program.Location;
+import dartagnan.program.Register;
+
 import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import dartagnan.program.Location;
-import dartagnan.program.Register;
 
 public class MapSSA {
 
@@ -14,12 +14,12 @@ public class MapSSA {
 	private ConcurrentHashMap<Location, Integer> locMap;
 
 	public MapSSA() {
-		this.regMap = new ConcurrentHashMap<Register, Integer>();
-		this.locMap = new ConcurrentHashMap<Location, Integer>();
+		this.regMap = new ConcurrentHashMap<>();
+		this.locMap = new ConcurrentHashMap<>();
 	}
 	
 	public Set<Object> keySet() {
-		Set<Object> ret = new HashSet<Object>();
+		Set<Object> ret = new HashSet<>();
 		ret.addAll(regMap.keySet());
 		ret.addAll(locMap.keySet());
 		return ret;
@@ -44,7 +44,7 @@ public class MapSSA {
 		}
 		return regMap.get(reg);
 	}
-	
+
 	public Integer get(Object o) {
 		if(o instanceof Register) {
 			if(!regMap.containsKey(o)) {
@@ -58,10 +58,9 @@ public class MapSSA {
 			}
 			return locMap.get(o);
 		}
-		System.out.println(String.format("Check get for %s and %s", this, o));
-		return null;
+		throw new RuntimeException("Invalid object supplied to MapSSA: " + o);
 	}
-	
+
 	public void put(Object o, Integer i) {
 		if(o instanceof Register) {
 			regMap.put((Register) o, i);
@@ -71,15 +70,14 @@ public class MapSSA {
 			locMap.put((Location) o, i);
 			return;
 		}
-		System.out.println(String.format("Check get for %s and %s", this, o));
-		return;
+		throw new RuntimeException("Invalid object supplied to MapSSA: " + o);
 	}
 	
 	
 	public MapSSA clone() {
 		MapSSA map = new MapSSA();
-		map.locMap = new ConcurrentHashMap<Location, Integer>();
-		map.regMap = new ConcurrentHashMap<Register, Integer>();
+		map.locMap = new ConcurrentHashMap<>();
+		map.regMap = new ConcurrentHashMap<>();
 		
 		for(Register reg : regMap.keySet()) {
 			map.put(reg, this.get(reg));
@@ -93,6 +91,9 @@ public class MapSSA {
 	}
 	
 	public String toString() {
-		return (String) "[" + regMap.reduce(1, (k, v) -> k + " = " + NumberFormat.getInstance().format(v), (r1, r2) -> r1 + ", " + r2) + ", " + locMap.reduce(1, (k, v) -> k + " = " + NumberFormat.getInstance().format(v), (r1, r2) -> r1 + ", " + r2) + "]";
+		return "[" + regMap.reduce(1, (k, v) -> k + " = "
+                + NumberFormat.getInstance().format(v), (r1, r2) -> r1 + ", " + r2) + ", "
+                + locMap.reduce(1, (k, v) -> k + " = "
+                + NumberFormat.getInstance().format(v), (r1, r2) -> r1 + ", " + r2) + "]";
 	}
 }

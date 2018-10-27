@@ -1,31 +1,30 @@
 package dartagnan;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
-import com.microsoft.z3.*;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Solver;
+import com.microsoft.z3.Status;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
-
+import dartagnan.asserts.AbstractAssert;
+import dartagnan.parsers.ParserInterface;
+import dartagnan.parsers.ParserResolver;
+import dartagnan.program.Program;
 import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
 import dartagnan.wmm.utils.Arch;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.DiagnosticErrorListener;
+import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 
-import dartagnan.asserts.AbstractAssert;
-import dartagnan.program.Program;
-import dartagnan.parsers.ParserInterface;
-import dartagnan.parsers.ParserResolver;
-
-import org.apache.commons.cli.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 @SuppressWarnings("deprecation")
 public class Dartagnan {
 
-	public static void main(String[] args) throws Z3Exception, IOException {
+	public static void main(String[] args) throws IOException {
 
 		Options options = new Options();
 
@@ -47,22 +46,22 @@ public class Dartagnan {
 		options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
 		options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
 
-        CommandLine cmd;
-        try {
-        	cmd = new DefaultParser().parse(options, args);
-        }
-        catch (ParseException e) {
+		CommandLine cmd;
+		try {
+			cmd = new DefaultParser().parse(options, args);
+		}
+		catch (ParseException e) {
 			new HelpFormatter().printHelp("DARTAGNAN", options);
-        	System.exit(1);
-        	return;
-        }
+			System.exit(1);
+			return;
+		}
 
 		String target = cmd.getOptionValue("target").trim();
-        if(!(Arch.targets.contains(target))){
-            System.out.println("Unrecognized target");
-            System.exit(0);
-            return;
-        }
+		if(!(Arch.targets.contains(target))){
+			System.out.println("Unrecognized target");
+			System.exit(0);
+			return;
+		}
 
 		String inputFilePath = cmd.getOptionValue("input");
 		if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus")) {
@@ -80,32 +79,32 @@ public class Dartagnan {
 		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 		Wmm mcm = new Wmm(cmd.getOptionValue("cat"), target);
 
-        if(cmd.hasOption("draw")) {
-            mcm.setDrawExecutionGraph();
-            mcm.addDrawRelations(Graph.getDefaultRelations());
-            if(cmd.hasOption("rels")) {
-                mcm.addDrawRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
-            }
-        }
+		if(cmd.hasOption("draw")) {
+			mcm.setDrawExecutionGraph();
+			mcm.addDrawRelations(Graph.getDefaultRelations());
+			if(cmd.hasOption("rels")) {
+				mcm.addDrawRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+			}
+		}
 
 		int steps = 1;
 		if(cmd.hasOption("unroll")) {
 			steps = Integer.parseInt(cmd.getOptionValue("unroll"));
 		}
 
-		p.initialize(steps);
+		p.unroll(steps);
 		p.compile(target, false, true);
 
 		s.add(p.encodeDF(ctx));
 		s.add(p.getAss().encode(ctx));
-        if(p.getAssFilter() != null){
-            s.add(p.getAssFilter().encode(ctx));
-        }
+		if(p.getAssFilter() != null){
+			s.add(p.getAssFilter().encode(ctx));
+		}
 		s.add(p.encodeCF(ctx));
 		s.add(p.encodeDF_RF(ctx));
 		s.add(p.encodeFinalValues(ctx));
-        s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
-        s.add(mcm.consistent(p, ctx));
+		s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
+		s.add(mcm.consistent(p, ctx));
 
 		boolean result = (s.check() == Status.SATISFIABLE);
 		if(p.getAss().getInvert()){
@@ -113,8 +112,8 @@ public class Dartagnan {
 		}
 
 		if(p.getAssFilter() != null){
-            System.out.println("Filter " + (p.getAssFilter()));
-        }
+			System.out.println("Filter " + (p.getAssFilter()));
+		}
 		System.out.println("Condition " + p.getAss().toStringWithType());
 		System.out.println(result ? "Ok" : "No");
 

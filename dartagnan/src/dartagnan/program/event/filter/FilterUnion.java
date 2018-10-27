@@ -2,45 +2,29 @@ package dartagnan.program.event.filter;
 
 import dartagnan.program.event.Event;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class FilterUnion extends FilterAbstract {
 
-    private List<FilterAbstract> filters = new ArrayList<FilterAbstract>();
-
-    public FilterUnion(){}
+    private FilterAbstract filter1;
+    private FilterAbstract filter2;
 
     public FilterUnion(FilterAbstract filter1, FilterAbstract filter2){
-        filters.add(filter1);
-        filters.add(filter2);
+        this.filter1 = filter1;
+        this.filter2 = filter2;
     }
 
-    public void addFilter(FilterAbstract filter){
-        this.filters.add(filter);
-    }
-
+    @Override
     public boolean filter(Event e){
-        for(FilterAbstract filter : filters){
-            if(filter.filter(e)){
-                return true;
-            }
-        }
-        return false;
+        return filter1.filter(e) || filter2.filter(e);
     }
 
+    @Override
     public String toString(){
-        return filters.stream()
-                .map(f -> (f instanceof FilterBasic) ? f.toString() : "( " + f.toString() + " )")
-                .collect(Collectors.joining(" | "));
+        return (filter1 instanceof FilterBasic ? filter1.toString() : "( " + filter1.toString() + " )")
+                + " | " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
     }
 
+    @Override
     public Integer toRepositoryCode(){
-        Integer result = 0;
-        for(FilterAbstract filter : filters){
-            result |= filter.toRepositoryCode();
-        }
-        return result;
+        return filter1.toRepositoryCode() | filter2.toRepositoryCode();
     }
 }

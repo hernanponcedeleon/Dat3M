@@ -1,14 +1,16 @@
 package dartagnan.program;
 
+import com.microsoft.z3.ArithExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
+import dartagnan.expression.AExpr;
+import dartagnan.expression.IntExprInterface;
+import dartagnan.utils.MapSSA;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import com.microsoft.z3.*;
-
-import dartagnan.expression.IntExprInterface;
-import dartagnan.expression.AExpr;
-import dartagnan.utils.MapSSA;
 import static dartagnan.utils.Utils.ssaReg;
 
 public class Register extends AExpr implements IntExprInterface {
@@ -27,7 +29,8 @@ public class Register extends AExpr implements IntExprInterface {
 	public String getName() {
 		return name;
 	}
-	
+
+	@Override
 	public String toString() {
         return name;
 	}
@@ -40,7 +43,8 @@ public class Register extends AExpr implements IntExprInterface {
     public String getPrintMainThreadId(){
 	    return printMainThreadId;
     }
-	
+
+	@Override
 	public Register clone() {
 		return this;
 	}
@@ -49,15 +53,17 @@ public class Register extends AExpr implements IntExprInterface {
 		this.mainThreadId = t;
 	}
 
-	public ArithExpr toZ3(MapSSA map, Context ctx) throws Z3Exception {
-		if(getMainThreadId() == null) {
-			System.out.println(String.format("Check toZ3() for %s: null pointer!", this));
+	@Override
+	public ArithExpr toZ3(MapSSA map, Context ctx) {
+		if(getMainThreadId() != null) {
+			return ssaReg(this, map.get(this), ctx);
 		}
-		return ssaReg(this, map.get(this), ctx);
+		throw new RuntimeException("Main thread is not set for " + toString());
 	}
-	
+
+	@Override
 	public Set<Register> getRegs() {
-		HashSet<Register> setRegs = new HashSet<Register>();
+		HashSet<Register> setRegs = new HashSet<>();
 		setRegs.add(this);
 		return setRegs;
 	}
@@ -66,6 +72,7 @@ public class Register extends AExpr implements IntExprInterface {
 		return mainThreadId;
 	}
 
+	@Override
 	public IntExpr getLastValueExpr(Context ctx){
 		return ctx.mkIntConst(getName() + "_" + getMainThreadId() + "_final");
 	}

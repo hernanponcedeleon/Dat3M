@@ -11,8 +11,6 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.rmw.cond.RMWReadCondUnless;
 import dartagnan.program.event.rmw.cond.RMWStoreCond;
 
-import java.util.Collections;
-
 public class RMWAddUnless extends RMWAbstract {
     private ExprInterface cmp;
 
@@ -21,6 +19,7 @@ public class RMWAddUnless extends RMWAbstract {
         this.cmp = cmp;
     }
 
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
@@ -37,11 +36,12 @@ public class RMWAddUnless extends RMWAbstract {
         return super.compile(target, ctrl, leading);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  "))
-                + reg + " := atomic_add_unless" + "(" + loc + ", " + value + "," + cmp + ")";
+        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(" + loc + ", " + value + "," + cmp + ")";
     }
 
+    @Override
     public RMWAddUnless clone() {
         Location newLoc = loc.clone();
         Register newReg = reg.clone();

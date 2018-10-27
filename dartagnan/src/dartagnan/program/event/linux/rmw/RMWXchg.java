@@ -8,14 +8,13 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 
-import java.util.Collections;
-
 public class RMWXchg extends RMWAbstract {
 
     public RMWXchg(Location location, Register register, ExprInterface value, String atomic) {
         super(location, register, value, atomic);
     }
 
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = reg == value ? new Register(null) : reg;
@@ -32,11 +31,12 @@ public class RMWXchg extends RMWAbstract {
         return super.compile(target, ctrl, leading);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  "))
-                + reg + " := atomic_xchg" + atomicToText(atomic) + "(" + loc + ", " + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(" + loc + ", " + value + ")";
     }
 
+    @Override
     public RMWXchg clone() {
         Location newLoc = loc.clone();
         Register newReg = reg.clone();

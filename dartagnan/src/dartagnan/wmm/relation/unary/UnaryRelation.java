@@ -2,7 +2,6 @@ package dartagnan.wmm.relation.unary;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.wmm.relation.Relation;
 
@@ -42,7 +41,7 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode() throws Z3Exception {
+    public BoolExpr encode() {
         if(isEncoded){
             return ctx.mkTrue();
         }

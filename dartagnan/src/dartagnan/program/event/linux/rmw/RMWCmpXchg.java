@@ -8,8 +8,6 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.cond.RMWReadCondCmp;
 import dartagnan.program.event.rmw.cond.RMWStoreCond;
 
-import java.util.Collections;
-
 public class RMWCmpXchg extends RMWAbstract {
 
     private ExprInterface cmp;
@@ -19,6 +17,7 @@ public class RMWCmpXchg extends RMWAbstract {
         this.cmp = cmp;
     }
 
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = (reg == value || reg == cmp) ? new Register(null) : reg;
@@ -35,11 +34,12 @@ public class RMWCmpXchg extends RMWAbstract {
         return super.compile(target, ctrl, leading);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  "))
-                + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + loc + ", " + cmp + "," + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + loc + ", " + cmp + "," + value + ")";
     }
 
+    @Override
     public RMWCmpXchg clone() {
         Location newLoc = loc.clone();
         Register newReg = reg.clone();

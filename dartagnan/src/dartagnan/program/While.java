@@ -1,7 +1,5 @@
 package dartagnan.program;
 
-import java.util.Collections;
-
 import dartagnan.expression.AConst;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.event.If;
@@ -19,28 +17,27 @@ public class While extends Thread {
 		this.t = t;
 		t.incCondLevel();
 	}
-	
-	public String toString() {
-		return String.format("%swhile %s {\n%s\n%s}", String.join("", Collections.nCopies(condLevel, "  ")), pred, t, String.join("", Collections.nCopies(condLevel, "  ")));
-	}
-	
+
+	@Override
 	public void incCondLevel() {
 		condLevel++;
 		t.incCondLevel();
 	}
-	
+
+    @Override
 	public void decCondLevel() {
 		condLevel--;
 		t.decCondLevel();
 	}
-	
+
+    @Override
 	public Thread unroll(int steps, boolean obsNoTermination) {
 		if(steps == 0) {
 			if(obsNoTermination) {
 				Register rTerm = new Register("rTerm");
 				Local newLocal = new Local(rTerm, new AConst(1));
 				newLocal.condLevel = condLevel;
-				Location termination = new Location(String.format("termination_%s", hashCode()));
+				Location termination = new Location("termination_" + hashCode());
 				Store newStore = new Store(termination, rTerm, "_rx");
 				newStore.condLevel = condLevel;
 				ExprInterface newPred = pred.clone();
@@ -60,11 +57,18 @@ public class While extends Thread {
 			return newThread;
 		}
 	}
-	
+
+    @Override
 	public Thread unroll(int steps) {
 		return unroll(steps, false);
 	}
 
+    @Override
+    public void beforeClone(){
+        t.beforeClone();
+    }
+
+    @Override
 	public While clone() {
 		Thread newT = t.clone();
 		newT.decCondLevel();
@@ -73,4 +77,9 @@ public class While extends Thread {
 		newWhile.condLevel = condLevel;
 		return newWhile;
 	}
+
+    @Override
+    public String toString() {
+        return nTimesCondLevel() + "while " + pred + " {\n" + t + "\n" + nTimesCondLevel() + "}";
+    }
 }

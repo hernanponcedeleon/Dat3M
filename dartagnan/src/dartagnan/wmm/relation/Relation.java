@@ -2,7 +2,6 @@ package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
@@ -109,7 +108,7 @@ public abstract class Relation {
         return term;
     }
 
-    public BoolExpr encode() throws Z3Exception {
+    public BoolExpr encode() {
         if(isEncoded){
             return ctx.mkTrue();
         }
@@ -117,15 +116,15 @@ public abstract class Relation {
         return doEncode();
     }
 
-    protected BoolExpr encodeLFP() throws Z3Exception {
+    protected BoolExpr encodeLFP() {
         return encodeApprox();
     }
 
-    protected BoolExpr encodeIDL() throws Z3Exception{
+    protected BoolExpr encodeIDL() {
         return encodeApprox();
     }
 
-    protected abstract BoolExpr encodeApprox() throws Z3Exception;
+    protected abstract BoolExpr encodeApprox();
 
     public BoolExpr encodeIteration(int recGroupId, int iteration){
         return ctx.mkTrue();

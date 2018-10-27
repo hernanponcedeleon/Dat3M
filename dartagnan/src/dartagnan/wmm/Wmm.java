@@ -2,7 +2,6 @@ package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.ModelLexer;
 import dartagnan.ModelParser;
 import dartagnan.program.Program;
@@ -84,7 +83,7 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
+    public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) {
         this.program = program;
 
         for (Axiom ax : axioms) {
@@ -138,7 +137,7 @@ public class Wmm {
         return enc;
     }
 
-    public BoolExpr consistent(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr consistent(Program program, Context ctx) {
         if(this.program != program){
             throw new RuntimeException("Wmm relations must be encoded before consistency predicate");
         }
@@ -149,7 +148,7 @@ public class Wmm {
         return expr;
     }
 
-    public BoolExpr inconsistent(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr inconsistent(Program program, Context ctx) {
         if(this.program != program){
             throw new RuntimeException("Wmm relations must be encoded before inconsistency predicate");
         }

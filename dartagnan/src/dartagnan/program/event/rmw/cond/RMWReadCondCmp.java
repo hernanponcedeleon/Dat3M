@@ -3,16 +3,14 @@ package dartagnan.program.event.rmw.cond;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.utils.ClonableWithMemorisation;
 
-public class RMWReadCondCmp extends RMWReadCond implements ClonableWithMemorisation {
-
-    private RMWReadCondCmp clone;
+public class RMWReadCondCmp extends RMWReadCond {
 
     public RMWReadCondCmp(Register reg, ExprInterface cmp, Location loc, String atomic) {
         super(reg, cmp, loc, atomic);
     }
 
+    @Override
     public RMWReadCondCmp clone() {
         if(clone == null){
             Register newReg = reg.clone();
@@ -23,6 +21,6 @@ public class RMWReadCondCmp extends RMWReadCond implements ClonableWithMemorisat
             clone.setHLId(getHLId());
             clone.setUnfCopy(getUnfCopy());
         }
-        return clone;
+        return (RMWReadCondCmp)clone;
     }
 }

@@ -12,6 +12,7 @@ import java.io.IOException;
 
 public class ParserLitmusC implements ParserInterface {
 
+    @Override
     public Program parse(String inputFilePath) throws IOException {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);

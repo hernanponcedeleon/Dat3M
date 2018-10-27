@@ -5,12 +5,13 @@ import java.util.List;
 
 public abstract class AbstractAssertComposite extends AbstractAssert {
 
-    protected List<AbstractAssert> children = new ArrayList<AbstractAssert>();
+    protected List<AbstractAssert> children = new ArrayList<>();
 
     public void addChild(AbstractAssert ass){
         children.add(ass);
     }
 
+    @Override
     public AbstractAssert clone(){
         try{
             AbstractAssertComposite newAssert = getClass().getConstructor().newInstance();

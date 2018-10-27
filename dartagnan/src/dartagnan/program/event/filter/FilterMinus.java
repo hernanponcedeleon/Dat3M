@@ -4,27 +4,29 @@ import dartagnan.program.event.Event;
 
 public class FilterMinus extends FilterAbstract {
 
-    private FilterAbstract filterPresent;
-    private FilterAbstract filterAbsent;
+    private FilterAbstract filter1;
+    private FilterAbstract filter2;
 
     public FilterMinus(FilterAbstract filterPresent, FilterAbstract filterAbsent){
-        this.filterPresent = filterPresent;
-        this.filterAbsent = filterAbsent;
+        this.filter1 = filterPresent;
+        this.filter2 = filterAbsent;
     }
 
+    @Override
     public boolean filter(Event e){
-        return filterPresent.filter(e) && !filterAbsent.filter(e);
+        return filter1.filter(e) && !filter2.filter(e);
     }
 
+    @Override
     public String toString(){
-        return ((filterPresent instanceof FilterBasic) ? filterPresent : "( " + filterPresent + " )")
-                + " \\ "
-                + ((filterAbsent instanceof FilterBasic) ? filterAbsent : "( " + filterAbsent + " )");
+        return ((filter1 instanceof FilterBasic) ? filter1 : "( " + filter1 + " )")
+                + " \\ " + ((filter2 instanceof FilterBasic) ? filter2 : "( " + filter2 + " )");
     }
 
-    // TODO: Return absent filter after tight bounds are ready
+    @Override
     public Integer toRepositoryCode(){
-        return filterPresent.toRepositoryCode();
-        //return filterPresent.toRepositoryCode() & (Integer.MAX_VALUE ^ filterAbsent.toRepositoryCode());
+        return filter1.toRepositoryCode();
+        // TODO: Return absent filter after tight bounds are ready
+        //return filter1.toRepositoryCode() & (Integer.MAX_VALUE ^ filter2.toRepositoryCode());
     }
 }

@@ -2,8 +2,6 @@ package dartagnan.program.event;
 
 import dartagnan.program.event.filter.FilterUtils;
 
-import java.util.Collections;
-
 public class Fence extends Event {
 
 	protected String name;
@@ -31,13 +29,15 @@ public class Fence extends Event {
 		return name;
 	}
 
+	@Override
 	public String toString() {
 		if(atomic == null){
-			return String.join("", Collections.nCopies(condLevel, "  ")) + name;
+			return nTimesCondLevel() + name;
 		}
-		return String.join("", Collections.nCopies(condLevel, "  ")) + name + " " + atomic;
+		return nTimesCondLevel() + name + " " + atomic;
 	}
 
+	@Override
 	public Fence clone() {
 		return new Fence(name, condLevel, atomic);
 	}

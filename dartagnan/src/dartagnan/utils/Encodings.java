@@ -1,26 +1,21 @@
 package dartagnan.utils;
 
-import static dartagnan.utils.Utils.edge;
-import static dartagnan.utils.Utils.initValue;
-import static dartagnan.utils.Utils.initValue2;
-import static dartagnan.utils.Utils.uniqueValue;
-import static dartagnan.utils.Utils.ssaReg;
+import com.microsoft.z3.*;
+import dartagnan.program.HighLocation;
+import dartagnan.program.Location;
+import dartagnan.program.Program;
+import dartagnan.program.Register;
+import dartagnan.program.event.*;
+import dartagnan.program.utils.EventRepository;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.microsoft.z3.*;
-
-import dartagnan.program.HighLocation;
-import dartagnan.program.event.*;
-import dartagnan.program.Location;
-import dartagnan.program.Program;
-import dartagnan.program.Register;
-import dartagnan.program.utils.EventRepository;
+import static dartagnan.utils.Utils.*;
 
 public class Encodings {
 
-	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) throws Z3Exception {
+	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
 		Set<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
 		Set<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.EVENT_MEMORY | EventRepository.EVENT_LOCAL);
@@ -85,10 +80,10 @@ public class Encodings {
 								enc = ctx.mkAnd(enc, ctx.mkImplies(edge("sync", e1P1, e2P1, ctx), edge("sync", e1P2, e2P2, ctx)));
 								enc = ctx.mkAnd(enc, ctx.mkImplies(edge("lwsync", e1P1, e2P1, ctx), ctx.mkOr(edge("lwsync", e1P2, e2P2, ctx), edge("sync", e1P2, e2P2, ctx))));
 							}
-						}	
+						}
 					}
 				}
-			}	
+			}
 		}
 		return enc;
 	}
@@ -123,20 +118,10 @@ public class Encodings {
 			IntExpr var = var1 ? initValue(e,ctx) : initValue2(e,ctx);
 			IntExpr val = val1 ? initValue(e,ctx) : initValue2(e,ctx);
 			if(e.getLoc().getIValue() == null) {
-				reachedState = ctx.mkAnd(reachedState, ctx.mkEq(var, model.getConstInterp(val)));				
+				reachedState = ctx.mkAnd(reachedState, ctx.mkEq(var, model.getConstInterp(val)));
 			}
 		}
 		return reachedState;
-	}
-
-	public static BoolExpr getExecutedGuards(Program p, Model model, Context ctx) {
-		BoolExpr enc = ctx.mkTrue();
-		for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_ALL)) {
-			if(model.getConstInterp(e.executes(ctx)).isTrue()) {
-				enc = ctx.mkAnd(enc, e.getGuard());
-			}
-		}
-		return enc;
 	}
 
 	public static BoolExpr getExecutedInstanciatedEvents(Program p, Model model, Context ctx) {
@@ -147,7 +132,7 @@ public class Encodings {
 			}
 			if(model.getConstInterp(e.executes(ctx)).isTrue()) {
 				enc = ctx.mkAnd(enc, e.executes(ctx));
-				Expr dfEvent = model.getConstInterp(((MemEvent) e).ssaLoc); 
+				Expr dfEvent = model.getConstInterp(((MemEvent) e).ssaLoc);
 				enc = ctx.mkAnd(enc, ctx.mkEq(((MemEvent) e).ssaLoc, dfEvent));
 			}
 		}
@@ -159,13 +144,13 @@ public class Encodings {
 		BoolExpr initState = ctx.mkTrue();
 		for(Event e : highInits) {
 			if(e.getLoc().getIValue() == null) {
-				initState = ctx.mkAnd(initState, ctx.mkNot(ctx.mkEq(initValue(e,ctx), initValue2(e,ctx))));				
+				initState = ctx.mkAnd(initState, ctx.mkNot(ctx.mkEq(initValue(e,ctx), initValue2(e,ctx))));
 			}
 		}
 		return initState;
 	}
 
-	public static BoolExpr encodeMissingIndexes(If t, MapSSA map1, MapSSA map2, Context ctx) throws Z3Exception {
+	public static BoolExpr encodeMissingIndexes(If t, MapSSA map1, MapSSA map2, Context ctx) {
 
 		BoolExpr ret = ctx.mkTrue();
 		BoolExpr index = ctx.mkTrue();
@@ -187,7 +172,7 @@ public class Encodings {
 					index = ctx.mkEq(ssaReg((Register)o, i1, ctx), ssaReg((Register)o, i2, ctx));
 				}
 				if(o instanceof Location) {
-					index = ctx.mkEq(ctx.mkIntConst(String.format("%s_%s", o, i1)), ctx.mkIntConst(String.format("%s_%s", o, i2)));
+					index = ctx.mkEq(ctx.mkIntConst(o.toString() + "_" + i1), ctx.mkIntConst(o.toString() + "_" + i2));
 				}
 				ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkBoolConst(t.getT2().cfVar()), index));
 			}
@@ -207,24 +192,11 @@ public class Encodings {
 					index = ctx.mkEq(ssaReg((Register)o, i2, ctx), ssaReg((Register)o, i1, ctx));
 				}
 				if(o instanceof Location) {
-					index = ctx.mkEq(ctx.mkIntConst(String.format("%s_%s", o, i2)), ctx.mkIntConst(String.format("%s_%s", o, i1)));
+					index = ctx.mkEq(ctx.mkIntConst(o.toString() + "_" + i2), ctx.mkIntConst(o.toString() + "_" + i1));
 				}
 				ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkBoolConst(t.getT1().cfVar()), index));
 			}
 		}
 		return ret;	
-	}
-
-	public static BoolExpr initsUniquePath(Program p, Context ctx) {
-		BoolExpr prec = ctx.mkTrue();
-		BoolExpr post = ctx.mkTrue();
-		for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)) {
-			prec = ctx.mkAnd(prec, ctx.mkOr(e.getGuard(), ctx.mkNot(e.executes(ctx))));
-		}
-		for(Event e : p.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().filter(e -> e.getLoc() instanceof HighLocation).collect(Collectors.toSet())) {
-			BoolExpr guards = ctx.mkAnd(ctx.mkLt(ctx.mkSub(uniqueValue(e, ctx), ctx.mkInt(1)), initValue(e, ctx)), ctx.mkGt(ctx.mkAdd(uniqueValue(e, ctx), ctx.mkInt(1)), initValue(e, ctx)));
-			post = ctx.mkAnd(post, guards);
-		}
-		return ctx.mkImplies(prec, post);
 	}
 }

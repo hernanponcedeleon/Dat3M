@@ -10,8 +10,6 @@ import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 
-import java.util.Collections;
-
 public class RMWOp extends RMWAbstract {
 
     private String op;
@@ -22,6 +20,7 @@ public class RMWOp extends RMWAbstract {
         addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
     }
 
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             RMWLoad load = new RMWLoad(reg, loc, "_rx");
@@ -37,11 +36,12 @@ public class RMWOp extends RMWAbstract {
         return super.compile(target, ctrl, leading);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  "))
-                + "atomic_" + opToText(op) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + "atomic_" + opToText(op) + "(" + value + ", " + loc + ")";
     }
 
+    @Override
     public RMWOp clone() {
         Location newLoc = loc.clone();
         ExprInterface newValue = value.clone();

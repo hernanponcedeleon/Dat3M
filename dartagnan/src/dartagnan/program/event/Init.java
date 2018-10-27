@@ -1,17 +1,16 @@
 package dartagnan.program.event;
 
-import com.microsoft.z3.*;
-
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import dartagnan.program.HighLocation;
 import dartagnan.program.Location;
 import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.Collections;
-
+import static dartagnan.utils.Utils.initValue;
 import static dartagnan.utils.Utils.ssaLoc;
-import static dartagnan.utils.Utils.initValue;;
 
 public class Init extends MemEvent {
 	
@@ -29,12 +28,12 @@ public class Init extends MemEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s%s := 0", String.join("", Collections.nCopies(condLevel, "  ")), loc);
+		return nTimesCondLevel() + loc + " := 0";
 	}
 
 	@Override
 	public String label(){
-		return "W " + getLoc();
+		return "W " + loc;
 	}
 
 	@Override
@@ -47,12 +46,8 @@ public class Init extends MemEvent {
 	}
 
 	@Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		if(mainThread == null){
-			System.out.println(String.format("Check encodeDF for %s", this));
-			return null;
-		}
-		else {
+	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
+		if(mainThread != null){
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLoc = z3Loc;
 			Expr initValue;
@@ -65,7 +60,8 @@ public class Init extends MemEvent {
 			if(loc instanceof HighLocation && loc.getIValue() == null) {
 				initValue = initValue(this, ctx);
 			}
-			return new Pair<BoolExpr, MapSSA>(ctx.mkEq(z3Loc, initValue), map);
+			return new Pair<>(ctx.mkEq(z3Loc, initValue), map);
 		}
+		throw new RuntimeException("Main thread is not set for " + toString());
 	}
 }

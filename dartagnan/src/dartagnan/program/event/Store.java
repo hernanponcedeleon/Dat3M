@@ -1,9 +1,8 @@
 package dartagnan.program.event;
 
-import java.util.Collections;
-
-import com.microsoft.z3.*;
-
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
@@ -38,12 +37,12 @@ public class Store extends MemEvent {
 
 	@Override
 	public String toString() {
-        return String.format("%s%s := %s", String.join("", Collections.nCopies(condLevel, "  ")), loc, val);
+        return nTimesCondLevel() + loc + " := " + val;
 	}
 
 	@Override
 	public String label(){
-		return "W[" + atomic + "] " + getLoc();
+		return "W[" + atomic + "] " + loc;
 	}
 
 	@Override
@@ -63,14 +62,13 @@ public class Store extends MemEvent {
 	}
 
 	@Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		if(mainThread == null){
-			throw new RuntimeException("Main thread is not set in " + this);
+	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
+		if(mainThread != null){
+			Expr z3Expr = val.toZ3(map, ctx);
+			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
+			this.ssaLoc = z3Loc;
+			return new Pair<>(ctx.mkImplies(executes(ctx), val.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
 		}
-
-		Expr z3Expr = val.toZ3(map, ctx);
-		Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-		this.ssaLoc = z3Loc;
-		return new Pair<>(ctx.mkImplies(executes(ctx), val.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
+		throw new RuntimeException("Main thread is not set for " + toString());
 	}
 }

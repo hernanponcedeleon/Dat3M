@@ -43,14 +43,6 @@ public abstract class RMWAbstract extends MemEvent {
         throw new RuntimeException("Method compile is not implemented for " + target + " " + this.getClass().getName() + " " + atomic);
     }
 
-    public Thread optCompile(String target, boolean ctrl, boolean leading) {
-        throw new RuntimeException("Method optCompile is not implemented for " + target + " " + this.getClass().getName() + " " + atomic);
-    }
-
-    public Thread allCompile() {
-        throw new RuntimeException("Method allCompile is not implemented for " + this.getClass().getName() + " " + atomic);
-    }
-
     protected String getLoadMO(){
         return atomic.equals("_acq") ? "_acq" : "_rx";
     }
@@ -94,7 +86,7 @@ public abstract class RMWAbstract extends MemEvent {
             case "-":
                 return "sub";
             default:
-                throw new RuntimeException("Unsupported operation " + op + " in " + this.getClass().getName());
+                throw new RuntimeException("Unrecognised operation " + op + " in " + this.getClass().getName());
         }
     }
 
@@ -109,7 +101,7 @@ public abstract class RMWAbstract extends MemEvent {
             case "_mb":
                 return "";
             default:
-                throw new RuntimeException("Unsupported memory order " + atomic + " in " + this.getClass().getName());
+                throw new RuntimeException("Unrecognised memory order " + atomic + " in " + this.getClass().getName());
         }
     }
 }
