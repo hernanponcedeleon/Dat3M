@@ -24,7 +24,7 @@ public class FilterMinus extends FilterAbstract {
     }
 
     @Override
-    public Integer toRepositoryCode(){
+    public int toRepositoryCode(){
         return filter1.toRepositoryCode();
         // TODO: Return absent filter after tight bounds are ready
         //return filter1.toRepositoryCode() & (Integer.MAX_VALUE ^ filter2.toRepositoryCode());

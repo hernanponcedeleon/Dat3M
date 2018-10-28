@@ -53,7 +53,7 @@ public class RelTransRef extends RelTrans {
             for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
                 entry.getValue().remove(entry.getKey());
             }
-            for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+            for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }
@@ -69,7 +69,7 @@ public class RelTransRef extends RelTrans {
         activeSet.retainAll(maxTupleSet);
 
         for(Tuple tuple : activeSet){
-            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+            if(tuple.getFirst().getEId() == tuple.getSecond().getEId()){
                 identityEncodeTupleSet.add(tuple);
             }
         }

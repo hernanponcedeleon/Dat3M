@@ -77,7 +77,7 @@ public class RelComposition extends BinaryRelation {
 
                 for(Tuple tuple1 : r1.getMaxTupleSet().getByFirst(e1)){
                     for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
-                        if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                        if(tuple2.getSecond().getEId() == e2.getEId()){
                             r1Set.add(tuple1);
                             r2Set.add(tuple2);
                         }
@@ -109,7 +109,7 @@ public class RelComposition extends BinaryRelation {
             for(Tuple tuple1 : r1Set.getByFirst(e1)){
                 Event e3 = tuple1.getSecond();
                 for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                    if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                    if(tuple2.getSecond().getEId() == e2.getEId()){
                         BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
                         BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
@@ -156,7 +156,7 @@ public class RelComposition extends BinaryRelation {
                 Event e3 = tuple1.getSecond();
 
                 for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                    if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                    if(tuple2.getSecond().getEId() == e2.getEId()){
                         BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
                         BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
@@ -218,7 +218,7 @@ public class RelComposition extends BinaryRelation {
                         Event e3 = tuple1.getSecond();
 
                         for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                            if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                            if(tuple2.getSecond().getEId() == e2.getEId()){
                                 BoolExpr opt1 = Utils.edge(r1Name, e1, e3, ctx);
                                 BoolExpr opt2 = Utils.edge(r2Name, e3, e2, ctx);
                                 orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));

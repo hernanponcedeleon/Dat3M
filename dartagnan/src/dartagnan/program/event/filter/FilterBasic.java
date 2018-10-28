@@ -1,6 +1,7 @@
 package dartagnan.program.event.filter;
 
 import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
 
 public class FilterBasic extends FilterAbstract {
 
@@ -21,7 +22,10 @@ public class FilterBasic extends FilterAbstract {
     }
 
     @Override
-    public Integer toRepositoryCode(){
-        return FilterUtils.toRepositoryCode.get(param);
+    public int toRepositoryCode(){
+        if(FilterUtils.toRepositoryCode.containsKey(param)){
+            return FilterUtils.toRepositoryCode.get(param);
+        }
+        return EventRepository.ALL;
     }
 }

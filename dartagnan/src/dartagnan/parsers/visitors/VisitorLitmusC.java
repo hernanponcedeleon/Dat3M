@@ -571,7 +571,6 @@ public class VisitorLitmusC
     private Location getOrCreateLocation(String locationName){
         if(!mapLocations.containsKey(locationName)){
             Location location = new Location(locationName);
-            location.setIValue(DEFAULT_INIT_VALUE);
             mapLocations.put(locationName, location);
         }
         return mapLocations.get(locationName);

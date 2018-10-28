@@ -16,5 +16,5 @@ public abstract class FilterAbstract {
 
     public abstract boolean filter(Event e);
 
-    public abstract Integer toRepositoryCode();
+    public abstract int toRepositoryCode();
 }

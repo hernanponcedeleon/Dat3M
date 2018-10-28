@@ -15,34 +15,34 @@ import java.util.Set;
 
 public abstract class Event extends Thread {
 
-	private Integer eid;
-	private Integer hlId;
-	private Integer unfCopy;
+	private int eid;
+	private int hlId;
+	private int unfCopy;
 	protected String atomic;
 	protected Set<String> filter = new HashSet<>();
 	
-	public Integer getEId() {
+	public int getEId() {
 		return eid;
 	}
 
-	public Integer setEId(Integer i) {
+	public int setEId(int i) {
 		this.eid = i;
-		return i+1;
+		return i + 1;
 	}
 
-	public Integer getHLId() {
+	public int getHLId() {
 		return hlId;
 	}
 	
-	public void setHLId(Integer id) {
+	public void setHLId(int id) {
 		this.hlId = id;
 	}
 
-	public Integer getUnfCopy() {
+	public int getUnfCopy() {
 		return unfCopy;
 	}
 	
-	public void setUnfCopy(Integer id) {
+	public void setUnfCopy(int id) {
 		this.unfCopy = id;
 	}
 
@@ -102,25 +102,21 @@ public abstract class Event extends Thread {
 
 	// TODO: Interface
 	public Register getReg() {
-		System.out.println(String.format("Check getReg for %s", this));
-		return null;
+		throw new UnsupportedOperationException("Register is not available for " + this.getClass().getName());
 	}
 
 	// TODO: Interface
-	public Integer getSsaRegIndex() {
-		System.out.println(String.format("Check getSSAReg for %s", this));
-		return null;
+	public int getSsaRegIndex() {
+		throw new UnsupportedOperationException("SsaRegIndex is not available for " + this.getClass().getName());
 	}
 
 	// TODO: Interface
 	public Location getLoc() {
-		System.out.println(String.format("Check getLoc for %s", this));
-		return null;
+		throw new UnsupportedOperationException("Location is not available for " + this.getClass().getName());
 	}
 
 	// TODO: Interface
 	public ExprInterface getExpr() {
-		System.out.println(String.format("Check getExpr for %s", this));
-		return null;
+		throw new UnsupportedOperationException("Expression is not available for " + this.getClass().getName());
 	}
 }

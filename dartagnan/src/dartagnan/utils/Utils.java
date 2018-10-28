@@ -38,11 +38,11 @@ public class Utils {
 		return ctx.mkIntConst(relName + "(" + e.repr() + ")");
 	}
 	
-	public static IntExpr ssaLoc(Location loc, Integer mainThreadId, Integer ssaIndex, Context ctx) {
+	public static IntExpr ssaLoc(Location loc, int mainThreadId, int ssaIndex, Context ctx) {
 		return ctx.mkIntConst("T" + mainThreadId + "_" + loc.getName() + "_" + ssaIndex);
 	}
 	
-	public static IntExpr ssaReg(Register reg, Integer ssaIndex, Context ctx) {
+	public static IntExpr ssaReg(Register reg, int ssaIndex, Context ctx) {
 		return ctx.mkIntConst("T" + reg.getPrintMainThreadId() + "_" + reg.getName() + "_" + ssaIndex);
 	}
 	

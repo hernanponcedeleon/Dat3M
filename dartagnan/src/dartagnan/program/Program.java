@@ -82,10 +82,8 @@ public class Program extends Thread {
         for(int i = 0; i < threads.size(); i++){
             threads.set(i, threads.get(i).unroll(steps, obsNoTermination));
         }
-
-		Set<Location> locs = getEventRepository().getEvents(EventRepository.EVENT_MEMORY).stream().map(e -> e.getLoc()).collect(Collectors.toSet());
-		for(Location loc : locs) {
-			threads.add(new Init(loc));
+		for(Location location : getEventRepository().getLocations()) {
+			threads.add(new Init(location));
 		}
         getEventRepository().clear();
 		return this;
@@ -111,17 +109,12 @@ public class Program extends Thread {
             firstTid = t.setTId(firstTid);
             firstEid = t.setEId(firstEid);
             t.setMainThread(t);
-            threads.set(i, t);
-        }
-
-        for(Thread t : threads){
-            Set<Register> regs = t.getEvents().stream().filter(e -> e instanceof Load || e instanceof Local).map(e -> e.getReg()).collect(Collectors.toSet());
-            regs.addAll(t.getEvents().stream().filter(e -> (e instanceof Store && e.getReg() != null)).map(e -> e.getReg()).collect(Collectors.toSet()));
-            for(Register reg : regs) {
+            for(Register reg : t.getEventRepository().getRegisters()) {
                 reg.setMainThreadId(t.tid);
             }
+            t.getEventRepository().clear();
+			threads.set(i, t);
         }
-
         getEventRepository().clear();
 		return this;
 	}
@@ -148,7 +141,7 @@ public class Program extends Thread {
 
 	public BoolExpr encodeFinalValues(Context ctx){
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> eventsLoadLocal = getEventRepository().getEvents(EventRepository.EVENT_LOAD | EventRepository.EVENT_LOCAL);
+		Set<Event> eventsLoadLocal = getEventRepository().getEvents(EventRepository.LOAD | EventRepository.LOCAL);
 		for(Event r1 : eventsLoadLocal) {
 			Set<Event> modRegLater = eventsLoadLocal.stream().filter(e -> r1.getReg() == e.getReg() && r1.getEId() < e.getEId()).collect(Collectors.toSet());
 			BoolExpr lastModReg = r1.executes(ctx);
@@ -162,8 +155,8 @@ public class Program extends Thread {
 	
 	public BoolExpr encodeDF_RF(Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
-		Set<Event> loadEvents = getEventRepository().getEvents(EventRepository.EVENT_LOAD);
-		Set<Event> storeInitEvents = getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT);
+		Set<Event> loadEvents = getEventRepository().getEvents(EventRepository.LOAD);
+		Set<Event> storeInitEvents = getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
 		for (Event r : loadEvents) {
 			Set<Event> storeSameLoc = storeInitEvents.stream().filter(w -> w.getLoc() == r.getLoc()).collect(Collectors.toSet());
 			BoolExpr sameValue = ctx.mkTrue();

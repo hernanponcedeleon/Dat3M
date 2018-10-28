@@ -4,6 +4,7 @@ import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import dartagnan.Dartagnan;
 import dartagnan.program.Program;
+import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
@@ -113,7 +114,7 @@ public class Porthos {
         Program pTarget = p.clone();
 
         pSource.compile(source, false, true);
-        Integer startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
+        int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;
         pTarget.compile(target, false, true, startEId);
 
         Context ctx = new Context();

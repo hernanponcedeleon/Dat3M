@@ -15,7 +15,7 @@ import static dartagnan.utils.Utils.ssaReg;
 public class Load extends MemEvent {
 
 	protected Register reg;
-	protected Integer ssaRegIndex;
+	protected int ssaRegIndex;
 	
 	public Load(Register reg, Location loc, String atomic) {
 		this.reg = reg;
@@ -68,7 +68,7 @@ public class Load extends MemEvent {
 	}
 
 	@Override
-	public Integer getSsaRegIndex() {
+	public int getSsaRegIndex() {
 		return ssaRegIndex;
 	}
 }

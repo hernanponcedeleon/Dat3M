@@ -17,10 +17,10 @@ public class RelLoc extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_MEMORY);
+            Collection<Event> events = program.getEventRepository().getEvents(EventRepository.MEMORY);
             for(Event e1 : events){
                 for(Event e2 : events){
-                    if(!e1.getEId().equals(e2.getEId()) && e1.getLoc() == e2.getLoc()){
+                    if(e1.getEId() != e2.getEId() && e1.getLoc() == e2.getLoc()){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }

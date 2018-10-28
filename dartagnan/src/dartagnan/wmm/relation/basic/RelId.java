@@ -15,7 +15,7 @@ public class RelId extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE)){
+            for(Event e : program.getEventRepository().getEvents(EventRepository.VISIBLE)){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }

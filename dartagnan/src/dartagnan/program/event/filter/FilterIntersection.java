@@ -24,7 +24,7 @@ public class FilterIntersection extends FilterAbstract {
     }
 
     @Override
-    public Integer toRepositoryCode(){
+    public int toRepositoryCode(){
         return filter1.toRepositoryCode() & filter2.toRepositoryCode();
     }
 }

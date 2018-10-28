@@ -25,7 +25,7 @@ public class MapSSA {
 		return ret;
 	}
 	
-	public Integer getFresh(Location loc){
+	public int getFresh(Location loc){
 		if(!locMap.containsKey(loc)) {
 			locMap.put(loc, 0);
 		}
@@ -35,7 +35,7 @@ public class MapSSA {
 		return locMap.get(loc);
 	}
 	
-	public Integer getFresh(Register reg){
+	public int getFresh(Register reg){
 		if(!regMap.containsKey(reg)) {
 			regMap.put(reg, 0);
 		}
@@ -45,7 +45,7 @@ public class MapSSA {
 		return regMap.get(reg);
 	}
 
-	public Integer get(Object o) {
+	public int get(Object o) {
 		if(o instanceof Register) {
 			if(!regMap.containsKey(o)) {
 				regMap.put((Register) o, 0);
@@ -61,7 +61,7 @@ public class MapSSA {
 		throw new RuntimeException("Invalid object supplied to MapSSA: " + o);
 	}
 
-	public void put(Object o, Integer i) {
+	public void put(Object o, int i) {
 		if(o instanceof Register) {
 			regMap.put((Register) o, i);
 			return;

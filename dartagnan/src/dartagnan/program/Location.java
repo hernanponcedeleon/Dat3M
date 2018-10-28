@@ -7,9 +7,9 @@ import dartagnan.expression.IntExprInterface;
 public class Location implements IntExprInterface {
 
 	private String name;
-	private Integer iValue;
-	private Integer min;
-	private Integer max;
+	private int iValue;
+	private int min;
+	private int max;
 
 	public Location(String name) {
 		this.name = name;
@@ -23,7 +23,7 @@ public class Location implements IntExprInterface {
 		this.iValue = iValue;
 	}
 	
-	public Integer getIValue() {
+	public int getIValue() {
 		return iValue;
 	}
 

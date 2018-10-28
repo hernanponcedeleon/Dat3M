@@ -26,8 +26,8 @@ public class RelCo extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.EVENT_STORE);
-            Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.EVENT_INIT);
+            Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.STORE);
+            Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.INIT);
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsStore){
@@ -39,7 +39,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsStore){
                 for(Event e2 : eventsStore){
-                    if(!e1.getEId().equals(e2.getEId()) && e1.getLoc() == e2.getLoc()){
+                    if(e1.getEId() != e2.getEId() && e1.getLoc() == e2.getLoc()){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -59,11 +59,11 @@ public class RelCo extends Relation {
             }
 
             EventRepository eventRepository = program.getEventRepository();
-            for(Event e : eventRepository.getEvents(EventRepository.EVENT_INIT)) {
+            for(Event e : eventRepository.getEvents(EventRepository.INIT)) {
                 enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
             }
 
-            Collection<Event> eventsStoreInit = eventRepository.getEvents(EventRepository.EVENT_INIT | EventRepository.EVENT_STORE);
+            Collection<Event> eventsStoreInit = eventRepository.getEvents(EventRepository.INIT | EventRepository.STORE);
             Collection<Location> locations = eventsStoreInit.stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 
             for(Location loc : locations) {

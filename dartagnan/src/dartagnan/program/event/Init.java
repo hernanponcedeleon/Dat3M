@@ -50,17 +50,7 @@ public class Init extends MemEvent {
 		if(mainThread != null){
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLoc = z3Loc;
-			Expr initValue;
-			if(loc.getIValue() == null) {
-				initValue = ctx.mkInt(0);
-			}
-			else {
-				initValue = ctx.mkInt(loc.getIValue());
-			}
-			if(loc instanceof HighLocation && loc.getIValue() == null) {
-				initValue = initValue(this, ctx);
-			}
-			return new Pair<>(ctx.mkEq(z3Loc, initValue), map);
+			return new Pair<>(ctx.mkEq(z3Loc, ctx.mkInt(loc.getIValue())), map);
 		}
 		throw new RuntimeException("Main thread is not set for " + toString());
 	}

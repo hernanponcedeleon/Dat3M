@@ -21,7 +21,7 @@ public class FilterUtils {
     public static final String EVENT_TYPE_LOCK = "LKW";
     public static final String EVENT_TYPE_SYNC_RCU = "Sync-rcu";
 
-    public static final Map<String, String> map = new HashMap<String, String>() {{
+    public static final Map<String, String> map = new HashMap<>() {{
 
         // Basic types
         put(EVENT_TYPE_ANY, EVENT_TYPE_ANY);
@@ -76,52 +76,52 @@ public class FilterUtils {
         return map.get(key);
     }
 
-    public static final Map<String, Integer> toRepositoryCode = new HashMap<String, Integer>() {{
+    public static final Map<String, Integer> toRepositoryCode = new HashMap<>() {{
 
         // Basic types
-        put(EVENT_TYPE_ANY,                 EventRepository.EVENT_ALL);         // Probably we can remove Skip and Local
-        put(EVENT_TYPE_INIT,                EventRepository.EVENT_INIT);
-        put(EVENT_TYPE_READ,                EventRepository.EVENT_LOAD);
-        put(EVENT_TYPE_WRITE,               EventRepository.EVENT_STORE);
-        put(EVENT_TYPE_MEMORY,              EventRepository.EVENT_MEMORY);
-        put(EVENT_TYPE_FENCE,               EventRepository.EVENT_FENCE);
+        put(EVENT_TYPE_ANY,                 EventRepository.ALL);         // Probably we can remove Skip and Local
+        put(EVENT_TYPE_INIT,                EventRepository.INIT);
+        put(EVENT_TYPE_READ,                EventRepository.LOAD);
+        put(EVENT_TYPE_WRITE,               EventRepository.STORE);
+        put(EVENT_TYPE_MEMORY,              EventRepository.MEMORY);
+        put(EVENT_TYPE_FENCE,               EventRepository.FENCE);
 
         // Atomic
-        put(EVENT_TYPE_ATOMIC,              EventRepository.EVENT_MEMORY);
-        put(EVENT_TYPE_READ_MODIFY_WRITE,   EventRepository.EVENT_MEMORY);      // Tighten up
-        put(EVENT_TYPE_RMW_NORETURN,        EventRepository.EVENT_LOAD);        // Tighten up
+        put(EVENT_TYPE_ATOMIC,              EventRepository.MEMORY);
+        put(EVENT_TYPE_READ_MODIFY_WRITE,   EventRepository.MEMORY);      // Tighten up
+        put(EVENT_TYPE_RMW_NORETURN,        EventRepository.LOAD);        // Tighten up
 
         // Locks
-        put(EVENT_TYPE_LOCK,                EventRepository.EVENT_ALL);         // Not implemented
+        put(EVENT_TYPE_LOCK,                EventRepository.ALL);         // Not implemented
 
         // Fences
-        put("Mfence",                       EventRepository.EVENT_FENCE);
-        put("Sync",                         EventRepository.EVENT_FENCE);
-        put("Isync",                        EventRepository.EVENT_FENCE);
-        put("Lwsync",                       EventRepository.EVENT_FENCE);
-        put("Isb",                          EventRepository.EVENT_FENCE);
-        put("Ish",                          EventRepository.EVENT_FENCE);
+        put("Mfence",                       EventRepository.FENCE);
+        put("Sync",                         EventRepository.FENCE);
+        put("Isync",                        EventRepository.FENCE);
+        put("Lwsync",                       EventRepository.FENCE);
+        put("Isb",                          EventRepository.FENCE);
+        put("Ish",                          EventRepository.FENCE);
 
         // Memory order
-        put("_sc",                          EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE);
-        put("_rx",                          EventRepository.EVENT_MEMORY | EventRepository.EVENT_FENCE);
-        put("_acq",                         EventRepository.EVENT_LOAD   | EventRepository.EVENT_FENCE);
-        put("_rel",                         EventRepository.EVENT_STORE  | EventRepository.EVENT_FENCE);
-        put("_rel_acq",                                                    EventRepository.EVENT_FENCE);
-        put("_con",                         EventRepository.EVENT_LOAD   | EventRepository.EVENT_FENCE);
+        put("_sc",                          EventRepository.MEMORY | EventRepository.FENCE);
+        put("_rx",                          EventRepository.MEMORY | EventRepository.FENCE);
+        put("_acq",                         EventRepository.LOAD   | EventRepository.FENCE);
+        put("_rel",                         EventRepository.STORE  | EventRepository.FENCE);
+        put("_rel_acq",                                              EventRepository.FENCE);
+        put("_con",                         EventRepository.LOAD   | EventRepository.FENCE);
 
         // Linux
-        put("Rmb",                          EventRepository.EVENT_FENCE);
-        put("Wmb",                          EventRepository.EVENT_FENCE);
-        put("Mb",                           EventRepository.EVENT_FENCE);
-        put("Before-atomic",                EventRepository.EVENT_FENCE);
-        put("After-atomic",                 EventRepository.EVENT_FENCE);
-        put("After-spinlock",               EventRepository.EVENT_FENCE);
+        put("Rmb",                          EventRepository.FENCE);
+        put("Wmb",                          EventRepository.FENCE);
+        put("Mb",                           EventRepository.FENCE);
+        put("Before-atomic",                EventRepository.FENCE);
+        put("After-atomic",                 EventRepository.FENCE);
+        put("After-spinlock",               EventRepository.FENCE);
 
         // RCU
-        put("Rcu-lock",                     EventRepository.EVENT_RCU_LOCK);
-        put("Rcu-unlock",                   EventRepository.EVENT_RCU_UNLOCK);
-        put("Sync-rcu",                     EventRepository.EVENT_RCU_SYNC);
+        put("Rcu-lock",                     EventRepository.RCU_LOCK);
+        put("Rcu-unlock",                   EventRepository.RCU_UNLOCK);
+        put("Sync-rcu",                     EventRepository.RCU_SYNC);
 
     }};
 }

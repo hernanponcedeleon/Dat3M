@@ -36,7 +36,7 @@ public class Acyclic extends Axiom {
         for(Event e1 : transMap.keySet()){
             if(transMap.get(e1).contains(e1)){
                 for(Event e2 : transMap.get(e1)){
-                    if(!e2.getEId().equals(e1.getEId()) && transMap.get(e2).contains(e1)){
+                    if(e2.getEId() != e1.getEId() && transMap.get(e2).contains(e1)){
                         result.add(new Tuple(e1, e2));
                     }
                 }
@@ -44,7 +44,7 @@ public class Acyclic extends Axiom {
         }
 
         for(Tuple tuple : rel.getMaxTupleSet()){
-            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+            if(tuple.getFirst().getEId() == tuple.getSecond().getEId()){
                 result.add(tuple);
             }
         }
@@ -115,7 +115,7 @@ public class Acyclic extends Axiom {
                 for(Tuple tuple1 : rel.getEncodeTupleSet().getByFirst(e1)){
                     BoolExpr opt = cycleEdge(name, e1, tuple1.getSecond(), ctx);
                     for(Tuple tuple2 : rel.getEncodeTupleSet().getByFirst(e1)){
-                        if(!tuple1.getSecond().getEId().equals(tuple2.getSecond().getEId())){
+                        if(tuple1.getSecond().getEId() != tuple2.getSecond().getEId()){
                             opt = ctx.mkAnd(opt, ctx.mkNot(cycleEdge(name, e1, tuple2.getSecond(), ctx)));
                         }
                     }
@@ -126,7 +126,7 @@ public class Acyclic extends Axiom {
                 for(Tuple tuple1 : rel.getEncodeTupleSet().getBySecond(e1)){
                     BoolExpr opt = cycleEdge(name, tuple1.getFirst(), e1, ctx);
                     for(Tuple tuple2 : rel.getEncodeTupleSet().getBySecond(e1)){
-                        if(!tuple1.getFirst().getEId().equals(tuple2.getFirst().getEId())){
+                        if(tuple1.getFirst().getEId() != tuple2.getFirst().getEId()){
                             opt = ctx.mkAnd(opt, ctx.mkNot(cycleEdge(name, tuple2.getFirst(), e1, ctx)));
                         }
                     }

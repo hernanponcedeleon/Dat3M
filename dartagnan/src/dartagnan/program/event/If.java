@@ -56,7 +56,7 @@ public class If extends Event {
     }
 
     @Override
-    public Integer setTId(Integer i) {
+    public int setTId(int i) {
         this.tid = i;
         i++;
         i = t1.setTId(i);
@@ -84,7 +84,7 @@ public class If extends Event {
     }
 
     @Override
-    public Integer setEId(Integer i) {
+    public int setEId(int i) {
         i = super.setEId(i);
         i = t1.setEId(i);
         i = t2.setEId(i);

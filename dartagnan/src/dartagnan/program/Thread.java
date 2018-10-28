@@ -16,7 +16,7 @@ import java.util.Set;
 public abstract class Thread {
 
 	protected Thread mainThread;
-	protected Integer tid;
+	protected int tid;
 	protected int condLevel;
 	private EventRepository eventRepository;
 
@@ -31,20 +31,13 @@ public abstract class Thread {
         throw new RuntimeException("Main thread is not initialised for " + this);
     }
 
-    public Integer getMainThreadId() {
-        if(mainThread != null){
-            return mainThread.getTId();
-        }
-        throw new RuntimeException("Main thread is not initialised for " + this);
-    }
-
-    public Integer getTId() {
+    public int getTId() {
         return this.tid;
     }
 
-    public Integer setTId(Integer i) {
+    public int setTId(int i) {
         this.tid = i;
-        return i+1;
+        return i + 1;
     }
 
     public int getCondLevel() {
@@ -103,7 +96,7 @@ public abstract class Thread {
         throw new UnsupportedOperationException("Compilation is not allowed for " + this.getClass().getName());
 	}
 
-    public Integer setEId(Integer i){
+    public int setEId(int i){
         throw new UnsupportedOperationException("Event ID cannot be set for " + this.getClass().getName());
     }
 

@@ -42,14 +42,14 @@ public class RelFencerel extends Relation {
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
                 List<Fence> fences = t.getEventRepository()
-                        .getEvents(EventRepository.EVENT_FENCE)
+                        .getEvents(EventRepository.FENCE)
                         .stream()
                         .filter(e -> ((Fence)e).getName().equals(fenceName))
                         .map(e -> (Fence)e)
                         .collect(Collectors.toList());
 
                 if(!fences.isEmpty()){
-                    List<Event> events = t.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)
+                    List<Event> events = t.getEventRepository().getEvents(EventRepository.MEMORY)
                             .stream()
                             .sorted(Comparator.comparing(Event::getEId))
                             .collect(Collectors.toList());
@@ -80,7 +80,7 @@ public class RelFencerel extends Relation {
         BoolExpr enc = ctx.mkTrue();
 
         Collection<Event> fences = program.getEventRepository()
-                .getEvents(EventRepository.EVENT_FENCE)
+                .getEvents(EventRepository.FENCE)
                 .stream()
                 .filter(e -> ((Fence)e).getName().equals(fenceName))
                 .collect(Collectors.toSet());

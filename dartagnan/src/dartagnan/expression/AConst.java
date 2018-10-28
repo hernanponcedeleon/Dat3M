@@ -11,15 +11,15 @@ import java.util.Set;
 
 public class AConst extends AExpr implements ExprInterface, IntExprInterface {
 
-	private Integer value;
+	private int value;
 	
-	public AConst(Integer value) {
+	public AConst(int value) {
 		this.value = value;
 	}
 
 	@Override
 	public String toString() {
-		return value.toString();
+		return Integer.toString(value);
 	}
 
 	@Override

@@ -122,7 +122,7 @@ public class Graph {
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
 
-                List<Event> events = t.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE).stream()
+                List<Event> events = t.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
                         .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
                         .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
 
@@ -145,7 +145,7 @@ public class Graph {
         String edge = " " + getEdgeDef("po") + ";\n";
 
         for(Thread thread : program.getThreads()) {
-            List<Event> events = thread.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE).stream()
+            List<Event> events = thread.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
                     .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
                     .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
 
@@ -163,12 +163,12 @@ public class Graph {
         String edge = " " + getEdgeDef("co") + ";\n";
 
         Set<MemEvent> events = program.getEventRepository()
-                .getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT)
+                .getEvents(EventRepository.STORE | EventRepository.INIT)
                 .stream()
                 .map(e -> (MemEvent)e)
                 .collect(Collectors.toSet());
 
-        Set<Location> locations = events.stream().map(MemEvent::getLoc).collect(Collectors.toSet());
+        Set<Location> locations = program.getEventRepository().getLocations();
 
         for(Location location : locations){
             Map<Event, Integer> map = new HashMap<>();
@@ -204,7 +204,7 @@ public class Graph {
 
     private StringBuilder buildRelations(Program program){
         StringBuilder sb = new StringBuilder();
-        List<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE).stream()
+        List<Event> events = program.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
                 .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toList());
 
         for(String relName : relations) {

@@ -1,5 +1,7 @@
 package dartagnan.program.utils;
 
+import dartagnan.program.Location;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
 import dartagnan.program.event.linux.rcu.RCUReadLock;
@@ -9,33 +11,32 @@ import dartagnan.program.event.linux.rmw.RMWAbstract;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.rmw.Xchg;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EventRepository {
 
-    public static final int EVENT_ALL           = -1;
-    public static final int EVENT_EMPTY         = 0;
-    public static final int EVENT_INIT          = 1;
-    public static final int EVENT_LOAD          = 2;
-    public static final int EVENT_LOCAL         = 4;
-    public static final int EVENT_FENCE         = 8;
-    public static final int EVENT_SKIP          = 16;
-    public static final int EVENT_STORE         = 32;
-    public static final int EVENT_RMW_STORE     = 64;
-    public static final int EVENT_IF            = 128;
-    public static final int EVENT_RCU_LOCK      = 256;
-    public static final int EVENT_RCU_UNLOCK    = 512;
-    public static final int EVENT_RCU_SYNC      = 1024;
+    public static final int ALL           = -1;
+    public static final int EMPTY         = 0;
+    public static final int INIT          = 1;
+    public static final int LOAD          = 2;
+    public static final int LOCAL         = 4;
+    public static final int FENCE         = 8;
+    public static final int SKIP          = 16;
+    public static final int STORE         = 32;
+    public static final int RMW_STORE     = 64;
+    public static final int IF            = 128;
+    public static final int RCU_LOCK      = 256;
+    public static final int RCU_UNLOCK    = 512;
+    public static final int RCU_SYNC      = 1024;
 
-    public static final int EVENT_MEMORY = EVENT_INIT | EVENT_LOAD | EVENT_STORE;
-    public static final int EVENT_RCU = EVENT_RCU_LOCK | EVENT_RCU_UNLOCK | EVENT_RCU_SYNC;
-    public static final int EVENT_VISIBLE = EVENT_MEMORY | EVENT_RCU;
+    public static final int MEMORY = INIT | LOAD | STORE;
+    public static final int RCU = RCU_LOCK | RCU_UNLOCK | RCU_SYNC;
+    public static final int VISIBLE = MEMORY | RCU;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
+    private Set<Location> locations;
+    private Set<Register> registers;
     private Thread thread;
 
     public EventRepository(Thread thread){
@@ -44,32 +45,51 @@ public class EventRepository {
 
     public Set<Event> getEvents(int mask){
         if(!sets.containsKey(mask)){
-            if(mask == EVENT_EMPTY){
-                return new HashSet<>();
-            } else if(mask == EVENT_ALL){
-                sets.put(EVENT_ALL, thread.getEvents());
+            if(mask == EMPTY){
+                sets.put(mask, new HashSet<>());
+            } else if(mask == ALL){
+                sets.put(ALL, thread.getEvents());
             } else {
-                sets.put(mask, getEvents(EVENT_ALL).stream().filter(e -> is(e, mask)).collect(Collectors.toSet()));
+                sets.put(mask, getEvents(ALL).stream().filter(e -> is(e, mask)).collect(Collectors.toSet()));
             }
         }
         return sets.get(mask);
     }
 
     public void clear(){
+        locations = null;
+        registers = null;
         sets.clear();
     }
 
     private boolean is(Event event, int mask){
-        return ((mask & EVENT_INIT) > 0 && event instanceof Init)
-                || ((mask & EVENT_LOAD) > 0 && (event instanceof Load || event instanceof Read || event instanceof RMWAbstract || event instanceof Xchg))
-                || ((mask & EVENT_LOCAL) > 0 && event instanceof Local)
-                || ((mask & EVENT_FENCE) > 0 && event instanceof Fence)
-                || ((mask & EVENT_SKIP) > 0 && event instanceof Skip)
-                || ((mask & EVENT_STORE) > 0 && (event instanceof Store || event instanceof Write || event instanceof RMWAbstract || event instanceof Xchg))
-                || ((mask & EVENT_RMW_STORE) > 0 && event instanceof RMWStore)
-                || ((mask & EVENT_IF) > 0 && event instanceof If)
-                || ((mask & EVENT_RCU_LOCK) > 0 && event instanceof RCUReadLock)
-                || ((mask & EVENT_RCU_UNLOCK) > 0 && event instanceof RCUReadUnlock)
-                || ((mask & EVENT_RCU_SYNC) > 0 && event instanceof RCUSync);
+        return ((mask & INIT) > 0 && event instanceof Init)
+                || ((mask & LOAD) > 0 && (event instanceof Load || event instanceof Read || event instanceof RMWAbstract || event instanceof Xchg))
+                || ((mask & LOCAL) > 0 && event instanceof Local)
+                || ((mask & FENCE) > 0 && event instanceof Fence)
+                || ((mask & SKIP) > 0 && event instanceof Skip)
+                || ((mask & STORE) > 0 && (event instanceof Store || event instanceof Write || event instanceof RMWAbstract || event instanceof Xchg))
+                || ((mask & RMW_STORE) > 0 && event instanceof RMWStore)
+                || ((mask & IF) > 0 && event instanceof If)
+                || ((mask & RCU_LOCK) > 0 && event instanceof RCUReadLock)
+                || ((mask & RCU_UNLOCK) > 0 && event instanceof RCUReadUnlock)
+                || ((mask & RCU_SYNC) > 0 && event instanceof RCUSync);
+    }
+
+    public Set<Location> getLocations(){
+        if(locations == null){
+            locations = getEvents(EventRepository.MEMORY).stream().map(Event::getLoc).collect(Collectors.toSet());
+        }
+        return locations;
+    }
+
+    public Set<Register> getRegisters(){
+        if(registers == null){
+            registers = getEvents(EventRepository.LOAD | EventRepository.LOCAL | EventRepository.STORE)
+                    .stream()
+                    .filter(e -> e.getReg() != null)
+                    .map(Event::getReg).collect(Collectors.toSet());
+        }
+        return registers;
     }
 }

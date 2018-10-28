@@ -25,9 +25,9 @@ public class RelRf extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.EVENT_INIT);
-            Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.EVENT_STORE);
-            Collection<Event> eventsLoad = program.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
+            Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.INIT);
+            Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.STORE);
+            Collection<Event> eventsLoad = program.getEventRepository().getEvents(EventRepository.LOAD);
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsLoad){
@@ -58,14 +58,14 @@ public class RelRf extends Relation {
                 enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx))));
             }
 
-            Collection<Event> eventsLoad = program.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
-            Collection<Event> eventsStoreInit = program.getEventRepository().getEvents(EventRepository.EVENT_INIT | EventRepository.EVENT_STORE);
+            Collection<Event> eventsLoad = program.getEventRepository().getEvents(EventRepository.LOAD);
+            Collection<Event> eventsStoreInit = program.getEventRepository().getEvents(EventRepository.INIT | EventRepository.STORE);
             Collection<Location> locations = eventsLoad.stream().map(e -> e.getLoc()).collect(Collectors.toSet());
 
             for(Location loc : locations) {
                 for(Event r : eventsLoad){
                     if(r.getLoc() == loc){
-                        Set<BoolExpr> rfPairs = new HashSet<BoolExpr>();
+                        Set<BoolExpr> rfPairs = new HashSet<>();
                         for(Event w : eventsStoreInit) {
                             if(w.getLoc() == loc){
                                 rfPairs.add(edge("rf", w, r, ctx));

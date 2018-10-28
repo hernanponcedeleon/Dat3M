@@ -25,16 +25,14 @@ public class VisitorLitmusX86
         extends AbstractParseTreeVisitor<Object>
         implements LitmusX86Visitor<Object> {
 
-    public static final int DEFAULT_LOCATION_VALUE = 0;
-
-    private Map<String, Location> mapLocations = new HashMap<String, Location>();
-    private Map<String, List<Thread>> mapThreadEvents = new HashMap<String, List<Thread>>();
-    private Map<String, Map<String, Register>> mapRegisters = new HashMap<String, Map<String, Register>>();
-    private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<String, Map<String, Location>>();
+    private Map<String, Location> mapLocations = new HashMap<>();
+    private Map<String, List<Thread>> mapThreadEvents = new HashMap<>();
+    private Map<String, Map<String, Register>> mapRegisters = new HashMap<>();
+    private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<>();
 
     private Program program;
     private String mainThread;
-    private Integer threadCount = 0;
+    private int threadCount;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
@@ -84,9 +82,8 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        Integer value = Integer.parseInt(ctx.value().getText());
         Location location = getLocation(ctx.location().getText());
-        location.setIValue(value);
+        location.setIValue(Integer.parseInt(ctx.value().getText()));
         return null;
     }
 
@@ -94,8 +91,7 @@ public class VisitorLitmusX86
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
         String thread = threadId(ctx.thread().getText());
         Register register = getRegister(thread, ctx.r1().getText());
-        Integer iValue = Integer.parseInt(ctx.value().getText());
-        getThreadEvents(thread).add(new Local(register, new AConst(iValue)));
+        getThreadEvents(thread).add(new Local(register, new AConst(Integer.parseInt(ctx.value().getText()))));
         return null;
     }
 
@@ -136,8 +132,8 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitInstructionRow(LitmusX86Parser.InstructionRowContext ctx) {
-        for(Integer i = 0; i < threadCount; i++){
-            mainThread = i.toString();
+        for(int i = 0; i < threadCount; i++){
+            mainThread = Integer.toString(i);
             Thread thread = (Thread)visitInstruction(ctx.instruction(i));
             if(thread != null){
                 getThreadEvents(mainThread).add(thread);
@@ -426,7 +422,6 @@ public class VisitorLitmusX86
     private Location getLocation(String locationName){
         if(!mapLocations.containsKey(locationName)){
             Location location = new Location(locationName);
-            location.setIValue(DEFAULT_LOCATION_VALUE);
             mapLocations.put(locationName, location);
         }
         return mapLocations.get(locationName);

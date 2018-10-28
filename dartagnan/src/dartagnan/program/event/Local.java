@@ -14,7 +14,7 @@ public class Local extends Event {
 	
 	private Register reg;
 	private ExprInterface expr;
-	private Integer ssaRegIndex;
+	private int ssaRegIndex;
 	
 	public Local(Register reg, ExprInterface expr) {
 		this.reg = reg;
@@ -38,7 +38,7 @@ public class Local extends Event {
 	}
 
     @Override
-    public Integer getSsaRegIndex() {
+    public int getSsaRegIndex() {
         return ssaRegIndex;
     }
 

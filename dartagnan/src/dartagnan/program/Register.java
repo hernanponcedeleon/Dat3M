@@ -16,7 +16,7 @@ import static dartagnan.utils.Utils.ssaReg;
 public class Register extends AExpr implements IntExprInterface {
 
 	private String name;
-	private Integer mainThreadId;
+	private int mainThreadId = -1;
 	private String printMainThreadId;
 
 	public Register(String name) {
@@ -30,35 +30,35 @@ public class Register extends AExpr implements IntExprInterface {
 		return name;
 	}
 
+	public void setMainThreadId(int t) {
+		this.mainThreadId = t;
+	}
+
+	public Register setPrintMainThreadId(String threadId){
+		this.printMainThreadId = threadId;
+		return this;
+	}
+
+	public String getPrintMainThreadId(){
+		return printMainThreadId;
+	}
+
 	@Override
 	public String toString() {
         return name;
 	}
 
-	public Register setPrintMainThreadId(String threadId){
-	    this.printMainThreadId = threadId;
-	    return this;
-    }
-
-    public String getPrintMainThreadId(){
-	    return printMainThreadId;
-    }
-
 	@Override
 	public Register clone() {
 		return this;
 	}
-	
-	public void setMainThreadId(Integer t) {
-		this.mainThreadId = t;
-	}
 
 	@Override
 	public ArithExpr toZ3(MapSSA map, Context ctx) {
-		if(getMainThreadId() != null) {
+		if(mainThreadId > -1) {
 			return ssaReg(this, map.get(this), ctx);
 		}
-		throw new RuntimeException("Main thread is not set for " + toString());
+		throw new RuntimeException("Main thread is not set for " + this);
 	}
 
 	@Override
@@ -68,12 +68,11 @@ public class Register extends AExpr implements IntExprInterface {
 		return setRegs;
 	}
 
-	public Integer getMainThreadId() {
-		return mainThreadId;
-	}
-
 	@Override
 	public IntExpr getLastValueExpr(Context ctx){
-		return ctx.mkIntConst(getName() + "_" + getMainThreadId() + "_final");
+		if(mainThreadId > -1) {
+			return ctx.mkIntConst(getName() + "_" + mainThreadId + "_final");
+		}
+		throw new RuntimeException("Main thread is not set for " + this);
 	}
 }
