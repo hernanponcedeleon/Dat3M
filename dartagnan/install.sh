@@ -7,7 +7,7 @@ export LD_LIBRARY_PATH=$LIB
 export DYLD_LIBRARY_PATH=$LIB
 export CLASSPATH=$(JARS=("$LIB"/*.jar); IFS=:; echo "${JARS[*]}")
 
-java -jar import/antlr-4.7-complete.jar Model.g4 -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar Cat.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 java -jar import/antlr-4.7-complete.jar Porthos.g4 -o target/generated-sources/antlr4/dartagnan/
 java -jar import/antlr-4.7-complete.jar LitmusC.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 java -jar import/antlr-4.7-complete.jar LitmusPPC.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/

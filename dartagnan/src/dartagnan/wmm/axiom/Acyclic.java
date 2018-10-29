@@ -72,7 +72,7 @@ public class Acyclic extends Axiom {
 
     @Override
     protected String _toString() {
-        return "acyclic" + rel.getName();
+        return "acyclic " + rel.getName();
     }
 
     private BoolExpr satCycle(Context ctx) {

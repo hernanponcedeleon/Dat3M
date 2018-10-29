@@ -27,9 +27,9 @@ public class VisitorLitmusC
 
     public static final int DEFAULT_INIT_VALUE = 0;
 
-    private Map<String, List<Thread>> mapThreadEvents = new HashMap<String, List<Thread>>();
-    private Map<String, Location> mapLocations = new HashMap<String, Location>();
-    private Map<String, Map<String, Register>> mapRegisters = new HashMap<String, Map<String, Register>>();
+    private Map<String, List<Thread>> mapThreadEvents = new HashMap<>();
+    private Map<String, Location> mapLocations = new HashMap<>();
+    private Map<String, Map<String, Register>> mapRegisters = new HashMap<>();
     private Stack<ExprInterface> returnStack = new Stack<>();
     private Stack<RCUReadLock> rcuLockStack = new Stack<>();
     private String currentThread;
@@ -161,7 +161,7 @@ public class VisitorLitmusC
         if(register == null){
             Location location = getLocation(varName);
             if(location != null){
-                result = new Write(location, returnStack.pop(), "_rx");
+                result = new Write(location, returnStack.pop(), "Relaxed");
             }
         }
 
@@ -312,7 +312,7 @@ public class VisitorLitmusC
 
         register = getOrCreateRegister(currentThread, null);
         returnStack.push(register);
-        return new Read(register, location, "_rx");
+        return new Read(register, location, "Relaxed");
     }
 
     @Override
@@ -607,242 +607,242 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReAtomicAddReturn(LitmusCParser.ReAtomicAddReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_mb");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "Mb");
     }
 
     @Override
     public Thread visitReAtomicAddReturnRelaxed(LitmusCParser.ReAtomicAddReturnRelaxedContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_rx");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicAddReturnAcquire(LitmusCParser.ReAtomicAddReturnAcquireContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_acq");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicAddReturnRelease(LitmusCParser.ReAtomicAddReturnReleaseContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "_rel");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "+", "Release");
     }
 
     @Override
     public Thread visitReAtomicSubReturn(LitmusCParser.ReAtomicSubReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_mb");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "Mb");
     }
 
     @Override
     public Thread visitReAtomicSubReturnRelaxed(LitmusCParser.ReAtomicSubReturnRelaxedContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_rx");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicSubReturnAcquire(LitmusCParser.ReAtomicSubReturnAcquireContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_acq");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicSubReturnRelease(LitmusCParser.ReAtomicSubReturnReleaseContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "_rel");
+        return visitAtomicOpReturn(ctx.variable(), ctx.returnExpression(), "-", "Release");
     }
 
     @Override
     public Thread visitReAtomicIncReturn(LitmusCParser.ReAtomicIncReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "_mb");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "Mb");
     }
 
     @Override
     public Thread visitReAtomicIncReturnRelaxed(LitmusCParser.ReAtomicIncReturnRelaxedContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "_rx");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicIncReturnAcquire(LitmusCParser.ReAtomicIncReturnAcquireContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "_acq");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicIncReturnRelease(LitmusCParser.ReAtomicIncReturnReleaseContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "_rel");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "+", "Release");
     }
 
     @Override
     public Thread visitReAtomicDecReturn(LitmusCParser.ReAtomicDecReturnContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "_mb");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "Mb");
     }
 
     @Override
     public Thread visitReAtomicDecReturnRelaxed(LitmusCParser.ReAtomicDecReturnRelaxedContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "_rx");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicDecReturnAcquire(LitmusCParser.ReAtomicDecReturnAcquireContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "_acq");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicDecReturnRelease(LitmusCParser.ReAtomicDecReturnReleaseContext ctx){
-        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "_rel");
+        return visitAtomicOpReturn(ctx.variable(), new AConst(1), "-", "Release");
     }
 
     @Override
     public Thread visitReAtomicFetchAdd(LitmusCParser.ReAtomicFetchAddContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "_mb");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "Mb");
     }
 
     @Override
     public Thread visitReAtomicFetchAddRelaxed(LitmusCParser.ReAtomicFetchAddRelaxedContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "_rx");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicFetchAddAcquire(LitmusCParser.ReAtomicFetchAddAcquireContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "_acq");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicFetchAddRelease(LitmusCParser.ReAtomicFetchAddReleaseContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "_rel");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "+", "Release");
     }
 
     @Override
     public Thread visitReAtomicFetchSub(LitmusCParser.ReAtomicFetchSubContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "_mb");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "Mb");
     }
 
     @Override
     public Thread visitReAtomicFetchSubRelaxed(LitmusCParser.ReAtomicFetchSubRelaxedContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "_rx");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicFetchSubAcquire(LitmusCParser.ReAtomicFetchSubAcquireContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "_acq");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicFetchSubRelease(LitmusCParser.ReAtomicFetchSubReleaseContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "_rel");
+        return visitAtomicFetchOp(ctx.variable(), ctx.returnExpression(), "-", "Release");
     }
 
     @Override
     public Thread visitReAtomicFetchInc(LitmusCParser.ReAtomicFetchIncContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "_mb");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "Mb");
     }
 
     @Override
     public Thread visitReAtomicFetchIncRelaxed(LitmusCParser.ReAtomicFetchIncRelaxedContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "_rx");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicFetchIncAcquire(LitmusCParser.ReAtomicFetchIncAcquireContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "_acq");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicFetchIncRelease(LitmusCParser.ReAtomicFetchIncReleaseContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "_rel");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "+", "Release");
     }
 
     @Override
     public Thread visitReAtomicFetchDec(LitmusCParser.ReAtomicFetchDecContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "_mb");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "Mb");
     }
 
     @Override
     public Thread visitReAtomicFetchDecRelaxed(LitmusCParser.ReAtomicFetchDecRelaxedContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "_rx");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicFetchDecAcquire(LitmusCParser.ReAtomicFetchDecAcquireContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "_acq");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "Acquire");
     }
 
     @Override
     public Thread visitReAtomicFetchDecRelease(LitmusCParser.ReAtomicFetchDecReleaseContext ctx){
-        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "_rel");
+        return visitAtomicFetchOp(ctx.variable(), new AConst(1), "-", "Release");
     }
 
     @Override
     public Thread visitReAtomicXchg(LitmusCParser.ReAtomicXchgContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_mb");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Mb");
     }
 
     @Override
     public Thread visitReAtomicXchgRelaxed(LitmusCParser.ReAtomicXchgRelaxedContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_rx");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicXchgAcquire(LitmusCParser.ReAtomicXchgAcquireContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_acq");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Acquire");
     }
 
     @Override
     public Thread visitReAtomicXchgRelease(LitmusCParser.ReAtomicXchgReleaseContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_rel");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Release");
     }
 
     @Override
     public Thread visitReXchg(LitmusCParser.ReXchgContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_mb");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Mb");
     }
 
     @Override
     public Thread visitReXchgRelaxed(LitmusCParser.ReXchgRelaxedContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_rx");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Relaxed");
     }
 
     @Override
     public Thread visitReXchgAcquire(LitmusCParser.ReXchgAcquireContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_acq");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Acquire");
     }
 
     @Override
     public Thread visitReXchgRelease(LitmusCParser.ReXchgReleaseContext ctx){
-        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "_rel");
+        return visitAtomicXchg(ctx.variable(), ctx.returnExpression(), "Release");
     }
 
     @Override
     public Thread visitReAtomicCmpxchg(LitmusCParser.ReAtomicCmpxchgContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_mb");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Mb");
     }
 
     @Override
     public Thread visitReAtomicCmpxchgRelaxed(LitmusCParser.ReAtomicCmpxchgRelaxedContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_rx");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicCmpxchgAcquire(LitmusCParser.ReAtomicCmpxchgAcquireContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_acq");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Acquire");
     }
 
     @Override
     public Thread visitReAtomicCmpxchgRelease(LitmusCParser.ReAtomicCmpxchgReleaseContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_rel");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Release");
     }
 
     @Override
     public Thread visitReCmpxchg(LitmusCParser.ReCmpxchgContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_mb");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Mb");
     }
 
     @Override
     public Thread visitReCmpxchgRelaxed(LitmusCParser.ReCmpxchgRelaxedContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_rx");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Relaxed");
     }
 
     @Override
     public Thread visitReCmpxchgAcquire(LitmusCParser.ReCmpxchgAcquireContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_acq");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Acquire");
     }
 
     @Override
     public Thread visitReCmpxchgRelease(LitmusCParser.ReCmpxchgReleaseContext ctx){
-        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "_rel");
+        return visitAtomicCmpxchg(ctx.variable(), ctx.returnExpression(0), ctx.returnExpression(1), "Release");
     }
 
     @Override
@@ -862,27 +862,27 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
-        return visitAtomicRead(ctx.variable(), "_rx");
+        return visitAtomicRead(ctx.variable(), "Relaxed");
     }
 
     @Override
     public Thread visitReAtomicRead(LitmusCParser.ReAtomicReadContext ctx){
-        return visitAtomicRead(ctx.variable(), "_rx");
+        return visitAtomicRead(ctx.variable(), "Relaxed");
     }
 
     @Override
     public Thread visitReRcuDerefence(LitmusCParser.ReRcuDerefenceContext ctx){
-        return visitAtomicRead(ctx.variable(), "_rx");
+        return visitAtomicRead(ctx.variable(), "Relaxed");
     }
 
     @Override
     public Thread visitReSmpLoadAcquire(LitmusCParser.ReSmpLoadAcquireContext ctx){
-        return visitAtomicRead(ctx.variable(), "_acq");
+        return visitAtomicRead(ctx.variable(), "Acquire");
     }
 
     @Override
     public Thread visitReAtomicReadAcquire(LitmusCParser.ReAtomicReadAcquireContext ctx){
-        return visitAtomicRead(ctx.variable(), "_acq");
+        return visitAtomicRead(ctx.variable(), "Acquire");
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -910,32 +910,32 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rx");
+        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "Relaxed");
     }
 
     @Override
     public Thread visitNreAtomicSet(LitmusCParser.NreAtomicSetContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rx");
+        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "Relaxed");
     }
 
     @Override
     public Thread visitNreSmpStoreRelease(LitmusCParser.NreSmpStoreReleaseContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rel");
+        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "Release");
     }
 
     @Override
     public Thread visitNreAtomicSetRelease(LitmusCParser.NreAtomicSetReleaseContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rel");
+        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "Release");
     }
 
     @Override
     public Thread visitNreRcuAssignPointer(LitmusCParser.NreRcuAssignPointerContext ctx){
-        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rel");
+        return visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "Release");
     }
 
     @Override
     public Thread visitNreSmpStoreMb(LitmusCParser.NreSmpStoreMbContext ctx){
-        return Thread.fromArray(false, visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "_rx"), new Fence("Mb"));
+        return Thread.fromArray(false, visitAtomicWrite(ctx.variable(), ctx.returnExpression(), "Relaxed"), new Fence("Mb"));
     }
 
     @Override

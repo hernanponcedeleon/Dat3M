@@ -17,7 +17,7 @@ public class RMWOpAndTest extends RMWAbstract {
     private String op;
 
     public RMWOpAndTest(Location location, Register register, ExprInterface value, String op) {
-        super(location, register, value, "_mb");
+        super(location, register, value, "Mb");
         this.op = op;
     }
 
@@ -25,9 +25,9 @@ public class RMWOpAndTest extends RMWAbstract {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
-            RMWLoad load = new RMWLoad(dummy, loc, "_rx");
+            RMWLoad load = new RMWLoad(dummy, loc, "Relaxed");
             Local local1 = new Local(dummy, new AExpr(dummy, op, value));
-            RMWStore store = new RMWStore(load, loc, dummy, "_rx");
+            RMWStore store = new RMWStore(load, loc, dummy, "Relaxed");
             Local local2 = new Local(reg, new Atom(dummy, "==", new AConst(0)));
 
             compileBasic(load);

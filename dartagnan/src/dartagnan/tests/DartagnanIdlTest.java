@@ -2,6 +2,7 @@ package dartagnan.tests;
 
 import com.microsoft.z3.*;
 import dartagnan.Dartagnan;
+import dartagnan.parsers.cat.ParserCat;
 import dartagnan.program.Program;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.Wmm;
@@ -44,7 +45,7 @@ public class DartagnanIdlTest {
                             Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
                             Program p = Dartagnan.parseProgram(f.toString());
 
-                            Wmm mcm = new Wmm(catFilePath, target);
+                            Wmm mcm = new ParserCat().parse(catFilePath, target);
 
                             Program pFP = p.clone();
                             Program pIDL = p.clone();

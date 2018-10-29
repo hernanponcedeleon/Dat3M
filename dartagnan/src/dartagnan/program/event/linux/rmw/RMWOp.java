@@ -15,7 +15,7 @@ public class RMWOp extends RMWAbstract {
     private String op;
 
     public RMWOp(Location location, ExprInterface value, String op) {
-        super(location, new Register(null), value, "_rx");
+        super(location, new Register(null), value, "Relaxed");
         this.op = op;
         addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
     }
@@ -23,8 +23,8 @@ public class RMWOp extends RMWAbstract {
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
-            RMWLoad load = new RMWLoad(reg, loc, "_rx");
-            RMWStore store = new RMWStore(load, loc, new AExpr(reg, op, value), "_rx");
+            RMWLoad load = new RMWLoad(reg, loc, "Relaxed");
+            RMWStore store = new RMWStore(load, loc, new AExpr(reg, op, value), "Relaxed");
 
             compileBasic(load);
             compileBasic(store);

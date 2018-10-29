@@ -3,6 +3,7 @@ package porthos;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import dartagnan.Dartagnan;
+import dartagnan.parsers.cat.ParserCat;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
@@ -87,9 +88,8 @@ public class Porthos {
             System.exit(0);
             return;
         }
-
-        Wmm mcmS = new Wmm(cmd.getOptionValue("scat"), source);
-        Wmm mcmT = new Wmm(cmd.getOptionValue("tcat"), target);
+        Wmm mcmS = new ParserCat().parse(cmd.getOptionValue("scat"), source);
+        Wmm mcmT = new ParserCat().parse(cmd.getOptionValue("tcat"), target);
 
         if(cmd.hasOption("draw")) {
             mcmS.setDrawExecutionGraph();

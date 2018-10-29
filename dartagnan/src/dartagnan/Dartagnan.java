@@ -7,6 +7,7 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
+import dartagnan.parsers.cat.ParserCat;
 import dartagnan.program.Program;
 import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
@@ -77,7 +78,7 @@ public class Dartagnan {
 
 		Context ctx = new Context();
 		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
-		Wmm mcm = new Wmm(cmd.getOptionValue("cat"), target);
+		Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"), target);
 
 		if(cmd.hasOption("draw")) {
 			mcm.setDrawExecutionGraph();

@@ -44,22 +44,22 @@ public abstract class RMWAbstract extends MemEvent {
     }
 
     protected String getLoadMO(){
-        return atomic.equals("_acq") ? "_acq" : "_rx";
+        return atomic.equals("Acquire") ? "Acquire" : "Relaxed";
     }
 
     protected String getStoreMO(){
-        return atomic.equals("_rel") ? "_rel" : "_rx";
+        return atomic.equals("Release") ? "Release" : "Relaxed";
     }
 
     protected Thread insertFencesOnMb(Thread result){
-        if (atomic.equals("_mb")) {
+        if (atomic.equals("Mb")) {
             return new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
         }
         return result;
     }
 
     protected Thread insertCondFencesOnMb(Thread result, RMWReadCond load){
-        if (atomic.equals("_mb")) {
+        if (atomic.equals("Mb")) {
             return new Seq(new FenceCond(load, "Mb"), new Seq(result, new FenceCond(load, "Mb")));
         }
         return result;
@@ -92,13 +92,13 @@ public abstract class RMWAbstract extends MemEvent {
 
     protected String atomicToText(String atomic){
         switch (atomic){
-            case "_rx":
+            case "Relaxed":
                 return "_relaxed";
-            case "_acq":
+            case "Acquire":
                 return "_acquire";
-            case "_rel":
+            case "Release":
                 return "_release";
-            case "_mb":
+            case "Mb":
                 return "";
             default:
                 throw new RuntimeException("Unrecognised memory order " + atomic + " in " + this.getClass().getName());
