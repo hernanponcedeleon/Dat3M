@@ -1,4 +1,4 @@
-package dartagnan.program.event.filter;
+package dartagnan.wmm.filter;
 
 import dartagnan.program.event.Event;
 
@@ -21,10 +21,5 @@ public class FilterIntersection extends FilterAbstract {
     public String toString(){
         return (filter1 instanceof FilterBasic ? filter1.toString() : "( " + filter1.toString() + " )")
                 + " & " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
-    }
-
-    @Override
-    public int toRepositoryCode(){
-        return filter1.toRepositoryCode() & filter2.toRepositoryCode();
     }
 }

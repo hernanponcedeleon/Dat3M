@@ -8,8 +8,6 @@ public class Location implements IntExprInterface {
 
 	private String name;
 	private int iValue;
-	private int min;
-	private int max;
 
 	public Location(String name) {
 		this.name = name;
@@ -25,14 +23,6 @@ public class Location implements IntExprInterface {
 	
 	public int getIValue() {
 		return iValue;
-	}
-
-	public void setMin(int min) {
-		this.min = min;
-	}
-
-	public void setMax(int max) {
-		this.max = max;
 	}
 
 	@Override

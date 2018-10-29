@@ -6,9 +6,9 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.utils.linux.EType;
 
 public class RMWOp extends RMWAbstract {
 
@@ -17,7 +17,7 @@ public class RMWOp extends RMWAbstract {
     public RMWOp(Location location, ExprInterface value, String op) {
         super(location, new Register(null), value, "Relaxed");
         this.op = op;
-        addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
+        addFilters(EType.NORETURN);
     }
 
     @Override
@@ -28,8 +28,7 @@ public class RMWOp extends RMWAbstract {
 
             compileBasic(load);
             compileBasic(store);
-            load.addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
-            store.addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
+            load.addFilters(EType.NORETURN);
 
             return new Seq(load, store);
         }

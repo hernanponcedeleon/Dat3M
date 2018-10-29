@@ -3,7 +3,7 @@ package dartagnan.parsers.cat.visitors;
 import dartagnan.CatBaseVisitor;
 import dartagnan.CatParser;
 import dartagnan.CatVisitor;
-import dartagnan.program.event.filter.FilterAbstract;
+import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.basic.RelCartesian;

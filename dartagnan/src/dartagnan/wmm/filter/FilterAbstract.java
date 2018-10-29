@@ -1,4 +1,4 @@
-package dartagnan.program.event.filter;
+package dartagnan.wmm.filter;
 
 import dartagnan.program.event.Event;
 
@@ -15,6 +15,4 @@ public abstract class FilterAbstract {
     }
 
     public abstract boolean filter(Event e);
-
-    public abstract int toRepositoryCode();
 }

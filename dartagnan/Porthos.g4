@@ -49,8 +49,7 @@ bool_atom [String mainThread] returns [BExpr expr]:
 	| LPAR be = bool_expr [mainThread] RPAR {$expr = $be.expr;};
 
 location returns [Location loc]:
-	| 'H:' hl = WORD {$loc = new HighLocation($hl.getText());}
-	| l = WORD {$loc = new Location($l.getText());};
+	l = WORD {$loc = new Location($l.getText());};
 register returns [Register reg]:
 	r = WORD {
 		if(mapLocs.keySet().contains($r.getText())) {
@@ -206,12 +205,10 @@ program [String name] returns [Program p]:
 	{
 		Program p = new Program(name);
 	}
-	LCBRA l = location 
-		('=' '[' min = DIGIT {$l.loc.setMin(Integer.parseInt($min.getText()));} ',' max = DIGIT {$l.loc.setMax(Integer.parseInt($max.getText()));} ']')* 
+	LCBRA l = location
 		('=' iValue = DIGIT {$l.loc.setIValue(Integer.parseInt($iValue.getText()));})*
 		{mapLocs.put($l.loc.getName(), $l.loc);} 
-	(COMMA l = location 
-		('=' '[' min = DIGIT {$l.loc.setMin(Integer.parseInt($min.getText()));} ',' max = DIGIT {$l.loc.setMax(Integer.parseInt($max.getText()));} ']')*
+	(COMMA l = location
 		('=' iValue = DIGIT {$l.loc.setIValue(Integer.parseInt($iValue.getText()));})*
 		{mapLocs.put($l.loc.getName(), $l.loc);}
 		)* RCBRA 

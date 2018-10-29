@@ -5,7 +5,7 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EType;
 
 public class Write extends MemEvent {
 
@@ -19,11 +19,7 @@ public class Write extends MemEvent {
 		this.atomic = atomic;
 		this.condLevel = 0;
 		this.memId = hashCode();
-		addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_MEMORY,
-				FilterUtils.EVENT_TYPE_WRITE
-		);
+		addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
 	}
 
 	@Override

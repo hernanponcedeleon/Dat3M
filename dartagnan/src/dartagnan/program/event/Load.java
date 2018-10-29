@@ -5,7 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -22,11 +22,7 @@ public class Load extends MemEvent {
 		this.loc = loc;
 		this.condLevel = 0;
 		this.atomic = atomic;
-		this.addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_MEMORY,
-				FilterUtils.EVENT_TYPE_READ
-		);
+		addFilters(EType.ANY, EType.MEMORY, EType.READ);
 	}
 
 	@Override

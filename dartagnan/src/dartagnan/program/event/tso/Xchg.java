@@ -1,11 +1,13 @@
-package dartagnan.program.event.rmw;
+package dartagnan.program.event.tso;
 
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.event.rmw.RMWLoad;
+import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.utils.tso.EType;
 
 public class Xchg extends MemEvent {
 
@@ -18,14 +20,7 @@ public class Xchg extends MemEvent {
         this.atomic = atomic;
         this.condLevel = 0;
         this.memId = hashCode();
-        addFilters(
-                FilterUtils.EVENT_TYPE_ANY,
-                FilterUtils.EVENT_TYPE_MEMORY,
-                FilterUtils.EVENT_TYPE_READ,
-                FilterUtils.EVENT_TYPE_WRITE,
-                FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE,
-                FilterUtils.EVENT_TYPE_ATOMIC
-        );
+        addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM);
     }
 
     @Override
@@ -36,13 +31,13 @@ public class Xchg extends MemEvent {
             load.setHLId(memId);
             load.setUnfCopy(getUnfCopy());
             load.setCondLevel(condLevel);
-            load.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+            load.addFilters(EType.ATOM);
 
             RMWStore store = new RMWStore(load, loc, reg, atomic);
             store.setHLId(memId);
             store.setUnfCopy(getUnfCopy());
             store.setCondLevel(condLevel);
-            store.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
+            store.addFilters(EType.ATOM);
 
             return Thread.fromArray(false, load, store, new Local(reg, dummyReg));
         }

@@ -9,9 +9,12 @@ import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.RMWAbstract;
 import dartagnan.program.event.rmw.RMWStore;
-import dartagnan.program.event.rmw.Xchg;
+import dartagnan.program.event.tso.Xchg;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class EventRepository {

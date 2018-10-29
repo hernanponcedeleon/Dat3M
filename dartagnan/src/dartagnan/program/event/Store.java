@@ -6,7 +6,7 @@ import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -23,11 +23,7 @@ public class Store extends MemEvent {
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
-		addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_MEMORY,
-				FilterUtils.EVENT_TYPE_WRITE
-		);
+		addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
 	}
 
 	@Override

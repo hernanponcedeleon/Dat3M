@@ -1,7 +1,6 @@
-package dartagnan.program.event.filter;
+package dartagnan.wmm.filter;
 
 import dartagnan.program.event.Event;
-import dartagnan.program.utils.EventRepository;
 
 public class FilterBasic extends FilterAbstract {
 
@@ -19,13 +18,5 @@ public class FilterBasic extends FilterAbstract {
     @Override
     public String toString(){
         return param;
-    }
-
-    @Override
-    public int toRepositoryCode(){
-        if(FilterUtils.toRepositoryCode.containsKey(param)){
-            return FilterUtils.toRepositoryCode.get(param);
-        }
-        return EventRepository.ALL;
     }
 }

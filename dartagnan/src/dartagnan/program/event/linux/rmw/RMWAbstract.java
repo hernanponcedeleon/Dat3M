@@ -8,9 +8,9 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
-import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.event.rmw.cond.FenceCond;
 import dartagnan.program.event.rmw.cond.RMWReadCond;
+import dartagnan.program.utils.linux.EType;
 
 public abstract class RMWAbstract extends MemEvent {
 
@@ -25,14 +25,7 @@ public abstract class RMWAbstract extends MemEvent {
         this.atomic = atomic;
         this.condLevel = 0;
         this.memId = hashCode();
-        addFilters(
-                FilterUtils.EVENT_TYPE_ANY,
-                FilterUtils.EVENT_TYPE_MEMORY,
-                FilterUtils.EVENT_TYPE_READ,
-                FilterUtils.EVENT_TYPE_WRITE,
-                FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE,
-                FilterUtils.EVENT_TYPE_ATOMIC
-        );
+        addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW);
     }
 
     public Register getReg() {
@@ -76,7 +69,6 @@ public abstract class RMWAbstract extends MemEvent {
         event.setHLId(memId);
         event.setUnfCopy(getUnfCopy());
         event.setCondLevel(condLevel);
-        event.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
     }
 
     protected String opToText(String op){

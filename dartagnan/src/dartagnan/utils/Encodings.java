@@ -1,16 +1,22 @@
 package dartagnan.utils;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
-import dartagnan.program.event.*;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.If;
+import dartagnan.program.event.Load;
+import dartagnan.program.event.Local;
 import dartagnan.program.utils.EventRepository;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static dartagnan.utils.Utils.*;
+import static dartagnan.utils.Utils.edge;
+import static dartagnan.utils.Utils.ssaReg;
 
 public class Encodings {
 

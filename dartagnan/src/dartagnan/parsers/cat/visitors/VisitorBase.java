@@ -4,7 +4,7 @@ import dartagnan.CatBaseVisitor;
 import dartagnan.CatParser;
 import dartagnan.CatVisitor;
 import dartagnan.parsers.cat.utils.CatSyntaxException;
-import dartagnan.program.event.filter.FilterAbstract;
+import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.Wmm;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.RecursiveRelation;

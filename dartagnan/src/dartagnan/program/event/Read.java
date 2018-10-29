@@ -4,7 +4,7 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EType;
 
 public class Read extends MemEvent {
 
@@ -16,11 +16,7 @@ public class Read extends MemEvent {
 		this.atomic = atomic;
 		this.condLevel = 0;
 		this.memId = hashCode();
-        addFilters(
-                FilterUtils.EVENT_TYPE_ANY,
-                FilterUtils.EVENT_TYPE_MEMORY,
-                FilterUtils.EVENT_TYPE_READ
-        );
+		addFilters(EType.ANY, EType.MEMORY, EType.READ);
 	}
 
 	@Override

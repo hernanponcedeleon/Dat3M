@@ -3,13 +3,11 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import dartagnan.program.HighLocation;
 import dartagnan.program.Location;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import static dartagnan.utils.Utils.initValue;
 import static dartagnan.utils.Utils.ssaLoc;
 
 public class Init extends MemEvent {
@@ -18,12 +16,7 @@ public class Init extends MemEvent {
 		setHLId(hashCode());
 		this.loc = loc;
 		this.condLevel = 0;
-		addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_MEMORY,
-				FilterUtils.EVENT_TYPE_INIT,
-				FilterUtils.EVENT_TYPE_WRITE
-		);
+		addFilters(EType.ANY, EType.MEMORY, EType.WRITE, EType.INIT);
 	}
 
 	@Override

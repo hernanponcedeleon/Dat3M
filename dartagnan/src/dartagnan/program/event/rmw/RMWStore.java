@@ -3,6 +3,7 @@ package dartagnan.program.event.rmw;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.event.Store;
+import dartagnan.program.utils.EType;
 
 public class RMWStore extends Store {
 
@@ -10,6 +11,7 @@ public class RMWStore extends Store {
 
     public RMWStore(RMWLoad loadEvent, Location loc, ExprInterface val, String atomic) {
         super(loc, val, atomic);
+        addFilters(EType.RMW);
         this.loadEvent = loadEvent;
     }
 

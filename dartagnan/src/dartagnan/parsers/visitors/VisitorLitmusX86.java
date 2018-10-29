@@ -13,7 +13,7 @@ import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Store;
-import dartagnan.program.event.rmw.Xchg;
+import dartagnan.program.event.tso.Xchg;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 import java.util.ArrayList;
