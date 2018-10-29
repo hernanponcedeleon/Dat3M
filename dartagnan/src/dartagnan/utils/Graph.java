@@ -116,7 +116,7 @@ public class Graph {
 
             if(t instanceof Init){
                 Init e = (Init)t.getEvents().iterator().next();
-                String label = e.label() + " = " + model.getConstInterp(e.ssaLoc).toString();
+                String label = e.label() + " = " + model.getConstInterp(e.getSsaLoc()).toString();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
 
             } else {
@@ -129,7 +129,7 @@ public class Graph {
                 for(Event e2 : events) {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
-                        label += " = " + model.getConstInterp(((MemEvent) e2).ssaLoc).toString();
+                        label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc()).toString();
                     }
                     sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }

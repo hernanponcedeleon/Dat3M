@@ -74,7 +74,7 @@ public class RelCo extends Relation {
                     for(Event w2 : eventsStoreInitByLocation){
                         lastCoOrder = ctx.mkAnd(lastCoOrder, ctx.mkNot(edge("co", w1, w2, ctx)));
                     }
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(w1.getLoc().getLastValueExpr(ctx), ((MemEvent) w1).ssaLoc)));
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(w1.getLoc().getLastValueExpr(ctx), ((MemEvent) w1).getSsaLoc())));
                 }
             }
         }

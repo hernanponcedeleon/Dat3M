@@ -12,7 +12,6 @@ import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.ssaReg;
@@ -142,33 +141,54 @@ public class Program extends Thread {
 		return enc;
 	}
 
-	public BoolExpr encodeFinalValues(Context ctx){
-		BoolExpr enc = ctx.mkTrue();
-		Set<Event> eventsLoadLocal = getEventRepository().getEvents(EventRepository.LOAD | EventRepository.LOCAL);
-		for(Event r1 : eventsLoadLocal) {
-			Set<Event> modRegLater = eventsLoadLocal.stream().filter(e -> r1.getReg() == e.getReg() && r1.getEId() < e.getEId()).collect(Collectors.toSet());
-			BoolExpr lastModReg = r1.executes(ctx);
-			for(Event r2 : modRegLater) {
-				lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(r2.executes(ctx)));
-			}
-			enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg, ctx.mkEq(r1.getReg().getLastValueExpr(ctx), ssaReg(r1.getReg(), r1.getSsaRegIndex(), ctx))));
-		}
-		return enc;
-	}
+    public BoolExpr encodeFinalValues(Context ctx){
+        Map<Register, List<Event>> eMap = new HashMap<>();
+        for(Event e : getEventRepository().getEvents(EventRepository.LOAD | EventRepository.LOCAL)){
+            eMap.putIfAbsent(e.getReg(), new ArrayList<>());
+            eMap.get(e.getReg()).add(e);
+        }
+
+        BoolExpr enc = ctx.mkTrue();
+        for (Register reg : eMap.keySet()) {
+            List<Event> events = eMap.get(reg);
+            events.sort((e1, e2) -> Integer.compare(e2.getEId(), e1.getEId()));
+            for(int i = 0; i <  events.size(); i++){
+                BoolExpr lastModReg = eMap.get(reg).get(i).executes(ctx);
+                for(int j = 0; j < i; j++){
+                    lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).executes(ctx)));
+                }
+                enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
+                        ctx.mkEq(reg.getLastValueExpr(ctx), ssaReg(reg, events.get(i).getSsaRegIndex(), ctx))));
+            }
+        }
+        return enc;
+    }
 	
 	public BoolExpr encodeDF_RF(Context ctx) {
-		BoolExpr enc = ctx.mkTrue();
-		Set<Event> loadEvents = getEventRepository().getEvents(EventRepository.LOAD);
-		Set<Event> storeInitEvents = getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
-		for (Event r : loadEvents) {
-			Set<Event> storeSameLoc = storeInitEvents.stream().filter(w -> w.getLoc() == r.getLoc()).collect(Collectors.toSet());
-			BoolExpr sameValue = ctx.mkTrue();
-			for (Event w : storeSameLoc) {
-				sameValue = ctx.mkAnd(sameValue, ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(((MemEvent) w).ssaLoc, ((Load) r).ssaLoc)));
-			}
-			enc = ctx.mkAnd(enc, sameValue);
-		}
-		return enc;
+        Map<Location, List<Load>> loads = new HashMap<>();
+        for(Event e : getEventRepository().getEvents(EventRepository.LOAD)){
+            loads.putIfAbsent(e.getLoc(), new ArrayList<>());
+            loads.get(e.getLoc()).add((Load)e);
+        }
+
+        Map<Location, List<MemEvent>> stores = new HashMap<>();
+        for(Event e : getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
+            stores.putIfAbsent(e.getLoc(), new ArrayList<>());
+            stores.get(e.getLoc()).add((MemEvent) e);
+        }
+
+        BoolExpr enc = ctx.mkTrue();
+        for (Location loc : loads.keySet()){
+            for(Load r : loads.get(loc)){
+                BoolExpr sameValue = ctx.mkTrue();
+                for(MemEvent w : stores.get(loc)){
+                    sameValue = ctx.mkAnd(sameValue,
+                            ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(w.getSsaLoc(), r.getSsaLoc())));
+                }
+                enc = ctx.mkAnd(enc, sameValue);
+            }
+        }
+        return enc;
 	}
 
     @Override
