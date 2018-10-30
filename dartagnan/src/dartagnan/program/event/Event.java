@@ -47,7 +47,7 @@ public abstract class Event extends Thread {
 	}
 
 	public String repr() {
-		return "E%" + eid;
+		return "E" + eid;
 	}
 
 	public BoolExpr executes(Context ctx) {
