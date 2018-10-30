@@ -11,37 +11,40 @@ import java.util.Set;
 
 public class BExpr implements ExprInterface {
 	
-	private BExpr b1;
-	private BExpr b2;
+	private ExprInterface b1;
+	private ExprInterface b2;
 	private String op;
 	
 	public BExpr() {};
 	
-	public BExpr(BExpr b1, String op, BExpr b2) {
+	public BExpr(ExprInterface b1, String op, ExprInterface b2) {
 		this.b1 = b1;
 		this.b2 = b2;
 		this.op = op;
 	}
 
-	@Override
 	public String toString() {
-		return b1 + " " + op + " " + b2;
+		if(b2 != null){
+		    return "(" + b1 + " " + op + " " + b2 + ")";
+		}
+        return "(" + op + " " + b1 + ")";
 	}
 
-	@Override
 	public BExpr clone() {
-		return new BExpr(b1.clone(), op, b2.clone());
+		ExprInterface newB1 = b1.clone();
+		ExprInterface newB2 = b2 == null ? null : b2.clone();
+		return new BExpr(newB1, op, newB2);
 	}
 
 	@Override
 	public BoolExpr toZ3(MapSSA map, Context ctx) {
 		switch(op) {
 			case "and":
-				return ctx.mkAnd(b1.toZ3(map, ctx), b2.toZ3(map, ctx));
+				return ctx.mkAnd(b1.toZ3Boolean(map, ctx), b2.toZ3Boolean(map, ctx));
 			case "or":
-				return ctx.mkOr(b1.toZ3(map, ctx), b2.toZ3(map, ctx));
+				return ctx.mkOr(b1.toZ3Boolean(map, ctx), b2.toZ3Boolean(map, ctx));
 			case "not":
-				return ctx.mkNot(b1.toZ3(map, ctx));
+				return ctx.mkNot(b1.toZ3Boolean(map, ctx));
 		}
 		throw new RuntimeException("Unrecognised boolean operator " + op);
 	}
@@ -55,7 +58,9 @@ public class BExpr implements ExprInterface {
 	public Set<Register> getRegs() {
 		Set<Register> setRegs = new HashSet<>();
 		setRegs.addAll(b1.getRegs());
-		setRegs.addAll(b2.getRegs());
+		if(b2 != null) {
+			setRegs.addAll(b2.getRegs());
+		}
 		return setRegs;
 	}
 
