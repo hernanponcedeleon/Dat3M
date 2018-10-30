@@ -1,7 +1,9 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import dartagnan.program.Location;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
@@ -19,6 +21,12 @@ public class RelRf extends Relation {
 
     public RelRf(){
         term = "rf";
+    }
+
+    @Override
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
+        encodeTupleSet.addAll(getMaxTupleSet());
     }
 
     @Override
@@ -52,7 +60,7 @@ public class RelRf extends Relation {
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
-        if(!encodeTupleSet.isEmpty()){
+        if(!maxTupleSet.isEmpty()){
             for(Tuple tuple : maxTupleSet){
                 BoolExpr rel = edge("rf", tuple.getFirst(), tuple.getSecond(), ctx);
                 enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx))));
@@ -60,7 +68,7 @@ public class RelRf extends Relation {
 
             Collection<Event> eventsLoad = program.getEventRepository().getEvents(EventRepository.LOAD);
             Collection<Event> eventsStoreInit = program.getEventRepository().getEvents(EventRepository.INIT | EventRepository.STORE);
-            Collection<Location> locations = eventsLoad.stream().map(e -> e.getLoc()).collect(Collectors.toSet());
+            Collection<Location> locations = eventsLoad.stream().map(Event::getLoc).collect(Collectors.toSet());
 
             for(Location loc : locations) {
                 for(Event r : eventsLoad){

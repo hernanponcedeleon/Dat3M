@@ -1,7 +1,9 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import dartagnan.program.Location;
+import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.utils.EventRepository;
@@ -20,6 +22,12 @@ public class RelCo extends Relation {
 
     public RelCo(){
         term = "co";
+    }
+
+    @Override
+    public void initialise(Program program, Context ctx, int encodingMode){
+        super.initialise(program, ctx, encodingMode);
+        encodeTupleSet.addAll(getMaxTupleSet());
     }
 
     @Override
@@ -52,7 +60,7 @@ public class RelCo extends Relation {
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
-        if(!encodeTupleSet.isEmpty()){
+        if(!maxTupleSet.isEmpty()){
             for(Tuple tuple : maxTupleSet){
                 BoolExpr rel = edge("co", tuple.getFirst(), tuple.getSecond(), ctx);
                 enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx))));
@@ -64,7 +72,7 @@ public class RelCo extends Relation {
             }
 
             Collection<Event> eventsStoreInit = eventRepository.getEvents(EventRepository.INIT | EventRepository.STORE);
-            Collection<Location> locations = eventsStoreInit.stream().map(e -> e.getLoc()).collect(Collectors.toSet());
+            Collection<Location> locations = eventsStoreInit.stream().map(Event::getLoc).collect(Collectors.toSet());
 
             for(Location loc : locations) {
                 Collection<Event> eventsStoreInitByLocation = eventsStoreInit.stream().filter(e -> e.getLoc() == loc).collect(Collectors.toSet());
