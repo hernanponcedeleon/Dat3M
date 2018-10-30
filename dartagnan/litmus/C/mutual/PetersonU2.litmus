@@ -8,10 +8,10 @@ WRITE_ONCE(*flag0, 1);
 WRITE_ONCE(*turn, 1);
 intptr_t f1 = READ_ONCE(*flag1);
 intptr_t t0 = READ_ONCE(*turn);
-if ((f1 == 1) & (t0 == 1)) {
+if ((f1 == 1) && (t0 == 1)) {
 	f1 = READ_ONCE(*flag1);
 	t0 = READ_ONCE(*turn);
-	if ((f1 == 1) & (t0 == 1)) {
+	if ((f1 == 1) && (t0 == 1)) {
 		f1 = READ_ONCE(*flag1);
 		t0 = READ_ONCE(*turn);
 	}
@@ -24,10 +24,10 @@ WRITE_ONCE(*flag1, 1);
 WRITE_ONCE(*turn, 0);
 intptr_t f0 = READ_ONCE(*flag0);
 intptr_t t1 = READ_ONCE(*turn);
-if ((f0 == 1) & (t1 == 1)) {
+if ((f0 == 1) && (t1 == 1)) {
 	f0 = READ_ONCE(*flag0);
 	t1 = READ_ONCE(*turn);
-	if ((f0 == 1) & (t1 == 1)) {
+	if ((f0 == 1) && (t1 == 1)) {
 		f0 = READ_ONCE(*flag0);
 		t1 = READ_ONCE(*turn);
 	}
