@@ -1,6 +1,6 @@
 for file in $(find litmus/C -name '*.litmus' | sort);
 do
-   if [[ $file == *"mutual"* ]];
+   if [[ $file == *"mutual"* || $file == *"no-herd"* ]];
    then
       continue
    fi

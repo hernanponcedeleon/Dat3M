@@ -132,6 +132,8 @@ returnExpression
     |   'spin_trylock' LeftParen variable RightParen                                                                    # reSpinTryLock
     |   'spin_is_locked' LeftParen variable RightParen                                                                  # reSpinIsLocked
 
+    |   Not returnExpression                                                                                            # reOpBoolNot
+    |   returnExpression opBool returnExpression                                                                        # reOpBool
     |   returnExpression opCompare returnExpression                                                                     # reOpCompare
     |   returnExpression opArith returnExpression                                                                       # reOpArith
 
@@ -224,6 +226,11 @@ opCompare
     |   GreaterEqual
     |   Less
     |   Greater
+    ;
+
+opBool
+    :   AndAnd
+    |   OrOr
     ;
 
 opArith

@@ -4,10 +4,7 @@ import dartagnan.LitmusCBaseVisitor;
 import dartagnan.LitmusCParser;
 import dartagnan.LitmusCVisitor;
 import dartagnan.asserts.*;
-import dartagnan.expression.AConst;
-import dartagnan.expression.AExpr;
-import dartagnan.expression.Atom;
-import dartagnan.expression.ExprInterface;
+import dartagnan.expression.*;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.program.*;
 import dartagnan.program.Thread;
@@ -284,6 +281,25 @@ public class VisitorLitmusC
         ExprInterface v2 = returnStack.pop();
         returnStack.push(new AExpr(v1, ctx.opArith().getText(), v2));
         return Thread.fromArray(false, t1, t2);
+    }
+
+    @Override
+    public Thread visitReOpBool(LitmusCParser.ReOpBoolContext ctx){
+        Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
+        ExprInterface v1 = returnStack.pop();
+        Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
+        ExprInterface v2 = returnStack.pop();
+        String op = ctx.opBool().getText().equals("&&") ? "and" : "or";
+        returnStack.push(new BExpr(v1, op, v2));
+        return Thread.fromArray(false, t1, t2);
+    }
+
+    @Override
+    public Thread visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
+        Thread t = (Thread)ctx.returnExpression().accept(this);
+        ExprInterface v = returnStack.pop();
+        returnStack.push(new BExpr(v, "not", null));
+        return t;
     }
 
     @Override
