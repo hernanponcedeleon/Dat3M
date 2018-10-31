@@ -189,7 +189,7 @@ public class VisitorLitmusC
         Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWOpReturn(location, register, pair.getSecond(), ctx.op, ctx.myMo);
+        Thread t = new RMWOpReturn(location, register, pair.getSecond(), ctx.op, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, pair.getFirst(), t);
     }
@@ -200,7 +200,7 @@ public class VisitorLitmusC
         Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWFetchOp(location, register, pair.getSecond(), ctx.op, ctx.myMo);
+        Thread t = new RMWFetchOp(location, register, pair.getSecond(), ctx.op, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, pair.getFirst(), t);
     }
@@ -234,7 +234,7 @@ public class VisitorLitmusC
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
         returnStack.push(register);
-        return new Read(register, location, ctx.myMo);
+        return new Read(register, location, ctx.mo);
     }
 
     @Override
@@ -329,7 +329,7 @@ public class VisitorLitmusC
         ExprInterface value = returnStack.pop();
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWXchg(location, register, value, ctx.myMo);
+        Thread t = new RMWXchg(location, register, value, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, t1, t);
     }
@@ -342,7 +342,7 @@ public class VisitorLitmusC
         ExprInterface value = returnStack.pop();
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWCmpXchg(location, register, cmp, value, ctx.myMo);
+        Thread t = new RMWCmpXchg(location, register, cmp, value, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, t1, t2, t);
     }
@@ -351,11 +351,11 @@ public class VisitorLitmusC
     public Thread visitNreStore(LitmusCParser.NreStoreContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
-        if(ctx.myMo.equals("Mb")){
+        if(ctx.mo.equals("Mb")){
             Thread t = new Write(location, returnStack.pop(), "Relaxed");
             return Thread.fromArray(false, t1, t, new Fence("Mb"));
         }
-        Thread t = new Write(location, returnStack.pop(), ctx.myMo);
+        Thread t = new Write(location, returnStack.pop(), ctx.mo);
         return Thread.fromArray(false, t1, t);
     }
 

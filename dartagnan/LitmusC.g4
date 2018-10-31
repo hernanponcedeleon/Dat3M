@@ -55,72 +55,72 @@ seqExpression
     |   nonReturnExpression                                                                                             # seqNonReturnExpression
     ;
 
-returnExpression locals [String op, String myMo]
-    :   ( AtomicAddReturn        LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Mb";}
-        | AtomicAddReturnRelaxed LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Relaxed";}
-        | AtomicAddReturnAcquire LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Acquire";}
-        | AtomicAddReturnRelease LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Release";}
-        | AtomicSubReturn        LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Mb";}
-        | AtomicSubReturnRelaxed LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Relaxed";}
-        | AtomicSubReturnAcquire LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Acquire";}
-        | AtomicSubReturnRelease LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Release";}
-        | AtomicIncReturn        LPar variable RPar {$op = "+"; $myMo = "Mb";}
-        | AtomicIncReturnRelaxed LPar variable RPar {$op = "+"; $myMo = "Relaxed";}
-        | AtomicIncReturnAcquire LPar variable RPar {$op = "+"; $myMo = "Acquire";}
-        | AtomicIncReturnRelease LPar variable RPar {$op = "+"; $myMo = "Release";}
-        | AtomicDecReturn        LPar variable RPar {$op = "-"; $myMo = "Mb";}
-        | AtomicDecReturnRelaxed LPar variable RPar {$op = "-"; $myMo = "Relaxed";}
-        | AtomicDecReturnAcquire LPar variable RPar {$op = "-"; $myMo = "Acquire";}
-        | AtomicDecReturnRelease LPar variable RPar {$op = "-"; $myMo = "Release";})                                    # reAtomicOpReturn
+returnExpression locals [String op, String mo]
+    :   ( AtomicAddReturn        LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Mb";}
+        | AtomicAddReturnRelaxed LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Relaxed";}
+        | AtomicAddReturnAcquire LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Acquire";}
+        | AtomicAddReturnRelease LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Release";}
+        | AtomicSubReturn        LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Mb";}
+        | AtomicSubReturnRelaxed LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Relaxed";}
+        | AtomicSubReturnAcquire LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Acquire";}
+        | AtomicSubReturnRelease LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Release";}
+        | AtomicIncReturn        LPar variable RPar {$op = "+"; $mo = "Mb";}
+        | AtomicIncReturnRelaxed LPar variable RPar {$op = "+"; $mo = "Relaxed";}
+        | AtomicIncReturnAcquire LPar variable RPar {$op = "+"; $mo = "Acquire";}
+        | AtomicIncReturnRelease LPar variable RPar {$op = "+"; $mo = "Release";}
+        | AtomicDecReturn        LPar variable RPar {$op = "-"; $mo = "Mb";}
+        | AtomicDecReturnRelaxed LPar variable RPar {$op = "-"; $mo = "Relaxed";}
+        | AtomicDecReturnAcquire LPar variable RPar {$op = "-"; $mo = "Acquire";}
+        | AtomicDecReturnRelease LPar variable RPar {$op = "-"; $mo = "Release";})                                      # reAtomicOpReturn
 
-    |   ( AtomicFetchAdd        LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Mb";}
-        | AtomicFetchAddRelaxed LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Relaxed";}
-        | AtomicFetchAddAcquire LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Acquire";}
-        | AtomicFetchAddRelease LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Release";}
-        | AtomicFetchSub        LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Mb";}
-        | AtomicFetchSubRelaxed LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Relaxed";}
-        | AtomicFetchSubAcquire LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Acquire";}
-        | AtomicFetchSubRelease LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Release";}
-        | AtomicFetchInc        LPar variable RPar {$op = "+"; $myMo = "Mb";}
-        | AtomicFetchIncRelaxed LPar variable RPar {$op = "+"; $myMo = "Relaxed";}
-        | AtomicFetchIncAcquire LPar variable RPar {$op = "+"; $myMo = "Acquire";}
-        | AtomicFetchIncRelease LPar variable RPar {$op = "+"; $myMo = "Release";}
-        | AtomicFetchDec        LPar variable RPar {$op = "-"; $myMo = "Mb";}
-        | AtomicFetchDecRelaxed LPar variable RPar {$op = "-"; $myMo = "Relaxed";}
-        | AtomicFetchDecAcquire LPar variable RPar {$op = "-"; $myMo = "Acquire";}
-        | AtomicFetchDecRelease LPar variable RPar {$op = "-"; $myMo = "Release";})                                     # reAtomicFetchOp
+    |   ( AtomicFetchAdd        LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Mb";}
+        | AtomicFetchAddRelaxed LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Relaxed";}
+        | AtomicFetchAddAcquire LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Acquire";}
+        | AtomicFetchAddRelease LPar returnExpression Comma variable RPar {$op = "+"; $mo = "Release";}
+        | AtomicFetchSub        LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Mb";}
+        | AtomicFetchSubRelaxed LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Relaxed";}
+        | AtomicFetchSubAcquire LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Acquire";}
+        | AtomicFetchSubRelease LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Release";}
+        | AtomicFetchInc        LPar variable RPar {$op = "+"; $mo = "Mb";}
+        | AtomicFetchIncRelaxed LPar variable RPar {$op = "+"; $mo = "Relaxed";}
+        | AtomicFetchIncAcquire LPar variable RPar {$op = "+"; $mo = "Acquire";}
+        | AtomicFetchIncRelease LPar variable RPar {$op = "+"; $mo = "Release";}
+        | AtomicFetchDec        LPar variable RPar {$op = "-"; $mo = "Mb";}
+        | AtomicFetchDecRelaxed LPar variable RPar {$op = "-"; $mo = "Relaxed";}
+        | AtomicFetchDecAcquire LPar variable RPar {$op = "-"; $mo = "Acquire";}
+        | AtomicFetchDecRelease LPar variable RPar {$op = "-"; $mo = "Release";})                                       # reAtomicFetchOp
 
-    |   ( AtomicXchg        LPar variable Comma returnExpression RPar {$myMo = "Mb";}
-        | AtomicXchgRelaxed LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
-        | AtomicXchgAcquire LPar variable Comma returnExpression RPar {$myMo = "Acquire";}
-        | AtomicXchgRelease LPar variable Comma returnExpression RPar {$myMo = "Release";})                             # reXchg
+    |   ( AtomicXchg        LPar variable Comma returnExpression RPar {$mo = "Mb";}
+        | AtomicXchgRelaxed LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
+        | AtomicXchgAcquire LPar variable Comma returnExpression RPar {$mo = "Acquire";}
+        | AtomicXchgRelease LPar variable Comma returnExpression RPar {$mo = "Release";})                               # reXchg
 
-    |   ( Xchg        LPar variable Comma returnExpression RPar {$myMo = "Mb";}
-        | XchgRelaxed LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
-        | XchgAcquire LPar variable Comma returnExpression RPar {$myMo = "Acquire";}
-        | XchgRelease LPar variable Comma returnExpression RPar {$myMo = "Release";})                                   # reXchg
+    |   ( Xchg        LPar variable Comma returnExpression RPar {$mo = "Mb";}
+        | XchgRelaxed LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
+        | XchgAcquire LPar variable Comma returnExpression RPar {$mo = "Acquire";}
+        | XchgRelease LPar variable Comma returnExpression RPar {$mo = "Release";})                                     # reXchg
 
-    |   ( AtomicCmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Mb";}
-        | AtomicCmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Relaxed";}
-        | AtomicCmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Acquire";}
-        | AtomicCmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Release";})   # reCmpXchg
+    |   ( AtomicCmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Mb";}
+        | AtomicCmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Relaxed";}
+        | AtomicCmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Acquire";}
+        | AtomicCmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Release";})     # reCmpXchg
 
-    |   ( CmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Mb";}
-        | CmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Relaxed";}
-        | CmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Acquire";}
-        | CmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Release";})         # reCmpXchg
+    |   ( CmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Mb";}
+        | CmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Relaxed";}
+        | CmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Acquire";}
+        | CmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Release";})           # reCmpXchg
 
-    |   ( AtomicSubAndTest LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Mb";}
-        | AtomicIncAndTest LPar variable RPar {$op = "+"; $myMo = "Mb";}
-        | AtomicDecAndTest LPar variable RPar {$op = "-"; $myMo = "Mb";})                                               # reAtomicOpAndTest
+    |   ( AtomicSubAndTest LPar returnExpression Comma variable RPar {$op = "-"; $mo = "Mb";}
+        | AtomicIncAndTest LPar variable RPar {$op = "+"; $mo = "Mb";}
+        | AtomicDecAndTest LPar variable RPar {$op = "-"; $mo = "Mb";})                                                 # reAtomicOpAndTest
 
     |   AtomicAddUnless LPar variable Comma returnExpression Comma returnExpression RPar                                # reAtomicAddUnless
 
-    |   ( ReadOnce          LPar variable RPar {$myMo = "Relaxed";}
-        | AtomicReadAcquire LPar variable RPar {$myMo = "Acquire";}
-        | AtomicRead        LPar variable RPar {$myMo = "Relaxed";}
-        | RcuDereference    LPar variable RPar {$myMo = "Dereference";}
-        | SmpLoadAcquire    LPar variable RPar {$myMo = "Acquire";})                                                    # reLoad
+    |   ( ReadOnce          LPar variable RPar {$mo = "Relaxed";}
+        | AtomicReadAcquire LPar variable RPar {$mo = "Acquire";}
+        | AtomicRead        LPar variable RPar {$mo = "Relaxed";}
+        | RcuDereference    LPar variable RPar {$mo = "Dereference";}
+        | SmpLoadAcquire    LPar variable RPar {$mo = "Acquire";})                                                      # reLoad
 
 //    |   SpinTrylock LPar variable RPar                                                                                  # reSpinTryLock
 //    |   SpiIsLocked LPar variable RPar                                                                                  # reSpinIsLocked
@@ -136,18 +136,18 @@ returnExpression locals [String op, String myMo]
     |   constantValue                                                                                                   # reConst
     ;
 
-nonReturnExpression locals [String op, String myMo, String name]
+nonReturnExpression locals [String op, String mo, String name]
     :   ( AtomicAdd LPar returnExpression Comma variable RPar {$op = "+";}
         | AtomicSub LPar returnExpression Comma variable RPar {$op = "-";}
         | AtomicInc LPar variable RPar {$op = "+";}
         | AtomicDec LPar variable RPar {$op = "-";})                                                                    # nreAtomicOp
 
-    |   ( WriteOnce         LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
-        | AtomicSet         LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
-        | AtomicSetRelease  LPar variable Comma returnExpression RPar {$myMo = "Release";}
-        | SmpStoreRelease   LPar variable Comma returnExpression RPar {$myMo = "Release";}
-        | SmpStoreMb        LPar variable Comma returnExpression RPar {$myMo = "Mb";}
-        | RcuAssignPointer  LPar variable Comma returnExpression RPar {$myMo = "Release";})                             # nreStore
+    |   ( WriteOnce         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
+        | AtomicSet         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
+        | AtomicSetRelease  LPar variable Comma returnExpression RPar {$mo = "Release";}
+        | SmpStoreRelease   LPar variable Comma returnExpression RPar {$mo = "Release";}
+        | SmpStoreMb        LPar variable Comma returnExpression RPar {$mo = "Mb";}
+        | RcuAssignPointer  LPar variable Comma returnExpression RPar {$mo = "Release";})                               # nreStore
 
     |   RcuReadLock LPar RPar                                                                                           # nreRcuReadLock
     |   RcuReadUnlock LPar RPar                                                                                         # nreRcuReadUnlock
