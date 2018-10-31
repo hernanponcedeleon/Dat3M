@@ -1,69 +1,44 @@
 package dartagnan.parsers.visitors;
 
+import dartagnan.LitmusX86BaseVisitor;
 import dartagnan.LitmusX86Parser;
 import dartagnan.LitmusX86Visitor;
 import dartagnan.asserts.*;
 import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ParsingException;
+import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.program.Location;
-import dartagnan.program.Program;
 import dartagnan.program.Register;
-import dartagnan.program.Thread;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Store;
 import dartagnan.program.event.tso.Xchg;
-import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class VisitorLitmusX86
-        extends AbstractParseTreeVisitor<Object>
+        extends LitmusX86BaseVisitor<Object>
         implements LitmusX86Visitor<Object> {
 
-    private Map<String, Location> mapLocations = new HashMap<>();
-    private Map<String, List<Thread>> mapThreadEvents = new HashMap<>();
-    private Map<String, Map<String, Register>> mapRegisters = new HashMap<>();
-    private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<>();
+    private final static Set<String> fences = new HashSet<>(Arrays.asList("Mfence"));
 
-    private Program program;
+    private ProgramBuilder programBuilder = new ProgramBuilder();
     private String mainThread;
-    private int threadCount;
+    private Integer threadCount = 0;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
 
     @Override
     public Object visitMain(LitmusX86Parser.MainContext ctx) {
-        program = new Program("");
-
-        visitThreadDeclaratorList(ctx.threadDeclaratorList());
+        visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
-        visitInstructionList(ctx.instructionList());
+        visitInstructionList(ctx.program().instructionList());
         visitAssertionList(ctx.assertionList());
-
-        for(String i : mapThreadEvents.keySet()) {
-            program.add(Thread.fromList(true, mapThreadEvents.get(i)));
-        }
-        return program;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Header (not used)
-
-    @Override
-    public Object visitHeader(LitmusX86Parser.HeaderContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitHeaderComment(LitmusX86Parser.HeaderCommentContext ctx) {
-        return null;
+        return programBuilder.build();
     }
 
 
@@ -71,37 +46,26 @@ public class VisitorLitmusX86
     // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
 
     @Override
-    public Object visitVariableDeclaratorList(LitmusX86Parser.VariableDeclaratorListContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitVariableDeclarator(LitmusX86Parser.VariableDeclaratorContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        Location location = getLocation(ctx.location().getText());
-        location.setIValue(Integer.parseInt(ctx.value().getText()));
+        programBuilder.addDeclarationLocImm(ctx.location().getText(), Integer.parseInt(ctx.value().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        String thread = threadId(ctx.thread().getText());
-        Register register = getRegister(thread, ctx.r1().getText());
-        getThreadEvents(thread).add(new Local(register, new AConst(Integer.parseInt(ctx.value().getText()))));
+        programBuilder.addDeclarationRegImm(threadId(ctx.threadId().getText()), ctx.register().getText(), Integer.parseInt(ctx.value().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusX86Parser.VariableDeclaratorRegisterLocationContext ctx) {
-        String thread = threadId(ctx.thread().getText());
-        Location location = getLocation(ctx.location().getText());
-        String registerName = ctx.r1().getText();
-        getRegister(thread, registerName);
-        getMapRegLoc(thread).put(registerName, location);
+        programBuilder.addDeclarationRegLoc(threadId(ctx.threadId().getText()), ctx.register().getText(), ctx.location().getText());
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorLocationLocation(LitmusX86Parser.VariableDeclaratorLocationLocationContext ctx) {
+        programBuilder.addDeclarationLocLoc(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 
@@ -111,11 +75,9 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitThreadDeclaratorList(LitmusX86Parser.ThreadDeclaratorListContext ctx) {
-        for(LitmusX86Parser.ThreadContext threadCtx : ctx.thread()){
+        for(LitmusX86Parser.ThreadIdContext threadCtx : ctx.threadId()){
             String thread = threadId(threadCtx.ThreadIdentifier().getText());
-            mapThreadEvents.put(thread, new ArrayList<Thread>());
-            mapRegisters.put(thread, new HashMap<String, Register>());
-            mapRegistersLocations.put(thread, new HashMap<String, Location>());
+            programBuilder.initThread(thread);
             threadCount++;
         }
         return null;
@@ -126,25 +88,12 @@ public class VisitorLitmusX86
     // Instruction list (the program itself)
 
     @Override
-    public Object visitInstructionList(LitmusX86Parser.InstructionListContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
     public Object visitInstructionRow(LitmusX86Parser.InstructionRowContext ctx) {
-        for(int i = 0; i < threadCount; i++){
-            mainThread = Integer.toString(i);
-            Thread thread = (Thread)visitInstruction(ctx.instruction(i));
-            if(thread != null){
-                getThreadEvents(mainThread).add(thread);
-            }
+        for(Integer i = 0; i < threadCount; i++){
+            mainThread = i.toString();
+            visitInstruction(ctx.instruction(i));
         }
         return null;
-    }
-
-    @Override
-    public Object visitInstruction(LitmusX86Parser.InstructionContext ctx) {
-        return visitChildren(ctx);
     }
 
     @Override
@@ -154,37 +103,37 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
-        Register register = getRegister(mainThread, ctx.r1().getText());
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
         AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new Local(register, constant);
+        return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
-        Register register = getRegister(mainThread, ctx.r1().getText());
-        Location location = getLocation(ctx.location().getText());
-        return new Load(register, location, "_rx");
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        return programBuilder.addChild(mainThread, new Load(register, location, "_rx"));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
-        Location location = getLocation(ctx.location().getText());
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
         AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new Store(location, constant, "_rx");
+        return programBuilder.addChild(mainThread, new Store(location, constant, "_rx"));
     }
 
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
-        Register register = getRegister(mainThread, ctx.r1().getText(), true);
-        Location location = getLocation(ctx.location().getText());
-        return new Store(location, register, "_rx");
+        Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        return programBuilder.addChild(mainThread, new Store(location, register, "_rx"));
     }
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
-        Register register = getRegister(mainThread, ctx.r1().getText(), true);
-        Location location = getLocation(ctx.location().getText());
-        return new Xchg(location, register,"_rx");
+        Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        return programBuilder.addChild(mainThread, new Xchg(location, register,"_rx"));
     }
 
     @Override
@@ -218,20 +167,13 @@ public class VisitorLitmusX86
     }
 
     @Override
-    public Object visitMfence(LitmusX86Parser.MfenceContext ctx) {
-        return new Fence("Mfence");
-    }
-
-    @Override
-    public Object visitLfence(LitmusX86Parser.LfenceContext ctx) {
-        // TODO: Implementation
-        throw new ParsingException("LFENCE is not implemented");
-    }
-
-    @Override
-    public Thread visitSfence(LitmusX86Parser.SfenceContext ctx) {
-        // TODO: Implementation
-        throw new ParsingException("SFENCE is not implemented");
+    public Object visitFence(LitmusX86Parser.FenceContext ctx) {
+        String name = ctx.getText().toLowerCase();
+        name = name.substring(0, 1).toUpperCase() + name.substring(1);
+        if(fences.contains(name)){
+            return programBuilder.addChild(mainThread, new Fence(name));
+        }
+        throw new ParsingException("Unrecognised fence " + name);
     }
 
 
@@ -247,24 +189,30 @@ public class VisitorLitmusX86
             }
 
             ass.setType(getAssertionType(ctx));
-            program.setAss(ass);
+            programBuilder.setAssert(ass);
         }
         return null;
     }
 
     @Override
-    public Object visitAssertionLocation(LitmusX86Parser.AssertionLocationContext ctx) {
-        Location location = getLocation(ctx.location().getText());
-        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new AssertBasic(location, "==", value);
+    public Object visitAssertionBasic(LitmusX86Parser.AssertionBasicContext ctx){
+        Object arg1 = ctx.assertionValue(0).accept(this);
+        Object arg2 = ctx.assertionValue(1).accept(this);
+        return new AssertBasic(
+                arg1 instanceof Location ? (Location)arg1 : arg1 instanceof Register ? (Register)arg1 : (AConst)arg1,
+                assOp(ctx.assertionCompare().getText()),
+                arg2 instanceof Location ? (Location)arg2 : arg2 instanceof Register ? (Register)arg2 : (AConst)arg2);
     }
 
     @Override
-    public Object visitAssertionRegister(LitmusX86Parser.AssertionRegisterContext ctx) {
-        String thread = threadId(ctx.thread().getText());
-        Register register = getRegister(thread, ctx.r1().getText());
-        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new AssertBasic(register, "==", value);
+    public Object visitAssertionValue(LitmusX86Parser.AssertionValueContext ctx){
+        if(ctx.location() != null){
+            return programBuilder.getOrErrorLocation(ctx.location().getText());
+        }
+        if(ctx.register() != null){
+            return programBuilder.getOrErrorRegister(threadId(ctx.threadId().getText()), ctx.register().getText());
+        }
+        return new AConst(Integer.parseInt(ctx.value().getText()));
     }
 
     @Override
@@ -281,6 +229,11 @@ public class VisitorLitmusX86
                 (AbstractAssert) visit(ctx.assertion(0)),
                 (AbstractAssert) visit(ctx.assertion(1))
         );
+    }
+
+    @Override
+    public Object visitAssertionNot(LitmusX86Parser.AssertionNotContext ctx) {
+        return new AssertNot((AbstractAssert) visit(ctx.assertion()));
     }
 
     @Override
@@ -308,76 +261,6 @@ public class VisitorLitmusX86
         throw new ParsingException("Unknown type of assertion clause");
     }
 
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Expected values for assertion of type final, e.g.
-    //
-    // final (P0:EAX = 0 /\ P1:EBX = 0);
-    // with
-    // tso: ~exists;
-    // cc: exists;
-    //
-    // (not used)
-
-    @Override
-    public Object visitAssertionListExpectationList(LitmusX86Parser.AssertionListExpectationListContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitAssertionListExpectation(LitmusX86Parser.AssertionListExpectationContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitAssertionListExpectationTest(LitmusX86Parser.AssertionListExpectationTestContext ctx) {
-        return null;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Locations list, e.g., "locations [0:EAX; 1:EAX; x;]" (not used)
-
-    @Override
-    public Object visitVariableList(LitmusX86Parser.VariableListContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitVariable(LitmusX86Parser.VariableContext ctx) {
-        return null;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Auxiliary miscellaneous
-
-    @Override
-    public Object visitThread(LitmusX86Parser.ThreadContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitR1(LitmusX86Parser.R1Context ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitR2(LitmusX86Parser.R2Context ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitLocation(LitmusX86Parser.LocationContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitValue(LitmusX86Parser.ValueContext ctx) {
-        return null;
-    }
-
-
     // ----------------------------------------------------------------------------------------------------------------
     // Private
 
@@ -385,52 +268,7 @@ public class VisitorLitmusX86
         return threadId.replace("P", "");
     }
 
-    private Map<String, Location> getMapRegLoc(String threadName){
-        if(!(mapRegistersLocations.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        return mapRegistersLocations.get(threadName);
-    }
-
-    private Register getRegister(String threadName, String registerName, boolean failOnMissingRegister){
-        if(!failOnMissingRegister){
-            return getRegister(threadName, registerName);
-        }
-
-        if(!(mapRegisters.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        Map<String, Register> registers = mapRegisters.get(threadName);
-        if(!(registers.keySet().contains(registerName))) {
-            throw new ParsingException("Register " + registerName + " must be initialised");
-        }
-        return registers.get(registerName);
-    }
-
-    private Register getRegister(String threadName, String registerName){
-        if(!(mapRegisters.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        Map<String, Register> registers = mapRegisters.get(threadName);
-        if(!(registers.keySet().contains(registerName))) {
-            registers.put(registerName, new Register(registerName).setPrintMainThreadId(threadName));
-        }
-        return registers.get(registerName);
-    }
-
-
-    private Location getLocation(String locationName){
-        if(!mapLocations.containsKey(locationName)){
-            Location location = new Location(locationName);
-            mapLocations.put(locationName, location);
-        }
-        return mapLocations.get(locationName);
-    }
-
-    private List<Thread> getThreadEvents(String threadName){
-        if(!(mapThreadEvents.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        return mapThreadEvents.get(threadName);
+    private String assOp(String op){
+        return op.equals("=") ? "==" : op;
     }
 }

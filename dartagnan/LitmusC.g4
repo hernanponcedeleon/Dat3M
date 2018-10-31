@@ -4,31 +4,29 @@ grammar LitmusC;
 package dartagnan;
 }
 
-main
-    :   header variableDeclaratorList threadList variableList? assertionFilter? assertionList? comment? EOF
-    ;
+import LinuxLexer, LitmusBase;
 
-header
-    :   'C' ~(LeftBrace)*
+main
+    :   LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
     ;
 
 variableDeclaratorList
-    :   LeftBrace (globalDeclarator Semi comment?)* RightBrace (Semi)?
+    :   LBrace (globalDeclarator Semi comment?)* RBrace (Semi)?
     ;
 
 globalDeclarator
-    :   typeSpecifier? variable (Assign initConstantValue)?                                                             # globalDeclaratorLocation
-    |   typeSpecifier? threadVariable (Assign initConstantValue)?                                                       # globalDeclaratorRegister
-    |   typeSpecifier? variable (Assign variable)?                                                                      # globalDeclaratorLocationLocation
-    |   typeSpecifier? threadVariable (Assign variable)?                                                                # globalDeclaratorRegisterLocation
+    :   typeSpecifier? variable (Equals initConstantValue)?                                                             # globalDeclaratorLocation
+    |   typeSpecifier? threadVariable (Equals initConstantValue)?                                                       # globalDeclaratorRegister
+    |   typeSpecifier? variable (Equals variable)?                                                                      # globalDeclaratorLocationLocation
+    |   typeSpecifier? threadVariable (Equals variable)?                                                                # globalDeclaratorRegisterLocation
     ;
 
-threadList
+program
     :   thread+
     ;
 
 thread
-    :   threadIdentifier LeftParen threadArguments? RightParen LeftBrace expression* RightBrace
+    :   threadId LPar threadArguments? RPar LBrace expression* RBrace
     ;
 
 threadArguments
@@ -41,212 +39,166 @@ expression
     ;
 
 ifExpression
-    :   'if' LeftParen returnExpression RightParen expression elseExpression?
-    |   'if' LeftParen returnExpression RightParen LeftBrace expression* RightBrace elseExpression?
+    :   If LPar returnExpression RPar expression elseExpression?
+    |   If LPar returnExpression RPar LBrace expression* RBrace elseExpression?
     ;
 
 elseExpression
-    :   'else' expression
-    |   'else' LeftBrace expression* RightBrace
+    :   Else expression
+    |   Else LBrace expression* RBrace
     ;
 
 // TODO: Some tests initialize variables without a type specifier, so it makes sence to reduce this to two options
 seqExpression
-    :   typeSpecifier variable (Assign returnExpression)?                                                               # seqDeclarationReturnExpression
-    |   variable Assign returnExpression                                                                                # seqReturnExpression
+    :   typeSpecifier variable (Equals returnExpression)?                                                               # seqDeclarationReturnExpression
+    |   variable Equals returnExpression                                                                                # seqReturnExpression
     |   nonReturnExpression                                                                                             # seqNonReturnExpression
     ;
 
-returnExpression
-    :   'atomic_add_return' LeftParen returnExpression Comma variable RightParen                                        # reAtomicAddReturn
-    |   'atomic_add_return_relaxed' LeftParen returnExpression Comma variable RightParen                                # reAtomicAddReturnRelaxed
-    |   'atomic_add_return_acquire' LeftParen returnExpression Comma variable RightParen                                # reAtomicAddReturnAcquire
-    |   'atomic_add_return_release' LeftParen returnExpression Comma variable RightParen                                # reAtomicAddReturnRelease
+returnExpression locals [String op, String myMo]
+    :   ( AtomicAddReturn        LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Mb";}
+        | AtomicAddReturnRelaxed LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Relaxed";}
+        | AtomicAddReturnAcquire LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Acquire";}
+        | AtomicAddReturnRelease LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Release";}
+        | AtomicSubReturn        LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Mb";}
+        | AtomicSubReturnRelaxed LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Relaxed";}
+        | AtomicSubReturnAcquire LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Acquire";}
+        | AtomicSubReturnRelease LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Release";}
+        | AtomicIncReturn        LPar variable RPar {$op = "+"; $myMo = "Mb";}
+        | AtomicIncReturnRelaxed LPar variable RPar {$op = "+"; $myMo = "Relaxed";}
+        | AtomicIncReturnAcquire LPar variable RPar {$op = "+"; $myMo = "Acquire";}
+        | AtomicIncReturnRelease LPar variable RPar {$op = "+"; $myMo = "Release";}
+        | AtomicDecReturn        LPar variable RPar {$op = "-"; $myMo = "Mb";}
+        | AtomicDecReturnRelaxed LPar variable RPar {$op = "-"; $myMo = "Relaxed";}
+        | AtomicDecReturnAcquire LPar variable RPar {$op = "-"; $myMo = "Acquire";}
+        | AtomicDecReturnRelease LPar variable RPar {$op = "-"; $myMo = "Release";})                                    # reAtomicOpReturn
 
-    |   'atomic_sub_return' LeftParen returnExpression Comma variable RightParen                                        # reAtomicSubReturn
-    |   'atomic_sub_return_relaxed' LeftParen returnExpression Comma variable RightParen                                # reAtomicSubReturnRelaxed
-    |   'atomic_sub_return_acquire' LeftParen returnExpression Comma variable RightParen                                # reAtomicSubReturnAcquire
-    |   'atomic_sub_return_release' LeftParen returnExpression Comma variable RightParen                                # reAtomicSubReturnRelease
+    |   ( AtomicFetchAdd        LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Mb";}
+        | AtomicFetchAddRelaxed LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Relaxed";}
+        | AtomicFetchAddAcquire LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Acquire";}
+        | AtomicFetchAddRelease LPar returnExpression Comma variable RPar {$op = "+"; $myMo = "Release";}
+        | AtomicFetchSub        LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Mb";}
+        | AtomicFetchSubRelaxed LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Relaxed";}
+        | AtomicFetchSubAcquire LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Acquire";}
+        | AtomicFetchSubRelease LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Release";}
+        | AtomicFetchInc        LPar variable RPar {$op = "+"; $myMo = "Mb";}
+        | AtomicFetchIncRelaxed LPar variable RPar {$op = "+"; $myMo = "Relaxed";}
+        | AtomicFetchIncAcquire LPar variable RPar {$op = "+"; $myMo = "Acquire";}
+        | AtomicFetchIncRelease LPar variable RPar {$op = "+"; $myMo = "Release";}
+        | AtomicFetchDec        LPar variable RPar {$op = "-"; $myMo = "Mb";}
+        | AtomicFetchDecRelaxed LPar variable RPar {$op = "-"; $myMo = "Relaxed";}
+        | AtomicFetchDecAcquire LPar variable RPar {$op = "-"; $myMo = "Acquire";}
+        | AtomicFetchDecRelease LPar variable RPar {$op = "-"; $myMo = "Release";})                                     # reAtomicFetchOp
 
-    |   'atomic_inc_return' LeftParen variable RightParen                                                               # reAtomicIncReturn
-    |   'atomic_inc_return_relaxed' LeftParen variable RightParen                                                       # reAtomicIncReturnRelaxed
-    |   'atomic_inc_return_acquire' LeftParen variable RightParen                                                       # reAtomicIncReturnAcquire
-    |   'atomic_inc_return_release' LeftParen variable RightParen                                                       # reAtomicIncReturnRelease
+    |   ( AtomicXchg        LPar variable Comma returnExpression RPar {$myMo = "Mb";}
+        | AtomicXchgRelaxed LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
+        | AtomicXchgAcquire LPar variable Comma returnExpression RPar {$myMo = "Acquire";}
+        | AtomicXchgRelease LPar variable Comma returnExpression RPar {$myMo = "Release";})                             # reXchg
 
-    |   'atomic_dec_return' LeftParen variable RightParen                                                               # reAtomicDecReturn
-    |   'atomic_dec_return_relaxed' LeftParen variable RightParen                                                       # reAtomicDecReturnRelaxed
-    |   'atomic_dec_return_acquire' LeftParen variable RightParen                                                       # reAtomicDecReturnAcquire
-    |   'atomic_dec_return_release' LeftParen variable RightParen                                                       # reAtomicDecReturnRelease
+    |   ( Xchg        LPar variable Comma returnExpression RPar {$myMo = "Mb";}
+        | XchgRelaxed LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
+        | XchgAcquire LPar variable Comma returnExpression RPar {$myMo = "Acquire";}
+        | XchgRelease LPar variable Comma returnExpression RPar {$myMo = "Release";})                                   # reXchg
 
-    |   'atomic_fetch_add' LeftParen returnExpression Comma variable RightParen                                         # reAtomicFetchAdd
-    |   'atomic_fetch_add_relaxed' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchAddRelaxed
-    |   'atomic_fetch_add_acquire' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchAddAcquire
-    |   'atomic_fetch_add_release' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchAddRelease
+    |   ( AtomicCmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Mb";}
+        | AtomicCmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Relaxed";}
+        | AtomicCmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Acquire";}
+        | AtomicCmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Release";})   # reCmpXchg
 
-    |   'atomic_fetch_sub' LeftParen returnExpression Comma variable RightParen                                         # reAtomicFetchSub
-    |   'atomic_fetch_sub_relaxed' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchSubRelaxed
-    |   'atomic_fetch_sub_acquire' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchSubAcquire
-    |   'atomic_fetch_sub_release' LeftParen returnExpression Comma variable RightParen                                 # reAtomicFetchSubRelease
+    |   ( CmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Mb";}
+        | CmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Relaxed";}
+        | CmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Acquire";}
+        | CmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$myMo = "Release";})         # reCmpXchg
 
-    |   'atomic_fetch_inc' LeftParen variable RightParen                                                                # reAtomicFetchInc
-    |   'atomic_fetch_inc_relaxed' LeftParen variable RightParen                                                        # reAtomicFetchIncRelaxed
-    |   'atomic_fetch_inc_acquire' LeftParen variable RightParen                                                        # reAtomicFetchIncAcquire
-    |   'atomic_fetch_inc_release' LeftParen variable RightParen                                                        # reAtomicFetchIncRelease
+    |   ( AtomicSubAndTest LPar returnExpression Comma variable RPar {$op = "-"; $myMo = "Mb";}
+        | AtomicIncAndTest LPar variable RPar {$op = "+"; $myMo = "Mb";}
+        | AtomicDecAndTest LPar variable RPar {$op = "-"; $myMo = "Mb";})                                               # reAtomicOpAndTest
 
-    |   'atomic_fetch_dec' LeftParen variable RightParen                                                                # reAtomicFetchDec
-    |   'atomic_fetch_dec_relaxed' LeftParen variable RightParen                                                        # reAtomicFetchDecRelaxed
-    |   'atomic_fetch_dec_acquire' LeftParen variable RightParen                                                        # reAtomicFetchDecAcquire
-    |   'atomic_fetch_dec_release' LeftParen variable RightParen                                                        # reAtomicFetchDecRelease
+    |   AtomicAddUnless LPar variable Comma returnExpression Comma returnExpression RPar                                # reAtomicAddUnless
 
-    |   'atomic_xchg' LeftParen variable Comma returnExpression RightParen                                              # reAtomicXchg
-    |   'atomic_xchg_relaxed' LeftParen variable Comma returnExpression RightParen                                      # reAtomicXchgRelaxed
-    |   'atomic_xchg_acquire' LeftParen variable Comma returnExpression RightParen                                      # reAtomicXchgAcquire
-    |   'atomic_xchg_release' LeftParen variable Comma returnExpression RightParen                                      # reAtomicXchgRelease
+    |   ( ReadOnce          LPar variable RPar {$myMo = "Relaxed";}
+        | AtomicReadAcquire LPar variable RPar {$myMo = "Acquire";}
+        | AtomicRead        LPar variable RPar {$myMo = "Relaxed";}
+        | RcuDereference    LPar variable RPar {$myMo = "Dereference";}
+        | SmpLoadAcquire    LPar variable RPar {$myMo = "Acquire";})                                                    # reLoad
 
-    |   'xchg' LeftParen variable Comma returnExpression RightParen                                                     # reXchg
-    |   'xchg_relaxed' LeftParen variable Comma returnExpression RightParen                                             # reXchgRelaxed
-    |   'xchg_acquire' LeftParen variable Comma returnExpression RightParen                                             # reXchgAcquire
-    |   'xchg_release' LeftParen variable Comma returnExpression RightParen                                             # reXchgRelease
+//    |   SpinTrylock LPar variable RPar                                                                                  # reSpinTryLock
+//    |   SpiIsLocked LPar variable RPar                                                                                  # reSpinIsLocked
 
-    |   'atomic_cmpxchg' LeftParen variable Comma returnExpression Comma returnExpression RightParen                    # reAtomicCmpxchg
-    |   'atomic_cmpxchg_relaxed' LeftParen variable Comma returnExpression Comma returnExpression RightParen            # reAtomicCmpxchgRelaxed
-    |   'atomic_cmpxchg_acquire' LeftParen variable Comma returnExpression Comma returnExpression RightParen            # reAtomicCmpxchgAcquire
-    |   'atomic_cmpxchg_release' LeftParen variable Comma returnExpression Comma returnExpression RightParen            # reAtomicCmpxchgRelease
-
-    |   'cmpxchg' LeftParen variable Comma returnExpression Comma returnExpression RightParen                           # reCmpxchg
-    |   'cmpxchg_relaxed' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgRelaxed
-    |   'cmpxchg_acquire' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgAcquire
-    |   'cmpxchg_release' LeftParen variable Comma returnExpression Comma returnExpression RightParen                   # reCmpxchgRelease
-
-    |   'atomic_add_unless' LeftParen variable Comma returnExpression Comma returnExpression RightParen                 # reAtomicAddUnless
-    |   'atomic_sub_and_test' LeftParen returnExpression Comma variable RightParen                                      # reAtomicSubAndTest
-    |   'atomic_inc_and_test' LeftParen variable RightParen                                                             # reAtomicIncAndTest
-    |   'atomic_dec_and_test' LeftParen variable RightParen                                                             # reAtomicDecAndTest
-
-    |   'READ_ONCE' LeftParen variable RightParen                                                                       # reReadOnce
-    |   'atomic_read' LeftParen variable RightParen                                                                     # reAtomicRead
-    |   'rcu_dereference' LeftParen variable RightParen                                                                 # reRcuDerefence
-    |   'smp_load_acquire' LeftParen variable RightParen                                                                # reSmpLoadAcquire
-    |   'atomic_read_acquire' LeftParen variable RightParen                                                             # reAtomicReadAcquire
-
-    |   'spin_trylock' LeftParen variable RightParen                                                                    # reSpinTryLock
-    |   'spin_is_locked' LeftParen variable RightParen                                                                  # reSpinIsLocked
-
-    |   Not returnExpression                                                                                            # reOpBoolNot
+    |   Excl returnExpression                                                                                           # reOpBoolNot
     |   returnExpression opBool returnExpression                                                                        # reOpBool
     |   returnExpression opCompare returnExpression                                                                     # reOpCompare
     |   returnExpression opArith returnExpression                                                                       # reOpArith
 
-    |   LeftParen returnExpression RightParen                                                                           # reParenthesis
+    |   LPar returnExpression RPar                                                                                      # reParenthesis
     |   cast returnExpression                                                                                           # reCast
     |   variable                                                                                                        # reVariable
     |   constantValue                                                                                                   # reConst
     ;
 
-nonReturnExpression
-    :   'atomic_add' LeftParen returnExpression Comma variable RightParen                                               # nreAtomicAdd
-    |   'atomic_sub' LeftParen returnExpression Comma variable RightParen                                               # nreAtomicSub
-    |   'atomic_inc' LeftParen variable RightParen                                                                      # nreAtomicInc
-    |   'atomic_dec' LeftParen variable RightParen                                                                      # nreAtomicDec
+nonReturnExpression locals [String op, String myMo, String name]
+    :   ( AtomicAdd LPar returnExpression Comma variable RPar {$op = "+";}
+        | AtomicSub LPar returnExpression Comma variable RPar {$op = "-";}
+        | AtomicInc LPar variable RPar {$op = "+";}
+        | AtomicDec LPar variable RPar {$op = "-";})                                                                    # nreAtomicOp
 
-    |   'WRITE_ONCE' LeftParen variable Comma returnExpression RightParen                                               # nreWriteOnce
-    |   'atomic_set' LeftParen variable Comma returnExpression RightParen                                               # nreAtomicSet
-    |   'smp_store_release' LeftParen variable Comma returnExpression RightParen                                        # nreSmpStoreRelease
-    |   'atomic_set_release' LeftParen variable Comma returnExpression RightParen                                       # nreAtomicSetRelease
-    |   'rcu_assign_pointer' LeftParen variable Comma returnExpression RightParen                                       # nreRcuAssignPointer
-    |   'smp_store_mb' LeftParen variable Comma returnExpression RightParen                                             # nreSmpStoreMb
+    |   ( WriteOnce         LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
+        | AtomicSet         LPar variable Comma returnExpression RPar {$myMo = "Relaxed";}
+        | AtomicSetRelease  LPar variable Comma returnExpression RPar {$myMo = "Release";}
+        | SmpStoreRelease   LPar variable Comma returnExpression RPar {$myMo = "Release";}
+        | SmpStoreMb        LPar variable Comma returnExpression RPar {$myMo = "Mb";}
+        | RcuAssignPointer  LPar variable Comma returnExpression RPar {$myMo = "Release";})                             # nreStore
 
-    |   'smp_mb' LeftParen RightParen                                                                                   # nreSmpMb
-    |   'smp_rmb' LeftParen RightParen                                                                                  # nreSmpRmb
-    |   'smp_wmb' LeftParen RightParen                                                                                  # nreSmpWmb
-    |   'smp_mb__before_atomic' LeftParen RightParen                                                                    # nreSmpMbBeforeAtomic
-    |   'smp_mb__after_atomic' LeftParen RightParen                                                                     # nreSmpMbAfterAtomic
-    |   'smp_mb__after_spinlock' LeftParen RightParen                                                                   # nreSmpMbAfterSpinlock
+    |   RcuReadLock LPar RPar                                                                                           # nreRcuReadLock
+    |   RcuReadUnlock LPar RPar                                                                                         # nreRcuReadUnlock
+    |   ( RcuSync LPar RPar
+        | RcuSyncExpedited LPar RPar)                                                                                   # nreSynchronizeRcu
 
-    |   'rcu_read_lock' LeftParen RightParen                                                                            # nreRcuReadLock
-    |   'rcu_read_unlock' LeftParen RightParen                                                                          # nreRcuReadUnlock
-    |   'synchronize_rcu' LeftParen RightParen                                                                          # nreSynchronizeRcu
-    |   'synchronize_rcu_expedited' LeftParen RightParen                                                                # nreSynchronizeRcuExpedited
+//    |   SpinLock LPar variable RPar                                                                                     # nreSpinLock
+//    |   SpinUnlock LPar variable RPar                                                                                   # nreSpinUnlock
+//    |   SpinUnlockWait LPar variable RPar                                                                               # nreSpinUnlockWait
 
-    |   'spin_lock' LeftParen variable RightParen                                                                       # nreSpinLock
-    |   'spin_unlock' LeftParen variable RightParen                                                                     # nreSpinUnlock
-    |   'spin_unlock_wait' LeftParen variable RightParen                                                                # nreSpinUnlockWait
+    |   ( FenceSmpMb LPar RPar {$name = "Mb";}
+        | FenceSmpWMb LPar RPar {$name = "Wmb";}
+        | FenceSmpRMb LPar RPar {$name = "Rmb";}
+        | FenceSmpMbBeforeAtomic LPar RPar {$name = "Before-atomic";}
+        | FenceSmpMbAfterAtomic LPar RPar {$name = "After-atomic";}
+        | FenceSmpMbAfterSpinLock LPar RPar {$name = "After-spinlock";})                                                # nreFence
     ;
 
 variableList
-    :   'locations' LeftBracket genericVariable (Semi genericVariable)* Semi? RightBracket
+    :   Locations LBracket genericVariable (Semi genericVariable)* Semi? RBracket
     ;
 
 assertionFilter
     :   AssertionFilter assertion Semi?
     ;
 
-assertionList
-    :   (AssertionExists | AssertionExistsNot | AssertionForall) assertion Semi?
-    |   AssertionFinal assertion Semi? assertionListExpectationList
-    ;
-
-assertion
-    :   LeftParen assertion RightParen                                                                                  # assertionParenthesis
-    |   Tilde assertion                                                                                                 # assertionNot
-    |   assertion AssertionAnd assertion                                                                                # assertionAnd
-    |   assertion AssertionOr assertion                                                                                 # assertionOr
-    |   variable assertionOp constantValue                                                                              # assertionLocation
-    |   variable assertionOp threadVariable                                                                             # assertionLocationRegister
-    |   variable assertionOp variable                                                                                   # assertionLocationLocation
-    |   threadVariable assertionOp constantValue                                                                        # assertionRegister
-    |   threadVariable assertionOp threadVariable                                                                       # assertionRegisterRegister
-    |   threadVariable assertionOp variable                                                                             # assertionRegisterLocation
-    ;
-
-assertionOp
-    :   (Assign | Equal)                                                                                                # assertionOpEqual
-    |   NotEqual                                                                                                        # assertionOpNotEqual
-    ;
-
-assertionListExpectationList
-    :   'with' (assertionListExpectation)+
-    ;
-
-assertionListExpectation
-    :   assertionListExpectationTest ':' (AssertionExists | AssertionExistsNot) ';'
-    ;
-
-assertionListExpectationTest
-    :   'tso'
-    |   'cc'
-    |   'optic'
-    |   'default'
-    ;
-
-opCompare
-    :   Equal
-    |   NotEqual
-    |   LessEqual
-    |   GreaterEqual
-    |   Less
-    |   Greater
+assertionValue
+    :   variable
+    |   threadVariable
+    |   constantValue
     ;
 
 opBool
-    :   AndAnd
-    |   OrOr
+    :   AmpAmp
+    |   BarBar
+    ;
+
+opCompare
+    :   EqualsEquals
+    |   NotEquals
+    |   LessEquals
+    |   GreaterEquals
+    |   Less
+    |   Greater
     ;
 
 opArith
     :   Plus
     |   Minus
-    |   And
-    |   Or
-    ;
-
-genericVariableDeclarator
-    :   threadVariableDeclarator
-    |   variableDeclarator
-    ;
-
-threadVariableDeclarator
-    :   typeSpecifier threadVariable
+    |   Amp
+    |   Bar
     ;
 
 variableDeclarator
@@ -259,26 +211,21 @@ genericVariable
     ;
 
 threadVariable
-    :   Star threadVariable
-    |   And threadVariable
+    :   Ast threadVariable
+    |   Amp threadVariable
     |   cast threadVariable
-    |   threadIdentifier Colon Identifier
+    |   threadId Colon varName
     ;
 
 variable
-    :   Star variable
-    |   And variable
+    :   Ast variable
+    |   Amp variable
     |   cast variable
-    |   Identifier
-    ;
-
-threadIdentifier
-    :   ThreadIdentifier
-    |   DigitSequence
+    |   varName
     ;
 
 initConstantValue
-    :   'ATOMIC_INIT' LeftParen constantValue RightParen
+    :   AtomicInit LPar constantValue RPar
     |   constantValue
     ;
 
@@ -287,7 +234,7 @@ constantValue
     ;
 
 cast
-    :   LeftParen typeSpecifier Star* RightParen
+    :   LPar typeSpecifier Ast* RPar
     ;
 
 typeSpecifier
@@ -296,129 +243,74 @@ typeSpecifier
     ;
 
 basicTypeSpecifier
-    :   'int'
-    |   'intptr_t'
-    |   'char'
-    |   'void'
+    :   Int
+    |   IntPtr
+    |   Char
     ;
 
 atomicTypeSpecifier
-    :   'atomic_t'
-    |   'spinlock_t'
+    :   AtomicT
+    |   SpinlockT
+    ;
+
+varName
+    :   Underscore? Identifier (Underscore (Identifier | DigitSequence)*)*
     ;
 
 comment
-    :   LeftParen Star .*? Star RightParen
+    :   LPar Ast .*? Ast RPar
+    ;
+
+If
+    :   'if'
+    ;
+
+Else
+    :   'else'
     ;
 
 Volatile
     :   'volatile'
     ;
 
-AssertionExistsNot
-    :   '~exists'
-    |   '~ exists'
-    |   'exists not'
+Int
+    :   'int'
     ;
 
-AssertionExists
-    :   'exists'
+IntPtr
+    :   'intptr_t'
     ;
 
-AssertionFinal
-    :   'final'
+Char
+    :   'char'
     ;
 
-AssertionForall
-    :   'forall'
+AtomicT
+    :   'atomic_t'
     ;
 
-AssertionFilter
-    :   'filter'
+SpinlockT
+    :   'spinlock_t'
     ;
 
-LeftParen : '(';
-RightParen : ')';
-LeftBracket : '[';
-RightBracket : ']';
-LeftBrace : '{';
-RightBrace : '}';
-
-LessEqual : '<=';
-Less : '<';
-GreaterEqual : '>=';
-Greater : '>';
-
-Equal : '==';
-NotEqual : '!=';
-Assign : '=';
-
-PlusPlus : '++';
-Plus : '+';
-MinusMinus : '--';
-Minus : '-';
-Div : '/';
-Mod : '%';
-Star : '*';
-
-AndAnd : '&&';
-And : '&';
-OrOr : '||';
-Or : '|';
-Caret : '^';
-Not : '!';
-Tilde : '~';
-AssertionOr : '\\/';
-AssertionAnd : '/\\';
-
-Question : '?';
-Colon : ':';
-Semi : ';';
-Comma : ',';
-Period : '.';
-Quotation : '"';
-SingleQuotation : '\'';
-
-ThreadIdentifier
-    :   'P' DigitSequence
+AmpAmp
+    :   '&&'
     ;
 
-Identifier
-    :   Nondigit (Nondigit | Digit)*
+BarBar
+    :   '||'
     ;
 
-DigitSequence
-    :   Digit+
+LitmusLanguage
+    :   'C'
     ;
 
-fragment
-Nondigit
-    :   [a-zA-Z_]
-    ;
-
-fragment
-Digit
-    :   [0-9]
-    ;
-
-Whitespace
-    :   [ \t]+
+BlockComment
+    :   '/*' .*? '*/'
         -> channel(HIDDEN)
     ;
 
 LineComment
     :   '//' .*? Newline
-        -> channel(HIDDEN)
-    ;
-
-Newline
-    :   (   '\r' '\n'?
-        |   '\n'
-        )
-        -> channel(HIDDEN)
-    ;
-
-BlockComment
-    :   '/*' .*? '*/'
         -> channel(HIDDEN)
     ;

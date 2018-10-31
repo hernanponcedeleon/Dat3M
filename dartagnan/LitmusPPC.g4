@@ -4,51 +4,54 @@ grammar LitmusPPC;
 package dartagnan;
 }
 
+import LitmusBase;
+
 main
-    :    header variableDeclaratorList threadDeclaratorList instructionList (variableList)? (assertionList)? EOF
-    ;
-
-header
-    :   LitmusLanguage headerComment
-    ;
-
-headerComment
-    :   ~('{')*
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionList? EOF
     ;
 
 variableDeclaratorList
-    :   '{' (variableDeclarator)? (';' variableDeclarator)* (';')? '}' (';')?
+    :   LBrace variableDeclarator? (Semi variableDeclarator)* Semi? RBrace Semi?
     ;
 
 variableDeclarator
     :   variableDeclaratorLocation
     |   variableDeclaratorRegister
     |   variableDeclaratorRegisterLocation
+    |   variableDeclaratorLocationLocation
     ;
 
 variableDeclaratorLocation
-    :   location '=' value
+    :   location Equals value
     ;
 
 variableDeclaratorRegister
-    :   thread ':' r1 '=' value
+    :   threadId Colon register Equals value
     ;
 
 variableDeclaratorRegisterLocation
-    :   thread ':' r1 '=' location
+    :   threadId Colon register Equals location
+    ;
+
+variableDeclaratorLocationLocation
+    :   location Equals location
     ;
 
 variableList
-    :   'locations' '[' variable (';' variable)* (';')? ']'
+    :   Locations LBracket variable (Semi variable)* Semi? RBracket
     ;
 
 variable
     :   location
-    |   thread ':' r1
+    |   threadId Colon register
+    ;
+
+program
+    :   threadDeclaratorList instructionList
     ;
 
 threadDeclaratorList
-    :   thread ('|' thread)* ';'
+    :   threadId (Bar threadId)* Semi
     ;
 
 instructionList
@@ -56,7 +59,7 @@ instructionList
     ;
 
 instructionRow
-    :   instruction ('|' instruction)* ';'
+    :   instruction (Bar instruction)* Semi
     ;
 
 instruction
@@ -71,16 +74,8 @@ instruction
     |   xor
     |   cmpw
     |   label
-    |   beq
-    |   bne
-    |   blt
-    |   bgt
-    |   ble
-    |   bge
-    |   sync
-    |   lwsync
-    |   isync
-    |   eieio
+    |   branchCond
+    |   fence
     ;
 
 none
@@ -88,104 +83,59 @@ none
     ;
 
 li
-    :   'li' r1 ',' value
+    :   Li register Comma value
     ;
 
 lwz
-    :   'lwz' r1 ',' offset '(' r2 ')'
+    :   Lwz register Comma offset LPar register RPar
     ;
 
 lwzx
-    :   'lwzx' r1 ',' r2 ',' r3
+    :   Lwzx register Comma register Comma register
     ;
 
 stw
-    :   'stw' r1 ',' offset '(' r2 ')'
+    :   Stw register Comma offset LPar register RPar
     ;
 
 stwx
-    :   'stwx' r1 ',' r2 ',' r3
+    :   Stwx register Comma register Comma register
     ;
 
 mr
-    :   'mr' r1 ',' r2
+    :   Mr register Comma register
     ;
 
 addi
-    :   'addi' r1 ',' r2 ',' value
+    :   Addi register Comma register Comma value
     ;
 
 xor
-    :   'xor' r1 ',' r2 ',' r3
+    :   Xor register Comma register Comma register
     ;
 
 cmpw
-    :   'cmpw' r1 ',' r2
+    :   Cmpw register Comma register
     ;
 
 label
-    :   Label ':'
+    :   Label Colon
     ;
 
-beq
-    :   'beq' Label
+branchCond
+    :   BranchCondInstruction Label
     ;
 
-bne
-    :   'bne' Label
-    ;
-
-blt
-    :   'blt' Label
-    ;
-
-bgt
-    :   'bgt' Label
-    ;
-
-ble
-    :   'ble' Label
-    ;
-
-bge
-    :   'bge' Label
-    ;
-
-sync
-    :   'sync'
-    ;
-
-lwsync
-    :   'lwsync'
-    ;
-
-isync
-    :   'isync'
-    ;
-
-eieio
-    :   'eieio'
-    ;
-
-thread
-    :   ThreadIdentifier
-    |   DigitSequence
-    ;
-
-r1
-    :   Register
-    ;
-
-r2
-    :   Register
-    ;
-
-r3
-    :   Register
+fence
+    :   Fence
     ;
 
 location
     :   Identifier
+    ;
+
+register
+    :   Register
     ;
 
 value
@@ -196,37 +146,62 @@ offset
     :   DigitSequence
     ;
 
-assertionList
-    :   (AssertionExists | AssertionExistsNot | AssertionForall) assertion (';')?
-    |   AssertionFinal assertion (';')? assertionListExpectationList
+assertionValue
+    :   location
+    |   threadId Colon register
+    |   value
     ;
 
-assertion
-    :   '(' assertion ')'               # assertionParenthesis
-    |   assertion LogicAnd assertion    # assertionAnd
-    |   assertion LogicOr assertion     # assertionOr
-    |   location '=' value              # assertionLocation
-    |   thread ':' r1 '=' value         # assertionRegister
+Fence
+    :   'sync'
+    |   'lwsync'
+    |   'isync'
+    |   'eieio'
     ;
 
-assertionListExpectationList
-    :   'with' (assertionListExpectation)+
+BranchCondInstruction
+    :   'beq'
+    |   'bne'
+    |   'blt'
+    |   'bgt'
+    |   'ble'
+    |   'bge'
     ;
 
-assertionListExpectation
-    :   assertionListExpectationTest ':' (AssertionExists | AssertionExistsNot) ';'
+Li
+    :   'li'
     ;
 
-assertionListExpectationTest
-    :   'tso'
-    |   'cc'
-    |   'optic'
-    |   'default'
+Lwzx
+    :   'lwzx'
     ;
 
-LitmusLanguage
-    :   'PPC'
-    |   'ppc'
+Lwz
+    :   'lwz'
+    ;
+
+Stwx
+    :   'stwx'
+    ;
+
+Stw
+    :   'stw'
+    ;
+
+Mr
+    :   'mr'
+    ;
+
+Addi
+    :   'addi'
+    ;
+
+Xor
+    :   'xor'
+    ;
+
+Cmpw
+    :   'cmpw'
     ;
 
 Register
@@ -237,91 +212,7 @@ Label
     :   'LC' DigitSequence
     ;
 
-ThreadIdentifier
-    :   'P' DigitSequence
-    ;
-
-AssertionExistsNot
-    :   '~exists'
-    |   '~ exists'
-    ;
-
-AssertionExists
-    :   'exists'
-    ;
-
-AssertionFinal
-    :   'final'
-    ;
-
-AssertionForall
-    :   'forall'
-    ;
-
-LogicAnd
-    :   '/\\'
-    ;
-
-LogicOr
-    :   '\\/'
-    ;
-
-Identifier
-    :   (Letter)+ (Letter | Digit)*
-    ;
-
-DigitSequence
-    :   Digit+
-    ;
-
-Word
-    :   (Letter | Digit | Symbol)+
-    ;
-
-fragment
-Digit
-    :   [0-9]
-    ;
-
-fragment
-Letter
-    :   [A-Za-z]
-    ;
-
-fragment
-Symbol
-    :   '+'
-    |   '-'
-    |   '*'
-    |   '/'
-    |   '"'
-    |   '.'
-    |   '?'
-    |   '@'
-    |   '&'
-    |   '\''
-    |   '\\'
-    |   '_'
-    ;
-
-Whitespace
-    :   [ \t]+
-        -> skip
-    ;
-
-Newline
-    :   (   '\r' '\n'?
-        |   '\n'
-        )
-        -> skip
-    ;
-
-BlockComment
-    :   '(*' .*? '*)'
-        -> skip
-    ;
-
-ExecConfig
-    :   '<<' .*? '>>'
-        -> skip
+LitmusLanguage
+    :   'PPC'
+    |   'ppc'
     ;

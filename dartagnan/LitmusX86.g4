@@ -4,51 +4,54 @@ grammar LitmusX86;
 package dartagnan;
 }
 
+import LitmusBase;
+
 main
-    :    header variableDeclaratorList threadDeclaratorList instructionList (variableList)? (assertionList)? EOF
-    ;
-
-header
-    :   LitmusLanguage headerComment
-    ;
-
-headerComment
-    :   ~('{')*
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionList? EOF
     ;
 
 variableDeclaratorList
-    :   '{' (variableDeclarator)? (';' variableDeclarator)* (';')? '}' (';')?
+    :   LBrace variableDeclarator? (Semi variableDeclarator)* Semi? RBrace Semi?
     ;
 
 variableDeclarator
     :   variableDeclaratorLocation
     |   variableDeclaratorRegister
     |   variableDeclaratorRegisterLocation
+    |   variableDeclaratorLocationLocation
     ;
 
 variableDeclaratorLocation
-    :   location '=' value
+    :   location Equals value
     ;
 
 variableDeclaratorRegister
-    :   thread ':' r1 '=' value
+    :   threadId Colon register Equals value
     ;
 
 variableDeclaratorRegisterLocation
-    :   thread ':' r1 '=' location
+    :   threadId Colon register Equals location
+    ;
+
+variableDeclaratorLocationLocation
+    :   location Equals location
     ;
 
 variableList
-    :   'locations' '[' variable (';' variable)* (';')? ']'
+    :   Locations LBracket variable (Semi variable)* Semi? RBracket
     ;
 
 variable
     :   location
-    |   thread ':' r1
+    |   threadId Colon register
+    ;
+
+program
+    :   threadDeclaratorList instructionList
     ;
 
 threadDeclaratorList
-    :   thread ('|' thread)* ';'
+    :   threadId (Bar threadId)* Semi
     ;
 
 instructionList
@@ -56,7 +59,7 @@ instructionList
     ;
 
 instructionRow
-    :   instruction ('|' instruction)* ';'
+    :   instruction (Bar instruction)* Semi
     ;
 
 instruction
@@ -65,9 +68,7 @@ instruction
     |   loadLocationToRegister
     |   storeValueToLocation
     |   storeRegisterToLocation
-    |   mfence
-    |   lfence
-    |   sfence
+    |   fence
     |   exchangeRegisterLocation
     |   incrementLocation
     |   compareRegisterValue
@@ -81,111 +82,70 @@ none
     ;
 
 loadValueToRegister
-    :   Mov r1 ',' ('$')? value
+    :   Mov register Comma Dollar? value
     ;
 
 loadLocationToRegister
-    :   Mov r1 ',' ('[')? location (']')?
+    :   Mov register Comma LBracket? location RBracket?
     ;
 
 storeValueToLocation
-    :   Mov ('[')? location (']')? ',' ('$')? value
+    :   Mov LBracket? location RBracket? Comma Dollar? value
     ;
 
 storeRegisterToLocation
-    :   Mov ('[')? location (']')? ',' r1
+    :   Mov LBracket? location RBracket? Comma register
     ;
 
-mfence
+fence
     :   Mfence
-    ;
-
-lfence
-    :   Lfence
-    ;
-
-sfence
-    :   Sfence
+    |   Lfence
+    |   Sfence
     ;
 
 exchangeRegisterLocation
-    :   Xchg r1 ',' ('[')? location (']')?
-    |   Xchg ('[')? location (']')? ',' r1
+    :   Xchg register Comma LBracket? location RBracket?
+    |   Xchg LBracket? location RBracket? Comma register
     ;
 
 incrementLocation
-    :   Inc ('[')? location (']')?
+    :   Inc LBracket? location RBracket?
     ;
 
 compareRegisterValue
-    :   Cmp r1 ',' ('$')? value
+    :   Cmp register Comma Dollar? value
     ;
 
 compareLocationValue
-    :   Cmp ('[')? location (']')? ',' ('$')? value
+    :   Cmp LBracket? location RBracket? Comma Dollar? value
     ;
 
 addRegisterRegister
-    :   Add r1 ',' r2
+    :   Add register Comma register
     ;
 
 addRegisterValue
-    :   Add r1 ',' ('$')? value
-    ;
-
-thread
-    :   ThreadIdentifier
-    |   DigitSequence
-    ;
-
-r1
-    :   Register
-    ;
-
-r2
-    :   Register
+    :   Add register Comma Dollar? value
     ;
 
 location
     :   Identifier
     ;
 
+register
+    :   Register
+    ;
+
 value
     :   DigitSequence
     ;
 
-assertionList
-    :   (AssertionExists | AssertionExistsNot | AssertionForall) assertion (';')?
-    |   AssertionFinal assertion (';')? assertionListExpectationList
+assertionValue
+    :   location
+    |   threadId Colon register
+    |   value
     ;
 
-assertion
-    :   '(' assertion ')'               # assertionParenthesis
-    |   assertion LogicAnd assertion    # assertionAnd
-    |   assertion LogicOr assertion     # assertionOr
-    |   location '=' value              # assertionLocation
-    |   thread ':' r1 '=' value         # assertionRegister
-    ;
-
-assertionListExpectationList
-    :   'with' (assertionListExpectation)+
-    ;
-
-assertionListExpectation
-    :   assertionListExpectationTest ':' (AssertionExists | AssertionExistsNot) ';'
-    ;
-
-assertionListExpectationTest
-    :   'tso'
-    |   'cc'
-    |   'optic'
-    |   'default'
-    ;
-
-LitmusLanguage
-    :   'X86'
-    |   'x86'
-    ;
 
 Mov
     :   'MOV'
@@ -238,91 +198,7 @@ Register
     |   'EDI'
     ;
 
-ThreadIdentifier
-    :   'P' DigitSequence
-    ;
-
-AssertionExistsNot
-    :   '~exists'
-    |   '~ exists'
-    ;
-
-AssertionExists
-    :   'exists'
-    ;
-
-AssertionFinal
-    :   'final'
-    ;
-
-AssertionForall
-    :   'forall'
-    ;
-
-LogicAnd
-    :   '/\\'
-    ;
-
-LogicOr
-    :   '\\/'
-    ;
-
-Identifier
-    :   (Letter)+ (Letter | Digit)*
-    ;
-
-DigitSequence
-    :   Digit+
-    ;
-
-Word
-    :   (Letter | Digit | Symbol)+
-    ;
-
-fragment
-Digit
-    :   [0-9]
-    ;
-
-fragment
-Letter
-    :   [A-Za-z]
-    ;
-
-fragment
-Symbol
-    :   '+'
-    |   '-'
-    |   '*'
-    |   '/'
-    |   '"'
-    |   '.'
-    |   '?'
-    |   '@'
-    |   '&'
-    |   '\''
-    |   '\\'
-    |   '_'
-    ;
-
-Whitespace
-    :   [ \t]+
-        -> skip
-    ;
-
-Newline
-    :   (   '\r' '\n'?
-        |   '\n'
-        )
-        -> skip
-    ;
-
-BlockComment
-    :   '(*' .*? '*)'
-        -> skip
-    ;
-
-ExecConfig
-    :   '<<' .*? '>>'
-        -> skip
+LitmusLanguage
+    :   'X86'
+    |   'x86'
     ;

@@ -1,75 +1,43 @@
 package dartagnan.parsers.visitors;
 
+import dartagnan.LitmusPPCBaseVisitor;
 import dartagnan.LitmusPPCParser;
 import dartagnan.LitmusPPCVisitor;
 import dartagnan.asserts.*;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
-import dartagnan.parsers.utils.ParsingException;
-import dartagnan.parsers.utils.branch.BareIf;
-import dartagnan.program.Location;
-import dartagnan.program.Program;
-import dartagnan.program.Register;
-import dartagnan.program.Thread;
+import dartagnan.parsers.utils.*;
+import dartagnan.parsers.utils.branch.Cmp;
+import dartagnan.parsers.utils.branch.CondJump;
+import dartagnan.program.*;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Store;
-import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 import java.util.*;
 
 public class VisitorLitmusPPC
-        extends AbstractParseTreeVisitor<Object>
+        extends LitmusPPCBaseVisitor<Object>
         implements LitmusPPCVisitor<Object> {
 
-    private Map<String, Location> mapLocations = new HashMap<>();
-    private Map<String, List<Thread>> mapThreadEvents = new HashMap<>();
-    private Map<String, Map<String, Register>> mapRegisters = new HashMap<>();
-    private Map<String, Map<String, Location>> mapRegistersLocations = new HashMap<>();
+    private final static Set<String> fences = new HashSet<>(Arrays.asList("Sync", "Lwsync", "Isync"));
 
-    private Map<String, Stack<String>> branchingStacks = new HashMap<>();
-    private String effectiveThread;
-
-    private Program program;
+    private ProgramBuilder programBuilder = new ProgramBuilder();
     private String mainThread;
-    private int threadCount;
+    private Integer threadCount = 0;
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
 
     @Override
     public Object visitMain(LitmusPPCParser.MainContext ctx) {
-        program = new Program("");
-
-        visitThreadDeclaratorList(ctx.threadDeclaratorList());
+        visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
-        visitInstructionList(ctx.instructionList());
+        visitInstructionList(ctx.program().instructionList());
         visitAssertionList(ctx.assertionList());
-
-        // This can happen if a program contains arbitrary jumps not matching if / else structures
-        if(threadCount != mapThreadEvents.size()){
-            throw new ParsingException("Not supported instruction sequence");
-        }
-
-        for(String i : mapThreadEvents.keySet()) {
-            program.add(Thread.fromList(true, mapThreadEvents.get(i)));
-        }
-        return program;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Header (not used)
-
-    @Override
-    public Object visitHeader(LitmusPPCParser.HeaderContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitHeaderComment(LitmusPPCParser.HeaderCommentContext ctx) {
-        return null;
+        return programBuilder.build();
     }
 
 
@@ -77,37 +45,26 @@ public class VisitorLitmusPPC
     // Variable declarator list, e.g., { 0:EAX=0; 1:EAX=1; x=2; }
 
     @Override
-    public Object visitVariableDeclaratorList(LitmusPPCParser.VariableDeclaratorListContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitVariableDeclarator(LitmusPPCParser.VariableDeclaratorContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
     public Object visitVariableDeclaratorLocation(LitmusPPCParser.VariableDeclaratorLocationContext ctx) {
-        Location location = getLocation(ctx.location().getText());
-        location.setIValue(Integer.parseInt(ctx.value().getText()));
+        programBuilder.addDeclarationLocImm(ctx.location().getText(), Integer.parseInt(ctx.value().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        String thread = threadId(ctx.thread().getText());
-        Register register = getRegister(thread, ctx.r1().getText());
-        getThreadEvents(thread).add(new Local(register, new AConst(Integer.parseInt(ctx.value().getText()))));
+        programBuilder.addDeclarationRegImm(threadId(ctx.threadId().getText()), ctx.register().getText(), Integer.parseInt(ctx.value().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPPCParser.VariableDeclaratorRegisterLocationContext ctx) {
-        String thread = threadId(ctx.thread().getText());
-        Location location = getLocation(ctx.location().getText());
-        String registerName = ctx.r1().getText();
-        getRegister(thread, registerName);
-        getMapRegLoc(thread).put(registerName, location);
+        programBuilder.addDeclarationRegLoc(threadId(ctx.threadId().getText()), ctx.register().getText(), ctx.location().getText());
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorLocationLocation(LitmusPPCParser.VariableDeclaratorLocationLocationContext ctx) {
+        programBuilder.addDeclarationLocLoc(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 
@@ -117,16 +74,8 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitThreadDeclaratorList(LitmusPPCParser.ThreadDeclaratorListContext ctx) {
-        for(LitmusPPCParser.ThreadContext threadCtx : ctx.thread()){
-            String thread = threadId(threadCtx.ThreadIdentifier().getText());
-            mapThreadEvents.put(thread, new ArrayList<Thread>());
-            mapRegisters.put(thread, new HashMap<String, Register>());
-            mapRegistersLocations.put(thread, new HashMap<String, Location>());
-
-            Stack<String> stack = new Stack<String>();
-            stack.push(thread);
-            branchingStacks.put(thread, stack);
-
+        for(LitmusPPCParser.ThreadIdContext threadCtx : ctx.threadId()){
+            programBuilder.initThread(threadId(threadCtx.ThreadIdentifier().getText()));
             threadCount++;
         }
         return null;
@@ -137,26 +86,12 @@ public class VisitorLitmusPPC
     // Instruction list (the program itself)
 
     @Override
-    public Object visitInstructionList(LitmusPPCParser.InstructionListContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    @Override
     public Object visitInstructionRow(LitmusPPCParser.InstructionRowContext ctx) {
-        for(int i = 0; i < threadCount; i++){
-            mainThread = Integer.toString(i);
-            effectiveThread = effectiveThread();
-            Thread thread = (Thread)visitInstruction(ctx.instruction(i));
-            if(thread != null){
-                getThreadEvents(effectiveThread()).add(thread);
-            }
+        for(Integer i = 0; i < threadCount; i++){
+            mainThread = i.toString();
+            visitInstruction(ctx.instruction(i));
         }
         return null;
-    }
-
-    @Override
-    public Object visitInstruction(LitmusPPCParser.InstructionContext ctx) {
-        return visitChildren(ctx);
     }
 
     @Override
@@ -166,16 +101,16 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
-        Register register = getRegister(mainThread, ctx.r1().getText());
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
         AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new Local(register, constant);
+        return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
-        Register r1 = getRegister(mainThread, ctx.r1().getText());
-        Location location = getLocationForRegister(mainThread, ctx.r2().getText());
-        return new Load(r1, location, "_rx");
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Location location = programBuilder.getLocForReg(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new Load(r1, location, "_rx"));
     }
 
     @Override
@@ -186,9 +121,9 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
-        Register r1 = getRegister(mainThread, ctx.r1().getText(), true);
-        Location location = getLocationForRegister(mainThread, ctx.r2().getText());
-        return new Store(location, r1, "_rx");
+        Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
+        Location location = programBuilder.getLocForReg(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new Store(location, r1, "_rx"));
     }
 
     @Override
@@ -199,137 +134,55 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitMr(LitmusPPCParser.MrContext ctx) {
-        Register r1 = getRegister(mainThread, ctx.r1().getText());
-        Register r2 = getRegister(mainThread, ctx.r2().getText());
-        return new Local(r1, r2);
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new Local(r1, r2));
     }
 
     @Override
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
-        Register r1 = getRegister(mainThread, ctx.r1().getText());
-        Register r2 = getRegister(mainThread, ctx.r2().getText());
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new Local(r1, new AExpr(r2, "+", constant));
+        return programBuilder.addChild(mainThread, new Local(r1, new AExpr(r2, "+", constant)));
     }
 
     @Override
     public Object visitXor(LitmusPPCParser.XorContext ctx) {
-        Register r1 = getRegister(mainThread, ctx.r1().getText());
-        Register r2 = getRegister(mainThread, ctx.r2().getText());
-        Register r3 = getRegister(mainThread, ctx.r3().getText());
-        return new Local(r1, new AExpr(r2, "xor", r3));
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
+        return programBuilder.addChild(mainThread, new Local(r1, new AExpr(r2, "xor", r3)));
     }
 
     @Override
     public Object visitCmpw(LitmusPPCParser.CmpwContext ctx) {
-        Register r1 = getRegister(mainThread, ctx.r1().getText());
-        Register r2 = getRegister(mainThread, ctx.r2().getText());
-        return new BareIf(r1, r2);
+        Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
+        Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new Cmp(r1, r2));
     }
 
     @Override
-    public Object visitBeq(LitmusPPCParser.BeqContext ctx) {
-        return visitBranchCondition("==", ctx.Label().getText());
-    }
-
-    @Override
-    public Object visitBne(LitmusPPCParser.BneContext ctx) {
-        return visitBranchCondition("!=", ctx.Label().getText());
-    }
-
-    @Override
-    public Object visitBlt(LitmusPPCParser.BltContext ctx) {
-        return visitBranchCondition("<", ctx.Label().getText());
-    }
-
-    @Override
-    public Object visitBgt(LitmusPPCParser.BgtContext ctx) {
-        return visitBranchCondition(">", ctx.Label().getText());
-    }
-
-    @Override
-    public Object visitBle(LitmusPPCParser.BleContext ctx) {
-        return visitBranchCondition("<=", ctx.Label().getText());
-    }
-
-    @Override
-    public Object visitBge(LitmusPPCParser.BgeContext ctx) {
-        return visitBranchCondition(">=", ctx.Label().getText());
-    }
-
-    private Object visitBranchCondition(String op, String label){
-        Thread lastEvent = getLastEvent(effectiveThread);
-        if(!(lastEvent instanceof BareIf)){
-            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
-        }
-        ((BareIf)lastEvent).setOp(op);
-        ((BareIf)lastEvent).setElseLabel(label);
-        forkBranch();
-        return null;
-    }
-
-    private void forkBranch(){
-        String branchId = UUID.randomUUID().toString();
-        branchingStacks.get(mainThread).push(branchId);
-        mapThreadEvents.put(branchId, new ArrayList<Thread>());
-    }
-
-    private Thread closeBranch(){
-        List<Thread> branchingThreadInstructions = mapThreadEvents.remove(effectiveThread);
-        Thread branchingThread = Thread.fromList(true, branchingThreadInstructions);
-        branchingStacks.get(mainThread).pop();
-        return branchingThread;
+    public Object visitBranchCond(LitmusPPCParser.BranchCondContext ctx) {
+        return programBuilder.addChild(mainThread, new CondJump(
+                ctx.BranchCondInstruction().getText(),
+                programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText())
+        ));
     }
 
     @Override
     public Object visitLabel(LitmusPPCParser.LabelContext ctx) {
-        String label = ctx.Label().getText();
-        boolean branchFound = false;
+        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+    }
 
-        while(true){
-            String parentThreadId = parentThread();
-            Thread lastEvent = getLastEvent(parentThreadId);
-            List<Thread> parentThreadInstructions = getThreadEvents(parentThreadId);
-
-            if(!(lastEvent instanceof BareIf)
-                    || ((BareIf)lastEvent).getElseLabel() == null
-                    || !((BareIf)lastEvent).getElseLabel().equals(label)){
-                if(!branchFound){
-                    throw new ParsingException("Not supported instruction sequence");
-                }
-                break;
-            }
-
-            branchFound = true;
-
-            ((BareIf)lastEvent).setT2(closeBranch());
-            parentThreadInstructions.remove(parentThreadInstructions.size() - 1);
-
-            getThreadEvents(effectiveThread()).add(((BareIf)lastEvent).toIf());
-            effectiveThread = effectiveThread();
+    @Override
+    public Object visitFence(LitmusPPCParser.FenceContext ctx) {
+        String name = ctx.getText().toLowerCase();
+        name = name.substring(0, 1).toUpperCase() + name.substring(1);
+        if(fences.contains(name)){
+            return programBuilder.addChild(mainThread, new Fence(name));
         }
-        return null;
-    }
-
-    @Override
-    public Object visitSync(LitmusPPCParser.SyncContext ctx) {
-        return new Fence("Sync");
-    }
-
-    @Override
-    public Object visitLwsync(LitmusPPCParser.LwsyncContext ctx) {
-        return new Fence("Lwsync");
-    }
-
-    @Override
-    public Object visitIsync(LitmusPPCParser.IsyncContext ctx) {
-        return new Fence("Isync");
-    }
-
-    @Override
-    public Object visitEieio(LitmusPPCParser.EieioContext ctx) {
-        // TODO: Implementation
-        throw new ParsingException("eieio is not implemented");
+        throw new ParsingException("Unrecognised fence " + name);
     }
 
 
@@ -345,24 +198,30 @@ public class VisitorLitmusPPC
             }
 
             ass.setType(getAssertionType(ctx));
-            program.setAss(ass);
+            programBuilder.setAssert(ass);
         }
         return null;
     }
 
     @Override
-    public Object visitAssertionLocation(LitmusPPCParser.AssertionLocationContext ctx) {
-        Location location = getLocation(ctx.location().getText());
-        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new AssertBasic(location, "==", value);
+    public Object visitAssertionBasic(LitmusPPCParser.AssertionBasicContext ctx){
+        Object arg1 = ctx.assertionValue(0).accept(this);
+        Object arg2 = ctx.assertionValue(1).accept(this);
+        return new AssertBasic(
+                arg1 instanceof Location ? (Location)arg1 : arg1 instanceof Register ? (Register)arg1 : (AConst)arg1,
+                assOp(ctx.assertionCompare().getText()),
+                arg2 instanceof Location ? (Location)arg2 : arg2 instanceof Register ? (Register)arg2 : (AConst)arg2);
     }
 
     @Override
-    public Object visitAssertionRegister(LitmusPPCParser.AssertionRegisterContext ctx) {
-        String thread = threadId(ctx.thread().getText());
-        Register register = getRegister(thread, ctx.r1().getText());
-        AConst value = new AConst(Integer.parseInt(ctx.value().getText()));
-        return new AssertBasic(register, "==", value);
+    public Object visitAssertionValue(LitmusPPCParser.AssertionValueContext ctx){
+        if(ctx.location() != null){
+            return programBuilder.getOrErrorLocation(ctx.location().getText());
+        }
+        if(ctx.register() != null){
+            return programBuilder.getOrErrorRegister(threadId(ctx.threadId().getText()), ctx.register().getText());
+        }
+        return new AConst(Integer.parseInt(ctx.value().getText()));
     }
 
     @Override
@@ -379,6 +238,11 @@ public class VisitorLitmusPPC
                 (AbstractAssert) visit(ctx.assertion(0)),
                 (AbstractAssert) visit(ctx.assertion(1))
         );
+    }
+
+    @Override
+    public Object visitAssertionNot(LitmusPPCParser.AssertionNotContext ctx) {
+        return new AssertNot((AbstractAssert) visit(ctx.assertion()));
     }
 
     @Override
@@ -408,173 +272,13 @@ public class VisitorLitmusPPC
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Expected values for assertion of type final, e.g.
-    //
-    // final (P0:EAX = 0 /\ P1:EBX = 0);
-    // with
-    // tso: ~exists;
-    // cc: exists;
-    //
-    // (not used)
-
-    @Override
-    public Object visitAssertionListExpectationList(LitmusPPCParser.AssertionListExpectationListContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitAssertionListExpectation(LitmusPPCParser.AssertionListExpectationContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitAssertionListExpectationTest(LitmusPPCParser.AssertionListExpectationTestContext ctx) {
-        return null;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Locations list, e.g., "locations [0:EAX; 1:EAX; x;]" (not used)
-
-    @Override
-    public Object visitVariableList(LitmusPPCParser.VariableListContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitVariable(LitmusPPCParser.VariableContext ctx) {
-        return null;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Auxiliary miscellaneous
-
-    @Override
-    public Object visitThread(LitmusPPCParser.ThreadContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitR1(LitmusPPCParser.R1Context ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitR2(LitmusPPCParser.R2Context ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitR3(LitmusPPCParser.R3Context ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitLocation(LitmusPPCParser.LocationContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitValue(LitmusPPCParser.ValueContext ctx) {
-        return null;
-    }
-
-    @Override
-    public Object visitOffset(LitmusPPCParser.OffsetContext ctx) {
-        return null;
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
     // Private
 
     private String threadId(String threadId){
         return threadId.replace("P", "");
     }
 
-    private String effectiveThread(){
-        return branchingStacks.get(mainThread).peek();
-    }
-
-    private String parentThread(){
-        if(effectiveThread().equals(mainThread)){
-            return mainThread;
-        }
-
-        Stack<String> stack = branchingStacks.get(mainThread);
-        String self = stack.pop();
-        String parent = stack.peek();
-        stack.push(self);
-        return parent;
-    }
-
-    private Map<String, Location> getMapRegLoc(String threadName){
-        if(!(mapRegistersLocations.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        return mapRegistersLocations.get(threadName);
-    }
-
-    private Register getRegister(String threadName, String registerName, boolean failOnMissingRegister){
-        if(!failOnMissingRegister){
-            return getRegister(threadName, registerName);
-        }
-
-        if(!(mapRegisters.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        Map<String, Register> registers = mapRegisters.get(threadName);
-        if(!(registers.keySet().contains(registerName))) {
-            throw new ParsingException("Register " + registerName + " must be initialised");
-        }
-        return registers.get(registerName);
-    }
-
-    private Register getRegister(String threadName, String registerName){
-        if(!(mapRegisters.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        Map<String, Register> registers = mapRegisters.get(threadName);
-        if(!(registers.keySet().contains(registerName))) {
-            registers.put(registerName, new Register(registerName).setPrintMainThreadId(threadName));
-        }
-        return registers.get(registerName);
-    }
-
-
-    private Location getLocation(String locationName){
-        if(!mapLocations.containsKey(locationName)){
-            Location location = new Location(locationName);
-            mapLocations.put(locationName, location);
-        }
-        return mapLocations.get(locationName);
-    }
-
-    private Location getLocationForRegister(String threadName, String registerName){
-        if(!mapRegistersLocations.containsKey(threadName)){
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        Map<String, Location> registerLocationMap = mapRegistersLocations.get(threadName);
-        if(!registerLocationMap.containsKey(registerName)){
-            throw new ParsingException("Register " + registerName + " must be initialized to a location");
-        }
-        return registerLocationMap.get(registerName);
-    }
-
-    private List<Thread> getThreadEvents(String threadName){
-        if(!(mapThreadEvents.keySet().contains(threadName))) {
-            throw new ParsingException("Unknown thread " + threadName);
-        }
-        return mapThreadEvents.get(threadName);
-    }
-
-    private Thread getLastEvent(String threadName){
-        List<Thread> events = getThreadEvents(threadName);
-        int size = events.size();
-        if(size == 0){
-            throw new ParsingException("Invalid instruction sequence in thread " + mainThread);
-        }
-        return events.get(size - 1);
+    private String assOp(String op){
+        return op.equals("=") ? "==" : op;
     }
 }

@@ -23,6 +23,10 @@ public class Program extends Thread {
     private AbstractAssert assFilter;
 	private List<Thread> threads;
 
+    public Program(){
+        this("");
+    }
+
 	public Program (String name) {
 		this.name = name;
 		this.threads = new ArrayList<>();
