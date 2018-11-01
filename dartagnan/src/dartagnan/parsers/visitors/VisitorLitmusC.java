@@ -3,7 +3,6 @@ package dartagnan.parsers.visitors;
 import dartagnan.LitmusCBaseVisitor;
 import dartagnan.LitmusCParser;
 import dartagnan.LitmusCVisitor;
-import dartagnan.asserts.*;
 import dartagnan.expression.*;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
@@ -24,10 +23,14 @@ public class VisitorLitmusC
         extends LitmusCBaseVisitor<Object>
         implements LitmusCVisitor<Object> {
 
-    private ProgramBuilder programBuilder = new ProgramBuilder();
+    private ProgramBuilder programBuilder;
     private Stack<ExprInterface> returnStack = new Stack<>();
     private Stack<RCUReadLock> rcuLockStack = new Stack<>();
     private String currentThread;
+
+    public VisitorLitmusC(ProgramBuilder pb){
+        this.programBuilder = pb;
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
@@ -36,8 +39,6 @@ public class VisitorLitmusC
     public Object visitMain(LitmusCParser.MainContext ctx) {
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
-        visitAssertionFilter(ctx.assertionFilter());
-        visitAssertionList(ctx.assertionList());
         return programBuilder.build();
     }
 
@@ -84,7 +85,7 @@ public class VisitorLitmusC
     @Override
     public Object visitThread(LitmusCParser.ThreadContext ctx) {
         visitThreadArguments(ctx.threadArguments());
-        currentThread = threadId(ctx.threadId().getText());
+        currentThread = ctx.threadId().id;
         programBuilder.initThread(currentThread);
         Thread result = visitExpressionSequence(ctx);
 
@@ -127,11 +128,7 @@ public class VisitorLitmusC
     @Override
     public Thread visitSeqDeclarationReturnExpression(LitmusCParser.SeqDeclarationReturnExpressionContext ctx){
         String varName = visitVariable(ctx.variable());
-        if(programBuilder.getRegister(currentThread, varName) != null){
-            throw new ParsingException("Local variable " + currentThread + ":" + varName + " has been already initialised");
-        }
         Register register = programBuilder.getOrCreateRegister(currentThread, varName);
-
         if(ctx.returnExpression() != null){
             Thread t = (Thread)ctx.returnExpression().accept(this);
             Thread result = new Local(register, returnStack.pop());
@@ -388,110 +385,14 @@ public class VisitorLitmusC
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Assertions
-
-    @Override
-    public Object visitAssertionFilter(LitmusCParser.AssertionFilterContext ctx) {
-        if(ctx != null){
-            programBuilder.setAssertFilter((AbstractAssert)visit(ctx.assertion()));
-        }
-        return null;
-    }
-
-
-    @Override
-    public Object visitAssertionList(LitmusCParser.AssertionListContext ctx) {
-        if(ctx != null){
-            AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
-            if(ctx.AssertionForall() != null){
-                ass = new AssertNot(ass);
-            }
-
-            ass.setType(getAssertionType(ctx));
-            programBuilder.setAssert(ass);
-        }
-        return null;
-    }
-
-    @Override
-    public Object visitAssertionParenthesis(LitmusCParser.AssertionParenthesisContext ctx) {
-        return visit(ctx.assertion());
-    }
-
-
-    @Override
-    public Object visitAssertionAnd(LitmusCParser.AssertionAndContext ctx) {
-        return new AssertCompositeAnd(
-                (AbstractAssert) visit(ctx.assertion(0)),
-                (AbstractAssert) visit(ctx.assertion(1))
-        );
-    }
-
-    @Override
-    public Object visitAssertionOr(LitmusCParser.AssertionOrContext ctx) {
-        return new AssertCompositeOr(
-                (AbstractAssert) visit(ctx.assertion(0)),
-                (AbstractAssert) visit(ctx.assertion(1))
-        );
-    }
-
-    @Override
-    public Object visitAssertionNot(LitmusCParser.AssertionNotContext ctx) {
-        return new AssertNot((AbstractAssert) visit(ctx.assertion()));
-    }
-
-    @Override
-    public Object visitAssertionBasic(LitmusCParser.AssertionBasicContext ctx){
-        Object arg1 = ctx.assertionValue(0).accept(this);
-        Object arg2 = ctx.assertionValue(1).accept(this);
-        return new AssertBasic(
-                arg1 instanceof Location ? (Location)arg1 : arg1 instanceof Register ? (Register)arg1 : (AConst)arg1,
-                assOp(ctx.assertionCompare().getText()),
-                arg2 instanceof Location ? (Location)arg2 : arg2 instanceof Register ? (Register)arg2 : (AConst)arg2);
-    }
-
-    @Override
-    public Object visitAssertionValue(LitmusCParser.AssertionValueContext ctx){
-        if(ctx.variable() != null){
-            return programBuilder.getOrCreateLocation(visitVariable(ctx.variable()));
-        }
-        if(ctx.threadVariable() != null){
-            return visitThreadVariable(ctx.threadVariable());
-        }
-        return new AConst(Integer.parseInt(ctx.constantValue().getText()));
-    }
-
-    private String getAssertionType(LitmusCParser.AssertionListContext ctx){
-        if(ctx.AssertionExists() != null){
-            return AbstractAssert.ASSERT_TYPE_EXISTS;
-        }
-
-        if(ctx.AssertionExistsNot() != null){
-            return AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
-        }
-
-        if(ctx.AssertionFinal() != null){
-            return AbstractAssert.ASSERT_TYPE_FINAL;
-        }
-
-        if(ctx.AssertionForall() != null){
-            return AbstractAssert.ASSERT_TYPE_FORALL;
-        }
-
-        throw new ParsingException("Unknown type of assertion clause");
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
     // Utils
 
     @Override
     // Here we know that it is thread local variable (register)
     public Register visitThreadVariable(LitmusCParser.ThreadVariableContext ctx) {
         if(ctx.threadId() != null && ctx.varName() != null){
-            String thread = threadId(ctx.threadId().getText());
             String variableName = ctx.varName().getText();
-            return programBuilder.getOrCreateRegister(thread, variableName);
+            return programBuilder.getOrCreateRegister(ctx.threadId().id, variableName);
         }
         return visitThreadVariable(ctx.threadVariable());
     }
@@ -504,18 +405,6 @@ public class VisitorLitmusC
             return ctx.varName().getText();
         }
         return visitVariable(ctx.variable());
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Private
-
-    private String threadId(String threadId){
-        return threadId.replace("P", "");
-    }
-
-    private String assOp(String op){
-        return op.equals("=") ? "==" : op;
     }
 
     private Pair<Thread, ExprInterface> acceptRetValue(LitmusCParser.ReturnExpressionContext ctx){

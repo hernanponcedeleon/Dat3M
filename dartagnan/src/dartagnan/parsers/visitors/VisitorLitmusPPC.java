@@ -3,7 +3,6 @@ package dartagnan.parsers.visitors;
 import dartagnan.LitmusPPCBaseVisitor;
 import dartagnan.LitmusPPCParser;
 import dartagnan.LitmusPPCVisitor;
-import dartagnan.asserts.*;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
 import dartagnan.parsers.utils.*;
@@ -23,10 +22,13 @@ public class VisitorLitmusPPC
 
     private final static Set<String> fences = new HashSet<>(Arrays.asList("Sync", "Lwsync", "Isync"));
 
-    private ProgramBuilder programBuilder = new ProgramBuilder();
+    private ProgramBuilder programBuilder;
     private String mainThread;
     private Integer threadCount = 0;
 
+    public VisitorLitmusPPC(ProgramBuilder pb){
+        this.programBuilder = pb;
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Entry point
@@ -36,7 +38,6 @@ public class VisitorLitmusPPC
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
-        visitAssertionList(ctx.assertionList());
         return programBuilder.build();
     }
 
@@ -52,13 +53,13 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.addDeclarationRegImm(threadId(ctx.threadId().getText()), ctx.register().getText(), Integer.parseInt(ctx.value().getText()));
+        programBuilder.addDeclarationRegImm(ctx.threadId().id, ctx.register().getText(), Integer.parseInt(ctx.value().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPPCParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.addDeclarationRegLoc(threadId(ctx.threadId().getText()), ctx.register().getText(), ctx.location().getText());
+        programBuilder.addDeclarationRegLoc(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
         return null;
     }
 
@@ -75,7 +76,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitThreadDeclaratorList(LitmusPPCParser.ThreadDeclaratorListContext ctx) {
         for(LitmusPPCParser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadId(threadCtx.ThreadIdentifier().getText()));
+            programBuilder.initThread(threadCtx.id);
             threadCount++;
         }
         return null;
@@ -91,11 +92,6 @@ public class VisitorLitmusPPC
             mainThread = i.toString();
             visitInstruction(ctx.instruction(i));
         }
-        return null;
-    }
-
-    @Override
-    public Object visitNone(LitmusPPCParser.NoneContext ctx) {
         return null;
     }
 
@@ -183,102 +179,5 @@ public class VisitorLitmusPPC
             return programBuilder.addChild(mainThread, new Fence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Assertions
-
-    @Override
-    public Object visitAssertionList(LitmusPPCParser.AssertionListContext ctx) {
-        if(ctx != null){
-            AbstractAssert ass = (AbstractAssert) visit(ctx.assertion());
-            if(ctx.AssertionForall() != null){
-                ass = new AssertNot(ass);
-            }
-
-            ass.setType(getAssertionType(ctx));
-            programBuilder.setAssert(ass);
-        }
-        return null;
-    }
-
-    @Override
-    public Object visitAssertionBasic(LitmusPPCParser.AssertionBasicContext ctx){
-        Object arg1 = ctx.assertionValue(0).accept(this);
-        Object arg2 = ctx.assertionValue(1).accept(this);
-        return new AssertBasic(
-                arg1 instanceof Location ? (Location)arg1 : arg1 instanceof Register ? (Register)arg1 : (AConst)arg1,
-                assOp(ctx.assertionCompare().getText()),
-                arg2 instanceof Location ? (Location)arg2 : arg2 instanceof Register ? (Register)arg2 : (AConst)arg2);
-    }
-
-    @Override
-    public Object visitAssertionValue(LitmusPPCParser.AssertionValueContext ctx){
-        if(ctx.location() != null){
-            return programBuilder.getOrErrorLocation(ctx.location().getText());
-        }
-        if(ctx.register() != null){
-            return programBuilder.getOrErrorRegister(threadId(ctx.threadId().getText()), ctx.register().getText());
-        }
-        return new AConst(Integer.parseInt(ctx.value().getText()));
-    }
-
-    @Override
-    public Object visitAssertionAnd(LitmusPPCParser.AssertionAndContext ctx) {
-        return new AssertCompositeAnd(
-                (AbstractAssert) visit(ctx.assertion(0)),
-                (AbstractAssert) visit(ctx.assertion(1))
-        );
-    }
-
-    @Override
-    public Object visitAssertionOr(LitmusPPCParser.AssertionOrContext ctx) {
-        return new AssertCompositeOr(
-                (AbstractAssert) visit(ctx.assertion(0)),
-                (AbstractAssert) visit(ctx.assertion(1))
-        );
-    }
-
-    @Override
-    public Object visitAssertionNot(LitmusPPCParser.AssertionNotContext ctx) {
-        return new AssertNot((AbstractAssert) visit(ctx.assertion()));
-    }
-
-    @Override
-    public Object visitAssertionParenthesis(LitmusPPCParser.AssertionParenthesisContext ctx) {
-        return visit(ctx.assertion());
-    }
-
-    private String getAssertionType(LitmusPPCParser.AssertionListContext ctx){
-        if(ctx.AssertionExists() != null){
-            return AbstractAssert.ASSERT_TYPE_EXISTS;
-        }
-
-        if(ctx.AssertionExistsNot() != null){
-            return AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
-        }
-
-        if(ctx.AssertionFinal() != null){
-            return AbstractAssert.ASSERT_TYPE_FINAL;
-        }
-
-        if(ctx.AssertionForall() != null){
-            return AbstractAssert.ASSERT_TYPE_FORALL;
-        }
-
-        throw new ParsingException("Unknown type of assertion clause");
-    }
-
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Private
-
-    private String threadId(String threadId){
-        return threadId.replace("P", "");
-    }
-
-    private String assOp(String op){
-        return op.equals("=") ? "==" : op;
     }
 }

@@ -6,9 +6,6 @@ package dartagnan;
 
 import LitmusBase;
 
-main
-    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionList? EOF
-    ;
 
 variableDeclaratorList
     :   LBrace variableDeclarator? (Semi variableDeclarator)* Semi? RBrace Semi?
@@ -63,7 +60,7 @@ instructionRow
     ;
 
 instruction
-    :   none
+    :
     |   loadValueToRegister
     |   loadLocationToRegister
     |   storeValueToLocation
@@ -75,10 +72,6 @@ instruction
     |   compareLocationValue
     |   addRegisterRegister
     |   addRegisterValue
-    ;
-
-none
-    :
     ;
 
 loadValueToRegister
@@ -140,10 +133,10 @@ value
     :   DigitSequence
     ;
 
-assertionValue
-    :   location
-    |   threadId Colon register
-    |   value
+assertionValue returns [IntExprInterface v]
+    :   l = location    {$v = pb.getOrCreateLocation($l.text);}
+    |   t = threadId Colon r = register {$v = pb.getOrCreateRegister($t.id, $r.text);}
+    |   imm = value    { $v = new AConst(Integer.parseInt($imm.text)); }
     ;
 
 

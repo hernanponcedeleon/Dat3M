@@ -3,6 +3,7 @@ grammar Porthos;
 @header{
 package dartagnan;
 import dartagnan.asserts.*;
+import dartagnan.asserts.utils.Op;
 import dartagnan.program.*;
 import dartagnan.program.event.*;
 import dartagnan.expression.*;
@@ -193,12 +194,12 @@ assertion returns [AbstractAssert ass]
     | a1 = assertion BARBAR a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
     | l = location '=' value = DIGIT{
         Location loc = $l.loc;
-        $ass = new AssertBasic(loc, "==", new AConst(Integer.parseInt($value.getText())));
+        $ass = new AssertBasic(loc, Op.EQ, new AConst(Integer.parseInt($value.getText())));
       }
     | thrd = DIGIT ':' r = register '=' value = DIGIT {
         Register regPointer = $r.reg;
         Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
-        $ass = new AssertBasic(reg, "==", new AConst(Integer.parseInt($value.getText())));
+        $ass = new AssertBasic(reg, Op.EQ, new AConst(Integer.parseInt($value.getText())));
       };
 
 program [String name] returns [Program p]:

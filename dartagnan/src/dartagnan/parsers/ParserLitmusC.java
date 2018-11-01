@@ -2,6 +2,7 @@ package dartagnan.parsers;
 
 import dartagnan.LitmusCLexer;
 import dartagnan.LitmusCParser;
+import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.visitors.VisitorLitmusC;
 import dartagnan.program.Program;
 import org.antlr.v4.runtime.*;
@@ -23,8 +24,10 @@ public class ParserLitmusC implements ParserInterface {
 
         LitmusCParser parser = new LitmusCParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
-        ParserRuleContext parserEntryPoint = parser.main();
-        VisitorLitmusC visitor = new VisitorLitmusC();
+        ProgramBuilder pb = new ProgramBuilder();
+        ParserRuleContext parserEntryPoint = parser.main(pb);
+        VisitorLitmusC visitor = new VisitorLitmusC(pb);
+
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);

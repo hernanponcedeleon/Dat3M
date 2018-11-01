@@ -6,10 +6,6 @@ package dartagnan;
 
 import LinuxLexer, LitmusBase;
 
-main
-    :   LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
-    ;
-
 variableDeclaratorList
     :   LBrace (globalDeclarator Semi comment?)* RBrace (Semi)?
     ;
@@ -170,14 +166,10 @@ variableList
     :   Locations LBracket genericVariable (Semi genericVariable)* Semi? RBracket
     ;
 
-assertionFilter
-    :   AssertionFilter assertion Semi?
-    ;
-
-assertionValue
-    :   variable
-    |   threadVariable
-    |   constantValue
+assertionValue returns [IntExprInterface v]
+    :   l = variable    {$v = pb.getOrCreateLocation($l.text);}
+    |   t = threadVariable {$v = pb.getOrCreateRegister($t.tid, $t.name);}
+    |   imm = constantValue { $v = new AConst(Integer.parseInt($imm.text)); }
     ;
 
 opBool
@@ -210,11 +202,11 @@ genericVariable
     |   variable
     ;
 
-threadVariable
-    :   Ast threadVariable
-    |   Amp threadVariable
-    |   cast threadVariable
-    |   threadId Colon varName
+threadVariable returns [String tid, String name]
+    :   Ast v = threadVariable {$tid = $v.tid; $name = $v.name;}
+    |   Amp v = threadVariable {$tid = $v.tid; $name = $v.name;}
+    |   cast v = threadVariable  {$tid = $v.tid; $name = $v.name;}
+    |   t = threadId Colon n = varName  {$tid = $t.id; $name = $n.text;}
     ;
 
 variable
@@ -255,10 +247,6 @@ atomicTypeSpecifier
 
 varName
     :   Underscore? Identifier (Underscore (Identifier | DigitSequence)*)*
-    ;
-
-comment
-    :   LPar Ast .*? Ast RPar
     ;
 
 If
