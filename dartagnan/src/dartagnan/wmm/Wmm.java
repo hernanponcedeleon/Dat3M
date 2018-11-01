@@ -21,7 +21,7 @@ import java.util.*;
 public class Wmm {
 
     private List<Axiom> axioms = new ArrayList<>();
-    private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
+    private Map<String, FilterAbstract> filters = new HashMap<>();
     private RelationRepository relationRepository;
     private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 

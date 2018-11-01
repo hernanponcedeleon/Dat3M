@@ -20,9 +20,6 @@ program                                     :;
 variableList                                :;
 assertionValue returns [IntExprInterface v] :;
 
-// Must be overwritten in child grammars
-LitmusLanguage  :   'BaseLitmusLanguage';
-
 
 main [ProgramBuilder p]
     :    {pb = p;} LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
@@ -143,6 +140,9 @@ GreaterEquals
 ThreadIdentifier
     :   'P' DigitSequence
     ;
+
+// Must be overwritten in child grammars
+LitmusLanguage  :   'BaseLitmusLanguage';
 
 Identifier
     :   (Letter)+ (Letter | Digit)*
