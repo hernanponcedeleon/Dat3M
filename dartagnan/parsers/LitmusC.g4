@@ -1,7 +1,7 @@
 grammar LitmusC;
 
 @header{
-package dartagnan;
+package dartagnan.parsers;
 }
 
 import LinuxLexer, LitmusBase;

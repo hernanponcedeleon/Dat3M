@@ -7,11 +7,11 @@ export LD_LIBRARY_PATH=$LIB
 export DYLD_LIBRARY_PATH=$LIB
 export CLASSPATH=$(JARS=("$LIB"/*.jar); IFS=:; echo "${JARS[*]}")
 
-java -jar import/antlr-4.7-complete.jar Cat.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar Porthos.g4 -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar LitmusC.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar LitmusPPC.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar LitmusX86.g4 -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/Cat.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/Porthos.g4 -Werror -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusC.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusPPC.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusX86.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 
 mkdir -p $OUT
 find src -name *.java > sources.txt

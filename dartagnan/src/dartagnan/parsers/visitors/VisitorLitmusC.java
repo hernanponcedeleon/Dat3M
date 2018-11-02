@@ -1,8 +1,8 @@
 package dartagnan.parsers.visitors;
 
-import dartagnan.LitmusCBaseVisitor;
-import dartagnan.LitmusCParser;
-import dartagnan.LitmusCVisitor;
+import dartagnan.parsers.LitmusCBaseVisitor;
+import dartagnan.parsers.LitmusCParser;
+import dartagnan.parsers.LitmusCVisitor;
 import dartagnan.expression.*;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;

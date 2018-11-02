@@ -1,7 +1,5 @@
 package dartagnan.parsers;
 
-import dartagnan.LitmusPPCLexer;
-import dartagnan.LitmusPPCParser;
 import dartagnan.parsers.utils.ParserErrorListener;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.visitors.VisitorLitmusPPC;

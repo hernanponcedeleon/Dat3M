@@ -1,7 +1,5 @@
 package dartagnan.parsers;
 
-import dartagnan.LitmusCLexer;
-import dartagnan.LitmusCParser;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.visitors.VisitorLitmusC;
 import dartagnan.program.Program;

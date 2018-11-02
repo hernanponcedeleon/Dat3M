@@ -1,7 +1,7 @@
 grammar Cat;
 @header{
-    package dartagnan;
-    import dartagnan.wmm.axiom.*;
+package dartagnan.parsers;
+import dartagnan.wmm.axiom.*;
 }
 
 mcm

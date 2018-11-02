@@ -1,7 +1,7 @@
 grammar Porthos;
 
 @header{
-package dartagnan;
+package dartagnan.parsers;
 import dartagnan.asserts.*;
 import dartagnan.asserts.utils.Op;
 import dartagnan.program.*;

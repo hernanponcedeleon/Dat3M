@@ -1,7 +1,7 @@
 package dartagnan.parsers.cat;
 
-import dartagnan.CatLexer;
-import dartagnan.CatParser;
+import dartagnan.parsers.CatLexer;
+import dartagnan.parsers.CatParser;
 import dartagnan.parsers.cat.visitors.VisitorBase;
 import dartagnan.wmm.Wmm;
 import org.antlr.v4.runtime.*;

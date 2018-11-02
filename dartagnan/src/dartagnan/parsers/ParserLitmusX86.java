@@ -1,7 +1,5 @@
 package dartagnan.parsers;
 
-import dartagnan.LitmusX86Lexer;
-import dartagnan.LitmusX86Parser;
 import dartagnan.parsers.utils.ParserErrorListener;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.visitors.VisitorLitmusX86;

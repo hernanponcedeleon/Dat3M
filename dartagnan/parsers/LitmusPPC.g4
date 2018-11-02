@@ -1,7 +1,7 @@
 grammar LitmusPPC;
 
 @header{
-package dartagnan;
+package dartagnan.parsers;
 }
 
 import LitmusBase;

@@ -1,8 +1,8 @@
 package dartagnan.parsers.visitors;
 
-import dartagnan.LitmusPPCBaseVisitor;
-import dartagnan.LitmusPPCParser;
-import dartagnan.LitmusPPCVisitor;
+import dartagnan.parsers.LitmusPPCBaseVisitor;
+import dartagnan.parsers.LitmusPPCParser;
+import dartagnan.parsers.LitmusPPCVisitor;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
 import dartagnan.parsers.utils.*;

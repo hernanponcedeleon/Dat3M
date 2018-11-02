@@ -1,7 +1,7 @@
 grammar LitmusX86;
 
 @header{
-package dartagnan;
+package dartagnan.parsers;
 }
 
 import LitmusBase;

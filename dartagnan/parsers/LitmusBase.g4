@@ -21,8 +21,11 @@ variableList                                :;
 assertionValue returns [IntExprInterface v] :;
 
 
-main [ProgramBuilder p]
-    :    {pb = p;} LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
+main [ProgramBuilder programBuilder]
+@init {
+    pb = programBuilder;
+}
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
     ;
 
 assertionFilter

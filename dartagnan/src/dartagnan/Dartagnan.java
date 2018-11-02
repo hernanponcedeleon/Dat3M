@@ -7,6 +7,8 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
+import dartagnan.parsers.PorthosLexer;
+import dartagnan.parsers.PorthosParser;
 import dartagnan.parsers.cat.ParserCat;
 import dartagnan.program.Program;
 import dartagnan.utils.Graph;

@@ -1,8 +1,8 @@
 package dartagnan.parsers.cat.visitors;
 
-import dartagnan.CatBaseVisitor;
-import dartagnan.CatParser;
-import dartagnan.CatVisitor;
+import dartagnan.parsers.CatBaseVisitor;
+import dartagnan.parsers.CatParser;
+import dartagnan.parsers.CatVisitor;
 import dartagnan.parsers.cat.utils.CatSyntaxException;
 import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.Wmm;
