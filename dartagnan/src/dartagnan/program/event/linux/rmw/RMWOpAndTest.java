@@ -4,6 +4,8 @@ import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.Atom;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.op.COpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -14,9 +16,9 @@ import dartagnan.program.event.rmw.RMWStore;
 
 public class RMWOpAndTest extends RMWAbstract {
 
-    private String op;
+    private AOpBin op;
 
-    public RMWOpAndTest(Location location, Register register, ExprInterface value, String op) {
+    public RMWOpAndTest(Location location, Register register, ExprInterface value, AOpBin op) {
         super(location, register, value, "Mb");
         this.op = op;
     }
@@ -28,7 +30,7 @@ public class RMWOpAndTest extends RMWAbstract {
             RMWLoad load = new RMWLoad(dummy, loc, "Relaxed");
             Local local1 = new Local(dummy, new AExpr(dummy, op, value));
             RMWStore store = new RMWStore(load, loc, dummy, "Relaxed");
-            Local local2 = new Local(reg, new Atom(dummy, "==", new AConst(0)));
+            Local local2 = new Local(reg, new Atom(dummy, COpBin.EQ, new AConst(0)));
 
             compileBasic(load);
             compileBasic(store);

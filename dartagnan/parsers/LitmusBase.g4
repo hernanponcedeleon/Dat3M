@@ -1,9 +1,10 @@
 grammar LitmusBase;
 
 import BaseLexer;
+
 @header{
 import dartagnan.asserts.*;
-import dartagnan.asserts.utils.Op;
+import dartagnan.expression.op.COpBin;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.*;
 import dartagnan.expression.AConst;
@@ -40,10 +41,10 @@ assertionList
     ;
 
 assertion returns [AbstractAssert ass]
-    :   LPar a = assertion RPar   { $ass = $a.ass; }
-    |   AssertionNot a = assertion    { $ass = new AssertNot($a.ass); }
-    |   a1 = assertion AssertionAnd a2 = assertion  { $ass = new AssertCompositeAnd($a1.ass, $a2.ass); }
-    |   a1 = assertion AssertionOr a2 = assertion   { $ass = new AssertCompositeOr($a1.ass, $a2.ass); }
+    :   LPar a = assertion RPar { $ass = $a.ass; }
+    |   AssertionNot a = assertion { $ass = new AssertNot($a.ass); }
+    |   a1 = assertion AssertionAnd a2 = assertion { $ass = new AssertCompositeAnd($a1.ass, $a2.ass); }
+    |   a1 = assertion AssertionOr a2 = assertion { $ass = new AssertCompositeOr($a1.ass, $a2.ass); }
     |   v1 = assertionValue op = assertionCompare v2 = assertionValue { $ass = new AssertBasic($v1.v, $op.op, $v2.v); }
     ;
 
@@ -55,13 +56,13 @@ assertionListExpectation
     :   AssertionListExpectationTest Colon (AssertionExists | AssertionExistsNot) Semi
     ;
 
-assertionCompare returns [Op op]
-    :   (Equals | EqualsEquals) {$op = Op.EQ;}
-    |   NotEquals               {$op = Op.NEQ;}
-    |   GreaterEquals           {$op = Op.GTE;}
-    |   LessEquals              {$op = Op.LTE;}
-    |   Less                    {$op = Op.LT;}
-    |   Greater                 {$op = Op.GT;}
+assertionCompare returns [COpBin op]
+    :   (Equals | EqualsEquals) {$op = COpBin.EQ;}
+    |   NotEquals               {$op = COpBin.NEQ;}
+    |   GreaterEquals           {$op = COpBin.GTE;}
+    |   LessEquals              {$op = COpBin.LTE;}
+    |   Less                    {$op = COpBin.LT;}
+    |   Greater                 {$op = COpBin.GT;}
     ;
 
 threadId returns [String id]

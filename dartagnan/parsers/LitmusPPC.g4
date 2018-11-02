@@ -115,7 +115,7 @@ label
     ;
 
 branchCond
-    :   BranchCondInstruction Label
+    :   cond Label
     ;
 
 fence
@@ -144,6 +144,15 @@ assertionValue returns [IntExprInterface v]
     |   imm = value    { $v = new AConst(Integer.parseInt($imm.text)); }
     ;
 
+cond returns [COpBin op]
+    :   Beq {$op = COpBin.EQ;}
+    |   Bne {$op = COpBin.NEQ;}
+    |   Bge {$op = COpBin.GTE;}
+    |   Ble {$op = COpBin.LTE;}
+    |   Bgt {$op = COpBin.GT;}
+    |   Blt {$op = COpBin.LT;}
+    ;
+
 Fence
     :   'sync'
     |   'lwsync'
@@ -151,21 +160,34 @@ Fence
     |   'eieio'
     ;
 
-BranchCondInstruction
+Beq
     :   'beq'
-    |   'bne'
-    |   'blt'
-    |   'bgt'
-    |   'ble'
-    |   'bge'
     ;
 
-Li
-    :   'li'
+Bne
+    :   'bne'
     ;
 
-Lwzx
-    :   'lwzx'
+Blt
+    :   'blt'
+    ;
+
+Bgt
+    :   'bgt'
+    ;
+
+Ble
+    :   'ble'
+    ;
+
+Bge
+    :   'bge'
+    ;
+
+Li  :   'li'
+    ;
+
+Lwzx:   'lwzx'
     ;
 
 Lwz

@@ -2,6 +2,7 @@ package dartagnan.expression;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import dartagnan.expression.op.COpBin;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
@@ -12,16 +13,16 @@ public class Atom extends BExpr implements ExprInterface {
 	
 	private AExpr lhs;
 	private AExpr rhs;
-	private String op;
+	private COpBin op;
 	
-	public Atom (ExprInterface lhs, String op, ExprInterface rhs) {
+	public Atom (ExprInterface lhs, COpBin op, ExprInterface rhs) {
         if(!(lhs instanceof AExpr) || !(rhs instanceof AExpr)){
             // TODO: Implementation
             throw new RuntimeException("Atom is not implemented for BExpr arguments");
         }
 		this.lhs = (AExpr)lhs;
 		this.rhs = (AExpr)rhs;
-		this.op = op;	
+		this.op = op;
 	}
 
     @Override
@@ -36,21 +37,7 @@ public class Atom extends BExpr implements ExprInterface {
 
     @Override
 	public BoolExpr toZ3(MapSSA map, Context ctx) {
-		switch(op) {
-			case "==":
-				return ctx.mkEq(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case "!=":
-				return ctx.mkNot(ctx.mkEq(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx)));
-			case "<":
-				return ctx.mkLt(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case "<=":
-				return ctx.mkLe(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case ">":
-				return ctx.mkGt(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case ">=":
-				return ctx.mkGe(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-		}
-		throw new RuntimeException("Unrecognised operator " + op);
+		return op.encode(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx), ctx);
 	}
 
     @Override

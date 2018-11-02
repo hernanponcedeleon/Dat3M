@@ -3,6 +3,8 @@ package dartagnan.program.event.linux.rmw;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.Atom;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.op.COpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -24,8 +26,8 @@ public class RMWAddUnless extends RMWAbstract {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
             RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, loc, "Relaxed");
-            RMWStoreCond store = new RMWStoreCond(load, loc, new AExpr(dummy, "+", value), "Relaxed");
-            Local local = new Local(reg, new Atom(dummy, "!=", cmp));
+            RMWStoreCond store = new RMWStoreCond(load, loc, new AExpr(dummy, AOpBin.PLUS, value), "Relaxed");
+            Local local = new Local(reg, new Atom(dummy, COpBin.NEQ, cmp));
 
             compileBasic(load);
             compileBasic(store);

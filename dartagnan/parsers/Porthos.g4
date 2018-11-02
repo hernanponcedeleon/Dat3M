@@ -3,7 +3,7 @@ grammar Porthos;
 @header{
 package dartagnan.parsers;
 import dartagnan.asserts.*;
-import dartagnan.asserts.utils.Op;
+import dartagnan.expression.op.*;
 import dartagnan.program.*;
 import dartagnan.program.event.*;
 import dartagnan.expression.*;
@@ -17,9 +17,33 @@ private Map<String, Location> mapLocs = new HashMap<String, Location>();
 private Map<String, Map<String, Register>> mapRegs = new HashMap<String, Map<String, Register>>();
 }
 
+op_arith returns [AOpBin op]
+    : ADD {$op = AOpBin.PLUS;}
+    | SUB {$op = AOpBin.MINUS;}
+    | MULT {$op = AOpBin.MULT;}
+    | DIV {$op = AOpBin.DIV;}
+    | AMP {$op = AOpBin.AND;}
+    | BAR {$op = AOpBin.OR;}
+    | XOR {$op = AOpBin.XOR;}
+    ;
+
+op_bool returns [BOpBin op]
+    : AND {$op = BOpBin.AND;}
+    | OR {$op = BOpBin.OR;}
+    ;
+
+op_comp returns [COpBin op]
+    : EQ {$op = COpBin.EQ;}
+    | NEQ {$op = COpBin.NEQ;}
+    | LEQ {$op = COpBin.LTE;}
+    | LT {$op = COpBin.LT;}
+    | GEQ {$op = COpBin.GTE;}
+    | GT {$op = COpBin.GT;}
+    ;
+
 arith_expr [String mainThread] returns [AExpr expr]:
-	| e1 = arith_atom [mainThread] op = ARITH_OP e2 = arith_atom [mainThread] {
-		$expr = new AExpr($e1.expr, $op.getText(), $e2.expr);
+	| e1 = arith_atom [mainThread] op = op_arith e2 = arith_atom [mainThread] {
+		$expr = new AExpr($e1.expr, $op.op, $e2.expr);
 	}
 	| e = arith_atom [mainThread] {
 		$expr = $e.expr;
@@ -34,14 +58,14 @@ arith_atom [String mainThread] returns [AExpr expr]:
 		$expr = $e.expr;
 	};
 arith_comp [String mainThread] returns [BExpr expr]: 
-	LPAR a1 = arith_expr [mainThread] op = COMP_OP a2 = arith_expr [mainThread] RPAR {
-		$expr = new Atom($a1.expr, $op.getText(), $a2.expr);
+	LPAR a1 = arith_expr [mainThread] op = op_comp a2 = arith_expr [mainThread] RPAR {
+		$expr = new Atom($a1.expr, $op.op, $a2.expr);
 	};
 
 bool_expr [String mainThread] returns [BExpr expr]: 
 	| b = bool_atom [mainThread] {$expr = $b.expr;}
-	| b1 = bool_atom [mainThread] op = BOOL_OP b2 = bool_atom [mainThread] {
-		$expr = new BExpr($b1.expr, $op.getText(), $b2.expr);
+	| b1 = bool_atom [mainThread] op = op_bool b2 = bool_atom [mainThread] {
+		$expr = new BExprBin($b1.expr, $op.op, $b2.expr);
 	};
 bool_atom [String mainThread] returns [BExpr expr]: 
 	| ('True' | 'true') {$expr = new BConst(true);}
@@ -194,12 +218,12 @@ assertion returns [AbstractAssert ass]
     | a1 = assertion BARBAR a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
     | l = location '=' value = DIGIT{
         Location loc = $l.loc;
-        $ass = new AssertBasic(loc, Op.EQ, new AConst(Integer.parseInt($value.getText())));
+        $ass = new AssertBasic(loc, COpBin.EQ, new AConst(Integer.parseInt($value.getText())));
       }
     | thrd = DIGIT ':' r = register '=' value = DIGIT {
         Register regPointer = $r.reg;
         Register reg = mapRegs.get($thrd.getText()).get(regPointer.getName());
-        $ass = new AssertBasic(reg, Op.EQ, new AConst(Integer.parseInt($value.getText())));
+        $ass = new AssertBasic(reg, COpBin.EQ, new AConst(Integer.parseInt($value.getText())));
       };
 
 program [String name] returns [Program p]:
@@ -226,9 +250,6 @@ program [String name] returns [Program p]:
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
-COMP_OP : EQ | NEQ | LEQ | LT | GEQ | GT;
-ARITH_OP : ADD | SUB | MULT | DIV | MOD | AMP | BAR | XOR ;
-BOOL_OP : AND | OR; 
 
 DIGIT : [0-9]+;
 WORD : (LETTER | DIGIT)+;
@@ -251,7 +272,6 @@ ADD : '+';
 SUB : '-';
 MULT : '*';
 DIV : '/';
-MOD : '%';
 AMPAMP : '&&';
 BARBAR : '||';
 AMP : '&';

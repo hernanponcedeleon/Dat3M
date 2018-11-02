@@ -1,6 +1,7 @@
 package dartagnan.expression;
 
 import com.microsoft.z3.*;
+import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 
@@ -11,11 +12,11 @@ public class AExpr implements ExprInterface {
 
 	private AExpr lhs;
 	private AExpr rhs;
-	private String op;
+	private AOpBin op;
 
 	public AExpr() {};
 	
-	public AExpr(ExprInterface lhs, String op, ExprInterface rhs) {
+	public AExpr(ExprInterface lhs, AOpBin op, ExprInterface rhs) {
 	    if(!(lhs instanceof AExpr) || !(rhs instanceof AExpr)){
 	        // TODO: Implementation
 	        throw new RuntimeException("AExpr is not implemented for BExpr arguments");
@@ -37,23 +38,7 @@ public class AExpr implements ExprInterface {
 
     @Override
 	public ArithExpr toZ3(MapSSA map, Context ctx) {
-		switch(op) {
-			case "+":
-				return ctx.mkAdd(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case "-":
-				return ctx.mkSub(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case "*":
-				return ctx.mkMul(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case "/":
-				return ctx.mkDiv(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-			case "&":
-				return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, (IntExpr) lhs.toZ3(map, ctx)), ctx.mkInt2BV(32, (IntExpr) rhs.toZ3(map, ctx))), false);
-			case "|":
-				return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr) lhs.toZ3(map, ctx)), ctx.mkInt2BV(32, (IntExpr) rhs.toZ3(map, ctx))), false);
-			case "xor":
-				return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr) lhs.toZ3(map, ctx)), ctx.mkInt2BV(32, (IntExpr) rhs.toZ3(map, ctx))), false);
-		}
-		throw new RuntimeException("Unrecognised arithmetic operator " + op);
+	    return op.encode(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx), ctx);
 	}
 
     @Override

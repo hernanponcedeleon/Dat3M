@@ -1,33 +1,19 @@
 package dartagnan.parsers.utils.branch;
 
 import dartagnan.expression.Atom;
+import dartagnan.expression.op.COpBin;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.If;
 
-import java.util.Map;
-import static java.util.Map.entry;
-
 public class CondJump extends Event {
 
-    private static final Map<String, String> condMap = Map.ofEntries(
-            entry("beq", "=="),
-            entry("bne", "!="),
-            entry("bgt", ">"),
-            entry("blt", "<"),
-            entry("bge", ">="),
-            entry("ble", "<=")
-    );
-
-    private final String op;
+    private final COpBin op;
     private Label label;
     private Cmp cmp;
 
-    public CondJump(String op, Label label){
-        this.op = op.toLowerCase();
-        if(!condMap.containsKey(this.op)){
-            throw new RuntimeException("Unrecognised conditional jump " + op);
-        }
+    public CondJump(COpBin op, Label label){
+        this.op = op;
         this.label = label;
     }
 
@@ -40,7 +26,7 @@ public class CondJump extends Event {
     }
 
     public If toIf(Thread t1, Thread t2){
-        return new If(new Atom(cmp.getLeft(), condMap.get(op), cmp.getRight()), t1, t2);
+        return new If(new Atom(cmp.getLeft(), op, cmp.getRight()), t1, t2);
     }
 
     @Override

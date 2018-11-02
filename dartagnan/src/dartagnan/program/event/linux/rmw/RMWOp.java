@@ -2,6 +2,7 @@ package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -12,9 +13,9 @@ import dartagnan.program.utils.linux.EType;
 
 public class RMWOp extends RMWAbstract {
 
-    private String op;
+    private AOpBin op;
 
-    public RMWOp(Location location, ExprInterface value, String op) {
+    public RMWOp(Location location, ExprInterface value, AOpBin op) {
         super(location, new Register(null), value, "Relaxed");
         this.op = op;
         addFilters(EType.NORETURN);

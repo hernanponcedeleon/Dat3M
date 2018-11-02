@@ -2,6 +2,7 @@ package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -11,9 +12,9 @@ import dartagnan.program.event.rmw.RMWStore;
 
 public class RMWFetchOp extends RMWAbstract {
 
-    private String op;
+    private AOpBin op;
 
-    public RMWFetchOp(Location location, Register register, ExprInterface value, String op, String atomic) {
+    public RMWFetchOp(Location location, Register register, ExprInterface value, AOpBin op, String atomic) {
         super(location, register, value, atomic);
         this.op = op;
     }

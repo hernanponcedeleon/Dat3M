@@ -1,6 +1,5 @@
 package dartagnan.expression;
 
-import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import dartagnan.program.Register;
@@ -28,7 +27,7 @@ public class AConst extends AExpr implements ExprInterface, IntExprInterface {
 	}
 
 	@Override
-	public ArithExpr toZ3(MapSSA map, Context ctx) {
+	public IntExpr toZ3(MapSSA map, Context ctx) {
 		return ctx.mkInt(value);
 	}
 

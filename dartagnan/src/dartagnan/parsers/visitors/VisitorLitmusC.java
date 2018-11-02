@@ -1,5 +1,6 @@
 package dartagnan.parsers.visitors;
 
+import dartagnan.expression.op.BOpUn;
 import dartagnan.parsers.LitmusCBaseVisitor;
 import dartagnan.parsers.LitmusCParser;
 import dartagnan.parsers.LitmusCVisitor;
@@ -240,7 +241,7 @@ public class VisitorLitmusC
         ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
-        returnStack.push(new Atom(v1, ctx.opCompare().getText(), v2));
+        returnStack.push(new Atom(v1, ctx.opCompare().op, v2));
         return Thread.fromArray(false, t1, t2);
     }
 
@@ -250,7 +251,7 @@ public class VisitorLitmusC
         ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
-        returnStack.push(new AExpr(v1, ctx.opArith().getText(), v2));
+        returnStack.push(new AExpr(v1, ctx.opArith().op, v2));
         return Thread.fromArray(false, t1, t2);
     }
 
@@ -260,8 +261,7 @@ public class VisitorLitmusC
         ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
-        String op = ctx.opBool().getText().equals("&&") ? "and" : "or";
-        returnStack.push(new BExpr(v1, op, v2));
+        returnStack.push(new BExprBin(v1, ctx.opBool().op, v2));
         return Thread.fromArray(false, t1, t2);
     }
 
@@ -269,7 +269,7 @@ public class VisitorLitmusC
     public Thread visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
         Thread t = (Thread)ctx.returnExpression().accept(this);
         ExprInterface v = returnStack.pop();
-        returnStack.push(new BExpr(v, "not", null));
+        returnStack.push(new BExprUn(BOpUn.NOT, v));
         return t;
     }
 
