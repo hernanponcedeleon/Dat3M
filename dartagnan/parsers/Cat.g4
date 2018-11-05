@@ -78,7 +78,7 @@ RBRAC   :   ']';
 
 FENCEREL    :   'fencerel';
 
-NAME    : [A-Za-z0-9\-_]+;
+NAME    : [A-Za-z0-9\-_.]+;
 
 LINE_COMMENT
     :   '//' ~[\n]*

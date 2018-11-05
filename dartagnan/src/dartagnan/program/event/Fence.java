@@ -28,9 +28,9 @@ public class Fence extends Event {
 	@Override
 	public String toString() {
 		if(atomic == null){
-			return nTimesCondLevel() + name;
+			return nTimesCondLevel() + getName();
 		}
-		return nTimesCondLevel() + name + " " + atomic;
+		return nTimesCondLevel() + getName() + " " + atomic;
 	}
 
 	@Override

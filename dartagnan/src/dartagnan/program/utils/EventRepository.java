@@ -35,7 +35,7 @@ public class EventRepository {
 
     public static final int MEMORY = INIT | LOAD | STORE;
     public static final int RCU = RCU_LOCK | RCU_UNLOCK | RCU_SYNC;
-    public static final int VISIBLE = MEMORY | RCU;
+    public static final int VISIBLE = MEMORY | FENCE | RCU;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
     private Set<Location> locations;
