@@ -8,6 +8,7 @@ import dartagnan.expression.AExpr;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
+import dartagnan.parsers.utils.branch.Label;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
@@ -139,10 +140,10 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitBranchRegister(LitmusAArch64Parser.BranchRegisterContext ctx) {
-        throw new RuntimeException("Branch register is not implemented");
-        //Register register = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
-        //programBuilder.addChild(mainThread, new Cmp(register, new AConst(0)));
-        //return programBuilder.addChild(mainThread, new CondJump(ctx.branchRegInstruction().op, programBuilder.getOrCreateLabel(mainThread, ctx.label().getText())));
+        Register register = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
+        programBuilder.addChild(mainThread, new Cmp(register, new AConst(0)));
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
+        return programBuilder.addChild(mainThread, new CondJump(ctx.branchRegInstruction().op, label));
     }
 
     @Override
