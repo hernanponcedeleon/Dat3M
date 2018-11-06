@@ -65,6 +65,7 @@ instruction
     |   mov
     |   arithmetic
     |   load
+    |   loadExclusive
     |   store
     |   storeExclusive
     |   cmp
@@ -92,6 +93,11 @@ arithmetic locals [String rD, String rV, int size]
 load  locals [String rD, int size]
     :   loadInstruction rD32 = register32 Comma LBracket address (Comma offset)? RBracket {$rD = $rD32.id; $size = 32;}
     |   loadInstruction rD64 = register64 Comma LBracket address (Comma offset)? RBracket {$rD = $rD64.id; $size = 64;}
+    ;
+
+loadExclusive  locals [String rD, int size]
+    :   loadExclusiveInstruction rD32 = register32 Comma LBracket address (Comma offset)? RBracket {$rD = $rD32.id; $size = 32;}
+    |   loadExclusiveInstruction rD64 = register64 Comma LBracket address (Comma offset)? RBracket {$rD = $rD64.id; $size = 64;}
     ;
 
 store  locals [String rV, int size]
@@ -125,7 +131,10 @@ branchLabel
 loadInstruction locals [String mo]
     :   LDR     {$mo = Mo.RX;}
     |   LDAR    {$mo = Mo.ACQ;}
-    |   LDXR    {$mo = Mo.RX;}
+    ;
+
+loadExclusiveInstruction locals [String mo]
+    :   LDXR    {$mo = Mo.RX;}
     |   LDAXR   {$mo = Mo.ACQ;}
     ;
 

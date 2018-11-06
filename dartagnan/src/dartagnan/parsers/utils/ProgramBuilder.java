@@ -26,7 +26,7 @@ public class ProgramBuilder {
     private Map<String, Map<String, Register>> registers = new HashMap<>();
     private Map<String, Map<String, Location>> mapRegLoc = new HashMap<>();
     private Map<String, Map<String, Label>> labels = new HashMap<>();
-    private Map<String, LinkedList<Thread>> threads = new HashMap<>();
+    protected Map<String, LinkedList<Thread>> threads = new HashMap<>();
 
     private Program program = new Program();
 

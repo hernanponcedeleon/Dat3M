@@ -5,13 +5,15 @@ import dartagnan.parsers.LitmusAArch64Parser;
 import dartagnan.parsers.LitmusAArch64Visitor;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
-import dartagnan.parsers.utils.ProgramBuilder;
+import dartagnan.parsers.utils.aarch64.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
+import dartagnan.program.event.aarch64.rmw.StoreExclusive;
+import dartagnan.program.event.rmw.RMWLoad;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         implements LitmusAArch64Visitor<Object> {
@@ -113,15 +115,20 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitLoad(LitmusAArch64Parser.LoadContext ctx) {
-        // TODO: Offset
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD);
         Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
         return programBuilder.addChild(mainThread, new Load(register, location, ctx.loadInstruction().mo));
     }
 
     @Override
+    public Object visitLoadExclusive(LitmusAArch64Parser.LoadExclusiveContext ctx) {
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD);
+        Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
+        return programBuilder.addChild(mainThread, new RMWLoad(register, location, ctx.loadExclusiveInstruction().mo));
+    }
+
+    @Override
     public Object visitStore(LitmusAArch64Parser.StoreContext ctx) {
-        // TODO: Offset
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
         Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
         return programBuilder.addChild(mainThread, new Store(location, register, ctx.storeInstruction().mo));
@@ -129,12 +136,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitStoreExclusive(LitmusAArch64Parser.StoreExclusiveContext ctx) {
-        // TODO: Implemntation
-        throw new RuntimeException("Store exclusive is not implemented");
+        Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
+        Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
+        StoreExclusive store = new StoreExclusive(statusReg, location, register, ctx.storeExclusiveInstruction().mo);
+        return programBuilder.addChild(mainThread, store);
     }
 
     @Override
     public Object visitBranch(LitmusAArch64Parser.BranchContext ctx) {
+        if(ctx.branchCondition() == null){
+            throw new RuntimeException("Unconditional branching is not implemented");
+        }
         return programBuilder.addChild(mainThread, new CondJump(ctx.branchCondition().op, programBuilder.getOrCreateLabel(mainThread, ctx.label().getText())));
     }
 
