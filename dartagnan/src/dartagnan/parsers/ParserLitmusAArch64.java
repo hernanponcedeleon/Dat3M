@@ -1,7 +1,7 @@
 package dartagnan.parsers;
 
 import dartagnan.parsers.utils.ParserErrorListener;
-import dartagnan.parsers.utils.aarch64.ProgramBuilder;
+import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.visitors.VisitorLitmusAArch64;
 import dartagnan.program.Program;
 import org.antlr.v4.runtime.*;

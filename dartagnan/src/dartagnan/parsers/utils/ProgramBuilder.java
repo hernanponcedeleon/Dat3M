@@ -51,6 +51,13 @@ public class ProgramBuilder {
         return child;
     }
 
+    public Thread getLastThreadEvent(String thread){
+        if(threads.containsKey(thread)){
+            return threads.get(thread).getLast();
+        }
+        return null;
+    }
+
     public void setAssert(AbstractAssert ass){
         program.setAss(ass);
     }

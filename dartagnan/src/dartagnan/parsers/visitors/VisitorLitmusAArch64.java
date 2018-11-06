@@ -5,14 +5,16 @@ import dartagnan.parsers.LitmusAArch64Parser;
 import dartagnan.parsers.LitmusAArch64Visitor;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
-import dartagnan.parsers.utils.aarch64.ProgramBuilder;
+import dartagnan.parsers.utils.ParsingException;
+import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
-import dartagnan.program.event.aarch64.rmw.StoreExclusive;
+import dartagnan.program.event.rmw.cond.LocalCondStatus;
+import dartagnan.program.event.rmw.cond.RMWStoreCondWithStatus;
 import dartagnan.program.event.rmw.RMWLoad;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
@@ -136,11 +138,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitStoreExclusive(LitmusAArch64Parser.StoreExclusiveContext ctx) {
-        Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
-        Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
-        StoreExclusive store = new StoreExclusive(statusReg, location, register, ctx.storeExclusiveInstruction().mo);
-        return programBuilder.addChild(mainThread, store);
+        RMWLoad loadEvent = (RMWLoad) programBuilder.getLastThreadEvent(mainThread);
+        if(loadEvent != null){
+            Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
+            Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
+            RMWStoreCondWithStatus store = new RMWStoreCondWithStatus(loadEvent, location, register, ctx.storeExclusiveInstruction().mo);
+            programBuilder.addChild(mainThread, store);
+
+            Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
+            LocalCondStatus local = new LocalCondStatus(statusReg, store);
+            return programBuilder.addChild(mainThread, local);
+        }
+        throw new ParsingException("Unbalanced exclusive store " + ctx.getText());
     }
 
     @Override

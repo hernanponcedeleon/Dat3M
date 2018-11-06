@@ -12,9 +12,9 @@ import static dartagnan.utils.Utils.ssaReg;
 
 public class Local extends Event {
 	
-	private Register reg;
-	private ExprInterface expr;
-	private int ssaRegIndex;
+	protected Register reg;
+	protected ExprInterface expr;
+	protected int ssaRegIndex;
 	
 	public Local(Register reg, ExprInterface expr) {
 		this.reg = reg;
