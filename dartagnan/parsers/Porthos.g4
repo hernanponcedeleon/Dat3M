@@ -251,10 +251,6 @@ program [String name] returns [Program p]:
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-DIGIT : [0-9]+;
-WORD : (LETTER | DIGIT)+;
-LETTER : 'a'..'z' | 'A'..'Z';
-
 WS : [ \t\r\n]+ -> skip;
 LPAR : '(';
 RPAR : ')';
@@ -281,3 +277,7 @@ OR : 'or';
 XOR : 'xor';
 
 ATOMIC : '_na' | '_sc' | '_rx' | '_acq' | '_rel' | '_con';
+
+DIGIT : [0-9]+;
+WORD : (LETTER | DIGIT)+;
+LETTER : 'a'..'z' | 'A'..'Z';
