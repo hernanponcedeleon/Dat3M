@@ -79,6 +79,10 @@ public class Wmm {
         approx = approx & !drawExecutionGraph;
         int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.LFP;
 
+        for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.setDoRecurse();
+        }
+
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program, ctx, encodingMode);
         }
