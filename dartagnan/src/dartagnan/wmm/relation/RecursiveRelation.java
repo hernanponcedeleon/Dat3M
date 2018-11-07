@@ -26,8 +26,11 @@ public class RecursiveRelation extends Relation {
     }
 
     public void initialise(Program program, Context ctx, int encodingMode){
-        super.initialise(program, ctx, encodingMode);
-        r1.initialise(program, ctx, encodingMode);
+        if(doRecurse){
+            doRecurse = false;
+            super.initialise(program, ctx, encodingMode);
+            r1.initialise(program, ctx, encodingMode);
+        }
     }
 
     public void setConcreteRelation(Relation r1){
@@ -73,9 +76,12 @@ public class RecursiveRelation extends Relation {
 
     @Override
     public void setRecursiveGroupId(int id){
-        forceUpdateRecursiveGroupId = true;
-        recursiveGroupId = id;
-        r1.setRecursiveGroupId(id);
+        if(doRecurse){
+            doRecurse = false;
+            forceUpdateRecursiveGroupId = true;
+            recursiveGroupId = id;
+            r1.setRecursiveGroupId(id);
+        }
     }
 
     @Override
@@ -114,7 +120,11 @@ public class RecursiveRelation extends Relation {
 
     @Override
     public BoolExpr encodeIteration(int recGroupId, int iteration){
-        return r1.encodeIteration(recGroupId, iteration);
+        if(doRecurse){
+            doRecurse = false;
+            return r1.encodeIteration(recGroupId, iteration);
+        }
+        return ctx.mkTrue();
     }
 
     public BoolExpr encodeFinalIteration(int iteration){

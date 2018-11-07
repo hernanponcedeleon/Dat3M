@@ -14,7 +14,8 @@ public class RecursiveGroup {
     private int encodeIterations = 0;
 
     public RecursiveGroup(int id, Collection<RecursiveRelation> relations){
-        for(Relation relation : relations){
+        for(RecursiveRelation relation : relations){
+            relation.setDoRecurse();
             relation.setRecursiveGroupId(id);
         }
         this.relations = new ArrayList<>(relations);
@@ -25,10 +26,17 @@ public class RecursiveGroup {
         return id;
     }
 
+    public void setDoRecurse(){
+        for(RecursiveRelation relation : relations){
+            relation.setDoRecurse();
+        }
+    }
+
     public BoolExpr encode(Context ctx){
         BoolExpr enc = ctx.mkTrue();
         for(int i = 0; i < encodeIterations; i++){
             for(RecursiveRelation relation : relations){
+                relation.setDoRecurse();
                 enc = ctx.mkAnd(enc, relation.encodeIteration(id, i));
             }
         }
