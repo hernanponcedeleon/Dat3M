@@ -1,0 +1,14 @@
+litmus/C/mutual/DekkerU2.litmus
+litmus/C/mutual/PetersonU2.litmus
+litmus/C/mutual/BakeryU2.litmus
+litmus/C/mutual/BurnsU2.litmus
+litmus/C/mutual/ParkerU2.litmus
+litmus/C/mutual/LamportU2.litmus
+litmus/C/mutual/SzymanskiU2.litmus
+litmus/C/dart/no-herd/basic-03.litmus
+litmus/C/dart/no-herd/basic-01.litmus
+litmus/C/dart/no-herd/basic-05.litmus
+litmus/C/dart/no-herd/basic-07.litmus
+litmus/C/dart/no-herd/basic-02.litmus
+litmus/C/dart/no-herd/basic-04.litmus
+litmus/C/dart/no-herd/basic-06.litmus
