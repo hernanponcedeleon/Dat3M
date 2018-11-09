@@ -1,9 +1,25 @@
+#Build blacklist of tests, which should not be executed
+blacklist=$(< litmus/herd-long-exec-time.txt)
+blacklist+=$(< litmus/herd-not-supported.txt)
+
+# Return 0 if file is in the blacklist, otherwise 1
+function is_blacklisted() {
+    for item in ${blacklist[@]}
+    do
+        if [[ $1 == $item ]]
+        then
+            return 0
+        fi
+    done
+    return 1
+}
+
 for file in $(find litmus/C -name '*.litmus' | sort);
 do
-   if [[ $file == *"mutual"* || $file == *"no-herd"* ]];
-   then
-      continue
+   if is_blacklisted $file; then
+        continue
    fi
+
    herd7 -I cat -model cat/linux-kernel.cat -bell cat/linux-kernel.bell -macros cat/linux-kernel.def $file > ./herd_linux.out
    herd=$(grep -e 'No' herd_linux.out | wc -l)
    rm herd_linux.out
