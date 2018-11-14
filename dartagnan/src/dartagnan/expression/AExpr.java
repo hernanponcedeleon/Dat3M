@@ -28,6 +28,7 @@ public class AExpr implements ExprInterface {
 
     @Override
 	public String toString() {
+    	// TODO: parentheses?
 		return lhs + " " + op + " " + rhs;
 	}
 
