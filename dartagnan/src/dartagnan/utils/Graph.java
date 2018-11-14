@@ -24,6 +24,7 @@ public class Graph {
             "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
     );
 
+    // TODO: HashMap<> instead of HashMap<String, String> brokes the compilation in my pc
     private Map<String, String> colorMap = new HashMap<>(){{
         put("rf", "red");
         put("co", "blue");

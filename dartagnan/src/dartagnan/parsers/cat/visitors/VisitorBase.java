@@ -25,6 +25,7 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
     private Set<RecursiveRelation> recursiveGroup;
 
     public VisitorBase(String target){
+    	// TODO why twice?
         this.wmm = new Wmm(target);
         this.wmm = new Wmm(target);
         relationRepository = wmm.getRelationRepository();

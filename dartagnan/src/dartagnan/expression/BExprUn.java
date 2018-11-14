@@ -29,6 +29,7 @@ public class BExprUn extends BExpr {
         return new BExprUn(op, b.clone());
     }
 
+    // TODO: is it correct that toZ3 uses recursively toZ3Boolean and the other way round?
     @Override
     public BoolExpr toZ3(MapSSA map, Context ctx) {
         return op.encode(b.toZ3Boolean(map, ctx), ctx);
