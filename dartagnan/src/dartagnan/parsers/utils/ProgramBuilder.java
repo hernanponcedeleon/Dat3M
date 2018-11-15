@@ -82,7 +82,6 @@ public class ProgramBuilder {
     // Utility
 
     public Location getLocation(String name){
-    	// TODO: what if the location is not in the keys? return null?
         return locations.get(name);
     }
 
