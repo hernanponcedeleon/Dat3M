@@ -20,7 +20,6 @@ public class AssertCompositeAnd extends AbstractAssert {
 
     @Override
     public String toString() {
-    	// TODO: parentheses?
         return a1 + " && " + a2;
     }
 

@@ -20,25 +20,27 @@ import java.util.stream.Collectors;
 
 public class Graph {
 
+    private static Map<String, String> colorMap;
+    static
+    {
+        colorMap = new HashMap<>();
+        colorMap.put("rf", "red");
+        colorMap.put("co", "blue");
+        colorMap.put("po", "brown");
+        colorMap.put("mfence", "black");
+        colorMap.put("sync", "black");
+        colorMap.put("isync", "black");
+        colorMap.put("lwsync", "black");
+        colorMap.put("isb", "black");
+        colorMap.put("ish", "black");
+        colorMap.put("mb", "black");
+        colorMap.put("rmb", "black");
+        colorMap.put("wmb", "black");
+    };
+
     private Set<String> relations = new HashSet<>(Arrays.asList(
             "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
     );
-
-    // TODO: HashMap<> instead of HashMap<String, String> brokes the compilation in my pc
-    private Map<String, String> colorMap = new HashMap<>(){{
-        put("rf", "red");
-        put("co", "blue");
-        put("po", "brown");
-        put("mfence", "black");
-        put("sync", "black");
-        put("isync", "black");
-        put("lwsync", "black");
-        put("isb", "black");
-        put("ish", "black");
-        put("mb", "black");
-        put("rmb", "black");
-        put("wmb", "black");
-    }};
 
     private Model model;
     private Context ctx;
