@@ -14,17 +14,14 @@ import dartagnan.program.Program;
 import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
 import dartagnan.wmm.utils.Arch;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.DiagnosticErrorListener;
+import org.antlr.v4.runtime.*;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-@SuppressWarnings("deprecation")
 public class Dartagnan {
 
 	public static void main(String[] args) throws IOException {
@@ -134,25 +131,24 @@ public class Dartagnan {
 
 	public static Program parseProgram(String inputFilePath) throws IOException{
 		File file = new File(inputFilePath);
-		String programRaw = FileUtils.readFileToString(file, "UTF-8");
-		ANTLRInputStream input = new ANTLRInputStream(programRaw);
-		Program program = new Program(inputFilePath);
+		FileInputStream stream = new FileInputStream(file);
+		CharStream charStream = CharStreams.fromStream(stream);
 
 		if(inputFilePath.endsWith("litmus")) {
 			ParserResolver parserResolver = new ParserResolver();
 			ParserInterface parser = parserResolver.getParser(inputFilePath);
-			program = parser.parse(inputFilePath);
+			return parser.parse(inputFilePath);
 		}
 
 		if(inputFilePath.endsWith("pts")) {
-			PorthosLexer lexer = new PorthosLexer(input);
+			PorthosLexer lexer = new PorthosLexer(charStream);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
 			PorthosParser parser = new PorthosParser(tokens);
 			parser.addErrorListener(new DiagnosticErrorListener(true));
-			program = parser.program(inputFilePath).p;
+			return parser.program(inputFilePath).p;
 		}
 
-		return program;
+		throw new RuntimeException("Unrecognised program format");
 	}
 
 	private static boolean canDrawGraph(AbstractAssert ass, boolean result){
