@@ -16,7 +16,7 @@ public class RelRMW extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Event store : program.getEventRepository().getEvents(EventRepository.EVENT_RMW_STORE)){
+            for(Event store : program.getEventRepository().getEvents(EventRepository.RMW_STORE)){
                 maxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));
             }
         }

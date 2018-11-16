@@ -1,56 +1,48 @@
 package dartagnan.expression;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
-
+import dartagnan.expression.op.COpBin;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class Atom extends BExpr implements ExprInterface {
 	
 	private AExpr lhs;
 	private AExpr rhs;
-	private String op;
+	private COpBin op;
 	
-	public Atom (ExprInterface lhs, String op, ExprInterface rhs) {
+	public Atom (ExprInterface lhs, COpBin op, ExprInterface rhs) {
         if(!(lhs instanceof AExpr) || !(rhs instanceof AExpr)){
             // TODO: Implementation
             throw new RuntimeException("Atom is not implemented for BExpr arguments");
         }
 		this.lhs = (AExpr)lhs;
 		this.rhs = (AExpr)rhs;
-		this.op = op;	
+		this.op = op;
 	}
-	
+
+    @Override
 	public String toString() {
-		return String.format("(%s %s %s)", lhs, op, rhs);
+		return lhs + " " + op + " " + rhs;
 	}
-	
+
+    @Override
 	public Atom clone() {
-		AExpr newLHS = lhs.clone();
-		AExpr newRHS = rhs.clone();
-		return new Atom(newLHS, op, newRHS);
+		return new Atom(lhs.clone(), op, rhs.clone());
 	}
-	
-	public BoolExpr toZ3(MapSSA map, Context ctx) throws Z3Exception {
-		switch(op) {
-		case "==": return ctx.mkEq(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx));
-		case "!=": return ctx.mkNot(ctx.mkEq(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx)));
-		case "<": return ctx.mkLt(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx)); 
-		case "<=": return ctx.mkLe(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx)); 
-		case ">": return ctx.mkGt(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx)); 
-		case ">=": return ctx.mkGe(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx)); 
-		}
-		System.out.println(String.format("Check toz3() for %s", this));
-		return null;
+
+    @Override
+	public BoolExpr toZ3(MapSSA map, Context ctx) {
+		return op.encode(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx), ctx);
 	}
-	
+
+    @Override
 	public Set<Register> getRegs() {
-		Set<Register> setRegs = new HashSet<Register>();
+		Set<Register> setRegs = new HashSet<>();
 		setRegs.addAll(lhs.getRegs());
 		setRegs.addAll(rhs.getRegs());
 		return setRegs;

@@ -2,6 +2,7 @@ package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -10,17 +11,16 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 
-import java.util.Collections;
-
 public class RMWOpReturn extends RMWAbstract {
 
-    private String op;
+    private AOpBin op;
 
-    public RMWOpReturn(Location location, Register register, ExprInterface value, String op, String atomic) {
+    public RMWOpReturn(Location location, Register register, ExprInterface value, AOpBin op, String atomic) {
         super(location, register, value, atomic);
         this.op = op;
     }
 
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
@@ -37,11 +37,12 @@ public class RMWOpReturn extends RMWAbstract {
         return super.compile(target, ctrl, leading);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  "))
-                + reg + " := atomic_" + opToText(op) + "_return" + atomicToText(atomic) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + reg + " := atomic_" + opToText(op) + "_return" + atomicToText(atomic) + "(" + value + ", " + loc + ")";
     }
 
+    @Override
     public RMWOpReturn clone() {
         Location newLoc = loc.clone();
         Register newReg = reg.clone();

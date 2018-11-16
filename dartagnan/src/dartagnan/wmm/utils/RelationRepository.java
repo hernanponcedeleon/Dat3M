@@ -1,7 +1,7 @@
 package dartagnan.wmm.utils;
 
-import dartagnan.program.event.filter.FilterAbstract;
-import dartagnan.program.event.filter.FilterBasic;
+import dartagnan.wmm.filter.FilterAbstract;
+import dartagnan.wmm.filter.FilterBasic;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.relation.basic.*;

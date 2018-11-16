@@ -2,46 +2,46 @@ package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
-
-import java.util.Collections;
+import dartagnan.program.utils.linux.EType;
 
 public class RMWOp extends RMWAbstract {
 
-    private String op;
+    private AOpBin op;
 
-    public RMWOp(Location location, ExprInterface value, String op) {
-        super(location, new Register(null), value, "_rx");
+    public RMWOp(Location location, ExprInterface value, AOpBin op) {
+        super(location, new Register(null), value, "Relaxed");
         this.op = op;
-        addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
+        addFilters(EType.NORETURN);
     }
 
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
-            RMWLoad load = new RMWLoad(reg, loc, "_rx");
-            RMWStore store = new RMWStore(load, loc, new AExpr(reg, op, value), "_rx");
+            RMWLoad load = new RMWLoad(reg, loc, "Relaxed");
+            RMWStore store = new RMWStore(load, loc, new AExpr(reg, op, value), "Relaxed");
 
             compileBasic(load);
             compileBasic(store);
-            load.addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
-            store.addFilters(FilterUtils.EVENT_TYPE_RMW_NORETURN);
+            load.addFilters(EType.NORETURN);
 
             return new Seq(load, store);
         }
         return super.compile(target, ctrl, leading);
     }
 
+    @Override
     public String toString() {
-        return String.join("", Collections.nCopies(condLevel, "  "))
-                + "atomic_" + opToText(op) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + "atomic_" + opToText(op) + "(" + value + ", " + loc + ")";
     }
 
+    @Override
     public RMWOp clone() {
         Location newLoc = loc.clone();
         ExprInterface newValue = value.clone();

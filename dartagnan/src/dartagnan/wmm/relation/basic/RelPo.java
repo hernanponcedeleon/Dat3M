@@ -22,10 +22,10 @@ public class RelPo extends BasicRelation {
     public RelPo(boolean includeLocalEvents){
         if(includeLocalEvents){
             term = "_po";
-            eventMask = EventRepository.EVENT_ALL;
+            eventMask = EventRepository.ALL;
         } else {
             term = "po";
-            eventMask = EventRepository.EVENT_VISIBLE;
+            eventMask = EventRepository.VISIBLE;
         }
     }
 

@@ -1,7 +1,7 @@
 package dartagnan.program.event.linux.rcu;
 
 import dartagnan.program.event.Event;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.linux.EType;
 
 public class RCUReadUnlock extends Event {
 
@@ -14,7 +14,7 @@ public class RCUReadUnlock extends Event {
     public RCUReadUnlock(RCUReadLock lockEvent, int condLevel){
         this.lockEvent = lockEvent;
         this.condLevel = condLevel;
-        this.addFilters(FilterUtils.EVENT_TYPE_ANY);
+        this.addFilters(EType.ANY, EType.RCU_UNLOCK);
     }
 
     public RCUReadLock getLockEvent(){
@@ -28,7 +28,7 @@ public class RCUReadUnlock extends Event {
 
     @Override
     public String label(){
-        return "F[rcu-unlock]";
+        return "F[" + EType.RCU_UNLOCK + "]";
     }
 
     @Override

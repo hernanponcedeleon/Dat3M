@@ -2,7 +2,6 @@ package dartagnan.wmm.axiom;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
@@ -26,7 +25,7 @@ public class Irreflexive extends Axiom {
     public TupleSet getEncodeTupleSet(){
         TupleSet set = new TupleSet();
         for(Tuple tuple : rel.getMaxTupleSet()){
-            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+            if(tuple.getFirst().getEId() == tuple.getSecond().getEId()){
                 set.add(tuple);
             }
         }
@@ -34,10 +33,10 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    protected BoolExpr _consistent(Context ctx) throws Z3Exception {
+    protected BoolExpr _consistent(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
-            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+            if(tuple.getFirst().getEId() == tuple.getSecond().getEId()){
                 enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(rel.getName(), tuple.getFirst(), tuple.getFirst(), ctx)));
             }
         }
@@ -45,10 +44,10 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    protected BoolExpr _inconsistent(Context ctx) throws Z3Exception {
+    protected BoolExpr _inconsistent(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
-            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+            if(tuple.getFirst().getEId() == tuple.getSecond().getEId()){
                 enc = ctx.mkOr(enc, Utils.edge(rel.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
             }
         }
@@ -57,6 +56,6 @@ public class Irreflexive extends Axiom {
 
     @Override
     protected String _toString() {
-        return String.format("irreflexive %s", rel.getName());
+        return "irreflexive " + rel.getName();
     }
 }

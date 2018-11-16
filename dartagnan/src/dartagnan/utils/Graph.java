@@ -7,7 +7,9 @@ import com.microsoft.z3.Model;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
-import dartagnan.program.event.*;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.Init;
+import dartagnan.program.event.MemEvent;
 import dartagnan.program.utils.EventRepository;
 
 import java.io.File;
@@ -18,24 +20,27 @@ import java.util.stream.Collectors;
 
 public class Graph {
 
+    private static Map<String, String> colorMap;
+    static
+    {
+        colorMap = new HashMap<>();
+        colorMap.put("rf", "red");
+        colorMap.put("co", "blue");
+        colorMap.put("po", "brown");
+        colorMap.put("mfence", "black");
+        colorMap.put("sync", "black");
+        colorMap.put("isync", "black");
+        colorMap.put("lwsync", "black");
+        colorMap.put("isb", "black");
+        colorMap.put("ish", "black");
+        colorMap.put("mb", "black");
+        colorMap.put("rmb", "black");
+        colorMap.put("wmb", "black");
+    };
+
     private Set<String> relations = new HashSet<>(Arrays.asList(
             "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
     );
-
-    private Map<String, String> colorMap = new HashMap<String, String>(){{
-        put("rf", "red");
-        put("co", "blue");
-        put("po", "brown");
-        put("mfence", "black");
-        put("sync", "black");
-        put("isync", "black");
-        put("lwsync", "black");
-        put("isb", "black");
-        put("ish", "black");
-        put("mb", "black");
-        put("rmb", "black");
-        put("wmb", "black");
-    }};
 
     private Model model;
     private Context ctx;
@@ -114,20 +119,20 @@ public class Graph {
 
             if(t instanceof Init){
                 Init e = (Init)t.getEvents().iterator().next();
-                String label = e.label() + " = " + model.getConstInterp(e.ssaLoc).toString();
+                String label = e.label() + " = " + model.getConstInterp(e.getSsaLoc()).toString();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
 
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
 
-                List<Event> events = t.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE).stream()
+                List<Event> events = t.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
                         .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
                         .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
 
                 for(Event e2 : events) {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
-                        label += " = " + model.getConstInterp(((MemEvent) e2).ssaLoc).toString();
+                        label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc()).toString();
                     }
                     sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }
@@ -143,7 +148,7 @@ public class Graph {
         String edge = " " + getEdgeDef("po") + ";\n";
 
         for(Thread thread : program.getThreads()) {
-            List<Event> events = thread.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE).stream()
+            List<Event> events = thread.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
                     .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
                     .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
 
@@ -161,12 +166,12 @@ public class Graph {
         String edge = " " + getEdgeDef("co") + ";\n";
 
         Set<MemEvent> events = program.getEventRepository()
-                .getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_INIT)
+                .getEvents(EventRepository.STORE | EventRepository.INIT)
                 .stream()
                 .map(e -> (MemEvent)e)
                 .collect(Collectors.toSet());
 
-        Set<Location> locations = events.stream().map(MemEvent::getLoc).collect(Collectors.toSet());
+        Set<Location> locations = program.getEventRepository().getLocations();
 
         for(Location location : locations){
             Map<Event, Integer> map = new HashMap<>();
@@ -202,7 +207,7 @@ public class Graph {
 
     private StringBuilder buildRelations(Program program){
         StringBuilder sb = new StringBuilder();
-        List<Event> events = program.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE).stream()
+        List<Event> events = program.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
                 .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toList());
 
         for(String relName : relations) {

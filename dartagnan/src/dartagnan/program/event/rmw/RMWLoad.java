@@ -2,19 +2,20 @@ package dartagnan.program.event.rmw;
 
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.utils.ClonableWithMemorisation;
 import dartagnan.program.event.Load;
+import dartagnan.program.utils.EType;
 
-public class RMWLoad extends Load implements ClonableWithMemorisation {
+public class RMWLoad extends Load {
 
-    private RMWLoad clone;
+    protected RMWLoad clone;
 
     public RMWLoad(Register reg, Location loc, String atomic) {
         super(reg, loc, atomic);
+        addFilters(EType.RMW);
     }
 
     @Override
-    public void resetPreparedClone(){
+    public void beforeClone(){
         clone = null;
     }
 

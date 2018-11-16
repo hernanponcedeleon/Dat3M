@@ -1,25 +1,62 @@
 package dartagnan.program.event;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.microsoft.z3.*;
-
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.*;
+import dartagnan.program.Location;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-public abstract class Event extends Thread {
-	
-	private Integer eid;
-	private Integer hlId;
-	private Integer unfCopy;
-	protected String atomic;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
+public abstract class Event extends Thread {
+
+	private int eid;
+	private int hlId;
+	private int unfCopy;
+	protected String atomic;
 	protected Set<String> filter = new HashSet<>();
+	
+	public int getEId() {
+		return eid;
+	}
+
+	public int setEId(int i) {
+		this.eid = i;
+		return i + 1;
+	}
+
+	public int getHLId() {
+		return hlId;
+	}
+	
+	public void setHLId(int id) {
+		this.hlId = id;
+	}
+
+	public int getUnfCopy() {
+		return unfCopy;
+	}
+	
+	public void setUnfCopy(int id) {
+		this.unfCopy = id;
+	}
+
+	public String repr() {
+		return "E" + eid;
+	}
+
+	public BoolExpr executes(Context ctx) {
+		return ctx.mkBoolConst("ex(" + repr() + ")");
+	}
+
+	public String label(){
+		throw new UnsupportedOperationException("Label is not available for events not shown in execution graph " + this.getClass().getName());
+	}
 
 	public boolean is(String param){
 		return param != null && (filter.contains(param) || param.equals(atomic));
@@ -28,121 +65,58 @@ public abstract class Event extends Thread {
 	public void addFilters(String... params){
 		filter.addAll(Arrays.asList(params));
 	}
-	
-	public Integer getEId() {
-		return eid;
-	}
-	
-	public void setHLId(Integer id) {
-		this.hlId = id;
+
+    @Override
+	public Set<Event> getEvents() {
+		Set<Event> ret = new HashSet<>();
+		ret.add(this);
+		return ret;
 	}
 
-	public Integer getHLId() {
-		return hlId;
-	}
-	
-	public void setUnfCopy(Integer id) {
-		this.unfCopy = id;
-	}
-
-	public Integer getUnfCopy() {
-		return unfCopy;
-	}
-	
-	public void setGuard(BoolExpr guard, Context ctx) {
-		myGuard = guard;
-	}	
-
-	public BoolExpr getGuard() {
-		return myGuard;
-	}
-	
-	public void incCondLevel() {
-		condLevel++;
-	}
-
+    @Override
 	public Thread unroll(int steps, boolean obsTermination) {
 		unfCopy = steps;
 		return this;
 	}
-	
+
+    @Override
 	public Thread unroll(int steps) {
 		return unroll(steps, false);
 	}
 
+    @Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
 		setHLId(hashCode());
 		return this;
 	}
 
-	public Thread allCompile() {
-		OptFence os = new OptFence("Sync");
-		os.condLevel = condLevel;
-		OptFence olws = new OptFence("Lwsync");
-		olws.condLevel = condLevel;
-		return new Seq(os, new Seq(olws, this));
+    @Override
+	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
+		return new Pair<>(ctx.mkTrue(), map);
 	}
 
-	public String repr() {
-		return String.format("E%s", eid);
-	}
-
-	public String label(){
-		throw new RuntimeException("Method label is not implemented for " + this.getClass().getName());
-	}
-	
-	public BoolExpr executes(Context ctx) throws Z3Exception {
-		return ctx.mkBoolConst(String.format("ex(%s)", repr()));
-	}
-	
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		return new Pair<BoolExpr, MapSSA>(ctx.mkTrue(), map);
-	}
-	
-	public Integer setEId(Integer i) {
-		this.eid = i;
-		return i+1;
-	}
-
-	public Integer setTId(Integer i) {
-		this.tid = i;
-		return i+1;
-	}
-
-	public Set<Event> getEvents() {
-		Set<Event> ret = new HashSet<Event>();
-		ret.add(this);
-		return ret;
-	}
-	
-	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
+	@Override
+	public BoolExpr encodeCF(Context ctx) {
 		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
 	}
 
-	public BoolExpr allExecute(Context ctx) throws Z3Exception {
-		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
-	}
-
+	// TODO: Interface
 	public Register getReg() {
-		// This should be never executes; should match a more concrete class
-		System.out.println(String.format("Check getReg for %s", this));
-		return null;
-	}
-	
-	public Integer getSsaRegIndex() {
-		System.out.println(String.format("Check getSSAReg for %s", this));
-		return null;
-	}
-	
-	public Location getLoc() {
-		// This should be never executes; should match a more concrete class
-		System.out.println(String.format("Check getLoc for %s", this));
-		return null;
+		throw new UnsupportedOperationException("Register is not available for " + this.getClass().getName());
 	}
 
+	// TODO: Interface
+	public int getSsaRegIndex() {
+		throw new UnsupportedOperationException("SsaRegIndex is not available for " + this.getClass().getName());
+	}
+
+	// TODO: Interface
+	public Location getLoc() {
+		throw new UnsupportedOperationException("Location is not available for " + this.getClass().getName());
+	}
+
+	// TODO: Interface
 	public ExprInterface getExpr() {
-		// This should be never executes; should match a more concrete class
-		System.out.println(String.format("Check getExpr for %s", this));
-		return null;
+		throw new UnsupportedOperationException("Expression is not available for " + this.getClass().getName());
 	}
 }

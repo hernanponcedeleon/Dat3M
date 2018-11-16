@@ -16,7 +16,7 @@ public class RelCrit extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Event unlock : program.getEventRepository().getEvents(EventRepository.EVENT_RCU_UNLOCK)){
+            for(Event unlock : program.getEventRepository().getEvents(EventRepository.RCU_UNLOCK)){
                 maxTupleSet.add(new Tuple(((RCUReadUnlock)unlock).getLockEvent(), unlock));
             }
         }

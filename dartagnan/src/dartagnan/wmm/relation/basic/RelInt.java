@@ -19,7 +19,7 @@ public class RelInt extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                Collection<Event> events = t.getEventRepository().getEvents(EventRepository.EVENT_VISIBLE);
+                Collection<Event> events = t.getEventRepository().getEvents(EventRepository.VISIBLE);
                 for(Event e1 : events){
                     for(Event e2 : events){
                         maxTupleSet.add(new Tuple(e1, e2));

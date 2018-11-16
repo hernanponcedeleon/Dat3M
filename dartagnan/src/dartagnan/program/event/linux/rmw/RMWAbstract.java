@@ -1,6 +1,7 @@
 package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -8,9 +9,9 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
-import dartagnan.program.event.filter.FilterUtils;
 import dartagnan.program.event.rmw.cond.FenceCond;
 import dartagnan.program.event.rmw.cond.RMWReadCond;
+import dartagnan.program.utils.linux.EType;
 
 public abstract class RMWAbstract extends MemEvent {
 
@@ -25,14 +26,7 @@ public abstract class RMWAbstract extends MemEvent {
         this.atomic = atomic;
         this.condLevel = 0;
         this.memId = hashCode();
-        addFilters(
-                FilterUtils.EVENT_TYPE_ANY,
-                FilterUtils.EVENT_TYPE_MEMORY,
-                FilterUtils.EVENT_TYPE_READ,
-                FilterUtils.EVENT_TYPE_WRITE,
-                FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE,
-                FilterUtils.EVENT_TYPE_ATOMIC
-        );
+        addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW);
     }
 
     public Register getReg() {
@@ -43,31 +37,23 @@ public abstract class RMWAbstract extends MemEvent {
         throw new RuntimeException("Method compile is not implemented for " + target + " " + this.getClass().getName() + " " + atomic);
     }
 
-    public Thread optCompile(String target, boolean ctrl, boolean leading) {
-        throw new RuntimeException("Method optCompile is not implemented for " + target + " " + this.getClass().getName() + " " + atomic);
-    }
-
-    public Thread allCompile() {
-        throw new RuntimeException("Method allCompile is not implemented for " + this.getClass().getName() + " " + atomic);
-    }
-
     protected String getLoadMO(){
-        return atomic.equals("_acq") ? "_acq" : "_rx";
+        return atomic.equals("Acquire") ? "Acquire" : "Relaxed";
     }
 
     protected String getStoreMO(){
-        return atomic.equals("_rel") ? "_rel" : "_rx";
+        return atomic.equals("Release") ? "Release" : "Relaxed";
     }
 
     protected Thread insertFencesOnMb(Thread result){
-        if (atomic.equals("_mb")) {
+        if (atomic.equals("Mb")) {
             return new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
         }
         return result;
     }
 
     protected Thread insertCondFencesOnMb(Thread result, RMWReadCond load){
-        if (atomic.equals("_mb")) {
+        if (atomic.equals("Mb")) {
             return new Seq(new FenceCond(load, "Mb"), new Seq(result, new FenceCond(load, "Mb")));
         }
         return result;
@@ -84,32 +70,31 @@ public abstract class RMWAbstract extends MemEvent {
         event.setHLId(memId);
         event.setUnfCopy(getUnfCopy());
         event.setCondLevel(condLevel);
-        event.addFilters(FilterUtils.EVENT_TYPE_ATOMIC, FilterUtils.EVENT_TYPE_READ_MODIFY_WRITE);
     }
 
-    protected String opToText(String op){
+    protected String opToText(AOpBin op){
         switch (op){
-            case "+":
+            case PLUS:
                 return "add";
-            case "-":
+            case MINUS:
                 return "sub";
             default:
-                throw new RuntimeException("Unsupported operation " + op + " in " + this.getClass().getName());
+                throw new RuntimeException("Unrecognised operation " + op + " in " + this.getClass().getName());
         }
     }
 
     protected String atomicToText(String atomic){
         switch (atomic){
-            case "_rx":
+            case "Relaxed":
                 return "_relaxed";
-            case "_acq":
+            case "Acquire":
                 return "_acquire";
-            case "_rel":
+            case "Release":
                 return "_release";
-            case "_mb":
+            case "Mb":
                 return "";
             default:
-                throw new RuntimeException("Unsupported memory order " + atomic + " in " + this.getClass().getName());
+                throw new RuntimeException("Unrecognised memory order " + atomic + " in " + this.getClass().getName());
         }
     }
 }

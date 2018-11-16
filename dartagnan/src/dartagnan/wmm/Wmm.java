@@ -2,27 +2,16 @@ package dartagnan.wmm;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
-import dartagnan.ModelLexer;
-import dartagnan.ModelParser;
 import dartagnan.program.Program;
-import dartagnan.program.event.filter.FilterAbstract;
-import dartagnan.program.event.filter.FilterBasic;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.wmm.filter.FilterAbstract;
+import dartagnan.wmm.filter.FilterBasic;
 import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Arch;
 import dartagnan.wmm.utils.RecursiveGroup;
 import dartagnan.wmm.utils.RelationRepository;
-import org.antlr.v4.runtime.BailErrorStrategy;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -32,7 +21,7 @@ import java.util.*;
 public class Wmm {
 
     private List<Axiom> axioms = new ArrayList<>();
-    private Map<String, FilterAbstract> filters = new HashMap<String, FilterAbstract>();
+    private Map<String, FilterAbstract> filters = new HashMap<>();
     private RelationRepository relationRepository;
     private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
@@ -40,9 +29,8 @@ public class Wmm {
     private boolean drawExecutionGraph = false;
     private Set<String> drawRelations = new HashSet<>();
 
-    public Wmm(String filePath, String target) throws IOException{
+    public Wmm(String target) {
         relationRepository = new RelationRepository(Arch.encodeCtrlPo(target));
-        parse(filePath);
     }
 
     public void setDrawExecutionGraph(){
@@ -64,10 +52,7 @@ public class Wmm {
     public FilterAbstract getFilter(String name){
         FilterAbstract filter = filters.get(name);
         if(filter == null){
-            name = FilterUtils.resolve(name);
-            if(name != null){
-                filter = new FilterBasic(name);
-            }
+            filter = new FilterBasic(name);
         }
         return filter;
     }
@@ -84,7 +69,7 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) throws Z3Exception {
+    public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) {
         this.program = program;
 
         for (Axiom ax : axioms) {
@@ -93,6 +78,10 @@ public class Wmm {
 
         approx = approx & !drawExecutionGraph;
         int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.LFP;
+
+        for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.setDoRecurse();
+        }
 
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program, ctx, encodingMode);
@@ -138,7 +127,7 @@ public class Wmm {
         return enc;
     }
 
-    public BoolExpr consistent(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr consistent(Program program, Context ctx) {
         if(this.program != program){
             throw new RuntimeException("Wmm relations must be encoded before consistency predicate");
         }
@@ -149,7 +138,7 @@ public class Wmm {
         return expr;
     }
 
-    public BoolExpr inconsistent(Program program, Context ctx) throws Z3Exception {
+    public BoolExpr inconsistent(Program program, Context ctx) {
         if(this.program != program){
             throw new RuntimeException("Wmm relations must be encoded before inconsistency predicate");
         }
@@ -178,16 +167,5 @@ public class Wmm {
         }
 
         return sb.toString();
-    }
-
-    private void parse(String filePath) throws IOException{
-        File file = new File(filePath);
-        FileInputStream stream = new FileInputStream(file);
-        CharStream charStream = CharStreams.fromStream(stream);
-        ModelLexer lexer = new ModelLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        ModelParser parser = new ModelParser(tokenStream);
-        parser.setErrorHandler(new BailErrorStrategy());
-        parser.mcm(this);
     }
 }

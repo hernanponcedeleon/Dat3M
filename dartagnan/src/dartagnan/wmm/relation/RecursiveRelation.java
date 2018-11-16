@@ -2,7 +2,6 @@ package dartagnan.wmm.relation;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.utils.Tuple;
@@ -27,8 +26,11 @@ public class RecursiveRelation extends Relation {
     }
 
     public void initialise(Program program, Context ctx, int encodingMode){
-        super.initialise(program, ctx, encodingMode);
-        r1.initialise(program, ctx, encodingMode);
+        if(doRecurse){
+            doRecurse = false;
+            super.initialise(program, ctx, encodingMode);
+            r1.initialise(program, ctx, encodingMode);
+        }
     }
 
     public void setConcreteRelation(Relation r1){
@@ -74,9 +76,12 @@ public class RecursiveRelation extends Relation {
 
     @Override
     public void setRecursiveGroupId(int id){
-        forceUpdateRecursiveGroupId = true;
-        recursiveGroupId = id;
-        r1.setRecursiveGroupId(id);
+        if(doRecurse){
+            doRecurse = false;
+            forceUpdateRecursiveGroupId = true;
+            recursiveGroupId = id;
+            r1.setRecursiveGroupId(id);
+        }
     }
 
     @Override
@@ -90,7 +95,7 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode() throws Z3Exception {
+    public BoolExpr encode() {
         if(isEncoded){
             return ctx.mkTrue();
         }
@@ -99,23 +104,27 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeLFP() throws Z3Exception {
+    protected BoolExpr encodeLFP() {
         return r1.encodeLFP();
     }
 
     @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
+    protected BoolExpr encodeIDL() {
         return r1.encodeIDL();
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         return r1.encodeApprox();
     }
 
     @Override
     public BoolExpr encodeIteration(int recGroupId, int iteration){
-        return r1.encodeIteration(recGroupId, iteration);
+        if(doRecurse){
+            doRecurse = false;
+            return r1.encodeIteration(recGroupId, iteration);
+        }
+        return ctx.mkTrue();
     }
 
     public BoolExpr encodeFinalIteration(int iteration){

@@ -1,32 +1,28 @@
 package dartagnan.program.event;
 
-import java.util.Collections;
-
-import com.microsoft.z3.*;
-
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
+
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
 public class Load extends MemEvent {
 
 	protected Register reg;
-	protected Integer ssaRegIndex;
+	protected int ssaRegIndex;
 	
 	public Load(Register reg, Location loc, String atomic) {
 		this.reg = reg;
 		this.loc = loc;
 		this.condLevel = 0;
 		this.atomic = atomic;
-		this.addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_MEMORY,
-				FilterUtils.EVENT_TYPE_READ
-		);
+		addFilters(EType.ANY, EType.MEMORY, EType.READ);
 	}
 
 	@Override
@@ -36,12 +32,12 @@ public class Load extends MemEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s%s <- %s", String.join("", Collections.nCopies(condLevel, "  ")), reg, loc);
+		return nTimesCondLevel() + reg + " <- " + loc;
 	}
 
 	@Override
 	public String label(){
-		return "R[" + atomic + "] " + getLoc();
+		return "R[" + atomic + "] " + loc;
 	}
 
 	@Override
@@ -56,22 +52,19 @@ public class Load extends MemEvent {
 	}
 
 	@Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		if(mainThread == null){
-			System.out.println(String.format("Check encodeDF for %s", this));
-			return null;
+	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
+		if(mainThread != null){
+            Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
+            Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
+            this.ssaLoc = z3Loc;
+            this.ssaRegIndex = map.get(reg);
+            return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
 		}
-		else {
-			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-			this.ssaLoc = z3Loc;
-			this.ssaRegIndex = map.get(reg);
-			return new Pair<BoolExpr, MapSSA>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
-		}		
+		throw new RuntimeException("Main thread is not set for " + toString());
 	}
 
 	@Override
-	public Integer getSsaRegIndex() {
+	public int getSsaRegIndex() {
 		return ssaRegIndex;
 	}
 }

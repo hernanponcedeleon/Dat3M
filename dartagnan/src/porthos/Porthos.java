@@ -1,5 +1,17 @@
 package porthos;
 
+import com.microsoft.z3.*;
+import com.microsoft.z3.enumerations.Z3_ast_print_mode;
+import dartagnan.Dartagnan;
+import dartagnan.parsers.cat.ParserCat;
+import dartagnan.program.Program;
+import dartagnan.program.event.Event;
+import dartagnan.program.utils.EventRepository;
+import dartagnan.utils.Graph;
+import dartagnan.wmm.Wmm;
+import dartagnan.wmm.utils.Arch;
+import org.apache.commons.cli.*;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,30 +19,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import dartagnan.*;
-import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.Graph;
-import dartagnan.wmm.Wmm;
-
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
-import com.microsoft.z3.Solver;
-import com.microsoft.z3.Status;
-import com.microsoft.z3.Z3Exception;
-import com.microsoft.z3.enumerations.Z3_ast_print_mode;
-
-import dartagnan.program.Program;
-import static dartagnan.utils.Encodings.encodeReachedState;
 import static dartagnan.utils.Encodings.encodeCommonExecutions;
-
-import dartagnan.wmm.utils.Arch;
-import org.apache.commons.cli.*;
+import static dartagnan.utils.Encodings.encodeReachedState;
 
 public class Porthos {
 
-    public static void main(String[] args) throws Z3Exception, IOException {
+    public static void main(String[] args) throws IOException {
 
         Options options = new Options();
 
@@ -94,9 +88,8 @@ public class Porthos {
             System.exit(0);
             return;
         }
-
-        Wmm mcmS = new Wmm(cmd.getOptionValue("scat"), source);
-        Wmm mcmT = new Wmm(cmd.getOptionValue("tcat"), target);
+        Wmm mcmS = new ParserCat().parse(cmd.getOptionValue("scat"), source);
+        Wmm mcmT = new ParserCat().parse(cmd.getOptionValue("tcat"), target);
 
         if(cmd.hasOption("draw")) {
             mcmS.setDrawExecutionGraph();
@@ -115,13 +108,13 @@ public class Porthos {
         }
 
         Program p = Dartagnan.parseProgram(inputFilePath);
-        p.initialize(steps);
+        p.unroll(steps);
 
         Program pSource = p.clone();
         Program pTarget = p.clone();
 
         pSource.compile(source, false, true);
-        Integer startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.EVENT_INIT).stream().map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
+        int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;
         pTarget.compile(target, false, true, startEId);
 
         Context ctx = new Context();

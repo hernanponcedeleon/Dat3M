@@ -1,10 +1,11 @@
 package dartagnan.utils;
 
-import com.microsoft.z3.*;
-
-import dartagnan.program.event.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
+import dartagnan.program.event.Event;
 
 public class Utils {
 
@@ -29,35 +30,35 @@ public class Utils {
 		return map;
 	}
 	
-	public static BoolExpr edge(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {
-		return (BoolExpr) ctx.mkConst(String.format("%s(%s,%s)", relName, e1.repr(), e2.repr()), ctx.mkBoolSort());
+	public static BoolExpr edge(String relName, Event e1, Event e2, Context ctx) {
+		return (BoolExpr) ctx.mkConst(relName + "(" + e1.repr() + "," + e2.repr() + ")", ctx.mkBoolSort());
 	}
 
-	public static IntExpr intVar(String relName, Event e, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(String.format("%s(%s)", relName, e.repr()));
+	public static IntExpr intVar(String relName, Event e, Context ctx) {
+		return ctx.mkIntConst(relName + "(" + e.repr() + ")");
 	}
 	
-	public static IntExpr ssaLoc(Location loc, Integer mainThreadId, Integer ssaIndex, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(String.format("T%s_%s_%s", mainThreadId, loc.getName(), ssaIndex));
+	public static IntExpr ssaLoc(Location loc, int mainThreadId, int ssaIndex, Context ctx) {
+		return ctx.mkIntConst("T" + mainThreadId + "_" + loc.getName() + "_" + ssaIndex);
 	}
 	
-	public static IntExpr ssaReg(Register reg, Integer ssaIndex, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(String.format("T%s_%s_%s", reg.getMainThreadId(), reg.getName(), ssaIndex));
+	public static IntExpr ssaReg(Register reg, int ssaIndex, Context ctx) {
+		return ctx.mkIntConst("T" + reg.getPrintMainThreadId() + "_" + reg.getName() + "_" + ssaIndex);
 	}
 	
-	public static IntExpr uniqueValue(Event e, Context ctx) throws Z3Exception {
+	public static IntExpr uniqueValue(Event e, Context ctx) {
 		return ctx.mkIntConst(e.getLoc() + "_unique");
 	}
 	
-	public static IntExpr initValue(Event e, Context ctx) throws Z3Exception {
+	public static IntExpr initValue(Event e, Context ctx) {
 		return ctx.mkIntConst(e.getLoc() + "_init");
 	}
 	
-	public static IntExpr initValue2(Event e, Context ctx) throws Z3Exception {
+	public static IntExpr initValue2(Event e, Context ctx) {
 		return ctx.mkIntConst(e.getLoc() + "_init_prime");
 	}
 	
-	public static IntExpr intCount(String relName, Event e1, Event e2, Context ctx) throws Z3Exception {
-		return ctx.mkIntConst(String.format("%s(%s,%s)", relName, e1.repr(), e2.repr()));
+	public static IntExpr intCount(String relName, Event e1, Event e2, Context ctx) {
+		return ctx.mkIntConst(relName + "(" + e1.repr() + "," + e2.repr() + ")");
 	}
 }

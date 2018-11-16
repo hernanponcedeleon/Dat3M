@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Fence;
@@ -43,14 +42,14 @@ public class RelFencerel extends Relation {
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
                 List<Fence> fences = t.getEventRepository()
-                        .getEvents(EventRepository.EVENT_FENCE)
+                        .getEvents(EventRepository.FENCE)
                         .stream()
                         .filter(e -> ((Fence)e).getName().equals(fenceName))
                         .map(e -> (Fence)e)
                         .collect(Collectors.toList());
 
                 if(!fences.isEmpty()){
-                    List<Event> events = t.getEventRepository().getEvents(EventRepository.EVENT_MEMORY)
+                    List<Event> events = t.getEventRepository().getEvents(EventRepository.MEMORY)
                             .stream()
                             .sorted(Comparator.comparing(Event::getEId))
                             .collect(Collectors.toList());
@@ -77,11 +76,11 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
         Collection<Event> fences = program.getEventRepository()
-                .getEvents(EventRepository.EVENT_FENCE)
+                .getEvents(EventRepository.FENCE)
                 .stream()
                 .filter(e -> ((Fence)e).getName().equals(fenceName))
                 .collect(Collectors.toSet());

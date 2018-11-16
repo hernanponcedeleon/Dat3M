@@ -2,33 +2,29 @@ package dartagnan.asserts;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 
-import java.util.stream.Collectors;
+public class AssertCompositeOr extends AbstractAssert {
 
-public class AssertCompositeOr extends AbstractAssertComposite {
-
-    public AssertCompositeOr(){}
+    private AbstractAssert a1;
+    private AbstractAssert a2;
 
     public AssertCompositeOr(AbstractAssert a1, AbstractAssert a2){
-        addChild(a1);
-        addChild(a2);
+        this.a1 = a1;
+        this.a2 = a2;
     }
 
-    public BoolExpr encode(Context ctx) throws Z3Exception {
-        if(children.isEmpty()){
-            throw new RuntimeException("Empty assertion clause");
-        }
-        BoolExpr enc = ctx.mkFalse();
-        for(AbstractAssert child : children){
-            enc = ctx.mkOr(enc, child.encode(ctx));
-        }
-        return enc;
+    @Override
+    public BoolExpr encode(Context ctx) {
+        return ctx.mkOr(a1.encode(ctx), a2.encode(ctx));
     }
 
+    @Override
     public String toString() {
-        return "(" + children.stream()
-                .map(AbstractAssert::toString)
-                .collect(Collectors.joining(" || " )) + ")";
+        return "(" + a1 + " || " + a2 + ")";
+    }
+
+    @Override
+    public AssertCompositeOr clone() {
+        return new AssertCompositeOr(a1, a2);
     }
 }

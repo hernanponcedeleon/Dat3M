@@ -1,15 +1,11 @@
 package dartagnan.program.event;
 
-import java.util.Collections;
-
-import com.microsoft.z3.*;
-
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.*;
+import dartagnan.program.Location;
+import dartagnan.program.Register;
+import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.filter.FilterUtils;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
+import dartagnan.program.utils.EType;
 
 public class Write extends MemEvent {
 
@@ -23,21 +19,20 @@ public class Write extends MemEvent {
 		this.atomic = atomic;
 		this.condLevel = 0;
 		this.memId = hashCode();
-		addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_MEMORY,
-				FilterUtils.EVENT_TYPE_WRITE
-		);
+		addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
 	}
 
+	@Override
 	public Register getReg() {
 		return (reg);
 	}
 
+	@Override
 	public String toString() {
-        return String.format("%s%s.store(%s, %s)", String.join("", Collections.nCopies(condLevel, "  ")), loc, atomic, val);
+		return nTimesCondLevel() + loc + ".store(" +  val + "," + atomic + ")";
 	}
-	
+
+	@Override
 	public Write clone() {
         Write newWrite = new Write(loc, val, atomic);
 		newWrite.condLevel = condLevel;
@@ -46,11 +41,7 @@ public class Write extends MemEvent {
 		return newWrite;
 	}
 
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		System.out.println(String.format("Check encodeDF for %s", this));
-		return null;
-	}
-
+	@Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
         Store st = new Store(loc, val, atomic);
 		st.setHLId(memId);
@@ -101,42 +92,6 @@ public class Write extends MemEvent {
 			}
 		}
 
-		else System.out.println(String.format("Error in the atomic operation type of", this));
-		return null;
-	}
-
-	public Thread optCompile(String target, boolean ctrl, boolean leading) {
-		Store st = new Store(loc, val, atomic);
-		st.setHLId(hashCode());
-		st.setCondLevel(this.condLevel);
-
-        if(atomic.equals("_rx") || atomic.equals("_na")) {
-            return st;
-        }
-
-		OptFence lwsync = new OptFence("Lwsync", this.condLevel);
-        if(atomic.equals("_rel")) {
-            return new Seq(lwsync, st);
-        }
-
-		OptFence sync = new OptFence("Sync", this.condLevel);
-		if(atomic.equals("_sc")) {
-			if(leading) {
-				return new Seq(sync, st);	
-			}
-			return new Seq(lwsync, new Seq(st, sync));
-		}
-
-		else System.out.println(String.format("Error in the atomic operation type of", this));
-		return null;
-	}
-	
-	public Thread allCompile() {
-		Store st = new Store(loc, val, atomic);
-		st.setHLId(hashCode());
-		st.setCondLevel(this.condLevel);
-		OptFence os = new OptFence("Sync", this.condLevel);
-		OptFence olws = new OptFence("Lwsync", this.condLevel);
-		return new Seq(os, new Seq(olws, st));
+		throw new RuntimeException("Compilation is not supported for " + this);
 	}
 }

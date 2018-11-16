@@ -1,8 +1,6 @@
 package dartagnan.program.event;
 
-import dartagnan.program.event.filter.FilterUtils;
-
-import java.util.Collections;
+import dartagnan.program.utils.EType;
 
 public class Fence extends Event {
 
@@ -20,24 +18,22 @@ public class Fence extends Event {
 		this.name = name;
 		this.condLevel = condLevel;
 		this.atomic = atomic;
-		this.addFilters(
-				FilterUtils.EVENT_TYPE_ANY,
-				FilterUtils.EVENT_TYPE_FENCE,
-				name
-		);
+		this.addFilters(EType.ANY, EType.FENCE, name);
 	}
 
 	public String getName(){
 		return name;
 	}
 
+	@Override
 	public String toString() {
 		if(atomic == null){
-			return String.join("", Collections.nCopies(condLevel, "  ")) + name;
+			return nTimesCondLevel() + name;
 		}
-		return String.join("", Collections.nCopies(condLevel, "  ")) + name + " " + atomic;
+		return nTimesCondLevel() + name + " " + atomic;
 	}
 
+	@Override
 	public Fence clone() {
 		return new Fence(name, condLevel, atomic);
 	}

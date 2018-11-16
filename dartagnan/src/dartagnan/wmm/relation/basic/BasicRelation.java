@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 
@@ -18,7 +17,7 @@ public abstract class BasicRelation extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet) {
             BoolExpr rel = edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx);

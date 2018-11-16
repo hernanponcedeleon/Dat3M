@@ -38,7 +38,7 @@ public class Tuple {
             return false;
 
         Tuple tObj = (Tuple) obj;
-        return first.getEId().equals(tObj.getFirst().getEId())
-                && second.getEId().equals(tObj.getSecond().getEId());
+        return first.getEId() == tObj.getFirst().getEId()
+                && second.getEId() == tObj.getSecond().getEId();
     }
 }

@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Store;
@@ -30,8 +29,8 @@ public class RelIdd extends Relation {
 
             for(Thread t : program.getThreads()){
                 // Via register
-                Set<Event> regWriters = t.getEventRepository().getEvents(EventRepository.EVENT_LOCAL | EventRepository.EVENT_LOAD);
-                Set<Event> regReaders = t.getEventRepository().getEvents(EventRepository.EVENT_STORE | EventRepository.EVENT_LOCAL | EventRepository.EVENT_IF);
+                Set<Event> regWriters = t.getEventRepository().getEvents(EventRepository.LOCAL | EventRepository.LOAD);
+                Set<Event> regReaders = t.getEventRepository().getEvents(EventRepository.STORE | EventRepository.LOCAL | EventRepository.IF);
                 for(Event e1 : regWriters){
                     for(Event e2 : regReaders){
                         if(e1.getEId() < e2.getEId() && e2.getExpr().getRegs().contains(e1.getReg())){
@@ -41,8 +40,8 @@ public class RelIdd extends Relation {
                 }
 
                 // Via location
-                Set<Event> locWriters = t.getEventRepository().getEvents(EventRepository.EVENT_STORE);
-                Set<Event> locReaders = t.getEventRepository().getEvents(EventRepository.EVENT_LOAD);
+                Set<Event> locWriters = t.getEventRepository().getEvents(EventRepository.STORE);
+                Set<Event> locReaders = t.getEventRepository().getEvents(EventRepository.LOAD);
                 for(Event e1 : locWriters){
                     for(Event e2 : locReaders){
                         if(e1.getEId() < e2.getEId() && e1.getLoc() == e2.getLoc()){
@@ -60,7 +59,7 @@ public class RelIdd extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple1 : encodeTupleSet) {
@@ -70,7 +69,7 @@ public class RelIdd extends Relation {
 
             if(e1 instanceof Store){
                 for(Tuple tuple2 : maxLocTupleSet){
-                    if(e2.getEId().equals(tuple2.getSecond().getEId())
+                    if(e2.getEId() == tuple2.getSecond().getEId()
                             && e2.getLoc() == tuple2.getSecond().getLoc()
                             && e1.getEId() < tuple2.getFirst().getEId()){
                         clause = ctx.mkAnd(clause, ctx.mkNot(tuple2.getFirst().executes(ctx)));
@@ -80,7 +79,7 @@ public class RelIdd extends Relation {
 
             } else {
                 for(Tuple tuple2 : maxRegTupleSet){
-                    if(e2.getEId().equals(tuple2.getSecond().getEId())
+                    if(e2.getEId() == tuple2.getSecond().getEId()
                             && e1.getReg() == tuple2.getFirst().getReg()
                             && e1.getEId() < tuple2.getFirst().getEId()){
                         clause = ctx.mkAnd(clause, ctx.mkNot(tuple2.getFirst().executes(ctx)));

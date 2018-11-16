@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -49,7 +48,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -68,7 +67,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
+    protected BoolExpr encodeIDL() {
         if(recursiveGroupId == 0){
             return encodeApprox();
         }

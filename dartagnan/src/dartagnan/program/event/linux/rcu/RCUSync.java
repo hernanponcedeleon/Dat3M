@@ -1,7 +1,7 @@
 package dartagnan.program.event.linux.rcu;
 
 import dartagnan.program.event.Event;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.linux.EType;
 
 public class RCUSync extends Event {
 
@@ -11,7 +11,7 @@ public class RCUSync extends Event {
 
     public RCUSync(int condLevel){
         this.condLevel = condLevel;
-        this.addFilters(FilterUtils.EVENT_TYPE_ANY, FilterUtils.EVENT_TYPE_SYNC_RCU);
+        this.addFilters(EType.ANY, EType.RCU_SYNC);
     }
 
     @Override
@@ -21,7 +21,7 @@ public class RCUSync extends Event {
 
     @Override
     public String label(){
-        return "F[sync-rcu]";
+        return "F[" + EType.RCU_SYNC + "]";
     }
 
     @Override

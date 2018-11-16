@@ -1,7 +1,6 @@
 package dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
 import dartagnan.wmm.relation.Relation;
@@ -78,7 +77,7 @@ public class RelComposition extends BinaryRelation {
 
                 for(Tuple tuple1 : r1.getMaxTupleSet().getByFirst(e1)){
                     for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
-                        if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                        if(tuple2.getSecond().getEId() == e2.getEId()){
                             r1Set.add(tuple1);
                             r2Set.add(tuple2);
                         }
@@ -91,7 +90,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
         TupleSet r1Set = new TupleSet();
@@ -110,7 +109,7 @@ public class RelComposition extends BinaryRelation {
             for(Tuple tuple1 : r1Set.getByFirst(e1)){
                 Event e3 = tuple1.getSecond();
                 for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                    if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                    if(tuple2.getSecond().getEId() == e2.getEId()){
                         BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
                         BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
@@ -128,7 +127,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
+    protected BoolExpr encodeIDL() {
         if(recursiveGroupId == 0){
             return encodeApprox();
         }
@@ -157,7 +156,7 @@ public class RelComposition extends BinaryRelation {
                 Event e3 = tuple1.getSecond();
 
                 for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                    if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                    if(tuple2.getSecond().getEId() == e2.getEId()){
                         BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
                         BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
@@ -219,7 +218,7 @@ public class RelComposition extends BinaryRelation {
                         Event e3 = tuple1.getSecond();
 
                         for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                            if(tuple2.getSecond().getEId().equals(e2.getEId())){
+                            if(tuple2.getSecond().getEId() == e2.getEId()){
                                 BoolExpr opt1 = Utils.edge(r1Name, e1, e3, ctx);
                                 BoolExpr opt2 = Utils.edge(r2Name, e3, e2, ctx);
                                 orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));

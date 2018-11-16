@@ -2,7 +2,6 @@ package dartagnan.wmm.relation.unary;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.utils.EventRepository;
@@ -54,7 +53,7 @@ public class RelTransRef extends RelTrans {
             for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
                 entry.getValue().remove(entry.getKey());
             }
-            for(Event e : program.getEventRepository().getEvents(EventRepository.EVENT_ALL)){
+            for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }
@@ -70,7 +69,7 @@ public class RelTransRef extends RelTrans {
         activeSet.retainAll(maxTupleSet);
 
         for(Tuple tuple : activeSet){
-            if(tuple.getFirst().getEId().equals(tuple.getSecond().getEId())){
+            if(tuple.getFirst().getEId() == tuple.getSecond().getEId()){
                 identityEncodeTupleSet.add(tuple);
             }
         }
@@ -83,17 +82,17 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         return invokeEncode("encodeApprox");
     }
 
     @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
+    protected BoolExpr encodeIDL() {
         return invokeEncode("encodeIDL");
     }
 
     @Override
-    protected BoolExpr encodeLFP() throws Z3Exception {
+    protected BoolExpr encodeLFP() {
         return invokeEncode("encodeLFP");
     }
 

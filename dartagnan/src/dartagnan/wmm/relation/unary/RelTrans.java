@@ -2,7 +2,6 @@ package dartagnan.wmm.relation.unary;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Z3Exception;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.utils.Utils;
@@ -77,7 +76,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() throws Z3Exception {
+    protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : fullEncodeTupleSet){
@@ -91,7 +90,7 @@ public class RelTrans extends UnaryRelation {
             }
 
             for(Event e3 : transitiveReachabilityMap.get(e1)){
-                if(!e3.getEId().equals(e1.getEId()) && !e3.getEId().equals(e2.getEId()) && transitiveReachabilityMap.get(e3).contains(e2)){
+                if(e3.getEId() != e1.getEId() && e3.getEId() != e2.getEId() && transitiveReachabilityMap.get(e3).contains(e2)){
                     orClause = ctx.mkOr(orClause, ctx.mkAnd(Utils.edge(this.getName(), e1, e3, ctx), Utils.edge(this.getName(), e3, e2, ctx)));
                 }
             }
@@ -107,7 +106,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() throws Z3Exception {
+    protected BoolExpr encodeIDL() {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : fullEncodeTupleSet){
@@ -159,7 +158,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeLFP() throws Z3Exception {
+    protected BoolExpr encodeLFP() {
         BoolExpr enc = ctx.mkTrue();
         int iteration = 0;
 
@@ -189,7 +188,7 @@ public class RelTrans extends UnaryRelation {
                 Event e1 = tuple1.getFirst();
                 Event e3 = tuple1.getSecond();
                 for(Tuple tuple2 : currentTupleSet){
-                    if(e3.getEId().equals(tuple2.getFirst().getEId())){
+                    if(e3.getEId() == tuple2.getFirst().getEId()){
                         Event e2 = tuple2.getSecond();
                         Tuple newTuple = new Tuple(e1, e2);
                         currentTupleMap.putIfAbsent(newTuple, new HashSet<>());
@@ -198,7 +197,7 @@ public class RelTrans extends UnaryRelation {
                                 Utils.edge(r1.getName() + "_" + iteration, e3, e2, ctx)
                         ));
 
-                        if(!newTuple.getFirst().getEId().equals(newTuple.getSecond().getEId())){
+                        if(newTuple.getFirst().getEId() != newTuple.getSecond().getEId()){
                             newTupleSet.add(newTuple);
                         }
                     }
@@ -249,8 +248,7 @@ public class RelTrans extends UnaryRelation {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
                 for (Event e3 : transitiveReachabilityMap.get(e1)) {
-                    if (!e3.getEId().equals(e1.getEId())
-                            && !e3.getEId().equals(e2.getEId())
+                    if (e3.getEId() != e1.getEId() && e3.getEId() != e2.getEId()
                             && transitiveReachabilityMap.get(e3).contains(e2)) {
                         processNext.add(new Tuple(e1, e3));
                         processNext.add(new Tuple(e3, e2));

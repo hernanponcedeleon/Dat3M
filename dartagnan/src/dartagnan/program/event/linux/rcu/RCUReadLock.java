@@ -1,10 +1,9 @@
 package dartagnan.program.event.linux.rcu;
 
-import dartagnan.program.utils.ClonableWithMemorisation;
 import dartagnan.program.event.Event;
-import dartagnan.program.event.filter.FilterUtils;
+import dartagnan.program.utils.linux.EType;
 
-public class RCUReadLock extends Event implements ClonableWithMemorisation {
+public class RCUReadLock extends Event {
 
     private RCUReadLock clone;
 
@@ -14,7 +13,7 @@ public class RCUReadLock extends Event implements ClonableWithMemorisation {
 
     public RCUReadLock(int condLevel){
         this.condLevel = condLevel;
-        this.addFilters(FilterUtils.EVENT_TYPE_ANY);
+        this.addFilters(EType.ANY, EType.RCU_LOCK);
     }
 
     @Override
@@ -24,11 +23,11 @@ public class RCUReadLock extends Event implements ClonableWithMemorisation {
 
     @Override
     public String label(){
-        return "F[rcu-lock]";
+        return "F[" + EType.RCU_LOCK + "]";
     }
 
     @Override
-    public void resetPreparedClone(){
+    public void beforeClone(){
         clone = null;
     }
 

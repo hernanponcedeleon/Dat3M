@@ -1,20 +1,22 @@
 package dartagnan.program;
 
+import com.microsoft.z3.ArithExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
+import dartagnan.expression.AExpr;
+import dartagnan.expression.IntExprInterface;
+import dartagnan.utils.MapSSA;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import com.microsoft.z3.*;
-
-import dartagnan.expression.IntExprInterface;
-import dartagnan.expression.AExpr;
-import dartagnan.utils.MapSSA;
 import static dartagnan.utils.Utils.ssaReg;
 
 public class Register extends AExpr implements IntExprInterface {
 
 	private String name;
-	private Integer mainThreadId;
+	private int mainThreadId = -1;
 	private String printMainThreadId;
 
 	public Register(String name) {
@@ -27,46 +29,50 @@ public class Register extends AExpr implements IntExprInterface {
 	public String getName() {
 		return name;
 	}
-	
+
+	public void setMainThreadId(int t) {
+		this.mainThreadId = t;
+	}
+
+	public Register setPrintMainThreadId(String threadId){
+		this.printMainThreadId = threadId;
+		return this;
+	}
+
+	public String getPrintMainThreadId(){
+		return printMainThreadId;
+	}
+
+	@Override
 	public String toString() {
         return name;
 	}
 
-	public Register setPrintMainThreadId(String threadId){
-	    this.printMainThreadId = threadId;
-	    return this;
-    }
-
-    public String getPrintMainThreadId(){
-	    return printMainThreadId;
-    }
-	
+	@Override
 	public Register clone() {
 		return this;
 	}
-	
-	public void setMainThreadId(Integer t) {
-		this.mainThreadId = t;
+
+	@Override
+	public ArithExpr toZ3(MapSSA map, Context ctx) {
+		if(mainThreadId > -1) {
+			return ssaReg(this, map.get(this), ctx);
+		}
+		throw new RuntimeException("Main thread is not set for " + this);
 	}
 
-	public ArithExpr toZ3(MapSSA map, Context ctx) throws Z3Exception {
-		if(getMainThreadId() == null) {
-			System.out.println(String.format("Check toZ3() for %s: null pointer!", this));
-		}
-		return ssaReg(this, map.get(this), ctx);
-	}
-	
+	@Override
 	public Set<Register> getRegs() {
-		HashSet<Register> setRegs = new HashSet<Register>();
+		HashSet<Register> setRegs = new HashSet<>();
 		setRegs.add(this);
 		return setRegs;
 	}
 
-	public Integer getMainThreadId() {
-		return mainThreadId;
-	}
-
+	@Override
 	public IntExpr getLastValueExpr(Context ctx){
-		return ctx.mkIntConst(getName() + "_" + getMainThreadId() + "_final");
+		if(mainThreadId > -1) {
+			return ctx.mkIntConst(getName() + "_" + mainThreadId + "_final");
+		}
+		throw new RuntimeException("Main thread is not set for " + this);
 	}
 }

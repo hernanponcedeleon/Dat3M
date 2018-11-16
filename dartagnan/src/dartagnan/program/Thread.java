@@ -1,155 +1,127 @@
 package dartagnan.program;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-
-import com.microsoft.z3.*;
-
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Skip;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
 public abstract class Thread {
 
-	protected int condLevel;
-	// Main thread where this Event, Seq, etc belongs
 	protected Thread mainThread;
-	protected Integer tid;
-	protected BoolExpr myGuard;
-
+	protected int tid;
+	protected int condLevel;
 	private EventRepository eventRepository;
 
-	public EventRepository getEventRepository(){
-		if(eventRepository == null){
-			eventRepository = new EventRepository(this);
-		}
-		return eventRepository;
-	}
-	
-	public int getCondLevel() {
-		return condLevel;
-	}
+    public void setMainThread(Thread t) {
+        this.mainThread = t;
+    }
 
-	public void setCondLevel(int condLevel) {
-		this.condLevel = condLevel;
-	}
-	
-	public void setGuard(BoolExpr guard, Context ctx) {
-		System.out.println("Check setGuard!");
-	}
-	
-	public void incCondLevel() {
-		condLevel++;
-	}
-	
-	public void decCondLevel() {
-		condLevel--;
-	}
-	
-	public Thread unroll(int steps, boolean obsNoTermination) {
-		System.out.println("Check unroll!");
-		return this;
-	}
-	
-	public Thread unroll(int steps) {
-		System.out.println("Check unroll!");
-		return this;
-	}
-	
-	public Thread compile(String target, boolean ctrl, boolean leading) {
-		System.out.println("Check compile!");
-		return this;
-	}
-	
-	public Thread optCompile(boolean ctrl, boolean leading) {
-		// CHECK!
-		return compile("", false, true);
-	}
-	
-	public Thread allCompile() {
-		System.out.println("Problem all compile!");
-		return null;
-	}
+    public Thread getMainThread() {
+        if(mainThread != null){
+            return mainThread;
+        }
+        throw new RuntimeException("Main thread is not initialised for " + this);
+    }
 
-	public abstract Thread clone();
+    public int getTId() {
+        return this.tid;
+    }
 
-	public void setMainThread(Thread t) {
-		this.mainThread = t;
-	}
+    public int setTId(int i) {
+        this.tid = i;
+        return i + 1;
+    }
 
-	public Thread getMainThread() {
-		if(mainThread == null){
-			throw new RuntimeException("Main thread is not initialised for \n" + this + "\n");
-		}
-		return mainThread;
-	}
+    public int getCondLevel() {
+        return condLevel;
+    }
 
-	public Integer getMainThreadId() {
-		if(mainThread == null){
-			throw new RuntimeException("Main thread is not initialised for \n" + this + "\n");
-		}
-		return mainThread.getTId();
-	}
-	
-	public BoolExpr encodeCF(Context ctx) throws Z3Exception {
-		System.out.println("Check encodeCF!");
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public void setCondLevel(int condLevel) {
+        this.condLevel = condLevel;
+    }
 
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public void incCondLevel() {
+        condLevel++;
+    }
 
-	public Integer setEId(Integer i) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public void decCondLevel() {
+        condLevel--;
+    }
 
-	public Set<Event> getEvents() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public Integer setTId(Integer i) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public EventRepository getEventRepository(){
+        if(eventRepository == null){
+            eventRepository = new EventRepository(this);
+        }
+        return eventRepository;
+    }
 
 	public String cfVar() {
 		return "CF" + hashCode();
 	}
 
-	public Integer getTId() {
-		return this.tid;
-	}
+	public void beforeClone(){}
 
-	public BoolExpr allExecute(Context ctx) {
-		// TODO Auto-generated method stub
-		System.out.println("Check allExecute!");
-		return null;
-	}
-
-    public static Thread fromArray(boolean createSkipOnNull, Thread... threads){
-        return fromList(createSkipOnNull, Arrays.asList(threads));
+    protected final String nTimesCondLevel() {
+        return String.join("", Collections.nCopies(condLevel, "  "));
     }
 
-    public static Thread fromList(boolean createSkipOnNull, List<Thread> threads) {
-        Thread result = null;
-        for (Thread t : threads) {
-            if(t != null){
-                result = result == null ? t : new Seq(result, t);
-            }
-        }
-
-        if(result == null && createSkipOnNull){
-            result = new Skip();
-        }
-
-        return result;
+    @Override
+    public Thread clone(){
+        // We can safely implement clone for all uncompilable classes, but we do not need it
+        throw new UnsupportedOperationException("Cloning is not supported for " + this.getClass().getName());
     }
+
+    public Set<Event> getEvents(){
+        // We can safely implement getEvents for all uncompilable classes, but we do not need it
+        throw new UnsupportedOperationException("Retrieving events is not supported for " + this.getClass().getName());
+    }
+
+    public Thread unroll(int steps, boolean obsNoTermination) {
+        throw new UnsupportedOperationException("Unrolling is not allowed for " + this.getClass().getName());
+    }
+
+    public Thread unroll(int steps) {
+        throw new UnsupportedOperationException("Unrolling is not allowed for " + this.getClass().getName());
+    }
+
+	public Thread compile(String target, boolean ctrl, boolean leading) {
+        throw new UnsupportedOperationException("Compilation is not allowed for " + this.getClass().getName());
+	}
+
+    public int setEId(int i){
+        throw new UnsupportedOperationException("Event ID cannot be set for " + this.getClass().getName());
+    }
+
+	public BoolExpr encodeCF(Context ctx){
+        throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
+    }
+
+	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx){
+	    throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
+    }
+
+	public static Thread fromArray(boolean createSkipOnNull, Thread... threads) {
+		return fromList(createSkipOnNull, Arrays.asList(threads));
+	}
+
+	public static Thread fromList(boolean createSkipOnNull, List<Thread> threads) {
+		Thread result = null;
+		for (Thread t : threads) {
+			if(t != null){
+				result = result == null ? t : new Seq(result, t);
+			}
+		}
+		if(result == null && createSkipOnNull){
+			result = new Skip();
+		}
+		return result;
+	}
 }

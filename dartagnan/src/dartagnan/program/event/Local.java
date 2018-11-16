@@ -1,39 +1,48 @@
 package dartagnan.program.event;
 
-import java.util.Collections;
-
-import com.microsoft.z3.*;
-
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
+
 import static dartagnan.utils.Utils.ssaReg;
 
 public class Local extends Event {
 	
 	private Register reg;
 	private ExprInterface expr;
-	private Integer ssaRegIndex;
+	private int ssaRegIndex;
 	
 	public Local(Register reg, ExprInterface expr) {
 		this.reg = reg;
 		this.expr = expr;
 		this.condLevel = 0;
 	}
-	
+
+    @Override
 	public Register getReg() {
 		return reg;
 	}
-	
+
+    @Override
 	public ExprInterface getExpr() {
 		return expr;
 	}
 
+    @Override
 	public String toString() {
-		return String.format("%s%s <- %s", String.join("", Collections.nCopies(condLevel, "  ")), reg, expr);
+		return nTimesCondLevel() + reg + " <- " + expr;
 	}
-	
+
+    @Override
+    public int getSsaRegIndex() {
+        return ssaRegIndex;
+    }
+
+    @Override
 	public Local clone() {
 		Register newReg = reg.clone();
 		ExprInterface newExpr = expr.clone();
@@ -44,20 +53,14 @@ public class Local extends Event {
 		return newLocal;
 	}
 
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) throws Z3Exception {
-		if(mainThread == null){
-			System.out.println(String.format("Check encodeDF for %s", this));
-			return null;
-		}
-		else {
+    @Override
+	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
+		if(mainThread != null){
 			Expr z3Expr = expr.toZ3(map, ctx);
 			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
 			this.ssaRegIndex = map.get(reg);
 			return new Pair<>(ctx.mkImplies(executes(ctx), expr.encodeAssignment(map, ctx, z3Reg, z3Expr)), map);
-		}		
-	}
-	
-	public Integer getSsaRegIndex() {
-			return ssaRegIndex;
+		}
+		throw new RuntimeException("Main thread is not set for " + toString());
 	}
 }
