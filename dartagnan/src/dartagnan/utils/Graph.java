@@ -171,7 +171,7 @@ public class Graph {
                 .map(e -> (MemEvent)e)
                 .collect(Collectors.toSet());
 
-        Set<Location> locations = program.getEventRepository().getLocations();
+        Set<Location> locations = program.getLocations();
 
         for(Location location : locations){
             Map<Event, Integer> map = new HashMap<>();

@@ -79,13 +79,6 @@ public class EventRepository {
                 || ((mask & RCU_SYNC) > 0 && event instanceof RCUSync);
     }
 
-    public Set<Location> getLocations(){
-        if(locations == null){
-            locations = getEvents(EventRepository.MEMORY).stream().map(Event::getLoc).collect(Collectors.toSet());
-        }
-        return locations;
-    }
-
     public Set<Register> getRegisters(){
         if(registers == null){
             registers = getEvents(EventRepository.LOAD | EventRepository.LOCAL | EventRepository.STORE)

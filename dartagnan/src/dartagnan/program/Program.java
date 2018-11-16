@@ -3,10 +3,8 @@ package dartagnan.program;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.asserts.AbstractAssert;
-import dartagnan.program.event.Event;
-import dartagnan.program.event.Init;
-import dartagnan.program.event.Load;
-import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.*;
+import dartagnan.program.memory.Memory;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -22,13 +20,16 @@ public class Program extends Thread {
 	private AbstractAssert ass;
     private AbstractAssert assFilter;
 	private List<Thread> threads;
+	private Memory memory;
 
-    public Program(){
-        this("");
+    public Program(Memory memory){
+        this("", memory);
     }
 
-	public Program (String name) {
+	public Program (String name, Memory memory) {
+        // TODO: memory must be @NotNull
 		this.name = name;
+		this.memory = memory;
 		this.threads = new ArrayList<>();
 	}
 
@@ -60,6 +61,10 @@ public class Program extends Thread {
         return threads;
     }
 
+    public Set<Location> getLocations(){
+        return memory.getLocations();
+    }
+
 	@Override
 	public Set<Event> getEvents(){
 		Set<Event> events = new HashSet<>();
@@ -71,7 +76,7 @@ public class Program extends Thread {
 
     @Override
 	public Program clone() {
-        Program newP = new Program(name);
+        Program newP = new Program(name, memory);
 		for(Thread t : threads){
 		    t.beforeClone();
             newP.add(t.clone());
@@ -88,7 +93,7 @@ public class Program extends Thread {
         for(int i = 0; i < threads.size(); i++){
             threads.set(i, threads.get(i).unroll(steps, obsNoTermination));
         }
-		for(Location location : getEventRepository().getLocations()) {
+		for(Location location : memory.getLocations()) {
 			threads.add(new Init(location));
 		}
         getEventRepository().clear();

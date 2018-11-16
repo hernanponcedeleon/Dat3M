@@ -71,7 +71,7 @@ public class Encodings {
 	
 	public static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
 		BoolExpr reachedState = ctx.mkTrue();
-		for(Location loc : p.getEventRepository().getLocations()) {
+		for(Location loc : p.getLocations()) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
 		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());

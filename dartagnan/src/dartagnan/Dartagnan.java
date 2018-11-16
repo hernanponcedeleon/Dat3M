@@ -7,8 +7,8 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
-import dartagnan.parsers.PorthosLexer;
-import dartagnan.parsers.PorthosParser;
+//import dartagnan.parsers.PorthosLexer;
+//import dartagnan.parsers.PorthosParser;
 import dartagnan.parsers.cat.ParserCat;
 import dartagnan.program.Program;
 import dartagnan.utils.Graph;
@@ -149,6 +149,7 @@ public class Dartagnan {
 			return parser.parse(inputFilePath);
 		}
 
+		/*
 		if(inputFilePath.endsWith("pts")) {
 			PorthosLexer lexer = new PorthosLexer(charStream);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -156,6 +157,7 @@ public class Dartagnan {
 			parser.addErrorListener(new DiagnosticErrorListener(true));
 			return parser.program(inputFilePath).p;
 		}
+		*/
 
 		throw new RuntimeException("Unrecognised program format");
 	}

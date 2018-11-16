@@ -12,11 +12,9 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.If;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
+import dartagnan.program.memory.Memory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class ProgramBuilder {
 
@@ -26,15 +24,19 @@ public class ProgramBuilder {
     private Map<String, Map<String, Register>> registers = new HashMap<>();
     private Map<String, Map<String, Location>> mapRegLoc = new HashMap<>();
     private Map<String, Map<String, Label>> labels = new HashMap<>();
-    protected Map<String, LinkedList<Thread>> threads = new HashMap<>();
-
-    private Program program = new Program();
+    private Map<String, LinkedList<Thread>> threads = new HashMap<>();
+    private AbstractAssert ass;
+    private AbstractAssert assFilter;
 
     public Program build(){
+        Memory memory = new Memory(new HashSet<>(locations.values()));
+        Program program = new Program(memory);
         for(LinkedList<Thread> thread : threads.values()){
             thread = buildBranches(thread);
             program.add(Thread.fromList(true, thread));
         }
+        program.setAss(ass);
+        program.setAssFilter(assFilter);
         return program;
     }
 
@@ -59,11 +61,11 @@ public class ProgramBuilder {
     }
 
     public void setAssert(AbstractAssert ass){
-        program.setAss(ass);
+        this.ass = ass;
     }
 
     public void setAssertFilter(AbstractAssert ass){
-        program.setAssFilter(ass);
+        this.assFilter = ass;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
