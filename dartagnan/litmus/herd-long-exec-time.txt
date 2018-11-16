@@ -120,3 +120,4 @@ litmus/C/manual/absperf/C-SB+l-o-o-u+l-o-o-u+l-o-o-u+l-o-o-u-XE.litmus
 litmus/C/manual/kernel/C-ManfredSpraul-L1G1xchg.litmus
 litmus/C/manual/kernel/C-ManfredSpraul-L1G1xchgnr.litmus
 litmus/C/manual/kernel/C-ManfredSpraul-L1G2xchg.litmus
+litmus/C/manual/demo/C-ISA2-6+o-sync-o+o-sync-o+o-sync-o+rl-o-o-rul+rl-o-o-rul+rl-o-o-rul.litmus
