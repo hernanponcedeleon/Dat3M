@@ -28,7 +28,7 @@ public class AExpr implements ExprInterface {
 
     @Override
 	public String toString() {
-		return lhs + " " + op + " " + rhs;
+		return "(" + lhs + " " + op + " " + rhs + ")";
 	}
 
     @Override

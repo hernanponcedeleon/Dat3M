@@ -1,0 +1,10 @@
+litmus/C/auto/C-RW-G+RW-B+RW-G+RW-B+RW-G+RW-G+RW-G+RW-B.litmus
+litmus/C/auto/C-RW-G+RW-B+RW-G+RW-G+RW-G+RW-B+RW-B+RW-B.litmus
+litmus/C/auto/C-RW-G+RW-B+RW-G+RW-G+RW-G+RW-G+RW-G+RW-B.litmus
+litmus/C/auto/C-RW-G+RW-G+RW-G+RW-B+RW-G+RW-G+RW-G+RW-B.litmus
+litmus/C/auto/C-RW-G+RW-G+RW-G+RW-G+RW-B+RW-G+RW-G+RW-B.litmus
+litmus/C/auto/C-RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-B+RW-B.litmus
+litmus/C/auto/C-RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-B.litmus
+litmus/C/auto/C-RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-G.litmus
+litmus/C/auto/C-RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-RB.litmus
+litmus/C/auto/C-RW-G+RW-G+RW-G+RW-G+RW-G+RW-G+RW-RB.litmus

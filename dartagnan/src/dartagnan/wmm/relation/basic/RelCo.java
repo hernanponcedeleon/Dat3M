@@ -95,19 +95,25 @@ public class RelCo extends Relation {
         String name = getName();
 
         for(Event e1 : events) {
-            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0))));
-            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkLe(Utils.intVar(name, e1, ctx), ctx.mkInt(events.size()))));
+            enc = ctx.mkAnd(enc, ctx.mkNot(edge(name, e1, e1, ctx)));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkAnd(
+                    ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0)),
+                    ctx.mkLe(Utils.intVar(name, e1, ctx), ctx.mkInt(events.size()))
+            )));
             for(Event e2 : events) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(edge(name, e1, e2, ctx),
-                        ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))));
-                enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
-                        ctx.mkImplies(ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)),
-                                edge(name, e1, e2, ctx))));
                 if(e1 != e2) {
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(edge(name, e1, e2, ctx),
+                            ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))));
+
                     enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
-                            ctx.mkNot(ctx.mkEq(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)))));
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
-                            ctx.mkOr(edge(name, e1, e2, ctx), edge(name, e2, e1, ctx))));
+                            ctx.mkAnd(
+                                    ctx.mkImplies(ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)), edge(name, e1, e2, ctx)),
+                                    ctx.mkAnd(
+                                            ctx.mkNot(ctx.mkEq(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))),
+                                            ctx.mkOr(edge(name, e1, e2, ctx), edge(name, e2, e1, ctx))
+                                    )
+                            )
+                    ));
                 }
             }
         }
