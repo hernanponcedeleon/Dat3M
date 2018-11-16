@@ -24,30 +24,32 @@ public class DartagnanTest {
 
         Runner runner = new Runner("src/dartagnan/tests/resources/dart-expected.csv", ",");
 
+        HashSet<String> blacklist = runner.loadList("src/dartagnan/tests/resources/blacklist.txt");
         HashSet<String> linuxFPBlacklist = runner.loadList("litmus/dart-fixpoint-long-exec-time.txt");
+        linuxFPBlacklist.addAll(blacklist);
 
-        runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, false, false, null);
-        runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, false, true, null);
-        runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, true, false, null);
+        runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, false, false, blacklist);
+        runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, false, true, blacklist);
+        runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, true, false, blacklist);
 
-        runner.runGroup("litmus/PPC", "power", "cat/power.cat", 2, false, false, null);
-        runner.runGroup("litmus/PPC", "power", "cat/power.cat", 2, false, true, null);
-        runner.runGroup("litmus/PPC", "power", "cat/power.cat", 2, true, false, null);
+        runner.runGroup("litmus/PPC", "power", "cat/power.cat", 2, false, false, blacklist);
+        runner.runGroup("litmus/PPC", "power", "cat/power.cat", 2, false, true, blacklist);
+        runner.runGroup("litmus/PPC", "power", "cat/power.cat", 2, true, false, blacklist);
 
         runner.runGroup("litmus/C/manual", "sc", "cat/linux-kernel.cat", 2, false, false, linuxFPBlacklist);
         runner.runGroup("litmus/C/luc", "sc", "cat/linux-kernel.cat", 2, false, false, linuxFPBlacklist);
         runner.runGroup("litmus/C/auto", "sc", "cat/linux-kernel.cat", 2, false, false, linuxFPBlacklist);
         runner.runGroup("litmus/C/dart", "sc", "cat/linux-kernel.cat", 2, false, false, linuxFPBlacklist);
 
-        runner.runGroup("litmus/C/manual", "sc", "cat/linux-kernel.cat", 2, false, true, null);
-        runner.runGroup("litmus/C/luc", "sc", "cat/linux-kernel.cat", 2, false, true, null);
-        runner.runGroup("litmus/C/auto", "sc", "cat/linux-kernel.cat", 2, false, true, null);
-        runner.runGroup("litmus/C/dart", "sc", "cat/linux-kernel.cat", 2, false, true, null);
+        runner.runGroup("litmus/C/manual", "sc", "cat/linux-kernel.cat", 2, false, true, blacklist);
+        runner.runGroup("litmus/C/luc", "sc", "cat/linux-kernel.cat", 2, false, true, blacklist);
+        runner.runGroup("litmus/C/auto", "sc", "cat/linux-kernel.cat", 2, false, true, blacklist);
+        runner.runGroup("litmus/C/dart", "sc", "cat/linux-kernel.cat", 2, false, true, blacklist);
 
-        runner.runGroup("litmus/C/manual", "sc", "cat/linux-kernel.cat", 2, true, false, null);
-        runner.runGroup("litmus/C/luc", "sc", "cat/linux-kernel.cat", 2, true, false, null);
-        runner.runGroup("litmus/C/auto", "sc", "cat/linux-kernel.cat", 2, true, false, null);
-        runner.runGroup("litmus/C/dart", "sc", "cat/linux-kernel.cat", 2, true, false, null);
+        runner.runGroup("litmus/C/manual", "sc", "cat/linux-kernel.cat", 2, true, false, blacklist);
+        runner.runGroup("litmus/C/luc", "sc", "cat/linux-kernel.cat", 2, true, false, blacklist);
+        runner.runGroup("litmus/C/auto", "sc", "cat/linux-kernel.cat", 2, true, false, blacklist);
+        runner.runGroup("litmus/C/dart", "sc", "cat/linux-kernel.cat", 2, true, false, blacklist);
     }
 }
 
@@ -112,10 +114,10 @@ class Runner {
 
     private void printResult(String test, int result, int expected){
         if(result == ERROR){
-            System.out.println(String.format("%-100s%-6s%-6s%-6s", test, "Error", "", "!!!"));
+            System.out.println(String.format("%-120s%-6s%-6s%-6s", test, "Error", "", "!!!"));
         } else if(!printFailedOnly || result != expected){
             String warning = result == expected ? "" : "!!!";
-            System.out.println(String.format("%-100s%-6s%-6s%-6s", test, result, expected, warning));
+            System.out.println(String.format("%-120s%-6s%-6s%-6s", test, result, expected, warning));
         }
     }
 
