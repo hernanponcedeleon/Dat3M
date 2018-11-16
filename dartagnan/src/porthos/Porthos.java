@@ -119,8 +119,8 @@ public class Porthos {
 
         Context ctx = new Context();
         ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-        Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
-        Solver s2 = ctx.mkSolver(ctx.mkTactic("qfufbv"));
+        Solver s = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+        Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
@@ -153,7 +153,7 @@ public class Porthos {
 
         int iterations = 0;
         Status lastCheck = Status.SATISFIABLE;
-        Set<Expr> visited = new HashSet<Expr>();
+        Set<Expr> visited = new HashSet<>();
 
         while(lastCheck == Status.SATISFIABLE) {
 
