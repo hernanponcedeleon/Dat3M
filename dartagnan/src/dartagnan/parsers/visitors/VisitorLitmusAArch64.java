@@ -13,7 +13,7 @@ import dartagnan.parsers.utils.branch.Label;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
-import dartagnan.program.event.rmw.cond.LocalCondStatus;
+import dartagnan.program.event.rmw.cond.SetStatusReg;
 import dartagnan.program.event.rmw.cond.RMWStoreCondWithStatus;
 import dartagnan.program.event.rmw.RMWLoad;
 
@@ -146,7 +146,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
             programBuilder.addChild(mainThread, store);
 
             Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
-            LocalCondStatus local = new LocalCondStatus(statusReg, store);
+            SetStatusReg local = new SetStatusReg(statusReg, store);
             return programBuilder.addChild(mainThread, local);
         }
         throw new ParsingException("Unbalanced exclusive store " + ctx.getText());

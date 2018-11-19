@@ -5,21 +5,28 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import dartagnan.expression.AConst;
 import dartagnan.program.Register;
-import dartagnan.program.event.Local;
+import dartagnan.program.event.Event;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 import static dartagnan.utils.Utils.ssaReg;
 
-public class LocalCondStatus extends Local implements RegWriter {
+public class SetStatusReg extends Event implements RegWriter {
 
-    // TODO: Remove inheritance from Local. This event cannot have expr
+    private Register reg;
+    private int ssaRegIndex;
     private RMWStoreCondWithStatus storeEvent;
 
-    public LocalCondStatus(Register register, RMWStoreCondWithStatus storeEvent){
-        super(register, new AConst(0));
+    public SetStatusReg(Register register, RMWStoreCondWithStatus storeEvent){
+        this.reg = register;
+        this.condLevel = 0;
         this.storeEvent = storeEvent;
+    }
+
+    @Override
+    public Register getModifiedReg(){
+        return reg;
     }
 
     @Override
@@ -28,8 +35,13 @@ public class LocalCondStatus extends Local implements RegWriter {
     }
 
     @Override
-    public LocalCondStatus clone() {
-        LocalCondStatus newLocalStatus = new LocalCondStatus(reg.clone(), storeEvent.clone());
+    public int getSsaRegIndex() {
+        return ssaRegIndex;
+    }
+
+    @Override
+    public SetStatusReg clone() {
+        SetStatusReg newLocalStatus = new SetStatusReg(reg.clone(), storeEvent.clone());
         newLocalStatus.condLevel = condLevel;
         newLocalStatus.setHLId(hashCode());
         newLocalStatus.setUnfCopy(getUnfCopy());
@@ -42,7 +54,7 @@ public class LocalCondStatus extends Local implements RegWriter {
             Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
             this.ssaRegIndex = map.get(reg);
             return new Pair<>(ctx.mkAnd(
-                    ctx.mkImplies(storeEvent.executes(ctx), ctx.mkEq(z3Reg, expr.toZ3(map, ctx))),
+                    ctx.mkImplies(storeEvent.executes(ctx), ctx.mkEq(z3Reg, new AConst(0).toZ3(map, ctx))),
                     ctx.mkImplies(ctx.mkNot(storeEvent.executes(ctx)), ctx.mkEq(z3Reg, new AConst(1).toZ3(map, ctx)))
             ), map);
         }
