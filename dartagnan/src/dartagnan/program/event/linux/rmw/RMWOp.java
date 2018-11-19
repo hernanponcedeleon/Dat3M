@@ -38,7 +38,7 @@ public class RMWOp extends RMWAbstract {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "atomic_" + opToText(op) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + "atomic_" + op.toLinuxName() + "(" + value + ", " + loc + ")";
     }
 
     @Override

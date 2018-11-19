@@ -15,12 +15,12 @@ import static dartagnan.utils.Utils.mergeMaps;
 
 public class If extends Event {
 
-    private ExprInterface pred;
+    private ExprInterface expr;
     private Thread t1;
     private Thread t2;
 
-    public If(ExprInterface pred, Thread t1, Thread t2) {
-        this.pred = pred;
+    public If(ExprInterface expr, Thread t1, Thread t2) {
+        this.expr = expr;
         this.t1 = t1;
         this.t2 = t2;
         t1.incCondLevel();
@@ -45,7 +45,7 @@ public class If extends Event {
 
     @Override
     public ExprInterface getExpr(){
-        return pred;
+        return expr;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class If extends Event {
         newT1.decCondLevel();
         Thread newT2 = t2.clone();
         newT2.decCondLevel();
-        ExprInterface newPred = pred.clone();
+        ExprInterface newPred = expr.clone();
         If newIf = new If(newPred, newT1, newT2);
         newIf.condLevel = condLevel;
         return newIf;
@@ -143,8 +143,8 @@ public class If extends Event {
             MapSSA map1 = map.clone();
             MapSSA map2 = map.clone();
 
-            BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), pred.toZ3Boolean(map, ctx)),
-                    ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(pred.toZ3Boolean(map, ctx))));
+            BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Boolean(map, ctx)),
+                    ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Boolean(map, ctx))));
 
             Pair<BoolExpr, MapSSA> p1 = t1.encodeDF(map1, ctx);
             enc = ctx.mkAnd(enc, p1.getFirst());
@@ -169,9 +169,9 @@ public class If extends Event {
     @Override
     public String toString() {
         if (t2 instanceof Skip)
-            return nTimesCondLevel() + "if (" + pred + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}";
+            return nTimesCondLevel() + "if (" + expr + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}";
         else
-            return nTimesCondLevel() + "if (" + pred + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}\n"
+            return nTimesCondLevel() + "if (" + expr + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}\n"
                     + nTimesCondLevel() + "else {\n" + t2 + "\n" + nTimesCondLevel() + "}";
     }
 }

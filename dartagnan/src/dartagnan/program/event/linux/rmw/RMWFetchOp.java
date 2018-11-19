@@ -38,7 +38,7 @@ public class RMWFetchOp extends RMWAbstract {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_fetch_" + opToText(op) + atomicToText(atomic) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + reg + " := atomic_fetch_" + op.toLinuxName() + atomicToText(atomic) + "(" + value + ", " + loc + ")";
     }
 
     @Override

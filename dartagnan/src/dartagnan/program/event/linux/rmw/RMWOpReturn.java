@@ -39,7 +39,7 @@ public class RMWOpReturn extends RMWAbstract {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + opToText(op) + "_return" + atomicToText(atomic) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", " + loc + ")";
     }
 
     @Override

@@ -43,7 +43,7 @@ public class RMWOpAndTest extends RMWAbstract {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + opToText(op) + "_and_test(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + loc + ")";
     }
 
     @Override

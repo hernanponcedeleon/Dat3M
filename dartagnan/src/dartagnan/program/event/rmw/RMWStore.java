@@ -9,8 +9,8 @@ public class RMWStore extends Store {
 
     protected RMWLoad loadEvent;
 
-    public RMWStore(RMWLoad loadEvent, Location loc, ExprInterface val, String atomic) {
-        super(loc, val, atomic);
+    public RMWStore(RMWLoad loadEvent, Location loc, ExprInterface value, String atomic) {
+        super(loc, value, atomic);
         addFilters(EType.RMW);
         this.loadEvent = loadEvent;
     }
@@ -23,7 +23,7 @@ public class RMWStore extends Store {
     public RMWStore clone() {
         Location newLoc = loc.clone();
         RMWLoad newLoad = loadEvent.clone();
-        ExprInterface newVal = val.clone();
+        ExprInterface newVal = value.clone();
         RMWStore newStore = new RMWStore(newLoad, newLoc, newVal, atomic);
         newStore.condLevel = condLevel;
         newStore.setHLId(getHLId());

@@ -9,12 +9,10 @@ import dartagnan.program.utils.EType;
 
 public class Write extends MemEvent {
 
-	private ExprInterface val;
-	private Register reg;
+	private ExprInterface value;
 
-	public Write(Location loc, ExprInterface expr, String atomic){
-		this.val = expr;
-		this.reg = (val instanceof Register) ? (Register) val : null;
+	public Write(Location loc, ExprInterface value, String atomic){
+		this.value = value;
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
@@ -22,19 +20,22 @@ public class Write extends MemEvent {
 		addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
 	}
 
-	@Override
-	public Register getReg() {
-		return (reg);
-	}
+    @Override
+    public Register getReg() {
+        if(value instanceof Register){
+            return (Register)value;
+        }
+        return null;
+    }
 
 	@Override
 	public String toString() {
-		return nTimesCondLevel() + loc + ".store(" +  val + "," + atomic + ")";
+		return nTimesCondLevel() + loc + ".store(" +  value + "," + atomic + ")";
 	}
 
 	@Override
 	public Write clone() {
-        Write newWrite = new Write(loc, val, atomic);
+        Write newWrite = new Write(loc, value, atomic);
 		newWrite.condLevel = condLevel;
 		newWrite.memId = memId;
 		newWrite.setUnfCopy(getUnfCopy());
@@ -43,7 +44,7 @@ public class Write extends MemEvent {
 
 	@Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-        Store st = new Store(loc, val, atomic);
+        Store st = new Store(loc, value, atomic);
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
 		st.setCondLevel(this.condLevel);

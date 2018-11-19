@@ -5,7 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 
 public enum AOpBin {
-    PLUS, MINUS, MULT, DIV, AND, OR, XOR;
+    PLUS, MINUS, MULT, DIV, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
 
     @Override
     public String toString() {
@@ -24,8 +24,24 @@ public enum AOpBin {
                 return "|";
             case XOR:
                 return "^";
+            case L_SHIFT:
+                return "<<";
+            case R_SHIFT:
+                return ">>";
+            case AR_SHIFT:
+                return ">>";
         }
         return super.toString();
+    }
+
+    public String toLinuxName(){
+        switch(this){
+            case PLUS:
+                return "add";
+            case MINUS:
+                return "sub";
+        }
+        throw new UnsupportedOperationException("Linux op name is not defined for " + this);
     }
 
     public ArithExpr encode(ArithExpr e1, ArithExpr e2, Context ctx){

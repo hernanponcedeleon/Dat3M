@@ -14,12 +14,10 @@ import static dartagnan.utils.Utils.ssaLoc;
 
 public class Store extends MemEvent {
 
-	protected ExprInterface val;
-	protected Register reg;
+	protected ExprInterface value;
 
-	public Store(Location loc, ExprInterface val, String atomic) {
-		this.val = val;
-		this.reg = (val instanceof Register) ? (Register) val : null;
+	public Store(Location loc, ExprInterface value, String atomic) {
+		this.value = value;
 		this.loc = loc;
 		this.atomic = atomic;
 		this.condLevel = 0;
@@ -28,12 +26,15 @@ public class Store extends MemEvent {
 
 	@Override
 	public Register getReg() {
-		return reg;
+		if(value instanceof Register){
+			return (Register)value;
+		}
+		return null;
 	}
 
 	@Override
 	public String toString() {
-        return nTimesCondLevel() + loc + " := " + val;
+        return nTimesCondLevel() + loc + " := " + value;
 	}
 
 	@Override
@@ -43,13 +44,13 @@ public class Store extends MemEvent {
 
 	@Override
 	public ExprInterface getExpr(){
-		return val;
+		return value;
 	}
 
 	@Override
 	public Store clone() {
         Location newLoc = loc.clone();
-        ExprInterface newVal = val.clone();
+        ExprInterface newVal = value.clone();
 		Store newStore = new Store(newLoc, newVal, atomic);
 		newStore.condLevel = condLevel;
 		newStore.setHLId(getHLId());
@@ -60,10 +61,10 @@ public class Store extends MemEvent {
 	@Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
 		if(mainThread != null){
-			Expr z3Expr = val.toZ3(map, ctx);
+			Expr z3Expr = value.toZ3(map, ctx);
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLoc = z3Loc;
-			return new Pair<>(ctx.mkImplies(executes(ctx), val.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
+			return new Pair<>(ctx.mkImplies(executes(ctx), value.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
 		}
 		throw new RuntimeException("Main thread is not set for " + toString());
 	}

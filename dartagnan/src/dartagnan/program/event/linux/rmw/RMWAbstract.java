@@ -1,7 +1,6 @@
 package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.ExprInterface;
-import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -70,17 +69,6 @@ public abstract class RMWAbstract extends MemEvent {
         event.setHLId(memId);
         event.setUnfCopy(getUnfCopy());
         event.setCondLevel(condLevel);
-    }
-
-    protected String opToText(AOpBin op){
-        switch (op){
-            case PLUS:
-                return "add";
-            case MINUS:
-                return "sub";
-            default:
-                throw new RuntimeException("Unrecognised operation " + op + " in " + this.getClass().getName());
-        }
     }
 
     protected String atomicToText(String atomic){

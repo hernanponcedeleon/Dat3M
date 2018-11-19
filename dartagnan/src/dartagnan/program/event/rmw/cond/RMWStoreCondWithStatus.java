@@ -11,13 +11,13 @@ public class RMWStoreCondWithStatus extends RMWStore {
 
     private RMWStoreCondWithStatus clone;
 
-    public RMWStoreCondWithStatus(RMWLoad loadEvent, Location location, ExprInterface val, String atomic){
-        super(loadEvent, location, val, atomic);
+    public RMWStoreCondWithStatus(RMWLoad loadEvent, Location location, ExprInterface value, String atomic){
+        super(loadEvent, location, value, atomic);
     }
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "status = (" + loc + " := " + val + ")";
+        return nTimesCondLevel() + "status = (" + loc + " := " + value + ")";
     }
 
     @Override
@@ -33,7 +33,7 @@ public class RMWStoreCondWithStatus extends RMWStore {
     @Override
     public RMWStoreCondWithStatus clone() {
         if(clone == null){
-            clone = new RMWStoreCondWithStatus(loadEvent.clone(), loc.clone(), val.clone(), atomic);
+            clone = new RMWStoreCondWithStatus(loadEvent.clone(), loc.clone(), value.clone(), atomic);
             clone.condLevel = condLevel;
             clone.setHLId(getHLId());
             clone.setUnfCopy(getUnfCopy());

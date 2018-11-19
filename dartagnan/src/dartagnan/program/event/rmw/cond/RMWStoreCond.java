@@ -8,8 +8,8 @@ import dartagnan.program.event.rmw.RMWStore;
 
 public class RMWStoreCond extends RMWStore {
 
-    public RMWStoreCond(RMWReadCond loadEvent, Location loc, ExprInterface val, String atomic) {
-        super(loadEvent, loc, val, atomic);
+    public RMWStoreCond(RMWReadCond loadEvent, Location loc, ExprInterface value, String atomic) {
+        super(loadEvent, loc, value, atomic);
     }
 
     @Override
