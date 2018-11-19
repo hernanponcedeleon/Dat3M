@@ -61,7 +61,7 @@ class Runner {
     private static final int ERROR = -2;
 
     private boolean printFailedOnly = false;
-    private boolean printStackTrace = false;
+    private boolean printStackTrace = true;
 
     private HashMap<String, Integer> expectedData;
 
@@ -90,14 +90,15 @@ class Runner {
 
                             } catch (Exception e) {
                                 printResult(test, ERROR, ERROR);
+                                if(printStackTrace){
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     });
 
         } catch(IOException e){
-            if(printStackTrace){
-                e.printStackTrace();
-            }
+            e.printStackTrace();
         }
     }
 
