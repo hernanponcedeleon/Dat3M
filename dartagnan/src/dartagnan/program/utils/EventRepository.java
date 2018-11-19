@@ -1,6 +1,5 @@
 package dartagnan.program.utils;
 
-import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
@@ -10,6 +9,7 @@ import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.RMWAbstract;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.tso.Xchg;
+import dartagnan.program.event.utils.RegWriter;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,7 +38,6 @@ public class EventRepository {
     public static final int VISIBLE = MEMORY | FENCE | RCU;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
-    private Set<Location> locations;
     private Set<Register> registers;
     private Thread thread;
 
@@ -60,7 +59,6 @@ public class EventRepository {
     }
 
     public void clear(){
-        locations = null;
         registers = null;
         sets.clear();
     }
@@ -81,10 +79,12 @@ public class EventRepository {
 
     public Set<Register> getRegisters(){
         if(registers == null){
-            registers = getEvents(EventRepository.LOAD | EventRepository.LOCAL | EventRepository.STORE)
-                    .stream()
-                    .filter(e -> e.getReg() != null)
-                    .map(Event::getReg).collect(Collectors.toSet());
+            registers = new HashSet<>();
+            for(Event e : getEvents(ALL)){
+                if(e instanceof RegWriter){
+                    registers.add(((RegWriter) e).getModifiedReg());
+                }
+            }
         }
         return registers;
     }

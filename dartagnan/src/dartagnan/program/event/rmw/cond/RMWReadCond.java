@@ -7,13 +7,18 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.rmw.RMWLoad;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
-public abstract class RMWReadCond extends RMWLoad {
+public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData {
 
     protected ExprInterface cmp;
     protected BoolExpr z3Cond;
@@ -29,6 +34,15 @@ public abstract class RMWReadCond extends RMWLoad {
         }
         // encodeDF must be called before encodeCF, otherwise this exception will be thrown
         throw new RuntimeException("z3Cond is requested before it has been initialised in " + this.getClass().getName());
+    }
+
+    @Override
+    public Set<Register> getDataRegs(){
+        Set<Register> regs = new HashSet<>();
+        if(cmp instanceof Register){
+            regs.add((Register) cmp);
+        }
+        return regs;
     }
 
     @Override

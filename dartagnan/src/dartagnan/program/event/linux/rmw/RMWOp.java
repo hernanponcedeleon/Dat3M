@@ -9,9 +9,11 @@ import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.linux.EType;
 
-public class RMWOp extends RMWAbstract {
+public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
     private AOpBin op;
 

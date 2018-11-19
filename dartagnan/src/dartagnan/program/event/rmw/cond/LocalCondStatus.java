@@ -6,13 +6,15 @@ import com.microsoft.z3.Expr;
 import dartagnan.expression.AConst;
 import dartagnan.program.Register;
 import dartagnan.program.event.Local;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 import static dartagnan.utils.Utils.ssaReg;
 
-public class LocalCondStatus extends Local {
+public class LocalCondStatus extends Local implements RegWriter {
 
+    // TODO: Remove inheritance from Local. This event cannot have expr
     private RMWStoreCondWithStatus storeEvent;
 
     public LocalCondStatus(Register register, RMWStoreCondWithStatus storeEvent){

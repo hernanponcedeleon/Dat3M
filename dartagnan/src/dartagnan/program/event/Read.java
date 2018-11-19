@@ -4,9 +4,10 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EType;
 
-public class Read extends MemEvent {
+public class Read extends MemEvent implements RegWriter {
 
 	private Register reg;
 	
@@ -20,7 +21,7 @@ public class Read extends MemEvent {
 	}
 
 	@Override
-	public Register getReg() {
+	public Register getModifiedReg(){
 		return reg;
 	}
 

@@ -10,9 +10,14 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.rmw.cond.FenceCond;
 import dartagnan.program.event.rmw.cond.RMWReadCond;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.linux.EType;
 
-public abstract class RMWAbstract extends MemEvent {
+import java.util.HashSet;
+import java.util.Set;
+
+public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
 
     protected Register reg;
     protected ExprInterface value;
@@ -28,10 +33,21 @@ public abstract class RMWAbstract extends MemEvent {
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW);
     }
 
-    public Register getReg() {
+    @Override
+    public Register getModifiedReg() {
         return reg;
     }
 
+    @Override
+    public Set<Register> getDataRegs(){
+        Set<Register> regs = new HashSet<>();
+        if(value instanceof Register){
+            regs.add((Register) value);
+        }
+        return regs;
+    }
+
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         throw new RuntimeException("Method compile is not implemented for " + target + " " + this.getClass().getName() + " " + atomic);
     }

@@ -5,6 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -12,7 +13,7 @@ import dartagnan.utils.Pair;
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
-public class Load extends MemEvent {
+public class Load extends MemEvent implements RegWriter {
 
 	protected Register reg;
 	protected int ssaRegIndex;
@@ -26,7 +27,7 @@ public class Load extends MemEvent {
 	}
 
 	@Override
-	public Register getReg() {
+	public Register getModifiedReg(){
 		return reg;
 	}
 

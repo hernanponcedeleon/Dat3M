@@ -6,13 +6,17 @@ import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
+import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static dartagnan.utils.Utils.ssaLoc;
 
-public class Store extends MemEvent {
+public class Store extends MemEvent implements RegReaderData {
 
 	protected ExprInterface value;
 
@@ -25,11 +29,12 @@ public class Store extends MemEvent {
 	}
 
 	@Override
-	public Register getReg() {
+	public Set<Register> getDataRegs(){
+		Set<Register> regs = new HashSet<>();
 		if(value instanceof Register){
-			return (Register)value;
+			regs.add((Register) value);
 		}
-		return null;
+		return regs;
 	}
 
 	@Override
@@ -40,11 +45,6 @@ public class Store extends MemEvent {
 	@Override
 	public String label(){
 		return "W[" + atomic + "] " + loc;
-	}
-
-	@Override
-	public ExprInterface getExpr(){
-		return value;
 	}
 
 	@Override

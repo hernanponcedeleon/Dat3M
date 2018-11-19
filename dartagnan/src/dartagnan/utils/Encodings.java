@@ -8,10 +8,10 @@ import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.If;
-import dartagnan.program.event.Load;
-import dartagnan.program.event.Local;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EventRepository;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -74,8 +74,16 @@ public class Encodings {
 		for(Location loc : p.getLocations()) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
-		Set<Event> executedEvents = p.getEventRepository().getEvents(EventRepository.ALL).stream().filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toSet());
-		Set<Register> regs = executedEvents.stream().filter(e -> e instanceof Local | e instanceof Load).map(e -> e.getReg()).collect(Collectors.toSet());
+		Set<RegWriter> executedEvents = p.getEventRepository().getEvents(EventRepository.ALL).stream()
+                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                .map(e -> (RegWriter)e)
+                .collect(Collectors.toSet());
+		Set<Register> regs = new HashSet<>();
+		for(RegWriter e : executedEvents){
+			if(e instanceof RegWriter){
+				regs.add(e.getModifiedReg());
+			}
+		}
 		for(Register reg : regs) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx), model.getConstInterp(reg.getLastValueExpr(ctx))));
 		}
@@ -96,8 +104,7 @@ public class Encodings {
 					// I need to maintain the value when the event is not executed
 					// for testing reachability
 					for(Event e : t.getEvents()) {
-						if(!(e instanceof Load || e instanceof Local)) {continue;}
-						if(e.getSsaRegIndex() == i1 && e.getReg() == o) {
+						if(e instanceof RegWriter && ((RegWriter)e).getSsaRegIndex() == i1 && ((RegWriter) e).getModifiedReg() == o){
 							ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ssaReg((Register)o, i1, ctx), ssaReg((Register)o, i1-1, ctx))));
 						}
 					}
@@ -116,8 +123,7 @@ public class Encodings {
 			if(i2 > i1) {
 				if(o instanceof Register) {
 					for(Event e : t.getEvents()) {
-						if(!(e instanceof Load || e instanceof Local)) {continue;}
-						if(e.getSsaRegIndex() == i2 && e.getReg() == o) {
+						if(e instanceof RegWriter && ((RegWriter)e).getSsaRegIndex() == i2 && ((RegWriter) e).getModifiedReg() == o){
 							ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ssaReg((Register)o, i2, ctx), ssaReg((Register)o, i2-1, ctx))));
 						}
 					}

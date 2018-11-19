@@ -5,12 +5,16 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
+import java.util.Set;
+
 import static dartagnan.utils.Utils.ssaReg;
 
-public class Local extends Event {
+public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected Register reg;
 	protected ExprInterface expr;
@@ -22,14 +26,14 @@ public class Local extends Event {
 		this.condLevel = 0;
 	}
 
-    @Override
-	public Register getReg() {
+	@Override
+	public Register getModifiedReg(){
 		return reg;
 	}
 
-    @Override
-	public ExprInterface getExpr() {
-		return expr;
+	@Override
+	public Set<Register> getDataRegs(){
+		return expr.getRegs();
 	}
 
     @Override

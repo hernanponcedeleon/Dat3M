@@ -5,11 +5,15 @@ import dartagnan.program.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
+import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 
-public class Write extends MemEvent {
+import java.util.HashSet;
+import java.util.Set;
 
-	private ExprInterface value;
+public class Write extends MemEvent implements RegReaderData {
+
+    private ExprInterface value;
 
 	public Write(Location loc, ExprInterface value, String atomic){
 		this.value = value;
@@ -21,11 +25,12 @@ public class Write extends MemEvent {
 	}
 
     @Override
-    public Register getReg() {
+    public Set<Register> getDataRegs(){
+        Set<Register> regs = new HashSet<>();
         if(value instanceof Register){
-            return (Register)value;
+            regs.add((Register) value);
         }
-        return null;
+        return regs;
     }
 
 	@Override

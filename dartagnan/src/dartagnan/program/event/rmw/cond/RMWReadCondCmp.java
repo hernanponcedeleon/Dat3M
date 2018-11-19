@@ -3,8 +3,10 @@ package dartagnan.program.event.rmw.cond;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.Register;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-public class RMWReadCondCmp extends RMWReadCond {
+public class RMWReadCondCmp extends RMWReadCond implements RegWriter, RegReaderData {
 
     public RMWReadCondCmp(Register reg, ExprInterface cmp, Location loc, String atomic) {
         super(reg, cmp, loc, atomic);

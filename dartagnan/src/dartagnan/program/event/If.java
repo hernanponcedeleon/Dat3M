@@ -3,7 +3,9 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
+import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
@@ -13,7 +15,7 @@ import java.util.Set;
 import static dartagnan.utils.Encodings.encodeMissingIndexes;
 import static dartagnan.utils.Utils.mergeMaps;
 
-public class If extends Event {
+public class If extends Event implements RegReaderData {
 
     private ExprInterface expr;
     private Thread t1;
@@ -25,6 +27,11 @@ public class If extends Event {
         this.t2 = t2;
         t1.incCondLevel();
         t2.incCondLevel();
+    }
+
+    @Override
+    public Set<Register> getDataRegs(){
+        return expr.getRegs();
     }
 
     public Thread getT1() {
@@ -41,11 +48,6 @@ public class If extends Event {
 
     public void setT2(Thread t) {
         t2 = t;
-    }
-
-    @Override
-    public ExprInterface getExpr(){
-        return expr;
     }
 
     @Override

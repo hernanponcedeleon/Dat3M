@@ -2,9 +2,7 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
-import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -101,22 +99,7 @@ public abstract class Event extends Thread {
 	}
 
 	// TODO: Interface
-	public Register getReg() {
-		throw new UnsupportedOperationException("Register is not available for " + this.getClass().getName());
-	}
-
-	// TODO: Interface
-	public int getSsaRegIndex() {
-		throw new UnsupportedOperationException("SsaRegIndex is not available for " + this.getClass().getName());
-	}
-
-	// TODO: Interface
 	public Location getLoc() {
 		throw new UnsupportedOperationException("Location is not available for " + this.getClass().getName());
-	}
-
-	// TODO: Interface
-	public ExprInterface getExpr() {
-		throw new UnsupportedOperationException("Expression is not available for " + this.getClass().getName());
 	}
 }

@@ -4,6 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.event.*;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Memory;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.MapSSA;
@@ -152,9 +153,12 @@ public class Program extends Thread {
 
     public BoolExpr encodeFinalValues(Context ctx){
         Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(EventRepository.LOAD | EventRepository.LOCAL)){
-            eMap.putIfAbsent(e.getReg(), new ArrayList<>());
-            eMap.get(e.getReg()).add(e);
+        for(Event e : getEventRepository().getEvents(EventRepository.ALL)){
+            if(e instanceof RegWriter){
+                Register reg = ((RegWriter)e).getModifiedReg();
+                eMap.putIfAbsent(reg, new ArrayList<>());
+                eMap.get(reg).add(e);
+            }
         }
 
         BoolExpr enc = ctx.mkTrue();
@@ -167,7 +171,7 @@ public class Program extends Thread {
                     lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).executes(ctx)));
                 }
                 enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
-                        ctx.mkEq(reg.getLastValueExpr(ctx), ssaReg(reg, events.get(i).getSsaRegIndex(), ctx))));
+                        ctx.mkEq(reg.getLastValueExpr(ctx), ssaReg(reg, ((RegWriter)events.get(i)).getSsaRegIndex(), ctx))));
             }
         }
         return enc;

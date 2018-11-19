@@ -6,8 +6,9 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.utils.RegReaderData;
 
-public class RMWStoreCondWithStatus extends RMWStore {
+public class RMWStoreCondWithStatus extends RMWStore implements RegReaderData {
 
     private RMWStoreCondWithStatus clone;
 

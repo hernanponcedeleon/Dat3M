@@ -5,8 +5,9 @@ import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Location;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.utils.RegReaderData;
 
-public class RMWStoreCond extends RMWStore {
+public class RMWStoreCond extends RMWStore implements RegReaderData {
 
     public RMWStoreCond(RMWReadCond loadEvent, Location loc, ExprInterface value, String atomic) {
         super(loadEvent, loc, value, atomic);

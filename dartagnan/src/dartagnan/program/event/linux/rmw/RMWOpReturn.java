@@ -10,8 +10,10 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-public class RMWOpReturn extends RMWAbstract {
+public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData {
 
     private AOpBin op;
 

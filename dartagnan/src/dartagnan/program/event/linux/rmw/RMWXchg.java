@@ -7,8 +7,10 @@ import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-public class RMWXchg extends RMWAbstract {
+public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     public RMWXchg(Location location, Register register, ExprInterface value, String atomic) {
         super(location, register, value, atomic);
