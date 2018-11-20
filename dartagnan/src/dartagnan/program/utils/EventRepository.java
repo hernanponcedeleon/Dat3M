@@ -9,6 +9,8 @@ import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.RMWAbstract;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.tso.Xchg;
+import dartagnan.program.event.utils.RegReaderAddress;
+import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
 import java.util.HashMap;
@@ -83,6 +85,12 @@ public class EventRepository {
             for(Event e : getEvents(ALL)){
                 if(e instanceof RegWriter){
                     registers.add(((RegWriter) e).getModifiedReg());
+                }
+                if(e instanceof RegReaderAddress){
+                    registers.add(((RegReaderAddress) e).getAddressReg());
+                }
+                if(e instanceof RegReaderData){
+                    registers.addAll(((RegReaderData) e).getDataRegs());
                 }
             }
         }
