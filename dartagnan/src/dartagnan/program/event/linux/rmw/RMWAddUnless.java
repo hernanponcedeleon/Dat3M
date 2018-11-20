@@ -5,7 +5,7 @@ import dartagnan.expression.Atom;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.op.AOpBin;
 import dartagnan.expression.op.COpBin;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;

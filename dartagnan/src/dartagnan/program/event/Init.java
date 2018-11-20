@@ -3,7 +3,7 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;

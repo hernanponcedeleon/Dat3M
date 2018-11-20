@@ -5,7 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import dartagnan.expression.AConst;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;

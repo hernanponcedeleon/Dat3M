@@ -1,6 +1,6 @@
 package dartagnan.program.event;
 
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -32,7 +32,7 @@ public class Read extends MemEvent implements RegWriter {
 
 	@Override
 	public Read clone() {
-		Read newRead = new Read(reg, loc, atomic);
+		Read newRead = new Read(reg.clone(), loc.clone(), atomic);
 		newRead.condLevel = condLevel;
 		newRead.memId = memId;
 		newRead.setUnfCopy(getUnfCopy());

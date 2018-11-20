@@ -6,7 +6,7 @@ import dartagnan.parsers.LitmusX86Visitor;
 import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;

@@ -3,7 +3,7 @@ package dartagnan.program.event.rmw.cond;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderData;
 

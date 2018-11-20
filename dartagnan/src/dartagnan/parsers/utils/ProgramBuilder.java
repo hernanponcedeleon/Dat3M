@@ -5,31 +5,32 @@ import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
+import dartagnan.program.event.Event;
 import dartagnan.program.event.If;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
+import dartagnan.program.event.addr.StoreToAddress;
 import dartagnan.program.memory.Memory;
+import dartagnan.program.utils.EventRepository;
 
 import java.util.*;
 
 public class ProgramBuilder {
 
-    public static final int DEFAULT_INIT_VALUE = 0;
-
-    private Map<String, Location> locations = new HashMap<>();
     private Map<String, Map<String, Register>> registers = new HashMap<>();
     private Map<String, Map<String, Location>> mapRegLoc = new HashMap<>();
     private Map<String, Map<String, Label>> labels = new HashMap<>();
     private Map<String, LinkedList<Thread>> threads = new HashMap<>();
+    private Memory memory = new Memory();
+
     private AbstractAssert ass;
     private AbstractAssert assFilter;
 
     public Program build(){
-        Memory memory = new Memory(new HashSet<>(locations.values()));
         Program program = new Program(memory);
         for(LinkedList<Thread> thread : threads.values()){
             thread = buildBranches(thread);
@@ -91,23 +92,15 @@ public class ProgramBuilder {
     // Utility
 
     public Location getLocation(String name){
-        return locations.get(name);
+        return memory.getLocation(name);
     }
 
     public Location getOrCreateLocation(String name){
-        if(!locations.containsKey(name)){
-            Location location = new Location(name);
-            location.setIValue(DEFAULT_INIT_VALUE);
-            locations.put(name, location);
-        }
-        return locations.get(name);
+        return memory.getOrCreateLocation(name);
     }
 
     public Location getOrErrorLocation(String name){
-        if(!locations.containsKey(name)){
-            throw new RuntimeException("Location " + name + " is not initialised");
-        }
-        return locations.get(name);
+        return memory.getOrErrorLocation(name);
     }
 
     public Register getRegister(String thread, String name){

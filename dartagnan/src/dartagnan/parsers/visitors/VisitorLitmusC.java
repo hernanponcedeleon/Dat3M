@@ -14,6 +14,7 @@ import dartagnan.program.event.linux.rcu.RCUReadLock;
 import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.*;
+import dartagnan.program.memory.Location;
 import dartagnan.utils.Pair;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;

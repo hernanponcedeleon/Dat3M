@@ -34,6 +34,7 @@ public class While extends Thread {
 	public Thread unroll(int steps, boolean obsNoTermination) {
 		if(steps == 0) {
 			if(obsNoTermination) {
+				/*
 				Register rTerm = new Register("rTerm");
 				Local newLocal = new Local(rTerm, new AConst(1));
 				newLocal.condLevel = condLevel;
@@ -43,7 +44,8 @@ public class While extends Thread {
 				ExprInterface newPred = pred.clone();
 				Thread newThread = new If(newPred, new Seq(newLocal, newStore), new Skip());
 				newThread.condLevel = condLevel;
-				return newThread;				
+				return newThread;
+				*/
 			}
 			return new Skip();
 		}

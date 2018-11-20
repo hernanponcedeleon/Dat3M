@@ -4,7 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
@@ -49,9 +49,7 @@ public class Store extends MemEvent implements RegReaderData {
 
 	@Override
 	public Store clone() {
-        Location newLoc = loc.clone();
-        ExprInterface newVal = value.clone();
-		Store newStore = new Store(newLoc, newVal, atomic);
+		Store newStore = new Store(loc.clone(), value.clone(), atomic);
 		newStore.condLevel = condLevel;
 		newStore.setHLId(getHLId());
 		newStore.setUnfCopy(getUnfCopy());

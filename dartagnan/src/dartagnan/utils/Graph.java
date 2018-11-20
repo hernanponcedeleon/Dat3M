@@ -4,7 +4,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.FuncDecl;
 import com.microsoft.z3.Model;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;

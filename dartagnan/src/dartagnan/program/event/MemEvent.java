@@ -1,7 +1,7 @@
 package dartagnan.program.event;
 
 import com.microsoft.z3.Expr;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 
 public abstract class MemEvent extends Event {
 	

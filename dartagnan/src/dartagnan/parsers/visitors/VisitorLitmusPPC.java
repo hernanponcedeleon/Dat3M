@@ -14,6 +14,7 @@ import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Store;
+import dartagnan.program.memory.Location;
 
 import java.util.*;
 

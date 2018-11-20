@@ -1,7 +1,7 @@
 package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;

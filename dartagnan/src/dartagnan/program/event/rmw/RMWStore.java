@@ -1,7 +1,7 @@
 package dartagnan.program.event.rmw;
 
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.event.Store;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;

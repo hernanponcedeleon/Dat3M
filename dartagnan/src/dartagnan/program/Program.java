@@ -5,6 +5,7 @@ import com.microsoft.z3.Context;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.event.*;
 import dartagnan.program.event.utils.RegWriter;
+import dartagnan.program.memory.Location;
 import dartagnan.program.memory.Memory;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.MapSSA;

@@ -1,6 +1,6 @@
 package dartagnan.program.event.rmw;
 
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.utils.RegWriter;

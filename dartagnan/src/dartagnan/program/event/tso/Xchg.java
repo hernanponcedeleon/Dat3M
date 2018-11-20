@@ -1,6 +1,6 @@
 package dartagnan.program.event.tso;
 
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;

@@ -1,7 +1,7 @@
 package dartagnan.program.event;
 
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -40,7 +40,7 @@ public class Write extends MemEvent implements RegReaderData {
 
 	@Override
 	public Write clone() {
-        Write newWrite = new Write(loc, value, atomic);
+        Write newWrite = new Write(loc.clone(), value.clone(), atomic);
 		newWrite.condLevel = condLevel;
 		newWrite.memId = memId;
 		newWrite.setUnfCopy(getUnfCopy());

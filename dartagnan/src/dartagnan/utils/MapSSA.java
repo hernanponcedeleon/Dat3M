@@ -1,6 +1,6 @@
 package dartagnan.utils;
 
-import dartagnan.program.Location;
+import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 
 import java.text.NumberFormat;
