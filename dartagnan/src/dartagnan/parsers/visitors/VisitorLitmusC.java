@@ -50,7 +50,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
-        int value = ProgramBuilder.DEFAULT_INIT_VALUE;
+        int value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
         }
@@ -61,7 +61,7 @@ public class VisitorLitmusC
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         Register register = visitThreadVariable(ctx.threadVariable());
-        int value = ProgramBuilder.DEFAULT_INIT_VALUE;
+        int value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
         }
