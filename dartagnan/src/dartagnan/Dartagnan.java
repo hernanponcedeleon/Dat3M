@@ -126,7 +126,6 @@ public class Dartagnan {
             solver.add(program.getAssFilter().encode(ctx));
         }
         solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeDF_RF(ctx));
         solver.add(program.encodeFinalValues(ctx));
         solver.add(wmm.encode(program, ctx, relax, idl));
         solver.add(wmm.consistent(program, ctx));
@@ -139,10 +138,6 @@ public class Dartagnan {
     }
 
 	public static Program parseProgram(String inputFilePath) throws IOException{
-		File file = new File(inputFilePath);
-		FileInputStream stream = new FileInputStream(file);
-		CharStream charStream = CharStreams.fromStream(stream);
-
 		if(inputFilePath.endsWith("litmus")) {
 			ParserResolver parserResolver = new ParserResolver();
 			ParserInterface parser = parserResolver.getParser(inputFilePath);
@@ -151,6 +146,9 @@ public class Dartagnan {
 
 		/*
 		if(inputFilePath.endsWith("pts")) {
+			File file = new File(inputFilePath);
+			FileInputStream stream = new FileInputStream(file);
+			CharStream charStream = CharStreams.fromStream(stream);
 			PorthosLexer lexer = new PorthosLexer(charStream);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
 			PorthosParser parser = new PorthosParser(tokens);

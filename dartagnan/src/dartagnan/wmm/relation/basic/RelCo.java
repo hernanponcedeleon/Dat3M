@@ -68,13 +68,11 @@ public class RelCo extends Relation {
                 )));
             }
 
-            // TODO: Get us from encodeTupleSet instead of EventRepository
             EventRepository eventRepository = program.getEventRepository();
             for(Event e : eventRepository.getEvents(EventRepository.INIT)) {
                 enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
             }
 
-            // TODO: Get us from encodeTupleSet instead of EventRepository
             Map<Location, List<MemEvent>> stores = new HashMap<>();
             for(Event e : eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT)){
                 for(Location location : ((MemEvent)e).getMaximumLocationSet()){
@@ -103,15 +101,12 @@ public class RelCo extends Relation {
         String name = getName();
 
         for(Event e1 : events) {
-            // TODO: not co(e1, e1) is not necessary if events are collected from encodeTupleSet
             enc = ctx.mkAnd(enc, ctx.mkNot(edge(name, e1, e1, ctx)));
             enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkAnd(
                     ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0)),
-                    // TODO: Tighten up events.size() to the number of writes to a particular location (might give some performance)
                     ctx.mkLe(Utils.intVar(name, e1, ctx), ctx.mkInt(events.size()))
             )));
             for(Event e2 : events) {
-                // TODO: (e1 != e2) is not necessary if events are collected from encodeTupleSet
                 if(e1 != e2) {
                     enc = ctx.mkAnd(enc, ctx.mkImplies(edge(name, e1, e2, ctx),
                             ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))));

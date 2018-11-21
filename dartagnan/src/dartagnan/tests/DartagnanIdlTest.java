@@ -73,9 +73,6 @@ public class DartagnanIdlTest {
                             s.add(pFP.encodeCF(ctx));
                             s.add(pIDL.encodeCF(ctx));
 
-                            s.add(pFP.encodeDF_RF(ctx));
-                            s.add(pIDL.encodeDF_RF(ctx));
-
                             s.add(pFP.encodeFinalValues(ctx));
                             s.add(pIDL.encodeFinalValues(ctx));
 

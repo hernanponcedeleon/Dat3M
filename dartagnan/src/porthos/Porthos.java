@@ -124,20 +124,17 @@ public class Porthos {
 
         BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
-        BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, cmd.hasOption("relax"), cmd.hasOption("idl"));
 
         s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
-        s.add(pTarget.encodeDF_RF(ctx));
         s.add(pTarget.encodeFinalValues(ctx));
         s.add(mcmT.encode(pTarget, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcmT.consistent(pTarget, ctx));
 
         s.add(sourceDF);
         s.add(sourceCF);
-        s.add(sourceDF_RF);
         s.add(sourceFV);
         s.add(sourceMM);
         s.add(mcmS.inconsistent(pSource, ctx));
@@ -146,7 +143,6 @@ public class Porthos {
 
         s2.add(sourceDF);
         s2.add(sourceCF);
-        s2.add(sourceDF_RF);
         s2.add(sourceFV);
         s2.add(sourceMM);
         s2.add(mcmS.consistent(pSource, ctx));

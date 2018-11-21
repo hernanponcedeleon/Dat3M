@@ -68,33 +68,38 @@ public class RelRf extends Relation {
                 )));
             }
 
-            // TODO: Get us from encodeTupleSet instead of EventRepository
-            Map<Location, List<MemEvent>> loads = new HashMap<>();
-            for(Event e : program.getEventRepository().getEvents(EventRepository.LOAD)){
-                for(Location location : ((MemEvent)e).getMaximumLocationSet()){
-                    loads.putIfAbsent(location, new ArrayList<>());
-                    loads.get(location).add((MemEvent)e);
-                }
-            }
-
-            // TODO: Get us from encodeTupleSet instead of EventRepository
+            BoolExpr dfEnc = ctx.mkTrue();
             Map<Location, List<MemEvent>> stores = new HashMap<>();
-            for(Event e : program.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
-                for(Location location : ((MemEvent)e).getMaximumLocationSet()){
+            Map<Location, List<MemEvent>> loads = new HashMap<>();
+
+            for(Tuple tuple : maxTupleSet){
+                MemEvent store = (MemEvent) tuple.getFirst();
+                for(Location location : store.getMaximumLocationSet()){
                     stores.putIfAbsent(location, new ArrayList<>());
-                    stores.get(location).add((MemEvent)e);
+                    stores.get(location).add(store);
+                }
+
+                MemEvent load = (MemEvent) tuple.getSecond();
+                for(Location location : load.getMaximumLocationSet()){
+                    loads.putIfAbsent(location, new ArrayList<>());
+                    loads.get(location).add(load);
                 }
             }
 
             for(Location location : loads.keySet()){
                 for(MemEvent r : loads.get(location)){
                     Set<BoolExpr> rfPairs = new HashSet<>();
-                    for(Event w : stores.get(location)) {
+                    for(MemEvent w : stores.get(location)) {
                         rfPairs.add(edge("rf", w, r, ctx));
+                        dfEnc = ctx.mkAnd(dfEnc, ctx.mkImplies(
+                                edge("rf", w, r, ctx),
+                                ctx.mkEq(w.getSsaLoc(location), r.getSsaLoc(location))
+                        ));
                     }
                     enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));
                 }
             }
+            enc = ctx.mkAnd(enc, dfEnc);
         }
 
         return enc;
