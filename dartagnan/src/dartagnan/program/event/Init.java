@@ -21,7 +21,7 @@ public class Init extends MemEvent {
 
 	@Override
 	public String toString() {
-		return nTimesCondLevel() + loc + " := 0";
+		return nTimesCondLevel() + loc + " := " + loc.getIValue();
 	}
 
 	@Override
@@ -46,5 +46,9 @@ public class Init extends MemEvent {
 			return new Pair<>(ctx.mkEq(z3Loc, ctx.mkInt(loc.getIValue())), map);
 		}
 		throw new RuntimeException("Main thread is not set for " + toString());
+	}
+
+	public int getIValue(){
+		return loc.getIValue();
 	}
 }

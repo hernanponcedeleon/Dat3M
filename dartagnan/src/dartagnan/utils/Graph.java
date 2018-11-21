@@ -119,7 +119,7 @@ public class Graph {
 
             if(t instanceof Init){
                 Init e = (Init)t.getEvents().iterator().next();
-                String label = e.label() + " = " + model.getConstInterp(e.getSsaLoc()).toString();
+                String label = e.label() + " = " + e.getIValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
 
             } else {
@@ -132,7 +132,8 @@ public class Graph {
                 for(Event e2 : events) {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
-                        label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc()).toString();
+                        int address = Integer.parseInt((((MemEvent) e2).getAddressExpr(ctx)).toString());
+                        label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc(program.getLocationForAddress(address))).toString();
                     }
                     sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }
@@ -174,11 +175,12 @@ public class Graph {
         Set<Location> locations = program.getLocations();
 
         for(Location location : locations){
+            int address = program.getAddressForLocation(location);
             Map<Event, Integer> map = new HashMap<>();
             Set<Event> locEvents = new HashSet<>();
 
-            for(Event e : events){
-                if(e.getLoc().equals(location)){
+            for(MemEvent e : events){
+                if(address == Integer.parseInt((e.getAddressExpr(ctx)).toString())){
                     map.put(e, 0);
                     locEvents.add(e);
                 }

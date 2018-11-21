@@ -65,6 +65,14 @@ public class Program extends Thread {
         return memory.getLocations();
     }
 
+    public Location getLocationForAddress(int address){
+        return memory.getLocationForAddress(address);
+    }
+
+    public int getAddressForLocation(Location location){
+        return memory.getAddressForLocation(location);
+    }
+
 	@Override
 	public Set<Event> getEvents(){
 		Set<Event> events = new HashSet<>();
