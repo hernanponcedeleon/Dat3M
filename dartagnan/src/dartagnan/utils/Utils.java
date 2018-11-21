@@ -46,18 +46,6 @@ public class Utils {
 		return ctx.mkIntConst("T" + reg.getPrintMainThreadId() + "_" + reg.getName() + "_" + ssaIndex);
 	}
 	
-	public static IntExpr uniqueValue(Event e, Context ctx) {
-		return ctx.mkIntConst(e.getLoc() + "_unique");
-	}
-	
-	public static IntExpr initValue(Event e, Context ctx) {
-		return ctx.mkIntConst(e.getLoc() + "_init");
-	}
-	
-	public static IntExpr initValue2(Event e, Context ctx) {
-		return ctx.mkIntConst(e.getLoc() + "_init_prime");
-	}
-	
 	public static IntExpr intCount(String relName, Event e1, Event e2, Context ctx) {
 		return ctx.mkIntConst(relName + "(" + e1.repr() + "," + e2.repr() + ")");
 	}
