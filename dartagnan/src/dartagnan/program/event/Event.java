@@ -2,7 +2,6 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Thread;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
@@ -96,10 +95,5 @@ public abstract class Event extends Thread {
 	@Override
 	public BoolExpr encodeCF(Context ctx) {
 		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
-	}
-
-	// TODO: Interface
-	public Location getLoc() {
-		throw new UnsupportedOperationException("Location is not available for " + this.getClass().getName());
 	}
 }

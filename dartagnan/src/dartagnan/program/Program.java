@@ -29,7 +29,6 @@ public class Program extends Thread {
     }
 
 	public Program (String name, Memory memory) {
-        // TODO: memory must be @NotNull
 		this.name = name;
 		this.memory = memory;
 		this.threads = new ArrayList<>();
@@ -177,27 +176,33 @@ public class Program extends Thread {
         }
         return enc;
     }
-	
+
+    // TODO: Move to rf relation and use encodeTupleSet
 	public BoolExpr encodeDF_RF(Context ctx) {
-        Map<Location, List<Load>> loads = new HashMap<>();
+        Map<Location, List<MemEvent>> loads = new HashMap<>();
         for(Event e : getEventRepository().getEvents(EventRepository.LOAD)){
-            loads.putIfAbsent(e.getLoc(), new ArrayList<>());
-            loads.get(e.getLoc()).add((Load)e);
+            for(Location location : ((MemEvent)e).getMaximumLocationSet()){
+                loads.putIfAbsent(location, new ArrayList<>());
+                loads.get(location).add((MemEvent)e);
+            }
         }
 
         Map<Location, List<MemEvent>> stores = new HashMap<>();
         for(Event e : getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
-            stores.putIfAbsent(e.getLoc(), new ArrayList<>());
-            stores.get(e.getLoc()).add((MemEvent) e);
+            for(Location location : ((MemEvent)e).getMaximumLocationSet()){
+                stores.putIfAbsent(location, new ArrayList<>());
+                stores.get(location).add((MemEvent)e);
+            }
         }
 
         BoolExpr enc = ctx.mkTrue();
         for (Location loc : loads.keySet()){
-            for(Load r : loads.get(loc)){
+            for(MemEvent r : loads.get(loc)){
+                // TODO: sameValue is redundant here
                 BoolExpr sameValue = ctx.mkTrue();
                 for(MemEvent w : stores.get(loc)){
                     sameValue = ctx.mkAnd(sameValue,
-                            ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(w.getSsaLoc(), r.getSsaLoc())));
+                            ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(w.getSsaLoc(loc), r.getSsaLoc(loc))));
                 }
                 enc = ctx.mkAnd(enc, sameValue);
             }

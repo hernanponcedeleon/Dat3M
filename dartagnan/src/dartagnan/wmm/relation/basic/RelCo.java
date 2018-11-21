@@ -12,8 +12,7 @@ import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.intVar;
@@ -39,7 +38,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsStore){
-                    if(e1.getLoc() == e2.getLoc()){
+                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -47,7 +46,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsStore){
                 for(Event e2 : eventsStore){
-                    if(e1.getEId() != e2.getEId() && e1.getLoc() == e2.getLoc()){
+                    if(e1.getEId() != e2.getEId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -63,49 +62,65 @@ public class RelCo extends Relation {
         if(!maxTupleSet.isEmpty()){
             for(Tuple tuple : maxTupleSet){
                 BoolExpr rel = edge("co", tuple.getFirst(), tuple.getSecond(), ctx);
-                enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx))));
+                enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
+                        ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
+                        ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(ctx), ((MemEvent)tuple.getSecond()).getAddressExpr(ctx))
+                )));
             }
 
+            // TODO: Get us from encodeTupleSet instead of EventRepository
             EventRepository eventRepository = program.getEventRepository();
             for(Event e : eventRepository.getEvents(EventRepository.INIT)) {
                 enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
             }
 
-            Collection<Event> eventsStoreInit = eventRepository.getEvents(EventRepository.INIT | EventRepository.STORE);
-            Collection<Location> locations = eventsStoreInit.stream().map(Event::getLoc).collect(Collectors.toSet());
+            // TODO: Get us from encodeTupleSet instead of EventRepository
+            Map<Location, List<MemEvent>> stores = new HashMap<>();
+            for(Event e : eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT)){
+                for(Location location : ((MemEvent)e).getMaximumLocationSet()){
+                    stores.putIfAbsent(location, new ArrayList<>());
+                    stores.get(location).add((MemEvent)e);
+                }
+            }
 
-            for(Location loc : locations) {
-                Collection<Event> eventsStoreInitByLocation = eventsStoreInit.stream().filter(e -> e.getLoc() == loc).collect(Collectors.toSet());
-                enc = ctx.mkAnd(enc, satTO(eventsStoreInitByLocation));
-                for(Event w1 : eventsStoreInitByLocation){
-                    BoolExpr lastCoOrder = w1.executes(ctx);
-                    for(Event w2 : eventsStoreInitByLocation){
+            for(Location location : stores.keySet()){
+                List<MemEvent> events = stores.get(location);
+                enc = ctx.mkAnd(enc, satTO(events));
+                for(Event w1 : events){
+                    BoolExpr lastCoOrder = ctx.mkAnd(w1.executes(ctx), ctx.mkEq(((MemEvent)w1).getAddressExpr(ctx), ctx.mkInt(location.getAddress())));
+                    for(Event w2 : events){
                         lastCoOrder = ctx.mkAnd(lastCoOrder, ctx.mkNot(edge("co", w1, w2, ctx)));
                     }
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(w1.getLoc().getLastValueExpr(ctx), ((MemEvent) w1).getSsaLoc())));
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(location.getLastValueExpr(ctx), ((MemEvent) w1).getSsaLoc(location))));
                 }
             }
         }
-
         return enc;
     }
 
-    private BoolExpr satTO(Collection<Event> events) {
+    private BoolExpr satTO(Collection<MemEvent> events) {
         BoolExpr enc = ctx.mkTrue();
         String name = getName();
 
         for(Event e1 : events) {
+            // TODO: not co(e1, e1) is not necessary if events are collected from encodeTupleSet
             enc = ctx.mkAnd(enc, ctx.mkNot(edge(name, e1, e1, ctx)));
             enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkAnd(
                     ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0)),
+                    // TODO: Tighten up events.size() to the number of writes to a particular location (might give some performance)
                     ctx.mkLe(Utils.intVar(name, e1, ctx), ctx.mkInt(events.size()))
             )));
             for(Event e2 : events) {
+                // TODO: (e1 != e2) is not necessary if events are collected from encodeTupleSet
                 if(e1 != e2) {
                     enc = ctx.mkAnd(enc, ctx.mkImplies(edge(name, e1, e2, ctx),
                             ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))));
 
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(
+                            ctx.mkAnd(
+                                ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
+                                ctx.mkEq(((MemEvent)e1).getAddressExpr(ctx), ((MemEvent)e2).getAddressExpr(ctx))
+                            ),
                             ctx.mkAnd(
                                     ctx.mkImplies(ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)), edge(name, e1, e2, ctx)),
                                     ctx.mkAnd(
