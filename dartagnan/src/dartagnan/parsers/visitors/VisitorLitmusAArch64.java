@@ -10,9 +10,11 @@ import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
+import dartagnan.program.event.address.LoadFromAddress;
 import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
+import dartagnan.program.event.address.StoreToAddress;
 import dartagnan.program.event.rmw.cond.RMWStoreCondWithStatus;
 import dartagnan.program.event.rmw.RMWLoad;
 
@@ -117,8 +119,13 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     @Override
     public Object visitLoad(LitmusAArch64Parser.LoadContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD);
-        Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
-        return programBuilder.addChild(mainThread, new Load(register, location, ctx.loadInstruction().mo));
+        try{
+            Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
+            return programBuilder.addChild(mainThread, new Load(register, location, ctx.loadInstruction().mo));
+        } catch(Exception e){
+            Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
+            return programBuilder.addChild(mainThread, new LoadFromAddress(address, register, ctx.loadInstruction().mo));
+        }
     }
 
     @Override
@@ -131,8 +138,13 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     @Override
     public Object visitStore(LitmusAArch64Parser.StoreContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
-        Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
-        return programBuilder.addChild(mainThread, new Store(location, register, ctx.storeInstruction().mo));
+        try{
+            Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
+            return programBuilder.addChild(mainThread, new Store(location, register, ctx.storeInstruction().mo));
+        } catch(Exception e){
+            Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
+            return programBuilder.addChild(mainThread, new StoreToAddress(address, register, ctx.storeInstruction().mo));
+        }
     }
 
     @Override
