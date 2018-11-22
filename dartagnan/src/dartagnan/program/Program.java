@@ -5,7 +5,6 @@ import com.microsoft.z3.Context;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.event.*;
 import dartagnan.program.event.utils.RegWriter;
-import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
 import dartagnan.program.memory.Memory;
 import dartagnan.program.utils.EventRepository;
@@ -64,14 +63,6 @@ public class Program extends Thread {
 
     public Set<Location> getLocations(){
         return memory.getLocations();
-    }
-
-    public Location getLocationForAddress(Address address){
-        return memory.getLocationForAddress(address);
-    }
-
-    public Address getAddressForLocation(Location location){
-        return memory.getAddressForLocation(location);
     }
 
 	@Override
