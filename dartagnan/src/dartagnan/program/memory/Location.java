@@ -9,10 +9,10 @@ public class Location implements IntExprInterface {
 	public static final int DEFAULT_INIT_VALUE = 0;
 
 	private final String name;
-	private final int address;
+	private final Address address;
 	private int iValue = DEFAULT_INIT_VALUE;
 
-	Location(String name, int address) {
+	Location(String name, Address address) {
 		this.name = name;
 		this.address = address;
 	}
@@ -29,7 +29,7 @@ public class Location implements IntExprInterface {
 		return iValue;
 	}
 
-	public int getAddress() {
+	public Address getAddress() {
 		return address;
 	}
 

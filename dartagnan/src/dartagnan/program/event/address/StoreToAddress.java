@@ -77,7 +77,7 @@ public class StoreToAddress extends MemEventAddress implements RegReaderData, Re
             Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
             this.ssaLocMap.put(loc, z3Loc);
             enc = ctx.mkAnd(enc, ctx.mkImplies(
-                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, ctx.mkInt(loc.getAddress()))),
+                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, loc.getAddress().toZ3(ctx))),
                     value.encodeAssignment(map, ctx, z3Loc, z3Expr)
             ));
         }

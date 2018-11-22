@@ -72,7 +72,7 @@ public class LoadFromAddress extends MemEventAddress implements RegWriter, RegRe
             Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
             this.ssaLocMap.put(loc, z3Loc);
             enc = ctx.mkAnd(enc, ctx.mkImplies(
-                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, ctx.mkInt(loc.getAddress()))),
+                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, loc.getAddress().toZ3(ctx))),
                     ctx.mkEq(z3Reg, z3Loc)
             ));
         }

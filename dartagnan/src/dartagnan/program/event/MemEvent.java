@@ -29,7 +29,7 @@ public abstract class MemEvent extends Event {
     }
 
     public IntExpr getAddressExpr(Context ctx){
-        return ctx.mkInt(loc.getAddress());
+        return loc.getAddress().toZ3(ctx);
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){

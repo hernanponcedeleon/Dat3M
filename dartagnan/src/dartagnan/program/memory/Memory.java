@@ -8,7 +8,7 @@ import java.util.*;
 
 public class Memory {
 
-    private BiMap<Location, Integer> map;
+    private BiMap<Location, Address> map;
     private Map<String, Location> locationIndex;
     private int nextAddress;
 
@@ -24,7 +24,7 @@ public class Memory {
 
     public Location getOrCreateLocation(String name){
         if(!locationIndex.containsKey(name)){
-            Location location = new Location(name, nextAddress++);
+            Location location = new Location(name, new Address(nextAddress++));
             map.put(location, location.getAddress());
             locationIndex.put(name, location);
             return location;
@@ -39,14 +39,14 @@ public class Memory {
         return locationIndex.get(name);
     }
 
-    public Location getLocationForAddress(int address){
+    public Location getLocationForAddress(Address address){
         if(map.inverse().containsKey(address)){
             return map.inverse().get(address);
         }
         throw new IllegalMemoryAccessException("Attempt to access illegal address " + address);
     }
 
-    public int getAddressForLocation(Location location){
+    public Address getAddressForLocation(Location location){
         if(map.containsKey(location)){
             return map.get(location);
         }
