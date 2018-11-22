@@ -7,12 +7,15 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import dartagnan.program.memory.Location;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class MemEvent extends Event {
 
     protected Location loc;
-    protected Expr ssaLoc;
     protected int memId;
     protected ImmutableSet<Location> locations;
+    protected Map<Location, Expr> ssaLocMap = new HashMap<>();
 
     public ImmutableSet<Location> getMaximumLocationSet(){
         if(locations == null){
@@ -22,12 +25,10 @@ public abstract class MemEvent extends Event {
     }
 
     public Expr getSsaLoc(Location location){
-        // TODO: Implementation
-        return ssaLoc;
+        return ssaLocMap.get(location);
     }
 
     public IntExpr getAddressExpr(Context ctx){
-        // TODO: Implementation
         return ctx.mkInt(loc.getAddress());
     }
 

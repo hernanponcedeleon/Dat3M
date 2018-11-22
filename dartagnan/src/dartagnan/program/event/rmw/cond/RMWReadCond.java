@@ -50,7 +50,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
         if(mainThread != null){
             Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
             Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-            this.ssaLoc = z3Loc;
+            this.ssaLocMap.put(loc, z3Loc);
             this.ssaRegIndex = map.get(reg);
             this.z3Cond = ctx.mkEq(z3Reg, encodeValue(map, ctx, cmp));
             return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);

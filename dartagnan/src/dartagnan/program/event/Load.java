@@ -57,7 +57,7 @@ public class Load extends MemEvent implements RegWriter {
 		if(mainThread != null){
             Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
             Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-            this.ssaLoc = z3Loc;
+			this.ssaLocMap.put(loc, z3Loc);
             this.ssaRegIndex = map.get(reg);
             return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
 		}

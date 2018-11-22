@@ -70,7 +70,7 @@ public class RMWStoreCondWithStatus extends RMWStore implements RegWriter, RegRe
         if(mainThread != null){
             Expr z3Expr = value.toZ3(map, ctx);
             Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-            this.ssaLoc = z3Loc;
+            this.ssaLocMap.put(loc, z3Loc);
             Expr z3Reg = ssaReg(statusReg, map.getFresh(statusReg), ctx);
             this.ssaRegIndex = map.get(statusReg);
             BoolExpr enc = ctx.mkAnd(

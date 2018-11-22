@@ -42,7 +42,7 @@ public class Init extends MemEvent {
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
 		if(mainThread != null){
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-			this.ssaLoc = z3Loc;
+			this.ssaLocMap.put(loc, z3Loc);
 			return new Pair<>(ctx.mkEq(z3Loc, ctx.mkInt(loc.getIValue())), map);
 		}
 		throw new RuntimeException("Main thread is not set for " + toString());

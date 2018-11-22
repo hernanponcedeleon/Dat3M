@@ -61,7 +61,7 @@ public class Store extends MemEvent implements RegReaderData {
 		if(mainThread != null){
 			Expr z3Expr = value.toZ3(map, ctx);
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-			this.ssaLoc = z3Loc;
+			this.ssaLocMap.put(loc, z3Loc);
 			return new Pair<>(ctx.mkImplies(executes(ctx), value.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
 		}
 		throw new RuntimeException("Main thread is not set for " + toString());
