@@ -75,7 +75,7 @@ public class RelCo extends Relation {
 
             Map<Location, List<MemEvent>> stores = new HashMap<>();
             for(Event e : eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT)){
-                for(Location location : ((MemEvent)e).getMaximumLocationSet()){
+                for(Location location : ((MemEvent)e).getMaxLocationSet()){
                     stores.putIfAbsent(location, new ArrayList<>());
                     stores.get(location).add((MemEvent)e);
                 }

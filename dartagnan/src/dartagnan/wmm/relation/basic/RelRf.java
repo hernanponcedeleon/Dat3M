@@ -74,13 +74,13 @@ public class RelRf extends Relation {
 
             for(Tuple tuple : maxTupleSet){
                 MemEvent store = (MemEvent) tuple.getFirst();
-                for(Location location : store.getMaximumLocationSet()){
+                for(Location location : store.getMaxLocationSet()){
                     stores.putIfAbsent(location, new ArrayList<>());
                     stores.get(location).add(store);
                 }
 
                 MemEvent load = (MemEvent) tuple.getSecond();
-                for(Location location : load.getMaximumLocationSet()){
+                for(Location location : load.getMaxLocationSet()){
                     loads.putIfAbsent(location, new ArrayList<>());
                     loads.get(location).add(load);
                 }

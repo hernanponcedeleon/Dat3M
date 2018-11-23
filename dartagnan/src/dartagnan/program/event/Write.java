@@ -13,7 +13,7 @@ import java.util.Set;
 
 public class Write extends MemEvent implements RegReaderData {
 
-    private ExprInterface value;
+    protected ExprInterface value;
 
 	public Write(Location loc, ExprInterface value, String atomic){
 		this.value = value;
@@ -49,7 +49,10 @@ public class Write extends MemEvent implements RegReaderData {
 
 	@Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-        Store st = new Store(loc, value, atomic);
+		return _compile(new Store(loc, value, atomic), target, ctrl, leading);
+	}
+
+	protected Thread _compile(Store st, String target, boolean ctrl, boolean leading) {
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
 		st.setCondLevel(this.condLevel);

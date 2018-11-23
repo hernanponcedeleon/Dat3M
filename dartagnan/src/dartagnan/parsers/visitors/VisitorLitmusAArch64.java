@@ -10,11 +10,11 @@ import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
-import dartagnan.program.event.address.LoadFromAddress;
+import dartagnan.program.event.LoadFromAddress;
 import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
-import dartagnan.program.event.address.StoreToAddress;
+import dartagnan.program.event.StoreToAddress;
 import dartagnan.program.event.rmw.cond.RMWStoreCondWithStatus;
 import dartagnan.program.event.rmw.RMWLoad;
 

@@ -5,7 +5,7 @@ import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
-import dartagnan.program.event.address.MemEventAddress;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.memory.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
@@ -44,8 +44,8 @@ public class ProgramBuilder {
 
     private void calculateLocationSets(Program program){
         for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
-            if(e instanceof MemEventAddress){
-                ((MemEventAddress) e).setMemoryMaxSet(memory.getLocations());
+            if(e instanceof RegReaderAddress){
+                ((RegReaderAddress) e).setMaxLocationSet(memory.getLocations());
             }
         }
     }

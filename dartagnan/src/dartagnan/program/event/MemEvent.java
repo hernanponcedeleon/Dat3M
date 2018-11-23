@@ -9,16 +9,21 @@ import dartagnan.program.memory.Location;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class MemEvent extends Event {
 
     protected Location loc;
     protected int memId;
-    protected ImmutableSet<Location> locations;
+    protected Set<Location> locations;
     protected Map<Location, Expr> ssaLocMap = new HashMap<>();
 
-    public ImmutableSet<Location> getMaximumLocationSet(){
+    public Set<Location> getMaxLocationSet(){
         if(locations == null){
+            if(loc == null){
+                // TODO: Assign all locations to such events during compilation
+                throw new RuntimeException("Location set is not specified for address event " + getClass().getName() + " " + getEId() + ": " + this);
+            }
             locations = ImmutableSet.of(loc);
         }
         return locations;
@@ -33,6 +38,6 @@ public abstract class MemEvent extends Event {
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
-        return !Sets.intersection(e1.getMaximumLocationSet(), e2.getMaximumLocationSet()).isEmpty();
+        return !Sets.intersection(e1.getMaxLocationSet(), e2.getMaxLocationSet()).isEmpty();
     }
 }

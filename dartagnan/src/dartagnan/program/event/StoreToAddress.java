@@ -1,4 +1,4 @@
-package dartagnan.program.event.address;
+package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -9,46 +9,46 @@ import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
-import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import static dartagnan.utils.Utils.ssaLoc;
 
-public class StoreToAddress extends MemEventAddress implements RegReaderData, RegReaderAddress {
+public class StoreToAddress extends Store implements RegReaderData, RegReaderAddress {
 
-    protected ExprInterface value;
+    private Register address;
+    private IntExpr addressExpr;
 
     public StoreToAddress(Register address, ExprInterface value, String atomic){
+        super(null, value, atomic);
         this.address = address;
-        this.value = value;
-        this.atomic = atomic;
-        this.condLevel = 0;
-        addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
     }
 
     @Override
-    public Set<Register> getDataRegs(){
-        Set<Register> regs = new HashSet<>();
-        if(value instanceof Register){
-            regs.add((Register) value);
-        }
-        return regs;
+    public void setMaxLocationSet(Set<Location> locations){
+        this.locations = locations;
+    }
+
+    @Override
+    public Register getAddressReg(){
+        return address;
+    }
+
+    @Override
+    public IntExpr getAddressExpr(Context ctx){
+        return addressExpr;
     }
 
     @Override
     public String toString() {
-        // TODO: Figure out better representation
-        return nTimesCondLevel() + address + " := " + value;
+        return nTimesCondLevel() + "memory[" + address + "] := " + value;
     }
 
     @Override
     public String label(){
-        // TODO: Figure out better representation
-        return "W[" + atomic + "] " + address;
+        return "W[" + atomic + "] memory[" + address + "]";
     }
 
     @Override

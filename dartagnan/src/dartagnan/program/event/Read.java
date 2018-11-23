@@ -9,7 +9,7 @@ import dartagnan.program.utils.EType;
 
 public class Read extends MemEvent implements RegWriter {
 
-	private Register reg;
+	protected Register reg;
 	
 	public Read(Register reg, Location loc, String atomic) {
 		this.reg = reg;
@@ -41,11 +41,14 @@ public class Read extends MemEvent implements RegWriter {
 
 	@Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		Load ld = new Load(reg, loc, atomic);
+		return _compile(new Load(reg, loc, atomic), target, ctrl, leading);
+	}
+
+	protected Thread _compile(Load ld, String target, boolean ctrl, boolean leading) {
 		ld.setHLId(memId);
 		ld.setUnfCopy(getUnfCopy());
 		ld.setCondLevel(this.condLevel);
-		
+
 		if(!target.equals("power") && !target.equals("arm")) {
 			return ld;
 		}
@@ -55,17 +58,17 @@ public class Read extends MemEvent implements RegWriter {
 		}
 
 		if(target.equals("power")) {
-            Fence lwsync = new Fence("Lwsync", this.condLevel);
-            if(atomic.equals("_con") || atomic.equals("_acq")) {
-                return new Seq(ld, lwsync);
-            }
+			Fence lwsync = new Fence("Lwsync", this.condLevel);
+			if(atomic.equals("_con") || atomic.equals("_acq")) {
+				return new Seq(ld, lwsync);
+			}
 
-            if(atomic.equals("_sc")) {
+			if(atomic.equals("_sc")) {
 				if(leading) {
-                    Fence sync = new Fence("Sync", this.condLevel);
+					Fence sync = new Fence("Sync", this.condLevel);
 					return new Seq(sync, new Seq(ld, lwsync));
 				}
-                return new Seq(ld, lwsync);
+				return new Seq(ld, lwsync);
 			}
 		}
 
@@ -73,7 +76,7 @@ public class Read extends MemEvent implements RegWriter {
 			if(atomic.equals("_con") || atomic.equals("_acq") || atomic.equals("_sc")) {
 				Fence ish = new Fence("Ish", this.condLevel);
 				return new Seq(ld, ish);
-			}			
+			}
 		}
 
 		throw new RuntimeException("Compilation is not supported for " + this);
