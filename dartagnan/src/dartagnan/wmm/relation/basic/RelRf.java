@@ -96,7 +96,10 @@ public class RelRf extends Relation {
                                 ctx.mkEq(w.getSsaLoc(location), r.getSsaLoc(location))
                         ));
                     }
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(
+                            ctx.mkAnd(r.executes(ctx), ctx.mkEq(r.getAddressExpr(ctx), location.getAddress().toZ3(ctx))),
+                            encodeEO(rfPairs)
+                    ));
                 }
             }
             enc = ctx.mkAnd(enc, dfEnc);
