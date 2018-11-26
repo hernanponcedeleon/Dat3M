@@ -126,13 +126,11 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     @Override
     public Object visitLoad(LitmusAArch64Parser.LoadContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD);
-        try{
-            Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
-            return programBuilder.addChild(mainThread, new Load(register, location, ctx.loadInstruction().mo));
-        } catch(Exception e){
-            Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
-            return programBuilder.addChild(mainThread, new LoadFromAddress(address, register, ctx.loadInstruction().mo));
+        Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
+        if(ctx.offset() != null){
+            address = visitOffset(ctx.offset(), address);
         }
+        return programBuilder.addChild(mainThread, new LoadFromAddress(register, address, ctx.loadInstruction().mo));
     }
 
     @Override
@@ -147,13 +145,11 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     @Override
     public Object visitStore(LitmusAArch64Parser.StoreContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
-        try{
-            Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
-            return programBuilder.addChild(mainThread, new Store(location, register, ctx.storeInstruction().mo));
-        } catch(Exception e){
-            Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
-            return programBuilder.addChild(mainThread, new StoreToAddress(address, register, ctx.storeInstruction().mo));
+        Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
+        if(ctx.offset() != null){
+            address = visitOffset(ctx.offset(), address);
         }
+        return programBuilder.addChild(mainThread, new StoreToAddress(address, register, ctx.storeInstruction().mo));
     }
 
     @Override
@@ -227,5 +223,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     public AExpr visitExpressionConversion(LitmusAArch64Parser.ExpressionConversionContext ctx) {
         // TODO: Implementation
         return programBuilder.getOrCreateRegister(mainThread, ctx.register32().id);
+    }
+
+    private Register visitOffset(LitmusAArch64Parser.OffsetContext ctx, Register register){
+        Register result = programBuilder.getOrCreateRegister(mainThread, null);
+        AExpr expr = ctx.immediate() == null
+                ? programBuilder.getOrErrorRegister(mainThread, ctx.expressionConversion().register32().id)
+                : new AConst(Integer.parseInt(ctx.immediate().value().getText()));
+        programBuilder.addChild(mainThread, new Local(result, new AExpr(register, AOpBin.PLUS, expr)));
+        return result;
     }
 }
