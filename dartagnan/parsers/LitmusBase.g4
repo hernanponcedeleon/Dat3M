@@ -7,6 +7,7 @@ import dartagnan.asserts.*;
 import dartagnan.expression.op.COpBin;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.*;
+import dartagnan.program.memory.Location;
 import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ProgramBuilder;
 }
@@ -45,7 +46,7 @@ assertion returns [AbstractAssert ass]
     |   AssertionNot a = assertion { $ass = new AssertNot($a.ass); }
     |   a1 = assertion AssertionAnd a2 = assertion { $ass = new AssertCompositeAnd($a1.ass, $a2.ass); }
     |   a1 = assertion AssertionOr a2 = assertion { $ass = new AssertCompositeOr($a1.ass, $a2.ass); }
-    |   v1 = assertionValue op = assertionCompare v2 = assertionValue { $ass = new AssertBasic($v1.v, $op.op, $v2.v); }
+    |   v1 = assertionValue op = assertionCompare v2 = assertionValue { $ass = new AssertBasic($v1.v, $op.op, $v2.v instanceof Location ? ((Location)$v2.v).getAddress() : $v2.v); }
     ;
 
 assertionListExpectationList

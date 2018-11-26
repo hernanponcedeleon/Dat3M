@@ -81,16 +81,21 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
 
+    // Initialisation x=y assigned address of y to the variable x
     public void addDeclarationLocLoc(String leftName, String rightName){
-        getOrCreateLocation(leftName).setIValue(getOrCreateLocation(rightName).getIValue());
+        getOrCreateLocation(leftName).setIValue(getOrCreateLocation(rightName).getAddress());
     }
 
     public void addDeclarationLocImm(String locName, int imm){
-        getOrCreateLocation(locName).setIValue(imm);
+        getOrCreateLocation(locName).setIValue(new AConst(imm));
     }
 
+    // Initialisation 0:r0=y assigned address of y to register 0:r0
     public void addDeclarationRegLoc(String regThread, String regName, String locName){
-        addRegLocPair(regThread, getOrCreateRegister(regThread, regName).getName(), getOrCreateLocation(locName));
+        Location loc = getOrCreateLocation(locName);
+        Register reg = getOrCreateRegister(regThread, regName);
+        addRegLocPair(regThread, reg.getName(), loc);
+        addChild(regThread, new Local(reg, loc.getAddress()));
     }
 
     public void addDeclarationRegImm(String regThread, String regName, int imm){
