@@ -87,7 +87,7 @@ cmp locals [String rD, int size]
 
 arithmetic locals [String rD, String rV, int size]
     :   arithmeticInstruction rD32 = register32 Comma rV32 = register32 Comma expr32 {$rD = $rD32.id; $rV = $rV32.id; $size = 32;}
-    |   arithmeticInstruction rD64 = register64 Comma rV64 = register32 Comma expr64 {$rD = $rD64.id; $rV = $rV64.id; $size = 64;}
+    |   arithmeticInstruction rD64 = register64 Comma rV64 = register64 Comma expr64 {$rD = $rD64.id; $rV = $rV64.id; $size = 64;}
     ;
 
 load  locals [String rD, int size]
