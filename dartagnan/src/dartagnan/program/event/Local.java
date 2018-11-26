@@ -26,6 +26,10 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		this.condLevel = 0;
 	}
 
+	public ExprInterface getExpr(){
+		return expr;
+	}
+
 	@Override
 	public Register getModifiedReg(){
 		return reg;

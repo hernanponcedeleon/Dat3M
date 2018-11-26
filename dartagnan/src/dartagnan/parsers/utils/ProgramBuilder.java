@@ -5,17 +5,14 @@ import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.memory.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
-import dartagnan.program.event.Event;
 import dartagnan.program.event.If;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
 import dartagnan.program.memory.Memory;
-import dartagnan.program.utils.EventRepository;
 
 import java.util.*;
 
@@ -38,16 +35,8 @@ public class ProgramBuilder {
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);
-        calculateLocationSets(program);
+        new AliasAnalysis().calculateLocationSets(program, memory);
         return program;
-    }
-
-    private void calculateLocationSets(Program program){
-        for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
-            if(e instanceof RegReaderAddress){
-                ((RegReaderAddress) e).setMaxLocationSet(memory.getLocations());
-            }
-        }
     }
 
     public void initThread(String thread){
