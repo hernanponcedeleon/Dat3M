@@ -3,6 +3,7 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
+import dartagnan.expression.AConst;
 import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
@@ -43,12 +44,12 @@ public class Init extends MemEvent {
 		if(mainThread != null){
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLocMap.put(loc, z3Loc);
-			return new Pair<>(ctx.mkEq(z3Loc, ctx.mkInt(loc.getIValue())), map);
+			return new Pair<>(ctx.mkEq(z3Loc, loc.getIValue().toZ3(ctx)), map);
 		}
 		throw new RuntimeException("Main thread is not set for " + toString());
 	}
 
-	public int getIValue(){
+	public AConst getIValue(){
 		return loc.getIValue();
 	}
 }

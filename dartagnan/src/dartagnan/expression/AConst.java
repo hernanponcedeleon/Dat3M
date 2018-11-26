@@ -40,4 +40,8 @@ public class AConst extends AExpr implements ExprInterface, IntExprInterface {
 	public IntExpr getLastValueExpr(Context ctx){
 		return ctx.mkInt(value);
 	}
+
+    public IntExpr toZ3(Context ctx) {
+        return ctx.mkInt(value);
+    }
 }
