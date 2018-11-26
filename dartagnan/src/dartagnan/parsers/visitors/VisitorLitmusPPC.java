@@ -10,11 +10,7 @@ import dartagnan.parsers.utils.*;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.program.*;
-import dartagnan.program.event.Fence;
-import dartagnan.program.event.Load;
-import dartagnan.program.event.Local;
-import dartagnan.program.event.Store;
-import dartagnan.program.memory.Location;
+import dartagnan.program.event.*;
 
 import java.util.*;
 
@@ -107,8 +103,8 @@ public class VisitorLitmusPPC
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
-        Location location = programBuilder.getLocForReg(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, new Load(r1, location, "_rx"));
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new LoadFromAddress(r1, ra, "_rx"));
     }
 
     @Override
@@ -120,8 +116,8 @@ public class VisitorLitmusPPC
     @Override
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
-        Location location = programBuilder.getLocForReg(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, new Store(location, r1, "_rx"));
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new StoreToAddress(ra, r1, "_rx"));
     }
 
     @Override
