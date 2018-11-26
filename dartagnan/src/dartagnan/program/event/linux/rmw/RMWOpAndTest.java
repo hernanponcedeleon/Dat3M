@@ -16,7 +16,6 @@ import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-
 public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderData {
 
     private AOpBin op;
@@ -51,13 +50,12 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public RMWOpAndTest clone() {
-        Location newLoc = loc.clone();
-        Register newReg = reg.clone();
-        ExprInterface newValue = reg == value ? newReg : value.clone();
-        RMWOpAndTest newOpReturn = new RMWOpAndTest(newLoc, newReg, newValue, op);
-        newOpReturn.setCondLevel(condLevel);
-        newOpReturn.memId = memId;
-        newOpReturn.setUnfCopy(getUnfCopy());
-        return newOpReturn;
+        if(clone == null){
+            Register newReg = reg.clone();
+            ExprInterface newValue = reg == value ? newReg : value.clone();
+            clone = new RMWOpAndTest(loc.clone(), newReg, newValue, op);
+            afterClone();
+        }
+        return (RMWOpAndTest)clone;
     }
 }

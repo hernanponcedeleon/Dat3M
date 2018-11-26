@@ -8,8 +8,6 @@ import dartagnan.program.utils.EType;
 
 public class RMWLoad extends Load implements RegWriter {
 
-    protected RMWLoad clone;
-
     public RMWLoad(Register reg, Location loc, String atomic) {
         super(reg, loc, atomic);
         addFilters(EType.RMW);
@@ -24,10 +22,8 @@ public class RMWLoad extends Load implements RegWriter {
     public RMWLoad clone() {
         if(clone == null){
             clone = new RMWLoad(reg.clone(), loc.clone(), atomic);
-            clone.setCondLevel(condLevel);
-            clone.setHLId(getHLId());
-            clone.setUnfCopy(getUnfCopy());
+            afterClone();
         }
-        return clone;
+        return (RMWLoad)clone;
     }
 }

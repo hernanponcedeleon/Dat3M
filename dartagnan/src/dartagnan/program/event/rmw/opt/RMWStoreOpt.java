@@ -12,8 +12,6 @@ import dartagnan.utils.Pair;
 
 public class RMWStoreOpt extends RMWStore implements RegReaderData {
 
-    private RMWStoreOpt clone;
-
     public RMWStoreOpt(RMWLoad loadEvent, Location location, ExprInterface value, String atomic){
         super(loadEvent, location, value, atomic);
     }
@@ -33,11 +31,9 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
         if(clone == null){
             RMWLoad newLoad = loadEvent != null ? loadEvent.clone() : null;
             clone = new RMWStoreOpt(newLoad, loc.clone(), value.clone(), atomic);
-            clone.condLevel = condLevel;
-            clone.setHLId(getHLId());
-            clone.setUnfCopy(getUnfCopy());
+            afterClone();
         }
-        return clone;
+        return (RMWStoreOpt)clone;
     }
 
     @Override

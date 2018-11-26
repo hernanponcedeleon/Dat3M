@@ -33,6 +33,10 @@ public class RCUReadUnlock extends Event {
 
     @Override
     public RCUReadUnlock clone() {
-        return new RCUReadUnlock(lockEvent.clone(), condLevel);
+        if(clone == null){
+            clone = new RCUReadUnlock(lockEvent.clone(), condLevel);
+            afterClone();
+        }
+        return (RCUReadUnlock)clone;
     }
 }

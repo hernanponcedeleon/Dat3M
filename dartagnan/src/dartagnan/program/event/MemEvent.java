@@ -40,4 +40,10 @@ public abstract class MemEvent extends Event {
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
         return !Sets.intersection(e1.getMaxLocationSet(), e2.getMaxLocationSet()).isEmpty();
     }
+
+    @Override
+    protected void afterClone(){
+        super.afterClone();
+        clone.setHLId(memId);
+    }
 }

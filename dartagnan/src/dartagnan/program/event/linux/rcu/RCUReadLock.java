@@ -5,8 +5,6 @@ import dartagnan.program.utils.linux.EType;
 
 public class RCUReadLock extends Event {
 
-    private RCUReadLock clone;
-
     public RCUReadLock(){
         this(0);
     }
@@ -35,7 +33,8 @@ public class RCUReadLock extends Event {
     public RCUReadLock clone() {
         if(clone == null){
             clone = new RCUReadLock(condLevel);
+            afterClone();
         }
-        return clone;
+        return (RCUReadLock)clone;
     }
 }

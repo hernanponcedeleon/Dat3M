@@ -15,6 +15,7 @@ public abstract class Event extends Thread {
 	private int eid;
 	private int hlId;
 	private int unfCopy;
+	protected Event clone;
 	protected String atomic;
 	protected Set<String> filter = new HashSet<>();
 	
@@ -62,6 +63,16 @@ public abstract class Event extends Thread {
 	public void addFilters(String... params){
 		filter.addAll(Arrays.asList(params));
 	}
+
+	@Override
+	public void beforeClone(){
+		clone = null;
+	}
+
+	protected void afterClone(){
+        clone.setCondLevel(condLevel);
+        clone.setUnfCopy(getUnfCopy());
+    }
 
     @Override
 	public Set<Event> getEvents() {

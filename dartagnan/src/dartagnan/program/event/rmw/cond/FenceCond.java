@@ -30,6 +30,10 @@ public class FenceCond extends Fence {
 
     @Override
     public FenceCond clone() {
-        return new FenceCond(loadEvent.clone(), name, condLevel, atomic);
+        if(clone == null){
+            clone = new FenceCond(loadEvent.clone(), name, condLevel, atomic);
+            afterClone();
+        }
+        return (FenceCond)clone;
     }
 }

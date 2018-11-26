@@ -26,6 +26,10 @@ public class RCUSync extends Event {
 
     @Override
     public RCUSync clone() {
-        return new RCUSync(condLevel);
+        if(clone == null){
+            clone = new RCUSync(condLevel);
+            afterClone();
+        }
+        return (RCUSync)clone;
     }
 }

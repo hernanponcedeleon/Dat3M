@@ -22,6 +22,10 @@ public class FenceOpt extends Fence {
 
     @Override
     public FenceOpt clone() {
-        return new FenceOpt(name, opt, condLevel);
+        if(clone == null){
+            clone = new FenceOpt(name, opt, condLevel);
+            afterClone();
+        }
+        return (FenceOpt)clone;
     }
 }

@@ -52,13 +52,11 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
     @Override
 	public Local clone() {
-		Register newReg = reg.clone();
-		ExprInterface newExpr = expr.clone();
-		Local newLocal = new Local(newReg, newExpr);
-		newLocal.condLevel = condLevel;
-		newLocal.setHLId(hashCode());
-		newLocal.setUnfCopy(getUnfCopy());
-		return newLocal;
+	    if(clone == null){
+            clone = new Local(reg.clone(), expr.clone());
+            afterClone();
+        }
+		return (Local)clone;
 	}
 
     @Override

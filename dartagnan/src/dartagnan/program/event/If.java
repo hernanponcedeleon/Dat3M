@@ -110,14 +110,16 @@ public class If extends Event implements RegReaderData {
 
     @Override
     public If clone() {
-        Thread newT1 = t1.clone();
-        newT1.decCondLevel();
-        Thread newT2 = t2.clone();
-        newT2.decCondLevel();
-        ExprInterface newPred = expr.clone();
-        If newIf = new If(newPred, newT1, newT2);
-        newIf.condLevel = condLevel;
-        return newIf;
+        if(clone == null){
+            Thread newT1 = t1.clone();
+            newT1.decCondLevel();
+            Thread newT2 = t2.clone();
+            newT2.decCondLevel();
+            ExprInterface newPred = expr.clone();
+            If newIf = new If(newPred, newT1, newT2);
+            newIf.condLevel = condLevel;
+        }
+        return (If)clone;
     }
 
     @Override

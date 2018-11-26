@@ -35,7 +35,11 @@ public class Fence extends Event {
 
 	@Override
 	public Fence clone() {
-		return new Fence(name, condLevel, atomic);
+		if(clone == null){
+			clone = new Fence(name, condLevel, atomic);
+			afterClone();
+		}
+		return (Fence)clone;
 	}
 
 	@Override

@@ -43,13 +43,11 @@ public class Load extends MemEvent implements RegWriter {
 
 	@Override
 	public Load clone() {
-		Register newReg = reg.clone();
-		Location newLoc = loc.clone();
-		Load newLoad = new Load(newReg, newLoc, atomic);
-		newLoad.condLevel = condLevel;
-		newLoad.setHLId(getHLId());
-		newLoad.setUnfCopy(getUnfCopy());
-		return newLoad;
+		if(clone == null){
+			clone = new Load(reg.clone(), loc.clone(), atomic);
+			afterClone();
+		}
+		return (Load)clone;
 	}
 
 	@Override

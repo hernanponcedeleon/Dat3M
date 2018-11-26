@@ -15,13 +15,8 @@ public class RMWReadCondCmp extends RMWReadCond implements RegWriter, RegReaderD
     @Override
     public RMWReadCondCmp clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            Location newLoc = loc.clone();
-            ExprInterface newCmp = cmp.clone();
-            clone = new RMWReadCondCmp(newReg, newCmp, newLoc, atomic);
-            clone.setCondLevel(condLevel);
-            clone.setHLId(getHLId());
-            clone.setUnfCopy(getUnfCopy());
+            clone = new RMWReadCondCmp(reg.clone(), cmp.clone(), loc.clone(), atomic);
+            afterClone();
         }
         return (RMWReadCondCmp)clone;
     }

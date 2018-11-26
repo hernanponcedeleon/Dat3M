@@ -13,8 +13,10 @@ public class Skip extends Event {
 
 	@Override
 	public Skip clone() {
-		Skip newSkip = new Skip();
-		newSkip.condLevel = condLevel;
-		return newSkip;
+		if(clone == null){
+			clone = new Skip();
+			afterClone();
+		}
+		return (Skip)clone;
 	}
 }

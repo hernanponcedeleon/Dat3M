@@ -25,13 +25,8 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     @Override
     public RMWReadCondUnless clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            Location newLoc = loc.clone();
-            ExprInterface newCmp = cmp.clone();
-            clone = new RMWReadCondUnless(newReg, newCmp, newLoc, atomic);
-            clone.setCondLevel(condLevel);
-            clone.setHLId(getHLId());
-            clone.setUnfCopy(getUnfCopy());
+            clone = new RMWReadCondUnless(reg.clone(), cmp.clone(), loc.clone(), atomic);
+            afterClone();
         }
         return (RMWReadCondUnless)clone;
     }

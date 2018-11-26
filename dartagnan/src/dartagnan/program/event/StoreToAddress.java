@@ -53,11 +53,11 @@ public class StoreToAddress extends Store implements RegReaderData, RegReaderAdd
 
     @Override
     public StoreToAddress clone() {
-        StoreToAddress newStore = new StoreToAddress(address.clone(), value.clone(), atomic);
-        newStore.condLevel = condLevel;
-        newStore.setHLId(getHLId());
-        newStore.setUnfCopy(getUnfCopy());
-        return newStore;
+        if(clone == null){
+            clone = new StoreToAddress(address.clone(), value.clone(), atomic);
+            afterClone();
+        }
+        return (StoreToAddress)clone;
     }
 
     @Override

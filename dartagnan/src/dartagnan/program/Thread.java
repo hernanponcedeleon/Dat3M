@@ -20,6 +20,8 @@ public abstract class Thread {
 	protected int condLevel;
 	private EventRepository eventRepository;
 
+    public abstract void beforeClone();
+
     public void setMainThread(Thread t) {
         this.mainThread = t;
     }
@@ -66,8 +68,6 @@ public abstract class Thread {
 	public String cfVar() {
 		return "CF" + hashCode();
 	}
-
-	public void beforeClone(){}
 
     protected final String nTimesCondLevel() {
         return String.join("", Collections.nCopies(condLevel, "  "));

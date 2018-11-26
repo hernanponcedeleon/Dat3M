@@ -53,11 +53,11 @@ public class LoadFromAddress extends Load implements RegWriter, RegReaderAddress
 
     @Override
     public LoadFromAddress clone() {
-        LoadFromAddress newLoad = new LoadFromAddress(reg.clone(), address.clone(), atomic);
-        newLoad.condLevel = condLevel;
-        newLoad.setHLId(getHLId());
-        newLoad.setUnfCopy(getUnfCopy());
-        return newLoad;
+        if(clone == null){
+            clone = new LoadFromAddress(reg.clone(), address.clone(), atomic);
+            afterClone();
+        }
+        return (LoadFromAddress)clone;
     }
 
     @Override

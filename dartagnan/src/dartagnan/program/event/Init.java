@@ -32,11 +32,11 @@ public class Init extends MemEvent {
 
 	@Override
 	public Init clone() {
-		Location newLoc = loc.clone();
-		Init newInit = new Init(newLoc);
-		newInit.condLevel = condLevel;
-		newInit.setHLId(getHLId());
-		return newInit;
+	    if(clone == null){
+            clone = new Init(loc.clone());
+            afterClone();
+        }
+		return (Init)clone;
 	}
 
 	@Override

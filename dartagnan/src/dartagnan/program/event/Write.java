@@ -40,11 +40,11 @@ public class Write extends MemEvent implements RegReaderData {
 
 	@Override
 	public Write clone() {
-        Write newWrite = new Write(loc.clone(), value.clone(), atomic);
-		newWrite.condLevel = condLevel;
-		newWrite.memId = memId;
-		newWrite.setUnfCopy(getUnfCopy());
-		return newWrite;
+		if(clone == null){
+			clone = new Write(loc.clone(), value.clone(), atomic);
+			afterClone();
+		}
+		return (Write)clone;
 	}
 
 	@Override

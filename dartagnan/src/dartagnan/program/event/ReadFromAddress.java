@@ -34,11 +34,11 @@ public class ReadFromAddress extends Read implements RegWriter, RegReaderAddress
 
     @Override
     public ReadFromAddress clone() {
-        ReadFromAddress newRead = new ReadFromAddress(reg.clone(), address.clone(), atomic);
-        newRead.condLevel = condLevel;
-        newRead.memId = memId;
-        newRead.setUnfCopy(getUnfCopy());
-        return newRead;
+        if(clone == null){
+            clone = new ReadFromAddress(reg.clone(), address.clone(), atomic);
+            afterClone();
+        }
+        return (ReadFromAddress)clone;
     }
 
     @Override

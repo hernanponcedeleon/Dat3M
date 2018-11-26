@@ -32,11 +32,11 @@ public class Read extends MemEvent implements RegWriter {
 
 	@Override
 	public Read clone() {
-		Read newRead = new Read(reg.clone(), loc.clone(), atomic);
-		newRead.condLevel = condLevel;
-		newRead.memId = memId;
-		newRead.setUnfCopy(getUnfCopy());
-		return newRead;
+		if(clone == null){
+			clone = new Read(reg.clone(), loc.clone(), atomic);
+			afterClone();
+		}
+		return (Read)clone;
 	}
 
 	@Override

@@ -22,13 +22,10 @@ public class RMWStore extends Store implements RegReaderData {
 
     @Override
     public RMWStore clone() {
-        Location newLoc = loc.clone();
-        RMWLoad newLoad = loadEvent.clone();
-        ExprInterface newVal = value.clone();
-        RMWStore newStore = new RMWStore(newLoad, newLoc, newVal, atomic);
-        newStore.condLevel = condLevel;
-        newStore.setHLId(getHLId());
-        newStore.setUnfCopy(getUnfCopy());
-        return newStore;
+        if(clone == null){
+            clone = new RMWStore(loadEvent.clone(), loc.clone(), value.clone(), atomic);
+            afterClone();
+        }
+        return (RMWStore)clone;
     }
 }

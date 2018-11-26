@@ -35,11 +35,11 @@ public class WriteToAddress extends Write implements RegReaderData, RegReaderAdd
 
     @Override
     public WriteToAddress clone() {
-        WriteToAddress newWrite = new WriteToAddress(address.clone(), value.clone(), atomic);
-        newWrite.condLevel = condLevel;
-        newWrite.memId = memId;
-        newWrite.setUnfCopy(getUnfCopy());
-        return newWrite;
+        if(clone == null){
+            clone = new WriteToAddress(address.clone(), value.clone(), atomic);
+            afterClone();
+        }
+        return (WriteToAddress)clone;
     }
 
     @Override
