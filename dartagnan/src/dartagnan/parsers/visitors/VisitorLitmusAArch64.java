@@ -1,22 +1,27 @@
 package dartagnan.parsers.visitors;
 
+import dartagnan.expression.op.AOpBin;
 import dartagnan.parsers.LitmusAArch64BaseVisitor;
 import dartagnan.parsers.LitmusAArch64Parser;
 import dartagnan.parsers.LitmusAArch64Visitor;
 import dartagnan.expression.AConst;
 import dartagnan.expression.AExpr;
-import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
+import dartagnan.program.Thread;
 import dartagnan.program.event.LoadFromAddress;
+import dartagnan.program.event.rmw.opt.RMWStoreOpt;
+import dartagnan.program.event.rmw.opt.RMWStoreOptStatus;
 import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
 import dartagnan.program.event.StoreToAddress;
-import dartagnan.program.event.rmw.cond.RMWStoreCondWithStatus;
 import dartagnan.program.event.rmw.RMWLoad;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         implements LitmusAArch64Visitor<Object> {
@@ -24,6 +29,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     private ProgramBuilder programBuilder;
     private String mainThread;
     private Integer threadCount = 0;
+
+    private Map<String, RMWLoad> ldxrMap = new HashMap<>();
 
     public VisitorLitmusAArch64(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -132,7 +139,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     public Object visitLoadExclusive(LitmusAArch64Parser.LoadExclusiveContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD);
         Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
-        return programBuilder.addChild(mainThread, new RMWLoad(register, location, ctx.loadExclusiveInstruction().mo));
+        RMWLoad load = new RMWLoad(register, location, ctx.loadExclusiveInstruction().mo);
+        ldxrMap.put(mainThread, load);
+        return programBuilder.addChild(mainThread, load);
     }
 
     @Override
@@ -149,16 +158,13 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitStoreExclusive(LitmusAArch64Parser.StoreExclusiveContext ctx) {
-        RMWLoad loadEvent = (RMWLoad) programBuilder.getLastThreadEvent(mainThread);
-        if(loadEvent != null){
-            Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
-            Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
-            Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
-            RMWStoreCondWithStatus store = new RMWStoreCondWithStatus(
-                    statusReg, loadEvent, location, register, ctx.storeExclusiveInstruction().mo);
-            return programBuilder.addChild(mainThread, store);
-        }
-        throw new ParsingException("Unbalanced exclusive store " + ctx.getText());
+        RMWLoad loadEvent = ldxrMap.remove(mainThread);
+        Location location = programBuilder.getLocForReg(mainThread, ctx.address().id);
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
+        Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
+        RMWStoreOpt store = new RMWStoreOpt(loadEvent, location, register, ctx.storeExclusiveInstruction().mo);
+        RMWStoreOptStatus status = new RMWStoreOptStatus(statusReg, store);
+        return programBuilder.addChild(mainThread, Thread.fromArray(false, store, status));
     }
 
     @Override

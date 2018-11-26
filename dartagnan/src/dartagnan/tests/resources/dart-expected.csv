@@ -77,6 +77,7 @@ litmus/AARCH64/EXTRA/ARMARM05.litmus,1
 litmus/AARCH64/EXTRA/ARMARM06+AP+AA.litmus,1
 litmus/AARCH64/EXTRA/ARMARM06+AP+AP.litmus,1
 litmus/AARCH64/EXTRA/ARMARM06.litmus,1
+litmus/AARCH64/EXTRA/ARMARM07+SAL.litmus,1
 litmus/AARCH64/Fence2/2+2W+dmb.ld+dmb.st.litmus,1
 litmus/AARCH64/Fence2/2+2W+dmb.ld+dmb.sy.litmus,1
 litmus/AARCH64/Fence2/2+2W+dmb.ld+po.litmus,1
@@ -13200,3 +13201,12 @@ litmus/C/auto/C-RR-G+RR-R+RR-R+RR-G+RR-R+RR-G+RR-G+RR-R.litmus,0
 litmus/C/auto/C-RW-G+RW-G+RW-R+RW-R+RW-R+RW-R+RW-G+RW-G+RW-G+RW-G+RW-R+RW-R+RW-R+RW-R+RW-G+RW-G.litmus,0
 litmus/C/auto/C-RR-G+RR-G+RR-G+RR-R+RR-G+RR-G+RR-G+RR-R.litmus,0
 litmus/C/auto/C-RR-G+RR-R+RR-R+RR-R+RR-G+RR-G+RR-R.litmus,1
+litmus/AARCH64/dart/exclusive-01.litmus,0
+litmus/AARCH64/dart/exclusive-02.litmus,1
+litmus/AARCH64/dart/exclusive-03.litmus,0
+litmus/AARCH64/dart/exclusive-04.litmus,0
+litmus/AARCH64/dart/exclusive-05.litmus,0
+litmus/AARCH64/dart/pointer-01.litmus,1
+litmus/AARCH64/dart/pointer-02.litmus,0
+litmus/AARCH64/dart/pointer-03.litmus,0
+litmus/AARCH64/dart/exclusive-06.litmus,0

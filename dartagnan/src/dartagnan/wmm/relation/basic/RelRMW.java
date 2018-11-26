@@ -1,6 +1,7 @@
 package dartagnan.wmm.relation.basic;
 
 import dartagnan.program.event.Event;
+import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.utils.Tuple;
@@ -17,7 +18,11 @@ public class RelRMW extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Event store : program.getEventRepository().getEvents(EventRepository.RMW_STORE)){
-                maxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));
+                RMWLoad load = ((RMWStore)store).getLoadEvent();
+                // Can be null for STXR in Aarch64
+                if(load != null){
+                    maxTupleSet.add(new Tuple(load, store));
+                }
             }
         }
         return maxTupleSet;
