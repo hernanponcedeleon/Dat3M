@@ -18,8 +18,8 @@ import static dartagnan.utils.Utils.ssaLoc;
 
 public class StoreToAddress extends Store implements RegReaderData, RegReaderAddress {
 
-    private Register address;
-    private IntExpr addressExpr;
+    protected Register address;
+    protected IntExpr addressExpr;
 
     public StoreToAddress(Register address, ExprInterface value, String atomic){
         super(null, value, atomic);

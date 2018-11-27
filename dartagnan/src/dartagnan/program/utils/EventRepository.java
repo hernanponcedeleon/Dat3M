@@ -8,6 +8,7 @@ import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.RMWAbstract;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.rmw.RMWStoreToAddress;
 import dartagnan.program.event.tso.Xchg;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
@@ -72,7 +73,7 @@ public class EventRepository {
                 || ((mask & FENCE) > 0 && event instanceof Fence)
                 || ((mask & SKIP) > 0 && event instanceof Skip)
                 || ((mask & STORE) > 0 && (event instanceof Store || event instanceof Write || event instanceof RMWAbstract || event instanceof Xchg))
-                || ((mask & RMW_STORE) > 0 && event instanceof RMWStore)
+                || ((mask & RMW_STORE) > 0 && (event instanceof RMWStore || event instanceof RMWStoreToAddress))
                 || ((mask & IF) > 0 && event instanceof If)
                 || ((mask & RCU_LOCK) > 0 && event instanceof RCUReadLock)
                 || ((mask & RCU_UNLOCK) > 0 && event instanceof RCUReadUnlock)

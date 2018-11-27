@@ -18,8 +18,8 @@ import static dartagnan.utils.Utils.ssaReg;
 
 public class LoadFromAddress extends Load implements RegWriter, RegReaderAddress {
 
-    private Register address;
-    private IntExpr addressExpr;
+    protected Register address;
+    protected IntExpr addressExpr;
 
     public LoadFromAddress(Register register, Register address, String atomic) {
         super(register, null, atomic);
