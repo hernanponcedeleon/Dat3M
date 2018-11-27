@@ -61,12 +61,11 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
-        Register register = visitThreadVariable(ctx.threadVariable());
         int value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
         }
-        programBuilder.addDeclarationRegImm(register.getPrintMainThreadId(), register.getName(), value);
+        programBuilder.addDeclarationRegImm(ctx.threadVariable().tid, ctx.threadVariable().name, value);
         return null;
     }
 
@@ -78,7 +77,8 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        throw new ParsingException("Pointer assignment is not implemented");
+        programBuilder.addDeclarationRegLoc(ctx.threadVariable().tid, ctx.threadVariable().name, visitVariable(ctx.variable()));
+        return null;
     }
 
 
@@ -154,7 +154,8 @@ public class VisitorLitmusC
         if(register == null){
             Location location = programBuilder.getLocation(varName);
             if(location != null){
-                result = new Write(location, returnStack.pop(), "Relaxed");
+                Register address = getAddressRegister(currentThread, location);
+                result = new StoreToAddress(address, returnStack.pop(), "NA");
             }
         }
 
@@ -241,8 +242,9 @@ public class VisitorLitmusC
     public Thread visitReLoad(LitmusCParser.ReLoadContext ctx){
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
+        Register address = getAddressRegister(currentThread, location);
         returnStack.push(register);
-        return new Read(register, location, ctx.mo);
+        return new LoadFromAddress(register, address, ctx.mo);
     }
 
     @Override
@@ -361,11 +363,12 @@ public class VisitorLitmusC
     public Thread visitNreStore(LitmusCParser.NreStoreContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
+        Register address = getAddressRegister(currentThread, location);
         if(ctx.mo.equals("Mb")){
-            Thread t = new Write(location, returnStack.pop(), "Relaxed");
+            Thread t = new StoreToAddress(address, returnStack.pop(), "Relaxed");
             return Thread.fromArray(false, t1, t, new Fence("Mb"));
         }
-        Thread t = new Write(location, returnStack.pop(), ctx.mo);
+        Thread t = new StoreToAddress(address, returnStack.pop(), ctx.mo);
         return Thread.fromArray(false, t1, t);
     }
 
