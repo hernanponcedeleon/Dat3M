@@ -17,11 +17,6 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
     }
 
     @Override
-    public void beforeClone(){
-        clone = null;
-    }
-
-    @Override
     public BoolExpr encodeCF(Context ctx) {
         return ctx.mkImplies(ctx.mkNot(ctx.mkBoolConst(cfVar())), ctx.mkNot(executes(ctx)));
     }

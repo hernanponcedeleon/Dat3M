@@ -14,11 +14,6 @@ public class RMWLoad extends Load implements RegWriter {
     }
 
     @Override
-    public void beforeClone(){
-        clone = null;
-    }
-
-    @Override
     public RMWLoad clone() {
         if(clone == null){
             clone = new RMWLoad(reg.clone(), loc.clone(), atomic);

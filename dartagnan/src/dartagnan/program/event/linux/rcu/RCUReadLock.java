@@ -25,11 +25,6 @@ public class RCUReadLock extends Event {
     }
 
     @Override
-    public void beforeClone(){
-        clone = null;
-    }
-
-    @Override
     public RCUReadLock clone() {
         if(clone == null){
             clone = new RCUReadLock(condLevel);
