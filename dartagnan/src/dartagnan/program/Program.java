@@ -75,6 +75,9 @@ public class Program extends Thread {
 	}
 
     @Override
+	public void beforeClone(){}
+
+    @Override
 	public Program clone() {
         Program newP = new Program(name, memory);
 		for(Thread t : threads){
