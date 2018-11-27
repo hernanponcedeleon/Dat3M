@@ -5,23 +5,23 @@ import dartagnan.expression.Atom;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.op.AOpBin;
 import dartagnan.expression.op.COpBin;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.rmw.cond.RMWReadCondUnless;
 import dartagnan.program.event.rmw.cond.RMWStoreCond;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
 import java.util.Set;
 
-public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData {
+public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
     private ExprInterface cmp;
 
-    public RMWAddUnless(Location location, Register register, ExprInterface cmp, ExprInterface value) {
-        super(location, register, value, "Mb");
+    public RMWAddUnless(Register address, Register register, ExprInterface cmp, ExprInterface value) {
+        super(address, register, value, "Mb");
         this.cmp = cmp;
     }
 
@@ -38,8 +38,8 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
-            RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, loc, "Relaxed");
-            RMWStoreCond store = new RMWStoreCond(load, loc, new AExpr(dummy, AOpBin.PLUS, value), "Relaxed");
+            RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, address, "Relaxed");
+            RMWStoreCond store = new RMWStoreCond(load, address, new AExpr(dummy, AOpBin.PLUS, value), "Relaxed");
             Local local = new Local(reg, new Atom(dummy, COpBin.NEQ, cmp));
 
             compileBasic(load);
@@ -62,7 +62,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
             ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : value.clone());
-            clone = new RMWAddUnless(loc.clone(), newReg, newCmp, newValue);
+            clone = new RMWAddUnless(address.clone(), newReg, newCmp, newValue);
             afterClone();
         }
         return (RMWAddUnless)clone;

@@ -5,17 +5,20 @@ import com.google.common.collect.Sets;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
+import dartagnan.program.Register;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.memory.Location;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class MemEvent extends Event {
+public abstract class MemEvent extends Event implements RegReaderAddress {
 
     protected Location loc;
     protected int memId;
     protected Set<Location> locations;
+    protected Register address;
     protected Map<Location, Expr> ssaLocMap = new HashMap<>();
 
     public Set<Location> getMaxLocationSet(){
@@ -27,6 +30,16 @@ public abstract class MemEvent extends Event {
             locations = ImmutableSet.of(loc);
         }
         return locations;
+    }
+
+    @Override
+    public void setMaxLocationSet(Set<Location> locations){
+        this.locations = locations;
+    }
+
+    @Override
+    public Register getAddressReg(){
+        return address;
     }
 
     public Expr getSsaLoc(Location location){

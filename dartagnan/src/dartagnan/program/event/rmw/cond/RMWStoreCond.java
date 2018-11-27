@@ -3,14 +3,15 @@ package dartagnan.program.event.rmw.cond;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.memory.Location;
-import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.Register;
+import dartagnan.program.event.rmw.RMWStoreToAddress;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 
-public class RMWStoreCond extends RMWStore implements RegReaderData {
+public class RMWStoreCond extends RMWStoreToAddress implements RegReaderData, RegReaderAddress {
 
-    public RMWStoreCond(RMWReadCond loadEvent, Location loc, ExprInterface value, String atomic) {
-        super(loadEvent, loc, value, atomic);
+    public RMWStoreCond(RMWReadCond loadEvent, Register address, ExprInterface value, String atomic) {
+        super(loadEvent, address, value, atomic);
     }
 
     @Override

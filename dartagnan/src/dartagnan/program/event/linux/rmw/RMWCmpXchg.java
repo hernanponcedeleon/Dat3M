@@ -1,23 +1,23 @@
 package dartagnan.program.event.linux.rmw;
 
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.cond.RMWReadCondCmp;
 import dartagnan.program.event.rmw.cond.RMWStoreCond;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
 import java.util.Set;
 
-public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
+public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
 
     private ExprInterface cmp;
 
-    public RMWCmpXchg(Location location, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
-        super(location, register, value, atomic);
+    public RMWCmpXchg(Register address, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
+        super(address, register, value, atomic);
         this.cmp = cmp;
     }
 
@@ -34,8 +34,8 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = (reg == value || reg == cmp) ? new Register(null) : reg;
-            RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, loc, getLoadMO());
-            RMWStoreCond store = new RMWStoreCond(load, loc, value, getStoreMO());
+            RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, getLoadMO());
+            RMWStoreCond store = new RMWStoreCond(load, address, value, getStoreMO());
 
             compileBasic(load);
             compileBasic(store);
@@ -58,7 +58,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
             ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : value.clone());
-            clone = new RMWCmpXchg(loc.clone(), newReg, newCmp, newValue, atomic);
+            clone = new RMWCmpXchg(address.clone(), newReg, newCmp, newValue, atomic);
             afterClone();
         }
         return (RMWCmpXchg)clone;

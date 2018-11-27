@@ -6,22 +6,22 @@ import dartagnan.expression.Atom;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.op.AOpBin;
 import dartagnan.expression.op.COpBin;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
-import dartagnan.program.event.rmw.RMWLoad;
-import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.rmw.RMWLoadFromAddress;
+import dartagnan.program.event.rmw.RMWStoreToAddress;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderData {
+public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
 
     private AOpBin op;
 
-    public RMWOpAndTest(Location location, Register register, ExprInterface value, AOpBin op) {
-        super(location, register, value, "Mb");
+    public RMWOpAndTest(Register address, Register register, ExprInterface value, AOpBin op) {
+        super(address, register, value, "Mb");
         this.op = op;
     }
 
@@ -29,9 +29,9 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
-            RMWLoad load = new RMWLoad(dummy, loc, "Relaxed");
+            RMWLoadFromAddress load = new RMWLoadFromAddress(dummy, address, "Relaxed");
             Local local1 = new Local(dummy, new AExpr(dummy, op, value));
-            RMWStore store = new RMWStore(load, loc, dummy, "Relaxed");
+            RMWStoreToAddress store = new RMWStoreToAddress(load, address, dummy, "Relaxed");
             Local local2 = new Local(reg, new Atom(dummy, COpBin.EQ, new AConst(0)));
 
             compileBasic(load);
@@ -53,7 +53,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWOpAndTest(loc.clone(), newReg, newValue, op);
+            clone = new RMWOpAndTest(address.clone(), newReg, newValue, op);
             afterClone();
         }
         return (RMWOpAndTest)clone;

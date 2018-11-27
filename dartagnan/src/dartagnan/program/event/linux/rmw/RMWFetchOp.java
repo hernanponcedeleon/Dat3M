@@ -3,21 +3,21 @@ package dartagnan.program.event.linux.rmw;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.op.AOpBin;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.rmw.RMWLoad;
-import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.rmw.RMWLoadFromAddress;
+import dartagnan.program.event.rmw.RMWStoreToAddress;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData {
+public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
 
     private AOpBin op;
 
-    public RMWFetchOp(Location location, Register register, ExprInterface value, AOpBin op, String atomic) {
-        super(location, register, value, atomic);
+    public RMWFetchOp(Register address, Register register, ExprInterface value, AOpBin op, String atomic) {
+        super(address, register, value, atomic);
         this.op = op;
     }
 
@@ -25,8 +25,8 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = reg == value ? new Register(null) : reg;
-            RMWLoad load = new RMWLoad(dummy, loc, getLoadMO());
-            RMWStore store = new RMWStore(load, loc, new AExpr(dummy, op, value), getStoreMO());
+            RMWLoadFromAddress load = new RMWLoadFromAddress(dummy, address, getLoadMO());
+            RMWStoreToAddress store = new RMWStoreToAddress(load, address, new AExpr(dummy, op, value), getStoreMO());
 
             compileBasic(load);
             compileBasic(store);
@@ -48,7 +48,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWFetchOp(loc.clone(), newReg, newValue, op, atomic);
+            clone = new RMWFetchOp(address.clone(), newReg, newValue, op, atomic);
             afterClone();
         }
         return (RMWFetchOp)clone;

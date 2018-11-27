@@ -12,28 +12,15 @@ import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.Set;
-
 import static dartagnan.utils.Utils.ssaLoc;
 
 public class StoreToAddress extends Store implements RegReaderData, RegReaderAddress {
 
-    protected Register address;
     protected IntExpr addressExpr;
 
     public StoreToAddress(Register address, ExprInterface value, String atomic){
         super(null, value, atomic);
         this.address = address;
-    }
-
-    @Override
-    public void setMaxLocationSet(Set<Location> locations){
-        this.locations = locations;
-    }
-
-    @Override
-    public Register getAddressReg(){
-        return address;
     }
 
     @Override

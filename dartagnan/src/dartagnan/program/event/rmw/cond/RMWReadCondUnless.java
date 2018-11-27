@@ -3,17 +3,17 @@ package dartagnan.program.event.rmw.cond;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData {
+public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData, RegReaderAddress {
 
-    public RMWReadCondUnless(Register reg, ExprInterface cmp, Location loc, String atomic) {
-        super(reg, cmp, loc, atomic);
+    public RMWReadCondUnless(Register reg, ExprInterface cmp, Register address, String atomic) {
+        super(reg, cmp, address, atomic);
     }
 
     public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
@@ -25,7 +25,7 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     @Override
     public RMWReadCondUnless clone() {
         if(clone == null){
-            clone = new RMWReadCondUnless(reg.clone(), cmp.clone(), loc.clone(), atomic);
+            clone = new RMWReadCondUnless(reg.clone(), cmp.clone(), address.clone(), atomic);
             afterClone();
         }
         return (RMWReadCondUnless)clone;

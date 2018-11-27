@@ -48,6 +48,7 @@ public class Read extends MemEvent implements RegWriter {
 		ld.setHLId(memId);
 		ld.setUnfCopy(getUnfCopy());
 		ld.setCondLevel(this.condLevel);
+        ld.setMaxLocationSet(getMaxLocationSet());
 
 		if(!target.equals("power") && !target.equals("arm")) {
 			return ld;

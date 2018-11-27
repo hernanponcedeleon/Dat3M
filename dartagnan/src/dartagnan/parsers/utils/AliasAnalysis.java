@@ -29,6 +29,10 @@ public class AliasAnalysis {
         for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
             if(e instanceof RegReaderAddress){
                 Register register = ((RegReaderAddress) e).getAddressReg();
+
+                // TODO: Remove me after Load / Store are completely changed to the corresponding address events
+                if(register == null) continue;
+
                 if(!regWrites.containsKey(register)){
                     throw new RuntimeException("Address register " + register + " has not been initialised");
                 }

@@ -11,29 +11,16 @@ import dartagnan.program.memory.Location;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.Set;
-
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
 public class LoadFromAddress extends Load implements RegWriter, RegReaderAddress {
 
-    protected Register address;
     protected IntExpr addressExpr;
 
     public LoadFromAddress(Register register, Register address, String atomic) {
         super(register, null, atomic);
         this.address = address;
-    }
-
-    @Override
-    public void setMaxLocationSet(Set<Location> locations){
-        this.locations = locations;
-    }
-
-    @Override
-    public Register getAddressReg(){
-        return address;
     }
 
     @Override

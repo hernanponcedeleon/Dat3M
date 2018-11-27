@@ -4,27 +4,12 @@ import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegWriter;
-import dartagnan.program.memory.Location;
-
-import java.util.Set;
 
 public class ReadFromAddress extends Read implements RegWriter, RegReaderAddress {
-
-    private Register address;
 
     public ReadFromAddress(Register register, Register address, String atomic) {
         super(register, null, atomic);
         this.address = address;
-    }
-
-    @Override
-    public Register getAddressReg(){
-        return address;
-    }
-
-    @Override
-    public void setMaxLocationSet(Set<Location> locations){
-        this.locations = locations;
     }
 
     @Override

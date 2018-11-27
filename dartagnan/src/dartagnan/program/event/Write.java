@@ -56,6 +56,7 @@ public class Write extends MemEvent implements RegReaderData {
 		st.setHLId(memId);
 		st.setUnfCopy(getUnfCopy());
 		st.setCondLevel(this.condLevel);
+		st.setMaxLocationSet(getMaxLocationSet());
 
 		if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
             Fence mfence = new Fence("Mfence", this.condLevel);
