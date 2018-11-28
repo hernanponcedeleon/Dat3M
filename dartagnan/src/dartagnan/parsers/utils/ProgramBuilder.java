@@ -22,6 +22,7 @@ public class ProgramBuilder {
     private Map<String, Map<String, Register>> registers = new HashMap<>();
     private Map<String, Map<String, Label>> labels = new HashMap<>();
     private Map<String, LinkedList<Thread>> threads = new HashMap<>();
+    private Map<Location, AConst> iValueMap = new HashMap<>();
     private Memory memory = new Memory();
 
     private AbstractAssert ass;
@@ -34,7 +35,8 @@ public class ProgramBuilder {
             program.add(Thread.fromList(true, thread));
         }
         for(Location location : memory.getLocations()) {
-            program.add(new Init(location.getAddress(), location.getIValue()));
+            AConst iValue = iValueMap.getOrDefault(location, new AConst(Location.DEFAULT_INIT_VALUE));
+            program.add(new Init(location.getAddress(), iValue));
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);
@@ -75,11 +77,13 @@ public class ProgramBuilder {
 
     // Initialisation x=y assigned address of y to the variable x
     public void addDeclarationLocLoc(String leftName, String rightName){
-        getOrCreateLocation(leftName).setIValue(getOrCreateLocation(rightName).getAddress());
+        Location location = getOrCreateLocation(leftName);
+        iValueMap.put(location, getOrCreateLocation(rightName).getAddress());
     }
 
     public void addDeclarationLocImm(String locName, int imm){
-        getOrCreateLocation(locName).setIValue(new AConst(imm));
+        Location location = getOrCreateLocation(locName);
+        iValueMap.put(location, new AConst(imm));
     }
 
     // Initialisation 0:r0=y assigned address of y to register 0:r0

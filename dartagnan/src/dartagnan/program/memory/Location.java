@@ -2,7 +2,6 @@ package dartagnan.program.memory;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
-import dartagnan.expression.AConst;
 import dartagnan.expression.IntExprInterface;
 
 public class Location implements IntExprInterface {
@@ -11,7 +10,6 @@ public class Location implements IntExprInterface {
 
 	private final String name;
 	private final Address address;
-	private AConst iValue = new AConst(DEFAULT_INIT_VALUE);
 
 	Location(String name, Address address) {
 		this.name = name;
@@ -20,14 +18,6 @@ public class Location implements IntExprInterface {
 	
 	public String getName() {
 		return name;
-	}
-	
-	public void setIValue(AConst iValue) {
-		this.iValue = iValue;
-	}
-
-	public AConst getIValue() {
-		return iValue;
 	}
 
 	public Address getAddress() {
