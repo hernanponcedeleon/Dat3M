@@ -3,11 +3,10 @@ package dartagnan.program.event.rmw;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.event.Store;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 
-public class RMWStore extends Store implements RegReaderData, RegReaderAddress {
+public class RMWStore extends Store implements RegReaderData {
 
     protected RMWLoad loadEvent;
 

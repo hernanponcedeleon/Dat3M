@@ -6,11 +6,10 @@ import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
+public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     public RMWXchg(Register address, Register register, ExprInterface value, String atomic) {
         super(address, register, value, atomic);
@@ -35,7 +34,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData, Re
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(" + loc + ", " + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(memory[" + address + "], " + value + ")";
     }
 
     @Override

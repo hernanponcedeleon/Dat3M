@@ -6,12 +6,11 @@ import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-public class RMWStoreOpt extends RMWStore implements RegReaderData, RegReaderAddress {
+public class RMWStoreOpt extends RMWStore implements RegReaderData {
 
     public RMWStoreOpt(RMWLoad loadEvent, AExpr address, ExprInterface value, String atomic){
         super(loadEvent, address, value, atomic);
@@ -39,7 +38,7 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData, RegReaderAdd
         if(loadEvent == null){
             enc = ctx.mkAnd(result.getFirst(), ctx.mkNot(executes(ctx)));
         } else {
-            enc = ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr(ctx)));
+            enc = ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr()));
         }
         return new Pair<>(enc, result.getSecond());
     }

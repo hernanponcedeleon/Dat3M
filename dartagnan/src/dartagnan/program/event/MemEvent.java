@@ -1,44 +1,44 @@
 package dartagnan.program.event;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.memory.Location;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class MemEvent extends Event implements RegReaderAddress {
+public abstract class MemEvent extends Event {
 
-    protected Location loc;
-    protected int memId;
-    protected Set<Location> locations;
     protected AExpr address;
+    protected IntExpr addressExpr;
+
+    protected Set<Location> locations;
     protected Map<Location, Expr> ssaLocMap = new HashMap<>();
 
-    public Set<Location> getMaxLocationSet(){
-        if(locations == null){
-            if(loc == null){
-                // TODO: Assign all locations to such events during compilation
-                throw new RuntimeException("Location set is not specified for address event " + getClass().getName() + " " + getEId() + ": " + this);
-            }
-            locations = ImmutableSet.of(loc);
+    protected int memId;
+
+    public IntExpr getAddressExpr(){
+        if(addressExpr != null){
+            return addressExpr;
         }
-        return locations;
+        throw new RuntimeException("Attempt to access not initialised address expression in " + this);
     }
 
-    @Override
+    public Set<Location> getMaxLocationSet(){
+        if(locations != null){
+            return locations;
+        }
+        throw new RuntimeException("Location set has not been initialised for memory event " + this);
+    }
+
     public void setMaxLocationSet(Set<Location> locations){
         this.locations = locations;
     }
 
-    @Override
     public Register getAddressReg(){
         if(address instanceof Register){
             return (Register) address;
@@ -52,10 +52,6 @@ public abstract class MemEvent extends Event implements RegReaderAddress {
 
     public Expr getSsaLoc(Location location){
         return ssaLocMap.get(location);
-    }
-
-    public IntExpr getAddressExpr(Context ctx){
-        return loc.getAddress().toZ3(ctx);
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){

@@ -9,15 +9,27 @@ import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static dartagnan.utils.Utils.ssaLoc;
 
 public class Init extends MemEvent {
+
+    protected Location loc;
 	
 	public Init(Location loc) {
 		setHLId(hashCode());
 		this.loc = loc;
 		this.condLevel = 0;
 		addFilters(EType.ANY, EType.MEMORY, EType.WRITE, EType.INIT);
+	}
+
+	@Override
+	public Set<Location> getMaxLocationSet(){
+		Set<Location> locations = new HashSet<>();
+		locations.add(loc);
+		return locations;
 	}
 
 	@Override
@@ -42,6 +54,7 @@ public class Init extends MemEvent {
 	@Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
 		if(mainThread != null){
+			addressExpr = loc.getAddress().toZ3(ctx);
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLocMap.put(loc, z3Loc);
 			return new Pair<>(ctx.mkEq(z3Loc, loc.getIValue().toZ3(ctx)), map);

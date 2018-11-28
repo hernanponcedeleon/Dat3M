@@ -11,13 +11,12 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.rmw.cond.RMWReadCondUnless;
 import dartagnan.program.event.rmw.cond.RMWStoreCond;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
 import java.util.Set;
 
-public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
+public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData {
     private ExprInterface cmp;
 
     public RMWAddUnless(Register address, Register register, ExprInterface cmp, ExprInterface value) {
@@ -53,7 +52,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(" + loc + ", " + value + "," + cmp + ")";
+        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(memory[" + address + "], " + value + "," + cmp + ")";
     }
 
     @Override

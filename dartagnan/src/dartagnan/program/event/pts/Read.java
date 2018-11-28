@@ -1,14 +1,16 @@
-package dartagnan.program.event;
+package dartagnan.program.event.pts;
 
 import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.utils.RegReaderAddress;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.Load;
+import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EType;
 
-public class Read extends MemEvent implements RegWriter, RegReaderAddress {
+public class Read extends MemEvent implements RegWriter {
 
     protected Register reg;
 

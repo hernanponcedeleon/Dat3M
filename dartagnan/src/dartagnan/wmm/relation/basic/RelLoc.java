@@ -40,7 +40,7 @@ public class RelLoc extends BasicRelation {
             BoolExpr rel = edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
             enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(
                     ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
-                    ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(ctx), ((MemEvent)tuple.getSecond()).getAddressExpr(ctx))
+                    ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(), ((MemEvent)tuple.getSecond()).getAddressExpr())
             )));
         }
         return enc;

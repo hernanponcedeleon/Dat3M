@@ -17,7 +17,6 @@ import java.util.Set;
 public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
     private Register reg;
-    private String atomic;
 
     public Xchg(Address address, Register register, String atomic) {
         this.address = address;
@@ -65,7 +64,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + loc + ".xchg(" + atomic + ", " + reg + ")";
+        return nTimesCondLevel() + "memory[" + address + "].xchg(" + atomic + ", " + reg + ")";
     }
 
     @Override

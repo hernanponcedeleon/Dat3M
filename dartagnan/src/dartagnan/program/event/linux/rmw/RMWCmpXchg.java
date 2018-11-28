@@ -6,13 +6,12 @@ import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.cond.RMWReadCondCmp;
 import dartagnan.program.event.rmw.cond.RMWStoreCond;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
 import java.util.Set;
 
-public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
+public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     private ExprInterface cmp;
 
@@ -49,7 +48,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData,
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + loc + ", " + cmp + "," + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(memory[" + address + "], " + cmp + "," + value + ")";
     }
 
     @Override

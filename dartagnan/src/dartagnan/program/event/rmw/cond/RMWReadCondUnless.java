@@ -5,13 +5,12 @@ import com.microsoft.z3.Context;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData, RegReaderAddress {
+public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData {
 
     public RMWReadCondUnless(Register reg, ExprInterface cmp, AExpr address, String atomic) {
         super(reg, cmp, address, atomic);

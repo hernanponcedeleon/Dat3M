@@ -9,11 +9,10 @@ import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData, RegReaderAddress {
+public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData {
 
     private AOpBin op;
 
@@ -41,7 +40,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", memory[" + address + "])";
     }
 
     @Override

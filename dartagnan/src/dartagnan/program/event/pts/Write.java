@@ -1,18 +1,20 @@
-package dartagnan.program.event;
+package dartagnan.program.event.pts;
 
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.utils.RegReaderAddress;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.Store;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class Write extends MemEvent implements RegReaderData, RegReaderAddress {
+public class Write extends MemEvent implements RegReaderData {
 
     protected ExprInterface value;
 

@@ -8,7 +8,6 @@ import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.memory.Location;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
@@ -19,16 +18,15 @@ import java.util.Set;
 
 import static dartagnan.utils.Utils.ssaLoc;
 
-public class Store extends MemEvent implements RegReaderData, RegReaderAddress {
+public class Store extends MemEvent implements RegReaderData {
 
     protected ExprInterface value;
-    protected IntExpr addressExpr;
 
     public Store(AExpr address, ExprInterface value, String atomic){
-        this.value = value;
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;
+        this.value = value;
         addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
     }
 
@@ -39,11 +37,6 @@ public class Store extends MemEvent implements RegReaderData, RegReaderAddress {
             regs.add((Register) value);
         }
         return regs;
-    }
-
-    @Override
-    public IntExpr getAddressExpr(Context ctx){
-        return addressExpr;
     }
 
     @Override

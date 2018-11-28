@@ -64,7 +64,7 @@ public class RelCo extends Relation {
                 BoolExpr rel = edge("co", tuple.getFirst(), tuple.getSecond(), ctx);
                 enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
                         ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
-                        ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(ctx), ((MemEvent)tuple.getSecond()).getAddressExpr(ctx))
+                        ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(), ((MemEvent)tuple.getSecond()).getAddressExpr())
                 )));
             }
 
@@ -85,7 +85,7 @@ public class RelCo extends Relation {
                 List<MemEvent> events = stores.get(location);
                 enc = ctx.mkAnd(enc, satTO(events));
                 for(Event w1 : events){
-                    BoolExpr lastCoOrder = ctx.mkAnd(w1.executes(ctx), ctx.mkEq(((MemEvent)w1).getAddressExpr(ctx), location.getAddress().toZ3(ctx)));
+                    BoolExpr lastCoOrder = ctx.mkAnd(w1.executes(ctx), ctx.mkEq(((MemEvent)w1).getAddressExpr(), location.getAddress().toZ3(ctx)));
                     for(Event w2 : events){
                         lastCoOrder = ctx.mkAnd(lastCoOrder, ctx.mkNot(edge("co", w1, w2, ctx)));
                     }
@@ -114,7 +114,7 @@ public class RelCo extends Relation {
                     enc = ctx.mkAnd(enc, ctx.mkImplies(
                             ctx.mkAnd(
                                 ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
-                                ctx.mkEq(((MemEvent)e1).getAddressExpr(ctx), ((MemEvent)e2).getAddressExpr(ctx))
+                                ctx.mkEq(((MemEvent)e1).getAddressExpr(), ((MemEvent)e2).getAddressExpr())
                             ),
                             ctx.mkAnd(
                                     ctx.mkImplies(ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)), edge(name, e1, e2, ctx)),

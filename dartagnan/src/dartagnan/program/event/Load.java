@@ -6,7 +6,6 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EType;
@@ -16,28 +15,22 @@ import dartagnan.utils.Pair;
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
-public class Load extends MemEvent implements RegWriter, RegReaderAddress {
+public class Load extends MemEvent implements RegWriter {
 
-    protected IntExpr addressExpr;
     protected Register reg;
     protected int ssaRegIndex;
 
     public Load(Register register, AExpr address, String atomic) {
-        this.reg = register;
         this.address = address;
-        this.condLevel = 0;
         this.atomic = atomic;
+        this.condLevel = 0;
+        this.reg = register;
         addFilters(EType.ANY, EType.MEMORY, EType.READ);
     }
 
     @Override
     public Register getModifiedReg(){
         return reg;
-    }
-
-    @Override
-    public IntExpr getAddressExpr(Context ctx){
-        return addressExpr;
     }
 
     @Override

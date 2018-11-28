@@ -3,11 +3,10 @@ package dartagnan.program.event.rmw;
 import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.Load;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EType;
 
-public class RMWLoad extends Load implements RegWriter, RegReaderAddress {
+public class RMWLoad extends Load implements RegWriter {
 
     public RMWLoad(Register reg, AExpr address, String atomic) {
         super(reg, address, atomic);

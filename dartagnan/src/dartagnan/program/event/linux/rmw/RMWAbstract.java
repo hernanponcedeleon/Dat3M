@@ -9,7 +9,6 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.rmw.cond.FenceCond;
 import dartagnan.program.event.rmw.cond.RMWReadCond;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.linux.EType;
@@ -17,11 +16,10 @@ import dartagnan.program.utils.linux.EType;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData, RegReaderAddress {
+public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
 
     protected Register reg;
     protected ExprInterface value;
-    protected String atomic;
 
     public RMWAbstract(Register address, Register register, ExprInterface value, String atomic) {
         this.address = address;

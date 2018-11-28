@@ -8,6 +8,8 @@ import dartagnan.program.event.linux.rcu.RCUReadLock;
 import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.RMWAbstract;
+import dartagnan.program.event.pts.Read;
+import dartagnan.program.event.pts.Write;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.tso.Xchg;
 import dartagnan.program.event.utils.RegReaderData;

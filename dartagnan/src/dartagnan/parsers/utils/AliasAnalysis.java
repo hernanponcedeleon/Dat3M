@@ -8,7 +8,6 @@ import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
@@ -41,12 +40,12 @@ public class AliasAnalysis {
                         ExprInterface expr = ((Local)regWrite).getExpr();
                         if(expr instanceof Address){
                             Set<Location> locations = ImmutableSet.of(memory.getLocationForAddress((Address) expr));
-                            ((RegReaderAddress) e).setMaxLocationSet(locations);
+                            ((MemEvent) e).setMaxLocationSet(locations);
                             continue;
                         }
                     }
                 }
-                ((RegReaderAddress) e).setMaxLocationSet(memory.getLocations());
+                ((MemEvent) e).setMaxLocationSet(memory.getLocations());
             } else if (address instanceof Address){
                 Set<Location> locations = ImmutableSet.of(memory.getLocationForAddress((Address) address));
                 ((MemEvent) e).setMaxLocationSet(locations);
