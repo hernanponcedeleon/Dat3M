@@ -5,6 +5,7 @@ import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
+import dartagnan.program.event.Init;
 import dartagnan.program.memory.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
@@ -32,6 +33,9 @@ public class ProgramBuilder {
         for(LinkedList<Thread> thread : threads.values()){
             thread = buildBranches(thread);
             program.add(Thread.fromList(true, thread));
+        }
+        for(Location location : memory.getLocations()) {
+            program.add(new Init(location.getAddress(), location.getIValue()));
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);

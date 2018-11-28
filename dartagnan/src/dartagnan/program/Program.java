@@ -96,9 +96,6 @@ public class Program extends Thread {
         for(int i = 0; i < threads.size(); i++){
             threads.set(i, threads.get(i).unroll(steps, obsNoTermination));
         }
-		for(Location location : memory.getLocations()) {
-			threads.add(new Init(location));
-		}
         getEventRepository().clear();
 		return this;
 	}
