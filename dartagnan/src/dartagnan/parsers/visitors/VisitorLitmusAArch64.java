@@ -11,13 +11,13 @@ import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
 import dartagnan.program.Thread;
-import dartagnan.program.event.LoadFromAddress;
-import dartagnan.program.event.rmw.RMWLoadFromAddress;
+import dartagnan.program.event.Load;
+import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.opt.RMWStoreOpt;
 import dartagnan.program.event.rmw.opt.RMWStoreOptStatus;
 import dartagnan.program.Register;
 import dartagnan.program.event.*;
-import dartagnan.program.event.StoreToAddress;
+import dartagnan.program.event.Store;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     private String mainThread;
     private Integer threadCount = 0;
 
-    private Map<String, RMWLoadFromAddress> ldxrMap = new HashMap<>();
+    private Map<String, RMWLoad> ldxrMap = new HashMap<>();
 
     public VisitorLitmusAArch64(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -129,7 +129,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        return programBuilder.addChild(mainThread, new LoadFromAddress(register, address, ctx.loadInstruction().mo));
+        return programBuilder.addChild(mainThread, new Load(register, address, ctx.loadInstruction().mo));
     }
 
     @Override
@@ -139,7 +139,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        RMWLoadFromAddress load = new RMWLoadFromAddress(register, address, ctx.loadExclusiveInstruction().mo);
+        RMWLoad load = new RMWLoad(register, address, ctx.loadExclusiveInstruction().mo);
         ldxrMap.put(mainThread, load);
         return programBuilder.addChild(mainThread, load);
     }
@@ -151,14 +151,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        return programBuilder.addChild(mainThread, new StoreToAddress(address, register, ctx.storeInstruction().mo));
+        return programBuilder.addChild(mainThread, new Store(address, register, ctx.storeInstruction().mo));
     }
 
     @Override
     public Object visitStoreExclusive(LitmusAArch64Parser.StoreExclusiveContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
         Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
-        RMWLoadFromAddress loadEvent = ldxrMap.remove(mainThread);
+        RMWLoad loadEvent = ldxrMap.remove(mainThread);
         Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);

@@ -104,7 +104,7 @@ public class VisitorLitmusPPC
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, new LoadFromAddress(r1, ra, "_rx"));
+        return programBuilder.addChild(mainThread, new Load(r1, ra, "_rx"));
     }
 
     @Override
@@ -117,7 +117,7 @@ public class VisitorLitmusPPC
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, new StoreToAddress(ra, r1, "_rx"));
+        return programBuilder.addChild(mainThread, new Store(ra, r1, "_rx"));
     }
 
     @Override

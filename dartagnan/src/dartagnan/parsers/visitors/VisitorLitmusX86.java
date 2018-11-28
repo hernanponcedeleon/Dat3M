@@ -105,21 +105,21 @@ public class VisitorLitmusX86
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, new LoadFromAddress(register, location.getAddress(), "_rx"));
+        return programBuilder.addChild(mainThread, new Load(register, location.getAddress(), "_rx"));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
         AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return programBuilder.addChild(mainThread, new StoreToAddress(location.getAddress(), constant, "_rx"));
+        return programBuilder.addChild(mainThread, new Store(location.getAddress(), constant, "_rx"));
     }
 
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, new StoreToAddress(location.getAddress(), register, "_rx"));
+        return programBuilder.addChild(mainThread, new Store(location.getAddress(), register, "_rx"));
     }
 
     @Override

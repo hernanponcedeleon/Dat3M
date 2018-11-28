@@ -6,7 +6,7 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.event.rmw.RMWLoadFromAddress;
+import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
@@ -21,7 +21,7 @@ import java.util.Set;
 import static dartagnan.utils.Utils.ssaLoc;
 import static dartagnan.utils.Utils.ssaReg;
 
-public abstract class RMWReadCond extends RMWLoadFromAddress implements RegWriter, RegReaderData, RegReaderAddress {
+public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData, RegReaderAddress {
 
     protected ExprInterface cmp;
     protected BoolExpr z3Cond;

@@ -7,8 +7,8 @@ import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
-import dartagnan.program.event.rmw.RMWLoadFromAddress;
-import dartagnan.program.event.rmw.RMWStoreToAddress;
+import dartagnan.program.event.rmw.RMWLoad;
+import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
@@ -26,9 +26,9 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
-            RMWLoadFromAddress load = new RMWLoadFromAddress(dummy, address, getLoadMO());
+            RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
             Local local = new Local(reg, new AExpr(dummy, op, value));
-            RMWStoreToAddress store = new RMWStoreToAddress(load, address, reg, getStoreMO());
+            RMWStore store = new RMWStore(load, address, reg, getStoreMO());
 
             compileBasic(load);
             compileBasic(store);

@@ -6,8 +6,8 @@ import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
-import dartagnan.program.event.rmw.RMWLoadFromAddress;
-import dartagnan.program.event.rmw.RMWStoreToAddress;
+import dartagnan.program.event.rmw.RMWLoad;
+import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
@@ -25,8 +25,8 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData,
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = reg == value ? new Register(null) : reg;
-            RMWLoadFromAddress load = new RMWLoadFromAddress(dummy, address, getLoadMO());
-            RMWStoreToAddress store = new RMWStoreToAddress(load, address, new AExpr(dummy, op, value), getStoreMO());
+            RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
+            RMWStore store = new RMWStore(load, address, new AExpr(dummy, op, value), getStoreMO());
 
             compileBasic(load);
             compileBasic(store);

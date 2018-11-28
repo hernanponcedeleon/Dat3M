@@ -155,7 +155,7 @@ public class VisitorLitmusC
             Location location = programBuilder.getLocation(varName);
             if(location != null){
                 Register address = getAddressRegister(currentThread, location);
-                result = new StoreToAddress(address, returnStack.pop(), "NA");
+                result = new Store(address, returnStack.pop(), "NA");
             }
         }
 
@@ -244,7 +244,7 @@ public class VisitorLitmusC
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
         Register address = getAddressRegister(currentThread, location);
         returnStack.push(register);
-        return new LoadFromAddress(register, address, ctx.mo);
+        return new Load(register, address, ctx.mo);
     }
 
     @Override
@@ -311,7 +311,7 @@ public class VisitorLitmusC
 
         register = programBuilder.getOrCreateRegister(currentThread, null);
         returnStack.push(register);
-        return new Read(register, location, "Relaxed");
+        return new Load(register, location.getAddress(), "NA");
     }
 
     @Override
@@ -365,10 +365,10 @@ public class VisitorLitmusC
         Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register address = getAddressRegister(currentThread, location);
         if(ctx.mo.equals("Mb")){
-            Thread t = new StoreToAddress(address, returnStack.pop(), "Relaxed");
+            Thread t = new Store(address, returnStack.pop(), "Relaxed");
             return Thread.fromArray(false, t1, t, new Fence("Mb"));
         }
-        Thread t = new StoreToAddress(address, returnStack.pop(), ctx.mo);
+        Thread t = new Store(address, returnStack.pop(), ctx.mo);
         return Thread.fromArray(false, t1, t);
     }
 

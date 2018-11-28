@@ -1,28 +1,29 @@
 package dartagnan.program.event;
 
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class Write extends MemEvent implements RegReaderData {
+public class Write extends MemEvent implements RegReaderData, RegReaderAddress {
 
     protected ExprInterface value;
 
-	public Write(Location loc, ExprInterface value, String atomic){
-		this.value = value;
-		this.loc = loc;
-		this.atomic = atomic;
-		this.condLevel = 0;
-		this.memId = hashCode();
-		addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
-	}
+    public Write(AExpr address, ExprInterface value, String atomic){
+        this.value = value;
+        this.address = address;
+        this.atomic = atomic;
+        this.condLevel = 0;
+        this.memId = hashCode();
+        addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
+    }
 
     @Override
     public Set<Register> getDataRegs(){
@@ -33,41 +34,39 @@ public class Write extends MemEvent implements RegReaderData {
         return regs;
     }
 
-	@Override
-	public String toString() {
-		return nTimesCondLevel() + loc + ".store(" +  value + "," + atomic + ")";
-	}
 
-	@Override
-	public Write clone() {
-		if(clone == null){
-			clone = new Write(loc.clone(), value.clone(), atomic);
-			afterClone();
-		}
-		return (Write)clone;
-	}
+    @Override
+    public String toString() {
+        return nTimesCondLevel() + "memory[" + address + "].store(" +  value + "," + atomic + ")";
+    }
 
-	@Override
-	public Thread compile(String target, boolean ctrl, boolean leading) {
-		return _compile(new Store(loc, value, atomic), target, ctrl, leading);
-	}
+    @Override
+    public Write clone() {
+        if(clone == null){
+            clone = new Write(address.clone(), value.clone(), atomic);
+            afterClone();
+        }
+        return (Write)clone;
+    }
 
-	protected Thread _compile(Store st, String target, boolean ctrl, boolean leading) {
-		st.setHLId(memId);
-		st.setUnfCopy(getUnfCopy());
-		st.setCondLevel(this.condLevel);
-		st.setMaxLocationSet(getMaxLocationSet());
+    @Override
+    public Thread compile(String target, boolean ctrl, boolean leading) {
+        Store st = new Store(address, value, atomic);
+        st.setHLId(memId);
+        st.setUnfCopy(getUnfCopy());
+        st.setCondLevel(this.condLevel);
+        st.setMaxLocationSet(getMaxLocationSet());
 
-		if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
+        if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
             Fence mfence = new Fence("Mfence", this.condLevel);
-			return new Seq(st, mfence);
-		}
-		
-		if(!target.equals("power") && !target.equals("arm")) {
-			return st;
-		}
-		
-		if(target.equals("power")) {
+            return new Seq(st, mfence);
+        }
+
+        if(!target.equals("power") && !target.equals("arm")) {
+            return st;
+        }
+
+        if(target.equals("power")) {
             if(atomic.equals("_rx") || atomic.equals("_na")) {
                 return st;
             }
@@ -78,15 +77,15 @@ public class Write extends MemEvent implements RegReaderData {
             }
 
             if(atomic.equals("_sc")) {
-				Fence sync = new Fence("Sync", this.condLevel);
-				if(leading) {
-					return new Seq(sync, st);
-				}
-				return new Seq(lwsync, new Seq(st, sync));
-			}
-		}
+                Fence sync = new Fence("Sync", this.condLevel);
+                if(leading) {
+                    return new Seq(sync, st);
+                }
+                return new Seq(lwsync, new Seq(st, sync));
+            }
+        }
 
-		if(target.equals("arm")) {
+        if(target.equals("arm")) {
             if(atomic.equals("_rx") || atomic.equals("_na")) {
                 return st;
             }
@@ -97,11 +96,11 @@ public class Write extends MemEvent implements RegReaderData {
             }
 
             Fence ish2 = new Fence("Ish", this.condLevel);
-			if(atomic.equals("_sc")) {
-				return new Seq(ish1, new Seq(st, ish2));
-			}
-		}
+            if(atomic.equals("_sc")) {
+                return new Seq(ish1, new Seq(st, ish2));
+            }
+        }
 
-		throw new RuntimeException("Compilation is not supported for " + this);
-	}
+        throw new RuntimeException("Compilation is not supported for " + this);
+    }
 }

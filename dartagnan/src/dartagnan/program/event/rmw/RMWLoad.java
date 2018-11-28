@@ -1,22 +1,23 @@
 package dartagnan.program.event.rmw;
 
-import dartagnan.program.memory.Location;
+import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.Load;
+import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EType;
 
-public class RMWLoad extends Load implements RegWriter {
+public class RMWLoad extends Load implements RegWriter, RegReaderAddress {
 
-    public RMWLoad(Register reg, Location loc, String atomic) {
-        super(reg, loc, atomic);
+    public RMWLoad(Register reg, AExpr address, String atomic) {
+        super(reg, address, atomic);
         addFilters(EType.RMW);
     }
 
     @Override
     public RMWLoad clone() {
         if(clone == null){
-            clone = new RMWLoad(reg.clone(), loc.clone(), atomic);
+            clone = new RMWLoad(reg.clone(), address.clone(), atomic);
             afterClone();
         }
         return (RMWLoad)clone;

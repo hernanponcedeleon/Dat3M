@@ -1,7 +1,7 @@
 package dartagnan.program.event.tso;
 
-import dartagnan.program.event.rmw.RMWLoadFromAddress;
-import dartagnan.program.event.rmw.RMWStoreToAddress;
+import dartagnan.program.event.rmw.RMWLoad;
+import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.memory.Address;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
@@ -44,14 +44,14 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("tso") && atomic.equals("_rx")) {
             Register dummyReg = new Register(null);
-            RMWLoadFromAddress load = new RMWLoadFromAddress(dummyReg, address, atomic);
+            RMWLoad load = new RMWLoad(dummyReg, address, atomic);
             load.setHLId(memId);
             load.setUnfCopy(getUnfCopy());
             load.setCondLevel(condLevel);
             load.addFilters(EType.ATOM);
             load.setMaxLocationSet(locations);
 
-            RMWStoreToAddress store = new RMWStoreToAddress(load, address, reg, atomic);
+            RMWStore store = new RMWStore(load, address, reg, atomic);
             store.setHLId(memId);
             store.setUnfCopy(getUnfCopy());
             store.setCondLevel(condLevel);
