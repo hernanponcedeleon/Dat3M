@@ -47,7 +47,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
 
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
-        throw new RuntimeException("Method compile is not implemented for " + target + " " + this.getClass().getName() + " " + atomic);
+        throw new RuntimeException("Compilation to " + target + " is not supported for " + this.getClass().getName() + " " + atomic);
     }
 
     protected String getLoadMO(){
