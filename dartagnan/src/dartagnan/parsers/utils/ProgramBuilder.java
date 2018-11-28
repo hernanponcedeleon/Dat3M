@@ -20,7 +20,6 @@ import java.util.*;
 public class ProgramBuilder {
 
     private Map<String, Map<String, Register>> registers = new HashMap<>();
-    private Map<String, Map<String, Location>> mapRegLoc = new HashMap<>();
     private Map<String, Map<String, Label>> labels = new HashMap<>();
     private Map<String, LinkedList<Thread>> threads = new HashMap<>();
     private Memory memory = new Memory();
@@ -87,7 +86,6 @@ public class ProgramBuilder {
     public void addDeclarationRegLoc(String regThread, String regName, String locName){
         Location loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName);
-        addRegLocPair(regThread, reg.getName(), loc);
         addChild(regThread, new Local(reg, loc.getAddress()));
     }
 
@@ -160,22 +158,6 @@ public class ProgramBuilder {
             }
         }
         throw new RuntimeException("Label " + thread + ":" + name + " is not initialised");
-    }
-
-    public void addRegLocPair(String thread, String regName, Location location){
-        mapRegLoc.putIfAbsent(thread, new HashMap<>());
-        mapRegLoc.get(thread).put(regName, location);
-    }
-
-    public Location getLocForReg(String threadName, String registerName){
-        if(!mapRegLoc.containsKey(threadName)){
-            throw new RuntimeException("Unrecognised thread " + threadName);
-        }
-        Map<String, Location> registerLocationMap = mapRegLoc.get(threadName);
-        if(!registerLocationMap.containsKey(registerName)){
-            throw new RuntimeException("Register " + registerName + " must be initialized to a location");
-        }
-        return registerLocationMap.get(registerName);
     }
 
 
