@@ -9,11 +9,12 @@ import dartagnan.utils.MapSSA;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import static dartagnan.utils.Utils.ssaReg;
 
 public class Register extends AExpr implements IntExprInterface {
+
+	private static int dummyCount = 0;
 
 	private String name;
 	private int mainThreadId = -1;
@@ -21,7 +22,7 @@ public class Register extends AExpr implements IntExprInterface {
 
 	public Register(String name) {
 		if(name == null){
-			name = "DUMMY_REG_" + UUID.randomUUID().toString();
+			name = "DUMMY_REG_" + dummyCount++;
 		}
 		this.name = name;
 	}
