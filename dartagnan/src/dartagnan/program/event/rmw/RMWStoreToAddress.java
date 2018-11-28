@@ -1,7 +1,7 @@
 package dartagnan.program.event.rmw;
 
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Register;
 import dartagnan.program.event.StoreToAddress;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
@@ -11,7 +11,7 @@ public class RMWStoreToAddress extends StoreToAddress implements RegReaderData, 
 
     protected RMWLoadFromAddress loadEvent;
 
-    public RMWStoreToAddress(RMWLoadFromAddress loadEvent, Register address, ExprInterface value, String atomic) {
+    public RMWStoreToAddress(RMWLoadFromAddress loadEvent, AExpr address, ExprInterface value, String atomic) {
         super(address, value, atomic);
         addFilters(EType.RMW);
         this.loadEvent = loadEvent;

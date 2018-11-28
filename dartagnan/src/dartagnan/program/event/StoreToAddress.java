@@ -4,9 +4,9 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.memory.Location;
-import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.utils.MapSSA;
@@ -18,7 +18,7 @@ public class StoreToAddress extends Store implements RegReaderData, RegReaderAdd
 
     protected IntExpr addressExpr;
 
-    public StoreToAddress(Register address, ExprInterface value, String atomic){
+    public StoreToAddress(AExpr address, ExprInterface value, String atomic){
         super(null, value, atomic);
         this.address = address;
     }

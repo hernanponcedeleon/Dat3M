@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
+import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.memory.Location;
@@ -18,7 +19,7 @@ public abstract class MemEvent extends Event implements RegReaderAddress {
     protected Location loc;
     protected int memId;
     protected Set<Location> locations;
-    protected Register address;
+    protected AExpr address;
     protected Map<Location, Expr> ssaLocMap = new HashMap<>();
 
     public Set<Location> getMaxLocationSet(){
@@ -39,6 +40,13 @@ public abstract class MemEvent extends Event implements RegReaderAddress {
 
     @Override
     public Register getAddressReg(){
+        if(address instanceof Register){
+            return (Register) address;
+        }
+        return null;
+    }
+
+    public AExpr getAddress(){
         return address;
     }
 

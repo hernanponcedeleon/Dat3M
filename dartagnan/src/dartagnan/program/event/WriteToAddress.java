@@ -1,14 +1,14 @@
 package dartagnan.program.event;
 
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 
 public class WriteToAddress extends Write implements RegReaderData, RegReaderAddress {
 
-    public WriteToAddress(Register address, ExprInterface value, String atomic){
+    public WriteToAddress(AExpr address, ExprInterface value, String atomic){
         super(null, value, atomic);
         this.address = address;
     }

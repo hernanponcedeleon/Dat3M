@@ -49,7 +49,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWOpReturn(address.clone(), newReg, newValue, op, atomic);
+            clone = new RMWOpReturn((Register) address.clone(), newReg, newValue, op, atomic);
             afterClone();
         }
         return (RMWOpReturn)clone;

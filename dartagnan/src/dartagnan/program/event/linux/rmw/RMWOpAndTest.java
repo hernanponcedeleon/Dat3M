@@ -53,7 +53,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWOpAndTest(address.clone(), newReg, newValue, op);
+            clone = new RMWOpAndTest((Register) address.clone(), newReg, newValue, op);
             afterClone();
         }
         return (RMWOpAndTest)clone;

@@ -1,12 +1,12 @@
 package dartagnan.program.event.tso;
 
-import dartagnan.program.memory.Location;
+import dartagnan.program.event.rmw.RMWLoadFromAddress;
+import dartagnan.program.event.rmw.RMWStoreToAddress;
+import dartagnan.program.memory.Address;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
-import dartagnan.program.event.rmw.RMWLoad;
-import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.tso.EType;
@@ -19,8 +19,8 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     private Register reg;
     private String atomic;
 
-    public Xchg(Location location, Register register, String atomic) {
-        this.loc = location;
+    public Xchg(Address address, Register register, String atomic) {
+        this.address = address;
         this.reg = register;
         this.atomic = atomic;
         this.condLevel = 0;
@@ -44,17 +44,19 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("tso") && atomic.equals("_rx")) {
             Register dummyReg = new Register(null);
-            RMWLoad load = new RMWLoad(dummyReg, loc, atomic);
+            RMWLoadFromAddress load = new RMWLoadFromAddress(dummyReg, address, atomic);
             load.setHLId(memId);
             load.setUnfCopy(getUnfCopy());
             load.setCondLevel(condLevel);
             load.addFilters(EType.ATOM);
+            load.setMaxLocationSet(locations);
 
-            RMWStore store = new RMWStore(load, loc, reg, atomic);
+            RMWStoreToAddress store = new RMWStoreToAddress(load, address, reg, atomic);
             store.setHLId(memId);
             store.setUnfCopy(getUnfCopy());
             store.setCondLevel(condLevel);
             store.addFilters(EType.ATOM);
+            store.setMaxLocationSet(locations);
 
             return Thread.fromArray(false, load, store, new Local(reg, dummyReg));
         }
@@ -69,7 +71,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     @Override
     public Xchg clone() {
         if(clone == null){
-            clone= new Xchg(loc.clone(), reg.clone(), atomic);
+            clone= new Xchg((Address) address.clone(), reg.clone(), atomic);
             afterClone();
         }
         return (Xchg)clone;

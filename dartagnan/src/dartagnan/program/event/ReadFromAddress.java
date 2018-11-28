@@ -1,5 +1,6 @@
 package dartagnan.program.event;
 
+import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.utils.RegReaderAddress;
@@ -7,7 +8,7 @@ import dartagnan.program.event.utils.RegWriter;
 
 public class ReadFromAddress extends Read implements RegWriter, RegReaderAddress {
 
-    public ReadFromAddress(Register register, Register address, String atomic) {
+    public ReadFromAddress(Register register, AExpr address, String atomic) {
         super(register, null, atomic);
         this.address = address;
     }

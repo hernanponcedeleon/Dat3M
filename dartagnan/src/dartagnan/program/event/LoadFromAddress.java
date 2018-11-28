@@ -4,6 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
+import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegWriter;
@@ -18,7 +19,7 @@ public class LoadFromAddress extends Load implements RegWriter, RegReaderAddress
 
     protected IntExpr addressExpr;
 
-    public LoadFromAddress(Register register, Register address, String atomic) {
+    public LoadFromAddress(Register register, AExpr address, String atomic) {
         super(register, null, atomic);
         this.address = address;
     }

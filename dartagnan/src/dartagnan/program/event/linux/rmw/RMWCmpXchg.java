@@ -58,7 +58,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData,
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
             ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : value.clone());
-            clone = new RMWCmpXchg(address.clone(), newReg, newCmp, newValue, atomic);
+            clone = new RMWCmpXchg((Register) address.clone(), newReg, newCmp, newValue, atomic);
             afterClone();
         }
         return (RMWCmpXchg)clone;

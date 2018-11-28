@@ -4,6 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.event.rmw.RMWLoadFromAddress;
 import dartagnan.program.Register;
@@ -25,7 +26,7 @@ public abstract class RMWReadCond extends RMWLoadFromAddress implements RegWrite
     protected ExprInterface cmp;
     protected BoolExpr z3Cond;
 
-    public RMWReadCond(Register reg, ExprInterface cmp, Register address, String atomic) {
+    public RMWReadCond(Register reg, ExprInterface cmp, AExpr address, String atomic) {
         super(reg, address, atomic);
         this.cmp = cmp;
     }

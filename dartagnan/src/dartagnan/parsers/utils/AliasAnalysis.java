@@ -1,11 +1,13 @@
 package dartagnan.parsers.utils;
 
 import com.google.common.collect.ImmutableSet;
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Local;
+import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Address;
@@ -26,17 +28,13 @@ public class AliasAnalysis {
                 regWrites.get(register).add(e);
             }
         }
-        for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
-            if(e instanceof RegReaderAddress){
-                Register register = ((RegReaderAddress) e).getAddressReg();
-
-                // TODO: Remove me after Load / Store are completely changed to the corresponding address events
-                if(register == null) continue;
-
-                if(!regWrites.containsKey(register)){
-                    throw new RuntimeException("Address register " + register + " has not been initialised");
+        for(Event e : program.getEventRepository().getEvents(EventRepository.MEMORY)){
+            AExpr address = ((MemEvent) e).getAddress();
+            if(address instanceof Register){
+                if(!regWrites.containsKey(address)){
+                    throw new RuntimeException("Address register " + address + " has not been initialised");
                 }
-                List<Event> events = regWrites.get(register);
+                List<Event> events = regWrites.get(address);
                 if(events.size() == 1){
                     Event regWrite = events.get(0);
                     if(regWrite instanceof Local){
@@ -49,6 +47,11 @@ public class AliasAnalysis {
                     }
                 }
                 ((RegReaderAddress) e).setMaxLocationSet(memory.getLocations());
+            } else if (address instanceof Address){
+                Set<Location> locations = ImmutableSet.of(memory.getLocationForAddress((Address) address));
+                ((MemEvent) e).setMaxLocationSet(locations);
+            } else {
+                throw new RuntimeException("Unrecognised type of address in " + this);
             }
         }
     }

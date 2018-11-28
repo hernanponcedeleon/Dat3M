@@ -6,12 +6,9 @@ import dartagnan.parsers.LitmusX86Visitor;
 import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
+import dartagnan.program.event.*;
 import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
-import dartagnan.program.event.Fence;
-import dartagnan.program.event.Load;
-import dartagnan.program.event.Local;
-import dartagnan.program.event.Store;
 import dartagnan.program.event.tso.Xchg;
 
 import java.util.Arrays;
@@ -108,28 +105,28 @@ public class VisitorLitmusX86
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, new Load(register, location, "_rx"));
+        return programBuilder.addChild(mainThread, new LoadFromAddress(register, location.getAddress(), "_rx"));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
         AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return programBuilder.addChild(mainThread, new Store(location, constant, "_rx"));
+        return programBuilder.addChild(mainThread, new StoreToAddress(location.getAddress(), constant, "_rx"));
     }
 
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, new Store(location, register, "_rx"));
+        return programBuilder.addChild(mainThread, new StoreToAddress(location.getAddress(), register, "_rx"));
     }
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, new Xchg(location, register,"_rx"));
+        return programBuilder.addChild(mainThread, new Xchg(location.getAddress(), register,"_rx"));
     }
 
     @Override

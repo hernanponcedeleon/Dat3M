@@ -1,5 +1,6 @@
 package dartagnan.program.utils;
 
+import dartagnan.expression.AExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
@@ -10,7 +11,6 @@ import dartagnan.program.event.linux.rmw.RMWAbstract;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.rmw.RMWStoreToAddress;
 import dartagnan.program.event.tso.Xchg;
-import dartagnan.program.event.utils.RegReaderAddress;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
@@ -87,8 +87,11 @@ public class EventRepository {
                 if(e instanceof RegWriter){
                     registers.add(((RegWriter) e).getModifiedReg());
                 }
-                if(e instanceof RegReaderAddress){
-                    registers.add(((RegReaderAddress) e).getAddressReg());
+                if(e instanceof MemEvent){
+                    AExpr address = ((MemEvent) e).getAddress();
+                    if(address instanceof Register){
+                        registers.add((Register) address);
+                    }
                 }
                 if(e instanceof RegReaderData){
                     registers.addAll(((RegReaderData) e).getDataRegs());

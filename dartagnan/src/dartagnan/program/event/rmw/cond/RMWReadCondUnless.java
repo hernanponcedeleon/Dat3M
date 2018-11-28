@@ -2,6 +2,7 @@ package dartagnan.program.event.rmw.cond;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderAddress;
@@ -12,7 +13,7 @@ import dartagnan.utils.Pair;
 
 public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData, RegReaderAddress {
 
-    public RMWReadCondUnless(Register reg, ExprInterface cmp, Register address, String atomic) {
+    public RMWReadCondUnless(Register reg, ExprInterface cmp, AExpr address, String atomic) {
         super(reg, cmp, address, atomic);
     }
 
