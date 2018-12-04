@@ -113,11 +113,12 @@ returnExpression locals [AOpBin op, String mo]
 
     |   AtomicAddUnless LPar variable Comma returnExpression Comma returnExpression RPar                                # reAtomicAddUnless
 
-    |   ( ReadOnce          LPar variable RPar {$mo = "Once";}
-        | AtomicReadAcquire LPar variable RPar {$mo = "Acquire";}
+    |   ( AtomicReadAcquire LPar variable RPar {$mo = "Acquire";}
         | AtomicRead        LPar variable RPar {$mo = "Relaxed";}
         | RcuDereference    LPar variable RPar {$mo = "Dereference";}
         | SmpLoadAcquire    LPar variable RPar {$mo = "Acquire";})                                                      # reLoad
+
+    |   ReadOnce LPar variable RPar {$mo = "Once";}                                                                     # reReadOnce
 
 //    |   SpinTrylock LPar variable RPar                                                                                  # reSpinTryLock
 //    |   SpiIsLocked LPar variable RPar                                                                                  # reSpinIsLocked
@@ -139,12 +140,13 @@ nonReturnExpression locals [AOpBin op, String mo, String name]
         | AtomicInc LPar variable RPar {$op = AOpBin.PLUS;}
         | AtomicDec LPar variable RPar {$op = AOpBin.MINUS;})                                                           # nreAtomicOp
 
-    |   ( WriteOnce         LPar variable Comma returnExpression RPar {$mo = "Once";}
-        | AtomicSet         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
+    |   ( AtomicSet         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
         | AtomicSetRelease  LPar variable Comma returnExpression RPar {$mo = "Release";}
         | SmpStoreRelease   LPar variable Comma returnExpression RPar {$mo = "Release";}
         | SmpStoreMb        LPar variable Comma returnExpression RPar {$mo = "Mb";}
         | RcuAssignPointer  LPar variable Comma returnExpression RPar {$mo = "Release";})                               # nreStore
+
+    |   WriteOnce LPar variable Comma returnExpression RPar {$mo = "Once";}                                             # nreWriteOnce
 
     |   RcuReadLock LPar RPar                                                                                           # nreRcuReadLock
     |   RcuReadUnlock LPar RPar                                                                                         # nreRcuReadUnlock
