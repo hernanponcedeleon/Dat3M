@@ -1,5 +1,6 @@
 package dartagnan.program.event.linux.rmw;
 
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -11,7 +12,7 @@ import dartagnan.program.event.utils.RegWriter;
 
 public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
-    public RMWXchg(Register address, Register register, ExprInterface value, String atomic) {
+    public RMWXchg(AExpr address, Register register, ExprInterface value, String atomic) {
         super(address, register, value, atomic);
     }
 
@@ -34,7 +35,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(" + address + ", " + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(memory[" + address + "], " + value + ")";
     }
 
     @Override
@@ -42,7 +43,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWXchg((Register) address.clone(), newReg, newValue, atomic);
+            clone = new RMWXchg(address.clone(), newReg, newValue, atomic);
             afterClone();
         }
         return (RMWXchg)clone;

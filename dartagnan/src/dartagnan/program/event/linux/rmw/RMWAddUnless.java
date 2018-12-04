@@ -19,7 +19,7 @@ import java.util.Set;
 public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData {
     private ExprInterface cmp;
 
-    public RMWAddUnless(Register address, Register register, ExprInterface cmp, ExprInterface value) {
+    public RMWAddUnless(AExpr address, Register register, ExprInterface cmp, ExprInterface value) {
         super(address, register, value, "Mb");
         this.cmp = cmp;
     }
@@ -52,7 +52,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(" + address + ", " + value + "," + cmp + ")";
+        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(memory[" + address + "], " + value + "," + cmp + ")";
     }
 
     @Override
@@ -61,7 +61,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
             ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : value.clone());
-            clone = new RMWAddUnless((Register) address.clone(), newReg, newCmp, newValue);
+            clone = new RMWAddUnless(address.clone(), newReg, newCmp, newValue);
             afterClone();
         }
         return (RMWAddUnless)clone;

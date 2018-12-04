@@ -28,7 +28,6 @@ public class VisitorLitmusC
     private ProgramBuilder programBuilder;
     private Stack<ExprInterface> returnStack = new Stack<>();
     private Stack<RCUReadLock> rcuLockStack = new Stack<>();
-    private Map<String, Map<Location, Register>> ptrMap = new HashMap<>();
     private String currentThread;
 
     public VisitorLitmusC(ProgramBuilder pb){
@@ -104,12 +103,8 @@ public class VisitorLitmusC
         int n = ctx.getChildCount();
         for (int i = 0; i < n; ++i) {
             ParseTree child = ctx.getChild(i);
-            if (child instanceof LitmusCParser.VariableDeclaratorContext) {
-                Location location = programBuilder.getOrCreateLocation(visitVariable(((LitmusCParser.VariableDeclaratorContext) child).variable()));
-                Register ptr = programBuilder.getOrCreateRegister(currentThread, location.getName() + "Ptr");
-                programBuilder.addChild(currentThread, new Local(ptr, location.getAddress()));
-                ptrMap.putIfAbsent(currentThread, new HashMap<>());
-                ptrMap.get(currentThread).put(location, ptr);
+            if (child instanceof LitmusCParser.VarNameContext) {
+                programBuilder.getOrCreateLocation(child.getText());
             }
         }
         return null;
@@ -154,8 +149,7 @@ public class VisitorLitmusC
         if(register == null){
             Location location = programBuilder.getLocation(varName);
             if(location != null){
-                Register address = getAddressRegister(currentThread, location);
-                result = new Store(address, returnStack.pop(), "NA");
+                result = new Store(location.getAddress(), returnStack.pop(), "NA");
             }
         }
 
@@ -192,10 +186,9 @@ public class VisitorLitmusC
     @Override
     public Thread visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
         Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Register address = getAddressRegister(currentThread, location);
-        Thread t = new RMWOpReturn(address, register, pair.getSecond(), ctx.op, ctx.mo);
+        Location location = getLocation(ctx.variable());
+        Thread t = new RMWOpReturn(location.getAddress(), register, pair.getSecond(), ctx.op, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, pair.getFirst(), t);
     }
@@ -204,10 +197,9 @@ public class VisitorLitmusC
     @Override
     public Thread visitReAtomicFetchOp(LitmusCParser.ReAtomicFetchOpContext ctx){
         Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Register address = getAddressRegister(currentThread, location);
-        Thread t = new RMWFetchOp(address, register, pair.getSecond(), ctx.op, ctx.mo);
+        Location location = getLocation(ctx.variable());
+        Thread t = new RMWFetchOp(location.getAddress(), register, pair.getSecond(), ctx.op, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, pair.getFirst(), t);
     }
@@ -215,10 +207,9 @@ public class VisitorLitmusC
     @Override
     public Thread visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
         Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Register address = getAddressRegister(currentThread, location);
-        Thread t = new RMWOpAndTest(address, register, pair.getSecond(), ctx.op);
+        Location location = getLocation(ctx.variable());
+        Thread t = new RMWOpAndTest(location.getAddress(), register, pair.getSecond(), ctx.op);
         returnStack.push(register);
         return Thread.fromArray(false, pair.getFirst(), t);
     }
@@ -230,21 +221,19 @@ public class VisitorLitmusC
         ExprInterface value = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface cmp = returnStack.pop();
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Register address = getAddressRegister(currentThread, location);
-        Thread t = new RMWAddUnless(address, register,cmp, value);
+        Location location = getLocation(ctx.variable());
+        Thread t = new RMWAddUnless(location.getAddress(), register,cmp, value);
         returnStack.push(register);
         return Thread.fromArray(false, t1, t2, t);
     }
 
     @Override
     public Thread visitReLoad(LitmusCParser.ReLoadContext ctx){
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Register address = getAddressRegister(currentThread, location);
+        Location location = getLocation(ctx.variable());
         returnStack.push(register);
-        return new Load(register, address, ctx.mo);
+        return new Load(register, location.getAddress(), ctx.mo);
     }
 
     @Override
@@ -327,9 +316,8 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
         Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
-        Register address = getAddressRegister(currentThread, location);
-        Thread t = new RMWOp(address, pair.getSecond(), ctx.op);
+        Location location = getLocation(ctx.variable());
+        Thread t = new RMWOp(location.getAddress(), pair.getSecond(), ctx.op);
         return Thread.fromArray(false, pair.getFirst(), t);
     }
 
@@ -337,10 +325,9 @@ public class VisitorLitmusC
     public Thread visitReXchg(LitmusCParser.ReXchgContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
         ExprInterface value = returnStack.pop();
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Register address = getAddressRegister(currentThread, location);
-        Thread t = new RMWXchg(address, register, value, ctx.mo);
+        Location location = getLocation(ctx.variable());
+        Thread t = new RMWXchg(location.getAddress(), register, value, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, t1, t);
     }
@@ -351,10 +338,9 @@ public class VisitorLitmusC
         ExprInterface cmp = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface value = returnStack.pop();
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Register address = getAddressRegister(currentThread, location);
-        Thread t = new RMWCmpXchg(address, register, cmp, value, ctx.mo);
+        Location location = getLocation(ctx.variable());
+        Thread t = new RMWCmpXchg(location.getAddress(), register, cmp, value, ctx.mo);
         returnStack.push(register);
         return Thread.fromArray(false, t1, t2, t);
     }
@@ -362,13 +348,12 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreStore(LitmusCParser.NreStoreContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        Location location = programBuilder.getOrErrorLocation(visitVariable(ctx.variable()));
-        Register address = getAddressRegister(currentThread, location);
+        Location location = getLocation(ctx.variable());
         if(ctx.mo.equals("Mb")){
-            Thread t = new Store(address, returnStack.pop(), "Relaxed");
+            Thread t = new Store(location.getAddress(), returnStack.pop(), "Relaxed");
             return Thread.fromArray(false, t1, t, new Fence("Mb"));
         }
-        Thread t = new Store(address, returnStack.pop(), ctx.mo);
+        Thread t = new Store(location.getAddress(), returnStack.pop(), ctx.mo);
         return Thread.fromArray(false, t1, t);
     }
 
@@ -423,6 +408,13 @@ public class VisitorLitmusC
         return visitVariable(ctx.variable());
     }
 
+    private Location getLocation(LitmusCParser.VariableContext ctx){
+        if(ctx.varName() != null){
+            return programBuilder.getOrErrorLocation(ctx.varName().getText());
+        }
+        return getLocation(ctx.variable());
+    }
+
     private Pair<Thread, ExprInterface> acceptRetValue(LitmusCParser.ReturnExpressionContext ctx){
         Thread t = null;
         ExprInterface v = new AConst(1);
@@ -431,15 +423,5 @@ public class VisitorLitmusC
             v = returnStack.pop();
         }
         return new Pair<>(t, v);
-    }
-
-    private Register getAddressRegister(String thread, Location location){
-        if(ptrMap.containsKey(thread)){
-            Map<Location, Register> map = ptrMap.get(thread);
-            if(map.containsKey(location)){
-                return map.get(location);
-            }
-        }
-        throw new ParsingException("Pointer to " + location + " used without being initialised");
     }
 }

@@ -27,7 +27,7 @@ thread
     ;
 
 threadArguments
-    :   variableDeclarator (Comma variableDeclarator)*
+    :   typeSpecifier Ast varName (Comma typeSpecifier Ast varName)*
     ;
 
 expression

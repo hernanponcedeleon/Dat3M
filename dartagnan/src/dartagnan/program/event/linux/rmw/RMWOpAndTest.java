@@ -19,7 +19,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
     private AOpBin op;
 
-    public RMWOpAndTest(Register address, Register register, ExprInterface value, AOpBin op) {
+    public RMWOpAndTest(AExpr address, Register register, ExprInterface value, AOpBin op) {
         super(address, register, value, "Mb");
         this.op = op;
     }
@@ -44,7 +44,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")";
+        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", memory[" + address + "])";
     }
 
     @Override
@@ -52,7 +52,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWOpAndTest((Register) address.clone(), newReg, newValue, op);
+            clone = new RMWOpAndTest(address.clone(), newReg, newValue, op);
             afterClone();
         }
         return (RMWOpAndTest)clone;

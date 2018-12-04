@@ -1,5 +1,6 @@
 package dartagnan.program.event.linux.rmw;
 
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -15,7 +16,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     private ExprInterface cmp;
 
-    public RMWCmpXchg(Register address, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
+    public RMWCmpXchg(AExpr address, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
         super(address, register, value, atomic);
         this.cmp = cmp;
     }
@@ -48,7 +49,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + address + ", " + cmp + "," + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(memory[" + address + "], " + cmp + "," + value + ")";
     }
 
     @Override
@@ -57,7 +58,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
             ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : value.clone());
-            clone = new RMWCmpXchg((Register) address.clone(), newReg, newCmp, newValue, atomic);
+            clone = new RMWCmpXchg(address.clone(), newReg, newCmp, newValue, atomic);
             afterClone();
         }
         return (RMWCmpXchg)clone;

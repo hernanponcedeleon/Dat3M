@@ -16,7 +16,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
 
     private AOpBin op;
 
-    public RMWOpReturn(Register address, Register register, ExprInterface value, AOpBin op, String atomic) {
+    public RMWOpReturn(AExpr address, Register register, ExprInterface value, AOpBin op, String atomic) {
         super(address, register, value, atomic);
         this.op = op;
     }
@@ -40,7 +40,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", " + address + ")";
+        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", memory[" + address + "])";
     }
 
     @Override
@@ -48,7 +48,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWOpReturn((Register) address.clone(), newReg, newValue, op, atomic);
+            clone = new RMWOpReturn(address.clone(), newReg, newValue, op, atomic);
             afterClone();
         }
         return (RMWOpReturn)clone;

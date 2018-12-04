@@ -15,7 +15,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
 
     private AOpBin op;
 
-    public RMWFetchOp(Register address, Register register, ExprInterface value, AOpBin op, String atomic) {
+    public RMWFetchOp(AExpr address, Register register, ExprInterface value, AOpBin op, String atomic) {
         super(address, register, value, atomic);
         this.op = op;
     }
@@ -39,7 +39,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_fetch_" + op.toLinuxName() + atomicToText(atomic) + "(" + value + ", " + address + ")";
+        return nTimesCondLevel() + reg + " := atomic_fetch_" + op.toLinuxName() + atomicToText(atomic) + "(" + value + ", memory[" + address + "])";
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            clone = new RMWFetchOp((Register) address.clone(), newReg, newValue, op, atomic);
+            clone = new RMWFetchOp(address.clone(), newReg, newValue, op, atomic);
             afterClone();
         }
         return (RMWFetchOp)clone;

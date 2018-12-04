@@ -1,5 +1,6 @@
 package dartagnan.program.event.linux.rmw;
 
+import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
@@ -21,7 +22,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     protected Register reg;
     protected ExprInterface value;
 
-    public RMWAbstract(Register address, Register register, ExprInterface value, String atomic) {
+    public RMWAbstract(AExpr address, Register register, ExprInterface value, String atomic) {
         this.address = address;
         this.reg = register;
         this.value = value;

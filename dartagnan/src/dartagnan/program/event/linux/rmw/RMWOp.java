@@ -16,7 +16,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
     private AOpBin op;
 
-    public RMWOp(Register address, ExprInterface value, AOpBin op) {
+    public RMWOp(AExpr address, ExprInterface value, AOpBin op) {
         super(address, new Register(null), value, "Relaxed");
         this.op = op;
         addFilters(EType.NORETURN);
@@ -39,13 +39,13 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "atomic_" + op.toLinuxName() + "(" + value + ", " + address + ")";
+        return nTimesCondLevel() + "atomic_" + op.toLinuxName() + "(" + value + ", memory[" + address + "])";
     }
 
     @Override
     public RMWOp clone() {
         if(clone == null){
-            clone = new RMWOp((Register) address.clone(), value.clone(), op);
+            clone = new RMWOp(address.clone(), value.clone(), op);
             afterClone();
         }
         return (RMWOp)clone;
