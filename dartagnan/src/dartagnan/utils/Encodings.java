@@ -22,6 +22,9 @@ public class Encodings {
 
 	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
+
+		// TODO: With pointers, they do not necessarily point to the same memory address
+		/*
 		Set<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
 		Set<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
 		Set<Event> rEventsP1 = p1.getEventRepository().getEvents(EventRepository.LOAD);
@@ -32,7 +35,7 @@ public class Encodings {
 			for(Event e2 : lEventsP2) {
 				if(e1.getHLId() == e2.getHLId() && e1.getUnfCopy() == e2.getUnfCopy()) {
 					enc = ctx.mkAnd(enc, ctx.mkEq(e1.executes(ctx), e2.executes(ctx)));
-				}	
+				}
 			}
 		}
 		for(Event r1 : rEventsP1) {
@@ -65,7 +68,7 @@ public class Encodings {
 					}
 				}
 			}	
-		}
+		}*/
 		return enc;
 	}
 	
@@ -76,13 +79,12 @@ public class Encodings {
 		}
 		Set<RegWriter> executedEvents = p.getEventRepository().getEvents(EventRepository.ALL).stream()
                 .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+				.filter(e -> e instanceof RegWriter)
                 .map(e -> (RegWriter)e)
                 .collect(Collectors.toSet());
 		Set<Register> regs = new HashSet<>();
 		for(RegWriter e : executedEvents){
-			if(e instanceof RegWriter){
-				regs.add(e.getModifiedReg());
-			}
+			regs.add(e.getModifiedReg());
 		}
 		for(Register reg : regs) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx), model.getConstInterp(reg.getLastValueExpr(ctx))));

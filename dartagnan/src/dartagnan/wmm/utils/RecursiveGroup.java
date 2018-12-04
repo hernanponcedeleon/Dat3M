@@ -63,7 +63,8 @@ public class RecursiveGroup {
             }
             iterationCounter++;
         }
-        encodeIterations = iterationCounter + 1;
+        // TODO: bounds
+        encodeIterations = iterationCounter + 2;
     }
 
     public void updateEncodeTupleSets(){

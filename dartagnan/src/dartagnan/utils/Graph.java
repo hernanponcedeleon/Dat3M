@@ -119,7 +119,7 @@ public class Graph {
 
             if(t instanceof Init){
                 Init e = (Init)t.getEvents().iterator().next();
-                String label = e.label() + " = " + e.getIValue();
+                String label = e.label() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
 
             } else {
@@ -132,8 +132,10 @@ public class Graph {
                 for(Event e2 : events) {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
-                        int address = Integer.parseInt((((MemEvent) e2).getAddressExpr(ctx)).toString());
-                        label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc(program.getLocationForAddress(address))).toString();
+                        // TODO: Implementation (build memory map with concrete assignments for each program)
+                        //int address = Integer.parseInt(model.getConstInterp(((MemEvent) e2).getAddressExpr()).toString());
+                        //int address = Integer.parseInt((((MemEvent) e2).getAddressExpr()).toString());
+                        //label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc(program.getLocationForAddress(address))).toString();
                     }
                     sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }
@@ -171,7 +173,7 @@ public class Graph {
                 .stream()
                 .map(e -> (MemEvent)e)
                 .collect(Collectors.toSet());
-
+        /*
         Set<Location> locations = program.getLocations();
 
         for(Location location : locations){
@@ -180,7 +182,7 @@ public class Graph {
             Set<Event> locEvents = new HashSet<>();
 
             for(MemEvent e : events){
-                if(address == Integer.parseInt((e.getAddressExpr(ctx)).toString())){
+                if(address == Integer.parseInt((e.getAddressExpr()).toString())){
                     map.put(e, 0);
                     locEvents.add(e);
                 }
@@ -204,6 +206,7 @@ public class Graph {
                 sb.append("      ").append(e1.repr()).append(" -> ").append(e2.repr()).append(edge);
             }
         }
+        */
         return sb;
     }
 
