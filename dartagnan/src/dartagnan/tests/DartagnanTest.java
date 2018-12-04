@@ -28,6 +28,10 @@ public class DartagnanTest {
         HashSet<String> linuxFPBlacklist = runner.loadList("litmus/dart-fixpoint-long-exec-time.txt");
         linuxFPBlacklist.addAll(blacklist);
 
+        runner.runGroup("litmus/AARCH64", "arm", "cat/aarch64.cat", 2, false, false, blacklist);
+        runner.runGroup("litmus/AARCH64", "arm", "cat/aarch64.cat", 2, true, true, blacklist);
+        runner.runGroup("litmus/AARCH64", "arm", "cat/aarch64.cat", 2, true, false, blacklist);
+
         runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, false, false, blacklist);
         runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, false, true, blacklist);
         runner.runGroup("litmus/X86", "tso", "cat/tso.cat", 2, true, false, blacklist);
@@ -60,7 +64,7 @@ class Runner {
     private static final int UNDEFINED = -1;
     private static final int ERROR = -2;
 
-    private boolean printFailedOnly = false;
+    private boolean printFailedOnly = true;
     private boolean printStackTrace = true;
 
     private HashMap<String, Integer> expectedData;
