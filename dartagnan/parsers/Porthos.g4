@@ -73,18 +73,18 @@ assertionList
     |   AssertionForall assertion Semi?
     ;
 
-assertion
-    :   LPar a = assertion RPar
-    |   Not a = assertion
+assertion returns [AbstractAssert ass]
+    :   LPar a = assertion RPar {$ass = $a.ass;}
+    |   Not a = assertion {$ass = new AssertNot($a.ass); }
     |   a1 = assertion And a2 = assertion
     |   a1 = assertion Or a2 = assertion
     |   v1 = assertionValue op = assertionCompare v2 = assertionValue
     ;
 
-assertionValue
-    :   l = location
-    |   t = threadId Colon r = register
-    |   imm = value
+assertionValue returns [IntExprInterface v]
+    :   location {$v = pb.getOrCreateLocation($location.text);}
+    |   threadId Colon register {$v = pb.getOrCreateRegister($threadId.text, $register.text);}
+    |   value {$v = new AConst(Integer.parseInt($value.text));}
     ;
 
 fence
@@ -131,9 +131,11 @@ opCompare returns [Op op]
 opArith returns [AOpBin op]
     :   Plus                    {$op = AOpBin.PLUS;}
     |   Minus                   {$op = AOpBin.MINUS;}
+    |   Ast                     {$op = AOpBin.MULT;}
+    |   Slash                   {$op = AOpBin.DIV;}
     |   Amp                     {$op = AOpBin.AND;}
     |   Bar                     {$op = AOpBin.OR;}
-    |   Xor                     {$op = AOpBin.XOR;}
+    |   Circ                    {$op = AOpBin.XOR;}
     ;
 
 opBool returns [BOpBin op]
@@ -205,6 +207,14 @@ MemoryOrder
     |   '_con'
     ;
 
+AssertionExists
+    :   'exists'
+    ;
+
+AssertionForall
+    :   'forall'
+    ;
+
 LocalOp
     :   '<-'
     ;
@@ -243,27 +253,8 @@ Or
     |   '||'
     ;
 
-Xor
-    :   'xor'
-    ;
-
 Not
     :   'not'
-    ;
-
-AssertionListExpectationTest
-    :   'tso'
-    |   'cc'
-    |   'optic'
-    |   'default'
-    ;
-
-AssertionExists
-    :   'exists'
-    ;
-
-AssertionForall
-    :   'forall'
     ;
 
 Identifier
