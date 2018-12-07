@@ -31,11 +31,11 @@ Usage
 ======
 For checking reachability:
 ```
-java dartagnan/Dartagnan -t <target> [-cat <CAT file>] -i <input> [options]
+java dartagnan/Dartagnan -t <target> -cat <CAT file> -i <input> [options]
 ```
 For checking state inclusion:
 ```
-java porthos/Porthos -s <source> [-scat <CAT file>] -t <target> [-tcat <CAT file>] -i <input> [options]
+java porthos/Porthos -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <input> [options]
 ```
 Programs shall be written in the .pts format (see below). The path to the .pts file shall be provided in \<input>.
 
@@ -61,13 +61,13 @@ Examples are provided in the **benchmarks/** folder.
 ```
   program ::= {⟨loc⟩*} ⟨thrd⟩*
 
-  ⟨thrd⟩ ::= thread String {⟨inst⟩}
+  ⟨thrd⟩ ::= thread String {⟨inst⟩*}
 
-  ⟨inst⟩ ::= ⟨com⟩ | ⟨inst⟩; ⟨inst⟩ | while ⟨pred⟩ {⟨inst⟩} | if ⟨pred⟩ {⟨inst⟩} else {⟨inst⟩}
+  ⟨inst⟩ ::= ⟨com⟩; | while ⟨pred⟩ {⟨inst⟩} | if ⟨pred⟩ {⟨inst⟩} | if ⟨pred⟩ {⟨inst⟩} else {⟨inst⟩}
 
   ⟨com⟩ ::= ⟨reg⟩ <- ⟨expr⟩ | ⟨reg⟩ = ⟨loc⟩.load(⟨atomic⟩) | ⟨loc⟩.store(⟨atomic⟩,⟨reg⟩)
   
-  ⟨atomic⟩ ::= "_sc" | "_rx" | "_acq" | "_rel" | "_con"
+  ⟨atomic⟩ ::= "_na" | "_sc" | "_rx" | "_acq" | "_rel" | "_con"
   
   ⟨pred⟩ ::= Bool | ⟨pred⟩ and ⟨pred⟩ | ⟨pred⟩ or ⟨pred⟩ | not ⟨pred⟩ 
   
@@ -80,10 +80,12 @@ Examples are provided in the **benchmarks/** folder.
   ⟨expr⟩ ::= Int | ⟨reg⟩
   
           | ⟨expr⟩ + ⟨expr⟩ | ⟨expr⟩ - ⟨expr⟩
-  
+
           | ⟨expr⟩ * ⟨expr⟩ | ⟨expr⟩ / ⟨expr⟩
+  
+          | ⟨expr⟩ & ⟨expr⟩ | ⟨expr⟩ | ⟨expr⟩
           
-          | ⟨expr⟩ % ⟨expr⟩ 
+          | ⟨expr⟩ ^ ⟨expr⟩ 
   ```
 
 Author and Contact
