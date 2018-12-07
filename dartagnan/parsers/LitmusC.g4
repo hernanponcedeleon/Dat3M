@@ -12,10 +12,10 @@ variableDeclaratorList
     ;
 
 globalDeclarator
-    :   typeSpecifier? variable (Equals initConstantValue)?                                                             # globalDeclaratorLocation
-    |   typeSpecifier? threadVariable (Equals initConstantValue)?                                                       # globalDeclaratorRegister
-    |   typeSpecifier? variable (Equals variable)?                                                                      # globalDeclaratorLocationLocation
-    |   typeSpecifier? threadVariable (Equals variable)?                                                                # globalDeclaratorRegisterLocation
+    :   typeSpecifier? varName (Equals initConstantValue)?                                                              # globalDeclaratorLocation
+    |   typeSpecifier? t = threadId Colon n = varName (Equals initConstantValue)?                                       # globalDeclaratorRegister
+    |   typeSpecifier? varName (Equals varName)?                                                                        # globalDeclaratorLocationLocation
+    |   typeSpecifier? t = threadId Colon n = varName (Equals varName)?                                                 # globalDeclaratorRegisterLocation
     ;
 
 program
@@ -27,11 +27,11 @@ thread
     ;
 
 threadArguments
-    :   typeSpecifier Ast varName (Comma typeSpecifier Ast varName)*
+    :   typeSpecifier varName (Comma typeSpecifier varName)*
     ;
 
 expression
-    :   seqExpression Semi
+    :   nonReturnExpression Semi
     |   ifExpression
     ;
 
@@ -43,13 +43,6 @@ ifExpression
 elseExpression
     :   Else expression
     |   Else LBrace expression* RBrace
-    ;
-
-// TODO: Some tests initialize variables without a type specifier, so it makes sence to reduce this to two options
-seqExpression
-    :   typeSpecifier variable (Equals returnExpression)?                                                               # seqDeclarationReturnExpression
-    |   variable Equals returnExpression                                                                                # seqReturnExpression
-    |   nonReturnExpression                                                                                             # seqNonReturnExpression
     ;
 
 returnExpression locals [AOpBin op, String mo]
@@ -115,10 +108,11 @@ returnExpression locals [AOpBin op, String mo]
 
     |   ( AtomicReadAcquire LPar variable RPar {$mo = "Acquire";}
         | AtomicRead        LPar variable RPar {$mo = "Relaxed";}
-        | RcuDereference    LPar variable RPar {$mo = "Dereference";}
+        | RcuDereference    LPar Ast? variable RPar {$mo = "Dereference";}
         | SmpLoadAcquire    LPar variable RPar {$mo = "Acquire";})                                                      # reLoad
 
-    |   ReadOnce LPar variable RPar {$mo = "Once";}                                                                     # reReadOnce
+    |   ReadOnce LPar Ast variable RPar {$mo = "Once";}                                                                 # reReadOnce
+    |   Ast variable {$mo = "NA";}                                                                                      # reReadNa
 
 //    |   SpinTrylock LPar variable RPar                                                                                  # reSpinTryLock
 //    |   SpiIsLocked LPar variable RPar                                                                                  # reSpinIsLocked
@@ -144,14 +138,17 @@ nonReturnExpression locals [AOpBin op, String mo, String name]
         | AtomicSetRelease  LPar variable Comma returnExpression RPar {$mo = "Release";}
         | SmpStoreRelease   LPar variable Comma returnExpression RPar {$mo = "Release";}
         | SmpStoreMb        LPar variable Comma returnExpression RPar {$mo = "Mb";}
-        | RcuAssignPointer  LPar variable Comma returnExpression RPar {$mo = "Release";})                               # nreStore
+        | RcuAssignPointer  LPar Ast? variable Comma returnExpression RPar {$mo = "Release";})                          # nreStore
 
-    |   WriteOnce LPar variable Comma returnExpression RPar {$mo = "Once";}                                             # nreWriteOnce
+    |   WriteOnce LPar Ast variable Comma returnExpression RPar {$mo = "Once";}                                         # nreWriteOnce
 
     |   RcuReadLock LPar RPar                                                                                           # nreRcuReadLock
     |   RcuReadUnlock LPar RPar                                                                                         # nreRcuReadUnlock
     |   ( RcuSync LPar RPar
         | RcuSyncExpedited LPar RPar)                                                                                   # nreSynchronizeRcu
+
+    |   Ast? varName Equals returnExpression                                                                            # nreAssignment
+    |   typeSpecifier varName (Equals returnExpression)?                                                                # nreRegDeclaration
 
 //    |   SpinLock LPar variable RPar                                                                                     # nreSpinLock
 //    |   SpinUnlock LPar variable RPar                                                                                   # nreSpinUnlock
@@ -166,11 +163,11 @@ nonReturnExpression locals [AOpBin op, String mo, String name]
     ;
 
 variableList
-    :   Locations LBracket genericVariable (Semi genericVariable)* Semi? RBracket
+    :   Locations LBracket (threadVariable | varName) (Semi (threadVariable | varName))* Semi? RBracket
     ;
 
 assertionValue returns [IntExprInterface v]
-    :   l = variable    {$v = pb.getOrCreateLocation($l.text);}
+    :   l = varName {$v = pb.getOrCreateLocation($l.text);}
     |   t = threadVariable {$v = pb.getOrCreateRegister($t.tid, $t.name);}
     |   imm = constantValue { $v = new AConst(Integer.parseInt($imm.text)); }
     ;
@@ -197,26 +194,12 @@ opArith returns [AOpBin op]
     |   Circ    {$op = AOpBin.XOR;}
     ;
 
-variableDeclarator
-    :   typeSpecifier variable
-    ;
-
-genericVariable
-    :   threadVariable
-    |   variable
-    ;
-
 threadVariable returns [String tid, String name]
-    :   Ast v = threadVariable {$tid = $v.tid; $name = $v.name;}
-    |   Amp v = threadVariable {$tid = $v.tid; $name = $v.name;}
-    |   cast v = threadVariable  {$tid = $v.tid; $name = $v.name;}
-    |   t = threadId Colon n = varName  {$tid = $t.id; $name = $n.text;}
+    :   t = threadId Colon n = varName  {$tid = $t.id; $name = $n.text;}
     ;
 
 variable
-    :   Ast variable
-    |   Amp variable
-    |   cast variable
+    :   cast variable
     |   varName
     ;
 
@@ -234,8 +217,8 @@ cast
     ;
 
 typeSpecifier
-    :   (Volatile)? basicTypeSpecifier
-    |   (Volatile)? atomicTypeSpecifier
+    :   (Volatile)? basicTypeSpecifier Ast*
+    |   (Volatile)? atomicTypeSpecifier Ast*
     ;
 
 basicTypeSpecifier

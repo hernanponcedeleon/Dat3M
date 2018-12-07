@@ -55,7 +55,7 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
         }
-        programBuilder.addDeclarationLocImm(visitVariable(ctx.variable()), value);
+        programBuilder.addDeclarationLocImm(ctx.varName().getText(), value);
         return null;
     }
 
@@ -65,19 +65,19 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
         }
-        programBuilder.addDeclarationRegImm(ctx.threadVariable().tid, ctx.threadVariable().name, value);
+        programBuilder.addDeclarationRegImm(ctx.threadId().getText(), ctx.varName().getText(), value);
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorLocationLocation(LitmusCParser.GlobalDeclaratorLocationLocationContext ctx) {
-        programBuilder.addDeclarationLocLoc(visitVariable(ctx.variable(0)), visitVariable(ctx.variable(1)));
+        programBuilder.addDeclarationLocLoc(ctx.varName(0).getText(), ctx.varName(1).getText());
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        programBuilder.addDeclarationRegLoc(ctx.threadVariable().tid, ctx.threadVariable().name, visitVariable(ctx.variable()));
+        programBuilder.addDeclarationRegLoc(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
         return null;
     }
 
@@ -116,7 +116,7 @@ public class VisitorLitmusC
         if (ctx.ifExpression() != null) {
             return visitIfExpression(ctx.ifExpression());
         }
-        return (Thread) ctx.seqExpression().accept(this);
+        return (Thread) ctx.nonReturnExpression().accept(this);
     }
 
     @Override
@@ -126,42 +126,6 @@ public class VisitorLitmusC
         Thread t2 = ctx.elseExpression() == null ? new Skip() : visitExpressionSequence(ctx.elseExpression());
         Thread result = new If(returnStack.pop(), t1, t2);
         return Thread.fromArray(false, evalThread, result);
-    }
-
-    @Override
-    public Thread visitSeqDeclarationReturnExpression(LitmusCParser.SeqDeclarationReturnExpressionContext ctx){
-        String varName = visitVariable(ctx.variable());
-        Register register = programBuilder.getOrCreateRegister(currentThread, varName);
-        if(ctx.returnExpression() != null){
-            Thread t = (Thread)ctx.returnExpression().accept(this);
-            Thread result = new Local(register, returnStack.pop());
-            return Thread.fromArray(false, t, result);
-        }
-        return null;
-    }
-
-    @Override
-    public Thread visitSeqReturnExpression(LitmusCParser.SeqReturnExpressionContext ctx){
-        Thread t = (Thread)ctx.returnExpression().accept(this);
-        String varName = visitVariable(ctx.variable());
-        Thread result = null;
-
-        Register register = programBuilder.getRegister(currentThread, varName);
-        if(register == null){
-            Location location = programBuilder.getLocation(varName);
-            if(location != null){
-                result = new Store(location.getAddress(), returnStack.pop(), "NA");
-            }
-        }
-
-        if(result == null){
-            if(register == null){
-                register = programBuilder.getOrCreateRegister(currentThread, varName);
-            }
-            result = new Local(register, returnStack.pop());
-        }
-
-        return Thread.fromArray(false, t, result);
     }
 
     private Thread visitExpressionSequence(RuleContext ctx) {
@@ -236,8 +200,16 @@ public class VisitorLitmusC
     public Thread visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
         returnStack.push(register);
-        Location location = getLocation(ctx.variable());
-        return new Load(register, location.getAddress(), ctx.mo);
+        AExpr address = getAddress(ctx.variable());
+        return new Load(register, address, ctx.mo);
+    }
+
+    @Override
+    public Thread visitReReadNa(LitmusCParser.ReReadNaContext ctx){
+        Register register = programBuilder.getOrCreateRegister(currentThread, null);
+        returnStack.push(register);
+        AExpr address = (AExpr)ctx.variable().accept(this);
+        return new Load(register, address, "NA");
     }
 
     @Override
@@ -290,21 +262,16 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReVariable(LitmusCParser.ReVariableContext ctx){
-        String varName = visitVariable(ctx.variable());
-        Register register = programBuilder.getRegister(currentThread, varName);
-        if(register != null){
-            returnStack.push(register);
+        IntExprInterface variable = (IntExprInterface)ctx.variable().accept(this);
+        if(variable instanceof Register){
+            returnStack.push((Register) variable);
             return null;
         }
-
-        Location location = programBuilder.getLocation(varName);
-        if(location == null){
-            throw new ParsingException("Variable " + varName + " has not been initialized");
+        if(variable instanceof Address){
+            returnStack.push((Address) variable);
+            return null;
         }
-
-        register = programBuilder.getOrCreateRegister(currentThread, null);
-        returnStack.push(register);
-        return new Load(register, location.getAddress(), "NA");
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     @Override
@@ -349,7 +316,7 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreStore(LitmusCParser.NreStoreContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        Address address = getAddress(ctx.variable());
+        AExpr address = getAddress(ctx.variable());
         if(ctx.mo.equals("Mb")){
             Thread t = new Store(address, returnStack.pop(), "Relaxed");
             return Thread.fromArray(false, t1, t, new Fence("Mb"));
@@ -361,9 +328,40 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        Location location = getLocation(ctx.variable());
-        Thread t = new Store(location.getAddress(), returnStack.pop(), ctx.mo);
+        AExpr address = getAddress(ctx.variable());
+        Thread t = new Store(address, returnStack.pop(), ctx.mo);
         return Thread.fromArray(false, t1, t);
+    }
+
+    @Override
+    public Thread visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
+        Thread t = (Thread)ctx.returnExpression().accept(this);
+        IntExprInterface variable = (IntExprInterface)ctx.varName().accept(this);
+
+        if(ctx.Ast() == null){
+            if(variable instanceof Register){
+                Thread result = new Local((Register) variable, returnStack.pop());
+                return Thread.fromArray(false, t, result);
+            }
+            throw new ParsingException("Invalid syntax near " + ctx.getText());
+        }
+
+        if(variable instanceof Address || variable instanceof Register){
+            Thread result = new Store((AExpr) variable, returnStack.pop(), "NA");
+            return Thread.fromArray(false, t, result);
+        }
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
+    }
+
+    @Override
+    public Thread visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
+        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.varName().getText());
+        if(ctx.returnExpression() != null){
+            Thread t = (Thread)ctx.returnExpression().accept(this);
+            Thread result = new Local(register, returnStack.pop());
+            return Thread.fromArray(false, t, result);
+        }
+        return null;
     }
 
     @Override
@@ -398,37 +396,38 @@ public class VisitorLitmusC
     // Utils
 
     @Override
-    // Here we know that it is thread local variable (register)
     public Register visitThreadVariable(LitmusCParser.ThreadVariableContext ctx) {
-        if(ctx.threadId() != null && ctx.varName() != null){
-            String variableName = ctx.varName().getText();
-            return programBuilder.getOrCreateRegister(ctx.threadId().id, variableName);
-        }
-        return visitThreadVariable(ctx.threadVariable());
+        String variableName = ctx.varName().getText();
+        return programBuilder.getOrCreateRegister(ctx.threadId().id, variableName);
     }
 
     @Override
-    // Here we do not know if it is a local (register) or a global (location) variable,
-    // the calling method must decide it and instantiate a correct class
-    public String visitVariable(LitmusCParser.VariableContext ctx) {
-        if(ctx.varName() != null){
-            return ctx.varName().getText();
+    public IntExprInterface visitVariable(LitmusCParser.VariableContext ctx){
+        if(ctx.variable() != null){
+            return (IntExprInterface)ctx.variable().accept(this);
         }
-        return visitVariable(ctx.variable());
+        return (IntExprInterface)ctx.varName().accept(this);
     }
 
-    private Address getAddress(LitmusCParser.VariableContext ctx){
-        if(ctx.varName() != null){
-            return programBuilder.getOrErrorLocation(ctx.varName().getText()).getAddress();
+    @Override
+    public IntExprInterface visitVarName(LitmusCParser.VarNameContext ctx){
+        Register register = programBuilder.getRegister(currentThread, ctx.getText());
+        if(register != null){
+            return register;
         }
-        return getLocation(ctx.variable()).getAddress();
+        Location location = programBuilder.getLocation(ctx.getText());
+        if(location != null){
+            return location.getAddress();
+        }
+        return programBuilder.getOrCreateRegister(currentThread, ctx.getText());
     }
 
-    private Location getLocation(LitmusCParser.VariableContext ctx){
-        if(ctx.varName() != null){
-            return programBuilder.getOrErrorLocation(ctx.varName().getText());
+    private AExpr getAddress(LitmusCParser.VariableContext ctx){
+        Object address = ctx.accept(this);
+        if(address instanceof Address || address instanceof Register){
+            return (AExpr) address;
         }
-        return getLocation(ctx.variable());
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     private Pair<Thread, ExprInterface> acceptRetValue(LitmusCParser.ReturnExpressionContext ctx){
