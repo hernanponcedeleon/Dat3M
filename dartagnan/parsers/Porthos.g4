@@ -5,13 +5,11 @@ import BaseLexer;
 @header{
 package dartagnan.parsers;
 import dartagnan.asserts.*;
-import dartagnan.expression.utils.COpBin;
-import dartagnan.program.*;
-import dartagnan.program.event.*;
-import dartagnan.expression.*;
-import dartagnan.program.Thread;
-import java.util.HashMap;
-import java.util.Map;
+import dartagnan.expression.op.*;
+import dartagnan.expression.IntExprInterface;
+import dartagnan.expression.AConst;
+import dartagnan.parsers.utils.ProgramBuilder;
+import dartagnan.program.memory.Location;
 }
 
 @parser::members{
@@ -34,51 +32,55 @@ program
     ;
 
 thread
-    :   ThreadT threadId LBrace expression* RBrace
+    :   ThreadT threadId LBrace expressionSequence RBrace
     ;
 
 expression
-	:   instruction Semi
-	|   While boolExpr LBrace expression* RBrace
-    |   If boolExpr Then? LBrace expression* RBrace (Else LBrace expression* RBrace)?
+	:   instruction Semi                                                                                # expressionInstruction
+	|   While boolExpr LBrace expressionSequence RBrace                                                 # expressionWhile
+    |   If boolExpr Then? LBrace expressionSequence RBrace (Else LBrace expressionSequence RBrace)?     # expressionIf
 	;
 
+expressionSequence
+    :   expression*
+    ;
+
 instruction
-    :   register LocalOp arithExpr                                                      # instructionLocal
-	|   register LoadOp location                                                        # instructionLoad
-	|   location StoreOp register                                                       # instructionStore
-	|   fence                                                                           # instructionFence
-	|   register Equals location Period Load LPar MemoryOrder RPar                      # instructionRead
-	|   location Period Store LPar MemoryOrder Comma (register | DigitSequence) RPar    # instructionWrite
+    :   register LocalOp arithExpr                                                                      # instructionLocal
+	|   register LoadOp location                                                                        # instructionLoad
+	|   location StoreOp arithExpr                                                                      # instructionStore
+	|   register Equals location Period Load LPar MemoryOrder RPar                                      # instructionRead
+	|   location Period Store LPar MemoryOrder Comma arithExpr RPar                                     # instructionWrite
+    |   fence                                                                                           # instructionFence
 	;
 
 arithExpr
-    :   arithExpr opArith arithExpr
-    |   LPar arithExpr RPar
-	|   register
-	|   value
+    :   arithExpr opArith arithExpr                                                                     # arithExprAExpr
+    |   LPar arithExpr RPar                                                                             # arithExprChild
+	|   register                                                                                        # arithExprRegister
+	|   value                                                                                           # arithExprConst
 	;
 
 boolExpr
-    :   boolExpr opBool boolExpr
-    |   arithExpr opCompare arithExpr
-    |   LPar boolExpr RPar
-    |   False
-    |   True
+    :   boolExpr opBoolBin boolExpr                                                                     # boolExprBExprBin
+    |   opBoolUn boolExpr                                                                               # boolExprBExprUn
+    |   arithExpr opCompare arithExpr                                                                   # boolExprAtom
+    |   LPar boolExpr RPar                                                                              # boolExprChild
+    |   (True | False)                                                                                  # boolExprConst
     ;
 
-assertionList
-    :   AssertionExists assertion Semi?
-    |   (Not | Tilde) AssertionExists assertion Semi?
-    |   AssertionForall assertion Semi?
+assertionList returns [AbstractAssert ass]
+    :   AssertionExists a = assertion Semi? {$ass = $a.ass; $ass.setType(AbstractAssert.ASSERT_TYPE_EXISTS);}
+    |   (Not | Tilde) AssertionExists a = assertion Semi? {$ass = $a.ass; $ass.setType(AbstractAssert.ASSERT_TYPE_NOT_EXISTS);}
+    |   AssertionForall a = assertion Semi? {$ass = $a.ass; $ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);}
     ;
 
 assertion returns [AbstractAssert ass]
     :   LPar a = assertion RPar {$ass = $a.ass;}
-    |   Not a = assertion {$ass = new AssertNot($a.ass); }
-    |   a1 = assertion And a2 = assertion
-    |   a1 = assertion Or a2 = assertion
-    |   v1 = assertionValue op = assertionCompare v2 = assertionValue
+    |   Not a = assertion {$ass = new AssertNot($a.ass);}
+    |   a1 = assertion And a2 = assertion {$ass = new AssertCompositeAnd($a1.ass, $a2.ass);}
+    |   a1 = assertion Or a2 = assertion {$ass = new AssertCompositeOr($a1.ass, $a2.ass);}
+    |   v1 = assertionValue op = assertionCompare v2 = assertionValue {$ass = new AssertBasic($v1.v, $op.op, $v2.v instanceof Location ? ((Location)$v2.v).getAddress() : $v2.v);}
     ;
 
 assertionValue returns [IntExprInterface v]
@@ -110,22 +112,22 @@ value
     :   DigitSequence
     ;
 
-assertionCompare returns [Op op]
-    :   (Equals | EqualsEquals) {$op = Op.EQ;}
-    |   NotEquals               {$op = Op.NEQ;}
-    |   GreaterEquals           {$op = Op.GTE;}
-    |   LessEquals              {$op = Op.LTE;}
-    |   Less                    {$op = Op.LT;}
-    |   Greater                 {$op = Op.GT;}
+assertionCompare returns [COpBin op]
+    :   (Equals | EqualsEquals) {$op = COpBin.EQ;}
+    |   NotEquals               {$op = COpBin.NEQ;}
+    |   GreaterEquals           {$op = COpBin.GTE;}
+    |   LessEquals              {$op = COpBin.LTE;}
+    |   Less                    {$op = COpBin.LT;}
+    |   Greater                 {$op = COpBin.GT;}
     ;
 
-opCompare returns [Op op]
-    :   EqualsEquals            {$op = Op.EQ;}
-    |   NotEquals               {$op = Op.NEQ;}
-    |   GreaterEquals           {$op = Op.GTE;}
-    |   LessEquals              {$op = Op.LTE;}
-    |   Less                    {$op = Op.LT;}
-    |   Greater                 {$op = Op.GT;}
+opCompare returns [COpBin op]
+    :   EqualsEquals            {$op = COpBin.EQ;}
+    |   NotEquals               {$op = COpBin.NEQ;}
+    |   GreaterEquals           {$op = COpBin.GTE;}
+    |   LessEquals              {$op = COpBin.LTE;}
+    |   Less                    {$op = COpBin.LT;}
+    |   Greater                 {$op = COpBin.GT;}
     ;
 
 opArith returns [AOpBin op]
@@ -138,11 +140,14 @@ opArith returns [AOpBin op]
     |   Circ                    {$op = AOpBin.XOR;}
     ;
 
-opBool returns [BOpBin op]
+opBoolBin returns [BOpBin op]
     :   And                     {$op = BOpBin.AND;}
     |   Or                      {$op = BOpBin.OR;}
     ;
 
+opBoolUn returns [BOpUn op]
+    :   Not                     {$op = BOpUn.NOT;}
+    ;
 
 ThreadT
     :   'thread t'
@@ -255,6 +260,7 @@ Or
 
 Not
     :   'not'
+    |   '!'
     ;
 
 Identifier

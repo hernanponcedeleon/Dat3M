@@ -1,13 +1,13 @@
-package dartagnan.program;
+package dartagnan.program.event;
 
-import dartagnan.expression.AConst;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.event.If;
-import dartagnan.program.event.Local;
-import dartagnan.program.event.Skip;
-import dartagnan.program.event.Store;
+import dartagnan.program.Seq;
+import dartagnan.program.Thread;
 
-public class While extends Thread {
+import java.util.HashSet;
+import java.util.Set;
+
+public class While extends Event {
 
 	private ExprInterface pred;
 	private Thread t;
@@ -55,9 +55,16 @@ public class While extends Thread {
 			copyT = copyT.unroll(steps);
 			ExprInterface newPred = pred.clone();
 			Thread newThread = new If(newPred, new Seq(copyT, unroll(steps - 1, obsNoTermination)), new Skip());
-			newThread.condLevel = condLevel;
+			newThread.setCondLevel(condLevel);
 			return newThread;
 		}
+	}
+
+	@Override
+	public Set<Event> getEvents() {
+		Set<Event> ret = new HashSet<>(t.getEvents());
+		ret.add(this);
+		return ret;
 	}
 
     @Override

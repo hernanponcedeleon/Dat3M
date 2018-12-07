@@ -7,18 +7,13 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
-//import dartagnan.parsers.PorthosLexer;
-//import dartagnan.parsers.PorthosParser;
 import dartagnan.parsers.cat.ParserCat;
 import dartagnan.program.Program;
 import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
 import dartagnan.wmm.utils.Arch;
-import org.antlr.v4.runtime.*;
 import org.apache.commons.cli.*;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -138,26 +133,9 @@ public class Dartagnan {
     }
 
 	public static Program parseProgram(String inputFilePath) throws IOException{
-		if(inputFilePath.endsWith("litmus")) {
-			ParserResolver parserResolver = new ParserResolver();
-			ParserInterface parser = parserResolver.getParser(inputFilePath);
-			return parser.parse(inputFilePath);
-		}
-
-		/*
-		if(inputFilePath.endsWith("pts")) {
-			File file = new File(inputFilePath);
-			FileInputStream stream = new FileInputStream(file);
-			CharStream charStream = CharStreams.fromStream(stream);
-			PorthosLexer lexer = new PorthosLexer(charStream);
-			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			PorthosParser parser = new PorthosParser(tokens);
-			parser.addErrorListener(new DiagnosticErrorListener(true));
-			return parser.program(inputFilePath).p;
-		}
-		*/
-
-		throw new RuntimeException("Unrecognised program format");
+		ParserResolver parserResolver = new ParserResolver();
+		ParserInterface parser = parserResolver.getParser(inputFilePath);
+		return parser.parse(inputFilePath);
 	}
 
 	private static boolean canDrawGraph(AbstractAssert ass, boolean result){
