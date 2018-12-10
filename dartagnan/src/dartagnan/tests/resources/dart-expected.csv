@@ -13213,3 +13213,5 @@ litmus/AARCH64/dart/exclusive-06.litmus,0
 litmus/AARCH64/dart/exclusive-07.litmus,1
 litmus/AARCH64/dart/exclusive-08.litmus,1
 litmus/AARCH64/dart/exclusive-09.litmus,0
+litmus/C/dart/C-atomic-operator-01.litmus,1
+litmus/C/dart/C-atomic-operator-02.litmus,0
