@@ -17,4 +17,13 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     public BoolExpr encodeCF(Context ctx) {
         return ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(cfVar()), ((RMWReadCond)loadEvent).getCond()), executes(ctx));
     }
+
+    @Override
+    public RMWStoreCond clone() {
+        if(clone == null){
+            clone = new RMWStoreCond((RMWReadCond)loadEvent.clone(), address.clone(), value.clone(), atomic);
+            afterClone();
+        }
+        return (RMWStoreCond)clone;
+    }
 }

@@ -79,12 +79,13 @@ public class While extends Event {
 
     @Override
 	public While clone() {
-		Thread newT = t.clone();
-		newT.decCondLevel();
-		ExprInterface newPred = pred.clone();
-		While newWhile = new While(newPred, newT);
-		newWhile.condLevel = condLevel;
-		return newWhile;
+		if(clone == null){
+			Thread newT = t.clone();
+			newT.decCondLevel();
+			clone = new While(pred.clone(), newT);
+			afterClone();
+		}
+		return (While)clone;
 	}
 
     @Override
