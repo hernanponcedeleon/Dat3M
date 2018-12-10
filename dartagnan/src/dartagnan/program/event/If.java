@@ -6,14 +6,16 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
+import dartagnan.program.memory.Location;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static dartagnan.utils.Encodings.encodeMissingIndexes;
 import static dartagnan.utils.Utils.mergeMaps;
+import static dartagnan.utils.Utils.ssaReg;
 
 public class If extends Event implements RegReaderData {
 
@@ -154,7 +156,7 @@ public class If extends Event implements RegReaderData {
             enc = ctx.mkAnd(enc, p1.getFirst());
             Pair<BoolExpr, MapSSA> p2 = t2.encodeDF(map2, ctx);
             enc = ctx.mkAnd(enc, p2.getFirst());
-            enc = ctx.mkAnd(enc, encodeMissingIndexes(this, map1, map2, ctx));
+            enc = ctx.mkAnd(enc, encodeMissingIndexes(map1, map2, ctx));
             map = mergeMaps(map1, map2);
             return new Pair<>(enc, map);
         }
@@ -177,5 +179,52 @@ public class If extends Event implements RegReaderData {
         else
             return nTimesCondLevel() + "if (" + expr + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}\n"
                     + nTimesCondLevel() + "else {\n" + t2 + "\n" + nTimesCondLevel() + "}";
+    }
+
+    private BoolExpr encodeMissingIndexes(MapSSA map1, MapSSA map2, Context ctx) {
+        BoolExpr ret = ctx.mkTrue();
+        BoolExpr index = ctx.mkTrue();
+
+        for(Object o : map1.keySet()) {
+            int i1 = map1.get(o);
+            int i2 = map2.get(o);
+            if(i1 > i2) {
+                if(o instanceof Register) {
+                    // If the ssa index of a register differs in the two branches
+                    // I need to maintain the value when the event is not executed
+                    // for testing reachability
+                    for(Event e : getEvents()) {
+                        if(e instanceof RegWriter && ((RegWriter)e).getSsaRegIndex() == i1 && ((RegWriter) e).getModifiedReg() == o){
+                            ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ssaReg((Register)o, i1, ctx), ssaReg((Register)o, i1-1, ctx))));
+                        }
+                    }
+                    index = ctx.mkEq(ssaReg((Register)o, i1, ctx), ssaReg((Register)o, i2, ctx));
+                }
+                if(o instanceof Location) {
+                    index = ctx.mkEq(ctx.mkIntConst(o.toString() + "_" + i1), ctx.mkIntConst(o.toString() + "_" + i2));
+                }
+                ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkBoolConst(getT2().cfVar()), index));
+            }
+        }
+
+        for(Object o : map2.keySet()) {
+            int i1 = map1.get(o);
+            int i2 = map2.get(o);
+            if(i2 > i1) {
+                if(o instanceof Register) {
+                    for(Event e : getEvents()) {
+                        if(e instanceof RegWriter && ((RegWriter)e).getSsaRegIndex() == i2 && ((RegWriter) e).getModifiedReg() == o){
+                            ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ssaReg((Register)o, i2, ctx), ssaReg((Register)o, i2-1, ctx))));
+                        }
+                    }
+                    index = ctx.mkEq(ssaReg((Register)o, i2, ctx), ssaReg((Register)o, i1, ctx));
+                }
+                if(o instanceof Location) {
+                    index = ctx.mkEq(ctx.mkIntConst(o.toString() + "_" + i2), ctx.mkIntConst(o.toString() + "_" + i1));
+                }
+                ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkBoolConst(getT1().cfVar()), index));
+            }
+        }
+        return ret;
     }
 }
