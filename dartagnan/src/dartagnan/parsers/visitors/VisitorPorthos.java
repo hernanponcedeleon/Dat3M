@@ -50,6 +50,11 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
     }
 
     @Override
+    public Thread visitExpressionInstruction(PorthosParser.ExpressionInstructionContext ctx) {
+        return (Thread)ctx.instruction().accept(this);
+    }
+
+    @Override
     public Thread visitExpressionWhile(PorthosParser.ExpressionWhileContext ctx) {
         BExpr e = (BExpr)ctx.boolExpr().accept(this);
         Thread t = (Thread)ctx.expressionSequence().accept(this);

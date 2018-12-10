@@ -35,15 +35,15 @@ thread
     :   ThreadT threadId LBrace expressionSequence RBrace
     ;
 
+expressionSequence
+    :   expression*
+    ;
+
 expression
 	:   instruction Semi                                                                                # expressionInstruction
 	|   While boolExpr LBrace expressionSequence RBrace                                                 # expressionWhile
     |   If boolExpr Then? LBrace expressionSequence RBrace (Else LBrace expressionSequence RBrace)?     # expressionIf
 	;
-
-expressionSequence
-    :   expression*
-    ;
 
 instruction
     :   register LocalOp arithExpr                                                                      # instructionLocal
