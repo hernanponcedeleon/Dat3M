@@ -13215,3 +13215,4 @@ litmus/AARCH64/dart/exclusive-08.litmus,1
 litmus/AARCH64/dart/exclusive-09.litmus,0
 litmus/C/dart/C-atomic-operator-01.litmus,1
 litmus/C/dart/C-atomic-operator-02.litmus,0
+litmus/C/auto/C-LB-LRW+R-OC+R-Oc+R-Oc.litmus,0
