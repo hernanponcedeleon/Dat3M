@@ -1,9 +1,6 @@
 package dartagnan.utils;
 
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.FuncDecl;
-import com.microsoft.z3.Model;
+import com.microsoft.z3.*;
 import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
@@ -16,6 +13,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Graph {
@@ -225,14 +224,17 @@ public class Graph {
     }
 
     private StringBuilder buildCycle(){
+        Pattern pattern = Pattern.compile("\\((E\\d+),(E\\d+)\\)$");
         StringBuilder sb = new StringBuilder();
         sb.append(L2).append("/* Cycle */\n");
         for(FuncDecl m : model.getDecls()) {
             String edge = m.getName().toString();
             if(edge.contains("Cycle:") && model.getConstInterp(m).isTrue()) {
-                String source = getSourceFromEdge(edge);
-                String target = getTargetFromEdge(edge);
-                sb.append(L2).append(source).append(" -> ").append(target).append("[style=bold, color=green, weight=1];\n");
+                Matcher matcher = pattern.matcher(edge);
+                if(matcher.find()){
+                    sb.append(L2).append(matcher.group(1)).append(" -> ")
+                            .append(matcher.group(2)).append("[style=bold, color=green, weight=1];\n");
+                }
             }
         }
         return sb;
@@ -257,13 +259,5 @@ public class Graph {
 
     private String getEventDef(String label, int group){
         return "[label=\"" + label + "\", shape=\"box\", color=\"blue\", group=\"s" + group + "\"]";
-    }
-
-    private String getSourceFromEdge(String edge) {
-        return edge.split("\\(")[1].split(",")[0];
-    }
-
-    private String getTargetFromEdge(String edge) {
-        return edge.replace(")", "").split(",")[1];
     }
 }
