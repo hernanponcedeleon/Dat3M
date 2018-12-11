@@ -5,17 +5,20 @@ import dartagnan.expression.AConst;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
-import dartagnan.program.event.Init;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.If;
+import dartagnan.program.event.Init;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
+import dartagnan.program.memory.Location;
 import dartagnan.program.memory.Memory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Stack;
 
 public class ProgramBuilder {
 

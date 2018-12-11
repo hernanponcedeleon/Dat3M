@@ -1,8 +1,8 @@
 package dartagnan.wmm.relation.basic;
 
 import dartagnan.program.event.Event;
-import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.program.utils.EventRepository;
+import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 

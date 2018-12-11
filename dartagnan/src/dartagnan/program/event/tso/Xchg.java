@@ -1,14 +1,14 @@
 package dartagnan.program.event.tso;
 
-import dartagnan.program.event.rmw.RMWLoad;
-import dartagnan.program.event.rmw.RMWStore;
-import dartagnan.program.memory.Address;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.rmw.RMWLoad;
+import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
+import dartagnan.program.memory.Address;
 import dartagnan.program.utils.tso.EType;
 
 import java.util.HashSet;
@@ -23,7 +23,6 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         this.reg = register;
         this.atomic = atomic;
         this.condLevel = 0;
-        this.hlId = hashCode();
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM);
     }
 
@@ -45,14 +44,12 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
             Register dummyReg = new Register(null);
             RMWLoad load = new RMWLoad(dummyReg, address, atomic);
             load.setHLId(hlId);
-            load.setUnfCopy(getUnfCopy());
             load.setCondLevel(condLevel);
             load.addFilters(EType.ATOM);
             load.setMaxLocationSet(locations);
 
             RMWStore store = new RMWStore(load, address, reg, atomic);
             store.setHLId(hlId);
-            store.setUnfCopy(getUnfCopy());
             store.setCondLevel(condLevel);
             store.addFilters(EType.ATOM);
             store.setMaxLocationSet(locations);

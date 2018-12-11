@@ -3,7 +3,8 @@ package dartagnan.program;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.asserts.AbstractAssert;
-import dartagnan.program.event.*;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.Init;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Location;
 import dartagnan.program.memory.Memory;
@@ -66,9 +67,9 @@ public class Program extends Thread {
     }
 
 	@Override
-	public Set<Event> getEvents(){
-		Set<Event> events = new HashSet<>();
-		for(Thread t : getThreads()){
+	public List<Event> getEvents(){
+		List<Event> events = new ArrayList<>();
+		for(Thread t : threads){
 			events.addAll(t.getEvents());
 		}
 		return events;

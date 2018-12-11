@@ -8,6 +8,7 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,9 +23,9 @@ public class RelAddrDirect extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                Set<Event> events = t.getEventRepository().getEvents(EventRepository.ALL);
+                List<Event> events = t.getEventRepository().getEvents(EventRepository.ALL);
                 Set<Event> regWriters = events.stream().filter(e -> e instanceof RegWriter).collect(Collectors.toSet());
-                Set<Event> regReaders = t.getEventRepository().getEvents(EventRepository.MEMORY);
+                List<Event> regReaders = t.getEventRepository().getEvents(EventRepository.MEMORY);
                 for(Event e1 : regWriters){
                     for(Event e2 : regReaders){
                         if(e1.getEId() < e2.getEId() && ((MemEvent)e2).getAddressReg() == ((RegWriter)e1).getModifiedReg()){

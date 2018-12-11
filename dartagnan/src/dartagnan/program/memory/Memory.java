@@ -4,7 +4,9 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import dartagnan.program.memory.utils.IllegalMemoryAccessException;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class Memory {
 

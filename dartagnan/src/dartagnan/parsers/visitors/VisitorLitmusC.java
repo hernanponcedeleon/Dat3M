@@ -1,13 +1,13 @@
 package dartagnan.parsers.visitors;
 
+import dartagnan.expression.*;
 import dartagnan.expression.op.BOpUn;
 import dartagnan.parsers.LitmusCBaseVisitor;
 import dartagnan.parsers.LitmusCParser;
 import dartagnan.parsers.LitmusCVisitor;
-import dartagnan.expression.*;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
-import dartagnan.program.*;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
 import dartagnan.program.event.linux.rcu.RCUReadLock;
@@ -20,7 +20,10 @@ import dartagnan.utils.Pair;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EmptyStackException;
+import java.util.List;
+import java.util.Stack;
 
 public class VisitorLitmusC
         extends LitmusCBaseVisitor<Object>

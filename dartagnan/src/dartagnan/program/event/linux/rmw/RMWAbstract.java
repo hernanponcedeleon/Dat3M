@@ -28,7 +28,6 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         this.value = value;
         this.atomic = atomic;
         this.condLevel = 0;
-        this.hlId = hashCode();
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW);
     }
 
@@ -82,7 +81,6 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
 
     protected void compileBasic(MemEvent event){
         event.setHLId(hlId);
-        event.setUnfCopy(getUnfCopy());
         event.setCondLevel(condLevel);
         event.setMaxLocationSet(getMaxLocationSet());
     }

@@ -1,18 +1,24 @@
 package dartagnan.parsers.visitors;
 
+import dartagnan.expression.AConst;
+import dartagnan.expression.AExpr;
 import dartagnan.expression.op.AOpBin;
 import dartagnan.parsers.LitmusPPCBaseVisitor;
 import dartagnan.parsers.LitmusPPCParser;
 import dartagnan.parsers.LitmusPPCVisitor;
-import dartagnan.expression.AConst;
-import dartagnan.expression.AExpr;
-import dartagnan.parsers.utils.*;
+import dartagnan.parsers.utils.ParsingException;
+import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
-import dartagnan.program.*;
-import dartagnan.program.event.*;
+import dartagnan.program.Register;
+import dartagnan.program.event.Fence;
+import dartagnan.program.event.Load;
+import dartagnan.program.event.Local;
+import dartagnan.program.event.Store;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class VisitorLitmusPPC
         extends LitmusPPCBaseVisitor<Object>

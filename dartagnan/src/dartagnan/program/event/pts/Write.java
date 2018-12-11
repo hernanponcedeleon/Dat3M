@@ -23,7 +23,6 @@ public class Write extends MemEvent implements RegReaderData {
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;
-        this.hlId = hashCode();
         addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
     }
 
@@ -55,7 +54,6 @@ public class Write extends MemEvent implements RegReaderData {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         Store st = new Store(address, value, atomic);
         st.setHLId(hlId);
-        st.setUnfCopy(getUnfCopy());
         st.setCondLevel(this.condLevel);
         st.setMaxLocationSet(getMaxLocationSet());
 

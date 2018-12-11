@@ -1,7 +1,7 @@
 package dartagnan.utils;
 
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
+import dartagnan.program.memory.Location;
 
 import java.text.NumberFormat;
 import java.util.HashSet;

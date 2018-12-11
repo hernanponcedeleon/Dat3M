@@ -3,17 +3,18 @@ package dartagnan.utils;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;
-import dartagnan.program.event.Event;
-import dartagnan.program.event.MemEvent;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
+import dartagnan.program.event.Event;
+import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.utils.RegWriter;
+import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,15 +23,17 @@ public class Encodings {
 	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
 
-		Set<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
-		Set<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
-		Set<Event> rEventsP1 = p1.getEventRepository().getEvents(EventRepository.LOAD);
-		Set<Event> wEventsP1 = p1.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
-		Set<Event> rEventsP2 = p2.getEventRepository().getEvents(EventRepository.LOAD);
-		Set<Event> wEventsP2 = p2.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
+		List<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
+		List<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
+		List<Event> rEventsP1 = p1.getEventRepository().getEvents(EventRepository.LOAD);
+		List<Event> wEventsP1 = p1.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
+		List<Event> rEventsP2 = p2.getEventRepository().getEvents(EventRepository.LOAD);
+		List<Event> wEventsP2 = p2.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
+
+
 		for(Event e1 : lEventsP1) {
 			for(Event e2 : lEventsP2) {
-				if(e1.getHLId() == e2.getHLId() && e1.getUnfCopy() == e2.getUnfCopy()) {
+				if(e1.getHLId() == e2.getHLId()) {
 					enc = ctx.mkAnd(enc, ctx.mkEq(e1.executes(ctx), e2.executes(ctx)));
 				}
 			}
@@ -41,7 +44,7 @@ public class Encodings {
 
 		for(Event r1 : rEventsP1) {
 			for(Event r2 : rEventsP2) {
-				if(r1.getHLId() == r2.getHLId() && r1.getUnfCopy() == r2.getUnfCopy()) {
+				if(r1.getHLId() == r2.getHLId()) {
 					enc = ctx.mkAnd(enc, ctx.mkEq(((MemEvent)r1).getAddressExpr(), ((MemEvent)r2).getAddressExpr()));
 					rTuples.add(new Tuple(r1, r2));
 					break;
@@ -51,7 +54,7 @@ public class Encodings {
 
 		for(Event w1 : wEventsP1) {
 			for(Event w2 : wEventsP2) {
-				if(w1.getHLId() == w2.getHLId() && w1.getUnfCopy() == w2.getUnfCopy()) {
+				if(w1.getHLId() == w2.getHLId()) {
 					enc = ctx.mkAnd(enc, ctx.mkEq(((MemEvent)w1).getAddressExpr(), ((MemEvent)w2).getAddressExpr()));
 					wTuples.add(new Tuple(w1, w2));
 					break;

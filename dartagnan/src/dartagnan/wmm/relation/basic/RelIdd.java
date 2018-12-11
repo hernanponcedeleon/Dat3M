@@ -10,6 +10,7 @@ import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,7 +27,7 @@ public class RelIdd extends Relation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                Set<Event> events = t.getEventRepository().getEvents(EventRepository.ALL);
+                List<Event> events = t.getEventRepository().getEvents(EventRepository.ALL);
                 Set<Event> regWriters = events.stream().filter(e -> e instanceof RegWriter).collect(Collectors.toSet());
                 Set<Event> regReaders = events.stream().filter(e -> e instanceof RegReaderData).collect(Collectors.toSet());
                 for(Event e1 : regWriters){

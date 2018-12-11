@@ -1,11 +1,12 @@
 package dartagnan.parsers.visitors;
 
 import dartagnan.expression.*;
-import dartagnan.parsers.*;
+import dartagnan.parsers.PorthosBaseVisitor;
+import dartagnan.parsers.PorthosParser;
+import dartagnan.parsers.PorthosVisitor;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
-import dartagnan.program.event.While;
 import dartagnan.program.event.*;
 import dartagnan.program.event.pts.Read;
 import dartagnan.program.event.pts.Write;

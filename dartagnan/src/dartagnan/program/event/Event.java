@@ -6,15 +6,12 @@ import dartagnan.program.Thread;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public abstract class Event extends Thread {
 
 	private int eid;
-	private int unfCopy;
-    protected int hlId;
+	protected int hlId;
 	protected Event clone;
 	protected String atomic;
 	protected Set<String> filter = new HashSet<>();
@@ -34,14 +31,6 @@ public abstract class Event extends Thread {
 	
 	public void setHLId(int id) {
 		this.hlId = id;
-	}
-
-	public int getUnfCopy() {
-		return unfCopy;
-	}
-	
-	public void setUnfCopy(int id) {
-		this.unfCopy = id;
 	}
 
 	public String repr() {
@@ -71,19 +60,18 @@ public abstract class Event extends Thread {
 
 	protected void afterClone(){
         clone.setCondLevel(condLevel);
-        clone.setUnfCopy(getUnfCopy());
+        clone.setHLId(hlId);
     }
 
     @Override
-	public Set<Event> getEvents() {
-		Set<Event> ret = new HashSet<>();
+	public List<Event> getEvents() {
+		List<Event> ret = new ArrayList<>();
 		ret.add(this);
 		return ret;
 	}
 
     @Override
 	public Thread unroll(int steps, boolean obsTermination) {
-		unfCopy = steps;
 		return this;
 	}
 
@@ -94,7 +82,6 @@ public abstract class Event extends Thread {
 
     @Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		setHLId(hashCode());
 		return this;
 	}
 

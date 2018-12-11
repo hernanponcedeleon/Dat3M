@@ -3,9 +3,9 @@ package dartagnan.utils;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
-import dartagnan.program.memory.Location;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
+import dartagnan.program.memory.Location;
 
 public class Utils {
 

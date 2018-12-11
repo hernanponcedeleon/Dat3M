@@ -21,7 +21,6 @@ public class Init extends MemEvent {
 		this.address = address;
 		this.value = value;
 		this.condLevel = 0;
-		setHLId(hashCode());
 		addFilters(EType.ANY, EType.MEMORY, EType.WRITE, EType.INIT);
 	}
 

@@ -2,8 +2,8 @@ package dartagnan.asserts;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import dartagnan.expression.op.COpBin;
 import dartagnan.expression.IntExprInterface;
+import dartagnan.expression.op.COpBin;
 import dartagnan.program.Register;
 
 public class AssertBasic extends AbstractAssert{

@@ -1,23 +1,24 @@
 package dartagnan.parsers.visitors;
 
+import dartagnan.expression.AConst;
+import dartagnan.expression.AExpr;
 import dartagnan.expression.op.AOpBin;
 import dartagnan.parsers.LitmusAArch64BaseVisitor;
 import dartagnan.parsers.LitmusAArch64Parser;
 import dartagnan.parsers.LitmusAArch64Visitor;
-import dartagnan.expression.AConst;
-import dartagnan.expression.AExpr;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
+import dartagnan.program.event.FenceOpt;
 import dartagnan.program.event.Load;
+import dartagnan.program.event.Local;
+import dartagnan.program.event.Store;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.opt.RMWStoreOpt;
 import dartagnan.program.event.rmw.opt.RMWStoreOptStatus;
-import dartagnan.program.Register;
-import dartagnan.program.event.*;
-import dartagnan.program.event.Store;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -11,7 +11,8 @@ import dartagnan.program.memory.Location;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static dartagnan.utils.Utils.mergeMaps;
@@ -96,8 +97,8 @@ public class If extends Event implements RegReaderData {
     }
 
     @Override
-    public Set<Event> getEvents() {
-        Set<Event> ret = new HashSet<>();
+    public List<Event> getEvents() {
+        List<Event> ret = new ArrayList<>();
         ret.addAll(t1.getEvents());
         ret.addAll(t2.getEvents());
         ret.add(this);

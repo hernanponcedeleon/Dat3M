@@ -11,7 +11,6 @@ import dartagnan.utils.Pair;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 public abstract class Thread {
 
@@ -79,7 +78,7 @@ public abstract class Thread {
         throw new UnsupportedOperationException("Cloning is not supported for " + this.getClass().getName());
     }
 
-    public Set<Event> getEvents(){
+    public List<Event> getEvents(){
         // We can safely implement getEvents for all uncompilable classes, but we do not need it
         throw new UnsupportedOperationException("Retrieving events is not supported for " + this.getClass().getName());
     }

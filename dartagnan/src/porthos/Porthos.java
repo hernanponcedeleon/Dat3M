@@ -110,6 +110,11 @@ public class Porthos {
         Program p = Dartagnan.parseProgram(inputFilePath);
         p.unroll(steps);
 
+        int baseHlId = 1;
+        for(Event e : p.getEvents()){
+            e.setHLId(baseHlId++);
+        }
+
         Program pSource = p.clone();
         Program pTarget = p.clone();
 

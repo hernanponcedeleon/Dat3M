@@ -59,7 +59,6 @@ public abstract class MemEvent extends Event {
     @Override
     protected void afterClone(){
         super.afterClone();
-        clone.setHLId(hlId);
         ((MemEvent)clone).setMaxLocationSet(locations);
     }
 }
