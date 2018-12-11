@@ -74,6 +74,7 @@ public class While extends Event {
 
     @Override
     public void beforeClone(){
+	    super.beforeClone();
         t.beforeClone();
     }
 

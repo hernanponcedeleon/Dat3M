@@ -106,6 +106,7 @@ public class If extends Event implements RegReaderData {
 
     @Override
     public void beforeClone(){
+        super.beforeClone();
         t1.beforeClone();
         t2.beforeClone();
     }
