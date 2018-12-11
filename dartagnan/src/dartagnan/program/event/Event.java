@@ -13,8 +13,8 @@ import java.util.Set;
 public abstract class Event extends Thread {
 
 	private int eid;
-	private int hlId;
 	private int unfCopy;
+    protected int hlId;
 	protected Event clone;
 	protected String atomic;
 	protected Set<String> filter = new HashSet<>();

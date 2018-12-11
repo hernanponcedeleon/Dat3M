@@ -19,7 +19,7 @@ public class Read extends MemEvent implements RegWriter {
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;
-        this.memId = hashCode();
+        this.hlId = hashCode();
         addFilters(EType.ANY, EType.MEMORY, EType.READ);
     }
 
@@ -45,7 +45,7 @@ public class Read extends MemEvent implements RegWriter {
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         Load ld = new Load(reg, address, atomic);
-        ld.setHLId(memId);
+        ld.setHLId(hlId);
         ld.setUnfCopy(getUnfCopy());
         ld.setCondLevel(this.condLevel);
         ld.setMaxLocationSet(getMaxLocationSet());

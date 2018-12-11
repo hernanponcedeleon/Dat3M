@@ -23,7 +23,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         this.reg = register;
         this.atomic = atomic;
         this.condLevel = 0;
-        this.memId = hashCode();
+        this.hlId = hashCode();
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM);
     }
 
@@ -44,14 +44,14 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         if(target.equals("tso") && atomic.equals("_rx")) {
             Register dummyReg = new Register(null);
             RMWLoad load = new RMWLoad(dummyReg, address, atomic);
-            load.setHLId(memId);
+            load.setHLId(hlId);
             load.setUnfCopy(getUnfCopy());
             load.setCondLevel(condLevel);
             load.addFilters(EType.ATOM);
             load.setMaxLocationSet(locations);
 
             RMWStore store = new RMWStore(load, address, reg, atomic);
-            store.setHLId(memId);
+            store.setHLId(hlId);
             store.setUnfCopy(getUnfCopy());
             store.setCondLevel(condLevel);
             store.addFilters(EType.ATOM);

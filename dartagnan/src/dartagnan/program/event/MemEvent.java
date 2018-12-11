@@ -19,8 +19,6 @@ public abstract class MemEvent extends Event {
     protected Set<Location> locations;
     protected Map<Location, Expr> ssaLocMap = new HashMap<>();
 
-    protected int memId;
-
     public IntExpr getAddressExpr(){
         if(addressExpr != null){
             return addressExpr;
@@ -61,7 +59,7 @@ public abstract class MemEvent extends Event {
     @Override
     protected void afterClone(){
         super.afterClone();
-        clone.setHLId(memId);
+        clone.setHLId(hlId);
         ((MemEvent)clone).setMaxLocationSet(locations);
     }
 }
