@@ -44,7 +44,7 @@ public class RMWCmpXchg extends RMWAbstract {
         Location newLoc = loc.clone();
         Register newReg = reg.clone();
         ExprInterface newValue = reg == value ? newReg : value.clone();
-        ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : value.clone());
+        ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
         RMWCmpXchg newOp = new RMWCmpXchg(newLoc, newReg, newCmp, newValue, atomic);
         newOp.setCondLevel(condLevel);
         newOp.memId = memId;
