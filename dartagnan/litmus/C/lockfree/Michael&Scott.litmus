@@ -1,0 +1,30 @@
+C  Michael_Scott
+{
+node2 = 2;
+node3 = 3;
+ToS = 1;
+}
+
+P0(int *ToS, int *node2)
+{
+  if(1) {
+    top = READ_ONCE(*ToS);
+    r0 = atomic_cmpxchg(ToS, top, *node2);
+    if(r0 != *ToS) {
+      n2next = top;
+    }
+  }
+}
+
+P1(int *ToS, int *node3)
+{
+  while(1) {
+    top = READ_ONCE(*ToS);
+    r0 = atomic_cmpxchg(ToS, top, *node3);
+    if(r0 != *ToS) {
+      n3next = top;
+    }
+  }
+}
+
+exists (ToS = 2)

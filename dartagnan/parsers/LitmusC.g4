@@ -33,6 +33,12 @@ threadArguments
 expression
     :   seqExpression Semi
     |   ifExpression
+    |   whileExpression
+    ;
+
+whileExpression
+    :   While LPar returnExpression RPar expression
+    |   While LPar returnExpression RPar LBrace expression* RBrace
     ;
 
 ifExpression
@@ -249,6 +255,10 @@ atomicTypeSpecifier
 
 varName
     :   Underscore? Identifier (Underscore (Identifier | DigitSequence)*)*
+    ;
+
+While
+    :   'while'
     ;
 
 If

@@ -94,7 +94,7 @@ public class Dartagnan {
 
 		p.unroll(steps);
 		p.compile(target, false, true);
-
+System.out.println(p);
 		s.add(p.encodeDF(ctx));
 		s.add(p.getAss().encode(ctx));
 		if(p.getAssFilter() != null){
