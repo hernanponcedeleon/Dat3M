@@ -119,7 +119,18 @@ public class VisitorLitmusC
         if (ctx.ifExpression() != null) {
             return visitIfExpression(ctx.ifExpression());
         }
+        if (ctx.whileExpression() != null) {
+            return visitWhileExpression(ctx.whileExpression());
+        }
         return (Thread) ctx.nonReturnExpression().accept(this);
+    }
+
+    @Override
+    public Thread visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
+        Thread evalThread = (Thread)ctx.returnExpression().accept(this);
+        Thread t1 = visitExpressionSequence(ctx);
+        Thread result = new While(returnStack.pop(), t1);
+        return Thread.fromArray(false, evalThread, result);
     }
 
     @Override
