@@ -60,7 +60,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
         if(clone == null){
             Register newReg = reg.clone();
             ExprInterface newValue = reg == value ? newReg : value.clone();
-            ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : value.clone());
+            ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
             clone = new RMWAddUnless(address.clone(), newReg, newCmp, newValue);
             afterClone();
         }
