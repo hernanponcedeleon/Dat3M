@@ -7,6 +7,7 @@ import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EventRepository;
+import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
@@ -69,19 +70,19 @@ public class RelRf extends Relation {
             }
 
             BoolExpr dfEnc = ctx.mkTrue();
-            Map<Location, List<MemEvent>> stores = new HashMap<>();
-            Map<Location, List<MemEvent>> loads = new HashMap<>();
+            Map<Location, Set<MemEvent>> stores = new HashMap<>();
+            Map<Location, Set<MemEvent>> loads = new HashMap<>();
 
             for(Tuple tuple : maxTupleSet){
                 MemEvent store = (MemEvent) tuple.getFirst();
                 for(Location location : store.getMaxLocationSet()){
-                    stores.putIfAbsent(location, new ArrayList<>());
+                    stores.putIfAbsent(location, new HashSet<>());
                     stores.get(location).add(store);
                 }
 
                 MemEvent load = (MemEvent) tuple.getSecond();
                 for(Location location : load.getMaxLocationSet()){
-                    loads.putIfAbsent(location, new ArrayList<>());
+                    loads.putIfAbsent(location, new HashSet<>());
                     loads.get(location).add(load);
                 }
             }
