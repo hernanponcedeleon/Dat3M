@@ -33,6 +33,7 @@ public class While extends Event {
     @Override
 	public Thread unroll(int steps) {
 		if(steps > 0){
+		    t.beforeClone();
 			Thread copyT = t.clone();
 			copyT.decCondLevel();
 			copyT = copyT.unroll(steps);
