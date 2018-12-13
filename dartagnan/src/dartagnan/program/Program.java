@@ -67,8 +67,8 @@ public class Program extends Thread {
     }
 
 	@Override
-	public List<Event> getEvents(){
-		List<Event> events = new ArrayList<>();
+	public Set<Event> getEvents(){
+        Set<Event> events = new HashSet<>();
 		for(Thread t : threads){
 			events.addAll(t.getEvents());
 		}

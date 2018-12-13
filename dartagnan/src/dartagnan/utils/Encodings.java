@@ -14,7 +14,6 @@ import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,12 +22,12 @@ public class Encodings {
 	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
 
-		List<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
-		List<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
-		List<Event> rEventsP1 = p1.getEventRepository().getEvents(EventRepository.LOAD);
-		List<Event> wEventsP1 = p1.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
-		List<Event> rEventsP2 = p2.getEventRepository().getEvents(EventRepository.LOAD);
-		List<Event> wEventsP2 = p2.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
+		Set<Event> lEventsP1 = p1.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
+		Set<Event> lEventsP2 = p2.getEventRepository().getEvents(EventRepository.MEMORY | EventRepository.LOCAL);
+		Set<Event> rEventsP1 = p1.getEventRepository().getEvents(EventRepository.LOAD);
+		Set<Event> wEventsP1 = p1.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
+		Set<Event> rEventsP2 = p2.getEventRepository().getEvents(EventRepository.LOAD);
+		Set<Event> wEventsP2 = p2.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT);
 
 
 		for(Event e1 : lEventsP1) {

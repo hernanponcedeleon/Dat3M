@@ -4,8 +4,8 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class While extends Event {
 
@@ -46,8 +46,8 @@ public class While extends Event {
 	}
 
 	@Override
-	public List<Event> getEvents() {
-		List<Event> ret = new ArrayList<>(t.getEvents());
+	public Set<Event> getEvents() {
+		Set<Event> ret = new HashSet<>(t.getEvents());
 		ret.add(this);
 		return ret;
 	}

@@ -6,7 +6,9 @@ import dartagnan.program.Thread;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class Event extends Thread {
 
@@ -64,8 +66,8 @@ public abstract class Event extends Thread {
     }
 
     @Override
-	public List<Event> getEvents() {
-		List<Event> ret = new ArrayList<>();
+	public Set<Event> getEvents() {
+		Set<Event> ret = new HashSet<>();
 		ret.add(this);
 		return ret;
 	}

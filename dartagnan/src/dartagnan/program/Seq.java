@@ -7,8 +7,8 @@ import dartagnan.program.event.Skip;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Seq extends Thread {
 	
@@ -67,8 +67,8 @@ public class Seq extends Thread {
     }
 
     @Override
-    public List<Event> getEvents() {
-        List<Event> ret = new ArrayList<>();
+    public Set<Event> getEvents() {
+        Set<Event> ret = new HashSet<>();
         ret.addAll(t1.getEvents());
         ret.addAll(t2.getEvents());
         return ret;
