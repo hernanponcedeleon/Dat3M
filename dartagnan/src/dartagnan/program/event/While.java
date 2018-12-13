@@ -31,33 +31,17 @@ public class While extends Event {
 	}
 
     @Override
-	public Thread unroll(int steps, boolean obsNoTermination) {
-		if(steps == 0) {
-			if(obsNoTermination) {
-				/*
-				Register rTerm = new Register("rTerm");
-				Local newLocal = new Local(rTerm, new AConst(1));
-				newLocal.condLevel = condLevel;
-				Location termination = new Location("termination_" + hashCode());
-				Store newStore = new Store(termination, rTerm, "_rx");
-				newStore.condLevel = condLevel;
-				ExprInterface newPred = pred.clone();
-				Thread newThread = new If(newPred, new Seq(newLocal, newStore), new Skip());
-				newThread.condLevel = condLevel;
-				return newThread;
-				*/
-			}
-			return new Skip();
-		}
-		else {
+	public Thread unroll(int steps) {
+		if(steps > 0){
 			Thread copyT = t.clone();
 			copyT.decCondLevel();
 			copyT = copyT.unroll(steps);
 			ExprInterface newPred = pred.clone();
-			Thread newThread = new If(newPred, new Seq(copyT, unroll(steps - 1, obsNoTermination)), new Skip());
+			Thread newThread = new If(newPred, new Seq(copyT, unroll(steps - 1)), new Skip());
 			newThread.setCondLevel(condLevel);
 			return newThread;
 		}
+		return new Skip();
 	}
 
 	@Override
@@ -65,11 +49,6 @@ public class While extends Event {
 		List<Event> ret = new ArrayList<>(t.getEvents());
 		ret.add(this);
 		return ret;
-	}
-
-    @Override
-	public Thread unroll(int steps) {
-		return unroll(steps, false);
 	}
 
     @Override

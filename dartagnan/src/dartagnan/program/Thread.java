@@ -83,10 +83,6 @@ public abstract class Thread {
         throw new UnsupportedOperationException("Retrieving events is not supported for " + this.getClass().getName());
     }
 
-    public Thread unroll(int steps, boolean obsNoTermination) {
-        throw new UnsupportedOperationException("Unrolling is not allowed for " + this.getClass().getName());
-    }
-
     public Thread unroll(int steps) {
         throw new UnsupportedOperationException("Unrolling is not allowed for " + this.getClass().getName());
     }

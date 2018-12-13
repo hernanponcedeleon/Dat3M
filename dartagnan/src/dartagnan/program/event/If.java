@@ -127,15 +127,10 @@ public class If extends Event implements RegReaderData {
     }
 
     @Override
-    public If unroll(int steps, boolean obsNoTermination) {
-        t1 = t1.unroll(steps, obsNoTermination);
-        t2 = t2.unroll(steps, obsNoTermination);
-        return this;
-    }
-
-    @Override
     public If unroll(int steps) {
-        return unroll(steps, false);
+        t1 = t1.unroll(steps);
+        t2 = t2.unroll(steps);
+        return this;
     }
 
     @Override

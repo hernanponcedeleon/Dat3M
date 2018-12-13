@@ -90,15 +90,10 @@ public class Seq extends Thread {
     }
 
     @Override
-	public Seq unroll(int steps, boolean obsNoTermination) {
-		t1 = t1.unroll(steps, obsNoTermination);
-		t2 = t2.unroll(steps, obsNoTermination);
-		return this;
-	}
-
-    @Override
 	public Seq unroll(int steps) {
-		return unroll(steps, false);
+		t1 = t1.unroll(steps);
+		t2 = t2.unroll(steps);
+		return this;
 	}
 
     @Override

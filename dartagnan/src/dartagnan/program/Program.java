@@ -93,17 +93,12 @@ public class Program extends Thread {
 	}
 
 	@Override
-	public Thread unroll(int steps, boolean obsNoTermination) {
+	public Thread unroll(int steps) {
         for(int i = 0; i < threads.size(); i++){
-            threads.set(i, threads.get(i).unroll(steps, obsNoTermination));
+            threads.set(i, threads.get(i).unroll(steps));
         }
         getEventRepository().clear();
 		return this;
-	}
-
-    @Override
-	public Thread unroll(int steps) {
-        return unroll(steps, false);
 	}
 
     @Override

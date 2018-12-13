@@ -71,13 +71,8 @@ public abstract class Event extends Thread {
 	}
 
     @Override
-	public Thread unroll(int steps, boolean obsTermination) {
-		return this;
-	}
-
-    @Override
 	public Thread unroll(int steps) {
-		return unroll(steps, false);
+		return this;
 	}
 
     @Override
