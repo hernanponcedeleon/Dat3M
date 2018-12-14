@@ -2,11 +2,12 @@ package dartagnan.program.memory;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import dartagnan.program.memory.utils.IllegalMemoryAccessException;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Memory {
 
@@ -16,6 +17,14 @@ public class Memory {
     public Memory(){
         map = HashBiMap.create();
         locationIndex = new HashMap<>();
+    }
+
+    public BoolExpr encode(Context ctx){
+        List<IntExpr> expressions = new ArrayList<>();
+        for(Address address : map.values()){
+            expressions.add(address.toZ3(ctx));
+        }
+        return ctx.mkDistinct(expressions.toArray(new IntExpr[0]));
     }
 
     public Location getLocation(String name){
