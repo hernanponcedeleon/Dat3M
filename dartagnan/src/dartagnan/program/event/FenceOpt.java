@@ -10,12 +10,6 @@ public class FenceOpt extends Fence {
         filter.add(name + "." + opt);
     }
 
-    public FenceOpt(String name, String opt, int condLevel){
-        super(name, condLevel);
-        this.opt = opt;
-        filter.add(name + "." + opt);
-    }
-
     public String getName(){
         return name + "." + opt;
     }
@@ -23,7 +17,7 @@ public class FenceOpt extends Fence {
     @Override
     public FenceOpt clone() {
         if(clone == null){
-            clone = new FenceOpt(name, opt, condLevel);
+            clone = new FenceOpt(name, opt);
             afterClone();
         }
         return (FenceOpt)clone;

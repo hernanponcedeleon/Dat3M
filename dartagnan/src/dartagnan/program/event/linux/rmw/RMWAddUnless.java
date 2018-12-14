@@ -17,6 +17,7 @@ import dartagnan.program.event.utils.RegWriter;
 import java.util.Set;
 
 public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData {
+
     private ExprInterface cmp;
 
     public RMWAddUnless(AExpr address, Register register, ExprInterface cmp, ExprInterface value) {

@@ -6,11 +6,7 @@ import dartagnan.program.utils.linux.EType;
 public class RCUSync extends Event {
 
     public RCUSync(){
-        this(0);
-    }
-
-    public RCUSync(int condLevel){
-        this.condLevel = condLevel;
+        this.condLevel = 0;
         this.addFilters(EType.ANY, EType.RCU_SYNC);
     }
 
@@ -27,7 +23,7 @@ public class RCUSync extends Event {
     @Override
     public RCUSync clone() {
         if(clone == null){
-            clone = new RCUSync(condLevel);
+            clone = new RCUSync();
             afterClone();
         }
         return (RCUSync)clone;

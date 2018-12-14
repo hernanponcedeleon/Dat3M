@@ -58,7 +58,8 @@ public class Write extends MemEvent implements RegReaderData {
         st.setMaxLocationSet(getMaxLocationSet());
 
         if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
-            Fence mfence = new Fence("Mfence", this.condLevel);
+            Fence mfence = new Fence("Mfence");
+            mfence.setCondLevel(this.condLevel);
             return new Seq(st, mfence);
         }
 
@@ -71,13 +72,15 @@ public class Write extends MemEvent implements RegReaderData {
                 return st;
             }
 
-            Fence lwsync = new Fence("Lwsync", this.condLevel);
+            Fence lwsync = new Fence("Lwsync");
+            lwsync.setCondLevel(this.condLevel);
             if(atomic.equals("_rel")) {
                 return new Seq(lwsync, st);
             }
 
             if(atomic.equals("_sc")) {
-                Fence sync = new Fence("Sync", this.condLevel);
+                Fence sync = new Fence("Sync");
+                sync.setCondLevel(this.condLevel);
                 if(leading) {
                     return new Seq(sync, st);
                 }
@@ -90,12 +93,14 @@ public class Write extends MemEvent implements RegReaderData {
                 return st;
             }
 
-            Fence ish1 = new Fence("Ish", this.condLevel);
+            Fence ish1 = new Fence("Ish");
+            ish1.setCondLevel(this.condLevel);
             if(atomic.equals("_rel")) {
                 return new Seq(ish1, st);
             }
 
-            Fence ish2 = new Fence("Ish", this.condLevel);
+            Fence ish2 = new Fence("Ish");
+            ish2.setCondLevel(this.condLevel);
             if(atomic.equals("_sc")) {
                 return new Seq(ish1, new Seq(st, ish2));
             }

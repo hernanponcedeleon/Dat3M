@@ -8,12 +8,8 @@ public class RCUReadUnlock extends Event {
     private RCUReadLock lockEvent;
 
     public RCUReadUnlock(RCUReadLock lockEvent){
-        this(lockEvent, 0);
-    }
-
-    public RCUReadUnlock(RCUReadLock lockEvent, int condLevel){
+        this.condLevel = 0;
         this.lockEvent = lockEvent;
-        this.condLevel = condLevel;
         this.addFilters(EType.ANY, EType.RCU_UNLOCK);
     }
 
@@ -34,7 +30,7 @@ public class RCUReadUnlock extends Event {
     @Override
     public RCUReadUnlock clone() {
         if(clone == null){
-            clone = new RCUReadUnlock(lockEvent.clone(), condLevel);
+            clone = new RCUReadUnlock(lockEvent.clone());
             afterClone();
         }
         return (RCUReadUnlock)clone;

@@ -13,16 +13,6 @@ public class FenceCond extends Fence {
         this.loadEvent = loadEvent;
     }
 
-    public FenceCond (RMWReadCond loadEvent, String name, int condLevel){
-        super(name, condLevel);
-        this.loadEvent = loadEvent;
-    }
-
-    public FenceCond(RMWReadCond loadEvent, String name, int condLevel, String atomic){
-        super(name, condLevel, atomic);
-        this.loadEvent = loadEvent;
-    }
-
     @Override
     public BoolExpr encodeCF(Context ctx) {
         return ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(cfVar()), loadEvent.getCond()), executes(ctx));
@@ -31,7 +21,7 @@ public class FenceCond extends Fence {
     @Override
     public FenceCond clone() {
         if(clone == null){
-            clone = new FenceCond(loadEvent.clone(), name, condLevel, atomic);
+            clone = new FenceCond(loadEvent.clone(), name);
             afterClone();
         }
         return (FenceCond)clone;
