@@ -1,5 +1,8 @@
 C  Michael_Scott
 {
+0:continue = 1;
+1:continue = 1;
+2:continue = 1;
 2:out = 0;
 node2 = 2;
 node3 = 3;
@@ -8,7 +11,6 @@ ToS = 1;
 
 P0(int *ToS, int *node2, int *n2next)
 {
-  continue = 1;
   if(continue) {
     top = READ_ONCE(*ToS);
     WRITE_ONCE(*n2next, top);
@@ -21,7 +23,6 @@ P0(int *ToS, int *node2, int *n2next)
 
 P1(int *ToS, int *node3, int *n3next)
 {
-  continue = 1;
   if(continue) {
     top = READ_ONCE(*ToS);
     WRITE_ONCE(*n3next, top);
@@ -34,7 +35,6 @@ P1(int *ToS, int *node3, int *n3next)
 
 P2(int *ToS, int *n2next, int *n3next)
 {
-  continue = 1;
   if(continue) {
     top = READ_ONCE(*ToS);
     if(top == 2) {
@@ -51,4 +51,4 @@ P2(int *ToS, int *n2next, int *n3next)
   }
 }
 
-exists (ToS = 0 /\ 2:out = 2)
+exists (0:continue=0 /\ 1:continue=0 /\ 2:continue=0)
