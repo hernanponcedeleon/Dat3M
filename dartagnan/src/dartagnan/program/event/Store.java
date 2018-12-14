@@ -46,7 +46,7 @@ public class Store extends MemEvent implements RegReaderData {
 
     @Override
     public String label(){
-        return "W[" + atomic + "] memory[" + address + "]";
+        return "W_" + atomic;
     }
 
     @Override

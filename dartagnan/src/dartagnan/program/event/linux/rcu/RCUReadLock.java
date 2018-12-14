@@ -21,7 +21,7 @@ public class RCUReadLock extends Event {
 
     @Override
     public String label(){
-        return "F[" + EType.RCU_LOCK + "]";
+        return EType.RCU_LOCK;
     }
 
     @Override

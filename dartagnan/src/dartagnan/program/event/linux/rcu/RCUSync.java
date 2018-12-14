@@ -21,7 +21,7 @@ public class RCUSync extends Event {
 
     @Override
     public String label(){
-        return "F[" + EType.RCU_SYNC + "]";
+        return EType.RCU_SYNC;
     }
 
     @Override

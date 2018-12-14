@@ -40,7 +40,7 @@ public class Load extends MemEvent implements RegWriter {
 
     @Override
     public String label(){
-        return "R[" + atomic + "] memory[" + address + "]";
+        return "R_" + atomic;
     }
 
     @Override

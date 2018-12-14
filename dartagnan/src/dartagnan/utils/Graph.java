@@ -1,14 +1,12 @@
 package dartagnan.utils;
 
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.FuncDecl;
-import com.microsoft.z3.Model;
+import com.microsoft.z3.*;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Init;
 import dartagnan.program.event.MemEvent;
+import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EventRepository;
 
 import java.io.File;
@@ -47,6 +45,7 @@ public class Graph {
     private Context ctx;
 
     private StringBuilder buffer;
+    private Map<Integer, Location> mapAddressLocation;
 
     private final String L1 = "  ";
     private final String L2 = "    ";
@@ -133,10 +132,8 @@ public class Graph {
                 for(Event e2 : events) {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
-                        // TODO: Implementation (build memory map with concrete assignments for each program)
-                        //int address = Integer.parseInt(model.getConstInterp(((MemEvent) e2).getAddressExpr()).toString());
-                        //int address = Integer.parseInt((((MemEvent) e2).getAddressExpr()).toString());
-                        //label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc(program.getLocationForAddress(address))).toString();
+                        Location location = getLocationForAddress(program, addressExprToInt(((MemEvent)e2).getAddressExpr()));
+                        label += " " + location + " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc(location)).toString();
                     }
                     sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }
@@ -169,28 +166,18 @@ public class Graph {
         StringBuilder sb = new StringBuilder();
         String edge = " " + getEdgeDef("co") + ";\n";
 
-        Set<MemEvent> events = program.getEventRepository()
-                .getEvents(EventRepository.STORE | EventRepository.INIT)
-                .stream()
-                .map(e -> (MemEvent)e)
-                .collect(Collectors.toSet());
-        /*
-        Set<Location> locations = program.getLocations();
+        Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
+        for(Event e : program.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
+            int address = addressExprToInt(((MemEvent)e).getAddressExpr());
+            mapAddressEvent.putIfAbsent(address, new HashSet<>());
+            mapAddressEvent.get(address).add(e);
+        }
 
-        for(Location location : locations){
-            int address = program.getAddressForLocation(location);
+        for(int address : mapAddressEvent.keySet()){
             Map<Event, Integer> map = new HashMap<>();
-            Set<Event> locEvents = new HashSet<>();
-
-            for(MemEvent e : events){
-                if(address == Integer.parseInt((e.getAddressExpr()).toString())){
-                    map.put(e, 0);
-                    locEvents.add(e);
-                }
-            }
-
-            for(Event e1 :locEvents){
-                for(Event e2 : locEvents){
+            for(Event e2 : mapAddressEvent.get(address)){
+                map.put(e2, 0);
+                for(Event e1 : mapAddressEvent.get(address)){
                     Expr expr = model.getConstInterp(Utils.edge("co", e1, e2, ctx));
                     if(expr != null && expr.isTrue()){
                         map.put(e2, map.get(e2) + 1);
@@ -207,7 +194,6 @@ public class Graph {
                 sb.append("      ").append(e1.repr()).append(" -> ").append(e2.repr()).append(edge);
             }
         }
-        */
         return sb;
     }
 
@@ -245,6 +231,22 @@ public class Graph {
             }
         }
         return sb;
+    }
+
+    private int addressExprToInt(IntExpr addressExpr){
+        return (addressExpr instanceof IntNum)
+                ? Integer.parseInt(addressExpr.toString())
+                : Integer.parseInt(model.getConstInterp(addressExpr).toString());
+    }
+
+    private Location getLocationForAddress(Program program, int address){
+        if(mapAddressLocation == null){
+            mapAddressLocation = new HashMap<>();
+            for(Location location : program.getLocations()){
+                mapAddressLocation.put(addressExprToInt(location.getAddress().toZ3(ctx)), location);
+            }
+        }
+        return mapAddressLocation.get(address);
     }
 
     private String getProgramDef(String label){

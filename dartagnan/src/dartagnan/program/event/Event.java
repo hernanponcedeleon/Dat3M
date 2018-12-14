@@ -44,7 +44,7 @@ public abstract class Event extends Thread {
 	}
 
 	public String label(){
-		throw new UnsupportedOperationException("Label is not available for events not shown in execution graph " + this.getClass().getName());
+		return repr() + " " + getClass().getSimpleName();
 	}
 
 	public boolean is(String param){

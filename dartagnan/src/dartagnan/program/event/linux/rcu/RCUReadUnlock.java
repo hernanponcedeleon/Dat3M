@@ -28,7 +28,7 @@ public class RCUReadUnlock extends Event {
 
     @Override
     public String label(){
-        return "F[" + EType.RCU_UNLOCK + "]";
+        return EType.RCU_UNLOCK;
     }
 
     @Override
