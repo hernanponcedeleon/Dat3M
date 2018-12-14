@@ -12,12 +12,10 @@ public class Memory {
 
     private BiMap<Location, Address> map;
     private Map<String, Location> locationIndex;
-    private int nextAddress;
 
     public Memory(){
         map = HashBiMap.create();
         locationIndex = new HashMap<>();
-        nextAddress = 0;
     }
 
     public Location getLocation(String name){
@@ -26,7 +24,7 @@ public class Memory {
 
     public Location getOrCreateLocation(String name){
         if(!locationIndex.containsKey(name)){
-            Location location = new Location(name, new Address(nextAddress++));
+            Location location = new Location(name, new Address());
             map.put(location, location.getAddress());
             locationIndex.put(name, location);
             return location;
@@ -46,13 +44,6 @@ public class Memory {
             return map.inverse().get(address);
         }
         throw new IllegalMemoryAccessException("Attempt to access illegal address " + address);
-    }
-
-    public Address getAddressForLocation(Location location){
-        if(map.containsKey(location)){
-            return map.get(location);
-        }
-        throw new IllegalMemoryAccessException("Attempt to access illegal location " + location.getName());
     }
 
     public Set<Location> getLocations(){

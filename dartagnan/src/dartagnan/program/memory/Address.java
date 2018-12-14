@@ -10,9 +10,17 @@ import dartagnan.utils.MapSSA;
 
 public class Address extends AConst implements IntExprInterface, ExprInterface {
 
-    private int address;
+    private static int nextAddress = 0;
 
-    Address(int address){
+    private final int address;
+
+    Address(){
+        super(nextAddress);
+        this.address = nextAddress;
+        nextAddress++;
+    }
+
+    private Address(int address){
         super(address);
         this.address = address;
     }
