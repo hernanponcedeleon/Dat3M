@@ -127,8 +127,8 @@ public class Program extends Thread {
 	}
 
 	public BoolExpr encodeDF(Context ctx) {
+        BoolExpr enc = memory.encode(ctx);
 		MapSSA lastMap = new MapSSA();
-		BoolExpr enc = ctx.mkTrue();
 		for(Thread t : threads){
             Pair<BoolExpr, MapSSA>recResult = t.encodeDF(lastMap, ctx);
             enc = ctx.mkAnd(enc, recResult.getFirst());

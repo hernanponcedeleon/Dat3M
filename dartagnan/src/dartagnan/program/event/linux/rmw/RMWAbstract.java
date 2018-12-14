@@ -22,7 +22,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     protected Register reg;
     protected ExprInterface value;
 
-    public RMWAbstract(AExpr address, Register register, ExprInterface value, String atomic) {
+    RMWAbstract(AExpr address, Register register, ExprInterface value, String atomic) {
         this.address = address;
         this.reg = register;
         this.value = value;
@@ -50,42 +50,42 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         throw new RuntimeException("Compilation to " + target + " is not supported for " + this.getClass().getName() + " " + atomic);
     }
 
-    protected String getLoadMO(){
+    String getLoadMO(){
         return atomic.equals("Acquire") ? "Acquire" : "Relaxed";
     }
 
-    protected String getStoreMO(){
+    String getStoreMO(){
         return atomic.equals("Release") ? "Release" : "Relaxed";
     }
 
-    protected Thread insertFencesOnMb(Thread result){
+    Thread insertFencesOnMb(Thread result){
         if (atomic.equals("Mb")) {
             return new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
         }
         return result;
     }
 
-    protected Thread insertCondFencesOnMb(Thread result, RMWReadCond load){
+    Thread insertCondFencesOnMb(Thread result, RMWReadCond load){
         if (atomic.equals("Mb")) {
             return new Seq(new FenceCond(load, "Mb"), new Seq(result, new FenceCond(load, "Mb")));
         }
         return result;
     }
 
-    protected Thread copyFromDummyToResult(Thread result, Register dummy){
+    Thread copyFromDummyToResult(Thread result, Register dummy){
         if (dummy != reg) {
             return new Seq(result, new Local(reg, dummy));
         }
         return result;
     }
 
-    protected void compileBasic(MemEvent event){
+    void compileBasic(MemEvent event){
         event.setHLId(hlId);
         event.setCondLevel(condLevel);
         event.setMaxLocationSet(getMaxLocationSet());
     }
 
-    protected String atomicToText(String atomic){
+    String atomicToText(String atomic){
         switch (atomic){
             case "Relaxed":
                 return "_relaxed";

@@ -12,8 +12,8 @@ public class RMWStore extends Store implements RegReaderData {
 
     public RMWStore(RMWLoad loadEvent, AExpr address, ExprInterface value, String atomic) {
         super(address, value, atomic);
-        addFilters(EType.RMW);
         this.loadEvent = loadEvent;
+        addFilters(EType.RMW);
     }
 
     public RMWLoad getLoadEvent(){

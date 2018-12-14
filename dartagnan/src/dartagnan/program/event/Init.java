@@ -31,7 +31,7 @@ public class Init extends MemEvent {
 
 	@Override
 	public String label(){
-		return "W memory[" + address + "]";
+		return "W";
 	}
 
 	@Override

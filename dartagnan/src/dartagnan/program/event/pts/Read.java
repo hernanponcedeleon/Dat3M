@@ -57,14 +57,16 @@ public class Read extends MemEvent implements RegWriter {
         }
 
         if(target.equals("power")) {
-            Fence lwsync = new Fence("Lwsync", this.condLevel);
+            Fence lwsync = new Fence("Lwsync");
+            lwsync.setCondLevel(this.condLevel);
             if(atomic.equals("_con") || atomic.equals("_acq")) {
                 return new Seq(ld, lwsync);
             }
 
             if(atomic.equals("_sc")) {
                 if(leading) {
-                    Fence sync = new Fence("Sync", this.condLevel);
+                    Fence sync = new Fence("Sync");
+                    sync.setCondLevel(this.condLevel);
                     return new Seq(sync, new Seq(ld, lwsync));
                 }
                 return new Seq(ld, lwsync);
@@ -73,7 +75,8 @@ public class Read extends MemEvent implements RegWriter {
 
         if(target.equals("arm")) {
             if(atomic.equals("_con") || atomic.equals("_acq") || atomic.equals("_sc")) {
-                Fence ish = new Fence("Ish", this.condLevel);
+                Fence ish = new Fence("Ish");
+                ish.setCondLevel(this.condLevel);
                 return new Seq(ld, ish);
             }
         }

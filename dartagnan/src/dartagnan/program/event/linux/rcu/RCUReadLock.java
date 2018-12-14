@@ -6,11 +6,7 @@ import dartagnan.program.utils.linux.EType;
 public class RCUReadLock extends Event {
 
     public RCUReadLock(){
-        this(0);
-    }
-
-    public RCUReadLock(int condLevel){
-        this.condLevel = condLevel;
+        this.condLevel = 0;
         this.addFilters(EType.ANY, EType.RCU_LOCK);
     }
 
@@ -21,13 +17,13 @@ public class RCUReadLock extends Event {
 
     @Override
     public String label(){
-        return "F[" + EType.RCU_LOCK + "]";
+        return EType.RCU_LOCK;
     }
 
     @Override
     public RCUReadLock clone() {
         if(clone == null){
-            clone = new RCUReadLock(condLevel);
+            clone = new RCUReadLock();
             afterClone();
         }
         return (RCUReadLock)clone;
