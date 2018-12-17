@@ -27,7 +27,7 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3(MapSSA map, Context ctx) {
+	public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
 		return value ? ctx.mkTrue() : ctx.mkFalse();
 	}
 

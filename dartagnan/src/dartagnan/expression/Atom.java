@@ -36,8 +36,8 @@ public class Atom extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3(MapSSA map, Context ctx) {
-		return op.encode(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx), ctx);
+	public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
+		return op.encode(lhs.toZ3Int(map, ctx), rhs.toZ3Int(map, ctx), ctx);
 	}
 
     @Override

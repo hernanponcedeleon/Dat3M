@@ -85,7 +85,7 @@ public class RelCo extends Relation {
                 List<MemEvent> events = stores.get(location);
                 enc = ctx.mkAnd(enc, satTO(events));
                 for(Event w1 : events){
-                    BoolExpr lastCoOrder = ctx.mkAnd(w1.executes(ctx), ctx.mkEq(((MemEvent)w1).getAddressExpr(), location.getAddress().toZ3(ctx)));
+                    BoolExpr lastCoOrder = ctx.mkAnd(w1.executes(ctx), ctx.mkEq(((MemEvent)w1).getAddressExpr(), location.getAddress().toZ3Int(ctx)));
                     for(Event w2 : events){
                         lastCoOrder = ctx.mkAnd(lastCoOrder, ctx.mkNot(edge("co", w1, w2, ctx)));
                     }

@@ -3,7 +3,6 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AConst;
 import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
@@ -51,13 +50,13 @@ public class Init extends MemEvent {
 		if(locations.size() != 1){
 			throw new RuntimeException("Invalid location set in " + this);
 		}
-		addressExpr = (IntExpr) address.toZ3(map, ctx);
+		addressExpr = address.toZ3Int(map, ctx);
 
 		BoolExpr enc = ctx.mkTrue();
 		for(Location loc : locations){
 			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
 			this.ssaLocMap.put(loc, z3Loc);
-			enc = ctx.mkAnd(enc, ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, value.toZ3(ctx))));
+			enc = ctx.mkAnd(enc, ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, value.toZ3Int(ctx))));
 		}
 		return new Pair<>(enc, map);
 	}

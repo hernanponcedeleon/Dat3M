@@ -3,7 +3,6 @@ package dartagnan.program.event.rmw.cond;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
@@ -59,14 +58,14 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
         Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
         this.ssaRegIndex = map.get(reg);
         this.z3Cond = ctx.mkEq(z3Reg, encodeValue(map, ctx, cmp));
-        addressExpr = (IntExpr) address.toZ3(map, ctx);
+        addressExpr = address.toZ3Int(map, ctx);
         BoolExpr enc = ctx.mkTrue();
 
         for(Location loc : locations){
             Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
             this.ssaLocMap.put(loc, z3Loc);
             enc = ctx.mkAnd(enc, ctx.mkImplies(
-                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, loc.getAddress().toZ3(ctx))),
+                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, loc.getAddress().toZ3Int(ctx))),
                     ctx.mkEq(z3Reg, z3Loc)
             ));
         }

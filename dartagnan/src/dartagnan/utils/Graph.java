@@ -243,7 +243,7 @@ public class Graph {
         if(mapAddressLocation == null){
             mapAddressLocation = new HashMap<>();
             for(Location location : program.getLocations()){
-                mapAddressLocation.put(addressExprToInt(location.getAddress().toZ3(ctx)), location);
+                mapAddressLocation.put(addressExprToInt(location.getAddress().toZ3Int(ctx)), location);
             }
         }
         return mapAddressLocation.get(address);

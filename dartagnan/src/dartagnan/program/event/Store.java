@@ -2,7 +2,6 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
@@ -67,16 +66,16 @@ public class Store extends MemEvent implements RegReaderData {
             throw new RuntimeException("Location set is not specified for " + toString());
         }
 
-        Expr z3Expr = value.toZ3(map, ctx);
-        addressExpr = (IntExpr) address.toZ3(map, ctx);
+        IntExpr z3Expr = value.toZ3Int(map, ctx);
+        addressExpr = address.toZ3Int(map, ctx);
         BoolExpr enc = ctx.mkTrue();
 
         for(Location loc : locations){
-            Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
+            IntExpr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
             this.ssaLocMap.put(loc, z3Loc);
             enc = ctx.mkAnd(enc, ctx.mkImplies(
-                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, loc.getAddress().toZ3(ctx))),
-                    value.encodeAssignment(map, ctx, z3Loc, z3Expr)
+                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, loc.getAddress().toZ3Int(ctx))),
+                    ctx.mkEq(z3Loc, z3Expr)
             ));
         }
         return new Pair<>(enc, map);

@@ -22,7 +22,7 @@ public class Memory {
     public BoolExpr encode(Context ctx){
         List<IntExpr> expressions = new ArrayList<>();
         for(Address address : map.values()){
-            expressions.add(address.toZ3(ctx));
+            expressions.add(address.toZ3Int(ctx));
         }
         return ctx.mkDistinct(expressions.toArray(new IntExpr[0]));
     }

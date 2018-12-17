@@ -1,9 +1,6 @@
 package dartagnan.expression;
 
-import com.microsoft.z3.ArithExpr;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import com.microsoft.z3.*;
 import dartagnan.expression.op.AOpBin;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
@@ -40,13 +37,13 @@ public class AExpr implements ExprInterface {
 	}
 
     @Override
-	public ArithExpr toZ3(MapSSA map, Context ctx) {
-	    return op.encode(lhs.toZ3(map, ctx), rhs.toZ3(map, ctx), ctx);
+	public IntExpr toZ3Int(MapSSA map, Context ctx) {
+	    return op.encode(lhs.toZ3Int(map, ctx), rhs.toZ3Int(map, ctx), ctx);
 	}
 
     @Override
-	public BoolExpr toZ3Boolean(MapSSA map, Context ctx) {
-		return ctx.mkGt(toZ3(map, ctx), ctx.mkInt(0));
+	public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
+		return ctx.mkGt(toZ3Int(map, ctx), ctx.mkInt(0));
 	}
 
     @Override
@@ -55,11 +52,6 @@ public class AExpr implements ExprInterface {
 		setRegs.addAll(lhs.getRegs());
 		setRegs.addAll(rhs.getRegs());
 		return setRegs;
-	}
-
-    @Override
-	public BoolExpr encodeAssignment(MapSSA map, Context ctx, Expr target, Expr value){
-		return ctx.mkEq(target, value);
 	}
 }
 

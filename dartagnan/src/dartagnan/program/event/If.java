@@ -145,8 +145,8 @@ public class If extends Event implements RegReaderData {
             MapSSA map1 = map.clone();
             MapSSA map2 = map.clone();
 
-            BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Boolean(map, ctx)),
-                    ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Boolean(map, ctx))));
+            BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Bool(map, ctx)),
+                    ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Bool(map, ctx))));
 
             Pair<BoolExpr, MapSSA> p1 = t1.encodeDF(map1, ctx);
             enc = ctx.mkAnd(enc, p1.getFirst());

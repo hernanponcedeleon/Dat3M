@@ -53,8 +53,8 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
             Expr z3Reg = ssaReg(register, map.getFresh(register), ctx);
             this.ssaRegIndex = map.get(register);
             BoolExpr enc = ctx.mkAnd(
-                    ctx.mkImplies(storeEvent.executes(ctx), ctx.mkEq(z3Reg, new AConst(0).toZ3(map, ctx))),
-                    ctx.mkImplies(ctx.mkNot(storeEvent.executes(ctx)), ctx.mkEq(z3Reg, new AConst(1).toZ3(map, ctx)))
+                    ctx.mkImplies(storeEvent.executes(ctx), ctx.mkEq(z3Reg, new AConst(0).toZ3Int(map, ctx))),
+                    ctx.mkImplies(ctx.mkNot(storeEvent.executes(ctx)), ctx.mkEq(z3Reg, new AConst(1).toZ3Int(map, ctx)))
             );
             return new Pair<>(ctx.mkImplies(executes(ctx), enc), map);
         }

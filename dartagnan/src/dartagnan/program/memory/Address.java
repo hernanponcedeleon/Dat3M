@@ -2,7 +2,6 @@ package dartagnan.program.memory;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AConst;
 import dartagnan.expression.ExprInterface;
@@ -31,27 +30,22 @@ public class Address extends AConst implements IntExprInterface, ExprInterface {
     }
 
     @Override
-    public BoolExpr encodeAssignment(MapSSA map, Context ctx, Expr target, Expr value){
-        return ctx.mkEq(target, value);
-    }
-
-    @Override
     public Set<Register> getRegs(){
         return new HashSet<>();
     }
 
     @Override
-    public IntExpr toZ3(MapSSA map, Context ctx){
-        return toZ3(ctx);
+    public IntExpr toZ3Int(MapSSA map, Context ctx){
+        return toZ3Int(ctx);
     }
 
     @Override
     public IntExpr getLastValueExpr(Context ctx){
-        return toZ3(ctx);
+        return toZ3Int(ctx);
     }
 
     @Override
-    public BoolExpr toZ3Boolean(MapSSA map, Context ctx){
+    public BoolExpr toZ3Bool(MapSSA map, Context ctx){
         return ctx.mkTrue();
     }
 
@@ -65,7 +59,7 @@ public class Address extends AConst implements IntExprInterface, ExprInterface {
         return "memory_" + index;
     }
 
-    public IntExpr toZ3(Context ctx){
+    public IntExpr toZ3Int(Context ctx){
         return ctx.mkIntConst("memory_" + index);
     }
 }

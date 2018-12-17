@@ -2,7 +2,7 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import com.microsoft.z3.IntExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderData;
@@ -62,10 +62,10 @@ public class Local extends Event implements RegWriter, RegReaderData {
     @Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
 		if(mainThread != null){
-			Expr z3Expr = expr.toZ3(map, ctx);
-			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
+			IntExpr z3Expr = expr.toZ3Int(map, ctx);
+			IntExpr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
 			this.ssaRegIndex = map.get(reg);
-			return new Pair<>(ctx.mkImplies(executes(ctx), expr.encodeAssignment(map, ctx, z3Reg, z3Expr)), map);
+			return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
 		}
 		throw new RuntimeException("Main thread is not set for " + toString());
 	}

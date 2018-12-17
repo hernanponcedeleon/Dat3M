@@ -1,6 +1,5 @@
 package dartagnan.program;
 
-import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.AExpr;
@@ -55,7 +54,7 @@ public class Register extends AExpr implements IntExprInterface {
 	}
 
 	@Override
-	public ArithExpr toZ3(MapSSA map, Context ctx) {
+	public IntExpr toZ3Int(MapSSA map, Context ctx) {
 		if(mainThreadId > -1) {
 			return ssaReg(this, map.get(this), ctx);
 		}

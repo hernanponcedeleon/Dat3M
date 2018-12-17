@@ -27,7 +27,7 @@ public class AConst extends AExpr implements ExprInterface, IntExprInterface {
 	}
 
 	@Override
-	public IntExpr toZ3(MapSSA map, Context ctx) {
+	public IntExpr toZ3Int(MapSSA map, Context ctx) {
 		return ctx.mkInt(value);
 	}
 
@@ -41,7 +41,7 @@ public class AConst extends AExpr implements ExprInterface, IntExprInterface {
 		return ctx.mkInt(value);
 	}
 
-    public IntExpr toZ3(Context ctx) {
+    public IntExpr toZ3Int(Context ctx) {
         return ctx.mkInt(value);
     }
 }
