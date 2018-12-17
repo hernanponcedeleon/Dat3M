@@ -1,10 +1,11 @@
 package dartagnan.program.event.linux.rmw;
 
-import dartagnan.expression.AExpr;
 import dartagnan.expression.Atom;
 import dartagnan.expression.ExprInterface;
-import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.IExpr;
+import dartagnan.expression.IExprBin;
 import dartagnan.expression.op.COpBin;
+import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -20,7 +21,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     private ExprInterface cmp;
 
-    public RMWAddUnless(AExpr address, Register register, ExprInterface cmp, ExprInterface value) {
+    public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, ExprInterface value) {
         super(address, register, value, "Mb");
         this.cmp = cmp;
     }
@@ -39,7 +40,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
         if(target.equals("sc")) {
             Register dummy = new Register(null);
             RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, address, "Relaxed");
-            RMWStoreCond store = new RMWStoreCond(load, address, new AExpr(dummy, AOpBin.PLUS, value), "Relaxed");
+            RMWStoreCond store = new RMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), "Relaxed");
             Local local = new Local(reg, new Atom(dummy, COpBin.NEQ, cmp));
 
             compileBasic(load);

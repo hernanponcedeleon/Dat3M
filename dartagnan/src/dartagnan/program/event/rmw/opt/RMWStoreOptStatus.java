@@ -3,7 +3,7 @@ package dartagnan.program.event.rmw.opt;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import dartagnan.expression.AConst;
+import dartagnan.expression.IConst;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.utils.RegWriter;
@@ -53,8 +53,8 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
             Expr z3Reg = ssaReg(register, map.getFresh(register), ctx);
             this.ssaRegIndex = map.get(register);
             BoolExpr enc = ctx.mkAnd(
-                    ctx.mkImplies(storeEvent.executes(ctx), ctx.mkEq(z3Reg, new AConst(0).toZ3Int(map, ctx))),
-                    ctx.mkImplies(ctx.mkNot(storeEvent.executes(ctx)), ctx.mkEq(z3Reg, new AConst(1).toZ3Int(map, ctx)))
+                    ctx.mkImplies(storeEvent.executes(ctx), ctx.mkEq(z3Reg, new IConst(0).toZ3Int(map, ctx))),
+                    ctx.mkImplies(ctx.mkNot(storeEvent.executes(ctx)), ctx.mkEq(z3Reg, new IConst(1).toZ3Int(map, ctx)))
             );
             return new Pair<>(ctx.mkImplies(executes(ctx), enc), map);
         }

@@ -7,7 +7,7 @@ package dartagnan.parsers;
 import dartagnan.asserts.*;
 import dartagnan.expression.op.*;
 import dartagnan.expression.IntExprInterface;
-import dartagnan.expression.AConst;
+import dartagnan.expression.IConst;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.program.memory.Location;
 }
@@ -86,7 +86,7 @@ assertion returns [AbstractAssert ass]
 assertionValue returns [IntExprInterface v]
     :   location {$v = pb.getOrCreateLocation($location.text);}
     |   threadId Colon register {$v = pb.getOrCreateRegister($threadId.text, $register.text);}
-    |   value {$v = new AConst(Integer.parseInt($value.text));}
+    |   value {$v = new IConst(Integer.parseInt($value.text));}
     ;
 
 fence
@@ -130,14 +130,14 @@ opCompare returns [COpBin op]
     |   Greater                 {$op = COpBin.GT;}
     ;
 
-opArith returns [AOpBin op]
-    :   Plus                    {$op = AOpBin.PLUS;}
-    |   Minus                   {$op = AOpBin.MINUS;}
-    |   Ast                     {$op = AOpBin.MULT;}
-    |   Slash                   {$op = AOpBin.DIV;}
-    |   Amp                     {$op = AOpBin.AND;}
-    |   Bar                     {$op = AOpBin.OR;}
-    |   Circ                    {$op = AOpBin.XOR;}
+opArith returns [IOpBin op]
+    :   Plus                    {$op = IOpBin.PLUS;}
+    |   Minus                   {$op = IOpBin.MINUS;}
+    |   Ast                     {$op = IOpBin.MULT;}
+    |   Slash                   {$op = IOpBin.DIV;}
+    |   Amp                     {$op = IOpBin.AND;}
+    |   Bar                     {$op = IOpBin.OR;}
+    |   Circ                    {$op = IOpBin.XOR;}
     ;
 
 opBoolBin returns [BOpBin op]

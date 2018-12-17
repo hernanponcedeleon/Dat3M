@@ -8,7 +8,7 @@ import dartagnan.expression.op.COpBin;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.*;
 import dartagnan.program.memory.Location;
-import dartagnan.expression.AConst;
+import dartagnan.expression.IConst;
 import dartagnan.parsers.utils.ProgramBuilder;
 }
 

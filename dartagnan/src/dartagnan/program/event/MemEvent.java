@@ -3,7 +3,7 @@ package dartagnan.program.event;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
-import dartagnan.expression.AExpr;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.memory.Location;
 
@@ -13,7 +13,7 @@ import java.util.Set;
 
 public abstract class MemEvent extends Event {
 
-    protected AExpr address;
+    protected IExpr address;
     protected IntExpr addressExpr;
 
     protected Set<Location> locations;
@@ -44,7 +44,7 @@ public abstract class MemEvent extends Event {
         return null;
     }
 
-    public AExpr getAddress(){
+    public IExpr getAddress(){
         return address;
     }
 

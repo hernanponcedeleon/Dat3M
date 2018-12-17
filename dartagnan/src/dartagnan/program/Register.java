@@ -2,7 +2,7 @@ package dartagnan.program;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
-import dartagnan.expression.AExpr;
+import dartagnan.expression.IExpr;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.utils.MapSSA;
 
@@ -11,7 +11,7 @@ import java.util.Set;
 
 import static dartagnan.utils.Utils.ssaReg;
 
-public class Register extends AExpr implements IntExprInterface {
+public class Register extends IExpr implements IntExprInterface {
 
 	private static int dummyCount = 0;
 

@@ -3,7 +3,7 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import dartagnan.expression.AConst;
+import dartagnan.expression.IConst;
 import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EType;
@@ -14,9 +14,9 @@ import static dartagnan.utils.Utils.ssaLoc;
 
 public class Init extends MemEvent {
 
-	private AConst value;
+	private IConst value;
 	
-	public Init(Address address, AConst value) {
+	public Init(Address address, IConst value) {
 		this.address = address;
 		this.value = value;
 		this.condLevel = 0;
@@ -61,7 +61,7 @@ public class Init extends MemEvent {
 		return new Pair<>(enc, map);
 	}
 
-	public AConst getValue(){
+	public IConst getValue(){
 		return value;
 	}
 }

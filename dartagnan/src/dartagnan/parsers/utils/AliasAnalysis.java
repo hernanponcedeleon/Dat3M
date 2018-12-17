@@ -1,8 +1,8 @@
 package dartagnan.parsers.utils;
 
 import com.google.common.collect.ImmutableSet;
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
@@ -28,7 +28,7 @@ public class AliasAnalysis {
             }
         }
         for(Event e : program.getEventRepository().getEvents(EventRepository.MEMORY)){
-            AExpr address = ((MemEvent) e).getAddress();
+            IExpr address = ((MemEvent) e).getAddress();
             if(address instanceof Register){
                 if(!regWrites.containsKey(address)){
                     throw new RuntimeException("Address register " + address + " has not been initialised");

@@ -1,7 +1,7 @@
 package dartagnan.program.event.linux.rmw;
 
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -16,7 +16,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     private ExprInterface cmp;
 
-    public RMWCmpXchg(AExpr address, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
+    public RMWCmpXchg(IExpr address, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
         super(address, register, value, atomic);
         this.cmp = cmp;
     }

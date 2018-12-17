@@ -1,6 +1,6 @@
 package dartagnan.program.event.pts;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -14,7 +14,7 @@ public class Read extends MemEvent implements RegWriter {
 
     protected Register reg;
 
-    public Read(Register register, AExpr address, String atomic) {
+    public Read(Register register, IExpr address, String atomic) {
         this.reg = register;
         this.address = address;
         this.atomic = atomic;

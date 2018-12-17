@@ -14,18 +14,9 @@ public class BExprUn extends BExpr {
     private ExprInterface b;
     private BOpUn op;
 
-
     public BExprUn(BOpUn op, ExprInterface b) {
         this.b = b;
         this.op = op;
-    }
-
-    public String toString() {
-        return "(" + op + " " + b + ")";
-    }
-
-    public BExprUn clone() {
-        return new BExprUn(op, b.clone());
     }
 
     @Override
@@ -36,5 +27,13 @@ public class BExprUn extends BExpr {
     @Override
     public Set<Register> getRegs() {
         return new HashSet<>(b.getRegs());
+    }
+
+    public BExprUn clone() {
+        return new BExprUn(op, b.clone());
+    }
+
+    public String toString() {
+        return "(" + op + " " + b + ")";
     }
 }

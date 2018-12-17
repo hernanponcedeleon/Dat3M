@@ -1,7 +1,7 @@
 package dartagnan.program.event.linux.rmw;
 
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -12,7 +12,7 @@ import dartagnan.program.event.utils.RegWriter;
 
 public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
-    public RMWXchg(AExpr address, Register register, ExprInterface value, String atomic) {
+    public RMWXchg(IExpr address, Register register, ExprInterface value, String atomic) {
         super(address, register, value, atomic);
     }
 

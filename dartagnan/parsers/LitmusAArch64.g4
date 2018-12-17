@@ -148,18 +148,18 @@ storeExclusiveInstruction locals [String mo]
     |   STLXR   {$mo = Mo.REL;}
     ;
 
-arithmeticInstruction locals [AOpBin op]
-    :   ADD     { $op = AOpBin.PLUS; }
+arithmeticInstruction locals [IOpBin op]
+    :   ADD     { $op = IOpBin.PLUS; }
 //    |   ADDS    { throw new RuntimeException("Instruction ADDS is not implemented"); }
-    |   SUB     { $op = AOpBin.MINUS; }
+    |   SUB     { $op = IOpBin.MINUS; }
 //    |   SUBS    { throw new RuntimeException("Instruction SUBS is not implemented"); }
 //    |   ADC     { throw new RuntimeException("Instruction ADC is not implemented"); }
 //    |   ADCS    { throw new RuntimeException("Instruction ADCS is not implemented"); }
 //    |   SBC     { throw new RuntimeException("Instruction SBC is not implemented"); }
 //    |   SBCS    { throw new RuntimeException("Instruction SBCS is not implemented"); }
-    |   AND     { $op = AOpBin.AND; }
-    |   ORR     { $op = AOpBin.OR; }
-    |   EOR     { $op = AOpBin.XOR; }
+    |   AND     { $op = IOpBin.AND; }
+    |   ORR     { $op = IOpBin.OR; }
+    |   EOR     { $op = IOpBin.XOR; }
 //    |   BIC     { throw new RuntimeException("Instruction BIC is not implemented"); }
 //    |   ORN     { throw new RuntimeException("Instruction ORN is not implemented"); }
 //    |   EON     { throw new RuntimeException("Instruction EON is not implemented"); }
@@ -190,10 +190,10 @@ branchRegInstruction returns [COpBin op]
     |   CBNZ    {$op = COpBin.NEQ;}
     ;
 
-shiftOperator returns [AOpBin op]
-    :   LSL { $op = AOpBin.L_SHIFT; }
-    |   LSR { $op = AOpBin.R_SHIFT; }
-    |   ASR { $op = AOpBin.AR_SHIFT; }
+shiftOperator returns [IOpBin op]
+    :   LSL { $op = IOpBin.L_SHIFT; }
+    |   LSR { $op = IOpBin.R_SHIFT; }
+    |   ASR { $op = IOpBin.AR_SHIFT; }
     ;
 
 expr64
@@ -235,7 +235,7 @@ expressionConversion
 assertionValue returns [IntExprInterface v]
     :   l = location    {$v = pb.getOrCreateLocation($l.text);}
     |   t = threadId Colon r = register64 {$v = pb.getOrCreateRegister($t.id, $r.id);}
-    |   imm = value    { $v = new AConst(Integer.parseInt($imm.text)); }
+    |   imm = value    { $v = new IConst(Integer.parseInt($imm.text)); }
     ;
 
 address returns[String id]

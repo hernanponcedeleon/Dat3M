@@ -214,7 +214,7 @@ public class VisitorLitmusC
     public Thread visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
         returnStack.push(register);
-        AExpr address = getAddress(ctx.variable());
+        IExpr address = getAddress(ctx.variable());
         return new Load(register, address, ctx.mo);
     }
 
@@ -222,7 +222,7 @@ public class VisitorLitmusC
     public Thread visitReReadNa(LitmusCParser.ReReadNaContext ctx){
         Register register = programBuilder.getOrCreateRegister(currentThread, null);
         returnStack.push(register);
-        AExpr address = (AExpr)ctx.variable().accept(this);
+        IExpr address = (IExpr)ctx.variable().accept(this);
         return new Load(register, address, "NA");
     }
 
@@ -242,7 +242,7 @@ public class VisitorLitmusC
         ExprInterface v1 = returnStack.pop();
         Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
         ExprInterface v2 = returnStack.pop();
-        returnStack.push(new AExpr(v1, ctx.opArith().op, v2));
+        returnStack.push(new IExprBin(v1, ctx.opArith().op, v2));
         return Thread.fromArray(false, t1, t2);
     }
 
@@ -290,7 +290,7 @@ public class VisitorLitmusC
 
     @Override
     public Thread visitReConst(LitmusCParser.ReConstContext ctx){
-        returnStack.push(new AConst(Integer.parseInt(ctx.getText())));
+        returnStack.push(new IConst(Integer.parseInt(ctx.getText())));
         return null;
     }
 
@@ -330,7 +330,7 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreStore(LitmusCParser.NreStoreContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        AExpr address = getAddress(ctx.variable());
+        IExpr address = getAddress(ctx.variable());
         if(ctx.mo.equals("Mb")){
             Thread t = new Store(address, returnStack.pop(), "Relaxed");
             return Thread.fromArray(false, t1, t, new Fence("Mb"));
@@ -342,7 +342,7 @@ public class VisitorLitmusC
     @Override
     public Thread visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
         Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        AExpr address = getAddress(ctx.variable());
+        IExpr address = getAddress(ctx.variable());
         Thread t = new Store(address, returnStack.pop(), ctx.mo);
         return Thread.fromArray(false, t1, t);
     }
@@ -361,7 +361,7 @@ public class VisitorLitmusC
         }
 
         if(variable instanceof Address || variable instanceof Register){
-            Thread result = new Store((AExpr) variable, returnStack.pop(), "NA");
+            Thread result = new Store((IExpr) variable, returnStack.pop(), "NA");
             return Thread.fromArray(false, t, result);
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
@@ -436,17 +436,17 @@ public class VisitorLitmusC
         return programBuilder.getOrCreateRegister(currentThread, ctx.getText());
     }
 
-    private AExpr getAddress(LitmusCParser.VariableContext ctx){
+    private IExpr getAddress(LitmusCParser.VariableContext ctx){
         Object address = ctx.accept(this);
         if(address instanceof Address || address instanceof Register){
-            return (AExpr) address;
+            return (IExpr) address;
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     private Pair<Thread, ExprInterface> acceptRetValue(LitmusCParser.ReturnExpressionContext ctx){
         Thread t = null;
-        ExprInterface v = new AConst(1);
+        ExprInterface v = new IConst(1);
         if(ctx != null){
             t = (Thread)ctx.accept(this);
             v = returnStack.pop();

@@ -8,22 +8,12 @@ import dartagnan.utils.MapSSA;
 import java.util.HashSet;
 import java.util.Set;
 
-public class AConst extends AExpr implements ExprInterface, IntExprInterface {
+public class IConst extends IExpr implements ExprInterface, IntExprInterface {
 
 	private int value;
 	
-	public AConst(int value) {
+	public IConst(int value) {
 		this.value = value;
-	}
-
-	@Override
-	public String toString() {
-		return Integer.toString(value);
-	}
-
-	@Override
-	public AConst clone() {
-		return new AConst(value);
 	}
 
 	@Override
@@ -34,6 +24,16 @@ public class AConst extends AExpr implements ExprInterface, IntExprInterface {
 	@Override
 	public Set<Register> getRegs() {
 		return new HashSet<>();
+	}
+
+	@Override
+	public IConst clone() {
+		return new IConst(value);
+	}
+
+	@Override
+	public String toString() {
+		return Integer.toString(value);
 	}
 
 	@Override

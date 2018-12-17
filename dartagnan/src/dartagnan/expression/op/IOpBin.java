@@ -3,7 +3,7 @@ package dartagnan.expression.op;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 
-public enum AOpBin {
+public enum IOpBin {
     PLUS, MINUS, MULT, DIV, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
 
     @Override

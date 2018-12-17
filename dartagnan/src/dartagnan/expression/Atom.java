@@ -11,28 +11,14 @@ import java.util.Set;
 
 public class Atom extends BExpr implements ExprInterface {
 	
-	private AExpr lhs;
-	private AExpr rhs;
+	private ExprInterface lhs;
+	private ExprInterface rhs;
 	private COpBin op;
 	
 	public Atom (ExprInterface lhs, COpBin op, ExprInterface rhs) {
-        if(!(lhs instanceof AExpr) || !(rhs instanceof AExpr)){
-            // TODO: Implementation
-            throw new RuntimeException("Atom is not implemented for BExpr arguments");
-        }
-		this.lhs = (AExpr)lhs;
-		this.rhs = (AExpr)rhs;
+		this.lhs = lhs;
+		this.rhs = rhs;
 		this.op = op;
-	}
-
-    @Override
-	public String toString() {
-		return lhs + " " + op + " " + rhs;
-	}
-
-    @Override
-	public Atom clone() {
-		return new Atom(lhs.clone(), op, rhs.clone());
 	}
 
     @Override
@@ -47,4 +33,14 @@ public class Atom extends BExpr implements ExprInterface {
 		setRegs.addAll(rhs.getRegs());
 		return setRegs;
 	}
+
+    @Override
+    public Atom clone() {
+        return new Atom(lhs.clone(), op, rhs.clone());
+    }
+
+    @Override
+    public String toString() {
+        return lhs + " " + op + " " + rhs;
+    }
 }

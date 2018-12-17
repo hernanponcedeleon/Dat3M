@@ -1,6 +1,6 @@
 package dartagnan.program.event.rmw;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.utils.RegWriter;
@@ -8,7 +8,7 @@ import dartagnan.program.utils.EType;
 
 public class RMWLoad extends Load implements RegWriter {
 
-    public RMWLoad(Register reg, AExpr address, String atomic) {
+    public RMWLoad(Register reg, IExpr address, String atomic) {
         super(reg, address, atomic);
         addFilters(EType.RMW);
     }

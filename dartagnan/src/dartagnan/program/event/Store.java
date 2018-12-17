@@ -3,8 +3,8 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.memory.Location;
@@ -21,7 +21,7 @@ public class Store extends MemEvent implements RegReaderData {
 
     protected ExprInterface value;
 
-    public Store(AExpr address, ExprInterface value, String atomic){
+    public Store(IExpr address, ExprInterface value, String atomic){
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;

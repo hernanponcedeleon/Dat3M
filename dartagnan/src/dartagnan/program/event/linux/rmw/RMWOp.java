@@ -1,8 +1,9 @@
 package dartagnan.program.event.linux.rmw;
 
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.IExpr;
+import dartagnan.expression.IExprBin;
+import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -14,9 +15,9 @@ import dartagnan.program.utils.linux.EType;
 
 public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
-    private AOpBin op;
+    private IOpBin op;
 
-    public RMWOp(AExpr address, ExprInterface value, AOpBin op) {
+    public RMWOp(IExpr address, ExprInterface value, IOpBin op) {
         super(address, new Register(null), value, "Relaxed");
         this.op = op;
         addFilters(EType.NORETURN);
@@ -26,7 +27,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             RMWLoad load = new RMWLoad(reg, address, "Relaxed");
-            RMWStore store = new RMWStore(load, address, new AExpr(reg, op, value), "Relaxed");
+            RMWStore store = new RMWStore(load, address, new IExprBin(reg, op, value), "Relaxed");
 
             compileBasic(load);
             compileBasic(store);

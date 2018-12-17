@@ -1,8 +1,9 @@
 package dartagnan.program.event.linux.rmw;
 
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.IExpr;
+import dartagnan.expression.IExprBin;
+import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -13,9 +14,9 @@ import dartagnan.program.event.utils.RegWriter;
 
 public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData {
 
-    private AOpBin op;
+    private IOpBin op;
 
-    public RMWFetchOp(AExpr address, Register register, ExprInterface value, AOpBin op, String atomic) {
+    public RMWFetchOp(IExpr address, Register register, ExprInterface value, IOpBin op, String atomic) {
         super(address, register, value, atomic);
         this.op = op;
     }
@@ -25,7 +26,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
         if(target.equals("sc")) {
             Register dummy = reg == value ? new Register(null) : reg;
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
-            RMWStore store = new RMWStore(load, address, new AExpr(dummy, op, value), getStoreMO());
+            RMWStore store = new RMWStore(load, address, new IExprBin(dummy, op, value), getStoreMO());
 
             compileBasic(load);
             compileBasic(store);

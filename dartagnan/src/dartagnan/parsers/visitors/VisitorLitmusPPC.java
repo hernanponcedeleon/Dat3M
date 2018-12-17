@@ -1,8 +1,8 @@
 package dartagnan.parsers.visitors;
 
-import dartagnan.expression.AConst;
-import dartagnan.expression.AExpr;
-import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.IConst;
+import dartagnan.expression.IExprBin;
+import dartagnan.expression.op.IOpBin;
 import dartagnan.parsers.LitmusPPCBaseVisitor;
 import dartagnan.parsers.LitmusPPCParser;
 import dartagnan.parsers.LitmusPPCVisitor;
@@ -102,7 +102,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
-        AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
+        IConst constant = new IConst(Integer.parseInt(ctx.value().getText()));
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
@@ -143,8 +143,8 @@ public class VisitorLitmusPPC
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return programBuilder.addChild(mainThread, new Local(r1, new AExpr(r2, AOpBin.PLUS, constant)));
+        IConst constant = new IConst(Integer.parseInt(ctx.value().getText()));
+        return programBuilder.addChild(mainThread, new Local(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
     }
 
     @Override
@@ -152,7 +152,7 @@ public class VisitorLitmusPPC
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, new Local(r1, new AExpr(r2, AOpBin.XOR, r3)));
+        return programBuilder.addChild(mainThread, new Local(r1, new IExprBin(r2, IOpBin.XOR, r3)));
     }
 
     @Override

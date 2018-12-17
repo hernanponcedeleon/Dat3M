@@ -51,40 +51,40 @@ elseExpression
     |   Else LBrace expression* RBrace
     ;
 
-returnExpression locals [AOpBin op, String mo]
-    :   ( AtomicAddReturn        LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicAddReturnRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicAddReturnAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicAddReturnRelease LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicSubReturn        LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicSubReturnRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicSubReturnAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicSubReturnRelease LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Release";}
-        | AtomicIncReturn        LPar variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicIncReturnRelaxed LPar variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicIncReturnAcquire LPar variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicIncReturnRelease LPar variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicDecReturn        LPar variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicDecReturnRelaxed LPar variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicDecReturnAcquire LPar variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicDecReturnRelease LPar variable RPar {$op = AOpBin.MINUS; $mo = "Release";})                             # reAtomicOpReturn
+returnExpression locals [IOpBin op, String mo]
+    :   ( AtomicAddReturn        LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicAddReturnRelaxed LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicAddReturnAcquire LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicAddReturnRelease LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicSubReturn        LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicSubReturnRelaxed LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicSubReturnAcquire LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicSubReturnRelease LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Release";}
+        | AtomicIncReturn        LPar variable RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicIncReturnRelaxed LPar variable RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicIncReturnAcquire LPar variable RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicIncReturnRelease LPar variable RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicDecReturn        LPar variable RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicDecReturnRelaxed LPar variable RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicDecReturnAcquire LPar variable RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicDecReturnRelease LPar variable RPar {$op = IOpBin.MINUS; $mo = "Release";})                             # reAtomicOpReturn
 
-    |   ( AtomicFetchAdd        LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicFetchAddRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicFetchAddAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicFetchAddRelease LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicFetchSub        LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicFetchSubRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicFetchSubAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicFetchSubRelease LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Release";}
-        | AtomicFetchInc        LPar variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicFetchIncRelaxed LPar variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicFetchIncAcquire LPar variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicFetchIncRelease LPar variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicFetchDec        LPar variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicFetchDecRelaxed LPar variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicFetchDecAcquire LPar variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicFetchDecRelease LPar variable RPar {$op = AOpBin.MINUS; $mo = "Release";})                              # reAtomicFetchOp
+    |   ( AtomicFetchAdd        LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicFetchAddRelaxed LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicFetchAddAcquire LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicFetchAddRelease LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicFetchSub        LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicFetchSubRelaxed LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicFetchSubAcquire LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicFetchSubRelease LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Release";}
+        | AtomicFetchInc        LPar variable RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicFetchIncRelaxed LPar variable RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicFetchIncAcquire LPar variable RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicFetchIncRelease LPar variable RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicFetchDec        LPar variable RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicFetchDecRelaxed LPar variable RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicFetchDecAcquire LPar variable RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicFetchDecRelease LPar variable RPar {$op = IOpBin.MINUS; $mo = "Release";})                              # reAtomicFetchOp
 
     |   ( AtomicXchg        LPar variable Comma returnExpression RPar {$mo = "Mb";}
         | AtomicXchgRelaxed LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
@@ -106,9 +106,9 @@ returnExpression locals [AOpBin op, String mo]
         | CmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Acquire";}
         | CmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Release";})           # reCmpXchg
 
-    |   ( AtomicSubAndTest LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicIncAndTest LPar variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicDecAndTest LPar variable RPar {$op = AOpBin.MINUS; $mo = "Mb";})                                        # reAtomicOpAndTest
+    |   ( AtomicSubAndTest LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicIncAndTest LPar variable RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicDecAndTest LPar variable RPar {$op = IOpBin.MINUS; $mo = "Mb";})                                        # reAtomicOpAndTest
 
     |   AtomicAddUnless LPar variable Comma returnExpression Comma returnExpression RPar                                # reAtomicAddUnless
 
@@ -134,11 +134,11 @@ returnExpression locals [AOpBin op, String mo]
     |   constantValue                                                                                                   # reConst
     ;
 
-nonReturnExpression locals [AOpBin op, String mo, String name]
-    :   ( AtomicAdd LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS;}
-        | AtomicSub LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS;}
-        | AtomicInc LPar variable RPar {$op = AOpBin.PLUS;}
-        | AtomicDec LPar variable RPar {$op = AOpBin.MINUS;})                                                           # nreAtomicOp
+nonReturnExpression locals [IOpBin op, String mo, String name]
+    :   ( AtomicAdd LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS;}
+        | AtomicSub LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS;}
+        | AtomicInc LPar variable RPar {$op = IOpBin.PLUS;}
+        | AtomicDec LPar variable RPar {$op = IOpBin.MINUS;})                                                           # nreAtomicOp
 
     |   ( AtomicSet         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
         | AtomicSetRelease  LPar variable Comma returnExpression RPar {$mo = "Release";}
@@ -175,7 +175,7 @@ variableList
 assertionValue returns [IntExprInterface v]
     :   l = varName {$v = pb.getOrCreateLocation($l.text);}
     |   t = threadVariable {$v = pb.getOrCreateRegister($t.tid, $t.name);}
-    |   imm = constantValue { $v = new AConst(Integer.parseInt($imm.text)); }
+    |   imm = constantValue { $v = new IConst(Integer.parseInt($imm.text)); }
     ;
 
 opBool returns [BOpBin op]
@@ -192,12 +192,12 @@ opCompare returns [COpBin op]
     |   Greater         {$op = COpBin.GT;}
     ;
 
-opArith returns [AOpBin op]
-    :   Plus    {$op = AOpBin.PLUS;}
-    |   Minus   {$op = AOpBin.MINUS;}
-    |   Amp     {$op = AOpBin.AND;}
-    |   Bar     {$op = AOpBin.OR;}
-    |   Circ    {$op = AOpBin.XOR;}
+opArith returns [IOpBin op]
+    :   Plus    {$op = IOpBin.PLUS;}
+    |   Minus   {$op = IOpBin.MINUS;}
+    |   Amp     {$op = IOpBin.AND;}
+    |   Bar     {$op = IOpBin.OR;}
+    |   Circ    {$op = IOpBin.XOR;}
     ;
 
 threadVariable returns [String tid, String name]

@@ -1,6 +1,6 @@
 package dartagnan.parsers.visitors;
 
-import dartagnan.expression.AConst;
+import dartagnan.expression.IConst;
 import dartagnan.parsers.LitmusX86BaseVisitor;
 import dartagnan.parsers.LitmusX86Parser;
 import dartagnan.parsers.LitmusX86Visitor;
@@ -100,7 +100,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
-        AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
+        IConst constant = new IConst(Integer.parseInt(ctx.value().getText()));
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
@@ -114,7 +114,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
+        IConst constant = new IConst(Integer.parseInt(ctx.value().getText()));
         return programBuilder.addChild(mainThread, new Store(location.getAddress(), constant, "_rx"));
     }
 

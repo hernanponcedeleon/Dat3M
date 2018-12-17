@@ -3,8 +3,8 @@ package dartagnan.program.event.rmw.cond;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.utils.RegReaderData;
@@ -24,7 +24,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     protected ExprInterface cmp;
     protected BoolExpr z3Cond;
 
-    RMWReadCond(Register reg, ExprInterface cmp, AExpr address, String atomic) {
+    RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
         this.cmp = cmp;
     }

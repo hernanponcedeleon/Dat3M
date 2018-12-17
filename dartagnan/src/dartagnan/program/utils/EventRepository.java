@@ -1,6 +1,6 @@
 package dartagnan.program.utils;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
@@ -89,7 +89,7 @@ public class EventRepository {
                     registers.add(((RegWriter) e).getModifiedReg());
                 }
                 if(e instanceof MemEvent){
-                    AExpr address = ((MemEvent) e).getAddress();
+                    IExpr address = ((MemEvent) e).getAddress();
                     if(address instanceof Register){
                         registers.add((Register) address);
                     }

@@ -1,7 +1,7 @@
 package dartagnan.program.event.pts;
 
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -18,7 +18,7 @@ public class Write extends MemEvent implements RegReaderData {
 
     protected ExprInterface value;
 
-    public Write(AExpr address, ExprInterface value, String atomic){
+    public Write(IExpr address, ExprInterface value, String atomic){
         this.value = value;
         this.address = address;
         this.atomic = atomic;

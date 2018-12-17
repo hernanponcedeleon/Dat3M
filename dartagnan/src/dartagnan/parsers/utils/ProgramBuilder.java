@@ -1,7 +1,7 @@
 package dartagnan.parsers.utils;
 
 import dartagnan.asserts.AbstractAssert;
-import dartagnan.expression.AConst;
+import dartagnan.expression.IConst;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
@@ -25,7 +25,7 @@ public class ProgramBuilder {
     private Map<String, Map<String, Register>> registers = new HashMap<>();
     private Map<String, Map<String, Label>> labels = new HashMap<>();
     private Map<String, LinkedList<Thread>> threads = new HashMap<>();
-    private Map<Location, AConst> iValueMap = new HashMap<>();
+    private Map<Location, IConst> iValueMap = new HashMap<>();
     private Memory memory = new Memory();
 
     private AbstractAssert ass;
@@ -38,7 +38,7 @@ public class ProgramBuilder {
             program.add(Thread.fromList(true, thread));
         }
         for(Location location : memory.getLocations()) {
-            AConst iValue = iValueMap.getOrDefault(location, new AConst(Location.DEFAULT_INIT_VALUE));
+            IConst iValue = iValueMap.getOrDefault(location, new IConst(Location.DEFAULT_INIT_VALUE));
             program.add(new Init(location.getAddress(), iValue));
         }
         program.setAss(ass);
@@ -86,7 +86,7 @@ public class ProgramBuilder {
 
     public void addDeclarationLocImm(String locName, int imm){
         Location location = getOrCreateLocation(locName);
-        iValueMap.put(location, new AConst(imm));
+        iValueMap.put(location, new IConst(imm));
     }
 
     // Initialisation 0:r0=y assigned address of y to register 0:r0
@@ -97,7 +97,7 @@ public class ProgramBuilder {
     }
 
     public void addDeclarationRegImm(String regThread, String regName, int imm){
-        addChild(regThread, new Local(getOrCreateRegister(regThread, regName), new AConst(imm)));
+        addChild(regThread, new Local(getOrCreateRegister(regThread, regName), new IConst(imm)));
     }
 
     // ----------------------------------------------------------------------------------------------------------------

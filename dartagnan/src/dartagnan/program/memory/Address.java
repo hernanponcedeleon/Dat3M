@@ -3,8 +3,8 @@ package dartagnan.program.memory;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
-import dartagnan.expression.AConst;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IConst;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.Register;
 import dartagnan.utils.MapSSA;
@@ -12,7 +12,7 @@ import dartagnan.utils.MapSSA;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Address extends AConst implements IntExprInterface, ExprInterface {
+public class Address extends IConst implements IntExprInterface, ExprInterface {
 
     private static int nextIndex = 0;
 

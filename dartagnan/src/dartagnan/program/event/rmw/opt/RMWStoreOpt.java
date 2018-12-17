@@ -2,8 +2,8 @@ package dartagnan.program.event.rmw.opt;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
+import dartagnan.expression.IExpr;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderData;
@@ -12,7 +12,7 @@ import dartagnan.utils.Pair;
 
 public class RMWStoreOpt extends RMWStore implements RegReaderData {
 
-    public RMWStoreOpt(RMWLoad loadEvent, AExpr address, ExprInterface value, String atomic){
+    public RMWStoreOpt(RMWLoad loadEvent, IExpr address, ExprInterface value, String atomic){
         super(loadEvent, address, value, atomic);
     }
 

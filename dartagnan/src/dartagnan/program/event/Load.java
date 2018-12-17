@@ -3,7 +3,7 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import dartagnan.expression.AExpr;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Location;
@@ -19,7 +19,7 @@ public class Load extends MemEvent implements RegWriter {
     protected Register reg;
     protected int ssaRegIndex;
 
-    public Load(Register register, AExpr address, String atomic) {
+    public Load(Register register, IExpr address, String atomic) {
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;

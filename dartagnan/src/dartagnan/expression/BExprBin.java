@@ -21,14 +21,6 @@ public class BExprBin extends BExpr {
         this.op = op;
     }
 
-    public String toString() {
-        return "(" + b1 + " " + op + " " + b2 + ")";
-    }
-
-    public BExprBin clone() {
-        return new BExprBin(b1.clone(), op, b2.clone());
-    }
-
     @Override
     public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
         return op.encode(b1.toZ3Bool(map, ctx), b2.toZ3Bool(map, ctx), ctx);
@@ -40,5 +32,13 @@ public class BExprBin extends BExpr {
         setRegs.addAll(b1.getRegs());
         setRegs.addAll(b2.getRegs());
         return setRegs;
+    }
+
+    public BExprBin clone() {
+        return new BExprBin(b1.clone(), op, b2.clone());
+    }
+
+    public String toString() {
+        return "(" + b1 + " " + op + " " + b2 + ")";
     }
 }

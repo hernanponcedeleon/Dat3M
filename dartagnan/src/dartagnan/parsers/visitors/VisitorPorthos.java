@@ -85,7 +85,7 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
     @Override
     public Thread visitInstructionLocal(PorthosParser.InstructionLocalContext ctx) {
         Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText());
-        AExpr expr = (AExpr)ctx.arithExpr().accept(this);
+        IExpr expr = (IExpr)ctx.arithExpr().accept(this);
         return new Local(register, expr);
     }
 
@@ -98,7 +98,7 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public Thread visitInstructionStore(PorthosParser.InstructionStoreContext ctx) {
-        AExpr expr = (AExpr)ctx.arithExpr().accept(this);
+        IExpr expr = (IExpr)ctx.arithExpr().accept(this);
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
         return new Store(location.getAddress(), expr, "_rx");
     }
@@ -112,7 +112,7 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public Thread visitInstructionWrite(PorthosParser.InstructionWriteContext ctx) {
-        AExpr e = (AExpr)ctx.arithExpr().accept(this);
+        IExpr e = (IExpr)ctx.arithExpr().accept(this);
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
         return new Write(location.getAddress(), e, ctx.MemoryOrder().getText());
     }
@@ -123,15 +123,15 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
     }
 
     @Override
-    public AExpr visitArithExprAExpr(PorthosParser.ArithExprAExprContext ctx) {
-        AExpr e1 = (AExpr)ctx.arithExpr(0).accept(this);
-        AExpr e2 = (AExpr)ctx.arithExpr(1).accept(this);
-        return new AExpr(e1, ctx.opArith().op, e2);
+    public IExpr visitArithExprAExpr(PorthosParser.ArithExprAExprContext ctx) {
+        IExpr e1 = (IExpr)ctx.arithExpr(0).accept(this);
+        IExpr e2 = (IExpr)ctx.arithExpr(1).accept(this);
+        return new IExprBin(e1, ctx.opArith().op, e2);
     }
 
     @Override
-    public AExpr visitArithExprChild(PorthosParser.ArithExprChildContext ctx) {
-        return (AExpr)ctx.arithExpr().accept(this);
+    public IExpr visitArithExprChild(PorthosParser.ArithExprChildContext ctx) {
+        return (IExpr)ctx.arithExpr().accept(this);
     }
 
     @Override
@@ -140,8 +140,8 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
     }
 
     @Override
-    public AConst visitArithExprConst(PorthosParser.ArithExprConstContext ctx) {
-        return new AConst(Integer.parseInt(ctx.getText()));
+    public IConst visitArithExprConst(PorthosParser.ArithExprConstContext ctx) {
+        return new IConst(Integer.parseInt(ctx.getText()));
     }
 
     @Override
@@ -159,8 +159,8 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public Atom visitBoolExprAtom(PorthosParser.BoolExprAtomContext ctx) {
-        AExpr e1 = (AExpr)ctx.arithExpr(0).accept(this);
-        AExpr e2 = (AExpr)ctx.arithExpr(1).accept(this);
+        IExpr e1 = (IExpr)ctx.arithExpr(0).accept(this);
+        IExpr e2 = (IExpr)ctx.arithExpr(1).accept(this);
         return new Atom(e1, ctx.opCompare().op, e2);
     }
 
