@@ -1,12 +1,14 @@
-C  Michael_Scott
+C Treiber
 {
+ToS = 1;
+node2 = 2;
+n2next = 0;
+node3 = 3;
+n3next = 0;
 0:continue = 1;
 1:continue = 1;
 2:continue = 1;
-2:out = 0;
-node2 = 2;
-node3 = 3;
-ToS = 1;
+2:next = 0;
 }
 
 P0(int *ToS, int *node2, int *n2next)
@@ -15,7 +17,7 @@ P0(int *ToS, int *node2, int *n2next)
     top = READ_ONCE(*ToS);
     WRITE_ONCE(*n2next, top);
     r0 = atomic_cmpxchg(ToS, top, *node2);
-    if(r0 != top) {
+    if(r0 == top) {
 	  continue = 0;
     }
   }
@@ -27,7 +29,7 @@ P1(int *ToS, int *node3, int *n3next)
     top = READ_ONCE(*ToS);
     WRITE_ONCE(*n3next, top);
     r0 = atomic_cmpxchg(ToS, top, *node3);
-    if(r0 != top) {
+    if(r0 == top) {
       continue = 0;
     }
   }
@@ -45,10 +47,10 @@ P2(int *ToS, int *n2next, int *n3next)
     }
     out = top;
     r0 = atomic_cmpxchg(ToS, top, next);
-    if(r0 != top) {
+    if(r0 == top) {
       continue = 0;
     }
   }
 }
 
-exists (0:continue=0 /\ 1:continue=0 /\ 2:continue=0)
+exists (ToS = 1 /\ 2:out = 3)
