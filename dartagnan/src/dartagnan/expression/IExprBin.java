@@ -12,9 +12,9 @@ import java.util.Set;
 
 public class IExprBin extends IExpr implements ExprInterface {
 
-    private ExprInterface lhs;
-    private ExprInterface rhs;
-    private IOpBin op;
+    private final ExprInterface lhs;
+    private final ExprInterface rhs;
+    private final IOpBin op;
 
     public IExprBin(ExprInterface lhs, IOpBin op, ExprInterface rhs) {
         this.lhs = lhs;

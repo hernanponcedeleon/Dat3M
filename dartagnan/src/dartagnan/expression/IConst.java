@@ -10,7 +10,7 @@ import java.util.Set;
 
 public class IConst extends IExpr implements ExprInterface, IntExprInterface {
 
-	private int value;
+	private final int value;
 	
 	public IConst(int value) {
 		this.value = value;

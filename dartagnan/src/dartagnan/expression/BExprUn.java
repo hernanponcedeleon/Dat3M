@@ -11,8 +11,8 @@ import java.util.Set;
 
 public class BExprUn extends BExpr {
 
-    private ExprInterface b;
-    private BOpUn op;
+    private final ExprInterface b;
+    private final BOpUn op;
 
     public BExprUn(BOpUn op, ExprInterface b) {
         this.b = b;

@@ -10,7 +10,7 @@ import java.util.Set;
 
 public class BConst extends BExpr implements ExprInterface {
 
-	private boolean value;
+	private final boolean value;
 	
 	public BConst(boolean value) {
 		this.value = value;

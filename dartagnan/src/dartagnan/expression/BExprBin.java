@@ -11,9 +11,9 @@ import java.util.Set;
 
 public class BExprBin extends BExpr {
 
-    private ExprInterface b1;
-    private ExprInterface b2;
-    private BOpBin op;
+    private final ExprInterface b1;
+    private final ExprInterface b2;
+    private final BOpBin op;
 
     public BExprBin(ExprInterface b1, BOpBin op, ExprInterface b2) {
         this.b1 = b1;

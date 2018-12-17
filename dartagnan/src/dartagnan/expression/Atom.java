@@ -11,9 +11,9 @@ import java.util.Set;
 
 public class Atom extends BExpr implements ExprInterface {
 	
-	private ExprInterface lhs;
-	private ExprInterface rhs;
-	private COpBin op;
+	private final ExprInterface lhs;
+	private final ExprInterface rhs;
+	private final COpBin op;
 	
 	public Atom (ExprInterface lhs, COpBin op, ExprInterface rhs) {
 		this.lhs = lhs;
