@@ -1,23 +1,20 @@
 C Treiber
 {
-ToS = 1;
-node2 = 2;
-n2next = 0;
-node3 = 3;
-n3next = 0;
+*ToS = node1;
+*n1next = null;
+*n2next = null;
+*n3next = null;
 0:continue = 1;
 1:continue = 1;
-2:continue = 1;
-2:next = 0;
 }
 
 P0(int *ToS, int *node2, int *n2next)
 {
   if(continue) {
     top = READ_ONCE(*ToS);
-    WRITE_ONCE(*n2next, top);
-    r0 = atomic_cmpxchg(ToS, top, *node2);
+    r0 = atomic_cmpxchg(ToS, top, node2);
     if(r0 == top) {
+      WRITE_ONCE(*n2next, top);
 	  continue = 0;
     }
   }
@@ -27,30 +24,12 @@ P1(int *ToS, int *node3, int *n3next)
 {
   if(continue) {
     top = READ_ONCE(*ToS);
-    WRITE_ONCE(*n3next, top);
-    r0 = atomic_cmpxchg(ToS, top, *node3);
+    r0 = atomic_cmpxchg(ToS, top, node3);
     if(r0 == top) {
-      continue = 0;
+      WRITE_ONCE(*n3next, top);
+	  continue = 0;
     }
   }
 }
 
-P2(int *ToS, int *n2next, int *n3next)
-{
-  if(continue) {
-    top = READ_ONCE(*ToS);
-    if(top == 2) {
-      next = READ_ONCE(*n2next);
-    }
-    if(top == 3) {
-      next = READ_ONCE(*n3next);
-    }
-    out = top;
-    r0 = atomic_cmpxchg(ToS, top, next);
-    if(r0 == top) {
-      continue = 0;
-    }
-  }
-}
-
-exists (ToS = 1 /\ 2:out = 3)
+exists (ToS = 1 /\ n2next = 1 /\ 0:continue = 1 /\ n3next = 1 /\ n1next = 1 /\ 1:continue = 1)
