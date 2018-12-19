@@ -24,7 +24,7 @@ P0(int *ToS, int *node2, int *n2next)
 P1(int *ToS, int *node2, int *n2next)
 {
   if(continue) {
-    top = READ_ONCE(*ToS);
+    top = smp_load_acquire(ToS);
     if(top == node2) {
       next = *n2next;
     }
