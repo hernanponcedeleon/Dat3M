@@ -60,69 +60,43 @@ public class RelCo extends Relation {
         BoolExpr enc = ctx.mkTrue();
 
         if(!maxTupleSet.isEmpty()){
-            for(Tuple tuple : maxTupleSet){
-                BoolExpr rel = edge("co", tuple.getFirst(), tuple.getSecond(), ctx);
-                enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
-                        ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
-                        ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(), ((MemEvent)tuple.getSecond()).getAddressExpr())
-                )));
-            }
-
             EventRepository eventRepository = program.getEventRepository();
+            Set<Event> writes = eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT);
+
             for(Event e : eventRepository.getEvents(EventRepository.INIT)) {
                 enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
             }
 
-            Map<Location, List<MemEvent>> stores = new HashMap<>();
-            for(Event e : eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT)){
-                for(Location location : ((MemEvent)e).getMaxLocationSet()){
-                    stores.putIfAbsent(location, new ArrayList<>());
-                    stores.get(location).add((MemEvent)e);
-                }
-            }
+            for(Event w :  writes){
+                MemEvent w1 = (MemEvent)w;
+                enc = ctx.mkAnd(enc, ctx.mkImplies(w1.executes(ctx),
+                        ctx.mkGt(Utils.intVar("co", w1, ctx), ctx.mkInt(0))));
 
-            for(Location location : stores.keySet()){
-                List<MemEvent> events = stores.get(location);
-                enc = ctx.mkAnd(enc, satTO(events));
-                for(Event w1 : events){
-                    BoolExpr lastCoOrder = ctx.mkAnd(w1.executes(ctx), ctx.mkEq(((MemEvent)w1).getAddressExpr(), location.getAddress().toZ3Int(ctx)));
-                    for(Event w2 : events){
-                        lastCoOrder = ctx.mkAnd(lastCoOrder, ctx.mkNot(edge("co", w1, w2, ctx)));
-                    }
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(lastCoOrder, ctx.mkEq(location.getLastValueExpr(ctx), ((MemEvent) w1).getSsaLoc(location))));
-                }
-            }
-        }
-        return enc;
-    }
+                BoolExpr lastCo = w1.executes(ctx);
 
-    private BoolExpr satTO(Collection<MemEvent> events) {
-        BoolExpr enc = ctx.mkTrue();
-        String name = getName();
+                for(Tuple t : maxTupleSet.getByFirst(w1)){
+                    MemEvent w2 = (MemEvent)t.getSecond();
+                    BoolExpr relation = edge("co", w1, w2, ctx);
+                    lastCo = ctx.mkAnd(lastCo, ctx.mkNot(edge("co", w1, w2, ctx)));
 
-        for(Event e1 : events) {
-            enc = ctx.mkAnd(enc, ctx.mkNot(edge(name, e1, e1, ctx)));
-            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkAnd(
-                    ctx.mkGt(Utils.intVar(name, e1, ctx), ctx.mkInt(0)),
-                    ctx.mkLe(Utils.intVar(name, e1, ctx), ctx.mkInt(events.size()))
-            )));
-            for(Event e2 : events) {
-                if(e1 != e2) {
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(edge(name, e1, e2, ctx),
-                            ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))));
+                    enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
+                            ctx.mkAnd(ctx.mkAnd(w1.executes(ctx), w2.executes(ctx)), ctx.mkEq(w1.getAddressExpr(), w2.getAddressExpr())),
+                            ctx.mkLt(Utils.intVar("co", w1, ctx), Utils.intVar("co", w2, ctx))
+                    )));
 
                     enc = ctx.mkAnd(enc, ctx.mkImplies(
-                            ctx.mkAnd(
-                                ctx.mkAnd(e1.executes(ctx), e2.executes(ctx)),
-                                ctx.mkEq(((MemEvent)e1).getAddressExpr(), ((MemEvent)e2).getAddressExpr())
-                            ),
-                            ctx.mkAnd(
-                                    ctx.mkImplies(ctx.mkLt(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx)), edge(name, e1, e2, ctx)),
-                                    ctx.mkAnd(
-                                            ctx.mkNot(ctx.mkEq(Utils.intVar(name, e1, ctx), Utils.intVar(name, e2, ctx))),
-                                            ctx.mkOr(edge(name, e1, e2, ctx), edge(name, e2, e1, ctx))
-                                    )
-                            )
+                            ctx.mkAnd(ctx.mkAnd(w1.executes(ctx), w2.executes(ctx)), ctx.mkEq(w1.getAddressExpr(), w2.getAddressExpr())),
+                            ctx.mkNot(ctx.mkEq(Utils.intVar("co", w1, ctx), Utils.intVar("co", w2, ctx)))
+                    ));
+                }
+
+                BoolExpr lastCoExpr = ctx.mkBoolConst("co_last(" + w1.repr() + ")");
+                enc = ctx.mkAnd(enc, ctx.mkEq(lastCoExpr, lastCo));
+
+                for(Location location : w1.getMaxLocationSet()){
+                    enc = ctx.mkAnd(enc, ctx.mkImplies(
+                            ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getAddressExpr(), location.getAddress().toZ3Int(ctx))),
+                            ctx.mkEq(location.getLastValueExpr(ctx), w1.getSsaLoc(location))
                     ));
                 }
             }

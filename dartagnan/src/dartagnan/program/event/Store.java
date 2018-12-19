@@ -74,10 +74,10 @@ public class Store extends MemEvent implements RegReaderData {
             IntExpr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
             this.ssaLocMap.put(loc, z3Loc);
             enc = ctx.mkAnd(enc, ctx.mkImplies(
-                    ctx.mkAnd(executes(ctx), ctx.mkEq(addressExpr, loc.getAddress().toZ3Int(ctx))),
+                    ctx.mkEq(addressExpr, loc.getAddress().toZ3Int(ctx)),
                     ctx.mkEq(z3Loc, z3Expr)
             ));
         }
-        return new Pair<>(enc, map);
+        return new Pair<>(ctx.mkImplies(executes(ctx), enc), map);
     }
 }
