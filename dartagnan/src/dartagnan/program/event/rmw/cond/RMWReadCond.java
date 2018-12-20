@@ -58,7 +58,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
 
     private Expr encodeValue(MapSSA map, Context ctx, ExprInterface v){
         if(v instanceof Register){
-            return ssaReg((Register) v, map.get(v), ctx);
+            return ssaReg((Register)v, map.get((Register)v), ctx);
         }
         return ctx.mkInt(v.toString());
     }
