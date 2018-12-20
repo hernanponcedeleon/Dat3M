@@ -15,6 +15,7 @@ public abstract class MemEvent extends Event {
 
     protected IExpr address;
     protected IntExpr addressExpr;
+    protected IntExpr valueExpr;
 
     protected Set<Location> locations;
     protected Map<Location, Expr> ssaLocMap = new HashMap<>();
@@ -24,6 +25,13 @@ public abstract class MemEvent extends Event {
             return addressExpr;
         }
         throw new RuntimeException("Attempt to access not initialised address expression in " + this);
+    }
+
+    public IntExpr getValueExpr(){
+        if(valueExpr != null){
+            return valueExpr;
+        }
+        throw new RuntimeException("Attempt to access not initialised value expression in " + this);
     }
 
     public Set<Location> getMaxLocationSet(){
@@ -46,10 +54,6 @@ public abstract class MemEvent extends Event {
 
     public IExpr getAddress(){
         return address;
-    }
-
-    public Expr getSsaLoc(Location location){
-        return ssaLocMap.get(location);
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){

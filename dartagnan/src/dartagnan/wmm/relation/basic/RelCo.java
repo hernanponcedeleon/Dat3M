@@ -12,7 +12,8 @@ import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
 
 import static dartagnan.utils.Utils.edge;
 import static dartagnan.utils.Utils.intVar;
@@ -96,7 +97,7 @@ public class RelCo extends Relation {
                 for(Location location : w1.getMaxLocationSet()){
                     enc = ctx.mkAnd(enc, ctx.mkImplies(
                             ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getAddressExpr(), location.getAddress().toZ3Int(ctx))),
-                            ctx.mkEq(location.getLastValueExpr(ctx), w1.getSsaLoc(location))
+                            ctx.mkEq(location.getLastValueExpr(ctx), w1.getValueExpr())
                     ));
                 }
             }

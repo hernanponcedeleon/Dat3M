@@ -133,7 +133,7 @@ public class Graph {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
                         Location location = getLocationForAddress(program, addressExprToInt(((MemEvent)e2).getAddressExpr()));
-                        label += " " + location + " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc(location)).toString();
+                        label += " " + location + " = " + model.getConstInterp(((MemEvent) e2).getValueExpr()).toString();
                     }
                     sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }

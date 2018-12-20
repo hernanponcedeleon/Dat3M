@@ -4,15 +4,16 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
+import dartagnan.program.event.Load;
 import dartagnan.program.event.MemEvent;
-import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.axiom.Axiom;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dartagnan.utils.Utils.edge;
@@ -70,46 +71,26 @@ public class RelRf extends Relation {
             }
 
             BoolExpr dfEnc = ctx.mkTrue();
-            Map<Location, Set<MemEvent>> stores = new HashMap<>();
-            Map<Location, Set<MemEvent>> loads = new HashMap<>();
+            for(Event e : program.getEventRepository().getEvents(EventRepository.LOAD)){
+                Load r = (Load)e;
+                Set<BoolExpr> rfPairs = new HashSet<>();
 
-            for(Tuple tuple : maxTupleSet){
-                MemEvent store = (MemEvent) tuple.getFirst();
-                for(Location location : store.getMaxLocationSet()){
-                    stores.putIfAbsent(location, new HashSet<>());
-                    stores.get(location).add(store);
-                }
-
-                MemEvent load = (MemEvent) tuple.getSecond();
-                for(Location location : load.getMaxLocationSet()){
-                    loads.putIfAbsent(location, new HashSet<>());
-                    loads.get(location).add(load);
-                }
-            }
-
-            for(Location location : loads.keySet()){
-                for(MemEvent r : loads.get(location)){
-                    Set<BoolExpr> rfPairs = new HashSet<>();
-                    for(MemEvent w : stores.get(location)) {
-                        rfPairs.add(edge("rf", w, r, ctx));
-                        dfEnc = ctx.mkAnd(dfEnc, ctx.mkImplies(
-                                edge("rf", w, r, ctx),
-                                ctx.mkEq(w.getSsaLoc(location), r.getSsaLoc(location))
-                        ));
-                    }
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(
-                            ctx.mkAnd(r.executes(ctx), ctx.mkEq(r.getAddressExpr(), location.getAddress().toZ3Int(ctx))),
-                            encodeEO(rfPairs)
+                for(Tuple t : maxTupleSet.getBySecond(r)){
+                    MemEvent w = (MemEvent) t.getFirst();
+                    rfPairs.add(edge("rf", w, r, ctx));
+                    dfEnc = ctx.mkAnd(dfEnc, ctx.mkImplies(
+                            edge("rf", w, r, ctx),
+                            ctx.mkEq(w.getValueExpr(), r.getValueExpr())
                     ));
                 }
+                enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));
             }
             enc = ctx.mkAnd(enc, dfEnc);
         }
-
         return enc;
     }
 
-    private BoolExpr encodeEO(Collection<BoolExpr> set) {
+    private BoolExpr encodeEO(Set<BoolExpr> set) {
         BoolExpr enc = ctx.mkFalse();
         for(BoolExpr exp : set) {
             BoolExpr thisYesOthersNot = exp;
