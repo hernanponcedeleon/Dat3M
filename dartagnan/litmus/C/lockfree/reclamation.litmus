@@ -12,7 +12,6 @@ Bnext = null;
 
 P0(int *ToS, int *A, int *Anext, int *B, int *Bnext)
 {
-  rcu_read_lock();
   top = smp_load_acquire(ToS);
   if(top == A) {
     next = *Anext;
@@ -24,7 +23,6 @@ P0(int *ToS, int *A, int *Anext, int *B, int *Bnext)
   if(r1 == top) {
     out0 = top;
   }
-  rcu_read_unlock();
 }
 
 P1(int *ToS, int *A, int *Anext, int *B, int *Bnext)
@@ -40,8 +38,7 @@ P1(int *ToS, int *A, int *Anext, int *B, int *Bnext)
   if(r1 == top) {
     out1 = top;
   }
-    
-  synchronize_rcu();
+  
   top = smp_load_acquire(ToS);
   if(top == A) {
     next = *Anext;
@@ -52,6 +49,12 @@ P1(int *ToS, int *A, int *Anext, int *B, int *Bnext)
   r1 = atomic_cmpxchg(ToS, top, next);
   if(r1 == top) {
     out2 = top;
+    if(top == A) {
+      *A = 10;
+    }
+    if(top == B) {
+      *B = 10;
+    }
   }
   
   top2 = READ_ONCE(*ToS);
@@ -59,4 +62,4 @@ P1(int *ToS, int *A, int *Anext, int *B, int *Bnext)
   r2 = atomic_cmpxchg(ToS, top2, A);
 }
 
-exists (0:out0 = A /\ 1:out1 = A /\ ToS = B)
+exists (0:next = B /\ B = 10)
