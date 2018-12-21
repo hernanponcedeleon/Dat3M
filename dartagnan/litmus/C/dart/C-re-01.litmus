@@ -1,4 +1,4 @@
-C C-re-01.litmus.litmus
+C C-re-01.litmus
 
 {
   atomic_t x = ATOMIC_INIT(1);
