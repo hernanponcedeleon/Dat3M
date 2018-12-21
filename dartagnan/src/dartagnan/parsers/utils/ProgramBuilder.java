@@ -60,6 +60,13 @@ public class ProgramBuilder {
         return child;
     }
 
+    public Thread removeChild(String thread){
+        if(!threads.containsKey(thread)){
+            throw new RuntimeException("Thread " + thread + " is not initialised");
+        }
+        return Thread.fromList(true, threads.remove(thread));
+    }
+
     public Thread getLastThreadEvent(String thread){
         if(threads.containsKey(thread)){
             return threads.get(thread).getLast();

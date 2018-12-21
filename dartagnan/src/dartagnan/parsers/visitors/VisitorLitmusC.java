@@ -7,6 +7,7 @@ import dartagnan.parsers.LitmusCParser;
 import dartagnan.parsers.LitmusCVisitor;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
+import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
@@ -16,23 +17,19 @@ import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.*;
 import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
-import dartagnan.utils.Pair;
-import org.antlr.v4.runtime.RuleContext;
-import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.util.ArrayList;
-import java.util.EmptyStackException;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 public class VisitorLitmusC
         extends LitmusCBaseVisitor<Object>
         implements LitmusCVisitor<Object> {
 
     private ProgramBuilder programBuilder;
-    private Stack<ExprInterface> returnStack = new Stack<>();
     private Stack<RCUReadLock> rcuLockStack = new Stack<>();
     private String currentThread;
+    private String scope;
+    private Register returnRegister;
+    private int innerThreadIndex = 0;
 
     public VisitorLitmusC(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -42,7 +39,7 @@ public class VisitorLitmusC
     // Entry point
 
     @Override
-    public Object visitMain(LitmusCParser.MainContext ctx) {
+    public Program visitMain(LitmusCParser.MainContext ctx) {
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
         return programBuilder.build();
@@ -90,212 +87,215 @@ public class VisitorLitmusC
 
     @Override
     public Object visitThread(LitmusCParser.ThreadContext ctx) {
-        currentThread = ctx.threadId().id;
+        scope = currentThread = ctx.threadId().id;
         programBuilder.initThread(currentThread);
         visitThreadArguments(ctx.threadArguments());
-        Thread result = visitExpressionSequence(ctx);
+
+        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
+            expressionContext.accept(this);
 
         // TODO: A separate lock stack for each branch
         if(!rcuLockStack.empty()){
             throw new ParsingException("Unbalanced RCU lock in thread " + currentThread);
         }
-        Thread t = programBuilder.addChild(currentThread, result);
-        currentThread = null;
-        return t;
+        scope = currentThread = null;
+        return null;
     }
 
     @Override
     public Object visitThreadArguments(LitmusCParser.ThreadArgumentsContext ctx){
-        int n = ctx.getChildCount();
-        for (int i = 0; i < n; ++i) {
-            ParseTree child = ctx.getChild(i);
-            if (child instanceof LitmusCParser.VarNameContext) {
-                Location location = programBuilder.getOrCreateLocation(child.getText());
-                Register register = programBuilder.getOrCreateRegister(currentThread, child.getText());
-                programBuilder.addChild(currentThread, new Local(register, location.getAddress()));
-            }
+        for(LitmusCParser.VarNameContext varName : ctx.varName()){
+            Location location = programBuilder.getOrCreateLocation(varName.getText());
+            Register register = programBuilder.getOrCreateRegister(scope, varName.getText());
+            programBuilder.addChild(currentThread, new Local(register, location.getAddress()));
         }
         return null;
     }
 
     @Override
-    public Thread visitExpression(LitmusCParser.ExpressionContext ctx) {
-        if (ctx.ifExpression() != null) {
-            return visitIfExpression(ctx.ifExpression());
-        }
-        if (ctx.whileExpression() != null) {
-            return visitWhileExpression(ctx.whileExpression());
-        }
-        return (Thread) ctx.nonReturnExpression().accept(this);
+    public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
+        ExprInterface expr = (ExprInterface) ctx.returnExpression().accept(this);
+        programBuilder.addChild(currentThread, new While(expr, visitInnerThread(ctx.expression())));
+        return null;
     }
 
     @Override
-    public Thread visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
-        Thread evalThread = (Thread)ctx.returnExpression().accept(this);
-        Thread t1 = visitExpressionSequence(ctx);
-        Thread result = new While(returnStack.pop(), t1);
-        return Thread.fromArray(false, evalThread, result);
+    public Object visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
+        ExprInterface expr = (ExprInterface) ctx.returnExpression().accept(this);
+        Thread t1 = visitInnerThread(ctx.expression());
+        Thread t2 = ctx.elseExpression() == null ? new Skip() : visitInnerThread(ctx.elseExpression().expression());
+        programBuilder.addChild(currentThread, new If(expr, t1, t2));
+        return null;
     }
 
-    @Override
-    public Thread visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
-        Thread evalThread = (Thread)ctx.returnExpression().accept(this);
-        Thread t1 = visitExpressionSequence(ctx);
-        Thread t2 = ctx.elseExpression() == null ? new Skip() : visitExpressionSequence(ctx.elseExpression());
-        Thread result = new If(returnStack.pop(), t1, t2);
-        return Thread.fromArray(false, evalThread, result);
-    }
-
-    private Thread visitExpressionSequence(RuleContext ctx) {
-        List<Thread> events = new ArrayList<>();
-        int n = ctx.getChildCount();
-        for (int i = 0; i < n; ++i) {
-            ParseTree child = ctx.getChild(i);
-            if (child instanceof LitmusCParser.ExpressionContext) {
-                Thread t = visitExpression((LitmusCParser.ExpressionContext) child);
-                if(t != null){
-                    events.add(t);
-                }
-            }
+    private Thread visitInnerThread(Collection<LitmusCParser.ExpressionContext> ctx){
+        if(ctx != null){
+            String origThread = currentThread;
+            String tName = newInnerThreadIndex();
+            currentThread = tName;
+            programBuilder.initThread(tName);
+            for(LitmusCParser.ExpressionContext expressionContext : ctx)
+                expressionContext.accept(this);
+            currentThread = origThread;
+            return programBuilder.removeChild(tName);
         }
-        return Thread.fromList(true, events);
+        return new Skip();
     }
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Return expressions
+    // Return expressions (memory reads, must have register for return value)
 
     // Returns new value (the value after computation)
     @Override
-    public Thread visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
-        Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWOpReturn(getAddress(ctx.variable()), register, pair.getSecond(), ctx.op, ctx.mo);
-        returnStack.push(register);
-        return Thread.fromArray(false, pair.getFirst(), t);
+    public IExpr visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
+        Register register = getReturnRegister(true);
+        ExprInterface value = returnExpressionOrDefault(ctx.returnExpression(), 1);
+        Thread thread = new RMWOpReturn(visitVariable(ctx.variable()), register, value, ctx.op, ctx.mo);
+        programBuilder.addChild(currentThread, thread);
+        return register;
     }
 
     // Returns old value (the value before computation)
     @Override
-    public Thread visitReAtomicFetchOp(LitmusCParser.ReAtomicFetchOpContext ctx){
-        Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWFetchOp(getAddress(ctx.variable()), register, pair.getSecond(), ctx.op, ctx.mo);
-        returnStack.push(register);
-        return Thread.fromArray(false, pair.getFirst(), t);
+    public IExpr visitReAtomicFetchOp(LitmusCParser.ReAtomicFetchOpContext ctx){
+        Register register = getReturnRegister(true);
+        ExprInterface value = returnExpressionOrDefault(ctx.returnExpression(), 1);
+        Thread thread = new RMWFetchOp(visitVariable(ctx.variable()), register, value, ctx.op, ctx.mo);
+        programBuilder.addChild(currentThread, thread);
+        return register;
     }
 
     @Override
-    public Thread visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
-        Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWOpAndTest(getAddress(ctx.variable()), register, pair.getSecond(), ctx.op);
-        returnStack.push(register);
-        return Thread.fromArray(false, pair.getFirst(), t);
+    public IExpr visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
+        Register register = getReturnRegister(true);
+        ExprInterface value = returnExpressionOrDefault(ctx.returnExpression(), 1);
+        Thread thread = new RMWOpAndTest(visitVariable(ctx.variable()), register, value, ctx.op);
+        programBuilder.addChild(currentThread, thread);
+        return register;
     }
 
     // Returns non-zero if the addition was executed, zero otherwise
     @Override
-    public Thread visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
-        ExprInterface value = returnStack.pop();
-        Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
-        ExprInterface cmp = returnStack.pop();
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWAddUnless(getAddress(ctx.variable()), register,cmp, value);
-        returnStack.push(register);
-        return Thread.fromArray(false, t1, t2, t);
+    public IExpr visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
+        Register register = getReturnRegister(true);
+        ExprInterface value = (ExprInterface)ctx.returnExpression(0).accept(this);
+        ExprInterface cmp = (ExprInterface)ctx.returnExpression(1).accept(this);
+        programBuilder.addChild(currentThread, new RMWAddUnless(visitVariable(ctx.variable()), register, cmp, value));
+        return register;
     }
 
     @Override
-    public Thread visitReLoad(LitmusCParser.ReLoadContext ctx){
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        returnStack.push(register);
-        return new Load(register, getAddress(ctx.variable()), ctx.mo);
+    public IExpr visitReXchg(LitmusCParser.ReXchgContext ctx){
+        Register register = getReturnRegister(true);
+        ExprInterface value = (ExprInterface)ctx.returnExpression().accept(this);
+        Thread t = new RMWXchg(visitVariable(ctx.variable()), register, value, ctx.mo);
+        programBuilder.addChild(currentThread, t);
+        return register;
     }
 
     @Override
-    public Thread visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        returnStack.push(register);
-        IExpr address = getAddress(ctx.variable());
-        return new Load(register, address, ctx.mo);
+    public IExpr visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
+        Register register = getReturnRegister(true);
+        ExprInterface cmp = (ExprInterface)ctx.returnExpression(0).accept(this);
+        ExprInterface value = (ExprInterface)ctx.returnExpression(1).accept(this);
+        Thread t = new RMWCmpXchg(visitVariable(ctx.variable()), register, cmp, value, ctx.mo);
+        programBuilder.addChild(currentThread, t);
+        return register;
     }
 
     @Override
-    public Thread visitReReadNa(LitmusCParser.ReReadNaContext ctx){
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        returnStack.push(register);
+    public IExpr visitReLoad(LitmusCParser.ReLoadContext ctx){
+        Register register = getReturnRegister(true);
+        Thread t = new Load(register, visitVariable(ctx.variable()), ctx.mo);
+        programBuilder.addChild(currentThread, t);
+        return register;
+    }
+
+    @Override
+    public IExpr visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
+        Register register = getReturnRegister(true);
+        IExpr address = visitVariable(ctx.variable());
+        Thread t = new Load(register, address, ctx.mo);
+        programBuilder.addChild(currentThread, t);
+        return register;
+    }
+
+    @Override
+    public IExpr visitReReadNa(LitmusCParser.ReReadNaContext ctx){
+        Register register = getReturnRegister(true);
         IExpr address = (IExpr)ctx.variable().accept(this);
-        return new Load(register, address, "NA");
+        Thread t = new Load(register, address, "NA");
+        programBuilder.addChild(currentThread, t);
+        return register;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Return expressions (register for return value is optional)
+
+    @Override
+    public ExprInterface visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
+        Register register = getReturnRegister(false);
+        ExprInterface v1 = (ExprInterface)ctx.returnExpression(0).accept(this);
+        ExprInterface v2 = (ExprInterface)ctx.returnExpression(1).accept(this);
+        Atom result = new Atom(v1, ctx.opCompare().op, v2);
+        return assignToReturnRegister(register, result);
     }
 
     @Override
-    public Thread visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
-        ExprInterface v1 = returnStack.pop();
-        Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
-        ExprInterface v2 = returnStack.pop();
-        returnStack.push(new Atom(v1, ctx.opCompare().op, v2));
-        return Thread.fromArray(false, t1, t2);
+    public ExprInterface visitReOpArith(LitmusCParser.ReOpArithContext ctx){
+        Register register = getReturnRegister(false);
+        ExprInterface v1 = (ExprInterface)ctx.returnExpression(0).accept(this);
+        ExprInterface v2 = (ExprInterface)ctx.returnExpression(1).accept(this);
+        IExpr result = new IExprBin(v1, ctx.opArith().op, v2);
+        return assignToReturnRegister(register, result);
     }
 
     @Override
-    public Thread visitReOpArith(LitmusCParser.ReOpArithContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
-        ExprInterface v1 = returnStack.pop();
-        Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
-        ExprInterface v2 = returnStack.pop();
-        returnStack.push(new IExprBin(v1, ctx.opArith().op, v2));
-        return Thread.fromArray(false, t1, t2);
+    public ExprInterface visitReOpBool(LitmusCParser.ReOpBoolContext ctx){
+        Register register = getReturnRegister(false);
+        ExprInterface v1 = (ExprInterface)ctx.returnExpression(0).accept(this);
+        ExprInterface v2 = (ExprInterface)ctx.returnExpression(1).accept(this);
+        BExprBin result = new BExprBin(v1, ctx.opBool().op, v2);
+        return assignToReturnRegister(register, result);
     }
 
     @Override
-    public Thread visitReOpBool(LitmusCParser.ReOpBoolContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
-        ExprInterface v1 = returnStack.pop();
-        Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
-        ExprInterface v2 = returnStack.pop();
-        returnStack.push(new BExprBin(v1, ctx.opBool().op, v2));
-        return Thread.fromArray(false, t1, t2);
+    public ExprInterface visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
+        Register register = getReturnRegister(false);
+        ExprInterface v = (ExprInterface)ctx.returnExpression().accept(this);
+        BExprUn result = new BExprUn(BOpUn.NOT, v);
+        return assignToReturnRegister(register, result);
     }
 
     @Override
-    public Thread visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
-        Thread t = (Thread)ctx.returnExpression().accept(this);
-        ExprInterface v = returnStack.pop();
-        returnStack.push(new BExprUn(BOpUn.NOT, v));
-        return t;
+    public ExprInterface visitReParenthesis(LitmusCParser.ReParenthesisContext ctx){
+        return (ExprInterface)ctx.returnExpression().accept(this);
     }
 
     @Override
-    public Thread visitReParenthesis(LitmusCParser.ReParenthesisContext ctx){
-        return (Thread)ctx.returnExpression().accept(this);
+    public ExprInterface visitReCast(LitmusCParser.ReCastContext ctx){
+        Register register = getReturnRegister(false);
+        ExprInterface result = (ExprInterface)ctx.returnExpression().accept(this);
+        return assignToReturnRegister(register, result);
     }
 
     @Override
-    public Thread visitReCast(LitmusCParser.ReCastContext ctx){
-        return (Thread)ctx.returnExpression().accept(this);
-    }
-
-    @Override
-    public Thread visitReVariable(LitmusCParser.ReVariableContext ctx){
+    public ExprInterface visitReVariable(LitmusCParser.ReVariableContext ctx){
+        Register register = getReturnRegister(false);
         IntExprInterface variable = (IntExprInterface)ctx.variable().accept(this);
         if(variable instanceof Register){
-            returnStack.push((Register) variable);
-            return null;
-        }
-        if(variable instanceof Address){
-            returnStack.push((Address) variable);
-            return null;
+            Register result = (Register)variable;
+            return assignToReturnRegister(register, result);
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     @Override
-    public Thread visitReConst(LitmusCParser.ReConstContext ctx){
-        returnStack.push(new IConst(Integer.parseInt(ctx.getText())));
-        return null;
+    public ExprInterface visitReConst(LitmusCParser.ReConstContext ctx){
+        Register register = getReturnRegister(false);
+        IConst result = new IConst(Integer.parseInt(ctx.getText()));
+        return assignToReturnRegister(register, result);
     }
 
 
@@ -303,110 +303,98 @@ public class VisitorLitmusC
     // NonReturn expressions (all other return expressions are reduced to these ones)
 
     @Override
-    public Thread visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
-        Pair<Thread, ExprInterface> pair = acceptRetValue(ctx.returnExpression());
-        Thread t = new RMWOp(getAddress(ctx.variable()), pair.getSecond(), ctx.op);
-        return Thread.fromArray(false, pair.getFirst(), t);
+    public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
+        ExprInterface value = returnExpressionOrDefault(ctx.returnExpression(), 1);
+        Thread t = new RMWOp(visitVariable(ctx.variable()), value, ctx.op);;
+        programBuilder.addChild(currentThread, t);
+        return null;
     }
 
     @Override
-    public Thread visitReXchg(LitmusCParser.ReXchgContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        ExprInterface value = returnStack.pop();
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWXchg(getAddress(ctx.variable()), register, value, ctx.mo);
-        returnStack.push(register);
-        return Thread.fromArray(false, t1, t);
-    }
-
-    @Override
-    public Thread visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression(0).accept(this);
-        ExprInterface cmp = returnStack.pop();
-        Thread t2 = (Thread)ctx.returnExpression(1).accept(this);
-        ExprInterface value = returnStack.pop();
-        Register register = programBuilder.getOrCreateRegister(currentThread, null);
-        Thread t = new RMWCmpXchg(getAddress(ctx.variable()), register, cmp, value, ctx.mo);
-        returnStack.push(register);
-        return Thread.fromArray(false, t1, t2, t);
-    }
-
-    @Override
-    public Thread visitNreStore(LitmusCParser.NreStoreContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        IExpr address = getAddress(ctx.variable());
+    public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
+        ExprInterface value = (ExprInterface)ctx.returnExpression().accept(this);
+        IExpr address = visitVariable(ctx.variable());
         if(ctx.mo.equals("Mb")){
-            Thread t = new Store(address, returnStack.pop(), "Relaxed");
-            return Thread.fromArray(false, t1, t, new Fence("Mb"));
+            Thread t = new Store(address, value, "Relaxed");
+            t = Thread.fromArray(false, t, new Fence("Mb"));
+            programBuilder.addChild(currentThread, t);
+            return null;
         }
-        Thread t = new Store(address, returnStack.pop(), ctx.mo);
-        return Thread.fromArray(false, t1, t);
+        Thread t = new Store(address, value, ctx.mo);
+        programBuilder.addChild(currentThread, t);
+        return null;
     }
 
     @Override
-    public Thread visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
-        Thread t1 = (Thread)ctx.returnExpression().accept(this);
-        IExpr address = getAddress(ctx.variable());
-        Thread t = new Store(address, returnStack.pop(), ctx.mo);
-        return Thread.fromArray(false, t1, t);
+    public Object visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
+        ExprInterface value = (ExprInterface)ctx.returnExpression().accept(this);
+        IExpr address = visitVariable(ctx.variable());
+        Thread t = new Store(address, value, ctx.mo);
+        programBuilder.addChild(currentThread, t);
+        return null;
     }
 
     @Override
-    public Thread visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
-        Thread t = (Thread)ctx.returnExpression().accept(this);
+    public Object visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
         IntExprInterface variable = (IntExprInterface)ctx.varName().accept(this);
 
         if(ctx.Ast() == null){
             if(variable instanceof Register){
-                Thread result = new Local((Register) variable, returnStack.pop());
-                return Thread.fromArray(false, t, result);
+                returnRegister = (Register)variable;
+                ctx.returnExpression().accept(this);
+                return null;
             }
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
 
+        ExprInterface value = (ExprInterface)ctx.returnExpression().accept(this);
         if(variable instanceof Address || variable instanceof Register){
-            Thread result = new Store((IExpr) variable, returnStack.pop(), "NA");
-            return Thread.fromArray(false, t, result);
+            Thread result = new Store((IExpr) variable, value, "NA");
+            programBuilder.addChild(currentThread, result);
+            return null;
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     @Override
-    public Thread visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
-        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.varName().getText());
+    public Object visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
+        Register register = programBuilder.getOrCreateRegister(scope, ctx.varName().getText());
         if(ctx.returnExpression() != null){
-            Thread t = (Thread)ctx.returnExpression().accept(this);
-            Thread result = new Local(register, returnStack.pop());
-            return Thread.fromArray(false, t, result);
+            returnRegister = register;
+            ctx.returnExpression().accept(this);
         }
         return null;
     }
 
     @Override
-    public Thread visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
+    public Object visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
         RCUReadLock lock = new RCUReadLock();
+        programBuilder.addChild(currentThread, lock);
         rcuLockStack.push(lock);
-        return lock;
+        return null;
     }
 
     @Override
-    public Thread visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
+    public Object visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
         try {
             RCUReadLock lock = rcuLockStack.pop();
-            return new RCUReadUnlock(lock);
+            programBuilder.addChild(currentThread, new RCUReadUnlock(lock));
+            return null;
         } catch (EmptyStackException e){
             throw new ParsingException("Unbalanced RCU unlock in thread " + currentThread);
         }
     }
 
     @Override
-    public Thread visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
-        return new RCUSync();
+    public Object visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
+        programBuilder.addChild(currentThread, new RCUSync());
+        return null;
     }
 
     @Override
-    public Thread visitNreFence(LitmusCParser.NreFenceContext ctx){
-        return new Fence(ctx.name);
+    public Object visitNreFence(LitmusCParser.NreFenceContext ctx){
+        programBuilder.addChild(currentThread, new Fence(ctx.name));
+        return null;
     }
 
 
@@ -414,50 +402,54 @@ public class VisitorLitmusC
     // Utils
 
     @Override
-    public Register visitThreadVariable(LitmusCParser.ThreadVariableContext ctx) {
-        String variableName = ctx.varName().getText();
-        return programBuilder.getOrCreateRegister(ctx.threadId().id, variableName);
+    public IExpr visitVariable(LitmusCParser.VariableContext ctx){
+        return ctx.variable() != null
+                ? (IExpr)ctx.variable().accept(this)
+                : (IExpr)ctx.varName().accept(this);
     }
 
     @Override
-    public IntExprInterface visitVariable(LitmusCParser.VariableContext ctx){
-        if(ctx.variable() != null){
-            return (IntExprInterface)ctx.variable().accept(this);
-        }
-        return (IntExprInterface)ctx.varName().accept(this);
-    }
-
-    @Override
-    public IntExprInterface visitVarName(LitmusCParser.VarNameContext ctx){
-        if(currentThread != null){
-            Register register = programBuilder.getRegister(currentThread, ctx.getText());
+    public IExpr visitVarName(LitmusCParser.VarNameContext ctx){
+        if(scope != null){
+            Register register = programBuilder.getRegister(scope, ctx.getText());
             if(register != null){
                 return register;
             }
             Location location = programBuilder.getLocation(ctx.getText());
             if(location != null){
-                return location;
+                register = programBuilder.getOrCreateRegister(scope, null);
+                programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
+                return register;
             }
-            return programBuilder.getOrCreateRegister(currentThread, ctx.getText());
+            return programBuilder.getOrCreateRegister(scope, ctx.getText());
         }
-        return programBuilder.getOrCreateLocation(ctx.getText());
+        Location location = programBuilder.getOrCreateLocation(ctx.getText());
+        Register register = programBuilder.getOrCreateRegister(scope, null);
+        programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
+        return register;
     }
 
-    private IExpr getAddress(LitmusCParser.VariableContext ctx){
-        Object address = ctx.accept(this);
-        if(address instanceof Address || address instanceof Register){
-            return (IExpr) address;
-        }
-        throw new ParsingException("Invalid syntax near " + ctx.getText());
+    private ExprInterface returnExpressionOrDefault(LitmusCParser.ReturnExpressionContext ctx, int defaultValue){
+        return ctx != null ? (ExprInterface)ctx.accept(this) : new IConst(defaultValue);
     }
 
-    private Pair<Thread, ExprInterface> acceptRetValue(LitmusCParser.ReturnExpressionContext ctx){
-        Thread t = null;
-        ExprInterface v = new IConst(1);
-        if(ctx != null){
-            t = (Thread)ctx.accept(this);
-            v = returnStack.pop();
+    private Register getReturnRegister(boolean createOnNull){
+        Register register = returnRegister;
+        if(register == null && createOnNull){
+            return programBuilder.getOrCreateRegister(scope, null);
         }
-        return new Pair<>(t, v);
+        returnRegister = null;
+        return register;
+    }
+
+    private ExprInterface assignToReturnRegister(Register register, ExprInterface value){
+        if(register != null){
+            programBuilder.addChild(currentThread, new Local(register, value));
+        }
+        return value;
+    }
+
+    private String newInnerThreadIndex(){
+        return "inner_" + innerThreadIndex++;
     }
 }
