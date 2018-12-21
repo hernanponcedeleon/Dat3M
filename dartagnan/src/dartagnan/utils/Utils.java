@@ -11,20 +11,20 @@ public class Utils {
 
 	public static MapSSA mergeMaps(MapSSA map1, MapSSA map2) {
 		MapSSA map = new MapSSA();
-		for(Object o : map1.keySet()) {
-	        if(map2.keySet().contains(o)) {
-				map.put(o, Math.max(map1.get(o), map2.get(o)));
+		for(Register reg : map1.keySet()) {
+	        if(map2.keySet().contains(reg)) {
+				map.put(reg, Math.max(map1.get(reg), map2.get(reg)));
 	        }
 	        else {
-	        	map.put(o, map1.get(o));
+	        	map.put(reg, map1.get(reg));
 	        }
 		}
-		for(Object o : map2.keySet()) {
-	        if(map1.keySet().contains(o)) {
-				map.put(o, Math.max(map1.get(o), map2.get(o)));
+		for(Register reg : map2.keySet()) {
+	        if(map1.keySet().contains(reg)) {
+				map.put(reg, Math.max(map1.get(reg), map2.get(reg)));
 	        }
 	        else {
-	        	map.put(o, map2.get(o));
+	        	map.put(reg, map2.get(reg));
 	        }
 		}
 		return map;

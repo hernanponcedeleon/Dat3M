@@ -61,12 +61,9 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
     @Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		if(mainThread != null){
-			IntExpr z3Expr = expr.toZ3Int(map, ctx);
-			IntExpr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-			this.ssaRegIndex = map.get(reg);
-			return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
-		}
-		throw new RuntimeException("Main thread is not set for " + toString());
+		IntExpr z3Expr = expr.toZ3Int(map, ctx);
+		IntExpr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
+		this.ssaRegIndex = map.get(reg);
+		return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
 	}
 }

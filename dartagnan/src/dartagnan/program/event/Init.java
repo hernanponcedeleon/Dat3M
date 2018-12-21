@@ -2,15 +2,11 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
 import dartagnan.expression.IConst;
 import dartagnan.program.memory.Address;
-import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
-
-import static dartagnan.utils.Utils.ssaLoc;
 
 public class Init extends MemEvent {
 
@@ -44,21 +40,9 @@ public class Init extends MemEvent {
 
 	@Override
 	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		if(mainThread == null){
-			throw new RuntimeException("Main thread is not set for " + this);
-		}
-		if(locations.size() != 1){
-			throw new RuntimeException("Invalid location set in " + this);
-		}
 		addressExpr = address.toZ3Int(map, ctx);
-
-		BoolExpr enc = ctx.mkTrue();
-		for(Location loc : locations){
-			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-			this.ssaLocMap.put(loc, z3Loc);
-			enc = ctx.mkAnd(enc, ctx.mkImplies(executes(ctx), ctx.mkEq(z3Loc, value.toZ3Int(ctx))));
-		}
-		return new Pair<>(enc, map);
+		valueExpr = value.toZ3Int(ctx);
+		return new Pair<>(ctx.mkTrue(), map);
 	}
 
 	public IConst getValue(){

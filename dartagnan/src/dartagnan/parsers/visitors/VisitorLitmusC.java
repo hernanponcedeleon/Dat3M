@@ -99,7 +99,9 @@ public class VisitorLitmusC
         if(!rcuLockStack.empty()){
             throw new ParsingException("Unbalanced RCU lock in thread " + currentThread);
         }
-        return programBuilder.addChild(currentThread, result);
+        Thread t = programBuilder.addChild(currentThread, result);
+        currentThread = null;
+        return t;
     }
 
     @Override
@@ -108,7 +110,9 @@ public class VisitorLitmusC
         for (int i = 0; i < n; ++i) {
             ParseTree child = ctx.getChild(i);
             if (child instanceof LitmusCParser.VarNameContext) {
-                programBuilder.getOrCreateLocation(child.getText());
+                Location location = programBuilder.getOrCreateLocation(child.getText());
+                Register register = programBuilder.getOrCreateRegister(currentThread, child.getText());
+                programBuilder.addChild(currentThread, new Local(register, location.getAddress()));
             }
         }
         return null;
@@ -425,15 +429,18 @@ public class VisitorLitmusC
 
     @Override
     public IntExprInterface visitVarName(LitmusCParser.VarNameContext ctx){
-        Register register = programBuilder.getRegister(currentThread, ctx.getText());
-        if(register != null){
-            return register;
+        if(currentThread != null){
+            Register register = programBuilder.getRegister(currentThread, ctx.getText());
+            if(register != null){
+                return register;
+            }
+            Location location = programBuilder.getLocation(ctx.getText());
+            if(location != null){
+                return location;
+            }
+            return programBuilder.getOrCreateRegister(currentThread, ctx.getText());
         }
-        Location location = programBuilder.getLocation(ctx.getText());
-        if(location != null){
-            return location.getAddress();
-        }
-        return programBuilder.getOrCreateRegister(currentThread, ctx.getText());
+        return programBuilder.getOrCreateLocation(ctx.getText());
     }
 
     private IExpr getAddress(LitmusCParser.VariableContext ctx){

@@ -27,7 +27,7 @@ thread
     ;
 
 threadArguments
-    :   typeSpecifier varName (Comma typeSpecifier varName)*
+    :   pointerTypeSpecifier varName (Comma pointerTypeSpecifier varName)*
     ;
 
 expression
@@ -220,6 +220,11 @@ constantValue
 
 cast
     :   LPar typeSpecifier Ast* RPar
+    ;
+
+pointerTypeSpecifier
+    :   (Volatile)? basicTypeSpecifier Ast
+    |   (Volatile)? atomicTypeSpecifier Ast
     ;
 
 typeSpecifier
