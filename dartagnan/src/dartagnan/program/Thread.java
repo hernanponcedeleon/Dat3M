@@ -26,13 +26,6 @@ public abstract class Thread {
         this.mainThread = t;
     }
 
-    public Thread getMainThread() {
-        if(mainThread != null){
-            return mainThread;
-        }
-        throw new RuntimeException("Main thread is not initialised for " + this);
-    }
-
     public int getTId() {
         return this.tid;
     }
