@@ -1,0 +1,11 @@
+C C-array-error-invalid.litmus
+
+{
+  atomic_t arr[];
+}
+
+P0(atomic_t *x) {
+  int r0 = 1;
+}
+
+forall (0:r0 = 1);
