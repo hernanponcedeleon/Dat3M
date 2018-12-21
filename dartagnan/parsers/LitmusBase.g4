@@ -154,7 +154,7 @@ Identifier
     ;
 
 DigitSequence
-    :   Digit+
+    :   Minus? Digit+
     ;
 
 fragment
