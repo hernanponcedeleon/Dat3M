@@ -1,32 +1,32 @@
 C Treiber
 {
-*ToS = node1;
-*n1next = null;
-*n2next = null;
+*ToS = A;
+*Anext = null;
+*Bnext = null;
 0:continue = 1;
 1:continue = 1;
 1:next = null;
 1:out = null;
 }
 
-P0(int *ToS, int *node2, int *n2next)
+P0(int *ToS, int *B, int *Bnext)
 {
   if(continue) {
     top = READ_ONCE(*ToS);
-    WRITE_ONCE(*n2next, top);
-    r1 = atomic_cmpxchg(ToS, top, node2);
+    WRITE_ONCE(*Bnext, top);
+    r1 = atomic_cmpxchg(ToS, top, B);
     if(r1 == top) {      
 	  continue = 0;
     }
   }
 }
 
-P1(int *ToS, int *node2, int *n2next)
+P1(int *ToS, int *B, int *Bnext)
 {
   if(continue) {
     top = smp_load_acquire(ToS);
-    if(top == node2) {
-      next = *n2next;
+    if(top == B) {
+      next = *Bnext;
     }
     r1 = atomic_cmpxchg(ToS, top, next);
     if(r1 == top) {
@@ -36,4 +36,4 @@ P1(int *ToS, int *node2, int *n2next)
   }
 }
 
-exists (ToS = 1 /\ n2next = 1 /\ 1:out=1 /\ 0:continue = 1 /\ 1:continue = 1)
+exists (1:out=B /\ ToS=null)
