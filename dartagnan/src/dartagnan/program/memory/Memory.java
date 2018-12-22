@@ -58,4 +58,8 @@ public class Memory {
     public Set<Location> getLocations(){
         return map.keySet();
     }
+
+    public Set<Address> getAllAddresses(){
+        return map.values();
+    }
 }
