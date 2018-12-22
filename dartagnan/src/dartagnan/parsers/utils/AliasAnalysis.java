@@ -10,7 +10,6 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Address;
-import dartagnan.program.memory.Location;
 import dartagnan.program.memory.Memory;
 import dartagnan.program.utils.EventRepository;
 
@@ -39,16 +38,14 @@ public class AliasAnalysis {
                     if(regWrite instanceof Local){
                         ExprInterface expr = ((Local)regWrite).getExpr();
                         if(expr instanceof Address){
-                            Set<Location> locations = ImmutableSet.of(memory.getLocationForAddress((Address) expr));
-                            ((MemEvent) e).setMaxLocationSet(locations);
+                            ((MemEvent) e).setMaxAddressSet(ImmutableSet.of((Address) expr));
                             continue;
                         }
                     }
                 }
-                ((MemEvent) e).setMaxLocationSet(memory.getLocations());
+                ((MemEvent) e).setMaxAddressSet(memory.getAllAddresses());
             } else if (address instanceof Address){
-                Set<Location> locations = ImmutableSet.of(memory.getLocationForAddress((Address) address));
-                ((MemEvent) e).setMaxLocationSet(locations);
+                ((MemEvent) e).setMaxAddressSet(ImmutableSet.of((Address) address));
             } else {
                 throw new RuntimeException("Unrecognised type of address in " + this);
             }

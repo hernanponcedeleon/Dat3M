@@ -1,10 +1,12 @@
 package dartagnan.wmm.relation.basic;
 
+import com.google.common.collect.ImmutableSetMultimap;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
+import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.utils.Utils;
@@ -62,6 +64,7 @@ public class RelCo extends Relation {
 
         if(!maxTupleSet.isEmpty()){
             EventRepository eventRepository = program.getEventRepository();
+            ImmutableSetMultimap<Address, Location> addressLocationMap = getAddressLocationMap();
             Set<Event> writes = eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT);
 
             for(Event e : eventRepository.getEvents(EventRepository.INIT)) {
@@ -94,14 +97,24 @@ public class RelCo extends Relation {
                 BoolExpr lastCoExpr = ctx.mkBoolConst("co_last(" + w1.repr() + ")");
                 enc = ctx.mkAnd(enc, ctx.mkEq(lastCoExpr, lastCo));
 
-                for(Location location : w1.getMaxLocationSet()){
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(
-                            ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getAddressExpr(), location.getAddress().toZ3Int(ctx))),
-                            ctx.mkEq(location.getLastValueExpr(ctx), w1.getValueExpr())
-                    ));
+                for(Address address : w1.getMaxAddressSet()){
+                    for(Location location : addressLocationMap.get(address)){
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(
+                                ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getAddressExpr(), address.toZ3Int(ctx))),
+                                ctx.mkEq(location.getLastValueExpr(ctx), w1.getValueExpr())
+                        ));
+                    }
                 }
             }
         }
         return enc;
+    }
+
+    private ImmutableSetMultimap<Address, Location> getAddressLocationMap(){
+        ImmutableSetMultimap.Builder<Address, Location> builder = new ImmutableSetMultimap.Builder<>();
+        for(Location location : program.getLocations()){
+            builder.put(location.getAddress(), location);
+        }
+        return builder.build();
     }
 }
