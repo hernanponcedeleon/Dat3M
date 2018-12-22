@@ -49,12 +49,6 @@ P1(int *ToS, int *A, int *Anext, int *B, int *Bnext)
   r1 = atomic_cmpxchg(ToS, top, next);
   if(r1 == top) {
     out2 = top;
-    if(top == A) {
-      *A = 10;
-    }
-    if(top == B) {
-      *B = 10;
-    }
   }
   
   top2 = READ_ONCE(*ToS);
@@ -62,4 +56,4 @@ P1(int *ToS, int *A, int *Anext, int *B, int *Bnext)
   r2 = atomic_cmpxchg(ToS, top2, A);
 }
 
-exists (0:next = B /\ B = 10)
+exists (0:out0 = A /\ 1:out1 = A /\ ToS = B)
