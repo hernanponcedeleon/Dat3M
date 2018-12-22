@@ -1,14 +1,11 @@
 package dartagnan.program.event;
 
 import com.google.common.collect.Sets;
-import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.memory.Location;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class MemEvent extends Event {
@@ -18,7 +15,6 @@ public abstract class MemEvent extends Event {
     protected IntExpr valueExpr;
 
     protected Set<Location> locations;
-    protected Map<Location, Expr> ssaLocMap = new HashMap<>();
 
     public IntExpr getAddressExpr(){
         if(addressExpr != null){

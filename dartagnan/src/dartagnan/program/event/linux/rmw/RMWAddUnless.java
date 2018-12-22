@@ -54,7 +54,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(memory[" + address + "], " + value + "," + cmp + ")";
+        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")";
     }
 
     @Override

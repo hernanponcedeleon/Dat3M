@@ -29,7 +29,7 @@ public class Read extends MemEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " = memory[" + address + "].load(" +  atomic + ")";
+        return nTimesCondLevel() + reg + " = load(*" + address + ", " + (atomic != null ? ", " + atomic : "") + ")";
     }
 
     @Override

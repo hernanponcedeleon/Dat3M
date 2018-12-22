@@ -124,6 +124,6 @@ public class Seq extends Thread {
 
 	@Override
     public String toString() {
-        return t2 instanceof Skip ? t1.toString() : t1 + ";\n" + t2;
+        return t2 instanceof Skip ? t1.toString() : t1 + "\n" + t2;
     }
 }

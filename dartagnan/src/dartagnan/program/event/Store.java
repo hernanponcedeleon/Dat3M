@@ -36,7 +36,7 @@ public class Store extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "memory[" + address + "] := " + value;
+        return nTimesCondLevel() + "store(*" + address + ", " + value + (atomic != null ? ", " + atomic : "") + ")";
     }
 
     @Override

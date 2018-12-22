@@ -40,7 +40,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_fetch_" + op.toLinuxName() + atomicToText(atomic) + "(" + value + ", memory[" + address + "])";
+        return nTimesCondLevel() + reg + " := atomic_fetch_" + op.toLinuxName() + atomicToText(atomic) + "(" + value + ", " + address + ")";
     }
 
     @Override

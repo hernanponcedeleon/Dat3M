@@ -40,7 +40,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "atomic_" + op.toLinuxName() + "(" + value + ", memory[" + address + "])";
+        return nTimesCondLevel() + "atomic_" + op.toLinuxName() + "(" + value + ", " + address + ")";
     }
 
     @Override

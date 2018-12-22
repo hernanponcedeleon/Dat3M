@@ -21,7 +21,7 @@ public class Init extends MemEvent {
 
 	@Override
 	public String toString() {
-		return nTimesCondLevel() + "memory[" + address + "] := " + value;
+		return nTimesCondLevel() + "*" + address + " := " + value;
 	}
 
 	@Override

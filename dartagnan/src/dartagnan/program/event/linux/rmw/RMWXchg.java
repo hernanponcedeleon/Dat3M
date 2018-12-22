@@ -35,7 +35,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(memory[" + address + "], " + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(" + address + ", " + value + ")";
     }
 
     @Override

@@ -49,7 +49,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(memory[" + address + "], " + cmp + "," + value + ")";
+        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + address + ", " + cmp + ", " + value + ")";
     }
 
     @Override

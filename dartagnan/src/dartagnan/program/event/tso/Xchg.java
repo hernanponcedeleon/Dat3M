@@ -61,7 +61,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "memory[" + address + "].xchg(" + atomic + ", " + reg + ")";
+        return nTimesCondLevel() + "xchg(*" + address + ", " + reg + ", " + "atomic)";
     }
 
     @Override

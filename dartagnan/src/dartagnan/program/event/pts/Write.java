@@ -38,7 +38,7 @@ public class Write extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "memory[" + address + "].store(" +  value + "," + atomic + ")";
+        return nTimesCondLevel() + "store(*" + address + ", " +  value + ", " + (atomic != null ? ", " + atomic : "") + ")";
     }
 
     @Override
