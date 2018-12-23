@@ -25,7 +25,7 @@ public class ParserPorthos implements ParserInterface{
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
         ProgramBuilder pb = new ProgramBuilder();
-        ParserRuleContext parserEntryPoint = parser.main(pb);
+        ParserRuleContext parserEntryPoint = parser.main();
         VisitorPorthos visitor = new VisitorPorthos(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);

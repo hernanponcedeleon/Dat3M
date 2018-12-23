@@ -27,10 +27,10 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
     @Override
     public AbstractAssert visitAssertionList(LitmusAssertionsParser.AssertionListContext ctx){
         AbstractAssert ass = ctx.assertion().accept(this);
-        if(ctx.AssertionExists() != null){
-            ass.setType(AbstractAssert.ASSERT_TYPE_EXISTS);
-        } else if(ctx.AssertionExistsNot() != null){
+        if(ctx.AssertionNot() != null) {
             ass.setType(AbstractAssert.ASSERT_TYPE_NOT_EXISTS);
+        } else if(ctx.AssertionExists() != null){
+            ass.setType(AbstractAssert.ASSERT_TYPE_EXISTS);
         } else if(ctx.AssertionForall() != null){
             ass = new AssertNot(ass);
             ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);

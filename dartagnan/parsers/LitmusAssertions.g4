@@ -12,7 +12,7 @@ assertionFilter
 
 assertionList
     :   AssertionExists a = assertion Semi?
-    |   AssertionExistsNot a = assertion Semi?
+    |   AssertionNot AssertionExists a = assertion Semi?
     |   AssertionForall a = assertion Semi?
     |   AssertionFinal a = assertion Semi? assertionListExpectationList
     ;
@@ -44,7 +44,7 @@ assertionListExpectationList
     ;
 
 assertionListExpectation
-    :   AssertionListExpectationTest Colon (AssertionExists | AssertionExistsNot) Semi
+    :   AssertionListExpectationTest Colon AssertionNot? AssertionExists Semi
     ;
 
 assertionCompare returns [COpBin op]
@@ -70,17 +70,10 @@ AssertionListExpectationTest
 
 AssertionAnd
     :   '/\\'
-    |   '&&'
     ;
 
 AssertionOr
     :   '\\/'
-    |   '||'
-    ;
-
-AssertionExistsNot
-    :   '~exists'
-    |   '~ exists'
     ;
 
 AssertionExists

@@ -4,6 +4,7 @@ import dartagnan.expression.*;
 import dartagnan.parsers.PorthosBaseVisitor;
 import dartagnan.parsers.PorthosParser;
 import dartagnan.parsers.PorthosVisitor;
+import dartagnan.parsers.utils.AssertionHelper;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
@@ -11,6 +12,7 @@ import dartagnan.program.event.*;
 import dartagnan.program.event.pts.Read;
 import dartagnan.program.event.pts.Write;
 import dartagnan.program.memory.Location;
+import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +31,10 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
         if(ctx.assertionList() != null){
-            programBuilder.setAssert(ctx.assertionList().ass);
+            int a = ctx.assertionList().getStart().getStartIndex();
+            int b = ctx.assertionList().getStop().getStopIndex();
+            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
         }
         return programBuilder.build();
     }
