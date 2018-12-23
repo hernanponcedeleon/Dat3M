@@ -172,10 +172,10 @@ variableList
     :   Locations LBracket (threadVariable | varName) (Semi (threadVariable | varName))* Semi? RBracket
     ;
 
-assertionValue returns [IntExprInterface v]
-    :   l = varName {$v = pb.getOrCreateLocation($l.text);}
-    |   t = threadVariable {$v = pb.getOrCreateRegister($t.tid, $t.name);}
-    |   imm = constantValue { $v = new IConst(Integer.parseInt($imm.text)); }
+assertionValue
+    :   l = varName
+    |   t = threadVariable
+    |   imm = constantValue
     ;
 
 opBool returns [BOpBin op]
@@ -244,7 +244,7 @@ atomicTypeSpecifier
     ;
 
 varName
-    :   Underscore? Identifier (Underscore (Identifier | DigitSequence)*)*
+    :   Underscore* Identifier (Underscore (Identifier | DigitSequence)*)*
     ;
 
 While

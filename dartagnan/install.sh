@@ -15,6 +15,7 @@ java -jar import/antlr-4.7-complete.jar parsers/LitmusAArch64.g4 -Werror -no-lis
 java -jar import/antlr-4.7-complete.jar parsers/LitmusC.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 java -jar import/antlr-4.7-complete.jar parsers/LitmusPPC.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 java -jar import/antlr-4.7-complete.jar parsers/LitmusX86.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusAssertions.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 
 mkdir -p $OUT
 find src -name *.java > sources.txt

@@ -6,6 +6,7 @@ import dartagnan.expression.op.IOpBin;
 import dartagnan.parsers.LitmusPPCBaseVisitor;
 import dartagnan.parsers.LitmusPPCParser;
 import dartagnan.parsers.LitmusPPCVisitor;
+import dartagnan.parsers.utils.AssertionHelper;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
@@ -15,6 +16,7 @@ import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Store;
+import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -42,6 +44,18 @@ public class VisitorLitmusPPC
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
+        if(ctx.assertionList() != null){
+            int a = ctx.assertionList().getStart().getStartIndex();
+            int b = ctx.assertionList().getStop().getStopIndex();
+            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
+        }
+        if(ctx.assertionFilter() != null){
+            int a = ctx.assertionFilter().getStart().getStartIndex();
+            int b = ctx.assertionFilter().getStop().getStopIndex();
+            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
+        }
         return programBuilder.build();
     }
 

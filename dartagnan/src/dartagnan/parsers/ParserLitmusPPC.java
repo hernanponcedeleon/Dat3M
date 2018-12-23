@@ -25,7 +25,7 @@ public class ParserLitmusPPC implements ParserInterface {
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
         ProgramBuilder pb = new ProgramBuilder();
-        ParserRuleContext parserEntryPoint = parser.main(pb);
+        ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPPC visitor = new VisitorLitmusPPC(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);

@@ -138,10 +138,10 @@ offset
     :   DigitSequence
     ;
 
-assertionValue returns [IntExprInterface v]
-    :   l = location    {$v = pb.getOrCreateLocation($l.text);}
-    |   t = threadId Colon r = register {$v = pb.getOrCreateRegister($t.id, $r.text);}
-    |   imm = value    { $v = new IConst(Integer.parseInt($imm.text)); }
+assertionValue
+    :   l = location
+    |   t = threadId Colon r = register
+    |   imm = value
     ;
 
 cond returns [COpBin op]

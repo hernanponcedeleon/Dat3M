@@ -2,9 +2,8 @@ package dartagnan.parsers.visitors;
 
 import dartagnan.expression.*;
 import dartagnan.expression.op.BOpUn;
-import dartagnan.parsers.LitmusCBaseVisitor;
-import dartagnan.parsers.LitmusCParser;
-import dartagnan.parsers.LitmusCVisitor;
+import dartagnan.parsers.*;
+import dartagnan.parsers.utils.AssertionHelper;
 import dartagnan.parsers.utils.ParsingException;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.program.Program;
@@ -17,6 +16,7 @@ import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.*;
 import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
+import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.*;
 
@@ -42,6 +42,18 @@ public class VisitorLitmusC
     public Program visitMain(LitmusCParser.MainContext ctx) {
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
+        if(ctx.assertionList() != null){
+            int a = ctx.assertionList().getStart().getStartIndex();
+            int b = ctx.assertionList().getStop().getStopIndex();
+            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
+        }
+        if(ctx.assertionFilter() != null){
+            int a = ctx.assertionFilter().getStart().getStartIndex();
+            int b = ctx.assertionFilter().getStop().getStopIndex();
+            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
+        }
         return programBuilder.build();
     }
 

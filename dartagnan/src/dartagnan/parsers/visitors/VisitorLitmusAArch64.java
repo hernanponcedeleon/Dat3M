@@ -7,6 +7,7 @@ import dartagnan.expression.op.IOpBin;
 import dartagnan.parsers.LitmusAArch64BaseVisitor;
 import dartagnan.parsers.LitmusAArch64Parser;
 import dartagnan.parsers.LitmusAArch64Visitor;
+import dartagnan.parsers.utils.AssertionHelper;
 import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
@@ -20,6 +21,7 @@ import dartagnan.program.event.Store;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.opt.RMWStoreOpt;
 import dartagnan.program.event.rmw.opt.RMWStoreOptStatus;
+import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +48,18 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
+        if(ctx.assertionList() != null){
+            int a = ctx.assertionList().getStart().getStartIndex();
+            int b = ctx.assertionList().getStop().getStopIndex();
+            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
+        }
+        if(ctx.assertionFilter() != null){
+            int a = ctx.assertionFilter().getStart().getStartIndex();
+            int b = ctx.assertionFilter().getStop().getStopIndex();
+            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
+        }
         return programBuilder.build();
     }
 

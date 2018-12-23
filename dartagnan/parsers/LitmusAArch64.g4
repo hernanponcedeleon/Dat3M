@@ -232,10 +232,10 @@ expressionConversion
     :   register32 Comma BitfieldOperator
     ;
 
-assertionValue returns [IntExprInterface v]
-    :   l = location    {$v = pb.getOrCreateLocation($l.text);}
-    |   t = threadId Colon r = register64 {$v = pb.getOrCreateRegister($t.id, $r.id);}
-    |   imm = value    { $v = new IConst(Integer.parseInt($imm.text)); }
+assertionValue
+    :   l = location
+    |   t = threadId Colon r = register64
+    |   imm = value
     ;
 
 address returns[String id]

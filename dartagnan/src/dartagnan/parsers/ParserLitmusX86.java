@@ -25,7 +25,7 @@ public class ParserLitmusX86 implements ParserInterface {
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
         ProgramBuilder pb = new ProgramBuilder();
-        ParserRuleContext parserEntryPoint = parser.main(pb);
+        ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusX86 visitor = new VisitorLitmusX86(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);

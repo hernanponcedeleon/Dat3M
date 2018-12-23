@@ -1,31 +1,11 @@
-grammar LitmusBase;
+grammar LitmusAssertions;
 
 import BaseLexer;
 
 @header{
-import dartagnan.asserts.*;
+package dartagnan.parsers;
 import dartagnan.expression.op.COpBin;
-import dartagnan.expression.IntExprInterface;
-import dartagnan.program.*;
-import dartagnan.program.memory.Location;
-import dartagnan.expression.IConst;
-import dartagnan.parsers.utils.ProgramBuilder;
 }
-
-@parser::members{
-    ProgramBuilder pb;
-}
-
-// These rules must be overwritten in child grammars
-variableDeclaratorList                      :;
-program                                     :;
-variableList                                :;
-assertionValue returns [IntExprInterface v] :;
-
-
-main
-    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
-    ;
 
 assertionFilter
     :   AssertionFilter a = assertion Semi?
@@ -39,11 +19,25 @@ assertionList
     ;
 
 assertion
-    :   LPar assertion RPar
-    |   AssertionNot assertion
-    |   assertion AssertionAnd assertion
-    |   assertion AssertionOr assertion
-    |   assertionValue assertionCompare assertionValue
+    :   LPar assertion RPar                                 # assertionParenthesis
+    |   AssertionNot assertion                              # assertionNot
+    |   assertion AssertionAnd assertion                    # assertionAnd
+    |   assertion AssertionOr assertion                     # assertionOr
+    |   assertionValue assertionCompare assertionValue      # assertionBasic
+    ;
+
+assertionValue
+    :   varName
+    |   threadId Colon varName
+    |   constant
+    ;
+
+varName
+    :    Underscore* Identifier (Identifier | DigitSequence | Underscore)*
+    ;
+
+constant
+    :   Minus? DigitSequence
     ;
 
 assertionListExpectationList
@@ -54,22 +48,18 @@ assertionListExpectation
     :   AssertionListExpectationTest Colon (AssertionExists | AssertionExistsNot) Semi
     ;
 
-assertionCompare
-    :   (Equals | EqualsEquals)
-    |   NotEquals
-    |   GreaterEquals
-    |   LessEquals
-    |   Less
-    |   Greater
+assertionCompare returns [COpBin op]
+    :   (Equals | EqualsEquals) {$op = COpBin.EQ;}
+    |   NotEquals               {$op = COpBin.NEQ;}
+    |   GreaterEquals           {$op = COpBin.GTE;}
+    |   LessEquals              {$op = COpBin.LTE;}
+    |   Less                    {$op = COpBin.LT;}
+    |   Greater                 {$op = COpBin.GT;}
     ;
 
 threadId returns [String id]
     :   t = ThreadIdentifier {$id = $t.text.replace("P", "");}
     |   t = DigitSequence {$id = $t.text;}
-    ;
-
-comment
-    :   LPar Ast .*? Ast RPar
     ;
 
 AssertionListExpectationTest
@@ -119,8 +109,8 @@ AssertionWith
     :   'with'
     ;
 
-Locations
-    :   'locations'
+ThreadIdentifier
+    :   'P' DigitSequence
     ;
 
 EqualsEquals
@@ -139,19 +129,12 @@ GreaterEquals
     :   '>='
     ;
 
-ThreadIdentifier
-    :   'P' DigitSequence
-    ;
-
-// Must be overwritten in child grammars
-LitmusLanguage  :   'BaseLitmusLanguage';
-
 Identifier
-    :   (Letter)+ (Letter | Digit)*
+    :   Underscore* Letter+ (Letter | Digit | Underscore)*
     ;
 
 DigitSequence
-    :   Minus? Digit+
+    :   Digit+
     ;
 
 fragment

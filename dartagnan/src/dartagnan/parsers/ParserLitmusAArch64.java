@@ -24,7 +24,7 @@ public class ParserLitmusAArch64 implements ParserInterface {
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
         ProgramBuilder pb = new ProgramBuilder();
-        ParserRuleContext parserEntryPoint = parser.main(pb);
+        ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusAArch64 visitor = new VisitorLitmusAArch64(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
