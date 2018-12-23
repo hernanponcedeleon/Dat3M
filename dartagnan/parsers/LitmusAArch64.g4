@@ -1,12 +1,15 @@
 grammar LitmusAArch64;
 
-import LitmusBase;
+import LitmusAssertions;
 
 @header{
-package dartagnan.parsers;
 import dartagnan.expression.op.*;
 import dartagnan.program.utils.aarch64.Mo;
 }
+
+main
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? EOF
+    ;
 
 variableDeclaratorList
     :   LBrace variableDeclarator? (Semi variableDeclarator)* Semi? RBrace Semi?
@@ -20,11 +23,11 @@ variableDeclarator
     ;
 
 variableDeclaratorLocation
-    :   location Equals value
+    :   location Equals constant
     ;
 
 variableDeclaratorRegister
-    :   threadId Colon register64 Equals value
+    :   threadId Colon register64 Equals constant
     ;
 
 variableDeclaratorRegisterLocation
@@ -232,12 +235,6 @@ expressionConversion
     :   register32 Comma BitfieldOperator
     ;
 
-assertionValue
-    :   l = location
-    |   t = threadId Colon r = register64
-    |   imm = value
-    ;
-
 address returns[String id]
     :   r = register64 {$id = $r.id;}
     ;
@@ -255,15 +252,21 @@ location
     ;
 
 immediate
-    :   Num value
-    ;
-
-value
-    :   Minus? DigitSequence
+    :   Num constant
     ;
 
 label
     :   Identifier
+    ;
+
+assertionValue
+    :   location
+    |   threadId Colon register64
+    |   constant
+    ;
+
+Locations
+    :   'locations'
     ;
 
 // Arthmetic instructions

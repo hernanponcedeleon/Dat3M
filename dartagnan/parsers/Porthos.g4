@@ -3,7 +3,6 @@ grammar Porthos;
 import BaseLexer;
 
 @header{
-package dartagnan.parsers;
 import dartagnan.asserts.*;
 import dartagnan.expression.op.*;
 import dartagnan.expression.IntExprInterface;

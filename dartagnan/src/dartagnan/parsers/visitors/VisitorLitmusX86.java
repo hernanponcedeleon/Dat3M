@@ -63,13 +63,13 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.addDeclarationLocImm(ctx.location().getText(), Integer.parseInt(ctx.value().getText()));
+        programBuilder.addDeclarationLocImm(ctx.location().getText(), Integer.parseInt(ctx.constant().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.addDeclarationRegImm(ctx.threadId().id, ctx.register().getText(), Integer.parseInt(ctx.value().getText()));
+        programBuilder.addDeclarationRegImm(ctx.threadId().id, ctx.register().getText(), Integer.parseInt(ctx.constant().getText()));
         return null;
     }
 
@@ -114,7 +114,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
-        IConst constant = new IConst(Integer.parseInt(ctx.value().getText()));
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
@@ -128,7 +128,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        IConst constant = new IConst(Integer.parseInt(ctx.value().getText()));
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
         return programBuilder.addChild(mainThread, new Store(location.getAddress(), constant, "_rx"));
     }
 

@@ -1,6 +1,6 @@
 grammar Cat;
+
 @header{
-package dartagnan.parsers;
 import dartagnan.wmm.axiom.*;
 }
 

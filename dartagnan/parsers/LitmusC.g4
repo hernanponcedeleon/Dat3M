@@ -1,11 +1,14 @@
 grammar LitmusC;
 
+import LinuxLexer, LitmusAssertions;
+
 @header{
-package dartagnan.parsers;
 import dartagnan.expression.op.*;
 }
 
-import LinuxLexer, LitmusBase;
+main
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
+    ;
 
 variableDeclaratorList
     :   LBrace (globalDeclarator Semi comment?)* RBrace (Semi)?
@@ -131,7 +134,7 @@ returnExpression locals [IOpBin op, String mo]
     |   LPar returnExpression RPar                                                                                      # reParenthesis
     |   cast returnExpression                                                                                           # reCast
     |   variable                                                                                                        # reVariable
-    |   constantValue                                                                                                   # reConst
+    |   constant                                                                                                        # reConst
     ;
 
 nonReturnExpression locals [IOpBin op, String mo, String name]
@@ -172,12 +175,6 @@ variableList
     :   Locations LBracket (threadVariable | varName) (Semi (threadVariable | varName))* Semi? RBracket
     ;
 
-assertionValue
-    :   l = varName
-    |   t = threadVariable
-    |   imm = constantValue
-    ;
-
 opBool returns [BOpBin op]
     :   AmpAmp  {$op = BOpBin.AND;}
     |   BarBar  {$op = BOpBin.OR;}
@@ -210,12 +207,8 @@ variable
     ;
 
 initConstantValue
-    :   AtomicInit LPar constantValue RPar
-    |   constantValue
-    ;
-
-constantValue
-    :   DigitSequence
+    :   AtomicInit LPar constant RPar
+    |   constant
     ;
 
 cast
@@ -245,6 +238,15 @@ atomicTypeSpecifier
 
 varName
     :   Underscore* Identifier (Underscore (Identifier | DigitSequence)*)*
+    ;
+
+// Allowed outside of thread body (otherwise might conflict with pointer cast)
+comment
+    :   LPar Ast .*? Ast RPar
+    ;
+
+Locations
+    :   'locations'
     ;
 
 While
@@ -293,6 +295,11 @@ BarBar
 
 LitmusLanguage
     :   'C'
+    ;
+
+AssertionNot
+    :   Tilde
+    |   'not'
     ;
 
 BlockComment

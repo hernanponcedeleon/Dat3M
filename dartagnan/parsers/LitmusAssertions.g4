@@ -3,7 +3,6 @@ grammar LitmusAssertions;
 import BaseLexer;
 
 @header{
-package dartagnan.parsers;
 import dartagnan.expression.op.COpBin;
 }
 

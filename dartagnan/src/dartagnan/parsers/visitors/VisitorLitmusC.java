@@ -65,7 +65,7 @@ public class VisitorLitmusC
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
         int value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
+            value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
         programBuilder.addDeclarationLocImm(ctx.varName().getText(), value);
         return null;
@@ -75,7 +75,7 @@ public class VisitorLitmusC
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         int value = Location.DEFAULT_INIT_VALUE;
         if (ctx.initConstantValue() != null) {
-            value = Integer.parseInt(ctx.initConstantValue().constantValue().getText());
+            value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
         programBuilder.addDeclarationRegImm(ctx.threadId().getText(), ctx.varName().getText(), value);
         return null;

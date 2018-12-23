@@ -1,11 +1,10 @@
 grammar LitmusX86;
 
-@header{
-package dartagnan.parsers;
-}
+import LitmusAssertions;
 
-import LitmusBase;
-
+main
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? EOF
+    ;
 
 variableDeclaratorList
     :   LBrace variableDeclarator? (Semi variableDeclarator)* Semi? RBrace Semi?
@@ -19,11 +18,11 @@ variableDeclarator
     ;
 
 variableDeclaratorLocation
-    :   location Equals value
+    :   location Equals constant
     ;
 
 variableDeclaratorRegister
-    :   threadId Colon register Equals value
+    :   threadId Colon register Equals constant
     ;
 
 variableDeclaratorRegisterLocation
@@ -75,7 +74,7 @@ instruction
     ;
 
 loadValueToRegister
-    :   Mov register Comma Dollar? value
+    :   Mov register Comma Dollar? constant
     ;
 
 loadLocationToRegister
@@ -83,7 +82,7 @@ loadLocationToRegister
     ;
 
 storeValueToLocation
-    :   Mov LBracket? location RBracket? Comma Dollar? value
+    :   Mov LBracket? location RBracket? Comma Dollar? constant
     ;
 
 storeRegisterToLocation
@@ -106,11 +105,11 @@ incrementLocation
     ;
 
 compareRegisterValue
-    :   Cmp register Comma Dollar? value
+    :   Cmp register Comma Dollar? constant
     ;
 
 compareLocationValue
-    :   Cmp LBracket? location RBracket? Comma Dollar? value
+    :   Cmp LBracket? location RBracket? Comma Dollar? constant
     ;
 
 addRegisterRegister
@@ -118,7 +117,7 @@ addRegisterRegister
     ;
 
 addRegisterValue
-    :   Add register Comma Dollar? value
+    :   Add register Comma Dollar? constant
     ;
 
 location
@@ -129,14 +128,14 @@ register
     :   Register
     ;
 
-value
-    :   DigitSequence
+assertionValue
+    :   location
+    |   threadId Colon register
+    |   constant
     ;
 
-assertionValue
-    :   l = location
-    |   t = threadId Colon r = register
-    |   imm = value
+Locations
+    :   'locations'
     ;
 
 Mov
