@@ -135,7 +135,7 @@ public class ProgramBuilder {
         }
         Map<String, Register> threadRegisters = registers.get(thread);
         if(name == null || !(threadRegisters.keySet().contains(name))) {
-            threadRegisters.put(name, new Register(name).setPrintMainThreadId(thread));
+            threadRegisters.put(name, new Register(name));
         }
         return threadRegisters.get(name);
     }

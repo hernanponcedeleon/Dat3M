@@ -34,9 +34,8 @@ public class Register extends IExpr implements IntExprInterface {
 		this.mainThreadId = t;
 	}
 
-	public Register setPrintMainThreadId(String threadId){
+	public void setPrintMainThreadId(String threadId){
 		this.printMainThreadId = threadId;
-		return this;
 	}
 
 	public String getPrintMainThreadId(){

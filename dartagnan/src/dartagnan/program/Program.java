@@ -118,6 +118,7 @@ public class Program extends Thread {
             t.setMainThread(t);
             for(Register reg : t.getEventRepository().getRegisters()) {
                 reg.setMainThreadId(t.tid);
+                reg.setPrintMainThreadId(Integer.toString(i));
             }
             t.getEventRepository().clear();
 			threads.set(i, t);
