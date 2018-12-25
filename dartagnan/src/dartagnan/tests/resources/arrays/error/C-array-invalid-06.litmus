@@ -1,10 +1,10 @@
 C C-array-error.litmus
 
 {
-  atomic_t arr[3] = {1, 2};
+  atomic_t arr[0] = {};
 }
 
-P0(atomic_t *x) {
+P0() {
   int r0 = 1;
 }
 

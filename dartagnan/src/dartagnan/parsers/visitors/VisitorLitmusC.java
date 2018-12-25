@@ -17,6 +17,7 @@ import dartagnan.program.event.linux.rmw.*;
 import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
 
@@ -93,6 +94,28 @@ public class VisitorLitmusC
         return null;
     }
 
+    @Override
+    public Object visitGlobalDeclaratorArray(LitmusCParser.GlobalDeclaratorArrayContext ctx) {
+        String name = ctx.varName().getText();
+        Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
+
+        if(ctx.initArray() == null && size != null && size > 0){
+            programBuilder.addDeclarationArray(name, size);
+            return null;
+        }
+        if(ctx.initArray() != null){
+            if(size == null || ctx.initArray().DigitSequence().size() == size){
+                List<Integer> values = new ArrayList<>();
+                for(TerminalNode raw : ctx.initArray().DigitSequence()){
+                    values.add(Integer.parseInt(raw.getText()));
+                }
+                programBuilder.addDeclarationArray(name, values);
+                return null;
+            }
+        }
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
+    }
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // Threads (the program itself)
@@ -116,10 +139,19 @@ public class VisitorLitmusC
 
     @Override
     public Object visitThreadArguments(LitmusCParser.ThreadArgumentsContext ctx){
-        for(LitmusCParser.VarNameContext varName : ctx.varName()){
-            Location location = programBuilder.getOrCreateLocation(varName.getText());
-            Register register = programBuilder.getOrCreateRegister(scope, varName.getText());
-            programBuilder.addChild(currentThread, new Local(register, location.getAddress()));
+        if(ctx != null){
+            for(LitmusCParser.VarNameContext varName : ctx.varName()){
+                String name = varName.getText();
+                Address pointer = programBuilder.getPointer(name);
+                if(pointer != null){
+                    Register register = programBuilder.getOrCreateRegister(scope, name);
+                    programBuilder.addChild(currentThread, new Local(register, pointer));
+                } else {
+                    Location location = programBuilder.getOrCreateLocation(varName.getText());
+                    Register register = programBuilder.getOrCreateRegister(scope, varName.getText());
+                    programBuilder.addChild(currentThread, new Local(register, location.getAddress()));
+                }
+            }
         }
         return null;
     }
@@ -227,10 +259,13 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
         Register register = getReturnRegister(true);
-        IExpr address = visitVariable(ctx.variable());
-        Thread t = new Load(register, address, ctx.mo);
-        programBuilder.addChild(currentThread, t);
-        return register;
+        ExprInterface address = (ExprInterface)ctx.returnExpression().accept(this);
+        if(address instanceof IExpr){
+            Thread t = new Load(register, (IExpr) address, ctx.mo);
+            programBuilder.addChild(currentThread, t);
+            return register;
+        }
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     @Override

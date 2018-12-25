@@ -14,18 +14,10 @@ import java.util.Set;
 
 public class Address extends IConst implements IntExprInterface, ExprInterface {
 
-    private static int nextIndex = 0;
-
     private final int index;
 
-    Address(){
-        super(nextIndex);
-        this.index = nextIndex;
-        nextIndex++;
-    }
-
-    private Address(int index){
-        super(nextIndex);
+    Address(int index){
+        super(index);
         this.index = index;
     }
 
@@ -56,7 +48,7 @@ public class Address extends IConst implements IntExprInterface, ExprInterface {
 
     @Override
     public String toString(){
-        return "memory_" + index;
+        return "&mem" + index;
     }
 
     @Override

@@ -4,7 +4,7 @@ C C-array-error-invalid.litmus
   atomic_t arr[];
 }
 
-P0(atomic_t *x) {
+P0() {
   int r0 = 1;
 }
 

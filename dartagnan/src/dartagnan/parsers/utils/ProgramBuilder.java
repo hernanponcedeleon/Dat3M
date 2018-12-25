@@ -12,20 +12,21 @@ import dartagnan.program.event.If;
 import dartagnan.program.event.Init;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
+import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
 import dartagnan.program.memory.Memory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class ProgramBuilder {
 
     private Map<String, Map<String, Register>> registers = new HashMap<>();
+    private Map<String, Location> locations = new HashMap<>();
+    private Map<String, Address> pointers = new HashMap<>();
+
     private Map<String, Map<String, Label>> labels = new HashMap<>();
     private Map<String, LinkedList<Thread>> threads = new HashMap<>();
-    private Map<Location, IConst> iValueMap = new HashMap<>();
+    private Map<Address, IConst> iValueMap = new HashMap<>();
     private Memory memory = new Memory();
 
     private AbstractAssert ass;
@@ -37,9 +38,8 @@ public class ProgramBuilder {
             thread = buildBranches(thread);
             program.add(Thread.fromList(true, thread));
         }
-        for(Location location : memory.getLocations()) {
-            IConst iValue = iValueMap.getOrDefault(location, new IConst(Location.DEFAULT_INIT_VALUE));
-            program.add(new Init(location.getAddress(), iValue));
+        for (Map.Entry<Address, IConst> entry : iValueMap.entrySet()) {
+            program.add(new Init(entry.getKey(), entry.getValue()));
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);
@@ -88,12 +88,12 @@ public class ProgramBuilder {
     // Initialisation x=y assigned address of y to the variable x
     public void addDeclarationLocLoc(String leftName, String rightName){
         Location location = getOrCreateLocation(leftName);
-        iValueMap.put(location, getOrCreateLocation(rightName).getAddress());
+        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName).getAddress());
     }
 
     public void addDeclarationLocImm(String locName, int imm){
         Location location = getOrCreateLocation(locName);
-        iValueMap.put(location, new IConst(imm));
+        iValueMap.put(location.getAddress(), new IConst(imm));
     }
 
     // Initialisation 0:r0=y assigned address of y to register 0:r0
@@ -107,19 +107,44 @@ public class ProgramBuilder {
         addChild(regThread, new Local(getOrCreateRegister(regThread, regName), new IConst(imm)));
     }
 
+    public void addDeclarationArray(String name, int size){
+        List<Address> addresses = memory.malloc(name, size);
+        for(Address address : addresses){
+            iValueMap.put(address, new IConst(Location.DEFAULT_INIT_VALUE));
+        }
+        pointers.put(name, addresses.get(0));
+    }
+
+    public void addDeclarationArray(String name, List<Integer> values){
+        int size = values.size();
+        List<Address> addresses = memory.malloc(name, size);
+        for(int i = 0; i < size; i++){
+            iValueMap.put(addresses.get(i), new IConst(values.get(i)));
+        }
+        pointers.put(name, addresses.get(0));
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
 
     public Location getLocation(String name){
-        return memory.getLocation(name);
+        return locations.get(name);
     }
 
     public Location getOrCreateLocation(String name){
-        return memory.getOrCreateLocation(name);
+        if(!locations.containsKey(name)){
+            Location location = memory.getOrCreateLocation(name);
+            locations.put(name, location);
+            iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE));
+        }
+        return locations.get(name);
     }
 
     public Location getOrErrorLocation(String name){
-        return memory.getOrErrorLocation(name);
+        if(locations.containsKey(name)){
+            return locations.get(name);
+        }
+        throw new ParsingException("Location " + name + " has not been initialised");
     }
 
     public Register getRegister(String thread, String name){
@@ -216,5 +241,9 @@ public class ProgramBuilder {
         }
 
         return thread;
+    }
+
+    public Address getPointer(String name){
+        return pointers.get(name);
     }
 }

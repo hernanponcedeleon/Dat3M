@@ -18,7 +18,9 @@ import java.util.*;
 public class AliasAnalysis {
 
     public void calculateLocationSets(Program program, Memory memory){
+        ImmutableSet<Address> maxAddressSet = memory.getAllAddresses();
         Map<Register, List<Event>> regWrites = new HashMap<>();
+
         for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
             if(e instanceof RegWriter){
                 Register register = ((RegWriter)e).getModifiedReg();
@@ -26,6 +28,7 @@ public class AliasAnalysis {
                 regWrites.get(register).add(e);
             }
         }
+
         for(Event e : program.getEventRepository().getEvents(EventRepository.MEMORY)){
             IExpr address = ((MemEvent) e).getAddress();
             if(address instanceof Register){
@@ -43,11 +46,11 @@ public class AliasAnalysis {
                         }
                     }
                 }
-                ((MemEvent) e).setMaxAddressSet(memory.getAllAddresses());
+                ((MemEvent) e).setMaxAddressSet(maxAddressSet);
             } else if (address instanceof Address){
                 ((MemEvent) e).setMaxAddressSet(ImmutableSet.of((Address) address));
             } else {
-                throw new RuntimeException("Unrecognised type of address in " + this);
+                ((MemEvent) e).setMaxAddressSet(maxAddressSet);
             }
         }
     }

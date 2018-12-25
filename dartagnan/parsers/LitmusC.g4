@@ -19,6 +19,7 @@ globalDeclarator
     |   typeSpecifier? t = threadId Colon n = varName (Equals initConstantValue)?                                       # globalDeclaratorRegister
     |   typeSpecifier? varName (Equals varName)?                                                                        # globalDeclaratorLocationLocation
     |   typeSpecifier? t = threadId Colon n = varName (Equals varName)?                                                 # globalDeclaratorRegisterLocation
+    |   typeSpecifier? varName LBracket DigitSequence? RBracket (Equals initArray)?                                     # globalDeclaratorArray
     ;
 
 program
@@ -120,7 +121,7 @@ returnExpression locals [IOpBin op, String mo]
         | RcuDereference    LPar Ast? variable RPar {$mo = "Dereference";}
         | SmpLoadAcquire    LPar variable RPar {$mo = "Acquire";})                                                      # reLoad
 
-    |   ReadOnce LPar Ast variable RPar {$mo = "Once";}                                                                 # reReadOnce
+    |   ReadOnce LPar Ast returnExpression RPar {$mo = "Once";}                                                         # reReadOnce
     |   Ast variable {$mo = "NA";}                                                                                      # reReadNa
 
 //    |   SpinTrylock LPar variable RPar                                                                                  # reSpinTryLock
@@ -209,6 +210,10 @@ variable
 initConstantValue
     :   AtomicInit LPar constant RPar
     |   constant
+    ;
+
+initArray
+    :   LBrace DigitSequence (Comma DigitSequence)* RBrace
     ;
 
 cast
