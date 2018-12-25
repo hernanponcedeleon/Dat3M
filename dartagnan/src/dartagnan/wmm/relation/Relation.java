@@ -38,6 +38,7 @@ public abstract class Relation {
     protected int recursiveGroupId = 0;
     protected boolean forceUpdateRecursiveGroupId = false;
     protected boolean isRecursive = false;
+    protected boolean forceDoEncode = false;
 
     public Relation() {}
 
@@ -132,7 +133,7 @@ public abstract class Relation {
 
     protected BoolExpr doEncode(){
         BoolExpr enc = encodeNegations();
-        if(!encodeTupleSet.isEmpty()){
+        if(!encodeTupleSet.isEmpty() || forceDoEncode){
             if(encodingMode == LFP) {
                 return ctx.mkAnd(enc, encodeLFP());
             } else if(encodingMode == IDL) {
