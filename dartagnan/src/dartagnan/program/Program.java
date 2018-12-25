@@ -1,5 +1,6 @@
 package dartagnan.program;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.asserts.AbstractAssert;
@@ -22,15 +23,17 @@ public class Program extends Thread {
 	private AbstractAssert ass;
     private AbstractAssert assFilter;
 	private List<Thread> threads;
+	private final ImmutableSet<Location> locations;
 	private Memory memory;
 
-    public Program(Memory memory){
-        this("", memory);
+    public Program(Memory memory, ImmutableSet<Location> locations){
+        this("", memory, locations);
     }
 
-	public Program (String name, Memory memory) {
+	public Program (String name, Memory memory, ImmutableSet<Location> locations) {
 		this.name = name;
 		this.memory = memory;
+		this.locations = locations;
 		this.threads = new ArrayList<>();
 	}
 
@@ -62,8 +65,8 @@ public class Program extends Thread {
         return threads;
     }
 
-    public Set<Location> getLocations(){
-        return memory.getLocations();
+    public ImmutableSet<Location> getLocations(){
+        return locations;
     }
 
 	@Override
@@ -80,7 +83,7 @@ public class Program extends Thread {
 
     @Override
 	public Program clone() {
-        Program newP = new Program(name, memory);
+        Program newP = new Program(name, memory, locations);
 		for(Thread t : threads){
 		    t.beforeClone();
             newP.add(t.clone());

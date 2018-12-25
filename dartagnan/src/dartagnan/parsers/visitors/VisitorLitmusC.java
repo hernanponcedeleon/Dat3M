@@ -100,7 +100,7 @@ public class VisitorLitmusC
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.addDeclarationArray(name, size);
+            programBuilder.addDeclarationArray(name, Collections.nCopies(size, 0));
             return null;
         }
         if(ctx.initArray() != null){

@@ -11,7 +11,7 @@ public class Location implements IntExprInterface {
 	private final String name;
 	private final Address address;
 
-	Location(String name, Address address) {
+	public Location(String name, Address address) {
 		this.name = name;
 		this.address = address;
 	}

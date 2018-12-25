@@ -79,6 +79,6 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         if(ctx.threadId() != null){
             return programBuilder.getOrErrorRegister(ctx.threadId().id, ctx.varName().getText());
         }
-        return programBuilder.getOrErrorLocation(ctx.varName().getText());
+        return programBuilder.getOrErrorLocation(ctx.getText());
     }
 }

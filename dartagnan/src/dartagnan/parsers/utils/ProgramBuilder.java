@@ -1,5 +1,6 @@
 package dartagnan.parsers.utils;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.expression.IConst;
 import dartagnan.parsers.utils.branch.Cmp;
@@ -33,7 +34,7 @@ public class ProgramBuilder {
     private AbstractAssert assFilter;
 
     public Program build(){
-        Program program = new Program(memory);
+        Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
         for(LinkedList<Thread> thread : threads.values()){
             thread = buildBranches(thread);
             program.add(Thread.fromList(true, thread));
@@ -107,19 +108,14 @@ public class ProgramBuilder {
         addChild(regThread, new Local(getOrCreateRegister(regThread, regName), new IConst(imm)));
     }
 
-    public void addDeclarationArray(String name, int size){
-        List<Address> addresses = memory.malloc(name, size);
-        for(Address address : addresses){
-            iValueMap.put(address, new IConst(Location.DEFAULT_INIT_VALUE));
-        }
-        pointers.put(name, addresses.get(0));
-    }
-
     public void addDeclarationArray(String name, List<Integer> values){
         int size = values.size();
         List<Address> addresses = memory.malloc(name, size);
         for(int i = 0; i < size; i++){
-            iValueMap.put(addresses.get(i), new IConst(values.get(i)));
+            String varName = name + "[" + i + "]";
+            Address address = addresses.get(i);
+            locations.put(varName, new Location(varName, address));
+            iValueMap.put(address, new IConst(values.get(i)));
         }
         pointers.put(name, addresses.get(0));
     }
