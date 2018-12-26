@@ -121,7 +121,7 @@ returnExpression locals [IOpBin op, String mo]
         | RcuDereference    LPar Ast? variable RPar {$mo = "Dereference";}
         | SmpLoadAcquire    LPar variable RPar {$mo = "Acquire";})                                                      # reLoad
 
-    |   ReadOnce LPar Ast returnExpression RPar {$mo = "Once";}                                                         # reReadOnce
+    |   ReadOnce LPar Ast address = returnExpression RPar {$mo = "Once";}                                               # reReadOnce
     |   Ast variable {$mo = "NA";}                                                                                      # reReadNa
 
 //    |   SpinTrylock LPar variable RPar                                                                                  # reSpinTryLock
@@ -139,18 +139,18 @@ returnExpression locals [IOpBin op, String mo]
     ;
 
 nonReturnExpression locals [IOpBin op, String mo, String name]
-    :   ( AtomicAdd LPar returnExpression Comma variable RPar {$op = IOpBin.PLUS;}
-        | AtomicSub LPar returnExpression Comma variable RPar {$op = IOpBin.MINUS;}
-        | AtomicInc LPar variable RPar {$op = IOpBin.PLUS;}
-        | AtomicDec LPar variable RPar {$op = IOpBin.MINUS;})                                                           # nreAtomicOp
+    :   ( AtomicAdd LPar value = returnExpression Comma address = returnExpression RPar {$op = IOpBin.PLUS;}
+        | AtomicSub LPar value = returnExpression Comma address = returnExpression RPar {$op = IOpBin.MINUS;}
+        | AtomicInc LPar address = returnExpression RPar {$op = IOpBin.PLUS;}
+        | AtomicDec LPar address = returnExpression RPar {$op = IOpBin.MINUS;})                                         # nreAtomicOp
 
-    |   ( AtomicSet         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
-        | AtomicSetRelease  LPar variable Comma returnExpression RPar {$mo = "Release";}
-        | SmpStoreRelease   LPar variable Comma returnExpression RPar {$mo = "Release";}
-        | SmpStoreMb        LPar variable Comma returnExpression RPar {$mo = "Mb";}
-        | RcuAssignPointer  LPar Ast? variable Comma returnExpression RPar {$mo = "Release";})                          # nreStore
+    |   ( AtomicSet         LPar address = returnExpression Comma value = returnExpression RPar {$mo = "Relaxed";}
+        | AtomicSetRelease  LPar address = returnExpression Comma value = returnExpression RPar {$mo = "Release";}
+        | SmpStoreRelease   LPar address = returnExpression Comma value = returnExpression RPar {$mo = "Release";}
+        | SmpStoreMb        LPar address = returnExpression Comma value = returnExpression RPar {$mo = "Mb";}
+        | RcuAssignPointer  LPar Ast? address = returnExpression Comma value = returnExpression RPar {$mo = "Release";})# nreStore
 
-    |   WriteOnce LPar Ast variable Comma returnExpression RPar {$mo = "Once";}                                         # nreWriteOnce
+    |   WriteOnce LPar Ast address = returnExpression Comma value = returnExpression RPar {$mo = "Once";}               # nreWriteOnce
 
     |   RcuReadLock LPar RPar                                                                                           # nreRcuReadLock
     |   RcuReadUnlock LPar RPar                                                                                         # nreRcuReadUnlock

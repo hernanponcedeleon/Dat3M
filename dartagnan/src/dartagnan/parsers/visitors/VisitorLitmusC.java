@@ -259,7 +259,7 @@ public class VisitorLitmusC
     @Override
     public IExpr visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface address = (ExprInterface)ctx.returnExpression().accept(this);
+        ExprInterface address = (ExprInterface)ctx.address.accept(this);
         if(address instanceof IExpr){
             Thread t = new Load(register, (IExpr) address, ctx.mo);
             programBuilder.addChild(currentThread, t);
@@ -351,34 +351,44 @@ public class VisitorLitmusC
 
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
-        ExprInterface value = returnExpressionOrDefault(ctx.returnExpression(), 1);
-        Thread t = new RMWOp(visitVariable(ctx.variable()), value, ctx.op);;
-        programBuilder.addChild(currentThread, t);
-        return null;
+        ExprInterface value = returnExpressionOrDefault(ctx.value, 1);
+        ExprInterface address = (ExprInterface)ctx.address.accept(this);
+        if(address instanceof IExpr){
+            Thread t = new RMWOp((IExpr) address, value, ctx.op);
+            programBuilder.addChild(currentThread, t);
+            return null;
+        }
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     @Override
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
-        ExprInterface value = (ExprInterface)ctx.returnExpression().accept(this);
-        IExpr address = visitVariable(ctx.variable());
-        if(ctx.mo.equals("Mb")){
-            Thread t = new Store(address, value, "Relaxed");
-            t = Thread.fromArray(false, t, new Fence("Mb"));
+        ExprInterface address = (ExprInterface)ctx.address.accept(this);
+        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        if(address instanceof IExpr){
+            if(ctx.mo.equals("Mb")){
+                Thread t = new Store((IExpr)address, value, "Relaxed");
+                t = Thread.fromArray(false, t, new Fence("Mb"));
+                programBuilder.addChild(currentThread, t);
+                return null;
+            }
+            Thread t = new Store((IExpr)address, value, ctx.mo);
             programBuilder.addChild(currentThread, t);
             return null;
         }
-        Thread t = new Store(address, value, ctx.mo);
-        programBuilder.addChild(currentThread, t);
-        return null;
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     @Override
     public Object visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
-        ExprInterface value = (ExprInterface)ctx.returnExpression().accept(this);
-        IExpr address = visitVariable(ctx.variable());
-        Thread t = new Store(address, value, ctx.mo);
-        programBuilder.addChild(currentThread, t);
-        return null;
+        ExprInterface address = (ExprInterface)ctx.address.accept(this);
+        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        if(address instanceof IExpr){
+            Thread t = new Store((IExpr)address, value, ctx.mo);
+            programBuilder.addChild(currentThread, t);
+            return null;
+        }
+        throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
 
     @Override
