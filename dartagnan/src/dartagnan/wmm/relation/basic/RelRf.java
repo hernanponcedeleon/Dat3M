@@ -1,8 +1,6 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.MemEvent;
@@ -22,12 +20,7 @@ public class RelRf extends Relation {
 
     public RelRf(){
         term = "rf";
-    }
-
-    @Override
-    public void initialise(Program program, Context ctx, int encodingMode){
-        super.initialise(program, ctx, encodingMode);
-        encodeTupleSet.addAll(getMaxTupleSet());
+        forceDoEncode = true;
     }
 
     @Override
@@ -61,31 +54,27 @@ public class RelRf extends Relation {
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
-        if(!maxTupleSet.isEmpty()){
-            for(Tuple tuple : maxTupleSet){
-                BoolExpr rel = edge("rf", tuple.getFirst(), tuple.getSecond(), ctx);
-                enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
-                        ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
-                        ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(), ((MemEvent)tuple.getSecond()).getAddressExpr())
-                )));
-            }
+        for(Tuple tuple : maxTupleSet){
+            BoolExpr rel = edge("rf", tuple.getFirst(), tuple.getSecond(), ctx);
+            enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
+                    ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
+                    ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(), ((MemEvent)tuple.getSecond()).getAddressExpr())
+            )));
+        }
 
-            BoolExpr dfEnc = ctx.mkTrue();
-            for(Event e : program.getEventRepository().getEvents(EventRepository.LOAD)){
-                Load r = (Load)e;
-                Set<BoolExpr> rfPairs = new HashSet<>();
+        for(Event e : program.getEventRepository().getEvents(EventRepository.LOAD)){
+            Load r = (Load)e;
+            Set<BoolExpr> rfPairs = new HashSet<>();
 
-                for(Tuple t : maxTupleSet.getBySecond(r)){
-                    MemEvent w = (MemEvent) t.getFirst();
-                    rfPairs.add(edge("rf", w, r, ctx));
-                    dfEnc = ctx.mkAnd(dfEnc, ctx.mkImplies(
-                            edge("rf", w, r, ctx),
-                            ctx.mkEq(w.getValueExpr(), r.getValueExpr())
-                    ));
-                }
-                enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));
+            for(Tuple t : maxTupleSet.getBySecond(r)){
+                MemEvent w = (MemEvent) t.getFirst();
+                rfPairs.add(edge("rf", w, r, ctx));
+                enc = ctx.mkAnd(enc, ctx.mkImplies(
+                        edge("rf", w, r, ctx),
+                        ctx.mkEq(w.getValueExpr(), r.getValueExpr())
+                ));
             }
-            enc = ctx.mkAnd(enc, dfEnc);
+            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));
         }
         return enc;
     }

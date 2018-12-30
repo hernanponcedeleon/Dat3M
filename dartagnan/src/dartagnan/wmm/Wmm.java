@@ -1,5 +1,6 @@
 package dartagnan.wmm;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.program.Program;
@@ -19,6 +20,8 @@ import java.util.*;
  * @author Florian Furbach
  */
 public class Wmm {
+
+    private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
 
     private List<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<>();
@@ -72,6 +75,10 @@ public class Wmm {
     public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) {
         this.program = program;
 
+        for(String relName : baseRelations){
+            relationRepository.getRelation(relName);
+        }
+
         for (Axiom ax : axioms) {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
@@ -95,6 +102,10 @@ public class Wmm {
             ax.getRel().getMaxTupleSet();
         }
 
+        for(String relName : baseRelations){
+            relationRepository.getRelation(relName).getMaxTupleSet();
+        }
+
         if(drawExecutionGraph){
             for(String relName : drawRelations){
                 Relation relation = relationRepository.getRelation(relName);
@@ -116,6 +127,10 @@ public class Wmm {
         BoolExpr enc = ctx.mkTrue();
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode());
+        }
+
+        for(String relName : baseRelations){
+            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
         }
 
         if(encodingMode == Relation.LFP){

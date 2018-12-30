@@ -2,8 +2,6 @@ package dartagnan.wmm.relation.basic;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import dartagnan.program.Program;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.memory.Address;
@@ -25,12 +23,6 @@ public class RelCo extends Relation {
     public RelCo(){
         term = "co";
         forceDoEncode = true;
-    }
-
-    @Override
-    public void initialise(Program program, Context ctx, int encodingMode){
-        super.initialise(program, ctx, encodingMode);
-        encodeTupleSet.addAll(getMaxTupleSet());
     }
 
     @Override

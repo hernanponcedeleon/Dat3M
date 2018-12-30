@@ -1,6 +1,7 @@
 package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.utils.RegReaderData;
@@ -19,6 +20,7 @@ public class RelIdd extends Relation {
 
     public RelIdd(){
         term = "idd";
+        forceDoEncode = true;
     }
 
     @Override
@@ -44,7 +46,7 @@ public class RelIdd extends Relation {
     @Override
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
-        for(Tuple tuple1 : encodeTupleSet) {
+        for(Tuple tuple1 : maxTupleSet) {
             Event e1 = tuple1.getFirst();
             Event e2 = tuple1.getSecond();
             BoolExpr clause = ctx.mkAnd(e1.executes(ctx), e2.executes(ctx));
@@ -56,6 +58,11 @@ public class RelIdd extends Relation {
                 }
             }
             enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), clause));
+
+            Register reg = ((RegWriter)e1).getModifiedReg();
+            enc = ctx.mkAnd(enc, ctx.mkImplies(edge(this.getName(), e1, e2, ctx),
+                    ctx.mkEq(((RegWriter)e1).getRegResultExpr(), reg.toZ3Int(e2, ctx))
+            ));
         }
         return enc;
     }
