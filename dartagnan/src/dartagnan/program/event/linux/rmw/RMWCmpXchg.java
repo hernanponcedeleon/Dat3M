@@ -24,9 +24,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     @Override
     public Set<Register> getDataRegs(){
         Set<Register> regs = super.getDataRegs();
-        if(cmp instanceof Register){
-            regs.add((Register) cmp);
-        }
+        regs.addAll(cmp.getRegs());
         return regs;
     }
 

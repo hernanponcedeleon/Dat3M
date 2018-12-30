@@ -33,9 +33,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
     @Override
     public Set<Register> getDataRegs(){
-        Set<Register> regs = new HashSet<>();
-        regs.add(reg);
-        return regs;
+        return reg.getRegs();
     }
 
     @Override

@@ -27,11 +27,7 @@ public class Store extends MemEvent implements RegReaderData {
 
     @Override
     public Set<Register> getDataRegs(){
-        Set<Register> regs = new HashSet<>();
-        if(value instanceof Register){
-            regs.add((Register) value);
-        }
-        return regs;
+        return value.getRegs();
     }
 
     @Override

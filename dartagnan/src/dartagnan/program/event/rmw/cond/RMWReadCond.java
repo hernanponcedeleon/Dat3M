@@ -37,11 +37,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
 
     @Override
     public Set<Register> getDataRegs(){
-        Set<Register> regs = new HashSet<>();
-        if(cmp instanceof Register){
-            regs.add((Register) cmp);
-        }
-        return regs;
+        return cmp.getRegs();
     }
 
     @Override
