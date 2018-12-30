@@ -1,5 +1,6 @@
 package dartagnan.wmm.relation.basic;
 
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.MemEvent;
@@ -27,8 +28,10 @@ public class RelAddrDirect extends BasicRelation {
                 Set<Event> regReaders = t.getEventRepository().getEvents(EventRepository.MEMORY);
                 for(Event e1 : regWriters){
                     for(Event e2 : regReaders){
-                        if(e1.getEId() < e2.getEId() && ((MemEvent)e2).getAddressReg() == ((RegWriter)e1).getModifiedReg()){
-                            maxTupleSet.add(new Tuple(e1, e2));
+                        for(Register register : ((MemEvent)e2).getAddressRegs()){
+                            if(e1.getEId() < e2.getEId() && register == ((RegWriter)e1).getModifiedReg()){
+                                maxTupleSet.add(new Tuple(e1, e2));
+                            }
                         }
                     }
                 }

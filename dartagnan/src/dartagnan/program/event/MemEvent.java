@@ -41,11 +41,8 @@ public abstract class MemEvent extends Event {
         this.addresses = addresses;
     }
 
-    public Register getAddressReg(){
-        if(address instanceof Register){
-            return (Register) address;
-        }
-        return null;
+    public Set<Register> getAddressRegs(){
+        return address.getRegs();
     }
 
     public IExpr getAddress(){
