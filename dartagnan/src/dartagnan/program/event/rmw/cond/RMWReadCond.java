@@ -2,19 +2,14 @@ package dartagnan.program.event.rmw.cond;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.Set;
-
-import static dartagnan.utils.Utils.ssaReg;
 
 public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData {
 
@@ -40,21 +35,13 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     }
 
     @Override
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        valueExpr = ssaReg(reg, map.getFresh(reg), ctx);
-        ssaRegIndex = map.get(reg);
-        z3Cond = ctx.mkEq(valueExpr, encodeValue(map, ctx, cmp));
-        addressExpr = address.toZ3Int(map, ctx);
-        return new Pair<>(ctx.mkTrue(), map);
+    public BoolExpr encodeDF(Context ctx) {
+        valueExpr = reg.toZ3IntResult(this, ctx);
+        z3Cond = ctx.mkEq(valueExpr, cmp.toZ3Int(this, ctx));
+        addressExpr = address.toZ3Int(this, ctx);
+        return ctx.mkTrue();
     }
 
     @Override
     public abstract RMWReadCond clone();
-
-    private Expr encodeValue(MapSSA map, Context ctx, ExprInterface v){
-        if(v instanceof Register){
-            return ssaReg((Register)v, map.get((Register)v), ctx);
-        }
-        return ctx.mkInt(v.toString());
-    }
 }

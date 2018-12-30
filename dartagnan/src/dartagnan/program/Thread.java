@@ -5,8 +5,6 @@ import com.microsoft.z3.Context;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Skip;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -93,7 +91,7 @@ public abstract class Thread {
         throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
     }
 
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx){
+	public BoolExpr encodeDF(Context ctx){
 	    throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
     }
 

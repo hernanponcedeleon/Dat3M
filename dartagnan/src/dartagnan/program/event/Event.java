@@ -3,8 +3,6 @@ package dartagnan.program.event;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.program.Thread;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -83,8 +81,8 @@ public abstract class Event extends Thread {
 	}
 
     @Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		return new Pair<>(ctx.mkTrue(), map);
+	public BoolExpr encodeDF(Context ctx) {
+		return ctx.mkTrue();
 	}
 
 	@Override

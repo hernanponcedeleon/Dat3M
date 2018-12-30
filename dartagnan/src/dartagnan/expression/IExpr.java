@@ -2,13 +2,13 @@ package dartagnan.expression;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 public abstract class IExpr implements ExprInterface {
 
     @Override
-	public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
-		return ctx.mkGt(toZ3Int(map, ctx), ctx.mkInt(0));
+	public BoolExpr toZ3Bool(Event e, Context ctx) {
+		return ctx.mkGt(toZ3Int(e, ctx), ctx.mkInt(0));
 	}
 
     @Override

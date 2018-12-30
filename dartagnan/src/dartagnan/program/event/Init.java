@@ -5,8 +5,6 @@ import com.microsoft.z3.Context;
 import dartagnan.expression.IConst;
 import dartagnan.program.memory.Address;
 import dartagnan.program.utils.EType;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 public class Init extends MemEvent {
 
@@ -39,10 +37,10 @@ public class Init extends MemEvent {
 	}
 
 	@Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		addressExpr = address.toZ3Int(map, ctx);
+	public BoolExpr encodeDF(Context ctx) {
+		addressExpr = address.toZ3Int(this, ctx);
 		valueExpr = value.toZ3Int(ctx);
-		return new Pair<>(ctx.mkTrue(), map);
+		return ctx.mkTrue();
 	}
 
 	public IConst getValue(){

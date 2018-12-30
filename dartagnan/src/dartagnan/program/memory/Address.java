@@ -7,7 +7,7 @@ import dartagnan.expression.IConst;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,7 +27,7 @@ public class Address extends IConst implements IntExprInterface, ExprInterface {
     }
 
     @Override
-    public IntExpr toZ3Int(MapSSA map, Context ctx){
+    public IntExpr toZ3Int(Event e, Context ctx){
         return toZ3Int(ctx);
     }
 
@@ -37,7 +37,7 @@ public class Address extends IConst implements IntExprInterface, ExprInterface {
     }
 
     @Override
-    public BoolExpr toZ3Bool(MapSSA map, Context ctx){
+    public BoolExpr toZ3Bool(Event e, Context ctx){
         return ctx.mkTrue();
     }
 

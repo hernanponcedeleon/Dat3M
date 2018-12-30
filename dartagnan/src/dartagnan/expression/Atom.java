@@ -4,7 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.op.COpBin;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,8 +22,8 @@ public class Atom extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
-		return op.encode(lhs.toZ3Int(map, ctx), rhs.toZ3Int(map, ctx), ctx);
+	public BoolExpr toZ3Bool(Event e, Context ctx) {
+		return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
 	}
 
     @Override

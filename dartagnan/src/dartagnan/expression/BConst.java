@@ -3,7 +3,7 @@ package dartagnan.expression;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +17,7 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
+	public BoolExpr toZ3Bool(Event e, Context ctx) {
 		return value ? ctx.mkTrue() : ctx.mkFalse();
 	}
 

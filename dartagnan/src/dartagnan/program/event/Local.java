@@ -7,18 +7,14 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.Set;
-
-import static dartagnan.utils.Utils.ssaReg;
 
 public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected Register reg;
 	protected ExprInterface expr;
-	protected int ssaRegIndex;
+	private IntExpr regResultExpr;
 	
 	public Local(Register reg, ExprInterface expr) {
 		this.reg = reg;
@@ -36,6 +32,11 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
+	public IntExpr getRegResultExpr(){
+		return regResultExpr;
+	}
+
+	@Override
 	public Set<Register> getDataRegs(){
 		return expr.getRegs();
 	}
@@ -44,11 +45,6 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	public String toString() {
 		return nTimesCondLevel() + reg + " <- " + expr;
 	}
-
-    @Override
-    public int getSsaRegIndex() {
-        return ssaRegIndex;
-    }
 
     @Override
 	public Local clone() {
@@ -60,10 +56,9 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
     @Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		IntExpr z3Expr = expr.toZ3Int(map, ctx);
-		IntExpr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-		this.ssaRegIndex = map.get(reg);
-		return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Expr)), map);
+	public BoolExpr encodeDF(Context ctx) {
+		IntExpr z3Expr = expr.toZ3Int(this, ctx);
+		regResultExpr = reg.toZ3IntResult(this, ctx);
+		return ctx.mkImplies(executes(ctx), ctx.mkEq(regResultExpr, z3Expr));
 	}
 }

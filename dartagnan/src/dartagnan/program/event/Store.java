@@ -7,8 +7,6 @@ import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.Set;
 
@@ -49,9 +47,9 @@ public class Store extends MemEvent implements RegReaderData {
     }
 
     @Override
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        valueExpr = value.toZ3Int(map, ctx);
-        addressExpr = address.toZ3Int(map, ctx);
-        return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkTrue()), map);
+    public BoolExpr encodeDF(Context ctx) {
+        valueExpr = value.toZ3Int(this, ctx);
+        addressExpr = address.toZ3Int(this, ctx);
+        return ctx.mkTrue();
     }
 }

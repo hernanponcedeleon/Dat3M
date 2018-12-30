@@ -19,8 +19,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static dartagnan.utils.Encodings.encodeCommonExecutions;
-import static dartagnan.utils.Encodings.encodeReachedState;
+import static porthos.Encodings.encodeCommonExecutions;
+import static porthos.Encodings.encodeReachedState;
 
 public class Porthos {
 

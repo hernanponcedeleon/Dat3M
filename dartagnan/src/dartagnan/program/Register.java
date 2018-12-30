@@ -4,12 +4,10 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.IExpr;
 import dartagnan.expression.IntExprInterface;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import static dartagnan.utils.Utils.ssaReg;
 
 public class Register extends IExpr implements IntExprInterface {
 
@@ -53,11 +51,12 @@ public class Register extends IExpr implements IntExprInterface {
 	}
 
 	@Override
-	public IntExpr toZ3Int(MapSSA map, Context ctx) {
-		if(mainThreadId > -1) {
-			return ssaReg(this, map.get(this), ctx);
-		}
-		throw new RuntimeException("Main thread is not set for " + this);
+	public IntExpr toZ3Int(Event e, Context ctx) {
+		return ctx.mkIntConst(getName() + "(" + e.repr() + ")");
+	}
+
+	public IntExpr toZ3IntResult(Event e, Context ctx) {
+		return ctx.mkIntConst(getName() + "(" + e.repr() + "_result)");
 	}
 
 	@Override

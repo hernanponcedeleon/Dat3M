@@ -3,7 +3,7 @@ package dartagnan.expression;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +17,7 @@ public class IConst extends IExpr implements ExprInterface, IntExprInterface {
 	}
 
 	@Override
-	public IntExpr toZ3Int(MapSSA map, Context ctx) {
+	public IntExpr toZ3Int(Event e, Context ctx) {
 		return ctx.mkInt(value);
 	}
 

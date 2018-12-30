@@ -5,7 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,13 +23,13 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public IntExpr toZ3Int(MapSSA map, Context ctx) {
-        return op.encode(lhs.toZ3Int(map, ctx), rhs.toZ3Int(map, ctx), ctx);
+    public IntExpr toZ3Int(Event e, Context ctx) {
+        return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
     }
 
     @Override
-    public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
-        return ctx.mkGt(toZ3Int(map, ctx), ctx.mkInt(0));
+    public BoolExpr toZ3Bool(Event e, Context ctx) {
+        return ctx.mkGt(toZ3Int(e, ctx), ctx.mkInt(0));
     }
 
     @Override

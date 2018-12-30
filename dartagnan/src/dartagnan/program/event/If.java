@@ -6,15 +6,9 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.utils.RegReaderData;
-import dartagnan.program.event.utils.RegWriter;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import static dartagnan.utils.Utils.mergeMaps;
-import static dartagnan.utils.Utils.ssaReg;
 
 public class If extends Event implements RegReaderData {
 
@@ -139,23 +133,10 @@ public class If extends Event implements RegReaderData {
     }
 
     @Override
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        if(mainThread != null){
-            MapSSA map1 = map.clone();
-            MapSSA map2 = map.clone();
-
-            BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Bool(map, ctx)),
-                    ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Bool(map, ctx))));
-
-            Pair<BoolExpr, MapSSA> p1 = t1.encodeDF(map1, ctx);
-            enc = ctx.mkAnd(enc, p1.getFirst());
-            Pair<BoolExpr, MapSSA> p2 = t2.encodeDF(map2, ctx);
-            enc = ctx.mkAnd(enc, p2.getFirst());
-            enc = ctx.mkAnd(enc, encodeMissingIndexes(map1, map2, ctx));
-            map = mergeMaps(map1, map2);
-            return new Pair<>(enc, map);
-        }
-        throw new RuntimeException("Main thread is not set for " + toString());
+    public BoolExpr encodeDF(Context ctx) {
+        BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Bool(this, ctx)),
+                ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Bool(this, ctx))));
+        return ctx.mkAnd(enc, ctx.mkAnd(t1.encodeDF(ctx), t2.encodeDF(ctx)));
     }
 
     @Override
@@ -174,42 +155,5 @@ public class If extends Event implements RegReaderData {
         else
             return nTimesCondLevel() + "if (" + expr + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}\n"
                     + nTimesCondLevel() + "else {\n" + t2 + "\n" + nTimesCondLevel() + "}";
-    }
-
-    private BoolExpr encodeMissingIndexes(MapSSA map1, MapSSA map2, Context ctx) {
-        BoolExpr ret = ctx.mkTrue();
-        BoolExpr index = ctx.mkTrue();
-
-        for(Register reg : map1.keySet()) {
-            int i1 = map1.get(reg);
-            int i2 = map2.get(reg);
-            if(i1 > i2) {
-                // If the ssa index of a register differs in the two branches
-                // I need to maintain the value when the event is not executed
-                // for testing reachability
-                for(Event e : getEvents()) {
-                    if(e instanceof RegWriter && ((RegWriter)e).getSsaRegIndex() == i1 && ((RegWriter) e).getModifiedReg() == reg){
-                        ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ssaReg(reg, i1, ctx), ssaReg(reg, i1-1, ctx))));
-                    }
-                }
-                index = ctx.mkEq(ssaReg(reg, i1, ctx), ssaReg(reg, i2, ctx));
-                ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkBoolConst(getT2().cfVar()), index));
-            }
-        }
-
-        for(Register reg : map2.keySet()) {
-            int i1 = map1.get(reg);
-            int i2 = map2.get(reg);
-            if(i2 > i1) {
-                for(Event e : getEvents()) {
-                    if(e instanceof RegWriter && ((RegWriter)e).getSsaRegIndex() == i2 && ((RegWriter) e).getModifiedReg() == reg){
-                        ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkNot(e.executes(ctx)), ctx.mkEq(ssaReg(reg, i2, ctx), ssaReg(reg, i2-1, ctx))));
-                    }
-                }
-                index = ctx.mkEq(ssaReg(reg, i2, ctx), ssaReg(reg, i1, ctx));
-                ret = ctx.mkAnd(ret, ctx.mkImplies(ctx.mkBoolConst(getT1().cfVar()), index));
-            }
-        }
-        return ret;
     }
 }

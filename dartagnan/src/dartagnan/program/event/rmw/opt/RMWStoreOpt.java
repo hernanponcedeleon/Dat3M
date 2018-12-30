@@ -7,8 +7,6 @@ import dartagnan.expression.IExpr;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.utils.RegReaderData;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 public class RMWStoreOpt extends RMWStore implements RegReaderData {
 
@@ -32,14 +30,13 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
     }
 
     @Override
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        Pair<BoolExpr, MapSSA> result = super.encodeDF(map, ctx);
-        BoolExpr enc;
+    public BoolExpr encodeDF(Context ctx) {
+        BoolExpr enc = super.encodeDF(ctx);
         if(loadEvent == null){
-            enc = ctx.mkAnd(result.getFirst(), ctx.mkNot(executes(ctx)));
+            enc = ctx.mkAnd(enc, ctx.mkNot(executes(ctx)));
         } else {
             enc = ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr()));
         }
-        return new Pair<>(enc, result.getSecond());
+        return enc;
     }
 }

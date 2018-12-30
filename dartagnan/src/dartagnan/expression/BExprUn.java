@@ -4,7 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.op.BOpUn;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
+import dartagnan.program.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -20,8 +20,8 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public BoolExpr toZ3Bool(MapSSA map, Context ctx) {
-        return op.encode(b.toZ3Bool(map, ctx), ctx);
+    public BoolExpr toZ3Bool(Event e, Context ctx) {
+        return op.encode(b.toZ3Bool(e, ctx), ctx);
     }
 
     @Override

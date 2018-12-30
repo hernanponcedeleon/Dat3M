@@ -1,4 +1,4 @@
-package dartagnan.utils;
+package porthos;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -7,20 +7,20 @@ import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Load;
-import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.Store;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EventRepository;
+import dartagnan.utils.Utils;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Encodings {
+class Encodings {
 
-	public static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
+	static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
 		List<Event> p1Events = sortedByHlId(p1);
         List<Event> p2Events = sortedByHlId(p2);
 
@@ -75,7 +75,7 @@ public class Encodings {
 		return enc;
 	}
 	
-	public static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
+	static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : p.getLocations()) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));

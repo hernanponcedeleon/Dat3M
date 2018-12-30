@@ -2,19 +2,15 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EType;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
-
-import static dartagnan.utils.Utils.ssaReg;
 
 public class Load extends MemEvent implements RegWriter {
 
     protected Register reg;
-    protected int ssaRegIndex;
 
     public Load(Register register, IExpr address, String atomic) {
         this.address = address;
@@ -27,6 +23,11 @@ public class Load extends MemEvent implements RegWriter {
     @Override
     public Register getModifiedReg(){
         return reg;
+    }
+
+    @Override
+    public IntExpr getRegResultExpr(){
+        return valueExpr;
     }
 
     @Override
@@ -49,15 +50,9 @@ public class Load extends MemEvent implements RegWriter {
     }
 
     @Override
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        valueExpr = ssaReg(reg, map.getFresh(reg), ctx);
-        ssaRegIndex = map.get(reg);
-        addressExpr = address.toZ3Int(map, ctx);
-        return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkTrue()), map);
-    }
-
-    @Override
-    public int getSsaRegIndex() {
-        return ssaRegIndex;
+    public BoolExpr encodeDF(Context ctx) {
+        valueExpr = reg.toZ3IntResult(this, ctx);
+        addressExpr = address.toZ3Int(this, ctx);
+        return ctx.mkTrue();
     }
 }

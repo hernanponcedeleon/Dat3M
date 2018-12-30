@@ -7,8 +7,6 @@ import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData {
 
@@ -16,10 +14,10 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
         super(reg, cmp, address, atomic);
     }
 
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        Pair<BoolExpr, MapSSA> result = super.encodeDF(map, ctx);
+    public BoolExpr encodeDF(Context ctx) {
+        BoolExpr enc = super.encodeDF(ctx);
         this.z3Cond = ctx.mkNot(z3Cond);
-        return result;
+        return enc;
     }
 
     @Override

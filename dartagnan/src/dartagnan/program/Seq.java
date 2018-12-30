@@ -4,8 +4,6 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Skip;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -104,13 +102,8 @@ public class Seq extends Thread {
 	}
 
     @Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		if(mainThread != null){
-			Pair<BoolExpr, MapSSA> p1 = t1.encodeDF(map, ctx);
-			Pair<BoolExpr, MapSSA> p2 = t2.encodeDF(p1.getSecond(), ctx);
-			return new Pair<>(ctx.mkAnd(p1.getFirst(), p2.getFirst()), p2.getSecond());
-		}
-		throw new RuntimeException("Main thread is not set for " + toString());
+	public BoolExpr encodeDF(Context ctx) {
+	    return ctx.mkAnd(t1.encodeDF(ctx), t2.encodeDF(ctx));
 	}
 
     @Override

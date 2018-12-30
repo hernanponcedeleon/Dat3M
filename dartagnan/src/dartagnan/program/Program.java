@@ -10,12 +10,8 @@ import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Location;
 import dartagnan.program.memory.Memory;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.*;
-
-import static dartagnan.utils.Utils.ssaReg;
 
 public class Program extends Thread {
 
@@ -132,11 +128,8 @@ public class Program extends Thread {
 
 	public BoolExpr encodeDF(Context ctx) {
         BoolExpr enc = memory.encode(ctx);
-		MapSSA lastMap = new MapSSA();
 		for(Thread t : threads){
-            Pair<BoolExpr, MapSSA>recResult = t.encodeDF(lastMap, ctx);
-            enc = ctx.mkAnd(enc, recResult.getFirst());
-            lastMap = recResult.getSecond();
+            enc = ctx.mkAnd(enc, t.encodeDF(ctx));
         }
 		return enc;
 	}
@@ -170,7 +163,7 @@ public class Program extends Thread {
                     lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).executes(ctx)));
                 }
                 enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
-                        ctx.mkEq(reg.getLastValueExpr(ctx), ssaReg(reg, ((RegWriter)events.get(i)).getSsaRegIndex(), ctx))));
+                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)events.get(i)).getRegResultExpr())));
             }
         }
         return enc;
