@@ -10,7 +10,6 @@ import dartagnan.program.utils.EType;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public class Store extends MemEvent implements RegReaderData {

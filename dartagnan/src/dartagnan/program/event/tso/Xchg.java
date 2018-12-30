@@ -11,7 +11,6 @@ import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Address;
 import dartagnan.program.utils.tso.EType;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public class Xchg extends MemEvent implements RegWriter, RegReaderData {

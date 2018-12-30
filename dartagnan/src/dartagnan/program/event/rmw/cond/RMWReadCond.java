@@ -12,7 +12,6 @@ import dartagnan.program.event.utils.RegWriter;
 import dartagnan.utils.MapSSA;
 import dartagnan.utils.Pair;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import static dartagnan.utils.Utils.ssaReg;

@@ -11,7 +11,6 @@ import dartagnan.program.event.Store;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public class Write extends MemEvent implements RegReaderData {

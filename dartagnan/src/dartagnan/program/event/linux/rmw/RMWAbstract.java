@@ -14,7 +14,6 @@ import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.linux.EType;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
