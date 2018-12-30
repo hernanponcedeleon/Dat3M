@@ -31,12 +31,10 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
 
     @Override
     public BoolExpr encodeDF(Context ctx) {
-        BoolExpr enc = super.encodeDF(ctx);
+        super.encodeDF(ctx);
         if(loadEvent == null){
-            enc = ctx.mkAnd(enc, ctx.mkNot(executes(ctx)));
-        } else {
-            enc = ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr()));
+            return ctx.mkNot(executes(ctx));
         }
-        return enc;
+        return ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr()));
     }
 }
