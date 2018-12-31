@@ -20,6 +20,7 @@ public class RelAddrDirect extends BasicRelation {
     public RelAddrDirect(){
         term = "addrDirect";
         forceDoEncode = true;
+        isStatic = true;
     }
 
     @Override

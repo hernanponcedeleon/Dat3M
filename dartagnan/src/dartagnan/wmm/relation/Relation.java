@@ -39,6 +39,7 @@ public abstract class Relation {
     protected boolean forceUpdateRecursiveGroupId = false;
     protected boolean isRecursive = false;
     protected boolean forceDoEncode = false;
+    protected boolean isStatic = false;
 
     public Relation() {}
 
@@ -100,6 +101,10 @@ public abstract class Relation {
 
     public boolean getIsNamed(){
         return name != null;
+    }
+
+    public boolean getIsStatic(){
+        return isStatic;
     }
 
     public String toString(){

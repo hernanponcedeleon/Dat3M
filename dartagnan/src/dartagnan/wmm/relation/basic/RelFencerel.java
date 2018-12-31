@@ -28,6 +28,7 @@ public class RelFencerel extends Relation {
     public RelFencerel(String fenceName) {
         this.fenceName = fenceName;
         term = makeTerm(fenceName);
+        isStatic = true;
     }
 
     public RelFencerel(String fenceName, String name) {

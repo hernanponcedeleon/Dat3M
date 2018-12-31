@@ -90,6 +90,10 @@ public class Wmm {
             recursiveGroup.setDoRecurse();
         }
 
+        for(FilterAbstract filter : filters.values()){
+            filter.initialise();
+        }
+
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program, ctx, encodingMode);
         }

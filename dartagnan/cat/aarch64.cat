@@ -91,12 +91,8 @@ let dob = addr | data
 	| (addr | data); rfi
 
 (* Atomic-ordered-before *)
-(*
 let aob = rmw
 	| [range(rmw)]; rfi; [A | Q]
-	*)
-let aob = rmw
-	| [RMW & W]; rfi; [A | Q]
 
 (* Barrier-ordered-before *)
 let bob = po; [dmb.full]; po

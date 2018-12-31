@@ -15,6 +15,7 @@ public class RelLoc extends BasicRelation {
 
     public RelLoc(){
         term = "loc";
+        isStatic = true;
     }
 
     @Override

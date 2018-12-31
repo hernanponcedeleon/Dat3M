@@ -21,6 +21,7 @@ public class RelIdd extends Relation {
     public RelIdd(){
         term = "idd";
         forceDoEncode = true;
+        isStatic = true;
     }
 
     @Override
