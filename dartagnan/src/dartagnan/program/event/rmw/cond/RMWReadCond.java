@@ -21,25 +21,23 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
         this.cmp = cmp;
     }
 
+    @Override
+    public void initialise(Context ctx) {
+        valueExpr = reg.toZ3IntResult(this, ctx);
+        z3Cond = ctx.mkEq(valueExpr, cmp.toZ3Int(this, ctx));
+        addressExpr = address.toZ3Int(this, ctx);
+    }
+
     public BoolExpr getCond(){
-        if(z3Cond == null){
-            // encodeDF must be called before encodeCF, otherwise this exception will be thrown
-            throw new RuntimeException("z3Cond is requested before it has been initialised in " + this.getClass().getName());
+        if(z3Cond != null){
+            return z3Cond;
         }
-        return z3Cond;
+        throw new RuntimeException("z3Cond is requested before it has been initialised in " + this.getClass().getName());
     }
 
     @Override
     public Set<Register> getDataRegs(){
         return cmp.getRegs();
-    }
-
-    @Override
-    public BoolExpr encodeDF(Context ctx) {
-        valueExpr = reg.toZ3IntResult(this, ctx);
-        z3Cond = ctx.mkEq(valueExpr, cmp.toZ3Int(this, ctx));
-        addressExpr = address.toZ3Int(this, ctx);
-        return ctx.mkTrue();
     }
 
     @Override

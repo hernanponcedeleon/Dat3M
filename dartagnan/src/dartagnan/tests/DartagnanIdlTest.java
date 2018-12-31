@@ -57,9 +57,6 @@ public class DartagnanIdlTest {
                             int startEId = Collections.max(pFP.getEventRepository().getEvents(EventRepository.INIT).stream().map(e -> e.getEId()).collect(Collectors.toSet())) + 1;
                             pIDL.compile(target, false, true, startEId);
 
-                            s.add(pFP.encodeDF(ctx));
-                            s.add(pIDL.encodeDF(ctx));
-
                             s.add(pFP.getAss().encode(ctx));
                             if(pFP.getAssFilter() != null){
                                 s.add(pFP.getAssFilter().encode(ctx));

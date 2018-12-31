@@ -1,6 +1,5 @@
 package dartagnan.program.event;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.IConst;
 import dartagnan.program.memory.Address;
@@ -15,6 +14,12 @@ public class Init extends MemEvent {
 		this.value = value;
 		this.condLevel = 0;
 		addFilters(EType.ANY, EType.MEMORY, EType.WRITE, EType.INIT);
+	}
+
+	@Override
+	public void initialise(Context ctx) {
+		addressExpr = address.toZ3Int(this, ctx);
+		valueExpr = value.toZ3Int(ctx);
 	}
 
 	@Override
@@ -34,13 +39,6 @@ public class Init extends MemEvent {
             afterClone();
         }
 		return (Init)clone;
-	}
-
-	@Override
-	public BoolExpr encodeDF(Context ctx) {
-		addressExpr = address.toZ3Int(this, ctx);
-		valueExpr = value.toZ3Int(ctx);
-		return ctx.mkTrue();
 	}
 
 	public IConst getValue(){

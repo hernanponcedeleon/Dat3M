@@ -115,7 +115,6 @@ public class Dartagnan {
         program.unroll(steps);
         program.compile(target, false, true);
 
-	    solver.add(program.encodeDF(ctx));
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));

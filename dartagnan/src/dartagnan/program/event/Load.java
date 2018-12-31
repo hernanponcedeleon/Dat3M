@@ -1,6 +1,5 @@
 package dartagnan.program.event;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.IExpr;
@@ -18,6 +17,12 @@ public class Load extends MemEvent implements RegWriter {
         this.condLevel = 0;
         this.reg = register;
         addFilters(EType.ANY, EType.MEMORY, EType.READ);
+    }
+
+    @Override
+    public void initialise(Context ctx) {
+        valueExpr = reg.toZ3IntResult(this, ctx);
+        addressExpr = address.toZ3Int(this, ctx);
     }
 
     @Override
@@ -47,12 +52,5 @@ public class Load extends MemEvent implements RegWriter {
             afterClone();
         }
         return (Load)clone;
-    }
-
-    @Override
-    public BoolExpr encodeDF(Context ctx) {
-        valueExpr = reg.toZ3IntResult(this, ctx);
-        addressExpr = address.toZ3Int(this, ctx);
-        return ctx.mkTrue();
     }
 }

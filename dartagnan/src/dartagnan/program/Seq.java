@@ -102,11 +102,6 @@ public class Seq extends Thread {
 	}
 
     @Override
-	public BoolExpr encodeDF(Context ctx) {
-	    return ctx.mkAnd(t1.encodeDF(ctx), t2.encodeDF(ctx));
-	}
-
-    @Override
 	public BoolExpr encodeCF(Context ctx) {
 		return ctx.mkAnd(
 				ctx.mkImplies(ctx.mkOr(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar())), ctx.mkBoolConst(cfVar())),

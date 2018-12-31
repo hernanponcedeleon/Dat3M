@@ -133,19 +133,18 @@ public class If extends Event implements RegReaderData {
     }
 
     @Override
-    public BoolExpr encodeDF(Context ctx) {
-        BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Bool(this, ctx)),
-                ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Bool(this, ctx))));
-        return ctx.mkAnd(enc, ctx.mkAnd(t1.encodeDF(ctx), t2.encodeDF(ctx)));
-    }
-
-    @Override
     public BoolExpr encodeCF(Context ctx) {
-        return ctx.mkAnd(
+        BoolExpr enc = ctx.mkAnd(
+                ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Bool(this, ctx)),
+                ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Bool(this, ctx)))
+        );
+
+        enc = ctx.mkAnd(enc, ctx.mkAnd(
                 ctx.mkEq(ctx.mkBoolConst(cfVar()), ctx.mkXor(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar()))),
-                ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx)),
-                t1.encodeCF(ctx),
-                t2.encodeCF(ctx));
+                ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx))
+        ));
+
+        return ctx.mkAnd(ctx.mkAnd(enc, ctx.mkAnd(t1.encodeCF(ctx), t2.encodeCF(ctx))));
     }
 
     @Override

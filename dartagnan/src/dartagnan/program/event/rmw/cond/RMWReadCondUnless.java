@@ -14,10 +14,10 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
         super(reg, cmp, address, atomic);
     }
 
-    public BoolExpr encodeDF(Context ctx) {
-        BoolExpr enc = super.encodeDF(ctx);
+    @Override
+    public void initialise(Context ctx) {
+        super.initialise(ctx);
         this.z3Cond = ctx.mkNot(z3Cond);
-        return enc;
     }
 
     @Override

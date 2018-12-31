@@ -91,10 +91,6 @@ public abstract class Thread {
         throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
     }
 
-	public BoolExpr encodeDF(Context ctx){
-	    throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
-    }
-
 	public static Thread fromArray(boolean createSkipOnNull, Thread... threads) {
 		return fromList(createSkipOnNull, Arrays.asList(threads));
 	}

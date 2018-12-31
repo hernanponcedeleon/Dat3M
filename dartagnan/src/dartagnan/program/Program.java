@@ -126,16 +126,11 @@ public class Program extends Thread {
 		return this;
 	}
 
-	public BoolExpr encodeDF(Context ctx) {
-        BoolExpr enc = memory.encode(ctx);
-		for(Thread t : threads){
-            enc = ctx.mkAnd(enc, t.encodeDF(ctx));
-        }
-		return enc;
-	}
-
 	public BoolExpr encodeCF(Context ctx) {
-		BoolExpr enc = ctx.mkTrue();
+        for(Event e : getEvents()){
+            e.initialise(ctx);
+        }
+        BoolExpr enc = memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.mkAnd(enc, t.encodeCF(ctx));
             enc = ctx.mkAnd(enc, ctx.mkBoolConst(t.cfVar()));

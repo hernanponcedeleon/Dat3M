@@ -16,7 +16,13 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
 
     @Override
     public BoolExpr encodeCF(Context ctx) {
-        return ctx.mkImplies(ctx.mkNot(ctx.mkBoolConst(cfVar())), ctx.mkNot(executes(ctx)));
+        if(loadEvent != null){
+            return ctx.mkAnd(
+                    ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr())),
+                    ctx.mkImplies(ctx.mkNot(ctx.mkBoolConst(cfVar())), ctx.mkNot(executes(ctx)))
+            );
+        }
+        return ctx.mkNot(executes(ctx));
     }
 
     @Override
@@ -27,14 +33,5 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
             afterClone();
         }
         return (RMWStoreOpt)clone;
-    }
-
-    @Override
-    public BoolExpr encodeDF(Context ctx) {
-        super.encodeDF(ctx);
-        if(loadEvent == null){
-            return ctx.mkNot(executes(ctx));
-        }
-        return ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr()));
     }
 }

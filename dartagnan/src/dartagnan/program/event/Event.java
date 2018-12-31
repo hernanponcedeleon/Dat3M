@@ -53,6 +53,8 @@ public abstract class Event extends Thread {
 		filter.addAll(Arrays.asList(params));
 	}
 
+	public void initialise(Context ctx){}
+
 	@Override
 	public void beforeClone(){
 		clone = null;
@@ -78,11 +80,6 @@ public abstract class Event extends Thread {
     @Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
 		return this;
-	}
-
-    @Override
-	public BoolExpr encodeDF(Context ctx) {
-		return ctx.mkTrue();
 	}
 
 	@Override

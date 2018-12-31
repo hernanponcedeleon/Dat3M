@@ -127,18 +127,15 @@ public class Porthos {
         Solver s = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
         Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
-        BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, cmd.hasOption("relax"), cmd.hasOption("idl"));
 
-        s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
         s.add(pTarget.encodeFinalValues(ctx));
         s.add(mcmT.encode(pTarget, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcmT.consistent(pTarget, ctx));
 
-        s.add(sourceDF);
         s.add(sourceCF);
         s.add(sourceFV);
         s.add(sourceMM);
@@ -146,7 +143,6 @@ public class Porthos {
 
         s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
-        s2.add(sourceDF);
         s2.add(sourceCF);
         s2.add(sourceFV);
         s2.add(sourceMM);

@@ -20,6 +20,11 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
     }
 
     @Override
+    public void initialise(Context ctx) {
+        regResultExpr = register.toZ3IntResult(this, ctx);
+    }
+
+    @Override
     public Register getModifiedReg(){
         return register;
     }
@@ -44,12 +49,11 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
     }
 
     @Override
-    public BoolExpr encodeDF(Context ctx) {
-        regResultExpr = register.toZ3IntResult(this, ctx);
+    public BoolExpr encodeCF(Context ctx) {
         BoolExpr enc = ctx.mkAnd(
                 ctx.mkImplies(storeEvent.executes(ctx), ctx.mkEq(regResultExpr, new IConst(0).toZ3Int(this, ctx))),
                 ctx.mkImplies(ctx.mkNot(storeEvent.executes(ctx)), ctx.mkEq(regResultExpr, new IConst(1).toZ3Int(this, ctx)))
         );
-        return ctx.mkImplies(executes(ctx), enc);
+        return ctx.mkAnd(super.encodeCF(ctx), ctx.mkImplies(executes(ctx), enc));
     }
 }
