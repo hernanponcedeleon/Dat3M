@@ -19,6 +19,10 @@ import java.util.stream.Collectors;
 
 public class Graph {
 
+    public static Set<String> getDefaultRelations(){
+        return new HashSet<>(Arrays.asList("po", "co", "rf"));
+    }
+
     private static Map<String, String> colorMap;
     static
     {
@@ -35,7 +39,7 @@ public class Graph {
         colorMap.put("mb", "black");
         colorMap.put("rmb", "black");
         colorMap.put("wmb", "black");
-    };
+    }
 
     private Set<String> relations = new HashSet<>(Arrays.asList(
             "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
@@ -46,6 +50,7 @@ public class Graph {
 
     private StringBuilder buffer;
     private Map<Integer, Location> mapAddressLocation;
+    private List<Event> events;
 
     private final String L1 = "  ";
     private final String L2 = "    ";
@@ -63,10 +68,6 @@ public class Graph {
 
     public void addRelations(Collection<String> relations){
         this.relations.addAll(relations);
-    }
-
-    public static Set<String> getDefaultRelations(){
-        return new HashSet<>(Arrays.asList("po", "co", "rf"));
     }
 
     public Graph build(Program program){
@@ -105,6 +106,7 @@ public class Graph {
     }
 
     private StringBuilder buildProgramGraph(Program program){
+        buildAddressLocationMap(program);
         return buildEvents(program)
                 .append(buildPo(program))
                 .append(buildCo(program))
@@ -119,7 +121,8 @@ public class Graph {
 
             if(t instanceof Init){
                 Init e = (Init)t.getEvents().iterator().next();
-                String label = e.label() + " = " + e.getValue();
+                Location location = mapAddressLocation.get(addressExprToInt(e.getAddressExpr()));
+                String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
 
             } else {
@@ -132,7 +135,7 @@ public class Graph {
                 for(Event e2 : events) {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
-                        Location location = getLocationForAddress(program, addressExprToInt(((MemEvent)e2).getAddressExpr()));
+                        Location location = mapAddressLocation.get(addressExprToInt(((MemEvent)e2).getAddressExpr()));
                         IntExpr value = ((MemEvent) e2).getValueExpr();
                         if(!(value instanceof IntNum)){
                             value = (IntExpr) model.getConstInterp(value);
@@ -172,9 +175,11 @@ public class Graph {
 
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
-            int address = addressExprToInt(((MemEvent)e).getAddressExpr());
-            mapAddressEvent.putIfAbsent(address, new HashSet<>());
-            mapAddressEvent.get(address).add(e);
+            if(model.getConstInterp(e.executes(ctx)).isTrue()){
+                int address = addressExprToInt(((MemEvent)e).getAddressExpr());
+                mapAddressEvent.putIfAbsent(address, new HashSet<>());
+                mapAddressEvent.get(address).add(e);
+            }
         }
 
         for(int address : mapAddressEvent.keySet()){
@@ -243,14 +248,11 @@ public class Graph {
                 : Integer.parseInt(model.getConstInterp(addressExpr).toString());
     }
 
-    private Location getLocationForAddress(Program program, int address){
-        if(mapAddressLocation == null){
-            mapAddressLocation = new HashMap<>();
-            for(Location location : program.getLocations()){
-                mapAddressLocation.put(addressExprToInt(location.getAddress().toZ3Int(ctx)), location);
-            }
+    private void buildAddressLocationMap(Program program){
+        mapAddressLocation = new HashMap<>();
+        for(Location location : program.getLocations()){
+            mapAddressLocation.put(addressExprToInt(location.getAddress().toZ3Int(ctx)), location);
         }
-        return mapAddressLocation.get(address);
     }
 
     private String getProgramDef(String label){
