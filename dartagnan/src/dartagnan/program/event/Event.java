@@ -10,6 +10,8 @@ import java.util.Set;
 
 public abstract class Event extends Thread {
 
+	public static final int PRINT_PAD_EXTRA = 50;
+
 	private int eid;
 	protected int hlId;
 	protected Event clone;

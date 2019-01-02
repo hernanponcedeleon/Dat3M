@@ -14,7 +14,7 @@ import java.util.Set;
 public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData {
 
     protected ExprInterface cmp;
-    protected BoolExpr z3Cond;
+    BoolExpr z3Cond;
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
@@ -42,4 +42,6 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
 
     @Override
     public abstract RMWReadCond clone();
+
+    public abstract String condToString();
 }

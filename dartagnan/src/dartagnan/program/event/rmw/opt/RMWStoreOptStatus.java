@@ -36,7 +36,7 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + register + " <- exec(" + storeEvent + ")";
+        return nTimesCondLevel() + register + " <- status(" + storeEvent.toStringBase() + ")";
     }
 
     @Override

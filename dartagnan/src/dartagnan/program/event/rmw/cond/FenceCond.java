@@ -2,6 +2,7 @@ package dartagnan.program.event.rmw.cond;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import dartagnan.program.event.Event;
 import dartagnan.program.event.Fence;
 
 public class FenceCond extends Fence {
@@ -16,6 +17,11 @@ public class FenceCond extends Fence {
     @Override
     public BoolExpr encodeCF(Context ctx) {
         return ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(cfVar()), loadEvent.getCond()), executes(ctx));
+    }
+
+    @Override
+    public String toString(){
+        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + loadEvent.condToString();
     }
 
     @Override

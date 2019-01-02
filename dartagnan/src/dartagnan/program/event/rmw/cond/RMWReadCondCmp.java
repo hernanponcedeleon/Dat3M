@@ -20,4 +20,9 @@ public class RMWReadCondCmp extends RMWReadCond implements RegWriter, RegReaderD
         }
         return (RMWReadCondCmp)clone;
     }
+
+    @Override
+    public String condToString(){
+        return "# if " + reg + " = " + cmp;
+    }
 }

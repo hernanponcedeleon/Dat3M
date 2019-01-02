@@ -28,4 +28,9 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
         }
         return (RMWReadCondUnless)clone;
     }
+
+    @Override
+    public String condToString(){
+        return "# if not " + reg + " = " + cmp;
+    }
 }
