@@ -44,7 +44,7 @@ public class Memory {
             expressions.add(address.toZ3Int(ctx));
         }
         for(IntExpr expr : expressions){
-            enc = ctx.mkAnd(enc, ctx.mkGt(expr, ctx.mkInt(0)));
+            enc = ctx.mkAnd(enc, ctx.mkGe(expr, ctx.mkInt(0)));
         }
         return ctx.mkAnd(enc, ctx.mkDistinct(expressions.toArray(new IntExpr[0])));
     }
