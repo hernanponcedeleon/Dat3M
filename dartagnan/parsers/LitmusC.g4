@@ -208,7 +208,12 @@ initConstantValue
     ;
 
 initArray
-    :   LBrace DigitSequence (Comma DigitSequence)* RBrace
+    :   LBrace arrayElement (Comma arrayElement)* RBrace
+    ;
+
+arrayElement
+    :   DigitSequence
+    |   Amp? varName
     ;
 
 cast

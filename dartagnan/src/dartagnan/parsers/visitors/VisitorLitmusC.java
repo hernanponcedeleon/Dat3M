@@ -100,14 +100,24 @@ public class VisitorLitmusC
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.addDeclarationArray(name, Collections.nCopies(size, 0));
+            programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0)));
             return null;
         }
         if(ctx.initArray() != null){
-            if(size == null || ctx.initArray().DigitSequence().size() == size){
-                List<Integer> values = new ArrayList<>();
-                for(TerminalNode raw : ctx.initArray().DigitSequence()){
-                    values.add(Integer.parseInt(raw.getText()));
+            if(size == null || ctx.initArray().arrayElement().size() == size){
+                List<IConst> values = new ArrayList<>();
+                for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
+                    if(elCtx.DigitSequence() != null){
+                        values.add(new IConst(Integer.parseInt(elCtx.DigitSequence().getText())));
+                    } else {
+                        String varName = elCtx.varName().getText();
+                        Address address = programBuilder.getPointer(varName);
+                        if(address != null){
+                            values.add(address);
+                        } else {
+                            values.add(programBuilder.getOrCreateLocation(varName).getAddress());
+                        }
+                    }
                 }
                 programBuilder.addDeclarationArray(name, values);
                 return null;

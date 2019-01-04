@@ -106,14 +106,14 @@ public class ProgramBuilder {
         addChild(regThread, new Local(getOrCreateRegister(regThread, regName), new IConst(imm)));
     }
 
-    public void addDeclarationArray(String name, List<Integer> values){
+    public void addDeclarationArray(String name, List<IConst> values){
         int size = values.size();
         List<Address> addresses = memory.malloc(name, size);
         for(int i = 0; i < size; i++){
             String varName = name + "[" + i + "]";
             Address address = addresses.get(i);
             locations.put(varName, new Location(varName, address));
-            iValueMap.put(address, new IConst(values.get(i)));
+            iValueMap.put(address, values.get(i));
         }
         pointers.put(name, addresses.get(0));
     }
