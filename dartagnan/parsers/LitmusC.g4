@@ -213,7 +213,7 @@ initArray
 
 arrayElement
     :   DigitSequence
-    |   Amp? varName
+    |   Ast? (Amp? varName | LPar Amp? varName RPar)
     ;
 
 cast

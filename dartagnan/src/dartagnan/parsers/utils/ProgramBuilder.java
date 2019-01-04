@@ -193,6 +193,10 @@ public class ProgramBuilder {
         throw new RuntimeException("Label " + thread + ":" + name + " is not initialised");
     }
 
+    public IConst getInitValue(Address address){
+        return iValueMap.getOrDefault(address, new IConst(Location.DEFAULT_INIT_VALUE));
+    }
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // A basic conversion from jump instructions to if structure

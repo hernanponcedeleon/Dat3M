@@ -1,8 +1,8 @@
-C C-array-ok-15.litmus
+C C-array-ok-16.litmus
 
 {
   a = 1; b = 2; c = 3;
-  arr[3] = {a, b, c};
+  arr[3] = {&a, &b, &c};
 }
 
 P0(atomic_t* arr) {

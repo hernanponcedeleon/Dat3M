@@ -115,7 +115,8 @@ public class VisitorLitmusC
                         if(address != null){
                             values.add(address);
                         } else {
-                            values.add(programBuilder.getOrCreateLocation(varName).getAddress());
+                            address = programBuilder.getOrCreateLocation(varName).getAddress();
+                            values.add(elCtx.Ast() == null ? address : programBuilder.getInitValue(address));
                         }
                     }
                 }
