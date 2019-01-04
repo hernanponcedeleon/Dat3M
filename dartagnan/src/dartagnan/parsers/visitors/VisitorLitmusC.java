@@ -67,7 +67,7 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
-        programBuilder.initLocEqConst(ctx.varName().getText(), value);
+        programBuilder.initLocEqConst(ctx.varName().getText(), new IConst(value));
         return null;
     }
 
@@ -77,7 +77,7 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
-        programBuilder.initRegEqConst(ctx.threadId().getText(), ctx.varName().getText(), value);
+        programBuilder.initRegEqConst(ctx.threadId().getText(), ctx.varName().getText(), new IConst(value));
         return null;
     }
 
@@ -86,7 +86,13 @@ public class VisitorLitmusC
         if(ctx.Ast() == null){
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
-            programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText());
+            String rightName = ctx.varName(1).getText();
+            Address address = programBuilder.getPointer(rightName);
+            if(address != null){
+                programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
+            } else {
+                programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText());
+            }
         }
         return null;
     }
@@ -96,7 +102,13 @@ public class VisitorLitmusC
         if(ctx.Ast() == null){
             programBuilder.initRegEqLocPtr(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
-            programBuilder.initRegEqLocVal(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+            String rightName = ctx.varName(1).getText();
+            Address address = programBuilder.getPointer(rightName);
+            if(address != null){
+                programBuilder.initRegEqConst(ctx.threadId().getText(), ctx.varName(0).getText(), address);
+            } else {
+                programBuilder.initRegEqLocVal(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+            }
         }
         return null;
     }
