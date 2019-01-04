@@ -63,25 +63,25 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.addDeclarationLocImm(ctx.location().getText(), Integer.parseInt(ctx.constant().getText()));
+        programBuilder.initLocEqConst(ctx.location().getText(), Integer.parseInt(ctx.constant().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.addDeclarationRegImm(ctx.threadId().id, ctx.register().getText(), Integer.parseInt(ctx.constant().getText()));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), Integer.parseInt(ctx.constant().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusX86Parser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.addDeclarationRegLoc(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusX86Parser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.addDeclarationLocLoc(ctx.location(0).getText(), ctx.location(1).getText());
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 

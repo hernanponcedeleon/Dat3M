@@ -86,25 +86,23 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
 
-    // Initialisation x=y assigned address of y to the variable x
-    public void addDeclarationLocLoc(String leftName, String rightName){
+    public void initLocEqLocPtr(String leftName, String rightName){
         Location location = getOrCreateLocation(leftName);
         iValueMap.put(location.getAddress(), getOrCreateLocation(rightName).getAddress());
     }
 
-    public void addDeclarationLocImm(String locName, int imm){
+    public void initLocEqConst(String locName, int imm){
         Location location = getOrCreateLocation(locName);
         iValueMap.put(location.getAddress(), new IConst(imm));
     }
 
-    // Initialisation 0:r0=y assigned address of y to register 0:r0
-    public void addDeclarationRegLoc(String regThread, String regName, String locName){
+    public void initRegEqLocPtr(String regThread, String regName, String locName){
         Location loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName);
         addChild(regThread, new Local(reg, loc.getAddress()));
     }
 
-    public void addDeclarationRegImm(String regThread, String regName, int imm){
+    public void initRegEqConst(String regThread, String regName, int imm){
         addChild(regThread, new Local(getOrCreateRegister(regThread, regName), new IConst(imm)));
     }
 

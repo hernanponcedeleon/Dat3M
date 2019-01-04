@@ -69,25 +69,25 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusAArch64Parser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.addDeclarationLocImm(ctx.location().getText(), Integer.parseInt(ctx.constant().getText()));
+        programBuilder.initLocEqConst(ctx.location().getText(), Integer.parseInt(ctx.constant().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusAArch64Parser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.addDeclarationRegImm(ctx.threadId().id, ctx.register64().id, Integer.parseInt(ctx.constant().getText()));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register64().id, Integer.parseInt(ctx.constant().getText()));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusAArch64Parser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.addDeclarationRegLoc(ctx.threadId().id, ctx.register64().id, ctx.location().getText());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register64().id, ctx.location().getText());
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusAArch64Parser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.addDeclarationLocLoc(ctx.location(0).getText(), ctx.location(1).getText());
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 

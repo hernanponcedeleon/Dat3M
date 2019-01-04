@@ -68,7 +68,7 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
-        programBuilder.addDeclarationLocImm(ctx.varName().getText(), value);
+        programBuilder.initLocEqConst(ctx.varName().getText(), value);
         return null;
     }
 
@@ -78,19 +78,19 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
-        programBuilder.addDeclarationRegImm(ctx.threadId().getText(), ctx.varName().getText(), value);
+        programBuilder.initRegEqConst(ctx.threadId().getText(), ctx.varName().getText(), value);
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorLocationLocation(LitmusCParser.GlobalDeclaratorLocationLocationContext ctx) {
-        programBuilder.addDeclarationLocLoc(ctx.varName(0).getText(), ctx.varName(1).getText());
+        programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        programBuilder.addDeclarationRegLoc(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+        programBuilder.initRegEqLocPtr(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
         return null;
     }
 

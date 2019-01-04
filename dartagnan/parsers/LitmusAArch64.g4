@@ -31,11 +31,11 @@ variableDeclaratorRegister
     ;
 
 variableDeclaratorRegisterLocation
-    :   threadId Colon register64 Equals location
+    :   threadId Colon register64 Equals Amp? location
     ;
 
 variableDeclaratorLocationLocation
-    :   location Equals location
+    :   location Equals Amp? location
     ;
 
 variableList
