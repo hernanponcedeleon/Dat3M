@@ -91,6 +91,12 @@ public class ProgramBuilder {
         iValueMap.put(location.getAddress(), getOrCreateLocation(rightName).getAddress());
     }
 
+    public void initLocEqLocVal(String leftName, String rightName){
+        Location left = getOrCreateLocation(leftName);
+        Location right = getOrCreateLocation(rightName);
+        iValueMap.put(left.getAddress(), iValueMap.get(right.getAddress()));
+    }
+
     public void initLocEqConst(String locName, int imm){
         Location location = getOrCreateLocation(locName);
         iValueMap.put(location.getAddress(), new IConst(imm));
@@ -100,6 +106,12 @@ public class ProgramBuilder {
         Location loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName);
         addChild(regThread, new Local(reg, loc.getAddress()));
+    }
+
+    public void initRegEqLocVal(String regThread, String regName, String locName){
+        Location loc = getOrCreateLocation(locName);
+        Register reg = getOrCreateRegister(regThread, regName);
+        addChild(regThread, new Local(reg, iValueMap.get(loc.getAddress())));
     }
 
     public void initRegEqConst(String regThread, String regName, int imm){

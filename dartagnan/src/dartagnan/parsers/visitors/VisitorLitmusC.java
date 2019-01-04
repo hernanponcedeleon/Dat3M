@@ -17,7 +17,6 @@ import dartagnan.program.event.linux.rmw.*;
 import dartagnan.program.memory.Address;
 import dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
 
@@ -84,13 +83,21 @@ public class VisitorLitmusC
 
     @Override
     public Object visitGlobalDeclaratorLocationLocation(LitmusCParser.GlobalDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
+        if(ctx.Ast() == null){
+            programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
+        } else {
+            programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText());
+        }
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+        if(ctx.Ast() == null){
+            programBuilder.initRegEqLocPtr(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+        } else {
+            programBuilder.initRegEqLocVal(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+        }
         return null;
     }
 

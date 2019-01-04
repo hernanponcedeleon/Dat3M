@@ -13273,3 +13273,4 @@ litmus/C/auto/C-LB-LRR+R-Dd+R-Dd+R-Oc.litmus,1
 litmus/C/auto/C-LB-Lrw+R-A+R-Od+R-Oc.litmus,0
 litmus/C/auto/C-LB-Lrw+R-Oc+R-Od+R-Od.litmus,0
 litmus/C/auto/C-LB-LRR+R-Dd+R-Oc.litmus,1
+litmus/C/dart/C-basic-03.litmus,1
