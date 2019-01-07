@@ -173,7 +173,7 @@ public class Graph {
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
             if(model.getConstInterp(e.executes(ctx)).isTrue()){
-                int address = addressExprToInt(((MemEvent)e).getAddressExpr());
+                int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
             }
@@ -239,16 +239,10 @@ public class Graph {
         return sb;
     }
 
-    private int addressExprToInt(IntExpr addressExpr){
-        return (addressExpr instanceof IntNum)
-                ? Integer.parseInt(addressExpr.toString())
-                : Integer.parseInt(model.getConstInterp(addressExpr).toString());
-    }
-
     private void buildAddressLocationMap(Program program){
         mapAddressLocation = new HashMap<>();
         for(Location location : program.getLocations()){
-            mapAddressLocation.put(addressExprToInt(location.getAddress().toZ3Int(ctx)), location);
+            mapAddressLocation.put(location.getAddress().getIntValue(null, ctx, model), location);
         }
     }
 
