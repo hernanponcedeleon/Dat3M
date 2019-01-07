@@ -212,7 +212,7 @@ initArray
     ;
 
 arrayElement
-    :   DigitSequence
+    :   constant
     |   Ast? (Amp? varName | LPar Amp? varName RPar)
     ;
 

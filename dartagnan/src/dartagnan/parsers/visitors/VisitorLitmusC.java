@@ -126,8 +126,8 @@ public class VisitorLitmusC
             if(size == null || ctx.initArray().arrayElement().size() == size){
                 List<IConst> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
-                    if(elCtx.DigitSequence() != null){
-                        values.add(new IConst(Integer.parseInt(elCtx.DigitSequence().getText())));
+                    if(elCtx.constant() != null){
+                        values.add(new IConst(Integer.parseInt(elCtx.constant().getText())));
                     } else {
                         String varName = elCtx.varName().getText();
                         Address address = programBuilder.getPointer(varName);
