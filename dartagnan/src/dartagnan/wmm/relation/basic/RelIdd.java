@@ -1,22 +1,17 @@
 package dartagnan.wmm.relation.basic;
 
-import com.microsoft.z3.BoolExpr;
-import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static dartagnan.utils.Utils.edge;
-
-public class RelIdd extends Relation {
+public class RelIdd extends BasicRegRelation {
 
     public RelIdd(){
         term = "idd";
@@ -42,29 +37,5 @@ public class RelIdd extends Relation {
             }
         }
         return maxTupleSet;
-    }
-
-    @Override
-    protected BoolExpr encodeApprox() {
-        BoolExpr enc = ctx.mkTrue();
-        for(Tuple tuple1 : maxTupleSet) {
-            Event e1 = tuple1.getFirst();
-            Event e2 = tuple1.getSecond();
-            BoolExpr clause = ctx.mkAnd(e1.executes(ctx), e2.executes(ctx));
-            for(Tuple tuple2 : maxTupleSet){
-                if(e2.getEId() == tuple2.getSecond().getEId()
-                        && ((RegWriter)e1).getModifiedReg() == ((RegWriter)tuple2.getFirst()).getModifiedReg()
-                        && e1.getEId() < tuple2.getFirst().getEId()){
-                    clause = ctx.mkAnd(clause, ctx.mkNot(tuple2.getFirst().executes(ctx)));
-                }
-            }
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), clause));
-
-            Register reg = ((RegWriter)e1).getModifiedReg();
-            enc = ctx.mkAnd(enc, ctx.mkImplies(edge(this.getName(), e1, e2, ctx),
-                    ctx.mkEq(((RegWriter)e1).getRegResultExpr(), reg.toZ3Int(e2, ctx))
-            ));
-        }
-        return enc;
     }
 }
