@@ -2,6 +2,7 @@ package dartagnan.expression;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 
@@ -34,5 +35,10 @@ public class BConst extends BExpr implements ExprInterface {
 	@Override
 	public String toString() {
 		return value ? "True" : "False";
+	}
+
+	@Override
+	public boolean getBoolValue(Event e, Context ctx, Model model){
+		return value;
 	}
 }

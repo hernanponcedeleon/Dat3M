@@ -41,16 +41,12 @@ public class Graph {
         colorMap.put("wmb", "black");
     }
 
-    private Set<String> relations = new HashSet<>(Arrays.asList(
-            "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
-    );
-
     private Model model;
     private Context ctx;
 
     private StringBuilder buffer;
     private Map<Integer, Location> mapAddressLocation;
-    private List<Event> events;
+    private Set<String> relations = new HashSet<>();
 
     private final String L1 = "  ";
     private final String L2 = "    ";
@@ -64,6 +60,7 @@ public class Graph {
     public Graph(Model model, Context ctx){
         this.model = model;
         this.ctx = ctx;
+        relations.add("rf");
     }
 
     public void addRelations(Collection<String> relations){
@@ -121,7 +118,7 @@ public class Graph {
 
             if(t instanceof Init){
                 Init e = (Init)t.getEvents().iterator().next();
-                Location location = mapAddressLocation.get(addressExprToInt(e.getAddressExpr()));
+                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model));
                 String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
 
@@ -135,7 +132,7 @@ public class Graph {
                 for(Event e2 : events) {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
-                        Location location = mapAddressLocation.get(addressExprToInt(((MemEvent)e2).getAddressExpr()));
+                        Location location = mapAddressLocation.get(((MemEvent) e2).getAddress().getIntValue(e2, ctx, model));
                         IntExpr value = ((MemEvent) e2).getValueExpr();
                         if(!(value instanceof IntNum)){
                             value = (IntExpr) model.getConstInterp(value);

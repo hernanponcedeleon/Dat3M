@@ -2,6 +2,7 @@ package dartagnan.program;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.expression.IExpr;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.event.Event;
@@ -72,5 +73,10 @@ public class Register extends IExpr implements IntExprInterface {
 			return ctx.mkIntConst(getName() + "_" + mainThreadId + "_final");
 		}
 		throw new RuntimeException("Main thread is not set for " + this);
+	}
+
+	@Override
+	public int getIntValue(Event e, Context ctx, Model model){
+		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 }

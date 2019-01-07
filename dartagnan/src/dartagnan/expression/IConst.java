@@ -2,6 +2,7 @@ package dartagnan.expression;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 
@@ -39,6 +40,11 @@ public class IConst extends IExpr implements ExprInterface, IntExprInterface {
 	@Override
 	public IntExpr getLastValueExpr(Context ctx){
 		return ctx.mkInt(value);
+	}
+
+	@Override
+	public int getIntValue(Event e, Context ctx, Model model){
+		return value;
 	}
 
     public IntExpr toZ3Int(Context ctx) {

@@ -2,6 +2,7 @@ package dartagnan.expression;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.program.event.Event;
 
 public abstract class BExpr implements ExprInterface {
@@ -13,4 +14,9 @@ public abstract class BExpr implements ExprInterface {
 
     @Override
     public abstract BExpr clone();
+
+    @Override
+    public int getIntValue(Event e, Context ctx, Model model){
+        return getBoolValue(e, ctx, model) ? 1 : 0;
+    }
 }

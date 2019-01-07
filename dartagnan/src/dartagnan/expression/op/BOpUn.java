@@ -22,4 +22,12 @@ public enum BOpUn {
         }
         throw new UnsupportedOperationException("Encoding of not supported for BOpUn " + this);
     }
+
+    public boolean combine(boolean a){
+        switch(this){
+            case NOT:
+                return !a;
+        }
+        throw new UnsupportedOperationException("Illegal operator " + this + " in BOpUn");
+    }
 }

@@ -3,6 +3,7 @@ package dartagnan.expression;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
@@ -48,5 +49,10 @@ public class IExprBin extends IExpr implements ExprInterface {
     @Override
     public String toString() {
         return "(" + lhs + " " + op + " " + rhs + ")";
+    }
+
+    @Override
+    public int getIntValue(Event e, Context ctx, Model model){
+        return op.combine(lhs.getIntValue(e, ctx, model), rhs.getIntValue(e, ctx, model));
     }
 }

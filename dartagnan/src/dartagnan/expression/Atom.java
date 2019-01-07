@@ -2,6 +2,7 @@ package dartagnan.expression;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 import dartagnan.expression.op.COpBin;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
@@ -43,4 +44,9 @@ public class Atom extends BExpr implements ExprInterface {
     public String toString() {
         return lhs + " " + op + " " + rhs;
     }
+
+	@Override
+	public boolean getBoolValue(Event e, Context ctx, Model model){
+		return op.combine(lhs.getIntValue(e, ctx, model), rhs.getIntValue(e, ctx, model));
+	}
 }

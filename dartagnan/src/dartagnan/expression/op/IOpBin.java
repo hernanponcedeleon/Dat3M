@@ -62,4 +62,30 @@ public enum IOpBin {
         }
         throw new UnsupportedOperationException("Encoding of not supported for AOpBin " + this);
     }
+
+    public int combine(int a, int b){
+        switch(this){
+            case PLUS:
+                return a + b;
+            case MINUS:
+                return a - b;
+            case MULT:
+                return a * b;
+            case DIV:
+                return a / b;
+            case AND:
+                return a & b;
+            case OR:
+                return a | b;
+            case XOR:
+                return a ^ b;
+            case L_SHIFT:
+                return a << b;
+            case R_SHIFT:
+                return a >>> b;
+            case AR_SHIFT:
+                return a >> b;
+        }
+        throw new UnsupportedOperationException("Illegal operator " + this + " in IOpBin");
+    }
 }

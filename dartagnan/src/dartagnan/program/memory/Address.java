@@ -3,6 +3,7 @@ package dartagnan.program.memory;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.expression.IConst;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IntExprInterface;
@@ -54,5 +55,10 @@ public class Address extends IConst implements IntExprInterface, ExprInterface {
     @Override
     public IntExpr toZ3Int(Context ctx){
         return ctx.mkIntConst("memory_" + index);
+    }
+
+    @Override
+    public int getIntValue(Event e, Context ctx, Model model){
+        return Integer.parseInt(model.getConstInterp(toZ3Int(ctx)).toString());
     }
 }

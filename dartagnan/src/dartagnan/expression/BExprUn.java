@@ -2,6 +2,7 @@ package dartagnan.expression;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 import dartagnan.expression.op.BOpUn;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
@@ -29,11 +30,18 @@ public class BExprUn extends BExpr {
         return new HashSet<>(b.getRegs());
     }
 
+    @Override
     public BExprUn clone() {
         return new BExprUn(op, b.clone());
     }
 
+    @Override
     public String toString() {
         return "(" + op + " " + b + ")";
+    }
+
+    @Override
+    public boolean getBoolValue(Event e, Context ctx, Model model){
+        return op.combine(b.getBoolValue(e, ctx, model));
     }
 }
