@@ -27,8 +27,8 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
         if(target.equals("sc")) {
             Register dummy = new Register(null);
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
-            Local local = new Local(reg, new IExprBin(dummy, op, value));
-            RMWStore store = new RMWStore(load, address, reg, getStoreMO());
+            Local local = new Local(resultRegister, new IExprBin(dummy, op, value));
+            RMWStore store = new RMWStore(load, address, resultRegister, getStoreMO());
 
             compileBasic(load);
             compileBasic(store);
@@ -41,14 +41,14 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", " + address + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", " + address + ")";
     }
 
     @Override
     public RMWOpReturn clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            ExprInterface newValue = reg == value ? newReg : value.clone();
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
             clone = new RMWOpReturn(address.clone(), newReg, newValue, op, atomic);
             afterClone();
         }

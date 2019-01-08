@@ -23,7 +23,7 @@ public class AliasAnalysis {
 
         for(Event e : program.getEventRepository().getEvents(EventRepository.ALL)){
             if(e instanceof RegWriter){
-                Register register = ((RegWriter)e).getModifiedReg();
+                Register register = ((RegWriter)e).getResultRegister();
                 regWrites.putIfAbsent(register, new ArrayList<>());
                 regWrites.get(register).add(e);
             }

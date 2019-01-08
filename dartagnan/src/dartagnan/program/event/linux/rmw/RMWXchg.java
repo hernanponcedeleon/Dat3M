@@ -19,7 +19,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
-            Register dummy = reg == value ? new Register(null) : reg;
+            Register dummy = resultRegister == value ? new Register(null) : resultRegister;
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
             RMWStore store = new RMWStore(load, address, value, getStoreMO());
 
@@ -35,14 +35,14 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_xchg" + atomicToText(atomic) + "(" + address + ", " + value + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_xchg" + atomicToText(atomic) + "(" + address + ", " + value + ")";
     }
 
     @Override
     public RMWXchg clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            ExprInterface newValue = reg == value ? newReg : value.clone();
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
             clone = new RMWXchg(address.clone(), newReg, newValue, atomic);
             afterClone();
         }

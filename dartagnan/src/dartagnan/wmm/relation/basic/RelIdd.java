@@ -29,7 +29,7 @@ public class RelIdd extends BasicRegRelation {
                 Set<Event> regReaders = events.stream().filter(e -> e instanceof RegReaderData).collect(Collectors.toSet());
                 for(Event e1 : regWriters){
                     for(Event e2 : regReaders){
-                        if(e1.getEId() < e2.getEId() && ((RegReaderData)e2).getDataRegs().contains(((RegWriter)e1).getModifiedReg())){
+                        if(e1.getEId() < e2.getEId() && ((RegReaderData)e2).getDataRegs().contains(((RegWriter)e1).getResultRegister())){
                             maxTupleSet.add(new Tuple(e1, e2));
                         }
                     }

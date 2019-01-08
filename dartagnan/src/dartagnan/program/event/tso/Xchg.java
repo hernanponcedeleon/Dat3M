@@ -15,24 +15,24 @@ import java.util.Set;
 
 public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
-    private Register reg;
+    private Register resultRegister;
 
     public Xchg(Address address, Register register, String atomic) {
         this.address = address;
-        this.reg = register;
+        this.resultRegister = register;
         this.atomic = atomic;
         this.condLevel = 0;
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM);
     }
 
     @Override
-    public Register getModifiedReg(){
-        return reg;
+    public Register getResultRegister(){
+        return resultRegister;
     }
 
     @Override
     public Set<Register> getDataRegs(){
-        return reg.getRegs();
+        return resultRegister.getRegs();
     }
 
     @Override
@@ -45,26 +45,26 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
             load.addFilters(EType.ATOM);
             load.setMaxAddressSet(maxAddressSet);
 
-            RMWStore store = new RMWStore(load, address, reg, atomic);
+            RMWStore store = new RMWStore(load, address, resultRegister, atomic);
             store.setHLId(hlId);
             store.setCondLevel(condLevel);
             store.addFilters(EType.ATOM);
             store.setMaxAddressSet(maxAddressSet);
 
-            return Thread.fromArray(false, load, store, new Local(reg, dummyReg));
+            return Thread.fromArray(false, load, store, new Local(resultRegister, dummyReg));
         }
         throw new RuntimeException("xchg " + atomic + " is not implemented for " + target);
     }
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "xchg(*" + address + ", " + reg + ", " + "atomic)";
+        return nTimesCondLevel() + "xchg(*" + address + ", " + resultRegister + ", " + "atomic)";
     }
 
     @Override
     public Xchg clone() {
         if(clone == null){
-            clone= new Xchg((Address) address.clone(), reg.clone(), atomic);
+            clone= new Xchg((Address) address.clone(), resultRegister.clone(), atomic);
             afterClone();
         }
         return (Xchg)clone;

@@ -142,7 +142,7 @@ public class Program extends Thread {
         Map<Register, List<Event>> eMap = new HashMap<>();
         for(Event e : getEventRepository().getEvents(EventRepository.ALL)){
             if(e instanceof RegWriter){
-                Register reg = ((RegWriter)e).getModifiedReg();
+                Register reg = ((RegWriter)e).getResultRegister();
                 eMap.putIfAbsent(reg, new ArrayList<>());
                 eMap.get(reg).add(e);
             }
@@ -158,7 +158,7 @@ public class Program extends Thread {
                     lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).executes(ctx)));
                 }
                 enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
-                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)events.get(i)).getRegResultExpr())));
+                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)events.get(i)).getResultRegisterExpr())));
             }
         }
         return enc;

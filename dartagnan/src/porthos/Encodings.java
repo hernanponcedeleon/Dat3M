@@ -87,7 +87,7 @@ class Encodings {
                 .collect(Collectors.toSet());
 		Set<Register> regs = new HashSet<>();
 		for(RegWriter e : executedEvents){
-			regs.add(e.getModifiedReg());
+			regs.add(e.getResultRegister());
 		}
 		for(Register reg : regs) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx), model.getConstInterp(reg.getLastValueExpr(ctx))));

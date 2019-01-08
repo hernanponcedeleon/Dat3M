@@ -1,6 +1,5 @@
 package dartagnan.program.event.rmw.cond;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
@@ -23,7 +22,7 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     @Override
     public RMWReadCondUnless clone() {
         if(clone == null){
-            clone = new RMWReadCondUnless(reg.clone(), cmp.clone(), address.clone(), atomic);
+            clone = new RMWReadCondUnless(resultRegister.clone(), cmp.clone(), address.clone(), atomic);
             afterClone();
         }
         return (RMWReadCondUnless)clone;
@@ -31,6 +30,6 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
 
     @Override
     public String condToString(){
-        return "# if not " + reg + " = " + cmp;
+        return "# if not " + resultRegister + " = " + cmp;
     }
 }

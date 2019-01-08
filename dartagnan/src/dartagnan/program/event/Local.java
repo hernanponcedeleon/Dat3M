@@ -32,12 +32,12 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public Register getModifiedReg(){
+	public Register getResultRegister(){
 		return reg;
 	}
 
 	@Override
-	public IntExpr getRegResultExpr(){
+	public IntExpr getResultRegisterExpr(){
 		return regResultExpr;
 	}
 

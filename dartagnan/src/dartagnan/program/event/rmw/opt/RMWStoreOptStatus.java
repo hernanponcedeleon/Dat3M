@@ -25,12 +25,12 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
     }
 
     @Override
-    public Register getModifiedReg(){
+    public Register getResultRegister(){
         return register;
     }
 
     @Override
-    public IntExpr getRegResultExpr(){
+    public IntExpr getResultRegisterExpr(){
         return regResultExpr;
     }
 

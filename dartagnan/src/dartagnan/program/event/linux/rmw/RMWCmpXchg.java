@@ -31,7 +31,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
-            Register dummy = (reg == value || reg == cmp) ? new Register(null) : reg;
+            Register dummy = (resultRegister == value || resultRegister == cmp) ? new Register(null) : resultRegister;
             RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, getLoadMO());
             RMWStoreCond store = new RMWStoreCond(load, address, value, getStoreMO());
 
@@ -47,15 +47,15 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + address + ", " + cmp + ", " + value + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + address + ", " + cmp + ", " + value + ")";
     }
 
     @Override
     public RMWCmpXchg clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            ExprInterface newValue = reg == value ? newReg : value.clone();
-            ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
+            ExprInterface newCmp = resultRegister == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
             clone = new RMWCmpXchg(address.clone(), newReg, newCmp, newValue, atomic);
             afterClone();
         }

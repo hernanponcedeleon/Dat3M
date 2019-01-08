@@ -39,7 +39,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
             Register dummy = new Register(null);
             RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, address, "Relaxed");
             RMWStoreCond store = new RMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), "Relaxed");
-            Local local = new Local(reg, new Atom(dummy, COpBin.NEQ, cmp));
+            Local local = new Local(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
 
             compileBasic(load);
             compileBasic(store);
@@ -52,15 +52,15 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")";
     }
 
     @Override
     public RMWAddUnless clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            ExprInterface newValue = reg == value ? newReg : value.clone();
-            ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
+            ExprInterface newCmp = resultRegister == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
             clone = new RMWAddUnless(address.clone(), newReg, newCmp, newValue);
             afterClone();
         }

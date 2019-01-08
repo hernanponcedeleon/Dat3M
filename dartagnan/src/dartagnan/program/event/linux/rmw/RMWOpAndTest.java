@@ -28,7 +28,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
             RMWLoad load = new RMWLoad(dummy, address, "Relaxed");
             Local local1 = new Local(dummy, new IExprBin(dummy, op, value));
             RMWStore store = new RMWStore(load, address, dummy, "Relaxed");
-            Local local2 = new Local(reg, new Atom(dummy, COpBin.EQ, new IConst(0)));
+            Local local2 = new Local(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(0)));
 
             compileBasic(load);
             compileBasic(store);
@@ -41,14 +41,14 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")";
     }
 
     @Override
     public RMWOpAndTest clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            ExprInterface newValue = reg == value ? newReg : value.clone();
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
             clone = new RMWOpAndTest(address.clone(), newReg, newValue, op);
             afterClone();
         }

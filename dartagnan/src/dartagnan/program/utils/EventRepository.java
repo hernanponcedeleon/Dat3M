@@ -86,7 +86,7 @@ public class EventRepository {
             registers = new HashSet<>();
             for(Event e : getEvents(ALL)){
                 if(e instanceof RegWriter){
-                    registers.add(((RegWriter) e).getModifiedReg());
+                    registers.add(((RegWriter) e).getResultRegister());
                 }
                 if(e instanceof MemEvent){
                     IExpr address = ((MemEvent) e).getAddress();

@@ -26,8 +26,8 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
-            RMWLoad load = new RMWLoad(reg, address, "Relaxed");
-            RMWStore store = new RMWStore(load, address, new IExprBin(reg, op, value), "Relaxed");
+            RMWLoad load = new RMWLoad(resultRegister, address, "Relaxed");
+            RMWStore store = new RMWStore(load, address, new IExprBin(resultRegister, op, value), "Relaxed");
 
             compileBasic(load);
             compileBasic(store);

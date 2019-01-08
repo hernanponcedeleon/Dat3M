@@ -9,35 +9,35 @@ import dartagnan.program.utils.EType;
 
 public class Load extends MemEvent implements RegWriter {
 
-    protected Register reg;
+    protected Register resultRegister;
 
     public Load(Register register, IExpr address, String atomic) {
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;
-        this.reg = register;
+        this.resultRegister = register;
         addFilters(EType.ANY, EType.MEMORY, EType.READ);
     }
 
     @Override
     public void initialise(Context ctx) {
-        memValueExpr = reg.toZ3IntResult(this, ctx);
+        memValueExpr = resultRegister.toZ3IntResult(this, ctx);
         memAddressExpr = address.toZ3Int(this, ctx);
     }
 
     @Override
-    public Register getModifiedReg(){
-        return reg;
+    public Register getResultRegister(){
+        return resultRegister;
     }
 
     @Override
-    public IntExpr getRegResultExpr(){
+    public IntExpr getResultRegisterExpr(){
         return memValueExpr;
     }
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " = load(*" + address + (atomic != null ? ", " + atomic : "") + ")";
+        return nTimesCondLevel() + resultRegister + " = load(*" + address + (atomic != null ? ", " + atomic : "") + ")";
     }
 
     @Override
@@ -48,7 +48,7 @@ public class Load extends MemEvent implements RegWriter {
     @Override
     public Load clone() {
         if(clone == null){
-            clone = new Load(reg.clone(), address.clone(), atomic);
+            clone = new Load(resultRegister.clone(), address.clone(), atomic);
             afterClone();
         }
         return (Load)clone;

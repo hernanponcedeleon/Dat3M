@@ -12,10 +12,10 @@ import dartagnan.program.utils.EType;
 
 public class Read extends MemEvent implements RegWriter {
 
-    protected Register reg;
+    protected Register resultRegister;
 
     public Read(Register register, IExpr address, String atomic) {
-        this.reg = register;
+        this.resultRegister = register;
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;
@@ -23,19 +23,19 @@ public class Read extends MemEvent implements RegWriter {
     }
 
     @Override
-    public Register getModifiedReg(){
-        return reg;
+    public Register getResultRegister(){
+        return resultRegister;
     }
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " = load(*" + address + ", " + (atomic != null ? ", " + atomic : "") + ")";
+        return nTimesCondLevel() + resultRegister + " = load(*" + address + ", " + (atomic != null ? ", " + atomic : "") + ")";
     }
 
     @Override
     public Read clone() {
         if(clone == null){
-            clone = new Read(reg.clone(), address.clone(), atomic);
+            clone = new Read(resultRegister.clone(), address.clone(), atomic);
             afterClone();
         }
         return (Read)clone;
@@ -43,7 +43,7 @@ public class Read extends MemEvent implements RegWriter {
 
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
-        Load ld = new Load(reg, address, atomic);
+        Load ld = new Load(resultRegister, address, atomic);
         ld.setHLId(hlId);
         ld.setCondLevel(this.condLevel);
         ld.setMaxAddressSet(getMaxAddressSet());

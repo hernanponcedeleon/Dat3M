@@ -18,12 +18,12 @@ import java.util.Set;
 
 public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
 
-    protected Register reg;
+    protected Register resultRegister;
     protected ExprInterface value;
 
     RMWAbstract(IExpr address, Register register, ExprInterface value, String atomic) {
         this.address = address;
-        this.reg = register;
+        this.resultRegister = register;
         this.value = value;
         this.atomic = atomic;
         this.condLevel = 0;
@@ -31,8 +31,8 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     }
 
     @Override
-    public Register getModifiedReg() {
-        return reg;
+    public Register getResultRegister() {
+        return resultRegister;
     }
 
     @Override
@@ -68,8 +68,8 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     }
 
     Thread copyFromDummyToResult(Thread result, Register dummy){
-        if (dummy != reg) {
-            return new Seq(result, new Local(reg, dummy));
+        if (dummy != resultRegister) {
+            return new Seq(result, new Local(resultRegister, dummy));
         }
         return result;
     }

@@ -5,9 +5,9 @@ import dartagnan.program.Register;
 
 public interface RegWriter {
 
-    Register getModifiedReg();
+    Register getResultRegister();
 
-    default IntExpr getRegResultExpr(){
+    default IntExpr getResultRegisterExpr(){
         throw new UnsupportedOperationException("RegResultExpr is available only for basic events");
     }
 }

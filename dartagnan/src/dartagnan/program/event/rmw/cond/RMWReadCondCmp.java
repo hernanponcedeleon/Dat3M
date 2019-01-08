@@ -15,7 +15,7 @@ public class RMWReadCondCmp extends RMWReadCond implements RegWriter, RegReaderD
     @Override
     public RMWReadCondCmp clone() {
         if(clone == null){
-            clone = new RMWReadCondCmp(reg.clone(), cmp.clone(), address.clone(), atomic);
+            clone = new RMWReadCondCmp(resultRegister.clone(), cmp.clone(), address.clone(), atomic);
             afterClone();
         }
         return (RMWReadCondCmp)clone;
@@ -23,6 +23,6 @@ public class RMWReadCondCmp extends RMWReadCond implements RegWriter, RegReaderD
 
     @Override
     public String condToString(){
-        return "# if " + reg + " = " + cmp;
+        return "# if " + resultRegister + " = " + cmp;
     }
 }
