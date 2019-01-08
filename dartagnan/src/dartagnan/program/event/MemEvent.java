@@ -1,16 +1,15 @@
 package dartagnan.program.event;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.IExpr;
 import dartagnan.program.memory.Address;
 
-import java.util.Set;
-
 public abstract class MemEvent extends Event {
 
     protected IExpr address;
-    protected Set<Address> maxAddressSet;
+    protected ImmutableSet<Address> maxAddressSet;
 
     protected IntExpr memAddressExpr;
     protected IntExpr memValueExpr;
@@ -29,15 +28,15 @@ public abstract class MemEvent extends Event {
         throw new RuntimeException("Attempt to access not initialised value expression in " + this);
     }
 
-    public Set<Address> getMaxAddressSet(){
+    public ImmutableSet<Address> getMaxAddressSet(){
         if(maxAddressSet != null){
             return maxAddressSet;
         }
         throw new RuntimeException("Location set has not been initialised for memory event " + this);
     }
 
-    public void setMaxAddressSet(Set<Address> addresses){
-        this.maxAddressSet = addresses;
+    public void setMaxAddressSet(ImmutableSet<Address> maxAddressSet){
+        this.maxAddressSet = maxAddressSet;
     }
 
     public IExpr getAddress(){
