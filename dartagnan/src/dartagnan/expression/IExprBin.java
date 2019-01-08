@@ -1,5 +1,6 @@
 package dartagnan.expression;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -7,9 +8,6 @@ import com.microsoft.z3.Model;
 import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class IExprBin extends IExpr implements ExprInterface {
 
@@ -34,11 +32,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public Set<Register> getRegs() {
-        Set<Register> setRegs = new HashSet<>();
-        setRegs.addAll(lhs.getRegs());
-        setRegs.addAll(rhs.getRegs());
-        return setRegs;
+    public ImmutableSet<Register> getRegs() {
+        return new ImmutableSet.Builder<Register>().addAll(lhs.getRegs()).addAll(rhs.getRegs()).build();
     }
 
     @Override

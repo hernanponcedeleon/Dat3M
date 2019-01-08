@@ -1,5 +1,6 @@
 package dartagnan.program.event.pts;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
@@ -11,23 +12,23 @@ import dartagnan.program.event.Store;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
 
-import java.util.Set;
-
 public class Write extends MemEvent implements RegReaderData {
 
     protected ExprInterface value;
+    private ImmutableSet<Register> dataRegs;
 
     public Write(IExpr address, ExprInterface value, String atomic){
         this.value = value;
         this.address = address;
         this.atomic = atomic;
         this.condLevel = 0;
+        this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
     }
 
     @Override
-    public Set<Register> getDataRegs(){
-        return value.getRegs();
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package dartagnan.program.event.rmw.cond;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
@@ -9,16 +10,17 @@ import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-import java.util.Set;
-
 public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData {
 
     protected ExprInterface cmp;
+    private ImmutableSet<Register> dataRegs;
+
     BoolExpr z3Cond;
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
         this.cmp = cmp;
+        this.dataRegs = cmp.getRegs();
     }
 
     @Override
@@ -36,8 +38,8 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     }
 
     @Override
-    public Set<Register> getDataRegs(){
-        return cmp.getRegs();
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
     }
 
     @Override

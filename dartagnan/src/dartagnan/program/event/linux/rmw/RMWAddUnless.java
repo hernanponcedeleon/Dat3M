@@ -1,5 +1,6 @@
 package dartagnan.program.event.linux.rmw;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.expression.Atom;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
@@ -15,22 +16,14 @@ import dartagnan.program.event.rmw.cond.RMWStoreCond;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-import java.util.Set;
-
 public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData {
 
     private ExprInterface cmp;
 
     public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, ExprInterface value) {
         super(address, register, value, "Mb");
+        this.dataRegs = new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
         this.cmp = cmp;
-    }
-
-    @Override
-    public Set<Register> getDataRegs(){
-        Set<Register> regs = super.getDataRegs();
-        regs.addAll(cmp.getRegs());
-        return regs;
     }
 
     @Override

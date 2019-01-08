@@ -1,13 +1,11 @@
 package dartagnan.expression;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class BConst extends BExpr implements ExprInterface {
 
@@ -23,8 +21,8 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public Set<Register> getRegs() {
-		return new HashSet<>();
+	public ImmutableSet<Register> getRegs() {
+		return ImmutableSet.of();
 	}
 
 	@Override

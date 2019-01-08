@@ -1,5 +1,6 @@
 package dartagnan.program.event;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
@@ -12,9 +13,10 @@ import java.util.Set;
 
 public class If extends Event implements RegReaderData {
 
-    private ExprInterface expr;
     private Thread t1;
     private Thread t2;
+    private ExprInterface expr;
+    private ImmutableSet<Register> dataRegs;
 
     public If(ExprInterface expr, Thread t1, Thread t2) {
         this.expr = expr;
@@ -22,11 +24,12 @@ public class If extends Event implements RegReaderData {
         this.t2 = t2;
         t1.incCondLevel();
         t2.incCondLevel();
+        dataRegs = expr.getRegs();
     }
 
     @Override
-    public Set<Register> getDataRegs(){
-        return expr.getRegs();
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
     }
 
     public Thread getT1() {

@@ -1,10 +1,9 @@
 package dartagnan.program.event.utils;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.program.Register;
-
-import java.util.Set;
 
 public interface RegReaderData {
 
-    Set<Register> getDataRegs();
+    ImmutableSet<Register> getDataRegs();
 }

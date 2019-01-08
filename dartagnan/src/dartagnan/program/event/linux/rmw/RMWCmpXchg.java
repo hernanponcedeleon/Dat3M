@@ -1,5 +1,6 @@
 package dartagnan.program.event.linux.rmw;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
@@ -10,22 +11,14 @@ import dartagnan.program.event.rmw.cond.RMWStoreCond;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-import java.util.Set;
-
 public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     private ExprInterface cmp;
 
     public RMWCmpXchg(IExpr address, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
         super(address, register, value, atomic);
+        this.dataRegs = new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
         this.cmp = cmp;
-    }
-
-    @Override
-    public Set<Register> getDataRegs(){
-        Set<Register> regs = super.getDataRegs();
-        regs.addAll(cmp.getRegs());
-        return regs;
     }
 
     @Override

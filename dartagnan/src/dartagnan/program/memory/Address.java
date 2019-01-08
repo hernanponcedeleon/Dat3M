@@ -1,5 +1,6 @@
 package dartagnan.program.memory;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -9,9 +10,6 @@ import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class Address extends IConst implements IntExprInterface, ExprInterface {
 
@@ -23,8 +21,8 @@ public class Address extends IConst implements IntExprInterface, ExprInterface {
     }
 
     @Override
-    public Set<Register> getRegs(){
-        return new HashSet<>();
+    public ImmutableSet<Register> getRegs(){
+        return ImmutableSet.of();
     }
 
     @Override

@@ -1,5 +1,6 @@
 package dartagnan.program.event;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -8,18 +9,18 @@ import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-import java.util.Set;
-
 public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected Register reg;
 	protected ExprInterface expr;
 	private IntExpr regResultExpr;
+	private ImmutableSet<Register> dataRegs;
 	
 	public Local(Register reg, ExprInterface expr) {
 		this.reg = reg;
 		this.expr = expr;
 		this.condLevel = 0;
+		dataRegs = expr.getRegs();
 	}
 
 	@Override
@@ -42,8 +43,8 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public Set<Register> getDataRegs(){
-		return expr.getRegs();
+	public ImmutableSet<Register> getDataRegs(){
+		return dataRegs;
 	}
 
     @Override

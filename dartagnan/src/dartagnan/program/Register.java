@@ -1,14 +1,12 @@
 package dartagnan.program;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import dartagnan.expression.IExpr;
 import dartagnan.expression.IntExprInterface;
 import dartagnan.program.event.Event;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class Register extends IExpr implements IntExprInterface {
 
@@ -61,10 +59,8 @@ public class Register extends IExpr implements IntExprInterface {
 	}
 
 	@Override
-	public Set<Register> getRegs() {
-		HashSet<Register> setRegs = new HashSet<>();
-		setRegs.add(this);
-		return setRegs;
+	public ImmutableSet<Register> getRegs() {
+		return ImmutableSet.of(this);
 	}
 
 	@Override

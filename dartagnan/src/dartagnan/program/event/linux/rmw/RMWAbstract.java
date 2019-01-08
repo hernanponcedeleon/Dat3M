@@ -1,5 +1,6 @@
 package dartagnan.program.event.linux.rmw;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
@@ -14,12 +15,12 @@ import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.linux.EType;
 
-import java.util.Set;
-
 public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
 
     protected Register resultRegister;
     protected ExprInterface value;
+
+    ImmutableSet<Register> dataRegs;
 
     RMWAbstract(IExpr address, Register register, ExprInterface value, String atomic) {
         this.address = address;
@@ -27,6 +28,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         this.value = value;
         this.atomic = atomic;
         this.condLevel = 0;
+        this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW);
     }
 
@@ -36,8 +38,8 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     }
 
     @Override
-    public Set<Register> getDataRegs(){
-        return value.getRegs();
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
     }
 
     @Override

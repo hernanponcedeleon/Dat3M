@@ -3,7 +3,6 @@ package dartagnan.program.event;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.IntExpr;
 import dartagnan.expression.IExpr;
-import dartagnan.program.Register;
 import dartagnan.program.memory.Address;
 
 import java.util.Set;
@@ -41,21 +40,17 @@ public abstract class MemEvent extends Event {
         this.maxAddressSet = addresses;
     }
 
-    public Set<Register> getAddressRegs(){
-        return address.getRegs();
-    }
-
     public IExpr getAddress(){
         return address;
-    }
-
-    public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
-        return !Sets.intersection(e1.getMaxAddressSet(), e2.getMaxAddressSet()).isEmpty();
     }
 
     @Override
     protected void afterClone(){
         super.afterClone();
         ((MemEvent)clone).setMaxAddressSet(maxAddressSet);
+    }
+
+    public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
+        return !Sets.intersection(e1.getMaxAddressSet(), e2.getMaxAddressSet()).isEmpty();
     }
 }

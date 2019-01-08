@@ -1,5 +1,6 @@
 package dartagnan.program.event.tso;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
@@ -11,17 +12,17 @@ import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.memory.Address;
 import dartagnan.program.utils.tso.EType;
 
-import java.util.Set;
-
 public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
     private Register resultRegister;
+    private ImmutableSet<Register> dataRegs;
 
     public Xchg(Address address, Register register, String atomic) {
         this.address = address;
         this.resultRegister = register;
         this.atomic = atomic;
         this.condLevel = 0;
+        this.dataRegs = ImmutableSet.of(resultRegister);
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM);
     }
 
@@ -31,8 +32,8 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     }
 
     @Override
-    public Set<Register> getDataRegs(){
-        return resultRegister.getRegs();
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
     }
 
     @Override

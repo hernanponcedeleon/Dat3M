@@ -30,7 +30,7 @@ public class RelAddrDirect extends BasicRegRelation {
                 Set<Event> regReaders = t.getEventRepository().getEvents(EventRepository.MEMORY);
                 for(Event e1 : regWriters){
                     for(Event e2 : regReaders){
-                        for(Register register : ((MemEvent)e2).getAddressRegs()){
+                        for(Register register : ((MemEvent)e2).getAddress().getRegs()){
                             if(e1.getEId() < e2.getEId() && register == ((RegWriter)e1).getResultRegister()){
                                 maxTupleSet.add(new Tuple(e1, e2));
                             }
