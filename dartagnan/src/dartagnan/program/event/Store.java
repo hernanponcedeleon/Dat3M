@@ -23,8 +23,8 @@ public class Store extends MemEvent implements RegReaderData {
 
     @Override
     public void initialise(Context ctx) {
-        valueExpr = value.toZ3Int(this, ctx);
-        addressExpr = address.toZ3Int(this, ctx);
+        memValueExpr = value.toZ3Int(this, ctx);
+        memAddressExpr = address.toZ3Int(this, ctx);
     }
 
     @Override

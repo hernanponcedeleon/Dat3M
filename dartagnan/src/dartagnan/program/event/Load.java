@@ -21,8 +21,8 @@ public class Load extends MemEvent implements RegWriter {
 
     @Override
     public void initialise(Context ctx) {
-        valueExpr = reg.toZ3IntResult(this, ctx);
-        addressExpr = address.toZ3Int(this, ctx);
+        memValueExpr = reg.toZ3IntResult(this, ctx);
+        memAddressExpr = address.toZ3Int(this, ctx);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class Load extends MemEvent implements RegWriter {
 
     @Override
     public IntExpr getRegResultExpr(){
-        return valueExpr;
+        return memValueExpr;
     }
 
     @Override

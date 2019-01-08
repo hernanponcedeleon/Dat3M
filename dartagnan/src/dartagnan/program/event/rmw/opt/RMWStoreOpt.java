@@ -19,7 +19,7 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
     public BoolExpr encodeCF(Context ctx) {
         if(loadEvent != null){
             return ctx.mkAnd(
-                    ctx.mkImplies(executes(ctx), ctx.mkEq(addressExpr, loadEvent.getAddressExpr())),
+                    ctx.mkImplies(executes(ctx), ctx.mkEq(memAddressExpr, loadEvent.getMemAddressExpr())),
                     ctx.mkImplies(ctx.mkNot(ctx.mkBoolConst(cfVar())), ctx.mkNot(executes(ctx)))
             );
         }

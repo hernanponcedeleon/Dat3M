@@ -133,7 +133,7 @@ public class Graph {
                     String label = e2.label();
                     if(e2 instanceof MemEvent) {
                         Location location = mapAddressLocation.get(((MemEvent) e2).getAddress().getIntValue(e2, ctx, model));
-                        IntExpr value = ((MemEvent) e2).getValueExpr();
+                        IntExpr value = ((MemEvent) e2).getMemValueExpr();
                         if(!(value instanceof IntNum)){
                             value = (IntExpr) model.getConstInterp(value);
                         }

@@ -58,7 +58,7 @@ public class RelRf extends Relation {
             BoolExpr rel = edge("rf", tuple.getFirst(), tuple.getSecond(), ctx);
             enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
                     ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
-                    ctx.mkEq(((MemEvent)tuple.getFirst()).getAddressExpr(), ((MemEvent)tuple.getSecond()).getAddressExpr())
+                    ctx.mkEq(((MemEvent)tuple.getFirst()).getMemAddressExpr(), ((MemEvent)tuple.getSecond()).getMemAddressExpr())
             )));
         }
 
@@ -71,7 +71,7 @@ public class RelRf extends Relation {
                 rfPairs.add(edge("rf", w, r, ctx));
                 enc = ctx.mkAnd(enc, ctx.mkImplies(
                         edge("rf", w, r, ctx),
-                        ctx.mkEq(w.getValueExpr(), r.getValueExpr())
+                        ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr())
                 ));
             }
             enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));

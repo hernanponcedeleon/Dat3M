@@ -75,12 +75,12 @@ public class RelCo extends Relation {
                 lastCo = ctx.mkAnd(lastCo, ctx.mkNot(edge("co", w1, w2, ctx)));
 
                 enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
-                        ctx.mkAnd(ctx.mkAnd(w1.executes(ctx), w2.executes(ctx)), ctx.mkEq(w1.getAddressExpr(), w2.getAddressExpr())),
+                        ctx.mkAnd(ctx.mkAnd(w1.executes(ctx), w2.executes(ctx)), ctx.mkEq(w1.getMemAddressExpr(), w2.getMemAddressExpr())),
                         ctx.mkLt(Utils.intVar("co", w1, ctx), Utils.intVar("co", w2, ctx))
                 )));
 
                 enc = ctx.mkAnd(enc, ctx.mkImplies(
-                        ctx.mkAnd(ctx.mkAnd(w1.executes(ctx), w2.executes(ctx)), ctx.mkEq(w1.getAddressExpr(), w2.getAddressExpr())),
+                        ctx.mkAnd(ctx.mkAnd(w1.executes(ctx), w2.executes(ctx)), ctx.mkEq(w1.getMemAddressExpr(), w2.getMemAddressExpr())),
                         ctx.mkNot(ctx.mkEq(Utils.intVar("co", w1, ctx), Utils.intVar("co", w2, ctx)))
                 ));
             }
@@ -91,8 +91,8 @@ public class RelCo extends Relation {
             for(Address address : w1.getMaxAddressSet()){
                 for(Location location : addressLocationMap.get(address)){
                     enc = ctx.mkAnd(enc, ctx.mkImplies(
-                            ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getAddressExpr(), address.toZ3Int(ctx))),
-                            ctx.mkEq(location.getLastValueExpr(ctx), w1.getValueExpr())
+                            ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3Int(ctx))),
+                            ctx.mkEq(location.getLastValueExpr(ctx), w1.getMemValueExpr())
                     ));
                 }
             }

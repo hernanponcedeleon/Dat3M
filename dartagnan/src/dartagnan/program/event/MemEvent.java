@@ -11,34 +11,34 @@ import java.util.Set;
 public abstract class MemEvent extends Event {
 
     protected IExpr address;
-    protected IntExpr addressExpr;
-    protected IntExpr valueExpr;
+    protected Set<Address> maxAddressSet;
 
-    protected Set<Address> addresses;
+    protected IntExpr memAddressExpr;
+    protected IntExpr memValueExpr;
 
-    public IntExpr getAddressExpr(){
-        if(addressExpr != null){
-            return addressExpr;
+    public IntExpr getMemAddressExpr(){
+        if(memAddressExpr != null){
+            return memAddressExpr;
         }
         throw new RuntimeException("Attempt to access not initialised address expression in " + this);
     }
 
-    public IntExpr getValueExpr(){
-        if(valueExpr != null){
-            return valueExpr;
+    public IntExpr getMemValueExpr(){
+        if(memValueExpr != null){
+            return memValueExpr;
         }
         throw new RuntimeException("Attempt to access not initialised value expression in " + this);
     }
 
     public Set<Address> getMaxAddressSet(){
-        if(addresses != null){
-            return addresses;
+        if(maxAddressSet != null){
+            return maxAddressSet;
         }
         throw new RuntimeException("Location set has not been initialised for memory event " + this);
     }
 
     public void setMaxAddressSet(Set<Address> addresses){
-        this.addresses = addresses;
+        this.maxAddressSet = addresses;
     }
 
     public Set<Register> getAddressRegs(){
@@ -56,6 +56,6 @@ public abstract class MemEvent extends Event {
     @Override
     protected void afterClone(){
         super.afterClone();
-        ((MemEvent)clone).setMaxAddressSet(addresses);
+        ((MemEvent)clone).setMaxAddressSet(maxAddressSet);
     }
 }
