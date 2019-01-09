@@ -71,10 +71,6 @@ public class Memory {
         return locationIndex.get(name);
     }
 
-    public Set<Location> getLocations(){
-        return map.keySet();
-    }
-
     public ImmutableSet<Address> getAllAddresses(){
         Set<Address> result = new HashSet<>(map.values());
         for(List<Address> array : arrays.values()){
