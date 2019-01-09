@@ -7,11 +7,10 @@ import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import dartagnan.expression.IConst;
 import dartagnan.expression.ExprInterface;
-import dartagnan.expression.IntExprInterface;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 
-public class Address extends IConst implements IntExprInterface, ExprInterface {
+public class Address extends IConst implements ExprInterface {
 
     private final int index;
 

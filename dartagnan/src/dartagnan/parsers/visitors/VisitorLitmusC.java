@@ -406,7 +406,7 @@ public class VisitorLitmusC
 
     @Override
     public Object visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
-        IntExprInterface variable = (IntExprInterface)ctx.varName().accept(this);
+        ExprInterface variable = (ExprInterface)ctx.varName().accept(this);
         if(ctx.Ast() == null){
             if(variable instanceof Register){
                 returnRegister = (Register)variable;

@@ -4,11 +4,11 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
-import dartagnan.expression.IntExprInterface;
 import dartagnan.program.event.Event;
 
-public class Register extends IExpr implements IntExprInterface {
+public class Register extends IExpr implements ExprInterface {
 
 	private static int dummyCount = 0;
 

@@ -3,6 +3,7 @@ package dartagnan.expression;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import dartagnan.expression.op.COpBin;
 import dartagnan.program.Register;
@@ -23,6 +24,15 @@ public class Atom extends BExpr implements ExprInterface {
     @Override
 	public BoolExpr toZ3Bool(Event e, Context ctx) {
 		return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
+	}
+
+	@Override
+	public IntExpr getLastValueExpr(Context ctx){
+		return (IntExpr)ctx.mkITE(
+				op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx),
+				ctx.mkInt(1),
+				ctx.mkInt(0)
+		);
 	}
 
     @Override

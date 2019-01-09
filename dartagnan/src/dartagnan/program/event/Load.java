@@ -2,6 +2,7 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
+import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.utils.RegWriter;
@@ -52,5 +53,10 @@ public class Load extends MemEvent implements RegWriter {
             afterClone();
         }
         return (Load)clone;
+    }
+
+    @Override
+    public ExprInterface getMemValue(){
+        return resultRegister;
     }
 }

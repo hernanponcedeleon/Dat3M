@@ -7,7 +7,7 @@ import com.microsoft.z3.Model;
 import dartagnan.program.Register;
 import dartagnan.program.event.Event;
 
-public class IConst extends IExpr implements ExprInterface, IntExprInterface {
+public class IConst extends IExpr implements ExprInterface {
 
 	private final int value;
 	

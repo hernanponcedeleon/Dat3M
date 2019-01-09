@@ -3,6 +3,7 @@ package dartagnan.expression;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import dartagnan.expression.op.BOpUn;
 import dartagnan.program.Register;
@@ -21,6 +22,12 @@ public class BExprUn extends BExpr {
     @Override
     public BoolExpr toZ3Bool(Event e, Context ctx) {
         return op.encode(b.toZ3Bool(e, ctx), ctx);
+    }
+
+    @Override
+    public IntExpr getLastValueExpr(Context ctx){
+        BoolExpr expr = ctx.mkGt(b.getLastValueExpr(ctx), ctx.mkInt(1));
+        return (IntExpr)ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
     }
 
     @Override

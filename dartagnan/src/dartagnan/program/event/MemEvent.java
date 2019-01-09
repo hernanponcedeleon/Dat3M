@@ -3,6 +3,7 @@ package dartagnan.program.event;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.IntExpr;
+import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IExpr;
 import dartagnan.program.memory.Address;
 
@@ -41,6 +42,10 @@ public abstract class MemEvent extends Event {
 
     public IExpr getAddress(){
         return address;
+    }
+
+    public ExprInterface getMemValue(){
+        throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
     }
 
     @Override

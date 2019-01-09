@@ -14,6 +14,8 @@ public interface ExprInterface {
 
     BoolExpr toZ3Bool(Event e, Context ctx);
 
+    IntExpr getLastValueExpr(Context ctx);
+
     int getIntValue(Event e, Context ctx, Model model);
 
     boolean getBoolValue(Event e, Context ctx, Model model);

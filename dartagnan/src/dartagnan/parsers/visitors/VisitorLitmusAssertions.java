@@ -1,8 +1,8 @@
 package dartagnan.parsers.visitors;
 
 import dartagnan.asserts.*;
+import dartagnan.expression.ExprInterface;
 import dartagnan.expression.IConst;
-import dartagnan.expression.IntExprInterface;
 import dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import dartagnan.parsers.LitmusAssertionsVisitor;
 import dartagnan.parsers.LitmusAssertionsParser;
@@ -64,15 +64,15 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     @Override
     public AbstractAssert visitAssertionBasic(LitmusAssertionsParser.AssertionBasicContext ctx){
-        IntExprInterface expr1 = acceptAssertionValue(ctx.assertionValue(0));
-        IntExprInterface expr2 = acceptAssertionValue(ctx.assertionValue(1));
+        ExprInterface expr1 = acceptAssertionValue(ctx.assertionValue(0));
+        ExprInterface expr2 = acceptAssertionValue(ctx.assertionValue(1));
         if(expr2 instanceof Location){
             expr2 = ((Location) expr2).getAddress();
         }
         return new AssertBasic(expr1, ctx.assertionCompare().op, expr2);
     }
 
-    private IntExprInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx){
+    private ExprInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx){
         if(ctx.constant() != null){
             return new IConst(Integer.parseInt(ctx.constant().getText()));
         }

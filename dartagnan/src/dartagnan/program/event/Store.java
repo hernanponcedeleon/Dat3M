@@ -51,4 +51,9 @@ public class Store extends MemEvent implements RegReaderData {
         }
         return (Store)clone;
     }
+
+    @Override
+    public ExprInterface getMemValue(){
+        return value;
+    }
 }
