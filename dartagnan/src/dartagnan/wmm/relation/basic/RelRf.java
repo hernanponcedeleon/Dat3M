@@ -9,10 +9,7 @@ import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import static dartagnan.utils.Utils.edge;
 
@@ -64,7 +61,7 @@ public class RelRf extends Relation {
 
         for(Event e : program.getEventRepository().getEvents(EventRepository.LOAD)){
             Load r = (Load)e;
-            Set<BoolExpr> rfPairs = new HashSet<>();
+            List<BoolExpr> rfPairs = new ArrayList<>();
 
             for(Tuple t : maxTupleSet.getBySecond(r)){
                 MemEvent w = (MemEvent) t.getFirst();
@@ -74,20 +71,27 @@ public class RelRf extends Relation {
                         ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr())
                 ));
             }
-            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(rfPairs)));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(e.getEId(), rfPairs)));
         }
         return enc;
     }
 
-    private BoolExpr encodeEO(Set<BoolExpr> set) {
-        BoolExpr enc = ctx.mkFalse();
-        for(BoolExpr exp : set) {
-            BoolExpr thisYesOthersNot = exp;
-            for(BoolExpr x : set.stream().filter(x -> x != exp).collect(Collectors.toSet())) {
-                thisYesOthersNot = ctx.mkAnd(thisYesOthersNot, ctx.mkNot(x));
-            }
-            enc = ctx.mkOr(enc, thisYesOthersNot);
+    private BoolExpr encodeEO(int readEid, List<BoolExpr> set){
+        int num = set.size();
+
+        BoolExpr enc = ctx.mkEq(mkL(readEid, 0), ctx.mkFalse());
+        enc = ctx.mkAnd(enc, ctx.mkNot(ctx.mkAnd(set.get(0), mkL(readEid, 0))));
+        BoolExpr atLeastOne = set.get(0);
+
+        for(int i = 1; i < num; i++){
+            enc = ctx.mkAnd(enc, ctx.mkEq(mkL(readEid, i), ctx.mkOr(mkL(readEid, i - 1), set.get(i - 1))));
+            enc = ctx.mkAnd(enc, ctx.mkNot(ctx.mkAnd(set.get(i), mkL(readEid, i))));
+            atLeastOne = ctx.mkOr(atLeastOne, set.get(i));
         }
-        return enc;
+        return ctx.mkAnd(enc, atLeastOne);
+    }
+
+    private BoolExpr mkL(int eid, int i) {
+        return (BoolExpr) ctx.mkConst("l(" + eid + "," + i + ")", ctx.mkBoolSort());
     }
 }
