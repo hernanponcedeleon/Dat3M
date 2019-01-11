@@ -2,7 +2,6 @@ package dartagnan.wmm.relation.basic;
 
 import com.microsoft.z3.BoolExpr;
 import dartagnan.program.event.Event;
-import dartagnan.program.event.Load;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.relation.Relation;
@@ -50,29 +49,28 @@ public class RelRf extends Relation {
     @Override
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
+        Map<MemEvent, List<BoolExpr>> rfMap = new HashMap<>();
 
         for(Tuple tuple : maxTupleSet){
-            BoolExpr rel = edge("rf", tuple.getFirst(), tuple.getSecond(), ctx);
+            MemEvent w = (MemEvent) tuple.getFirst();
+            MemEvent r = (MemEvent) tuple.getSecond();
+            BoolExpr rel = edge("rf", w, r, ctx);
+            rfMap.putIfAbsent(r, new ArrayList<>());
+            rfMap.get(r).add(rel);
+
             enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
-                    ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
-                    ctx.mkEq(((MemEvent)tuple.getFirst()).getMemAddressExpr(), ((MemEvent)tuple.getSecond()).getMemAddressExpr())
+                    ctx.mkAnd(w.executes(ctx), r.executes(ctx)),
+                    ctx.mkAnd(
+                            ctx.mkEq(w.getMemAddressExpr(), r.getMemAddressExpr()),
+                            ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr())
+                    )
             )));
         }
 
-        for(Event e : program.getEventRepository().getEvents(EventRepository.LOAD)){
-            Load r = (Load)e;
-            List<BoolExpr> rfPairs = new ArrayList<>();
-
-            for(Tuple t : maxTupleSet.getBySecond(r)){
-                MemEvent w = (MemEvent) t.getFirst();
-                rfPairs.add(edge("rf", w, r, ctx));
-                enc = ctx.mkAnd(enc, ctx.mkImplies(
-                        edge("rf", w, r, ctx),
-                        ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr())
-                ));
-            }
-            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(e.getEId(), rfPairs)));
+        for(MemEvent r : rfMap.keySet()){
+            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(r.getEId(), rfMap.get(r))));
         }
+
         return enc;
     }
 
