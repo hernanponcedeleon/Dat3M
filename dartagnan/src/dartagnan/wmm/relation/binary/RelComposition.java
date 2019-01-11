@@ -7,7 +7,9 @@ import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -64,26 +66,34 @@ public class RelComposition extends BinaryRelation {
     public void addEncodeTupleSet(TupleSet tuples){
         Set<Tuple> activeSet = new HashSet<>(tuples);
         activeSet.removeAll(encodeTupleSet);
-        activeSet.retainAll(maxTupleSet);
         encodeTupleSet.addAll(tuples);
+        activeSet.retainAll(maxTupleSet);
 
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
             TupleSet r2Set = new TupleSet();
 
+            Map<Integer, Set<Integer>> myMap = new HashMap<>();
             for(Tuple tuple : activeSet){
-                Event e1 = tuple.getFirst();
-                Event e2 = tuple.getSecond();
+                int eid1 = tuple.getFirst().getEId();
+                int eid2 = tuple.getSecond().getEId();
+                myMap.putIfAbsent(eid1, new HashSet<>());
+                myMap.get(eid1).add(eid2);
+            }
 
-                for(Tuple tuple1 : r1.getMaxTupleSet().getByFirst(e1)){
-                    for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
-                        if(tuple2.getSecond().getEId() == e2.getEId()){
-                            r1Set.add(tuple1);
-                            r2Set.add(tuple2);
-                        }
+            for(Tuple tuple1 : r1.getMaxTupleSet()){
+                Event e1 = tuple1.getFirst();
+                Set<Integer> ends = myMap.get(e1.getEId());
+                if(ends == null) continue;
+                for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
+                    Event e2 = tuple2.getSecond();
+                    if(ends.contains(e2.getEId())){
+                        r1Set.add(tuple1);
+                        r2Set.add(tuple2);
                     }
                 }
             }
+
             r1.addEncodeTupleSet(r1Set);
             r2.addEncodeTupleSet(r2Set);
         }
@@ -101,28 +111,29 @@ public class RelComposition extends BinaryRelation {
         r2Set.addAll(r2.getEncodeTupleSet());
         r2Set.retainAll(r2.getMaxTupleSet());
 
+        Map<Integer, BoolExpr> exprMap = new HashMap<>();
         for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
+            exprMap.put(tuple.hashCode(), ctx.mkFalse());
+        }
 
-            BoolExpr orClause = ctx.mkFalse();
-            for(Tuple tuple1 : r1Set.getByFirst(e1)){
-                Event e3 = tuple1.getSecond();
-                for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                    if(tuple2.getSecond().getEId() == e2.getEId()){
-                        BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                        BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
-                    }
+        for(Tuple tuple1 : r1Set){
+            Event e1 = tuple1.getFirst();
+            Event e3 = tuple1.getSecond();
+            for(Tuple tuple2 : r2Set.getByFirst(e3)){
+                Event e2 = tuple2.getSecond();
+                int id = Tuple.toHashCode(e1.getEId(), e2.getEId());
+                if(exprMap.containsKey(id)){
+                    BoolExpr e = exprMap.get(id);
+                    e = ctx.mkOr(e, ctx.mkAnd(Utils.edge(r1.getName(), e1, e3, ctx), Utils.edge(r2.getName(), e3, e2, ctx)));
+                    exprMap.put(id, e);
                 }
             }
-
-            if (Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, Utils.edge(this.getName(), e1, e2, ctx)));
-            } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
-            }
         }
+
+        for(Tuple tuple : encodeTupleSet){
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
+        }
+
         return enc;
     }
 
@@ -145,36 +156,40 @@ public class RelComposition extends BinaryRelation {
         r2Set.addAll(r2.getEncodeTupleSet());
         r2Set.retainAll(r2.getMaxTupleSet());
 
+        Map<Integer, BoolExpr> orClauseMap = new HashMap<>();
+        Map<Integer, BoolExpr> idlClauseMap = new HashMap<>();
         for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
+            orClauseMap.put(tuple.hashCode(), ctx.mkFalse());
+            idlClauseMap.put(tuple.hashCode(), ctx.mkFalse());
+        }
 
-            BoolExpr orClause = ctx.mkFalse();
-            BoolExpr orClauseIDL = ctx.mkFalse();
+        for(Tuple tuple1 : r1Set){
+            Event e1 = tuple1.getFirst();
+            Event e3 = tuple1.getSecond();
+            for(Tuple tuple2 : r2Set.getByFirst(e3)){
+                Event e2 = tuple2.getSecond();
+                int id = Tuple.toHashCode(e1.getEId(), e2.getEId());
+                if(orClauseMap.containsKey(id)){
+                    BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
+                    BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
+                    orClauseMap.put(id, ctx.mkOr(orClauseMap.get(id), ctx.mkAnd(opt1, opt2)));
 
-            for(Tuple tuple1 : r1Set.getByFirst(e1)){
-                Event e3 = tuple1.getSecond();
-
-                for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                    if(tuple2.getSecond().getEId() == e2.getEId()){
-                        BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                        BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
-
-                        if(recurseInR1){
-                            opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e3, ctx)));
-                        }
-                        if(recurseInR2){
-                            opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e3, e2, ctx)));
-                        }
-                        orClauseIDL = ctx.mkOr(orClauseIDL, ctx.mkAnd(opt1, opt2));
+                    if(recurseInR1){
+                        opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e3, ctx)));
                     }
+                    if(recurseInR2){
+                        opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e3, e2, ctx)));
+                    }
+                    idlClauseMap.put(id, ctx.mkOr(idlClauseMap.get(id), ctx.mkAnd(opt1, opt2)));
                 }
             }
-
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClause));
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), orClauseIDL));
         }
+
+        for(Tuple tuple : encodeTupleSet){
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx), orClauseMap.get(tuple.hashCode())));
+            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx), idlClauseMap.get(tuple.hashCode())));
+        }
+
         return enc;
     }
 
@@ -208,26 +223,27 @@ public class RelComposition extends BinaryRelation {
                 r2Set.addAll(r2.getEncodeTupleSet());
                 r2Set.retainAll(r2.getMaxTupleSet());
 
+                Map<Integer, BoolExpr> exprMap = new HashMap<>();
                 for(Tuple tuple : encodeTupleSet){
-                    BoolExpr orClause = ctx.mkFalse();
+                    exprMap.put(tuple.hashCode(), ctx.mkFalse());
+                }
 
-                    Event e1 = tuple.getFirst();
-                    Event e2 = tuple.getSecond();
-
-                    for(Tuple tuple1 : r1Set.getByFirst(e1)){
-                        Event e3 = tuple1.getSecond();
-
-                        for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                            if(tuple2.getSecond().getEId() == e2.getEId()){
-                                BoolExpr opt1 = Utils.edge(r1Name, e1, e3, ctx);
-                                BoolExpr opt2 = Utils.edge(r2Name, e3, e2, ctx);
-                                orClause = ctx.mkOr(orClause, ctx.mkAnd(opt1, opt2));
-                            }
+                for(Tuple tuple1 : r1Set){
+                    Event e1 = tuple1.getFirst();
+                    Event e3 = tuple1.getSecond();
+                    for(Tuple tuple2 : r2Set.getByFirst(e3)){
+                        Event e2 = tuple2.getSecond();
+                        int id = Tuple.toHashCode(e1.getEId(), e2.getEId());
+                        if(exprMap.containsKey(id)){
+                            BoolExpr e = exprMap.get(id);
+                            e = ctx.mkOr(e, ctx.mkAnd(Utils.edge(r1Name, e1, e3, ctx), Utils.edge(r2Name, e3, e2, ctx)));
+                            exprMap.put(id, e);
                         }
                     }
+                }
 
-                    BoolExpr edge = Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx);
-                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
+                for(Tuple tuple : encodeTupleSet){
+                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
                 }
 
                 if(recurseInR1){

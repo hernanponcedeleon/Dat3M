@@ -26,7 +26,11 @@ public class Tuple {
 
     @Override
     public int hashCode() {
-        return first.getEId() << 16 + second.getEId();
+        return (first.getEId() << 16) + second.getEId();
+    }
+
+    public static int toHashCode(int a, int b){
+        return (a << 16) + b;
     }
 
     @Override
