@@ -124,22 +124,19 @@ public class Graph {
 
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
-
-                List<Event> events = t.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
-                        .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
-                        .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
-
-                for(Event e2 : events) {
-                    String label = e2.label();
-                    if(e2 instanceof MemEvent) {
-                        Location location = mapAddressLocation.get(((MemEvent) e2).getAddress().getIntValue(e2, ctx, model));
-                        IntExpr value = ((MemEvent) e2).getMemValueExpr();
-                        if(!(value instanceof IntNum)){
-                            value = (IntExpr) model.getConstInterp(value);
+                for(Event e : t.getEventRepository().getSortedList(EventRepository.VISIBLE)) {
+                    if(model.getConstInterp(e.executes(ctx)).isTrue()){
+                        String label = e.label();
+                        if(e instanceof MemEvent) {
+                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model));
+                            IntExpr value = ((MemEvent) e).getMemValueExpr();
+                            if(!(value instanceof IntNum)){
+                                value = (IntExpr) model.getConstInterp(value);
+                            }
+                            label += " " + location + " = " + value.toString();
                         }
-                        label += " " + location + " = " + value.toString();
+                        sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                     }
-                    sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }
                 sb.append(L2).append("}\n");
             }
@@ -153,9 +150,11 @@ public class Graph {
         String edge = " " + getEdgeDef("po") + ";\n";
 
         for(Thread thread : program.getThreads()) {
-            List<Event> events = thread.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
+            List<Event> events = thread.getEventRepository()
+                    .getSortedList(EventRepository.VISIBLE)
+                    .stream()
                     .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
-                    .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
+                    .collect(Collectors.toList());
 
             for(int i = 1; i < events.size(); i++){
                 Event e1 = events.get(i - 1);
@@ -205,8 +204,12 @@ public class Graph {
 
     private StringBuilder buildRelations(Program program){
         StringBuilder sb = new StringBuilder();
-        List<Event> events = program.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
-                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toList());
+
+        List<Event> events = program.getEventRepository()
+                .getSortedList(EventRepository.VISIBLE)
+                .stream()
+                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                .collect(Collectors.toList());
 
         for(String relName : relations) {
             String edge = " " + getEdgeDef(relName) + ";\n";

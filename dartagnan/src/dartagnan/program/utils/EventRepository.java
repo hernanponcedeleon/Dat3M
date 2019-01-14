@@ -15,10 +15,7 @@ import dartagnan.program.event.tso.Xchg;
 import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.event.utils.RegWriter;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EventRepository {
@@ -60,6 +57,10 @@ public class EventRepository {
             }
         }
         return sets.get(mask);
+    }
+
+    public List<Event> getSortedList(int mask){
+        return this.getEvents(mask).stream().sorted().collect(Collectors.toList());
     }
 
     public void clear(){

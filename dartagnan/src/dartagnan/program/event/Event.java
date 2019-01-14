@@ -8,11 +8,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class Event extends Thread {
+public abstract class Event extends Thread implements Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	private int eid;
+	private int eid = -1;
 	protected int hlId;
 	protected Event clone;
 	protected String atomic;
@@ -56,6 +56,12 @@ public abstract class Event extends Thread {
 	}
 
 	public void initialise(Context ctx){}
+
+	@Override
+	public int compareTo(Event o){
+		// TODO: Exception if called before compilation or (better) limit to internal events only
+		return Integer.compare(eid, o.getEId());
+	}
 
 	@Override
 	public void beforeClone(){
