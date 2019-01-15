@@ -1,0 +1,5 @@
+AbstractAssert.java c38b76e33502717f672906a4f50d255dd40d6b27 GREEN
+AssertBasic.java 647a276741f1605a97bbf47169d6afb30b807b72 GREEN
+AssertCompositeAnd.java c71940bf2e112728dcaddab3bb3c9c5e08d085ba GREEN
+AssertCompositeOr.java 9d2cbeb93699105f16a3d3aeb59c740aad77d9fb GREEN
+AssertNot.java 6a5e256597842c7b75ed5d6c8b7b6b7ad074d10d GREEN
