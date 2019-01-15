@@ -63,7 +63,6 @@ public class RelationRepository {
                 addRelation(relation);
             }
             return relation;
-
         } catch (Exception e){
             e.printStackTrace();
             return null;
@@ -89,16 +88,12 @@ public class RelationRepository {
     private Class<?>[] getArgsForClass(Class<?> cls){
         if(BinaryRelation.class.isAssignableFrom(cls)){
             return new Class<?>[]{Relation.class, Relation.class};
-
         } else if(UnaryRelation.class.isAssignableFrom(cls)){
             return new Class<?>[]{Relation.class};
-
         } else if(RelCartesian.class.isAssignableFrom(cls)){
             return new Class<?>[]{FilterAbstract.class, FilterAbstract.class};
-
         } else if(RelSetIdentity.class.isAssignableFrom(cls)){
             return new Class<?>[]{FilterAbstract.class};
-
         } else if(RelFencerel.class.isAssignableFrom(cls) || RecursiveRelation.class.isAssignableFrom(cls)) {
             return new Class<?>[]{String.class};
         }

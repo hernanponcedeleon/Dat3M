@@ -20,6 +20,11 @@
 			<arguments>
 			</arguments>
 		</buildCommand>
+		<buildCommand>
+    		<name>org.eclipse.systemfocus.tooling.codereview.builder.GuidelinesCheckBuilder</name>
+    		<arguments>
+    		</arguments>
+		</buildCommand>
 	</buildSpec>
 	<natures>
 		<nature>org.eclipse.xtext.ui.shared.xtextNature</nature>

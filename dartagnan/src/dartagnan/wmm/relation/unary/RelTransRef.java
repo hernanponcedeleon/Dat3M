@@ -110,7 +110,6 @@ public class RelTransRef extends RelTrans {
                 enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
             }
             return enc;
-
         } catch (Throwable e){
             e.printStackTrace();
             throw new RuntimeException("Failed to encode relation " + this.getName());

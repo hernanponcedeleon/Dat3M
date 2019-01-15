@@ -45,7 +45,6 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
             }
             Constructor constructor = ctx.cls.getConstructor(Relation.class, boolean.class);
             wmm.addAxiom((Axiom) constructor.newInstance(r, ctx.negate != null));
-
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e){
             throw new CatSyntaxException(ctx.getText());
         }

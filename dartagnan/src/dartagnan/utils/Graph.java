@@ -120,7 +120,6 @@ public class Graph {
                 Init e = (Init)t.getEvents().iterator().next();
                 String label = e.label() + " = " + model.getConstInterp(e.getSsaLoc()).toString();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
-
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
 

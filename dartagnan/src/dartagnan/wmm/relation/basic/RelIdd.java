@@ -76,7 +76,6 @@ public class RelIdd extends Relation {
                     }
                 }
                 enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), clause));
-
             } else {
                 for(Tuple tuple2 : maxRegTupleSet){
                     if(e2.getEId() == tuple2.getSecond().getEId()

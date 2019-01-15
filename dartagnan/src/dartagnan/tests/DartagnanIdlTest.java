@@ -137,12 +137,10 @@ public class DartagnanIdlTest {
 
                                 throw new RuntimeException("Mismatched relation sets\n" + sb);
                             }
-
                         } catch (Exception e){
                             System.err.println(f.toString() + "Error : " + e.getMessage());
                         }
                     });
-
         } catch(Exception e){
             e.printStackTrace();
         }

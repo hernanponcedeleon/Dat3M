@@ -27,5 +27,4 @@ public class Arch {
 
         throw new RuntimeException("Unrecognised architecture " + arch);
     }
-
 }
