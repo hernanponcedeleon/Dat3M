@@ -1,0 +1,56 @@
+C C-RomanPenyaev-list-rcu-rr-WA
+
+(*
+ * The same as C-RomanPenyaev-list-rcu-rr.litmus, but working around herd's
+ * having just the wrong level of understanding of compiler optimizations
+ * for that particular litmus test.  The trick is to replicate the code
+ * following the "if" statement into both legs of that "if" statement.
+ *)
+
+{
+	int *z=1; (* List: v->w->x->y->z. Noncircular, but long enough. *)
+	int *y=z;
+	int *x=y;
+	int *w=x;
+	int *v=w; (* List head is v. *)
+	int *c=w; (* Cache, emulating ppcpu_con. *)
+}
+
+P0(int *c, int *v, int *w, int *x, int *y)
+{
+	rcu_assign_pointer(*w, y); /* Remove x from list. */
+	synchronize_rcu();
+	r1 = READ_ONCE(*c);
+	if (r1 == x) {
+		WRITE_ONCE(*c, -1); /* Invalidate cache. */
+		synchronize_rcu();
+		WRITE_ONCE(*x, -1);  /* Emulate kfree(x). */
+	} else {
+		WRITE_ONCE(*x, -1);  /* Emulate kfree(x). */
+	}
+}
+
+P1(int *c, int *v)
+{
+	rcu_read_lock();
+	r1 = READ_ONCE(*c); /* Pick up cache. */
+	if (r1 == -1) {
+		r1 = READ_ONCE(*v); /* Cache empty, start from head. */
+	}
+	r2 = rcu_dereference(*r1); /* Advance to next element. */
+	smp_store_release(c, r2); /* Update cache. */
+	rcu_read_unlock();
+
+	/* And repeat. */
+	rcu_read_lock();
+	r3 = READ_ONCE(*c);
+	if (r3 == -1) {
+		r3 = READ_ONCE(*v);
+	}
+	r4 = rcu_dereference(*r3);
+	smp_store_release(c, r4);
+	rcu_read_unlock();
+}
+
+locations [0:r1; 1:r1; 1:r3; c; v; w; x; y]
+exists (1:r1=-1 \/ 1:r2=-1 \/ 1:r3=-1 \/ 1:r4=-1) (* Better not be freed!!! *)
