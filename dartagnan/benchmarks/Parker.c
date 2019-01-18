@@ -15,7 +15,7 @@ void *thrd0(void *args) {
 
 void *thrd1(void *args) {
   cond = 1;
-  parkCounter = b;
+  parkCounter = 1;
   return NULL;
 }
 
