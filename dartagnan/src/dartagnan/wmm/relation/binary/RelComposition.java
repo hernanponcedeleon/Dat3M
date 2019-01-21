@@ -205,7 +205,6 @@ public class RelComposition extends BinaryRelation {
                 for(Tuple tuple : encodeTupleSet){
                     enc = ctx.mkAnd(ctx.mkNot(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
                 }
-
             } else {
                 int childIteration = isRecursive ? iteration - 1 : iteration;
 

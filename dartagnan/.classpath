@@ -7,5 +7,6 @@
 	<classpathentry kind="lib" path="import/com.microsoft.z3.jar"/>
 	<classpathentry kind="lib" path="import/commons-cli-1.4.jar"/>
 	<classpathentry kind="lib" path="import/commons-io-2.5.jar"/>
+	<classpathentry kind="lib" path="/home/ponce/git/Dat3M/dartagnan/import/google-collections-1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

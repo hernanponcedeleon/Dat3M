@@ -121,7 +121,6 @@ public class Graph {
                 Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model));
                 String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
-
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
                 for(Event e : t.getEventRepository().getSortedList(EventRepository.VISIBLE)) {

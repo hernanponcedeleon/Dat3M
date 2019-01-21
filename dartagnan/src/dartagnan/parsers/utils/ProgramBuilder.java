@@ -214,7 +214,6 @@ public class ProgramBuilder {
         for(Thread event : events){
             if(event instanceof Cmp){
                 lastCmp = (Cmp)event;
-
             } else if(event instanceof CondJump){
                 if(lastCmp == null){
                     throw new RuntimeException("Unrecognised instruction sequence");
@@ -223,7 +222,6 @@ public class ProgramBuilder {
                 bStack.push(thread);
                 thread = new LinkedList<>();
                 thread.add(event);
-
             } else if(event instanceof Label){
                 Thread t;
                 do{
@@ -236,8 +234,6 @@ public class ProgramBuilder {
                     thread.add(ifEvent);
                     t = thread.peekFirst();
                 } while (t instanceof CondJump && ((CondJump)t).getLabel() == event);
-
-
             } else {
                 thread.add(event);
             }
