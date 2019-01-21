@@ -12,3 +12,11 @@ litmus/C/dart/no-herd/basic-07.litmus
 litmus/C/dart/no-herd/basic-02.litmus
 litmus/C/dart/no-herd/basic-04.litmus
 litmus/C/dart/no-herd/basic-06.litmus
+
+# For these tests, we get different results with Herd, because we allow zero addresses, but Herd does not
+litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr-WA.litmus
+litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr.litmus
+
+# In these tests, null ptr is set to -1 (not supported by Herd)
+litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr-WA-dart-def-of-null.litmus
+litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr-dart-def-of-null.litmus

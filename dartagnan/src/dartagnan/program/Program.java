@@ -1,20 +1,17 @@
 package dartagnan.program;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Init;
-import dartagnan.program.event.Load;
-import dartagnan.program.event.MemEvent;
+import dartagnan.program.event.utils.RegWriter;
+import dartagnan.program.memory.Location;
+import dartagnan.program.memory.Memory;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.*;
-
-import static dartagnan.utils.Utils.edge;
-import static dartagnan.utils.Utils.ssaReg;
 
 public class Program extends Thread {
 
@@ -22,13 +19,17 @@ public class Program extends Thread {
 	private AbstractAssert ass;
     private AbstractAssert assFilter;
 	private List<Thread> threads;
+	private final ImmutableSet<Location> locations;
+	private Memory memory;
 
-    public Program(){
-        this("");
+    public Program(Memory memory, ImmutableSet<Location> locations){
+        this("", memory, locations);
     }
 
-	public Program (String name) {
+	public Program (String name, Memory memory, ImmutableSet<Location> locations) {
 		this.name = name;
+		this.memory = memory;
+		this.locations = locations;
 		this.threads = new ArrayList<>();
 	}
 
@@ -60,18 +61,25 @@ public class Program extends Thread {
         return threads;
     }
 
+    public ImmutableSet<Location> getLocations(){
+        return locations;
+    }
+
 	@Override
 	public Set<Event> getEvents(){
-		Set<Event> events = new HashSet<>();
-		for(Thread t : getThreads()){
+        Set<Event> events = new HashSet<>();
+		for(Thread t : threads){
 			events.addAll(t.getEvents());
 		}
 		return events;
 	}
 
     @Override
+	public void beforeClone(){}
+
+    @Override
 	public Program clone() {
-        Program newP = new Program(name);
+        Program newP = new Program(name, memory, locations);
 		for(Thread t : threads){
 		    t.beforeClone();
             newP.add(t.clone());
@@ -84,20 +92,12 @@ public class Program extends Thread {
 	}
 
 	@Override
-	public Thread unroll(int steps, boolean obsNoTermination) {
+	public Thread unroll(int steps) {
         for(int i = 0; i < threads.size(); i++){
-            threads.set(i, threads.get(i).unroll(steps, obsNoTermination));
+            threads.set(i, threads.get(i).unroll(steps));
         }
-		for(Location location : getEventRepository().getLocations()) {
-			threads.add(new Init(location));
-		}
         getEventRepository().clear();
 		return this;
-	}
-
-    @Override
-	public Thread unroll(int steps) {
-        return unroll(steps, false);
 	}
 
     @Override
@@ -117,6 +117,7 @@ public class Program extends Thread {
             t.setMainThread(t);
             for(Register reg : t.getEventRepository().getRegisters()) {
                 reg.setMainThreadId(t.tid);
+                reg.setPrintMainThreadId(Integer.toString(i));
             }
             t.getEventRepository().clear();
 			threads.set(i, t);
@@ -125,19 +126,11 @@ public class Program extends Thread {
 		return this;
 	}
 
-	public BoolExpr encodeDF(Context ctx) {
-		MapSSA lastMap = new MapSSA();
-		BoolExpr enc = ctx.mkTrue();
-		for(Thread t : threads){
-            Pair<BoolExpr, MapSSA>recResult = t.encodeDF(lastMap, ctx);
-            enc = ctx.mkAnd(enc, recResult.getFirst());
-            lastMap = recResult.getSecond();
-        }
-		return enc;
-	}
-
 	public BoolExpr encodeCF(Context ctx) {
-		BoolExpr enc = ctx.mkTrue();
+        for(Event e : getEvents()){
+            e.initialise(ctx);
+        }
+        BoolExpr enc = memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.mkAnd(enc, t.encodeCF(ctx));
             enc = ctx.mkAnd(enc, ctx.mkBoolConst(t.cfVar()));
@@ -147,9 +140,12 @@ public class Program extends Thread {
 
     public BoolExpr encodeFinalValues(Context ctx){
         Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(EventRepository.LOAD | EventRepository.LOCAL)){
-            eMap.putIfAbsent(e.getReg(), new ArrayList<>());
-            eMap.get(e.getReg()).add(e);
+        for(Event e : getEventRepository().getEvents(EventRepository.ALL)){
+            if(e instanceof RegWriter){
+                Register reg = ((RegWriter)e).getResultRegister();
+                eMap.putIfAbsent(reg, new ArrayList<>());
+                eMap.get(reg).add(e);
+            }
         }
 
         BoolExpr enc = ctx.mkTrue();
@@ -162,38 +158,11 @@ public class Program extends Thread {
                     lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).executes(ctx)));
                 }
                 enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
-                        ctx.mkEq(reg.getLastValueExpr(ctx), ssaReg(reg, events.get(i).getSsaRegIndex(), ctx))));
+                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)events.get(i)).getResultRegisterExpr())));
             }
         }
         return enc;
     }
-	
-	public BoolExpr encodeDF_RF(Context ctx) {
-        Map<Location, List<Load>> loads = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(EventRepository.LOAD)){
-            loads.putIfAbsent(e.getLoc(), new ArrayList<>());
-            loads.get(e.getLoc()).add((Load)e);
-        }
-
-        Map<Location, List<MemEvent>> stores = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
-            stores.putIfAbsent(e.getLoc(), new ArrayList<>());
-            stores.get(e.getLoc()).add((MemEvent) e);
-        }
-
-        BoolExpr enc = ctx.mkTrue();
-        for (Location loc : loads.keySet()){
-            for(Load r : loads.get(loc)){
-                BoolExpr sameValue = ctx.mkTrue();
-                for(MemEvent w : stores.get(loc)){
-                    sameValue = ctx.mkAnd(sameValue,
-                            ctx.mkImplies(edge("rf", w, r, ctx), ctx.mkEq(w.getSsaLoc(), r.getSsaLoc())));
-                }
-                enc = ctx.mkAnd(enc, sameValue);
-            }
-        }
-        return enc;
-	}
 
     @Override
     public String toString() {

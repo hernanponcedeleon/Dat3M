@@ -1,8 +1,8 @@
 package dartagnan.wmm.relation.basic;
 
 import dartagnan.program.event.Event;
-import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.program.utils.EventRepository;
+import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
@@ -20,6 +20,7 @@ public class RelCartesian extends BasicRelation {
         this.filter1 = filter1;
         this.filter2 = filter2;
         this.term = makeTerm(filter1, filter2);
+        isStatic = true;
     }
 
     public RelCartesian(FilterAbstract filter1, FilterAbstract filter2, String name) {
@@ -27,6 +28,7 @@ public class RelCartesian extends BasicRelation {
         this.filter1 = filter1;
         this.filter2 = filter2;
         this.term = makeTerm(filter1, filter2);
+        isStatic = true;
     }
 
     @Override

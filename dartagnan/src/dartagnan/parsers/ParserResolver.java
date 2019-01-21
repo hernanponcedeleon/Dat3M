@@ -9,15 +9,21 @@ import java.io.IOException;
 
 public class ParserResolver {
 
-    public static final String TYPE_LITMUS_PPC = "PPC";
-    public static final String TYPE_LITMUS_X86 = "X86";
-    public static final String TYPE_LITMUS_ARM = "ARM";
-    public static final String TYPE_LITMUS_C   = "C";
+    private static final String TYPE_LITMUS_AARCH64     = "AARCH64";
+    private static final String TYPE_LITMUS_PPC         = "PPC";
+    private static final String TYPE_LITMUS_X86         = "X86";
+    private static final String TYPE_LITMUS_C           = "C";
 
     public ParserInterface getParser(String inputFilePath) throws IOException {
+        if(inputFilePath.endsWith("pts")){
+            return new ParserPorthos();
+        }
         if(inputFilePath.endsWith("litmus")){
             String header = readFirstLine(inputFilePath).toUpperCase();
 
+            if(header.indexOf(TYPE_LITMUS_AARCH64) == 0){
+                return new ParserLitmusAArch64();
+            }
             if(header.indexOf(TYPE_LITMUS_C) == 0){
                 return new ParserLitmusC();
             }
@@ -27,7 +33,6 @@ public class ParserResolver {
             if(header.indexOf(TYPE_LITMUS_X86) == 0){
                 return new ParserLitmusX86();
             }
-            // TODO: Other parsers
         }
         throw new ParsingException("Unknown input file type");
     }

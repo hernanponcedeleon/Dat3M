@@ -1,12 +1,12 @@
 package dartagnan.utils;
 
 import com.microsoft.z3.*;
-import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Init;
 import dartagnan.program.event.MemEvent;
+import dartagnan.program.memory.Location;
 import dartagnan.program.utils.EventRepository;
 
 import java.io.File;
@@ -18,6 +18,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Graph {
+
+    public static Set<String> getDefaultRelations(){
+        return new HashSet<>(Arrays.asList("po", "co", "rf"));
+    }
 
     private static Map<String, String> colorMap;
     static
@@ -35,16 +39,14 @@ public class Graph {
         colorMap.put("mb", "black");
         colorMap.put("rmb", "black");
         colorMap.put("wmb", "black");
-    };
-
-    private Set<String> relations = new HashSet<>(Arrays.asList(
-            "rf", "mfence", "sync", "isync", "lwsync", "isb", "ish", "mb", "wmb", "rmb")
-    );
+    }
 
     private Model model;
     private Context ctx;
 
     private StringBuilder buffer;
+    private Map<Integer, Location> mapAddressLocation;
+    private Set<String> relations = new HashSet<>();
 
     private final String L1 = "  ";
     private final String L2 = "    ";
@@ -58,14 +60,11 @@ public class Graph {
     public Graph(Model model, Context ctx){
         this.model = model;
         this.ctx = ctx;
+        relations.add("rf");
     }
 
     public void addRelations(Collection<String> relations){
         this.relations.addAll(relations);
-    }
-
-    public static Set<String> getDefaultRelations(){
-        return new HashSet<>(Arrays.asList("po", "co", "rf"));
     }
 
     public Graph build(Program program){
@@ -104,6 +103,7 @@ public class Graph {
     }
 
     private StringBuilder buildProgramGraph(Program program){
+        buildAddressLocationMap(program);
         return buildEvents(program)
                 .append(buildPo(program))
                 .append(buildCo(program))
@@ -118,21 +118,24 @@ public class Graph {
 
             if(t instanceof Init){
                 Init e = (Init)t.getEvents().iterator().next();
-                String label = e.label() + " = " + model.getConstInterp(e.getSsaLoc()).toString();
+                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model));
+                String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
-
-                List<Event> events = t.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
-                        .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
-                        .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
-
-                for(Event e2 : events) {
-                    String label = e2.label();
-                    if(e2 instanceof MemEvent) {
-                        label += " = " + model.getConstInterp(((MemEvent) e2).getSsaLoc()).toString();
+                for(Event e : t.getEventRepository().getSortedList(EventRepository.VISIBLE)) {
+                    if(model.getConstInterp(e.executes(ctx)).isTrue()){
+                        String label = e.label();
+                        if(e instanceof MemEvent) {
+                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model));
+                            IntExpr value = ((MemEvent) e).getMemValueExpr();
+                            if(!(value instanceof IntNum)){
+                                value = (IntExpr) model.getConstInterp(value);
+                            }
+                            label += " " + location + " = " + value.toString();
+                        }
+                        sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                     }
-                    sb.append(L3).append(e2.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
                 }
                 sb.append(L2).append("}\n");
             }
@@ -146,9 +149,11 @@ public class Graph {
         String edge = " " + getEdgeDef("po") + ";\n";
 
         for(Thread thread : program.getThreads()) {
-            List<Event> events = thread.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
+            List<Event> events = thread.getEventRepository()
+                    .getSortedList(EventRepository.VISIBLE)
+                    .stream()
                     .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
-                    .sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
+                    .collect(Collectors.toList());
 
             for(int i = 1; i < events.size(); i++){
                 Event e1 = events.get(i - 1);
@@ -163,27 +168,20 @@ public class Graph {
         StringBuilder sb = new StringBuilder();
         String edge = " " + getEdgeDef("co") + ";\n";
 
-        Set<MemEvent> events = program.getEventRepository()
-                .getEvents(EventRepository.STORE | EventRepository.INIT)
-                .stream()
-                .map(e -> (MemEvent)e)
-                .collect(Collectors.toSet());
-
-        Set<Location> locations = program.getEventRepository().getLocations();
-
-        for(Location location : locations){
-            Map<Event, Integer> map = new HashMap<>();
-            Set<Event> locEvents = new HashSet<>();
-
-            for(Event e : events){
-                if(e.getLoc().equals(location)){
-                    map.put(e, 0);
-                    locEvents.add(e);
-                }
+        Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
+        for(Event e : program.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
+            if(model.getConstInterp(e.executes(ctx)).isTrue()){
+                int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
+                mapAddressEvent.putIfAbsent(address, new HashSet<>());
+                mapAddressEvent.get(address).add(e);
             }
+        }
 
-            for(Event e1 :locEvents){
-                for(Event e2 : locEvents){
+        for(int address : mapAddressEvent.keySet()){
+            Map<Event, Integer> map = new HashMap<>();
+            for(Event e2 : mapAddressEvent.get(address)){
+                map.put(e2, 0);
+                for(Event e1 : mapAddressEvent.get(address)){
                     Expr expr = model.getConstInterp(Utils.edge("co", e1, e2, ctx));
                     if(expr != null && expr.isTrue()){
                         map.put(e2, map.get(e2) + 1);
@@ -205,8 +203,12 @@ public class Graph {
 
     private StringBuilder buildRelations(Program program){
         StringBuilder sb = new StringBuilder();
-        List<Event> events = program.getEventRepository().getEvents(EventRepository.VISIBLE).stream()
-                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue()).collect(Collectors.toList());
+
+        List<Event> events = program.getEventRepository()
+                .getSortedList(EventRepository.VISIBLE)
+                .stream()
+                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                .collect(Collectors.toList());
 
         for(String relName : relations) {
             String edge = " " + getEdgeDef(relName) + ";\n";
@@ -237,6 +239,13 @@ public class Graph {
             }
         }
         return sb;
+    }
+
+    private void buildAddressLocationMap(Program program){
+        mapAddressLocation = new HashMap<>();
+        for(Location location : program.getLocations()){
+            mapAddressLocation.put(location.getAddress().getIntValue(null, ctx, model), location);
+        }
     }
 
     private String getProgramDef(String label){

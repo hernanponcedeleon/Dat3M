@@ -1,6 +1,6 @@
 package dartagnan.program.utils;
 
-import dartagnan.program.Location;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.*;
@@ -8,13 +8,14 @@ import dartagnan.program.event.linux.rcu.RCUReadLock;
 import dartagnan.program.event.linux.rcu.RCUReadUnlock;
 import dartagnan.program.event.linux.rcu.RCUSync;
 import dartagnan.program.event.linux.rmw.RMWAbstract;
+import dartagnan.program.event.pts.Read;
+import dartagnan.program.event.pts.Write;
 import dartagnan.program.event.rmw.RMWStore;
 import dartagnan.program.event.tso.Xchg;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EventRepository {
@@ -35,10 +36,9 @@ public class EventRepository {
 
     public static final int MEMORY = INIT | LOAD | STORE;
     public static final int RCU = RCU_LOCK | RCU_UNLOCK | RCU_SYNC;
-    public static final int VISIBLE = MEMORY | RCU;
+    public static final int VISIBLE = MEMORY | FENCE | RCU;
 
     private Map<Integer, Set<Event>> sets = new HashMap<>();
-    private Set<Location> locations;
     private Set<Register> registers;
     private Thread thread;
 
@@ -59,8 +59,11 @@ public class EventRepository {
         return sets.get(mask);
     }
 
+    public List<Event> getSortedList(int mask){
+        return this.getEvents(mask).stream().sorted().collect(Collectors.toList());
+    }
+
     public void clear(){
-        locations = null;
         registers = null;
         sets.clear();
     }
@@ -79,19 +82,23 @@ public class EventRepository {
                 || ((mask & RCU_SYNC) > 0 && event instanceof RCUSync);
     }
 
-    public Set<Location> getLocations(){
-        if(locations == null){
-            locations = getEvents(EventRepository.MEMORY).stream().map(Event::getLoc).collect(Collectors.toSet());
-        }
-        return locations;
-    }
-
     public Set<Register> getRegisters(){
         if(registers == null){
-            registers = getEvents(EventRepository.LOAD | EventRepository.LOCAL | EventRepository.STORE)
-                    .stream()
-                    .filter(e -> e.getReg() != null)
-                    .map(Event::getReg).collect(Collectors.toSet());
+            registers = new HashSet<>();
+            for(Event e : getEvents(ALL)){
+                if(e instanceof RegWriter){
+                    registers.add(((RegWriter) e).getResultRegister());
+                }
+                if(e instanceof MemEvent){
+                    IExpr address = ((MemEvent) e).getAddress();
+                    if(address instanceof Register){
+                        registers.add((Register) address);
+                    }
+                }
+                if(e instanceof RegReaderData){
+                    registers.addAll(((RegReaderData) e).getDataRegs());
+                }
+            }
         }
         return registers;
     }

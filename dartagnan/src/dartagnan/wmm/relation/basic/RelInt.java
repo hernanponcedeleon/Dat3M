@@ -12,6 +12,7 @@ public class RelInt extends BasicRelation {
 
     public RelInt(){
         term = "int";
+        isStatic = true;
     }
 
     @Override

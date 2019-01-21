@@ -19,8 +19,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static dartagnan.utils.Encodings.encodeCommonExecutions;
-import static dartagnan.utils.Encodings.encodeReachedState;
+import static porthos.Encodings.encodeCommonExecutions;
+import static porthos.Encodings.encodeReachedState;
 
 public class Porthos {
 
@@ -110,6 +110,11 @@ public class Porthos {
         Program p = Dartagnan.parseProgram(inputFilePath);
         p.unroll(steps);
 
+        int baseHlId = 1;
+        for(Event e : p.getEvents()){
+            e.setHLId(baseHlId++);
+        }
+
         Program pSource = p.clone();
         Program pTarget = p.clone();
 
@@ -119,41 +124,33 @@ public class Porthos {
 
         Context ctx = new Context();
         ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-        Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
-        Solver s2 = ctx.mkSolver(ctx.mkTactic("qfufbv"));
+        Solver s = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+        Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
-        BoolExpr sourceDF = pSource.encodeDF(ctx);
         BoolExpr sourceCF = pSource.encodeCF(ctx);
-        BoolExpr sourceDF_RF = pSource.encodeDF_RF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
         BoolExpr sourceMM = mcmS.encode(pSource, ctx, cmd.hasOption("relax"), cmd.hasOption("idl"));
 
-        s.add(pTarget.encodeDF(ctx));
         s.add(pTarget.encodeCF(ctx));
-        s.add(pTarget.encodeDF_RF(ctx));
         s.add(pTarget.encodeFinalValues(ctx));
         s.add(mcmT.encode(pTarget, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
         s.add(mcmT.consistent(pTarget, ctx));
 
-        s.add(sourceDF);
         s.add(sourceCF);
-        s.add(sourceDF_RF);
         s.add(sourceFV);
         s.add(sourceMM);
         s.add(mcmS.inconsistent(pSource, ctx));
 
         s.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
-        s2.add(sourceDF);
         s2.add(sourceCF);
-        s2.add(sourceDF_RF);
         s2.add(sourceFV);
         s2.add(sourceMM);
         s2.add(mcmS.consistent(pSource, ctx));
 
         int iterations = 0;
         Status lastCheck = Status.SATISFIABLE;
-        Set<Expr> visited = new HashSet<Expr>();
+        Set<Expr> visited = new HashSet<>();
 
         while(lastCheck == Status.SATISFIABLE) {
 

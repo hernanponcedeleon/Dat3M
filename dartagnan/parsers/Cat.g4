@@ -1,6 +1,6 @@
 grammar Cat;
+
 @header{
-package dartagnan.parsers;
 import dartagnan.wmm.axiom.*;
 }
 
@@ -45,6 +45,7 @@ expression
     |   e1 = expression AMP e2 = expression                             # exprIntersection
     |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC)    # exprIdentity
     |   FENCEREL LPAR n = NAME RPAR                                     # exprFencerel
+    |   RANGE LPAR e = expression RPAR                                  # exprRange
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
     ;
@@ -77,8 +78,9 @@ LBRAC   :   '[';
 RBRAC   :   ']';
 
 FENCEREL    :   'fencerel';
+RANGE       :   'range';
 
-NAME    : [A-Za-z0-9\-_]+;
+NAME    : [A-Za-z0-9\-_.]+;
 
 LINE_COMMENT
     :   '//' ~[\n]*

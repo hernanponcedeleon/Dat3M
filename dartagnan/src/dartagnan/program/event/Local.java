@@ -1,35 +1,50 @@
 package dartagnan.program.event;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import com.microsoft.z3.IntExpr;
 import dartagnan.expression.ExprInterface;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-import static dartagnan.utils.Utils.ssaReg;
-
-public class Local extends Event {
+public class Local extends Event implements RegWriter, RegReaderData {
 	
-	private Register reg;
-	private ExprInterface expr;
-	private int ssaRegIndex;
+	protected Register reg;
+	protected ExprInterface expr;
+	private IntExpr regResultExpr;
+	private ImmutableSet<Register> dataRegs;
 	
 	public Local(Register reg, ExprInterface expr) {
 		this.reg = reg;
 		this.expr = expr;
 		this.condLevel = 0;
+		dataRegs = expr.getRegs();
 	}
 
-    @Override
-	public Register getReg() {
+	@Override
+	public void initialise(Context ctx) {
+		regResultExpr = reg.toZ3IntResult(this, ctx);
+	}
+
+	public ExprInterface getExpr(){
+		return expr;
+	}
+
+	@Override
+	public Register getResultRegister(){
 		return reg;
 	}
 
-    @Override
-	public ExprInterface getExpr() {
-		return expr;
+	@Override
+	public IntExpr getResultRegisterExpr(){
+		return regResultExpr;
+	}
+
+	@Override
+	public ImmutableSet<Register> getDataRegs(){
+		return dataRegs;
 	}
 
     @Override
@@ -38,29 +53,16 @@ public class Local extends Event {
 	}
 
     @Override
-    public int getSsaRegIndex() {
-        return ssaRegIndex;
-    }
-
-    @Override
 	public Local clone() {
-		Register newReg = reg.clone();
-		ExprInterface newExpr = expr.clone();
-		Local newLocal = new Local(newReg, newExpr);
-		newLocal.condLevel = condLevel;
-		newLocal.setHLId(hashCode());
-		newLocal.setUnfCopy(getUnfCopy());
-		return newLocal;
+	    if(clone == null){
+            clone = new Local(reg.clone(), expr.clone());
+            afterClone();
+        }
+		return (Local)clone;
 	}
 
-    @Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		if(mainThread != null){
-			Expr z3Expr = expr.toZ3(map, ctx);
-			Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-			this.ssaRegIndex = map.get(reg);
-			return new Pair<>(ctx.mkImplies(executes(ctx), expr.encodeAssignment(map, ctx, z3Reg, z3Expr)), map);
-		}
-		throw new RuntimeException("Main thread is not set for " + toString());
+	@Override
+	public BoolExpr encodeCF(Context ctx) {
+		return ctx.mkAnd(super.encodeCF(ctx), ctx.mkEq(regResultExpr,  expr.toZ3Int(this, ctx)));
 	}
 }

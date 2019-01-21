@@ -1,0 +1,78 @@
+C aba-array
+/*
+    Modelling structures like
+    struct mystruct {
+        int value;
+        int next;
+    };
+*/
+
+{
+    c[2] = {3, -1};
+    b[2] = {2, *(&c)};
+    a[2] = {1, *(&b)};
+    ToS = *(&a);
+}
+
+P0(int* ToS)
+{
+    /* Program execution starts */
+
+    int top = smp_load_acquire(ToS);                        /* Read address of a[0] */
+    int value = smp_load_acquire(top);                      /* Read value of a[0] */
+    int next = smp_load_acquire(top + 1);                   /* Read value of a[1] */
+
+    /* Get interrupted in favor of P1 */
+
+    int old = atomic_cmpxchg(ToS, top, next);
+
+    if(old == top){
+
+        /* Successfully put "b" (deleted by P1) on top of the stack */
+
+        top = smp_load_acquire(ToS);                        /* Read address of b[0] */
+        value = smp_load_acquire(top);                      /* Read value of modified b[0] */
+        next = smp_load_acquire(top + 1);                   /* Read value of modified b[0] */
+    }
+}
+
+P1(int* ToS)
+{
+    /* Starts after the first part of P0 is executed */
+
+    int top = smp_load_acquire(ToS);                        /* Read address of a[0] */
+    int value = smp_load_acquire(top);                      /* Read value of a[0] */
+    int next = smp_load_acquire(top + 1);                   /* Read value of a[1] */
+
+    int old = atomic_cmpxchg(ToS, top, next);
+    if(old == top){
+        /* Successfully removed "a" from the stack */
+
+        int aPtr = top;
+
+        top = smp_load_acquire(ToS);                        /* Read address of b[0] */
+        value = smp_load_acquire(top);                      /* Read value of b[0] */
+        next = smp_load_acquire(top + 1);                   /* Read value of b[1] */
+
+        old = atomic_cmpxchg(ToS, top, next);
+
+        if(old == top){
+            /* Successfully removed "b" from the stack */
+
+            smp_store_release(top, -1);                     /* Model deletion of "b" */
+            smp_store_release(top + 1, -1);                 /* Model deletion of "b" */
+
+            /* Create new value in memory of "a" */
+
+            smp_store_release(aPtr, 99);
+            smp_store_release(aPtr + 1, next);
+
+            old = atomic_cmpxchg(ToS, next, aPtr);
+            if(old == next){
+                /* Successfully pushed modified "a" back to the stack */
+            }
+        }
+    }
+}
+
+exists (0:next = -1 /\ 0:value = -1)

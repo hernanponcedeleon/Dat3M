@@ -1,0 +1,9 @@
+AArch64 exclusive-02
+{
+0:X1=x;
+}
+ P0                 ;
+ LDXR W4,[X1]       ;
+ MOV W0,#1          ;
+ STXR W3,W0,[X1]    ;
+exists (0:X3=0)

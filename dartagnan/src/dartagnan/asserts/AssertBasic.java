@@ -2,17 +2,17 @@ package dartagnan.asserts;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import dartagnan.expression.ExprInterface;
 import dartagnan.expression.op.COpBin;
-import dartagnan.expression.IntExprInterface;
 import dartagnan.program.Register;
 
 public class AssertBasic extends AbstractAssert{
 
-    private final IntExprInterface e1;
-    private final IntExprInterface e2;
+    private final ExprInterface e1;
+    private final ExprInterface e2;
     private final COpBin op;
 
-    public AssertBasic(IntExprInterface e1, COpBin op, IntExprInterface e2){
+    public AssertBasic(ExprInterface e1, COpBin op, ExprInterface e2){
         this.e1 = e1;
         this.e2 = e2;
         this.op = op;
@@ -33,7 +33,7 @@ public class AssertBasic extends AbstractAssert{
         return new AssertBasic(e1.clone(), op, e2.clone());
     }
 
-    private String valueToString(IntExprInterface value){
+    private String valueToString(ExprInterface value){
         if(value instanceof Register){
             return ((Register)value).getPrintMainThreadId() + ":" + value;
         }

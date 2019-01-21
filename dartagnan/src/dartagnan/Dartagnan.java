@@ -7,22 +7,19 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import dartagnan.asserts.AbstractAssert;
 import dartagnan.parsers.ParserInterface;
 import dartagnan.parsers.ParserResolver;
-import dartagnan.parsers.PorthosLexer;
-import dartagnan.parsers.PorthosParser;
 import dartagnan.parsers.cat.ParserCat;
 import dartagnan.program.Program;
 import dartagnan.utils.Graph;
 import dartagnan.wmm.Wmm;
 import dartagnan.wmm.utils.Arch;
-import org.antlr.v4.runtime.*;
 import org.apache.commons.cli.*;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
 public class Dartagnan {
+
+    public static final String TACTIC = "qfufbv";
 
 	public static void main(String[] args) throws IOException {
 
@@ -75,8 +72,6 @@ public class Dartagnan {
 			throw new RuntimeException("Assert is required for Dartagnan tests");
 		}
 
-		Context ctx = new Context();
-		Solver s = ctx.mkSolver(ctx.mkTactic("qfufbv"));
 		Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"), target);
 
 		if(cmd.hasOption("draw")) {
@@ -92,25 +87,10 @@ public class Dartagnan {
 			steps = Integer.parseInt(cmd.getOptionValue("unroll"));
 		}
 
-		p.unroll(steps);
-		p.compile(target, false, true);
+        Context ctx = new Context();
+        Solver s = ctx.mkSolver(ctx.mkTactic(TACTIC));
 
-		s.add(p.encodeDF(ctx));
-		s.add(p.getAss().encode(ctx));
-		if(p.getAssFilter() != null){
-			s.add(p.getAssFilter().encode(ctx));
-		}
-		s.add(p.encodeCF(ctx));
-		s.add(p.encodeDF_RF(ctx));
-		s.add(p.encodeFinalValues(ctx));
-		s.add(mcm.encode(p, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
-		s.add(mcm.consistent(p, ctx));
-
-		boolean result = (s.check() == Status.SATISFIABLE);
-		if(p.getAss().getInvert()){
-			result = !result;
-		}
-
+        boolean result = testProgram(s, ctx, p, mcm, target, steps, cmd.hasOption("relax"), cmd.hasOption("idl"));
 		if(p.getAssFilter() != null){
 			System.out.println("Filter " + (p.getAssFilter()));
 		}
@@ -129,26 +109,32 @@ public class Dartagnan {
 		}
 	}
 
+	public static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, String target, int steps,
+                                      boolean relax, boolean idl){
+
+        program.unroll(steps);
+        program.compile(target, false, true);
+
+        solver.add(program.getAss().encode(ctx));
+        if(program.getAssFilter() != null){
+            solver.add(program.getAssFilter().encode(ctx));
+        }
+        solver.add(program.encodeCF(ctx));
+        solver.add(program.encodeFinalValues(ctx));
+        solver.add(wmm.encode(program, ctx, relax, idl));
+        solver.add(wmm.consistent(program, ctx));
+
+        boolean result = (solver.check() == Status.SATISFIABLE);
+        if(program.getAss().getInvert()){
+            result = !result;
+        }
+        return result;
+    }
+
 	public static Program parseProgram(String inputFilePath) throws IOException{
-		File file = new File(inputFilePath);
-		FileInputStream stream = new FileInputStream(file);
-		CharStream charStream = CharStreams.fromStream(stream);
-
-		if(inputFilePath.endsWith("litmus")) {
-			ParserResolver parserResolver = new ParserResolver();
-			ParserInterface parser = parserResolver.getParser(inputFilePath);
-			return parser.parse(inputFilePath);
-		}
-
-		if(inputFilePath.endsWith("pts")) {
-			PorthosLexer lexer = new PorthosLexer(charStream);
-			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			PorthosParser parser = new PorthosParser(tokens);
-			parser.addErrorListener(new DiagnosticErrorListener(true));
-			return parser.program(inputFilePath).p;
-		}
-
-		throw new RuntimeException("Unrecognised program format");
+		ParserResolver parserResolver = new ParserResolver();
+		ParserInterface parser = parserResolver.getParser(inputFilePath);
+		return parser.parse(inputFilePath);
 	}
 
 	private static boolean canDrawGraph(AbstractAssert ass, boolean result){

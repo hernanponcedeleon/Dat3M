@@ -1,38 +1,48 @@
 package dartagnan.expression;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
-
-import java.util.HashSet;
-import java.util.Set;
+import dartagnan.program.event.Event;
 
 public class BConst extends BExpr implements ExprInterface {
 
-	private boolean value;
+	private final boolean value;
 	
 	public BConst(boolean value) {
 		this.value = value;
 	}
 
     @Override
-	public String toString() {
-		return value ? "True" : "False";
+	public BoolExpr toZ3Bool(Event e, Context ctx) {
+		return value ? ctx.mkTrue() : ctx.mkFalse();
+	}
+
+	@Override
+	public IntExpr getLastValueExpr(Context ctx){
+		return value ? ctx.mkInt(1) : ctx.mkInt(0);
 	}
 
     @Override
+	public ImmutableSet<Register> getRegs() {
+		return ImmutableSet.of();
+	}
+
+	@Override
 	public BConst clone() {
 		return new BConst(value);
 	}
 
-    @Override
-	public BoolExpr toZ3(MapSSA map, Context ctx) {
-		return value ? ctx.mkTrue() : ctx.mkFalse();
+	@Override
+	public String toString() {
+		return value ? "True" : "False";
 	}
 
-    @Override
-	public Set<Register> getRegs() {
-		return new HashSet<>();
+	@Override
+	public boolean getBoolValue(Event e, Context ctx, Model model){
+		return value;
 	}
 }

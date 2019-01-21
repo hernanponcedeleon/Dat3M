@@ -125,10 +125,10 @@ public class RelationRepository {
                 return new RelCrit();
             case "idd":
                 return new RelIdd();
+            case "addrDirect":
+                return new RelAddrDirect();
             case "ctrlDirect":
                 return new RelCtrlDirect();
-            case "addr":
-                return new RelEmpty("addr");
             case "0":
                 return new RelEmpty("0");
             case "rf^-1":
@@ -141,6 +141,10 @@ public class RelationRepository {
                 return getRelation(RelTrans.class, getRelation("idd"));
             case "data":
                 return getRelation(RelIntersection.class, getRelation("idd^+"), getRelation("(R*W)")).setName("data");
+            case "addr":
+                return getRelation(RelUnion.class,
+                        getRelation("addrDirect"),
+                        getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))).setName("addr");
             case "ctrl":
                 if(includePoToCtrl){
                     return getRelation(RelComposition.class,

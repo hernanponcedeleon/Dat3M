@@ -1,40 +1,50 @@
 package dartagnan.parsers.utils;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.asserts.AbstractAssert;
-import dartagnan.expression.AConst;
+import dartagnan.expression.IConst;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
 import dartagnan.parsers.utils.branch.Label;
-import dartagnan.program.Location;
 import dartagnan.program.Program;
 import dartagnan.program.Register;
 import dartagnan.program.Thread;
 import dartagnan.program.event.If;
+import dartagnan.program.event.Init;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Skip;
+import dartagnan.program.memory.Address;
+import dartagnan.program.memory.Location;
+import dartagnan.program.memory.Memory;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class ProgramBuilder {
 
-    public static final int DEFAULT_INIT_VALUE = 0;
-
-    private Map<String, Location> locations = new HashMap<>();
     private Map<String, Map<String, Register>> registers = new HashMap<>();
-    private Map<String, Map<String, Location>> mapRegLoc = new HashMap<>();
+    private Map<String, Location> locations = new HashMap<>();
+    private Map<String, Address> pointers = new HashMap<>();
+
     private Map<String, Map<String, Label>> labels = new HashMap<>();
     private Map<String, LinkedList<Thread>> threads = new HashMap<>();
+    private Map<Address, IConst> iValueMap = new HashMap<>();
+    private Memory memory = new Memory();
 
-    private Program program = new Program();
+    private AbstractAssert ass;
+    private AbstractAssert assFilter;
 
     public Program build(){
+        Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
         for(LinkedList<Thread> thread : threads.values()){
             thread = buildBranches(thread);
             program.add(Thread.fromList(true, thread));
         }
+        for (Map.Entry<Address, IConst> entry : iValueMap.entrySet()) {
+            program.add(new Init(entry.getKey(), entry.getValue()));
+        }
+        program.setAss(ass);
+        program.setAssFilter(assFilter);
+        new AliasAnalysis().calculateLocationSets(program, memory);
         return program;
     }
 
@@ -51,31 +61,66 @@ public class ProgramBuilder {
         return child;
     }
 
+    public Thread removeChild(String thread){
+        if(!threads.containsKey(thread)){
+            throw new RuntimeException("Thread " + thread + " is not initialised");
+        }
+        return Thread.fromList(true, threads.remove(thread));
+    }
+
     public void setAssert(AbstractAssert ass){
-        program.setAss(ass);
+        this.ass = ass;
     }
 
     public void setAssertFilter(AbstractAssert ass){
-        program.setAssFilter(ass);
+        this.assFilter = ass;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
 
-    public void addDeclarationLocLoc(String leftName, String rightName){
-        getOrCreateLocation(leftName).setIValue(getOrCreateLocation(rightName).getIValue());
+    public void initLocEqLocPtr(String leftName, String rightName){
+        Location location = getOrCreateLocation(leftName);
+        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName).getAddress());
     }
 
-    public void addDeclarationLocImm(String locName, int imm){
-        getOrCreateLocation(locName).setIValue(imm);
+    public void initLocEqLocVal(String leftName, String rightName){
+        Location left = getOrCreateLocation(leftName);
+        Location right = getOrCreateLocation(rightName);
+        iValueMap.put(left.getAddress(), iValueMap.get(right.getAddress()));
     }
 
-    public void addDeclarationRegLoc(String regThread, String regName, String locName){
-        addRegLocPair(regThread, getOrCreateRegister(regThread, regName).getName(), getOrCreateLocation(locName));
+    public void initLocEqConst(String locName, IConst iValue){
+        Location location = getOrCreateLocation(locName);
+        iValueMap.put(location.getAddress(), iValue);
     }
 
-    public void addDeclarationRegImm(String regThread, String regName, int imm){
-        addChild(regThread, new Local(getOrCreateRegister(regThread, regName), new AConst(imm)));
+    public void initRegEqLocPtr(String regThread, String regName, String locName){
+        Location loc = getOrCreateLocation(locName);
+        Register reg = getOrCreateRegister(regThread, regName);
+        addChild(regThread, new Local(reg, loc.getAddress()));
+    }
+
+    public void initRegEqLocVal(String regThread, String regName, String locName){
+        Location loc = getOrCreateLocation(locName);
+        Register reg = getOrCreateRegister(regThread, regName);
+        addChild(regThread, new Local(reg, iValueMap.get(loc.getAddress())));
+    }
+
+    public void initRegEqConst(String regThread, String regName, IConst iValue){
+        addChild(regThread, new Local(getOrCreateRegister(regThread, regName), iValue));
+    }
+
+    public void addDeclarationArray(String name, List<IConst> values){
+        int size = values.size();
+        List<Address> addresses = memory.malloc(name, size);
+        for(int i = 0; i < size; i++){
+            String varName = name + "[" + i + "]";
+            Address address = addresses.get(i);
+            locations.put(varName, new Location(varName, address));
+            iValueMap.put(address, values.get(i));
+        }
+        pointers.put(name, addresses.get(0));
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -87,18 +132,18 @@ public class ProgramBuilder {
 
     public Location getOrCreateLocation(String name){
         if(!locations.containsKey(name)){
-            Location location = new Location(name);
-            location.setIValue(DEFAULT_INIT_VALUE);
+            Location location = memory.getOrCreateLocation(name);
             locations.put(name, location);
+            iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE));
         }
         return locations.get(name);
     }
 
     public Location getOrErrorLocation(String name){
-        if(!locations.containsKey(name)){
-            throw new RuntimeException("Location " + name + " is not initialised");
+        if(locations.containsKey(name)){
+            return locations.get(name);
         }
-        return locations.get(name);
+        throw new ParsingException("Location " + name + " has not been initialised");
     }
 
     public Register getRegister(String thread, String name){
@@ -114,7 +159,7 @@ public class ProgramBuilder {
         }
         Map<String, Register> threadRegisters = registers.get(thread);
         if(name == null || !(threadRegisters.keySet().contains(name))) {
-            threadRegisters.put(name, new Register(name).setPrintMainThreadId(thread));
+            threadRegisters.put(name, new Register(name));
         }
         return threadRegisters.get(name);
     }
@@ -153,20 +198,8 @@ public class ProgramBuilder {
         throw new RuntimeException("Label " + thread + ":" + name + " is not initialised");
     }
 
-    public void addRegLocPair(String thread, String regName, Location location){
-        mapRegLoc.putIfAbsent(thread, new HashMap<>());
-        mapRegLoc.get(thread).put(regName, location);
-    }
-
-    public Location getLocForReg(String threadName, String registerName){
-        if(!mapRegLoc.containsKey(threadName)){
-            throw new RuntimeException("Unrecognised thread " + threadName);
-        }
-        Map<String, Location> registerLocationMap = mapRegLoc.get(threadName);
-        if(!registerLocationMap.containsKey(registerName)){
-            throw new RuntimeException("Register " + registerName + " must be initialized to a location");
-        }
-        return registerLocationMap.get(registerName);
+    public IConst getInitValue(Address address){
+        return iValueMap.getOrDefault(address, new IConst(Location.DEFAULT_INIT_VALUE));
     }
 
 
@@ -207,5 +240,9 @@ public class ProgramBuilder {
         }
 
         return thread;
+    }
+
+    public Address getPointer(String name){
+        return pointers.get(name);
     }
 }

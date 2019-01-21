@@ -1,54 +1,52 @@
 package dartagnan.expression;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.expression.op.BOpUn;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
-
-import java.util.HashSet;
-import java.util.Set;
+import dartagnan.program.event.Event;
 
 public class BExprUn extends BExpr {
 
-    private ExprInterface b;
-    private BOpUn op;
-
+    private final ExprInterface b;
+    private final BOpUn op;
 
     public BExprUn(BOpUn op, ExprInterface b) {
         this.b = b;
         this.op = op;
     }
 
-    public String toString() {
-        return "(" + op + " " + b + ")";
+    @Override
+    public BoolExpr toZ3Bool(Event e, Context ctx) {
+        return op.encode(b.toZ3Bool(e, ctx), ctx);
     }
 
+    @Override
+    public IntExpr getLastValueExpr(Context ctx){
+        BoolExpr expr = ctx.mkGt(b.getLastValueExpr(ctx), ctx.mkInt(1));
+        return (IntExpr)ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    }
+
+    @Override
+    public ImmutableSet<Register> getRegs() {
+        return b.getRegs();
+    }
+
+    @Override
     public BExprUn clone() {
         return new BExprUn(op, b.clone());
     }
 
     @Override
-    public BoolExpr toZ3(MapSSA map, Context ctx) {
-        return op.encode(b.toZ3Boolean(map, ctx), ctx);
+    public String toString() {
+        return "(" + op + " " + b + ")";
     }
 
     @Override
-    public BoolExpr toZ3Boolean(MapSSA map, Context ctx){
-        return toZ3(map, ctx);
-    }
-
-    @Override
-    public Set<Register> getRegs() {
-        return new HashSet<>(b.getRegs());
-    }
-
-    @Override
-    public BoolExpr encodeAssignment(MapSSA map, Context ctx, Expr target, Expr value){
-        return ctx.mkOr(
-                ctx.mkAnd((BoolExpr) value, ctx.mkEq(target, ctx.mkInt(1))),
-                ctx.mkAnd(ctx.mkNot((BoolExpr) value), ctx.mkEq(target, ctx.mkInt(0)))
-        );
+    public boolean getBoolValue(Event e, Context ctx, Model model){
+        return op.combine(b.getBoolValue(e, ctx, model));
     }
 }

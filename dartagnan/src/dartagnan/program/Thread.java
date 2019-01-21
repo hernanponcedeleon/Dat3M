@@ -5,8 +5,6 @@ import com.microsoft.z3.Context;
 import dartagnan.program.event.Event;
 import dartagnan.program.event.Skip;
 import dartagnan.program.utils.EventRepository;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,15 +18,10 @@ public abstract class Thread {
 	protected int condLevel;
 	private EventRepository eventRepository;
 
+    public abstract void beforeClone();
+
     public void setMainThread(Thread t) {
         this.mainThread = t;
-    }
-
-    public Thread getMainThread() {
-        if(mainThread != null){
-            return mainThread;
-        }
-        throw new RuntimeException("Main thread is not initialised for " + this);
     }
 
     public int getTId() {
@@ -67,8 +60,6 @@ public abstract class Thread {
 		return "CF" + hashCode();
 	}
 
-	public void beforeClone(){}
-
     protected final String nTimesCondLevel() {
         return String.join("", Collections.nCopies(condLevel, "  "));
     }
@@ -82,10 +73,6 @@ public abstract class Thread {
     public Set<Event> getEvents(){
         // We can safely implement getEvents for all uncompilable classes, but we do not need it
         throw new UnsupportedOperationException("Retrieving events is not supported for " + this.getClass().getName());
-    }
-
-    public Thread unroll(int steps, boolean obsNoTermination) {
-        throw new UnsupportedOperationException("Unrolling is not allowed for " + this.getClass().getName());
     }
 
     public Thread unroll(int steps) {
@@ -102,10 +89,6 @@ public abstract class Thread {
 
 	public BoolExpr encodeCF(Context ctx){
         throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
-    }
-
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx){
-	    throw new UnsupportedOperationException("Encoding is not allowed for " + this.getClass().getName());
     }
 
 	public static Thread fromArray(boolean createSkipOnNull, Thread... threads) {

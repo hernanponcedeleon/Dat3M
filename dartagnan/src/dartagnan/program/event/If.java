@@ -1,30 +1,35 @@
 package dartagnan.program.event;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
+import dartagnan.program.Register;
 import dartagnan.program.Thread;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
+import dartagnan.program.event.utils.RegReaderData;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static dartagnan.utils.Encodings.encodeMissingIndexes;
-import static dartagnan.utils.Utils.mergeMaps;
+public class If extends Event implements RegReaderData {
 
-public class If extends Event {
-
-    private ExprInterface pred;
     private Thread t1;
     private Thread t2;
+    private ExprInterface expr;
+    private ImmutableSet<Register> dataRegs;
 
-    public If(ExprInterface pred, Thread t1, Thread t2) {
-        this.pred = pred;
+    public If(ExprInterface expr, Thread t1, Thread t2) {
+        this.expr = expr;
         this.t1 = t1;
         this.t2 = t2;
         t1.incCondLevel();
         t2.incCondLevel();
+        dataRegs = expr.getRegs();
+    }
+
+    @Override
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
     }
 
     public Thread getT1() {
@@ -41,11 +46,6 @@ public class If extends Event {
 
     public void setT2(Thread t) {
         t2 = t;
-    }
-
-    @Override
-    public ExprInterface getExpr(){
-        return pred;
     }
 
     @Override
@@ -102,32 +102,30 @@ public class If extends Event {
 
     @Override
     public void beforeClone(){
+        super.beforeClone();
         t1.beforeClone();
         t2.beforeClone();
     }
 
     @Override
     public If clone() {
-        Thread newT1 = t1.clone();
-        newT1.decCondLevel();
-        Thread newT2 = t2.clone();
-        newT2.decCondLevel();
-        ExprInterface newPred = pred.clone();
-        If newIf = new If(newPred, newT1, newT2);
-        newIf.condLevel = condLevel;
-        return newIf;
-    }
-
-    @Override
-    public If unroll(int steps, boolean obsNoTermination) {
-        t1 = t1.unroll(steps, obsNoTermination);
-        t2 = t2.unroll(steps, obsNoTermination);
-        return this;
+        if(clone == null){
+            Thread newT1 = t1.clone();
+            newT1.decCondLevel();
+            Thread newT2 = t2.clone();
+            newT2.decCondLevel();
+            ExprInterface newPred = expr.clone();
+            clone = new If(newPred, newT1, newT2);
+            afterClone();
+        }
+        return (If)clone;
     }
 
     @Override
     public If unroll(int steps) {
-        return unroll(steps, false);
+        t1 = t1.unroll(steps);
+        t2 = t2.unroll(steps);
+        return this;
     }
 
     @Override
@@ -138,40 +136,26 @@ public class If extends Event {
     }
 
     @Override
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        if(mainThread != null){
-            MapSSA map1 = map.clone();
-            MapSSA map2 = map.clone();
-
-            BoolExpr enc = ctx.mkAnd(ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), pred.toZ3Boolean(map, ctx)),
-                    ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(pred.toZ3Boolean(map, ctx))));
-
-            Pair<BoolExpr, MapSSA> p1 = t1.encodeDF(map1, ctx);
-            enc = ctx.mkAnd(enc, p1.getFirst());
-            Pair<BoolExpr, MapSSA> p2 = t2.encodeDF(map2, ctx);
-            enc = ctx.mkAnd(enc, p2.getFirst());
-            enc = ctx.mkAnd(enc, encodeMissingIndexes(this, map1, map2, ctx));
-            map = mergeMaps(map1, map2);
-            return new Pair<>(enc, map);
-        }
-        throw new RuntimeException("Main thread is not set for " + toString());
-    }
-
-    @Override
     public BoolExpr encodeCF(Context ctx) {
-        return ctx.mkAnd(
+        BoolExpr enc = ctx.mkAnd(
+                ctx.mkImplies(ctx.mkBoolConst(t1.cfVar()), expr.toZ3Bool(this, ctx)),
+                ctx.mkImplies(ctx.mkBoolConst(t2.cfVar()), ctx.mkNot(expr.toZ3Bool(this, ctx)))
+        );
+
+        enc = ctx.mkAnd(enc, ctx.mkAnd(
                 ctx.mkEq(ctx.mkBoolConst(cfVar()), ctx.mkXor(ctx.mkBoolConst(t1.cfVar()), ctx.mkBoolConst(t2.cfVar()))),
-                ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx)),
-                t1.encodeCF(ctx),
-                t2.encodeCF(ctx));
+                ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx))
+        ));
+
+        return ctx.mkAnd(ctx.mkAnd(enc, ctx.mkAnd(t1.encodeCF(ctx), t2.encodeCF(ctx))));
     }
 
     @Override
     public String toString() {
         if (t2 instanceof Skip)
-            return nTimesCondLevel() + "if (" + pred + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}";
+            return nTimesCondLevel() + "if (" + expr + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}";
         else
-            return nTimesCondLevel() + "if (" + pred + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}\n"
+            return nTimesCondLevel() + "if (" + expr + ") {\n" + t1 + "\n" + nTimesCondLevel() + "}\n"
                     + nTimesCondLevel() + "else {\n" + t2 + "\n" + nTimesCondLevel() + "}";
     }
 }

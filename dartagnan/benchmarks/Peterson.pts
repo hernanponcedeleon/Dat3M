@@ -7,7 +7,7 @@ f1 = flag1.load(_rx);
 t0 = turn.load(_rx);
 while ((f1 == 1) and (t0 == 1)) {
   f1 = flag1.load(_rx);
-  t0 = turn.load(_rx)
+  t0 = turn.load(_rx);
 }
 }
 
@@ -18,7 +18,7 @@ f0 = flag0.load(_rx);
 t1 = turn.load(_rx);
 while ((f0 == 1) and (t1 == 0)) {
   f0 = flag0.load(_rx);
-  t1 = turn.load(_rx)
+  t1 = turn.load(_rx);
 }
 }
 

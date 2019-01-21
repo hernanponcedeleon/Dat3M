@@ -1,30 +1,32 @@
 package dartagnan.program.event.linux.rmw;
 
-import dartagnan.expression.AExpr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.expression.op.AOpBin;
-import dartagnan.program.Location;
+import dartagnan.expression.IExpr;
+import dartagnan.expression.IExprBin;
+import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-public class RMWFetchOp extends RMWAbstract {
+public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData {
 
-    private AOpBin op;
+    private IOpBin op;
 
-    public RMWFetchOp(Location location, Register register, ExprInterface value, AOpBin op, String atomic) {
-        super(location, register, value, atomic);
+    public RMWFetchOp(IExpr address, Register register, ExprInterface value, IOpBin op, String atomic) {
+        super(address, register, value, atomic);
         this.op = op;
     }
 
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
-            Register dummy = reg == value ? new Register(null) : reg;
-            RMWLoad load = new RMWLoad(dummy, loc, getLoadMO());
-            RMWStore store = new RMWStore(load, loc, new AExpr(dummy, op, value), getStoreMO());
+            Register dummy = resultRegister == value ? new Register(null) : resultRegister;
+            RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
+            RMWStore store = new RMWStore(load, address, new IExprBin(dummy, op, value), getStoreMO());
 
             compileBasic(load);
             compileBasic(store);
@@ -38,18 +40,17 @@ public class RMWFetchOp extends RMWAbstract {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_fetch_" + opToText(op) + atomicToText(atomic) + "(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_fetch_" + op.toLinuxName() + atomicToText(atomic) + "(" + value + ", " + address + ")";
     }
 
     @Override
     public RMWFetchOp clone() {
-        Location newLoc = loc.clone();
-        Register newReg = reg.clone();
-        ExprInterface newValue = reg == value ? newReg : value.clone();
-        RMWFetchOp newOp = new RMWFetchOp(newLoc, newReg, newValue, op, atomic);
-        newOp.setCondLevel(condLevel);
-        newOp.memId = memId;
-        newOp.setUnfCopy(getUnfCopy());
-        return newOp;
+        if(clone == null){
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
+            clone = new RMWFetchOp(address.clone(), newReg, newValue, op, atomic);
+            afterClone();
+        }
+        return (RMWFetchOp)clone;
     }
 }

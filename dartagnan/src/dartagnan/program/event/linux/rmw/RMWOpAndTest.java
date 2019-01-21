@@ -1,25 +1,23 @@
 package dartagnan.program.event.linux.rmw;
 
-import dartagnan.expression.AConst;
-import dartagnan.expression.AExpr;
-import dartagnan.expression.Atom;
-import dartagnan.expression.ExprInterface;
-import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.*;
 import dartagnan.expression.op.COpBin;
-import dartagnan.program.Location;
+import dartagnan.expression.op.IOpBin;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.rmw.RMWLoad;
 import dartagnan.program.event.rmw.RMWStore;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-public class RMWOpAndTest extends RMWAbstract {
+public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderData {
 
-    private AOpBin op;
+    private IOpBin op;
 
-    public RMWOpAndTest(Location location, Register register, ExprInterface value, AOpBin op) {
-        super(location, register, value, "Mb");
+    public RMWOpAndTest(IExpr address, Register register, ExprInterface value, IOpBin op) {
+        super(address, register, value, "Mb");
         this.op = op;
     }
 
@@ -27,10 +25,10 @@ public class RMWOpAndTest extends RMWAbstract {
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
-            RMWLoad load = new RMWLoad(dummy, loc, "Relaxed");
-            Local local1 = new Local(dummy, new AExpr(dummy, op, value));
-            RMWStore store = new RMWStore(load, loc, dummy, "Relaxed");
-            Local local2 = new Local(reg, new Atom(dummy, COpBin.EQ, new AConst(0)));
+            RMWLoad load = new RMWLoad(dummy, address, "Relaxed");
+            Local local1 = new Local(dummy, new IExprBin(dummy, op, value));
+            RMWStore store = new RMWStore(load, address, dummy, "Relaxed");
+            Local local2 = new Local(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(0)));
 
             compileBasic(load);
             compileBasic(store);
@@ -43,18 +41,17 @@ public class RMWOpAndTest extends RMWAbstract {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_" + opToText(op) + "_and_test(" + value + ", " + loc + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")";
     }
 
     @Override
     public RMWOpAndTest clone() {
-        Location newLoc = loc.clone();
-        Register newReg = reg.clone();
-        ExprInterface newValue = reg == value ? newReg : value.clone();
-        RMWOpAndTest newOpReturn = new RMWOpAndTest(newLoc, newReg, newValue, op);
-        newOpReturn.setCondLevel(condLevel);
-        newOpReturn.memId = memId;
-        newOpReturn.setUnfCopy(getUnfCopy());
-        return newOpReturn;
+        if(clone == null){
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
+            clone = new RMWOpAndTest(address.clone(), newReg, newValue, op);
+            afterClone();
+        }
+        return (RMWOpAndTest)clone;
     }
 }

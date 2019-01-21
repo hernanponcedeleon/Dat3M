@@ -3,6 +3,7 @@ package dartagnan.parsers.cat.visitors;
 import dartagnan.parsers.CatBaseVisitor;
 import dartagnan.parsers.CatParser;
 import dartagnan.parsers.CatVisitor;
+import dartagnan.parsers.cat.utils.CatSyntaxException;
 import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
@@ -16,17 +17,13 @@ import dartagnan.wmm.relation.binary.RelUnion;
 import dartagnan.wmm.relation.unary.RelInverse;
 import dartagnan.wmm.relation.unary.RelTrans;
 import dartagnan.wmm.relation.unary.RelTransRef;
-import dartagnan.wmm.utils.RelationRepository;
 
 public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisitor<Relation> {
 
-    private RelationRepository repository;
-    private VisitorFilter filterVisitor;
-    private boolean recursiveDef;
+    private VisitorBase base;
 
-    public VisitorRelation(RelationRepository repository, VisitorFilter filterVisitor){
-        this.repository = repository;
-        this.filterVisitor = filterVisitor;
+    VisitorRelation(VisitorBase base){
+        this.base = base;
     }
 
     @Override
@@ -78,55 +75,56 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
     public Relation visitExprOptional(CatParser.ExprOptionalContext ctx) {
         Relation r = ctx.e.accept(this);
         if(r != null){
-            return repository.getRelation(RelUnion.class, repository.getRelation("id"), r);
+            return base.relationRepository.getRelation(RelUnion.class, base.relationRepository.getRelation("id"), r);
         }
         return null;
     }
 
     @Override
     public Relation visitExprIdentity(CatParser.ExprIdentityContext ctx) {
-        boolean orig = recursiveDef;
-        recursiveDef = false;
-        FilterAbstract filter = ctx.e.accept(filterVisitor);
-        Relation relation = repository.getRelation(RelSetIdentity.class, filter);
-        recursiveDef = orig;
+        boolean orig = base.recursiveDef;
+        base.recursiveDef = false;
+        FilterAbstract filter = ctx.e.accept(base.filterVisitor);
+        Relation relation = base.relationRepository.getRelation(RelSetIdentity.class, filter);
+        base.recursiveDef = orig;
         return relation;
     }
 
     @Override
     public Relation visitExprCartesian(CatParser.ExprCartesianContext ctx) {
-        boolean orig = recursiveDef;
-        recursiveDef = false;
-        FilterAbstract filter1 = ctx.e1.accept(filterVisitor);
-        FilterAbstract filter2 = ctx.e2.accept(filterVisitor);
-        Relation relation = repository.getRelation(RelCartesian.class, filter1, filter2);
-        recursiveDef = orig;
+        boolean orig = base.recursiveDef;
+        base.recursiveDef = false;
+        FilterAbstract filter1 = ctx.e1.accept(base.filterVisitor);
+        FilterAbstract filter2 = ctx.e2.accept(base.filterVisitor);
+        Relation relation = base.relationRepository.getRelation(RelCartesian.class, filter1, filter2);
+        base.recursiveDef = orig;
         return relation;
     }
 
     @Override
     public Relation visitExprFencerel(CatParser.ExprFencerelContext ctx) {
-        return repository.getRelation(RelFencerel.class, ctx.n.getText());
+        return base.relationRepository.getRelation(RelFencerel.class, ctx.n.getText());
     }
 
     @Override
     public Relation visitExprBasic(CatParser.ExprBasicContext ctx) {
-        Relation relation = repository.getRelation(ctx.n.getText());
-        if(relation == null && recursiveDef){
-            relation = repository.getRelation(RecursiveRelation.class, ctx.n.getText());
+        Relation relation = base.relationRepository.getRelation(ctx.n.getText());
+        if(relation == null && base.recursiveDef){
+            relation = base.relationRepository.getRelation(RecursiveRelation.class, ctx.n.getText());
         }
         return relation;
     }
 
-    public void setRecursiveDef(boolean flag){
-        recursiveDef = flag;
+    @Override
+    public Relation visitExprRange(CatParser.ExprRangeContext ctx) {
+        throw new CatSyntaxException(ctx.getText());
     }
 
     private Relation visitBinaryRelation(CatParser.ExpressionContext e1, CatParser.ExpressionContext e2, Class c){
         Relation r1 = e1.accept(this);
         Relation r2 = e2.accept(this);
         if(r1 != null && r2 != null){
-            return repository.getRelation(c, r1, r2);
+            return base.relationRepository.getRelation(c, r1, r2);
         }
         return null;
     }
@@ -134,7 +132,7 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
     private Relation visitUnaryRelation(CatParser.ExpressionContext e, Class c){
         Relation r = e.accept(this);
         if(r != null){
-            return repository.getRelation(c, r);
+            return base.relationRepository.getRelation(c, r);
         }
         return null;
     }

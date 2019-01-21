@@ -7,11 +7,15 @@ export LD_LIBRARY_PATH=$LIB
 export DYLD_LIBRARY_PATH=$LIB
 export CLASSPATH=$(JARS=("$LIB"/*.jar); IFS=:; echo "${JARS[*]}")
 
-java -jar import/antlr-4.7-complete.jar parsers/Cat.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar parsers/Porthos.g4 -Werror -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar parsers/LitmusC.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar parsers/LitmusPPC.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
-java -jar import/antlr-4.7-complete.jar parsers/LitmusX86.g4 -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+rm -rf target/generated-sources/
+
+java -jar import/antlr-4.7-complete.jar parsers/Cat.g4 -package dartagnan.parsers -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/Porthos.g4 -package dartagnan.parsers -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusAArch64.g4 -package dartagnan.parsers -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusC.g4 -package dartagnan.parsers -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusPPC.g4 -package dartagnan.parsers -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusX86.g4 -package dartagnan.parsers -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
+java -jar import/antlr-4.7-complete.jar parsers/LitmusAssertions.g4 -package dartagnan.parsers -Werror -no-listener -visitor -o target/generated-sources/antlr4/dartagnan/
 
 mkdir -p $OUT
 find src -name *.java > sources.txt

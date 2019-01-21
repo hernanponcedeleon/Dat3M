@@ -9,6 +9,7 @@ public class RelEmpty extends Relation {
     public RelEmpty(String name) {
         super(name);
         term = name;
+        isStatic = true;
     }
 
     @Override

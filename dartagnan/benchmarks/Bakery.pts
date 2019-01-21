@@ -9,11 +9,11 @@ while True {
   c0.store(_rx,0);
   chk = c1.load(_rx);
   while (chk != 0) {
-    chk = c1.load(_rx)
-  };
+    chk = c1.load(_rx);
+  }
   r0 = n1.load(_rx);
   while ((r0 != 0) and (r0 < r1)) {
-    r0 = n1.load(_rx)
+    r0 = n1.load(_rx);
   }
 }
 }
@@ -27,11 +27,11 @@ while True {
   c1.store(_rx,0);
   chk = c0.load(_rx);
   while (chk != 0) {
-    chk = c0.load(_rx)
-  };
+    chk = c0.load(_rx);
+  }
   q0 = n0.load(_rx);
   while ((q0 != 0) and (q0 < q1)) {
-    q0 = n0.load(_rx)
+    q0 = n0.load(_rx);
   }
 }
 }

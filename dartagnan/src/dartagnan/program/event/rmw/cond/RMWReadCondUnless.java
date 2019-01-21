@@ -1,36 +1,35 @@
 package dartagnan.program.event.rmw.cond;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-public class RMWReadCondUnless extends RMWReadCond {
+public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData {
 
-    public RMWReadCondUnless(Register reg, ExprInterface cmp, Location loc, String atomic) {
-        super(reg, cmp, loc, atomic);
+    public RMWReadCondUnless(Register reg, ExprInterface cmp, IExpr address, String atomic) {
+        super(reg, cmp, address, atomic);
     }
 
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        Pair<BoolExpr, MapSSA> result = super.encodeDF(map, ctx);
+    @Override
+    public void initialise(Context ctx) {
+        super.initialise(ctx);
         this.z3Cond = ctx.mkNot(z3Cond);
-        return result;
     }
 
     @Override
     public RMWReadCondUnless clone() {
         if(clone == null){
-            Register newReg = reg.clone();
-            Location newLoc = loc.clone();
-            ExprInterface newCmp = cmp.clone();
-            clone = new RMWReadCondUnless(newReg, newCmp, newLoc, atomic);
-            clone.setCondLevel(condLevel);
-            clone.setHLId(getHLId());
-            clone.setUnfCopy(getUnfCopy());
+            clone = new RMWReadCondUnless(resultRegister.clone(), cmp.clone(), address.clone(), atomic);
+            afterClone();
         }
         return (RMWReadCondUnless)clone;
+    }
+
+    @Override
+    public String condToString(){
+        return "# if not " + resultRegister + " = " + cmp;
     }
 }

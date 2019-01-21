@@ -1,22 +1,26 @@
 package dartagnan.expression;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Model;
 import dartagnan.program.Register;
-import dartagnan.utils.MapSSA;
-
-import java.util.Set;
+import dartagnan.program.event.Event;
 
 public interface ExprInterface {
 
-    Expr toZ3(MapSSA map, Context ctx);
+    IntExpr toZ3Int(Event e, Context ctx);
 
-    BoolExpr toZ3Boolean(MapSSA map, Context ctx);
+    BoolExpr toZ3Bool(Event e, Context ctx);
 
-    Set<Register> getRegs();
+    IntExpr getLastValueExpr(Context ctx);
+
+    int getIntValue(Event e, Context ctx, Model model);
+
+    boolean getBoolValue(Event e, Context ctx, Model model);
+
+    ImmutableSet<Register> getRegs();
 
     ExprInterface clone();
-
-    BoolExpr encodeAssignment(MapSSA map, Context ctx, Expr target, Expr value);
 }

@@ -10,7 +10,6 @@ import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
@@ -28,6 +27,7 @@ public class RelFencerel extends Relation {
     public RelFencerel(String fenceName) {
         this.fenceName = fenceName;
         term = makeTerm(fenceName);
+        isStatic = true;
     }
 
     public RelFencerel(String fenceName, String name) {
@@ -49,13 +49,9 @@ public class RelFencerel extends Relation {
                         .collect(Collectors.toList());
 
                 if(!fences.isEmpty()){
-                    List<Event> events = t.getEventRepository().getEvents(EventRepository.MEMORY)
-                            .stream()
-                            .sorted(Comparator.comparing(Event::getEId))
-                            .collect(Collectors.toList());
-
-
+                    List<Event> events = t.getEventRepository().getSortedList(EventRepository.MEMORY);
                     ListIterator<Event> it1 = events.listIterator();
+
                     while(it1.hasNext()){
                         Event e1 = it1.next();
                         ListIterator<Event> it2 = events.listIterator(it1.nextIndex());

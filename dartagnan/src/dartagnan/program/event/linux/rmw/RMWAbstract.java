@@ -1,8 +1,8 @@
 package dartagnan.program.event.linux.rmw;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.expression.ExprInterface;
-import dartagnan.expression.op.AOpBin;
-import dartagnan.program.Location;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
@@ -11,79 +11,78 @@ import dartagnan.program.event.Local;
 import dartagnan.program.event.MemEvent;
 import dartagnan.program.event.rmw.cond.FenceCond;
 import dartagnan.program.event.rmw.cond.RMWReadCond;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 import dartagnan.program.utils.linux.EType;
 
-public abstract class RMWAbstract extends MemEvent {
+public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {
 
-    protected Register reg;
+    protected Register resultRegister;
     protected ExprInterface value;
-    protected String atomic;
 
-    public RMWAbstract(Location location, Register register, ExprInterface value, String atomic) {
-        this.loc = location;
-        this.reg = register;
+    ImmutableSet<Register> dataRegs;
+
+    RMWAbstract(IExpr address, Register register, ExprInterface value, String atomic) {
+        this.address = address;
+        this.resultRegister = register;
         this.value = value;
         this.atomic = atomic;
         this.condLevel = 0;
-        this.memId = hashCode();
+        this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW);
     }
 
-    public Register getReg() {
-        return reg;
+    @Override
+    public Register getResultRegister() {
+        return resultRegister;
     }
 
+    @Override
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
+    }
+
+    @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
-        throw new RuntimeException("Method compile is not implemented for " + target + " " + this.getClass().getName() + " " + atomic);
+        throw new RuntimeException("Compilation to " + target + " is not supported for " + this.getClass().getName() + " " + atomic);
     }
 
-    protected String getLoadMO(){
+    String getLoadMO(){
         return atomic.equals("Acquire") ? "Acquire" : "Relaxed";
     }
 
-    protected String getStoreMO(){
+    String getStoreMO(){
         return atomic.equals("Release") ? "Release" : "Relaxed";
     }
 
-    protected Thread insertFencesOnMb(Thread result){
+    Thread insertFencesOnMb(Thread result){
         if (atomic.equals("Mb")) {
             return new Seq(new Fence("Mb"), new Seq(result, new Fence("Mb")));
         }
         return result;
     }
 
-    protected Thread insertCondFencesOnMb(Thread result, RMWReadCond load){
+    Thread insertCondFencesOnMb(Thread result, RMWReadCond load){
         if (atomic.equals("Mb")) {
             return new Seq(new FenceCond(load, "Mb"), new Seq(result, new FenceCond(load, "Mb")));
         }
         return result;
     }
 
-    protected Thread copyFromDummyToResult(Thread result, Register dummy){
-        if (dummy != reg) {
-            return new Seq(result, new Local(reg, dummy));
+    Thread copyFromDummyToResult(Thread result, Register dummy){
+        if (dummy != resultRegister) {
+            return new Seq(result, new Local(resultRegister, dummy));
         }
         return result;
     }
 
-    protected void compileBasic(MemEvent event){
-        event.setHLId(memId);
-        event.setUnfCopy(getUnfCopy());
+    void compileBasic(MemEvent event){
+        event.setHLId(hlId);
         event.setCondLevel(condLevel);
+        event.setMaxAddressSet(getMaxAddressSet());
     }
 
-    protected String opToText(AOpBin op){
-        switch (op){
-            case PLUS:
-                return "add";
-            case MINUS:
-                return "sub";
-            default:
-                throw new RuntimeException("Unrecognised operation " + op + " in " + this.getClass().getName());
-        }
-    }
-
-    protected String atomicToText(String atomic){
+    String atomicToText(String atomic){
         switch (atomic){
             case "Relaxed":
                 return "_relaxed";

@@ -1,50 +1,47 @@
 package dartagnan.program.event;
 
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import dartagnan.program.Location;
+import dartagnan.expression.IConst;
+import dartagnan.program.memory.Address;
 import dartagnan.program.utils.EType;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
-
-import static dartagnan.utils.Utils.ssaLoc;
 
 public class Init extends MemEvent {
+
+	private IConst value;
 	
-	public Init(Location loc) {
-		setHLId(hashCode());
-		this.loc = loc;
+	public Init(Address address, IConst value) {
+		this.address = address;
+		this.value = value;
 		this.condLevel = 0;
 		addFilters(EType.ANY, EType.MEMORY, EType.WRITE, EType.INIT);
 	}
 
 	@Override
+	public void initialise(Context ctx) {
+		memAddressExpr = address.toZ3Int(this, ctx);
+		memValueExpr = value.toZ3Int(ctx);
+	}
+
+	@Override
 	public String toString() {
-		return nTimesCondLevel() + loc + " := 0";
+		return nTimesCondLevel() + "*" + address + " := " + value;
 	}
 
 	@Override
 	public String label(){
-		return "W " + loc;
+		return "W";
 	}
 
 	@Override
 	public Init clone() {
-		Location newLoc = loc.clone();
-		Init newInit = new Init(newLoc);
-		newInit.condLevel = condLevel;
-		newInit.setHLId(getHLId());
-		return newInit;
+	    if(clone == null){
+            clone = new Init((Address) address.clone(), value.clone());
+            afterClone();
+        }
+		return (Init)clone;
 	}
 
-	@Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		if(mainThread != null){
-			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-			this.ssaLoc = z3Loc;
-			return new Pair<>(ctx.mkEq(z3Loc, ctx.mkInt(loc.getIValue())), map);
-		}
-		throw new RuntimeException("Main thread is not set for " + toString());
+	public IConst getValue(){
+		return value;
 	}
 }

@@ -43,4 +43,22 @@ public enum COpBin {
         }
         throw new UnsupportedOperationException("Encoding of not supported for COpBin " + this);
     }
+
+    public boolean combine(int a, int b){
+        switch(this){
+            case EQ:
+                return a == b;
+            case NEQ:
+                return a != b;
+            case LT:
+                return a < b;
+            case LTE:
+                return a <= b;
+            case GT:
+                return a > b;
+            case GTE:
+                return a >= b;
+        }
+        throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
+    }
 }

@@ -4,15 +4,15 @@ import dartagnan.parsers.CatBaseVisitor;
 import dartagnan.parsers.CatParser;
 import dartagnan.parsers.CatVisitor;
 import dartagnan.parsers.cat.utils.CatSyntaxException;
-import dartagnan.wmm.Wmm;
 import dartagnan.wmm.filter.*;
+import dartagnan.wmm.relation.Relation;
 
 public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements CatVisitor<FilterAbstract> {
 
-    private Wmm wmm;
+    private VisitorBase base;
 
-    public VisitorFilter(Wmm wmm){
-        this.wmm = wmm;
+    VisitorFilter(VisitorBase base){
+        this.base = base;
     }
 
     @Override
@@ -41,11 +41,20 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
     }
 
     @Override
+    public FilterAbstract visitExprRange(CatParser.ExprRangeContext ctx) {
+        Relation relation = ctx.expression().accept(base.relationVisitor);
+        if(relation != null){
+            return new FilterRange(relation);
+        }
+        throw new CatSyntaxException(ctx.getText());
+    }
+
+    @Override
     public FilterAbstract visitExprBasic(CatParser.ExprBasicContext ctx) {
-        FilterAbstract filter = wmm.getFilter(ctx.getText());
+        FilterAbstract filter = base.wmm.getFilter(ctx.getText());
         if(filter == null){
             filter = new FilterBasic(ctx.getText());
-            wmm.addFilter(filter);
+            base.wmm.addFilter(filter);
         }
         return filter;
     }

@@ -6,10 +6,7 @@ import dartagnan.program.utils.EventRepository;
 import dartagnan.wmm.utils.Tuple;
 import dartagnan.wmm.utils.TupleSet;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class RelPo extends BasicRelation {
 
@@ -27,6 +24,7 @@ public class RelPo extends BasicRelation {
             term = "po";
             eventMask = EventRepository.VISIBLE;
         }
+        isStatic = true;
     }
 
     @Override
@@ -34,8 +32,7 @@ public class RelPo extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Event> events = t.getEventRepository().getEvents(eventMask)
-                        .stream().sorted(Comparator.comparing(Event::getEId)).collect(Collectors.toList());
+                List<Event> events = t.getEventRepository().getSortedList(eventMask);
 
                 ListIterator<Event> it1 = events.listIterator();
                 while(it1.hasNext()){

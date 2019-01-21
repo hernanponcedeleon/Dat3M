@@ -1,28 +1,32 @@
 package dartagnan.program.event.linux.rmw;
 
+import com.google.common.collect.ImmutableSet;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.Seq;
 import dartagnan.program.Thread;
 import dartagnan.program.event.rmw.cond.RMWReadCondCmp;
 import dartagnan.program.event.rmw.cond.RMWStoreCond;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-public class RMWCmpXchg extends RMWAbstract {
+public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     private ExprInterface cmp;
 
-    public RMWCmpXchg(Location location, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
-        super(location, register, value, atomic);
+    public RMWCmpXchg(IExpr address, Register register, ExprInterface cmp, ExprInterface value, String atomic) {
+        super(address, register, value, atomic);
+        this.dataRegs = new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
         this.cmp = cmp;
     }
 
     @Override
     public Thread compile(String target, boolean ctrl, boolean leading) {
         if(target.equals("sc")) {
-            Register dummy = (reg == value || reg == cmp) ? new Register(null) : reg;
-            RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, loc, getLoadMO());
-            RMWStoreCond store = new RMWStoreCond(load, loc, value, getStoreMO());
+            Register dummy = (resultRegister == value || resultRegister == cmp) ? new Register(null) : resultRegister;
+            RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, getLoadMO());
+            RMWStoreCond store = new RMWStoreCond(load, address, value, getStoreMO());
 
             compileBasic(load);
             compileBasic(store);
@@ -36,19 +40,18 @@ public class RMWCmpXchg extends RMWAbstract {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + reg + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + loc + ", " + cmp + "," + value + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_cmpxchg_" + atomicToText(atomic) + "(" + address + ", " + cmp + ", " + value + ")";
     }
 
     @Override
     public RMWCmpXchg clone() {
-        Location newLoc = loc.clone();
-        Register newReg = reg.clone();
-        ExprInterface newValue = reg == value ? newReg : value.clone();
-        ExprInterface newCmp = reg == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
-        RMWCmpXchg newOp = new RMWCmpXchg(newLoc, newReg, newCmp, newValue, atomic);
-        newOp.setCondLevel(condLevel);
-        newOp.memId = memId;
-        newOp.setUnfCopy(getUnfCopy());
-        return newOp;
+        if(clone == null){
+            Register newReg = resultRegister.clone();
+            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
+            ExprInterface newCmp = resultRegister == cmp ? newReg : ((value == cmp) ? newValue : cmp.clone());
+            clone = new RMWCmpXchg(address.clone(), newReg, newCmp, newValue, atomic);
+            afterClone();
+        }
+        return (RMWCmpXchg)clone;
     }
 }

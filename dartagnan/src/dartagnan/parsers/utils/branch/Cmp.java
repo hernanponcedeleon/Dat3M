@@ -1,23 +1,23 @@
 package dartagnan.parsers.utils.branch;
 
-import dartagnan.expression.AExpr;
+import dartagnan.expression.IExpr;
 import dartagnan.program.event.Event;
 
 public class Cmp extends Event {
 
-    private AExpr left;
-    private AExpr right;
+    private IExpr left;
+    private IExpr right;
 
-    public Cmp(AExpr left, AExpr right){
+    public Cmp(IExpr left, IExpr right){
         this.left = left;
         this.right = right;
     }
 
-    public AExpr getLeft(){
+    public IExpr getLeft(){
         return left;
     }
 
-    public AExpr getRight(){
+    public IExpr getRight(){
         return right;
     }
 

@@ -1,56 +1,49 @@
 package dartagnan.program.event.rmw.cond;
 
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
 import dartagnan.program.event.rmw.RMWLoad;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
+import dartagnan.program.event.utils.RegReaderData;
+import dartagnan.program.event.utils.RegWriter;
 
-import static dartagnan.utils.Utils.ssaLoc;
-import static dartagnan.utils.Utils.ssaReg;
-
-public abstract class RMWReadCond extends RMWLoad {
+public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData {
 
     protected ExprInterface cmp;
-    protected BoolExpr z3Cond;
+    private ImmutableSet<Register> dataRegs;
 
-    public RMWReadCond(Register reg, ExprInterface cmp, Location loc, String atomic) {
-        super(reg, loc, atomic);
+    BoolExpr z3Cond;
+
+    RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
+        super(reg, address, atomic);
         this.cmp = cmp;
+        this.dataRegs = cmp.getRegs();
+    }
+
+    @Override
+    public void initialise(Context ctx) {
+        memValueExpr = resultRegister.toZ3IntResult(this, ctx);
+        z3Cond = ctx.mkEq(memValueExpr, cmp.toZ3Int(this, ctx));
+        memAddressExpr = address.toZ3Int(this, ctx);
     }
 
     public BoolExpr getCond(){
         if(z3Cond != null){
             return z3Cond;
         }
-        // encodeDF must be called before encodeCF, otherwise this exception will be thrown
         throw new RuntimeException("z3Cond is requested before it has been initialised in " + this.getClass().getName());
     }
 
     @Override
-    public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-        if(mainThread != null){
-            Expr z3Reg = ssaReg(reg, map.getFresh(reg), ctx);
-            Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-            this.ssaLoc = z3Loc;
-            this.ssaRegIndex = map.get(reg);
-            this.z3Cond = ctx.mkEq(z3Reg, encodeValue(map, ctx, cmp));
-            return new Pair<>(ctx.mkImplies(executes(ctx), ctx.mkEq(z3Reg, z3Loc)), map);
-        }
-        throw new RuntimeException("Main thread is not set for " + toString());
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
     }
 
     @Override
     public abstract RMWReadCond clone();
 
-    private Expr encodeValue(MapSSA map, Context ctx, ExprInterface v){
-        if(v instanceof Register){
-            return ssaReg((Register) v, map.get(v), ctx);
-        }
-        return ctx.mkInt(v.toString());
-    }
+    public abstract String condToString();
 }

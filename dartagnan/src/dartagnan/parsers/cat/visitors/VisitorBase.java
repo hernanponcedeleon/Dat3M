@@ -4,9 +4,9 @@ import dartagnan.parsers.CatBaseVisitor;
 import dartagnan.parsers.CatParser;
 import dartagnan.parsers.CatVisitor;
 import dartagnan.parsers.cat.utils.CatSyntaxException;
-import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.Wmm;
 import dartagnan.wmm.axiom.Axiom;
+import dartagnan.wmm.filter.FilterAbstract;
 import dartagnan.wmm.relation.RecursiveRelation;
 import dartagnan.wmm.relation.Relation;
 import dartagnan.wmm.utils.RelationRepository;
@@ -18,17 +18,19 @@ import java.util.Set;
 
 public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Object> {
 
-    private Wmm wmm;
-    private RelationRepository relationRepository;
-    private VisitorRelation relationVisitor;
-    private VisitorFilter filterVisitor;
+    RelationRepository relationRepository;
+    VisitorRelation relationVisitor;
+    VisitorFilter filterVisitor;
+    Wmm wmm;
+
+    boolean recursiveDef;
     private Set<RecursiveRelation> recursiveGroup;
 
     public VisitorBase(String target){
         this.wmm = new Wmm(target);
         relationRepository = wmm.getRelationRepository();
-        filterVisitor = new VisitorFilter(wmm);
-        relationVisitor = new VisitorRelation(relationRepository, filterVisitor);
+        filterVisitor = new VisitorFilter(this);
+        relationVisitor = new VisitorRelation(this);
     }
 
     public Object visitMcm(CatParser.McmContext ctx) {
@@ -68,7 +70,7 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
     @Override
     public Object visitLetRecDefinition(CatParser.LetRecDefinitionContext ctx) {
         recursiveGroup = new HashSet<>();
-        relationVisitor.setRecursiveDef(true);
+        recursiveDef = true;
 
         RecursiveRelation rRecursive = (RecursiveRelation)relationRepository.getRelation(RecursiveRelation.class, ctx.n.getText());
         Relation rConcrete = ctx.e.accept(relationVisitor);
@@ -84,7 +86,7 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
         }
 
         wmm.addRecursiveGroup(recursiveGroup);
-        relationVisitor.setRecursiveDef(false);
+        recursiveDef = false;
         return null;
     }
 

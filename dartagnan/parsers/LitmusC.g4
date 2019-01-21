@@ -1,21 +1,25 @@
 grammar LitmusC;
 
+import LinuxLexer, LitmusAssertions;
+
 @header{
-package dartagnan.parsers;
 import dartagnan.expression.op.*;
 }
 
-import LinuxLexer, LitmusBase;
+main
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? comment? EOF
+    ;
 
 variableDeclaratorList
     :   LBrace (globalDeclarator Semi comment?)* RBrace (Semi)?
     ;
 
 globalDeclarator
-    :   typeSpecifier? variable (Equals initConstantValue)?                                                             # globalDeclaratorLocation
-    |   typeSpecifier? threadVariable (Equals initConstantValue)?                                                       # globalDeclaratorRegister
-    |   typeSpecifier? variable (Equals variable)?                                                                      # globalDeclaratorLocationLocation
-    |   typeSpecifier? threadVariable (Equals variable)?                                                                # globalDeclaratorRegisterLocation
+    :   typeSpecifier? varName (Equals initConstantValue)?                                                              # globalDeclaratorLocation
+    |   typeSpecifier? t = threadId Colon n = varName (Equals initConstantValue)?                                       # globalDeclaratorRegister
+    |   typeSpecifier? varName (Equals Ast? (Amp? varName | LPar Amp? varName RPar))?                                   # globalDeclaratorLocationLocation
+    |   typeSpecifier? t = threadId Colon n = varName (Equals Ast? (Amp? varName | LPar Amp? varName RPar))?            # globalDeclaratorRegisterLocation
+    |   typeSpecifier? varName LBracket DigitSequence? RBracket (Equals initArray)?                                     # globalDeclaratorArray
     ;
 
 program
@@ -27,23 +31,23 @@ thread
     ;
 
 threadArguments
-    :   variableDeclarator (Comma variableDeclarator)*
+    :   pointerTypeSpecifier varName (Comma pointerTypeSpecifier varName)*
     ;
 
 expression
-    :   seqExpression Semi
+    :   nre Semi
     |   ifExpression
     |   whileExpression
     ;
 
 whileExpression
-    :   While LPar returnExpression RPar expression
-    |   While LPar returnExpression RPar LBrace expression* RBrace
+    :   While LPar re RPar expression
+    |   While LPar re RPar LBrace expression* RBrace
     ;
 
 ifExpression
-    :   If LPar returnExpression RPar expression elseExpression?
-    |   If LPar returnExpression RPar LBrace expression* RBrace elseExpression?
+    :   If LPar re RPar expression elseExpression?
+    |   If LPar re RPar LBrace expression* RBrace elseExpression?
     ;
 
 elseExpression
@@ -51,115 +55,114 @@ elseExpression
     |   Else LBrace expression* RBrace
     ;
 
-// TODO: Some tests initialize variables without a type specifier, so it makes sence to reduce this to two options
-seqExpression
-    :   typeSpecifier variable (Equals returnExpression)?                                                               # seqDeclarationReturnExpression
-    |   variable Equals returnExpression                                                                                # seqReturnExpression
-    |   nonReturnExpression                                                                                             # seqNonReturnExpression
+re locals [IOpBin op, String mo]
+    :   ( AtomicAddReturn        LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicAddReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicAddReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicAddReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicSubReturn        LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicSubReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicSubReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicSubReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Release";}
+        | AtomicIncReturn        LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicIncReturnRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicIncReturnAcquire LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicIncReturnRelease LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicDecReturn        LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicDecReturnRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicDecReturnAcquire LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicDecReturnRelease LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Release";})                         # reAtomicOpReturn
+
+    |   ( AtomicFetchAdd        LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicFetchAddRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicFetchAddAcquire LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicFetchAddRelease LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicFetchSub        LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicFetchSubRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicFetchSubAcquire LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicFetchSubRelease LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Release";}
+        | AtomicFetchInc        LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicFetchIncRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Relaxed";}
+        | AtomicFetchIncAcquire LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Acquire";}
+        | AtomicFetchIncRelease LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Release";}
+        | AtomicFetchDec        LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicFetchDecRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Relaxed";}
+        | AtomicFetchDecAcquire LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Acquire";}
+        | AtomicFetchDecRelease LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Release";})                          # reAtomicFetchOp
+
+    |   ( AtomicXchg        LPar address = re Comma value = re RPar {$mo = "Mb";}
+        | AtomicXchgRelaxed LPar address = re Comma value = re RPar {$mo = "Relaxed";}
+        | AtomicXchgAcquire LPar address = re Comma value = re RPar {$mo = "Acquire";}
+        | AtomicXchgRelease LPar address = re Comma value = re RPar {$mo = "Release";})                                 # reXchg
+
+    |   ( Xchg        LPar address = re Comma value = re RPar {$mo = "Mb";}
+        | XchgRelaxed LPar address = re Comma value = re RPar {$mo = "Relaxed";}
+        | XchgAcquire LPar address = re Comma value = re RPar {$mo = "Acquire";}
+        | XchgRelease LPar address = re Comma value = re RPar {$mo = "Release";})                                       # reXchg
+
+    |   ( AtomicCmpXchg        LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Mb";}
+        | AtomicCmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Relaxed";}
+        | AtomicCmpXchgAcquire LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Acquire";}
+        | AtomicCmpXchgRelease LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Release";})               # reCmpXchg
+
+    |   ( CmpXchg        LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Mb";}
+        | CmpXchgRelaxed LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Relaxed";}
+        | CmpXchgAcquire LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Acquire";}
+        | CmpXchgRelease LPar address = re Comma cmp = re Comma value = re RPar {$mo = "Release";})                     # reCmpXchg
+
+    |   ( AtomicSubAndTest LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = "Mb";}
+        | AtomicIncAndTest LPar address = re RPar {$op = IOpBin.PLUS; $mo = "Mb";}
+        | AtomicDecAndTest LPar address = re RPar {$op = IOpBin.MINUS; $mo = "Mb";})                                    # reAtomicOpAndTest
+
+    |   AtomicAddUnless LPar address = re Comma value = re Comma cmp = re RPar                                          # reAtomicAddUnless
+
+    |   ( AtomicReadAcquire LPar address = re RPar {$mo = "Acquire";}
+        | AtomicRead        LPar address = re RPar {$mo = "Relaxed";}
+        | RcuDereference    LPar Ast? address = re RPar {$mo = "Dereference";}
+        | SmpLoadAcquire    LPar address = re RPar {$mo = "Acquire";})                                                  # reLoad
+
+    |   ReadOnce LPar Ast address = re RPar {$mo = "Once";}                                                             # reReadOnce
+    |   Ast address = re {$mo = "NA";}                                                                                  # reReadNa
+
+//    |   SpinTrylock LPar address = re RPar                                                                            # reSpinTryLock
+//    |   SpiIsLocked LPar address = re RPar                                                                            # reSpinIsLocked
+
+    |   Excl re                                                                                                         # reOpBoolNot
+    |   re opBool re                                                                                                    # reOpBool
+    |   re opCompare re                                                                                                 # reOpCompare
+    |   re opArith re                                                                                                   # reOpArith
+
+    |   LPar re RPar                                                                                                    # reParenthesis
+    |   cast re                                                                                                         # reCast
+    |   varName                                                                                                         # reVarName
+    |   constant                                                                                                        # reConst
     ;
 
-returnExpression locals [AOpBin op, String mo]
-    :   ( AtomicAddReturn        LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicAddReturnRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicAddReturnAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicAddReturnRelease LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicSubReturn        LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicSubReturnRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicSubReturnAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicSubReturnRelease LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Release";}
-        | AtomicIncReturn        LPar variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicIncReturnRelaxed LPar variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicIncReturnAcquire LPar variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicIncReturnRelease LPar variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicDecReturn        LPar variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicDecReturnRelaxed LPar variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicDecReturnAcquire LPar variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicDecReturnRelease LPar variable RPar {$op = AOpBin.MINUS; $mo = "Release";})                             # reAtomicOpReturn
+nre locals [IOpBin op, String mo, String name]
+    :   ( AtomicAdd LPar value = re Comma address = re RPar {$op = IOpBin.PLUS;}
+        | AtomicSub LPar value = re Comma address = re RPar {$op = IOpBin.MINUS;}
+        | AtomicInc LPar address = re RPar {$op = IOpBin.PLUS;}
+        | AtomicDec LPar address = re RPar {$op = IOpBin.MINUS;})                                                       # nreAtomicOp
 
-    |   ( AtomicFetchAdd        LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicFetchAddRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicFetchAddAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicFetchAddRelease LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicFetchSub        LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicFetchSubRelaxed LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicFetchSubAcquire LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicFetchSubRelease LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Release";}
-        | AtomicFetchInc        LPar variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicFetchIncRelaxed LPar variable RPar {$op = AOpBin.PLUS; $mo = "Relaxed";}
-        | AtomicFetchIncAcquire LPar variable RPar {$op = AOpBin.PLUS; $mo = "Acquire";}
-        | AtomicFetchIncRelease LPar variable RPar {$op = AOpBin.PLUS; $mo = "Release";}
-        | AtomicFetchDec        LPar variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicFetchDecRelaxed LPar variable RPar {$op = AOpBin.MINUS; $mo = "Relaxed";}
-        | AtomicFetchDecAcquire LPar variable RPar {$op = AOpBin.MINUS; $mo = "Acquire";}
-        | AtomicFetchDecRelease LPar variable RPar {$op = AOpBin.MINUS; $mo = "Release";})                              # reAtomicFetchOp
+    |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = "Relaxed";}
+        | AtomicSetRelease  LPar address = re Comma value = re RPar {$mo = "Release";}
+        | SmpStoreRelease   LPar address = re Comma value = re RPar {$mo = "Release";}
+        | SmpStoreMb        LPar address = re Comma value = re RPar {$mo = "Mb";}
+        | RcuAssignPointer  LPar Ast? address = re Comma value = re RPar {$mo = "Release";})                            # nreStore
 
-    |   ( AtomicXchg        LPar variable Comma returnExpression RPar {$mo = "Mb";}
-        | AtomicXchgRelaxed LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
-        | AtomicXchgAcquire LPar variable Comma returnExpression RPar {$mo = "Acquire";}
-        | AtomicXchgRelease LPar variable Comma returnExpression RPar {$mo = "Release";})                               # reXchg
-
-    |   ( Xchg        LPar variable Comma returnExpression RPar {$mo = "Mb";}
-        | XchgRelaxed LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
-        | XchgAcquire LPar variable Comma returnExpression RPar {$mo = "Acquire";}
-        | XchgRelease LPar variable Comma returnExpression RPar {$mo = "Release";})                                     # reXchg
-
-    |   ( AtomicCmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Mb";}
-        | AtomicCmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Relaxed";}
-        | AtomicCmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Acquire";}
-        | AtomicCmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Release";})     # reCmpXchg
-
-    |   ( CmpXchg        LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Mb";}
-        | CmpXchgRelaxed LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Relaxed";}
-        | CmpXchgAcquire LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Acquire";}
-        | CmpXchgRelease LPar variable Comma returnExpression Comma returnExpression RPar {$mo = "Release";})           # reCmpXchg
-
-    |   ( AtomicSubAndTest LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS; $mo = "Mb";}
-        | AtomicIncAndTest LPar variable RPar {$op = AOpBin.PLUS; $mo = "Mb";}
-        | AtomicDecAndTest LPar variable RPar {$op = AOpBin.MINUS; $mo = "Mb";})                                        # reAtomicOpAndTest
-
-    |   AtomicAddUnless LPar variable Comma returnExpression Comma returnExpression RPar                                # reAtomicAddUnless
-
-    |   ( ReadOnce          LPar variable RPar {$mo = "Relaxed";}
-        | AtomicReadAcquire LPar variable RPar {$mo = "Acquire";}
-        | AtomicRead        LPar variable RPar {$mo = "Relaxed";}
-        | RcuDereference    LPar variable RPar {$mo = "Dereference";}
-        | SmpLoadAcquire    LPar variable RPar {$mo = "Acquire";})                                                      # reLoad
-
-//    |   SpinTrylock LPar variable RPar                                                                                  # reSpinTryLock
-//    |   SpiIsLocked LPar variable RPar                                                                                  # reSpinIsLocked
-
-    |   Excl returnExpression                                                                                           # reOpBoolNot
-    |   returnExpression opBool returnExpression                                                                        # reOpBool
-    |   returnExpression opCompare returnExpression                                                                     # reOpCompare
-    |   returnExpression opArith returnExpression                                                                       # reOpArith
-
-    |   LPar returnExpression RPar                                                                                      # reParenthesis
-    |   cast returnExpression                                                                                           # reCast
-    |   variable                                                                                                        # reVariable
-    |   constantValue                                                                                                   # reConst
-    ;
-
-nonReturnExpression locals [AOpBin op, String mo, String name]
-    :   ( AtomicAdd LPar returnExpression Comma variable RPar {$op = AOpBin.PLUS;}
-        | AtomicSub LPar returnExpression Comma variable RPar {$op = AOpBin.MINUS;}
-        | AtomicInc LPar variable RPar {$op = AOpBin.PLUS;}
-        | AtomicDec LPar variable RPar {$op = AOpBin.MINUS;})                                                           # nreAtomicOp
-
-    |   ( WriteOnce         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
-        | AtomicSet         LPar variable Comma returnExpression RPar {$mo = "Relaxed";}
-        | AtomicSetRelease  LPar variable Comma returnExpression RPar {$mo = "Release";}
-        | SmpStoreRelease   LPar variable Comma returnExpression RPar {$mo = "Release";}
-        | SmpStoreMb        LPar variable Comma returnExpression RPar {$mo = "Mb";}
-        | RcuAssignPointer  LPar variable Comma returnExpression RPar {$mo = "Release";})                               # nreStore
+    |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = "Once";}                                           # nreWriteOnce
 
     |   RcuReadLock LPar RPar                                                                                           # nreRcuReadLock
     |   RcuReadUnlock LPar RPar                                                                                         # nreRcuReadUnlock
     |   ( RcuSync LPar RPar
         | RcuSyncExpedited LPar RPar)                                                                                   # nreSynchronizeRcu
 
-//    |   SpinLock LPar variable RPar                                                                                     # nreSpinLock
-//    |   SpinUnlock LPar variable RPar                                                                                   # nreSpinUnlock
-//    |   SpinUnlockWait LPar variable RPar                                                                               # nreSpinUnlockWait
+    |   Ast? varName Equals re                                                                                          # nreAssignment
+    |   typeSpecifier varName (Equals re)?                                                                              # nreRegDeclaration
+
+//    |   SpinLock LPar address = re RPar                                                                               # nreSpinLock
+//    |   SpinUnlock LPar address = re RPar                                                                             # nreSpinUnlock
+//    |   SpinUnlockWait LPar address = re RPar                                                                         # nreSpinUnlockWait
 
     |   ( FenceSmpMb LPar RPar {$name = "Mb";}
         | FenceSmpWMb LPar RPar {$name = "Wmb";}
@@ -170,13 +173,7 @@ nonReturnExpression locals [AOpBin op, String mo, String name]
     ;
 
 variableList
-    :   Locations LBracket genericVariable (Semi genericVariable)* Semi? RBracket
-    ;
-
-assertionValue returns [IntExprInterface v]
-    :   l = variable    {$v = pb.getOrCreateLocation($l.text);}
-    |   t = threadVariable {$v = pb.getOrCreateRegister($t.tid, $t.name);}
-    |   imm = constantValue { $v = new AConst(Integer.parseInt($imm.text)); }
+    :   Locations LBracket (threadVariable | varName) (Semi (threadVariable | varName))* Semi? RBracket
     ;
 
 opBool returns [BOpBin op]
@@ -193,53 +190,44 @@ opCompare returns [COpBin op]
     |   Greater         {$op = COpBin.GT;}
     ;
 
-opArith returns [AOpBin op]
-    :   Plus    {$op = AOpBin.PLUS;}
-    |   Minus   {$op = AOpBin.MINUS;}
-    |   Amp     {$op = AOpBin.AND;}
-    |   Bar     {$op = AOpBin.OR;}
-    |   Circ    {$op = AOpBin.XOR;}
-    ;
-
-variableDeclarator
-    :   typeSpecifier variable
-    ;
-
-genericVariable
-    :   threadVariable
-    |   variable
+opArith returns [IOpBin op]
+    :   Plus    {$op = IOpBin.PLUS;}
+    |   Minus   {$op = IOpBin.MINUS;}
+    |   Amp     {$op = IOpBin.AND;}
+    |   Bar     {$op = IOpBin.OR;}
+    |   Circ    {$op = IOpBin.XOR;}
     ;
 
 threadVariable returns [String tid, String name]
-    :   Ast v = threadVariable {$tid = $v.tid; $name = $v.name;}
-    |   Amp v = threadVariable {$tid = $v.tid; $name = $v.name;}
-    |   cast v = threadVariable  {$tid = $v.tid; $name = $v.name;}
-    |   t = threadId Colon n = varName  {$tid = $t.id; $name = $n.text;}
-    ;
-
-variable
-    :   Ast variable
-    |   Amp variable
-    |   cast variable
-    |   varName
+    :   t = threadId Colon n = varName  {$tid = $t.id; $name = $n.text;}
     ;
 
 initConstantValue
-    :   AtomicInit LPar constantValue RPar
-    |   constantValue
+    :   AtomicInit LPar constant RPar
+    |   constant
     ;
 
-constantValue
-    :   DigitSequence
+initArray
+    :   LBrace arrayElement (Comma arrayElement)* RBrace
+    ;
+
+arrayElement
+    :   constant
+    |   Ast? (Amp? varName | LPar Amp? varName RPar)
     ;
 
 cast
     :   LPar typeSpecifier Ast* RPar
     ;
 
+pointerTypeSpecifier
+    :   (Volatile)? basicTypeSpecifier Ast
+    |   (Volatile)? atomicTypeSpecifier Ast
+    ;
+
 typeSpecifier
-    :   (Volatile)? basicTypeSpecifier
-    |   (Volatile)? atomicTypeSpecifier
+    :   (Volatile)? basicTypeSpecifier Ast*
+    |   (Volatile)? atomicTypeSpecifier Ast*
     ;
 
 basicTypeSpecifier
@@ -254,7 +242,16 @@ atomicTypeSpecifier
     ;
 
 varName
-    :   Underscore? Identifier (Underscore (Identifier | DigitSequence)*)*
+    :   Underscore* Identifier (Underscore (Identifier | DigitSequence)*)*
+    ;
+
+// Allowed outside of thread body (otherwise might conflict with pointer cast)
+comment
+    :   LPar Ast .*? Ast RPar
+    ;
+
+Locations
+    :   'locations'
     ;
 
 While
@@ -303,6 +300,11 @@ BarBar
 
 LitmusLanguage
     :   'C'
+    ;
+
+AssertionNot
+    :   Tilde
+    |   'not'
     ;
 
 BlockComment

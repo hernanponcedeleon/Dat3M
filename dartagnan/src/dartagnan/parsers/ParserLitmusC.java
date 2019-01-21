@@ -23,7 +23,7 @@ public class ParserLitmusC implements ParserInterface {
         LitmusCParser parser = new LitmusCParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
         ProgramBuilder pb = new ProgramBuilder();
-        ParserRuleContext parserEntryPoint = parser.main(pb);
+        ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusC visitor = new VisitorLitmusC(pb);
 
 

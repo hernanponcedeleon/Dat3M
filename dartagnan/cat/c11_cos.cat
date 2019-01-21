@@ -1,0 +1,19 @@
+"Generate co's (mo's) for c11, ie on atomic writes only ??"
+
+include "cross.cat"
+
+let invrf = rf^-1
+let mobase = co0
+with mo from generate_orders(W&(A|I),mobase)
+
+(* From now, mo is a coherence order *)
+let moi = mo & int
+let moe = mo & ext
+let co = mo and coe = moe and coi = coi
+
+(* Compute fr *)
+let fr = (invrf ; mo) \ id
+let fri = fr & int
+let fre = fr & ext
+
+show mo,fr

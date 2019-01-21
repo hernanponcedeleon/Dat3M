@@ -1,10 +1,10 @@
 grammar LitmusPPC;
 
-@header{
-package dartagnan.parsers;
-}
+import LitmusAssertions;
 
-import LitmusBase;
+main
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? EOF
+    ;
 
 variableDeclaratorList
     :   LBrace variableDeclarator? (Semi variableDeclarator)* Semi? RBrace Semi?
@@ -18,19 +18,19 @@ variableDeclarator
     ;
 
 variableDeclaratorLocation
-    :   location Equals value
+    :   location Equals constant
     ;
 
 variableDeclaratorRegister
-    :   threadId Colon register Equals value
+    :   threadId Colon register Equals constant
     ;
 
 variableDeclaratorRegisterLocation
-    :   threadId Colon register Equals location
+    :   threadId Colon register Equals Amp? location
     ;
 
 variableDeclaratorLocationLocation
-    :   location Equals location
+    :   location Equals Amp? location
     ;
 
 variableList
@@ -75,7 +75,7 @@ instruction
     ;
 
 li
-    :   Li register Comma value
+    :   Li register Comma constant
     ;
 
 lwz
@@ -99,7 +99,7 @@ mr
     ;
 
 addi
-    :   Addi register Comma register Comma value
+    :   Addi register Comma register Comma constant
     ;
 
 xor
@@ -130,18 +130,8 @@ register
     :   Register
     ;
 
-value
-    :   DigitSequence
-    ;
-
 offset
     :   DigitSequence
-    ;
-
-assertionValue returns [IntExprInterface v]
-    :   l = location    {$v = pb.getOrCreateLocation($l.text);}
-    |   t = threadId Colon r = register {$v = pb.getOrCreateRegister($t.id, $r.text);}
-    |   imm = value    { $v = new AConst(Integer.parseInt($imm.text)); }
     ;
 
 cond returns [COpBin op]
@@ -151,6 +141,16 @@ cond returns [COpBin op]
     |   Ble {$op = COpBin.LTE;}
     |   Bgt {$op = COpBin.GT;}
     |   Blt {$op = COpBin.LT;}
+    ;
+
+assertionValue
+    :   location
+    |   threadId Colon register
+    |   constant
+    ;
+
+Locations
+    :   'locations'
     ;
 
 Fence

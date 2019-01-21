@@ -1,21 +1,26 @@
 package dartagnan.parsers.visitors;
 
-import dartagnan.expression.op.AOpBin;
+import dartagnan.expression.IConst;
+import dartagnan.expression.IExprBin;
+import dartagnan.expression.op.IOpBin;
 import dartagnan.parsers.LitmusPPCBaseVisitor;
 import dartagnan.parsers.LitmusPPCParser;
 import dartagnan.parsers.LitmusPPCVisitor;
-import dartagnan.expression.AConst;
-import dartagnan.expression.AExpr;
-import dartagnan.parsers.utils.*;
+import dartagnan.parsers.utils.AssertionHelper;
+import dartagnan.parsers.utils.ParsingException;
+import dartagnan.parsers.utils.ProgramBuilder;
 import dartagnan.parsers.utils.branch.Cmp;
 import dartagnan.parsers.utils.branch.CondJump;
-import dartagnan.program.*;
+import dartagnan.program.Register;
 import dartagnan.program.event.Fence;
 import dartagnan.program.event.Load;
 import dartagnan.program.event.Local;
 import dartagnan.program.event.Store;
+import org.antlr.v4.runtime.misc.Interval;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class VisitorLitmusPPC
         extends LitmusPPCBaseVisitor<Object>
@@ -39,6 +44,18 @@ public class VisitorLitmusPPC
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
+        if(ctx.assertionList() != null){
+            int a = ctx.assertionList().getStart().getStartIndex();
+            int b = ctx.assertionList().getStop().getStopIndex();
+            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
+        }
+        if(ctx.assertionFilter() != null){
+            int a = ctx.assertionFilter().getStart().getStartIndex();
+            int b = ctx.assertionFilter().getStop().getStopIndex();
+            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
+        }
         return programBuilder.build();
     }
 
@@ -48,25 +65,25 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPPCParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.addDeclarationLocImm(ctx.location().getText(), Integer.parseInt(ctx.value().getText()));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(Integer.parseInt(ctx.constant().getText())));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.addDeclarationRegImm(ctx.threadId().id, ctx.register().getText(), Integer.parseInt(ctx.value().getText()));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(Integer.parseInt(ctx.constant().getText())));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPPCParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.addDeclarationRegLoc(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusPPCParser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.addDeclarationLocLoc(ctx.location(0).getText(), ctx.location(1).getText());
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 
@@ -99,15 +116,15 @@ public class VisitorLitmusPPC
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
-        AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
-        Location location = programBuilder.getLocForReg(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, new Load(r1, location, "_rx"));
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new Load(r1, ra, "_rx"));
     }
 
     @Override
@@ -119,8 +136,8 @@ public class VisitorLitmusPPC
     @Override
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
-        Location location = programBuilder.getLocForReg(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, new Store(location, r1, "_rx"));
+        Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
+        return programBuilder.addChild(mainThread, new Store(ra, r1, "_rx"));
     }
 
     @Override
@@ -140,8 +157,8 @@ public class VisitorLitmusPPC
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        AConst constant = new AConst(Integer.parseInt(ctx.value().getText()));
-        return programBuilder.addChild(mainThread, new Local(r1, new AExpr(r2, AOpBin.PLUS, constant)));
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
+        return programBuilder.addChild(mainThread, new Local(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
     }
 
     @Override
@@ -149,7 +166,7 @@ public class VisitorLitmusPPC
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, new Local(r1, new AExpr(r2, AOpBin.XOR, r3)));
+        return programBuilder.addChild(mainThread, new Local(r1, new IExprBin(r2, IOpBin.XOR, r3)));
     }
 
     @Override

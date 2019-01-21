@@ -26,4 +26,14 @@ public enum BOpBin {
         }
         throw new UnsupportedOperationException("Encoding of not supported for BOpBin " + this);
     }
+
+    public boolean combine(boolean a, boolean b){
+        switch(this){
+            case AND:
+                return a && b;
+            case OR:
+                return a || b;
+        }
+        throw new UnsupportedOperationException("Illegal operator " + this + " in BOpBin");
+    }
 }

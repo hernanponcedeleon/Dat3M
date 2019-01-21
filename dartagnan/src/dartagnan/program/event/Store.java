@@ -1,70 +1,59 @@
 package dartagnan.program.event;
 
-import com.microsoft.z3.BoolExpr;
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
 import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
+import dartagnan.expression.IExpr;
 import dartagnan.program.Register;
+import dartagnan.program.event.utils.RegReaderData;
 import dartagnan.program.utils.EType;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
-import static dartagnan.utils.Utils.ssaLoc;
+public class Store extends MemEvent implements RegReaderData {
 
-public class Store extends MemEvent {
+    protected ExprInterface value;
+    private ImmutableSet<Register> dataRegs;
 
-	protected ExprInterface val;
-	protected Register reg;
+    public Store(IExpr address, ExprInterface value, String atomic){
+        this.address = address;
+        this.atomic = atomic;
+        this.condLevel = 0;
+        this.value = value;
+        dataRegs = value.getRegs();
+        addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
+    }
 
-	public Store(Location loc, ExprInterface val, String atomic) {
-		this.val = val;
-		this.reg = (val instanceof Register) ? (Register) val : null;
-		this.loc = loc;
-		this.atomic = atomic;
-		this.condLevel = 0;
-		addFilters(EType.ANY, EType.MEMORY, EType.WRITE);
-	}
+    @Override
+    public void initialise(Context ctx) {
+        memValueExpr = value.toZ3Int(this, ctx);
+        memAddressExpr = address.toZ3Int(this, ctx);
+    }
 
-	@Override
-	public Register getReg() {
-		return reg;
-	}
+    @Override
+    public ImmutableSet<Register> getDataRegs(){
+        return dataRegs;
+    }
 
-	@Override
-	public String toString() {
-        return nTimesCondLevel() + loc + " := " + val;
-	}
+    @Override
+    public String toString() {
+        return nTimesCondLevel() + "store(*" + address + ", " + value + (atomic != null ? ", " + atomic : "") + ")";
+    }
 
-	@Override
-	public String label(){
-		return "W[" + atomic + "] " + loc;
-	}
+    @Override
+    public String label(){
+        return "W_" + atomic;
+    }
 
-	@Override
-	public ExprInterface getExpr(){
-		return val;
-	}
+    @Override
+    public Store clone() {
+        if(clone == null){
+            clone = new Store(address.clone(), value.clone(), atomic);
+            afterClone();
+        }
+        return (Store)clone;
+    }
 
-	@Override
-	public Store clone() {
-        Location newLoc = loc.clone();
-        ExprInterface newVal = val.clone();
-		Store newStore = new Store(newLoc, newVal, atomic);
-		newStore.condLevel = condLevel;
-		newStore.setHLId(getHLId());
-		newStore.setUnfCopy(getUnfCopy());
-		return newStore;
-	}
-
-	@Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		if(mainThread != null){
-			Expr z3Expr = val.toZ3(map, ctx);
-			Expr z3Loc = ssaLoc(loc, mainThread.getTId(), map.getFresh(loc), ctx);
-			this.ssaLoc = z3Loc;
-			return new Pair<>(ctx.mkImplies(executes(ctx), val.encodeAssignment(map, ctx, z3Loc, z3Expr)), map);
-		}
-		throw new RuntimeException("Main thread is not set for " + toString());
-	}
+    @Override
+    public ExprInterface getMemValue(){
+        return value;
+    }
 }

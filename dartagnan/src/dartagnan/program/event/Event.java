@@ -2,22 +2,19 @@ package dartagnan.program.event;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import dartagnan.expression.ExprInterface;
-import dartagnan.program.Location;
-import dartagnan.program.Register;
 import dartagnan.program.Thread;
-import dartagnan.utils.MapSSA;
-import dartagnan.utils.Pair;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class Event extends Thread {
+public abstract class Event extends Thread implements Comparable<Event> {
 
-	private int eid;
-	private int hlId;
-	private int unfCopy;
+	public static final int PRINT_PAD_EXTRA = 50;
+
+	private int eid = -1;
+	protected int hlId;
+	protected Event clone;
 	protected String atomic;
 	protected Set<String> filter = new HashSet<>();
 	
@@ -38,14 +35,6 @@ public abstract class Event extends Thread {
 		this.hlId = id;
 	}
 
-	public int getUnfCopy() {
-		return unfCopy;
-	}
-	
-	public void setUnfCopy(int id) {
-		this.unfCopy = id;
-	}
-
 	public String repr() {
 		return "E" + eid;
 	}
@@ -55,7 +44,7 @@ public abstract class Event extends Thread {
 	}
 
 	public String label(){
-		throw new UnsupportedOperationException("Label is not available for events not shown in execution graph " + this.getClass().getName());
+		return repr() + " " + getClass().getSimpleName();
 	}
 
 	public boolean is(String param){
@@ -66,6 +55,24 @@ public abstract class Event extends Thread {
 		filter.addAll(Arrays.asList(params));
 	}
 
+	public void initialise(Context ctx){}
+
+	@Override
+	public int compareTo(Event o){
+		// TODO: Exception if called before compilation or (better) limit to internal events only
+		return Integer.compare(eid, o.getEId());
+	}
+
+	@Override
+	public void beforeClone(){
+		clone = null;
+	}
+
+	protected void afterClone(){
+        clone.setCondLevel(condLevel);
+        clone.setHLId(hlId);
+    }
+
     @Override
 	public Set<Event> getEvents() {
 		Set<Event> ret = new HashSet<>();
@@ -74,49 +81,17 @@ public abstract class Event extends Thread {
 	}
 
     @Override
-	public Thread unroll(int steps, boolean obsTermination) {
-		unfCopy = steps;
-		return this;
-	}
-
-    @Override
 	public Thread unroll(int steps) {
-		return unroll(steps, false);
+		return this;
 	}
 
     @Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		setHLId(hashCode());
 		return this;
-	}
-
-    @Override
-	public Pair<BoolExpr, MapSSA> encodeDF(MapSSA map, Context ctx) {
-		return new Pair<>(ctx.mkTrue(), map);
 	}
 
 	@Override
 	public BoolExpr encodeCF(Context ctx) {
 		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
-	}
-
-	// TODO: Interface
-	public Register getReg() {
-		throw new UnsupportedOperationException("Register is not available for " + this.getClass().getName());
-	}
-
-	// TODO: Interface
-	public int getSsaRegIndex() {
-		throw new UnsupportedOperationException("SsaRegIndex is not available for " + this.getClass().getName());
-	}
-
-	// TODO: Interface
-	public Location getLoc() {
-		throw new UnsupportedOperationException("Location is not available for " + this.getClass().getName());
-	}
-
-	// TODO: Interface
-	public ExprInterface getExpr() {
-		throw new UnsupportedOperationException("Expression is not available for " + this.getClass().getName());
 	}
 }
