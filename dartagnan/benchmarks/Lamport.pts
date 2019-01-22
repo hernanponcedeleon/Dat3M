@@ -48,4 +48,4 @@ thread t2 {
   }
 }
 
-exists b1 = 2 && b2 = 2 && b3 = 2
+exists b1 = 4
