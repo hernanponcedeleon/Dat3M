@@ -17,9 +17,9 @@ if (1) {
 		}
 	}
 	r0 = READ_ONCE(*n1);
-	if ((r0 != 0) && (r0 < r1)) {
+	if ((r0 != 0) & (r0 < r1)) {
 		r0 = READ_ONCE(*n1);		
-		if ((r0 != 0) && (r0 < r1)) {
+		if ((r0 != 0) & (r0 < r1)) {
 			r0 = READ_ONCE(*n1);		
 		}
 	}
@@ -34,7 +34,7 @@ if (1) {
 			chk = READ_ONCE(*c1);
 		}
 		r0 = READ_ONCE(*n1);
-		if ((r0 != 0) && (r0 < r1)) {
+		if ((r0 != 0) & (r0 < r1)) {
 			r0 = READ_ONCE(*n1);		
 		}
 	}
@@ -57,9 +57,9 @@ if (1) {
 		}
 	}
 	q0 = READ_ONCE(*n0);
-	if ((q0 != 0) && (q0 < q1)) {
+	if ((q0 != 0) & (q0 < q1)) {
 		q0 = READ_ONCE(*n0);		
-		if ((q0 != 0) && (q0 < q1)) {
+		if ((q0 != 0) & (q0 < q1)) {
 			q0 = READ_ONCE(*n0);		
 		}
 	}
@@ -74,7 +74,7 @@ if (1) {
 			chk = READ_ONCE(*c0);
 		}
 		q0 = READ_ONCE(*n0);
-		if ((q0 != 0) && (q0 < q1)) {
+		if ((q0 != 0) & (q0 < q1)) {
 			q0 = READ_ONCE(*n0);		
 		}
 	}

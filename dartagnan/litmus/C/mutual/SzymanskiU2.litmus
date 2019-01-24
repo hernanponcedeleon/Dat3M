@@ -33,9 +33,9 @@ if (1) {
 		}
 	}
 	f2 = READ_ONCE(*flag2);
-	if ((2 <= f2) && (f2 <= 3)) {
+	if ((2 <= f2) & (f2 <= 3)) {
 		f2 = READ_ONCE(*flag2);
-		if ((2 <= f2) && (f2 <= 3)) {
+		if ((2 <= f2) & (f2 <= 3)) {
 			f2 = READ_ONCE(*flag2);
 		}
 	}
@@ -60,7 +60,7 @@ if (1) {
 			f2 = READ_ONCE(*flag2);
 		}
 		f2 = READ_ONCE(*flag2);
-		if ((2 <= f2) && (f2 <= 3)) {
+		if ((2 <= f2) & (f2 <= 3)) {
 			f2 = READ_ONCE(*flag2);
 		}
 	}
@@ -99,9 +99,9 @@ if (1) {
 		}
 	}
 	f1 = READ_ONCE(*flag1);
-	if ((2 <= f1) && (f1 <= 3)) {
+	if ((2 <= f1) & (f1 <= 3)) {
 		f1 = READ_ONCE(*flag1);
-		if ((2 <= f1) && (f1 <= 3)) {
+		if ((2 <= f1) & (f1 <= 3)) {
 			f1 = READ_ONCE(*flag1);
 		}
 	}
@@ -126,7 +126,7 @@ if (1) {
 			f1 = READ_ONCE(*flag1);
 		}
 		f1 = READ_ONCE(*flag1);
-		if ((2 <= f1) && (f1 <= 3)) {
+		if ((2 <= f1) & (f1 <= 3)) {
 			f1 = READ_ONCE(*flag1);
 		}
 	}
