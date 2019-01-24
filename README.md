@@ -51,7 +51,7 @@ Strings \<source> and \<target> specify the architectures to which the program w
 The optional -cat,-scat,-tcat options specify the paths to the CAT files. When they are not provided, the memory model is extracted from the compilation options \<source> and \<target>.
 
 Other optional arguments include:
-- -relax: uses the relax encodnig for recursive relations,
+- -relax: uses the relax encoding for recursive relations,
 - -unroll: unrolling bound for the BMC.
 
 The .pts format
