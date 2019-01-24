@@ -52,7 +52,7 @@ The optional -cat,-scat,-tcat options specify the paths to the CAT files. When t
 
 Other optional arguments include:
 - -relax: uses the relax encodnig for recursive relations,
-- -unroll: unrollifng bound for the BMC.
+- -unroll: unrolling bound for the BMC.
 
 The .pts format
 ======
