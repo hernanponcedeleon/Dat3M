@@ -1,0 +1,30 @@
+package com.dat3m.dartagnan.parsers.utils;
+
+import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.parsers.LitmusAssertionsLexer;
+import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
+import com.dat3m.dartagnan.parsers.visitors.VisitorLitmusAssertions;
+import org.antlr.v4.runtime.*;
+
+public class AssertionHelper {
+
+    public static AbstractAssert parseAssertionList(ProgramBuilder programBuilder, String text){
+        CharStream charStream = CharStreams.fromString(text);
+        LitmusAssertionsLexer lexer = new LitmusAssertionsLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        LitmusAssertionsParser parser = new LitmusAssertionsParser(tokenStream);
+        parser.setErrorHandler(new BailErrorStrategy());
+        ParserRuleContext parserEntryPoint = parser.assertionList();
+        return parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
+    }
+
+    public static AbstractAssert parseAssertionFilter(ProgramBuilder programBuilder, String text){
+        CharStream charStream = CharStreams.fromString(text);
+        LitmusAssertionsLexer lexer = new LitmusAssertionsLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        LitmusAssertionsParser parser = new LitmusAssertionsParser(tokenStream);
+        parser.setErrorHandler(new BailErrorStrategy());
+        ParserRuleContext parserEntryPoint = parser.assertionFilter();
+        return parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
+    }
+}
