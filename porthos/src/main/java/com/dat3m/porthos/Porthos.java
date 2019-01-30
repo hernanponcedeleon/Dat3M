@@ -15,8 +15,6 @@ import org.apache.commons.cli.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.dat3m.porthos.Encodings.encodeCommonExecutions;
@@ -107,87 +105,91 @@ public class Porthos {
             steps = Integer.parseInt(cmd.getOptionValue("unroll"));
         }
 
-        Program p = Dartagnan.parseProgram(inputFilePath);
-        p.unroll(steps);
+        Context ctx = new Context();
+        Program program = Dartagnan.parseProgram(inputFilePath);
+        Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+        Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+
+        PorthosResult result = testProgram(s1, s2, ctx, program,
+                source, target, mcmS, mcmT, steps, cmd.hasOption("relax"), cmd.hasOption("idl"));
+
+        if(result.getIsPortable()){
+            System.out.println("The program is state-portable");
+            System.out.println("Iterations: " + result.getIterations());
+
+        } else {
+            System.out.println("The program is not state-portable");
+            System.out.println("Iterations: " + result.getIterations());
+            if(cmd.hasOption("draw")) {
+                ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+                Graph graph = new Graph(s1.getModel(), ctx);
+                String outputPath = cmd.getOptionValue("draw");
+                if(cmd.hasOption("rels")) {
+                    graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
+                }
+                graph.build(result.getSourceProgram(), result.getTargetProgram()).draw(outputPath);
+                System.out.println("Execution graph is written to " + outputPath);
+            }
+        }
+    }
+
+    static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program program, String source, String target,
+                                     Wmm sourceWmm, Wmm targetWmm, int steps, boolean relax, boolean idl){
+
+        program.unroll(steps);
 
         int baseHlId = 1;
-        for(Event e : p.getEvents()){
+        for(Event e : program.getEvents()){
             e.setHLId(baseHlId++);
         }
 
-        Program pSource = p.clone();
-        Program pTarget = p.clone();
+        Program pSource = program.clone();
+        Program pTarget = program.clone();
 
         pSource.compile(source, false, true);
         int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;
         pTarget.compile(target, false, true, startEId);
 
-        Context ctx = new Context();
-        ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-        Solver s = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-        Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
-        BoolExpr sourceMM = mcmS.encode(pSource, ctx, cmd.hasOption("relax"), cmd.hasOption("idl"));
+        BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, relax, idl);
 
-        s.add(pTarget.encodeCF(ctx));
-        s.add(pTarget.encodeFinalValues(ctx));
-        s.add(mcmT.encode(pTarget, ctx, cmd.hasOption("relax"), cmd.hasOption("idl")));
-        s.add(mcmT.consistent(pTarget, ctx));
+        s1.add(pTarget.encodeCF(ctx));
+        s1.add(pTarget.encodeFinalValues(ctx));
+        s1.add(targetWmm.encode(pTarget, ctx, relax, idl));
+        s1.add(targetWmm.consistent(pTarget, ctx));
 
-        s.add(sourceCF);
-        s.add(sourceFV);
-        s.add(sourceMM);
-        s.add(mcmS.inconsistent(pSource, ctx));
+        s1.add(sourceCF);
+        s1.add(sourceFV);
+        s1.add(sourceMM);
+        s1.add(sourceWmm.inconsistent(pSource, ctx));
 
-        s.add(encodeCommonExecutions(pTarget, pSource, ctx));
+        s1.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
         s2.add(sourceCF);
         s2.add(sourceFV);
         s2.add(sourceMM);
-        s2.add(mcmS.consistent(pSource, ctx));
+        s2.add(sourceWmm.consistent(pSource, ctx));
 
-        int iterations = 0;
-        Status lastCheck = Status.SATISFIABLE;
-        Set<Expr> visited = new HashSet<>();
+        boolean isPortable = true;
+        int iterations = 1;
+
+        Status lastCheck = s1.check();
 
         while(lastCheck == Status.SATISFIABLE) {
-
-            lastCheck = s.check();
-            if(lastCheck == Status.SATISFIABLE) {
-                iterations = iterations + 1;
-                Model model = s.getModel();
-                s2.push();
-                BoolExpr reachedState = encodeReachedState(pTarget, model, ctx);
-                visited.add(reachedState);
-                assert(iterations == visited.size());
-                s2.add(reachedState);
-                if(s2.check() == Status.UNSATISFIABLE) {
-                    System.out.println("The program is not state-portable");
-                    System.out.println("Iterations: " + iterations);
-                    if(cmd.hasOption("draw")) {
-                        Graph graph = new Graph(s.getModel(), ctx);
-                        String outputPath = cmd.getOptionValue("draw");
-                        ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-                        if(cmd.hasOption("rels")) {
-                            graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
-                        }
-                        graph.build(pSource, pTarget).draw(outputPath);
-                        System.out.println("Execution graph is written to " + outputPath);
-                    }
-                    return;
-                }
-                else {
-                    s2.pop();
-                    s.add(ctx.mkNot(reachedState));
-                }
+            Model model = s1.getModel();
+            BoolExpr reachedState = encodeReachedState(pTarget, model, ctx);
+            s2.push();
+            s2.add(reachedState);
+            if(s2.check() == Status.UNSATISFIABLE) {
+                isPortable = false;
+                break;
             }
-            else {
-                System.out.println("The program is state-portable");
-                System.out.println("Iterations: " + iterations);
-                return;
-            }
+            s2.pop();
+            s1.add(ctx.mkNot(reachedState));
+            iterations++;
+            lastCheck = s1.check();
         }
+        return new PorthosResult(isPortable, iterations, pSource, pTarget);
     }
 }
