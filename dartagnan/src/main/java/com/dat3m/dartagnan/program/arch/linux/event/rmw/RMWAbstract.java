@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.linux.rmw;
+package com.dat3m.dartagnan.program.arch.linux.event.rmw;
 
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.program.event.rmw.cond.FenceCond;
 import com.dat3m.dartagnan.program.event.rmw.cond.RMWReadCond;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.utils.linux.EType;
+import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 import com.dat3m.dartagnan.program.Thread;
 
 public abstract class RMWAbstract extends MemEvent implements RegWriter, RegReaderData {

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.utils.linux;
+package com.dat3m.dartagnan.program.arch.linux.utils;
 
 public class EType extends com.dat3m.dartagnan.program.utils.EType {
 

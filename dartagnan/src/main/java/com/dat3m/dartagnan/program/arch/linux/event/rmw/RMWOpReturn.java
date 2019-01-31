@@ -1,33 +1,39 @@
-package com.dat3m.dartagnan.program.event.linux.rmw;
+package com.dat3m.dartagnan.program.arch.linux.event.rmw;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Seq;
+import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.Thread;
 
-public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
+public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData {
 
-    public RMWXchg(IExpr address, Register register, ExprInterface value, String atomic) {
+    private IOpBin op;
+
+    public RMWOpReturn(IExpr address, Register register, ExprInterface value, IOpBin op, String atomic) {
         super(address, register, value, atomic);
+        this.op = op;
     }
 
     @Override
     public Thread compile(String target) {
         if(target.equals("sc")) {
-            Register dummy = resultRegister == value ? new Register(null) : resultRegister;
+            Register dummy = new Register(null);
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
-            RMWStore store = new RMWStore(load, address, value, getStoreMO());
+            Local local = new Local(resultRegister, new IExprBin(dummy, op, value));
+            RMWStore store = new RMWStore(load, address, resultRegister, getStoreMO());
 
             compileBasic(load);
             compileBasic(store);
 
-            Thread result = new Seq(load, store);
-            result = copyFromDummyToResult(result, dummy);
+            Thread result = new Seq(load, new Seq(local, store));
             return insertFencesOnMb(result);
         }
         return super.compile(target);
@@ -35,17 +41,17 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + resultRegister + " := atomic_xchg" + atomicToText(atomic) + "(" + address + ", " + value + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_" + op.toLinuxName() + "_return" + atomicToText(atomic) + "(" + value + ", " + address + ")";
     }
 
     @Override
-    public RMWXchg clone() {
+    public RMWOpReturn clone() {
         if(clone == null){
             Register newReg = resultRegister.clone();
             ExprInterface newValue = resultRegister == value ? newReg : value.clone();
-            clone = new RMWXchg(address.clone(), newReg, newValue, atomic);
+            clone = new RMWOpReturn(address.clone(), newReg, newValue, op, atomic);
             afterClone();
         }
-        return (RMWXchg)clone;
+        return (RMWOpReturn)clone;
     }
 }

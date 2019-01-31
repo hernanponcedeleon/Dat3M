@@ -1,9 +1,7 @@
-package com.dat3m.dartagnan.program.event.linux.rmw;
+package com.dat3m.dartagnan.program.arch.linux.event.rmw;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Seq;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
@@ -12,13 +10,10 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.Thread;
 
-public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData {
+public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
-    private IOpBin op;
-
-    public RMWFetchOp(IExpr address, Register register, ExprInterface value, IOpBin op, String atomic) {
+    public RMWXchg(IExpr address, Register register, ExprInterface value, String atomic) {
         super(address, register, value, atomic);
-        this.op = op;
     }
 
     @Override
@@ -26,7 +21,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
         if(target.equals("sc")) {
             Register dummy = resultRegister == value ? new Register(null) : resultRegister;
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
-            RMWStore store = new RMWStore(load, address, new IExprBin(dummy, op, value), getStoreMO());
+            RMWStore store = new RMWStore(load, address, value, getStoreMO());
 
             compileBasic(load);
             compileBasic(store);
@@ -40,17 +35,17 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + resultRegister + " := atomic_fetch_" + op.toLinuxName() + atomicToText(atomic) + "(" + value + ", " + address + ")";
+        return nTimesCondLevel() + resultRegister + " := atomic_xchg" + atomicToText(atomic) + "(" + address + ", " + value + ")";
     }
 
     @Override
-    public RMWFetchOp clone() {
+    public RMWXchg clone() {
         if(clone == null){
             Register newReg = resultRegister.clone();
             ExprInterface newValue = resultRegister == value ? newReg : value.clone();
-            clone = new RMWFetchOp(address.clone(), newReg, newValue, op, atomic);
+            clone = new RMWXchg(address.clone(), newReg, newValue, atomic);
             afterClone();
         }
-        return (RMWFetchOp)clone;
+        return (RMWXchg)clone;
     }
 }

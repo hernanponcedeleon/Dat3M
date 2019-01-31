@@ -1,7 +1,7 @@
-package com.dat3m.dartagnan.program.event.linux.rcu;
+package com.dat3m.dartagnan.program.arch.linux.event.rcu;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.linux.EType;
+import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 
 public class RCUSync extends Event {
 

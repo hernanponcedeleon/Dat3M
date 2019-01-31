@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.pts;
+package com.dat3m.dartagnan.program.arch.pts.event;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.linux.rcu.RCUReadUnlock;
+import com.dat3m.dartagnan.program.arch.linux.event.rcu.RCUReadUnlock;
 import com.dat3m.dartagnan.program.utils.EventRepository;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;

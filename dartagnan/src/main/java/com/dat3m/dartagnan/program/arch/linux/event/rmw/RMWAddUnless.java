@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.linux.rmw;
+package com.dat3m.dartagnan.program.arch.linux.event.rmw;
 
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.Atom;
