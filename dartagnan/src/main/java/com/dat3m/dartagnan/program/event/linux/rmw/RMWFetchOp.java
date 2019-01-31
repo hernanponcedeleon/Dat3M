@@ -22,7 +22,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         if(target.equals("sc")) {
             Register dummy = resultRegister == value ? new Register(null) : resultRegister;
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
@@ -35,7 +35,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
             result = copyFromDummyToResult(result, dummy);
             return insertFencesOnMb(result);
         }
-        return super.compile(target, ctrl, leading);
+        return super.compile(target);
     }
 
     @Override

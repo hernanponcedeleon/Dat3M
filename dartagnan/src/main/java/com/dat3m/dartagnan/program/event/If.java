@@ -129,9 +129,9 @@ public class If extends Event implements RegReaderData {
     }
 
     @Override
-    public If compile(String target, boolean ctrl, boolean leading) {
-        t1 = t1.compile(target, ctrl, leading);
-        t2 = t2.compile(target, ctrl, leading);
+    public If compile(String target) {
+        t1 = t1.compile(target);
+        t2 = t2.compile(target);
         return this;
     }
 

@@ -46,7 +46,7 @@ public class Write extends MemEvent implements RegReaderData {
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         Store st = new Store(address, value, atomic);
         st.setHLId(hlId);
         st.setCondLevel(this.condLevel);
@@ -75,10 +75,7 @@ public class Write extends MemEvent implements RegReaderData {
             if(atomic.equals("_sc")) {
                 Fence sync = new Fence("Sync");
                 sync.setCondLevel(this.condLevel);
-                if(leading) {
-                    return new Seq(sync, st);
-                }
-                return new Seq(lwsync, new Seq(st, sync));
+                return new Seq(sync, st);
             }
         }
 

@@ -23,7 +23,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
@@ -36,7 +36,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
             Thread result = new Seq(load, new Seq(local, store));
             return insertFencesOnMb(result);
         }
-        return super.compile(target, ctrl, leading);
+        return super.compile(target);
     }
 
     @Override

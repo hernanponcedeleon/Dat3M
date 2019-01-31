@@ -37,7 +37,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         if(target.equals("tso") && atomic.equals("_rx")) {
             Register dummyReg = new Register(null);
             RMWLoad load = new RMWLoad(dummyReg, address, atomic);

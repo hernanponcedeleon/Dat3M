@@ -22,7 +22,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         if(target.equals("sc")) {
             Register dummy = (resultRegister == value || resultRegister == cmp) ? new Register(null) : resultRegister;
             RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, getLoadMO());
@@ -35,7 +35,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
             result = copyFromDummyToResult(result, dummy);
             return insertCondFencesOnMb(result, load);
         }
-        return super.compile(target, ctrl, leading);
+        return super.compile(target);
     }
 
     @Override

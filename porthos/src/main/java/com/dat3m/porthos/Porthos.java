@@ -51,6 +51,7 @@ public class Porthos {
         options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
         options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
         options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
+        options.addOption(new Option("no-alias", "No alias analysis"));
 
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -111,7 +112,7 @@ public class Porthos {
         Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
         PorthosResult result = testProgram(s1, s2, ctx, program,
-                source, target, mcmS, mcmT, steps, cmd.hasOption("relax"), cmd.hasOption("idl"));
+                source, target, mcmS, mcmT, steps, cmd.hasOption("relax"), cmd.hasOption("idl"), cmd.hasOption("no-alias"));
 
         if(result.getIsPortable()){
             System.out.println("The program is state-portable");
@@ -134,7 +135,7 @@ public class Porthos {
     }
 
     static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program program, String source, String target,
-                                     Wmm sourceWmm, Wmm targetWmm, int steps, boolean relax, boolean idl){
+                                     Wmm sourceWmm, Wmm targetWmm, int steps, boolean relax, boolean idl, boolean noAlias){
 
         program.unroll(steps);
 
@@ -146,9 +147,9 @@ public class Porthos {
         Program pSource = program.clone();
         Program pTarget = program.clone();
 
-        pSource.compile(source, false, true);
+        pSource.compile(source, noAlias);
         int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;
-        pTarget.compile(target, false, true, startEId);
+        pTarget.compile(target, noAlias, startEId);
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);

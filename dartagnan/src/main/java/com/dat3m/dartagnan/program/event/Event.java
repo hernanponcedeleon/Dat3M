@@ -86,7 +86,7 @@ public abstract class Event extends Thread implements Comparable<Event> {
 	}
 
     @Override
-	public Thread compile(String target, boolean ctrl, boolean leading) {
+	public Thread compile(String target) {
 		return this;
 	}
 

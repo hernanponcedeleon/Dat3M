@@ -27,7 +27,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         if(target.equals("sc")) {
             Register dummy = new Register(null);
             RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, address, "Relaxed");
@@ -40,7 +40,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
             Thread result = new Seq(load, new Seq(store, local));
             return insertCondFencesOnMb(result, load);
         }
-        return super.compile(target, ctrl, leading);
+        return super.compile(target);
     }
 
     @Override

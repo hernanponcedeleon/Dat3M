@@ -79,7 +79,7 @@ public abstract class Thread {
         throw new UnsupportedOperationException("Unrolling is not allowed for " + this.getClass().getName());
     }
 
-	public Thread compile(String target, boolean ctrl, boolean leading) {
+	public Thread compile(String target) {
         throw new UnsupportedOperationException("Compilation is not allowed for " + this.getClass().getName());
 	}
 

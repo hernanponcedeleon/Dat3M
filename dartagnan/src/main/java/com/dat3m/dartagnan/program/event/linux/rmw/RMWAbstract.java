@@ -43,7 +43,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         throw new RuntimeException("Compilation to " + target + " is not supported for " + this.getClass().getName() + " " + atomic);
     }
 

@@ -42,7 +42,7 @@ public class Read extends MemEvent implements RegWriter {
     }
 
     @Override
-    public Thread compile(String target, boolean ctrl, boolean leading) {
+    public Thread compile(String target) {
         Load ld = new Load(resultRegister, address, atomic);
         ld.setHLId(hlId);
         ld.setCondLevel(this.condLevel);
@@ -63,12 +63,9 @@ public class Read extends MemEvent implements RegWriter {
             }
 
             if(atomic.equals("_sc")) {
-                if(leading) {
-                    Fence sync = new Fence("Sync");
-                    sync.setCondLevel(this.condLevel);
-                    return new Seq(sync, new Seq(ld, lwsync));
-                }
-                return new Seq(ld, lwsync);
+                Fence sync = new Fence("Sync");
+                sync.setCondLevel(this.condLevel);
+                return new Seq(sync, new Seq(ld, lwsync));
             }
         }
 

@@ -102,21 +102,21 @@ public class Program extends Thread {
 	}
 
     @Override
-	public Thread compile(String target, boolean ctrl, boolean leading) {
-		return compile(target, ctrl, leading, false, 0, 0);
+	public Thread compile(String target) {
+		return compile(target, false, 0, 0);
 	}
 
-    public Thread compile(String target, boolean ctrl, boolean leading, boolean noAlias) {
-        return compile(target, ctrl, leading, noAlias, 0, 0);
+    public Thread compile(String target, boolean noAlias) {
+        return compile(target, noAlias, 0, 0);
     }
 
-	public Thread compile(String target, boolean ctrl, boolean leading, int firstEid) {
-		return compile(target, ctrl, leading, false, firstEid, 0);
+	public Thread compile(String target, boolean noAlias, int firstEid) {
+		return compile(target, noAlias, firstEid, 0);
 	}
 
-	public Thread compile(String target, boolean ctrl, boolean leading, boolean noAlias, int firstEid, int firstTid) {
+	public Thread compile(String target, boolean noAlias, int firstEid, int firstTid) {
         for(int i = 0; i < threads.size(); i++){
-            Thread t = threads.get(i).compile(target, ctrl, leading);
+            Thread t = threads.get(i).compile(target);
             firstTid = t.setTId(firstTid);
             firstEid = t.setEId(firstEid);
             t.setMainThread(t);

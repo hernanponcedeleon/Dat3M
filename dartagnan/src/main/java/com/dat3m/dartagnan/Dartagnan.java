@@ -116,7 +116,7 @@ public class Dartagnan {
                                       boolean relax, boolean idl, boolean noAlias){
 
         program.unroll(steps);
-        program.compile(target, false, true, noAlias);
+        program.compile(target, noAlias);
 
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){

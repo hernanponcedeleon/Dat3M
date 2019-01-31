@@ -95,9 +95,9 @@ public class Seq extends Thread {
 	}
 
     @Override
-	public Seq compile(String target, boolean ctrl, boolean leading) {
-		t1 = t1.compile(target, ctrl, leading);
-		t2 = t2.compile(target, ctrl, leading);
+	public Seq compile(String target) {
+		t1 = t1.compile(target);
+		t2 = t2.compile(target);
 		return this;
 	}
 
