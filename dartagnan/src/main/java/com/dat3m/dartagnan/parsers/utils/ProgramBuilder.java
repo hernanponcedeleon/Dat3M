@@ -44,7 +44,6 @@ public class ProgramBuilder {
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);
-        new AliasAnalysis().calculateLocationSets(program, memory);
         return program;
     }
 
@@ -159,7 +158,9 @@ public class ProgramBuilder {
         }
         Map<String, Register> threadRegisters = registers.get(thread);
         if(name == null || !(threadRegisters.keySet().contains(name))) {
-            threadRegisters.put(name, new Register(name));
+            Register register = new Register(name);
+            register.setPrintMainThreadId(thread);
+            threadRegisters.put(name, register);
         }
         return threadRegisters.get(name);
     }

@@ -33,7 +33,7 @@ public class BConst extends BExpr implements ExprInterface {
 
 	@Override
 	public BConst clone() {
-		return new BConst(value);
+		return this;
 	}
 
 	@Override

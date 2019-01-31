@@ -42,6 +42,7 @@ public class Dartagnan {
         options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
         options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
         options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
+        options.addOption(new Option("no-alias", "No alias analysis"));
 
         CommandLine cmd;
         try {
@@ -90,7 +91,9 @@ public class Dartagnan {
         Context ctx = new Context();
         Solver s = ctx.mkSolver(ctx.mkTactic(TACTIC));
 
-        boolean result = testProgram(s, ctx, p, mcm, target, steps, cmd.hasOption("relax"), cmd.hasOption("idl"));
+        boolean result = testProgram(s, ctx, p, mcm, target, steps,
+                cmd.hasOption("relax"), cmd.hasOption("idl"), cmd.hasOption("no-alias"));
+
         if(p.getAssFilter() != null){
             System.out.println("Filter " + (p.getAssFilter()));
         }
@@ -109,11 +112,11 @@ public class Dartagnan {
         }
     }
 
-    public static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, String target, int steps,
-                                      boolean relax, boolean idl){
+    static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, String target, int steps,
+                                      boolean relax, boolean idl, boolean noAlias){
 
         program.unroll(steps);
-        program.compile(target, false, true);
+        program.compile(target, false, true, noAlias);
 
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){

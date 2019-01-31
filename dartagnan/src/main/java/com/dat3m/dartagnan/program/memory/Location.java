@@ -10,12 +10,29 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 
-public class Location implements ExprInterface {
+import java.util.HashSet;
+import java.util.Set;
+
+public class Location implements ExprInterface, Variable {
 
 	public static final int DEFAULT_INIT_VALUE = 0;
 
 	private final String name;
 	private final Address address;
+
+	private Set<Variable> aliasEdges = new HashSet<>();
+
+	private Set<Address> aliasAddresses = new HashSet<>();
+
+	@Override
+	public Set<Variable> getAliasEdges() {
+		return aliasEdges;
+	}
+
+	@Override
+	public Set<Address> getAliasAddresses() {
+		return aliasAddresses;
+	}
 
 	public Location(String name, Address address) {
 		this.name = name;

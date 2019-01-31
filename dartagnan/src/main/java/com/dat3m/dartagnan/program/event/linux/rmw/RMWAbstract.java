@@ -79,7 +79,6 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     void compileBasic(MemEvent event){
         event.setHLId(hlId);
         event.setCondLevel(condLevel);
-        event.setMaxAddressSet(getMaxAddressSet());
     }
 
     String atomicToText(String atomic){

@@ -44,13 +44,11 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
             load.setHLId(hlId);
             load.setCondLevel(condLevel);
             load.addFilters(EType.ATOM);
-            load.setMaxAddressSet(maxAddressSet);
 
             RMWStore store = new RMWStore(load, address, resultRegister, atomic);
             store.setHLId(hlId);
             store.setCondLevel(condLevel);
             store.addFilters(EType.ATOM);
-            store.setMaxAddressSet(maxAddressSet);
 
             return Thread.fromArray(false, load, store, new Local(resultRegister, dummyReg));
         }

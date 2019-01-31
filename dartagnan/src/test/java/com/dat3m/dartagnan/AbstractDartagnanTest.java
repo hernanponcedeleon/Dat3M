@@ -65,7 +65,7 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, relax, idl));
+                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, relax, idl, false));
             }
         } catch (IOException e){
             fail("Missing resource file");

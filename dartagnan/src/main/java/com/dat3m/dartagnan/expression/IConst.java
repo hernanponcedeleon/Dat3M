@@ -27,7 +27,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public IConst clone() {
-		return new IConst(value);
+		return this;
 	}
 
 	@Override

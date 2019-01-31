@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.program.utils.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -15,7 +16,7 @@ import java.util.*;
 
 public class Program extends Thread {
 
-	private String name;
+    private String name;
 	private AbstractAssert ass;
     private AbstractAssert assFilter;
 	private List<Thread> threads;
@@ -102,14 +103,18 @@ public class Program extends Thread {
 
     @Override
 	public Thread compile(String target, boolean ctrl, boolean leading) {
-		return compile(target, ctrl, leading, 0, 0);
+		return compile(target, ctrl, leading, false, 0, 0);
 	}
+
+    public Thread compile(String target, boolean ctrl, boolean leading, boolean noAlias) {
+        return compile(target, ctrl, leading, noAlias, 0, 0);
+    }
 
 	public Thread compile(String target, boolean ctrl, boolean leading, int firstEid) {
-		return compile(target, ctrl, leading, firstEid, 0);
+		return compile(target, ctrl, leading, false, firstEid, 0);
 	}
 
-	public Thread compile(String target, boolean ctrl, boolean leading, int firstEid, int firstTid) {
+	public Thread compile(String target, boolean ctrl, boolean leading, boolean noAlias, int firstEid, int firstTid) {
         for(int i = 0; i < threads.size(); i++){
             Thread t = threads.get(i).compile(target, ctrl, leading);
             firstTid = t.setTId(firstTid);
@@ -123,9 +128,11 @@ public class Program extends Thread {
 			threads.set(i, t);
         }
         getEventRepository().clear();
+        new AliasAnalysis().calculateLocationSets(this, memory, noAlias);
 		return this;
 	}
 
+	@Override
 	public BoolExpr encodeCF(Context ctx) {
         for(Event e : getEvents()){
             e.initialise(ctx);

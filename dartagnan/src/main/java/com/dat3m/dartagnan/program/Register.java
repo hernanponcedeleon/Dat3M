@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.Variable;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -8,13 +11,36 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
 
-public class Register extends IExpr implements ExprInterface {
+import java.util.HashSet;
+import java.util.Set;
+
+public class Register extends IExpr implements ExprInterface, Variable {
 
 	private static int dummyCount = 0;
 
 	private String name;
 	private int mainThreadId = -1;
 	private String printMainThreadId;
+
+	private Set<Variable> aliasEdges = new HashSet<>();
+
+	private Set<Address> aliasAddresses = new HashSet<>();
+
+	private Set<MemEvent> aliasEvents = new HashSet<>();
+
+	@Override
+	public Set<Variable> getAliasEdges() {
+		return aliasEdges;
+	}
+
+	@Override
+	public Set<Address> getAliasAddresses() {
+		return aliasAddresses;
+	}
+
+	public Set<MemEvent> getAliasEvents() {
+		return aliasEvents ;
+	}
 
 	public Register(String name) {
 		if(name == null){

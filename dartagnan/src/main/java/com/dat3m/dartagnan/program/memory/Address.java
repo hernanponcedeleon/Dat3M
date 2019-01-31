@@ -41,7 +41,7 @@ public class Address extends IConst implements ExprInterface {
 
     @Override
     public Address clone(){
-        return new Address(index);
+        return this;
     }
 
     @Override

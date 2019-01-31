@@ -46,7 +46,6 @@ public class Read extends MemEvent implements RegWriter {
         Load ld = new Load(resultRegister, address, atomic);
         ld.setHLId(hlId);
         ld.setCondLevel(this.condLevel);
-        ld.setMaxAddressSet(getMaxAddressSet());
 
         if(!target.equals("power") && !target.equals("arm")) {
             return ld;

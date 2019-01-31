@@ -24,6 +24,10 @@ public class Memory {
         arrays = new HashMap<>();
     }
 
+    public Location getLocationForAddress(Address address){
+        return map.inverse().get(address);
+    }
+
     public BoolExpr encode(Context ctx){
         BoolExpr enc = ctx.mkTrue();
         List<IntExpr> expressions = new ArrayList<>();

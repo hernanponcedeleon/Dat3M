@@ -50,7 +50,6 @@ public class Write extends MemEvent implements RegReaderData {
         Store st = new Store(address, value, atomic);
         st.setHLId(hlId);
         st.setCondLevel(this.condLevel);
-        st.setMaxAddressSet(getMaxAddressSet());
 
         if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
             Fence mfence = new Fence("Mfence");
