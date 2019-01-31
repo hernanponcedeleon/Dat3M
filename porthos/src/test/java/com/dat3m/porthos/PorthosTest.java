@@ -135,7 +135,7 @@ public class PorthosTest {
                 Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
                 Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
                 PorthosResult result = Porthos.testProgram(s1, s2, ctx,program,
-                        source, target, sourceWmm, targetWmm, steps, relax, idl);
+                        source, target, sourceWmm, targetWmm, steps, relax, idl, false);
                 assertEquals(expected, result.getIsPortable());
             }
         } catch (IOException e){
