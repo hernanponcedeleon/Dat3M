@@ -1,6 +1,7 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -46,12 +47,13 @@ public class Porthos {
         targetCatOption.setRequired(true);
         options.addOption(targetCatOption);
 
+        Option modeOption = new Option("m", "mode", true, "Encoding mode {relax|idl|lfp}");
+        options.addOption(modeOption);
+
         options.addOption(new Option("unroll", true, "Unrolling steps"));
-        options.addOption(new Option("idl", "Uses IDL encoding for transitive closure"));
-        options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
         options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
         options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
-        options.addOption(new Option("no-alias", "No alias analysis"));
+        options.addOption(new Option("noalias", "No alias analysis"));
 
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -106,13 +108,15 @@ public class Porthos {
             steps = Integer.parseInt(cmd.getOptionValue("unroll"));
         }
 
+        Mode mode = Mode.get(cmd.getOptionValue("mode"));
+
         Context ctx = new Context();
         Program program = Dartagnan.parseProgram(inputFilePath);
         Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
         Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
-        PorthosResult result = testProgram(s1, s2, ctx, program,
-                source, target, mcmS, mcmT, steps, cmd.hasOption("relax"), cmd.hasOption("idl"), cmd.hasOption("no-alias"));
+        PorthosResult result = testProgram(s1, s2, ctx, program, source, target, mcmS, mcmT,
+                steps, mode, cmd.hasOption("noalias"));
 
         if(result.getIsPortable()){
             System.out.println("The program is state-portable");
@@ -135,7 +139,7 @@ public class Porthos {
     }
 
     static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program program, String source, String target,
-                                     Wmm sourceWmm, Wmm targetWmm, int steps, boolean relax, boolean idl, boolean noAlias){
+                                     Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, boolean noAlias){
 
         program.unroll(steps);
 
@@ -153,11 +157,11 @@ public class Porthos {
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
-        BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, relax, idl);
+        BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, mode);
 
         s1.add(pTarget.encodeCF(ctx));
         s1.add(pTarget.encodeFinalValues(ctx));
-        s1.add(targetWmm.encode(pTarget, ctx, relax, idl));
+        s1.add(targetWmm.encode(pTarget, ctx, mode));
         s1.add(targetWmm.consistent(pTarget, ctx));
 
         s1.add(sourceCF);

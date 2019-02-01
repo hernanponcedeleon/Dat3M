@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -17,10 +18,6 @@ import static com.dat3m.dartagnan.utils.Utils.edge;
  */
 public abstract class Relation {
 
-    public static final int LFP     = 0;
-    public static final int IDL     = 1;
-    public static final int APPROX  = 2;
-
     public static boolean PostFixApprox = false;
 
     protected String name;
@@ -30,7 +27,7 @@ public abstract class Relation {
     protected Context ctx;
 
     protected boolean isEncoded;
-    private int encodingMode;
+    private Mode mode;
 
     protected TupleSet maxTupleSet;
     protected TupleSet encodeTupleSet;
@@ -60,10 +57,10 @@ public abstract class Relation {
         return recursiveGroupId;
     }
 
-    public void initialise(Program program, Context ctx, int encodingMode){
+    public void initialise(Program program, Context ctx, Mode mode){
         this.program = program;
         this.ctx = ctx;
-        this.encodingMode = encodingMode;
+        this.mode = mode;
         this.maxTupleSet = null;
         this.isEncoded = false;
         encodeTupleSet = new TupleSet();
@@ -139,9 +136,9 @@ public abstract class Relation {
     protected BoolExpr doEncode(){
         BoolExpr enc = encodeNegations();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
-            if(encodingMode == LFP) {
+            if(mode == Mode.LFP) {
                 return ctx.mkAnd(enc, encodeLFP());
-            } else if(encodingMode == IDL) {
+            } else if(mode == Mode.IDL) {
                 return ctx.mkAnd(enc, encodeIDL());
             }
             return ctx.mkAnd(enc, encodeApprox());

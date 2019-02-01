@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -14,7 +15,7 @@ public class DartagnanAARCH64Test extends AbstractDartagnanTest {
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", "arm", 2);
     }
 
-    public DartagnanAARCH64Test(String input, boolean expected, String target, Wmm wmm, int unroll, boolean relax, boolean idl) {
-        super(input, expected, target, wmm, unroll, relax, idl);
+    public DartagnanAARCH64Test(String input, boolean expected, String target, Wmm wmm, int unroll, Mode mode) {
+        super(input, expected, target, wmm, unroll, mode);
     }
 }

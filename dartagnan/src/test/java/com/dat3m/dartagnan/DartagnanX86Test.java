@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -14,7 +15,7 @@ public class DartagnanX86Test extends AbstractDartagnanTest {
         return buildParameters("litmus/X86/", "cat/tso.cat", "tso", 2);
     }
 
-    public DartagnanX86Test(String input, boolean expected, String target, Wmm wmm, int unroll, boolean relax, boolean idl) {
-        super(input, expected, target, wmm, unroll, relax, idl);
+    public DartagnanX86Test(String input, boolean expected, String target, Wmm wmm, int unroll, Mode mode) {
+        super(input, expected, target, wmm, unroll, mode);
     }
 }

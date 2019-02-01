@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -72,7 +73,7 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encode(Program program, Context ctx, boolean approx, boolean idl) {
+    public BoolExpr encode(Program program, Context ctx, Mode mode) {
         this.program = program;
 
         for(String relName : baseRelations){
@@ -83,8 +84,9 @@ public class Wmm {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
 
-        approx = approx & !drawExecutionGraph;
-        int encodingMode = approx ? Relation.APPROX : idl ? Relation.IDL : Relation.LFP;
+        if(mode == Mode.RELAX && drawExecutionGraph){
+            mode = Mode.IDL;
+        }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
             recursiveGroup.setDoRecurse();
@@ -95,7 +97,7 @@ public class Wmm {
         }
 
         for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(program, ctx, encodingMode);
+            relation.initialise(program, ctx, mode);
         }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
@@ -137,7 +139,7 @@ public class Wmm {
             enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
         }
 
-        if(encodingMode == Relation.LFP){
+        if(mode == Mode.LFP){
             for(RecursiveGroup group : recursiveGroups){
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }

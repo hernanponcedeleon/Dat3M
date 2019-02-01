@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -25,11 +26,11 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initialise(Program program, Context ctx, int encodingMode){
+    public void initialise(Program program, Context ctx, Mode mode){
         if(doRecurse){
             doRecurse = false;
-            super.initialise(program, ctx, encodingMode);
-            r1.initialise(program, ctx, encodingMode);
+            super.initialise(program, ctx, mode);
+            r1.initialise(program, ctx, mode);
         }
     }
 

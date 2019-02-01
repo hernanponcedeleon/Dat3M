@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
@@ -33,9 +34,9 @@ public abstract class AbstractDartagnanTest {
                 .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                 .collect(ArrayList::new,
                         (l, f) -> {
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, true, false});
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, false, true});
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, false, false});
+                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.RELAX});
+                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.IDL});
+                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.LFP});
                         }, ArrayList::addAll);
     }
 
@@ -44,18 +45,15 @@ public abstract class AbstractDartagnanTest {
     private String target;
     private Wmm wmm;
     private int unroll;
-    private boolean relax;
-    private boolean idl;
+    private Mode mode;
 
-    AbstractDartagnanTest(String input, boolean expected, String target, Wmm wmm,
-                                 int unroll, boolean relax, boolean idl) {
+    AbstractDartagnanTest(String input, boolean expected, String target, Wmm wmm, int unroll, Mode mode) {
         this.input = input;
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;
         this.unroll = unroll;
-        this.relax = relax;
-        this.idl = idl;
+        this.mode = mode;
     }
 
     @Test
@@ -65,7 +63,7 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, relax, idl, false));
+                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, mode, false));
             }
         } catch (IOException e){
             fail("Missing resource file");

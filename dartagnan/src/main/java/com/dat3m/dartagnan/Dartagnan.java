@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
@@ -37,12 +38,13 @@ public class Dartagnan {
         catOption.setRequired(true);
         options.addOption(catOption);
 
+        Option modeOption = new Option("m", "mode", true, "Encoding mode {relax|idl|lfp}");
+        options.addOption(modeOption);
+
         options.addOption(new Option("unroll", true, "Unrolling steps"));
-        options.addOption(new Option("idl", "Uses IDL encoding for transitive closure"));
-        options.addOption(new Option("relax", "Uses relax encoding for recursive relations"));
         options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
         options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
-        options.addOption(new Option("no-alias", "No alias analysis"));
+        options.addOption(new Option("noalias", "No alias analysis"));
 
         CommandLine cmd;
         try {
@@ -68,6 +70,8 @@ public class Dartagnan {
             return;
         }
 
+        Mode mode = Mode.get(cmd.getOptionValue("mode"));
+
         Program p = parseProgram(inputFilePath);
         if(p.getAss() == null){
             throw new RuntimeException("Assert is required for Dartagnan tests");
@@ -91,8 +95,7 @@ public class Dartagnan {
         Context ctx = new Context();
         Solver s = ctx.mkSolver(ctx.mkTactic(TACTIC));
 
-        boolean result = testProgram(s, ctx, p, mcm, target, steps,
-                cmd.hasOption("relax"), cmd.hasOption("idl"), cmd.hasOption("no-alias"));
+        boolean result = testProgram(s, ctx, p, mcm, target, steps, mode, cmd.hasOption("noalias"));
 
         if(p.getAssFilter() != null){
             System.out.println("Filter " + (p.getAssFilter()));
@@ -113,7 +116,7 @@ public class Dartagnan {
     }
 
     static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, String target, int steps,
-                                      boolean relax, boolean idl, boolean noAlias){
+                                      Mode mode, boolean noAlias){
 
         program.unroll(steps);
         program.compile(target, noAlias);
@@ -124,7 +127,7 @@ public class Dartagnan {
         }
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalValues(ctx));
-        solver.add(wmm.encode(program, ctx, relax, idl));
+        solver.add(wmm.encode(program, ctx, mode));
         solver.add(wmm.consistent(program, ctx));
 
         boolean result = (solver.check() == Status.SATISFIABLE);
