@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -129,7 +130,7 @@ public class If extends Event implements RegReaderData {
     }
 
     @Override
-    public If compile(String target) {
+    public If compile(Arch target) {
         t1 = t1.compile(target);
         t2 = t2.compile(target);
         return this;

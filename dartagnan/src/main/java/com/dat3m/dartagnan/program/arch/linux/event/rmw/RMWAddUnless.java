@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.linux.event.rmw;
 
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -27,8 +28,8 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     }
 
     @Override
-    public Thread compile(String target) {
-        if(target.equals("sc")) {
+    public Thread compile(Arch target) {
+        if(target == Arch.NONE) {
             Register dummy = new Register(null);
             RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, address, "Relaxed");
             RMWStoreCond store = new RMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), "Relaxed");

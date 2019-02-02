@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.linux.event.rmw;
 
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -22,8 +23,8 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     }
 
     @Override
-    public Thread compile(String target) {
-        if(target.equals("sc")) {
+    public Thread compile(Arch target) {
+        if(target == Arch.NONE) {
             Register dummy = (resultRegister == value || resultRegister == cmp) ? new Register(null) : resultRegister;
             RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, getLoadMO());
             RMWStoreCond store = new RMWStoreCond(load, address, value, getStoreMO());

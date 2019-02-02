@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
@@ -79,7 +80,7 @@ public abstract class Thread {
         throw new UnsupportedOperationException("Unrolling is not allowed for " + this.getClass().getName());
     }
 
-	public Thread compile(String target) {
+	public Thread compile(Arch target) {
         throw new UnsupportedOperationException("Compilation is not allowed for " + this.getClass().getName());
 	}
 

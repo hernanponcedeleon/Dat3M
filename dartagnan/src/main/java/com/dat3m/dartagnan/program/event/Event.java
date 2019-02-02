@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -86,7 +87,7 @@ public abstract class Event extends Thread implements Comparable<Event> {
 	}
 
     @Override
-	public Thread compile(String target) {
+	public Thread compile(Arch target) {
 		return this;
 	}
 

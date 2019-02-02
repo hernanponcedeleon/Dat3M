@@ -27,15 +27,7 @@ public class Porthos {
 
         Options options = new Options();
 
-        Option sourceOption = new Option("s", "source", true, "Source architecture to compile the program");
-        sourceOption.setRequired(true);
-        options.addOption(sourceOption);
-
-        Option targetOption = new Option("t", "target", true, "Target architecture to compile the program");
-        targetOption.setRequired(true);
-        options.addOption(targetOption);
-
-        Option inputOption = new Option("i", "input", true, "Path to the file containing the input program");
+        Option inputOption = new Option("i", "input", true, "Path to the file with input program");
         inputOption.setRequired(true);
         options.addOption(inputOption);
 
@@ -46,6 +38,14 @@ public class Porthos {
         Option targetCatOption = new Option("tcat", true, "Path to the CAT file of the target memory model");
         targetCatOption.setRequired(true);
         options.addOption(targetCatOption);
+
+        Option sourceOption = new Option("s", "source", true, "Source architecture {none|arm|arm8|power|tso}");
+        sourceOption.setRequired(true);
+        options.addOption(sourceOption);
+
+        Option targetOption = new Option("t", "target", true, "Target architecture {none|arm|arm8|power|tso}");
+        targetOption.setRequired(true);
+        options.addOption(targetOption);
 
         Option modeOption = new Option("m", "mode", true, "Encoding mode {relax|idl|lfp}");
         options.addOption(modeOption);
@@ -69,19 +69,8 @@ public class Porthos {
             return;
         }
 
-        String source = cmd.getOptionValue("source").trim();
-        if(!(Arch.targets.contains(source))){
-            System.out.println("Unrecognized source");
-            System.exit(0);
-            return;
-        }
-
-        String target = cmd.getOptionValue("target").trim();
-        if(!(Arch.targets.contains(target))){
-            System.out.println("Unrecognized target");
-            System.exit(0);
-            return;
-        }
+        Arch source = Arch.get(cmd.getOptionValue("source"));
+        Arch target = Arch.get(cmd.getOptionValue("target"));
 
         String inputFilePath = cmd.getOptionValue("input");
         if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus")) {
@@ -138,7 +127,7 @@ public class Porthos {
         }
     }
 
-    static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program program, String source, String target,
+    static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program program, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, boolean noAlias){
 
         program.unroll(steps);

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import org.junit.Test;
@@ -21,7 +22,7 @@ import static org.junit.Assert.fail;
 
 public abstract class AbstractDartagnanTest {
 
-    static Iterable<Object[]> buildParameters(String litmusPath, String cat, String target, int unroll) throws IOException {
+    static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target, int unroll) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Boolean> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + cat, target);
@@ -42,12 +43,12 @@ public abstract class AbstractDartagnanTest {
 
     private String input;
     private boolean expected;
-    private String target;
+    private Arch target;
     private Wmm wmm;
     private int unroll;
     private Mode mode;
 
-    AbstractDartagnanTest(String input, boolean expected, String target, Wmm wmm, int unroll, Mode mode) {
+    AbstractDartagnanTest(String input, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
         this.input = input;
         this.expected = expected;
         this.target = target;

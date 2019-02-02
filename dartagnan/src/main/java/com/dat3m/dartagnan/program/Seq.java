@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
@@ -95,7 +96,7 @@ public class Seq extends Thread {
 	}
 
     @Override
-	public Seq compile(String target) {
+	public Seq compile(Arch target) {
 		t1 = t1.compile(target);
 		t2 = t2.compile(target);
 		return this;

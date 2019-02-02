@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.pts.event;
 
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -46,22 +47,22 @@ public class Write extends MemEvent implements RegReaderData {
     }
 
     @Override
-    public Thread compile(String target) {
+    public Thread compile(Arch target) {
         Store st = new Store(address, value, atomic);
         st.setHLId(hlId);
         st.setCondLevel(this.condLevel);
 
-        if(!target.equals("power") && !target.equals("arm") && atomic.equals("_sc")) {
+        if(target != Arch.POWER && target != Arch.ARM && target != Arch.ARM8 && atomic.equals("_sc")) {
             Fence mfence = new Fence("Mfence");
             mfence.setCondLevel(this.condLevel);
             return new Seq(st, mfence);
         }
 
-        if(!target.equals("power") && !target.equals("arm")) {
+        if(target != Arch.POWER && target != Arch.ARM && target != Arch.ARM8) {
             return st;
         }
 
-        if(target.equals("power")) {
+        if(target == Arch.POWER) {
             if(atomic.equals("_rx") || atomic.equals("_na")) {
                 return st;
             }
@@ -79,7 +80,7 @@ public class Write extends MemEvent implements RegReaderData {
             }
         }
 
-        if(target.equals("arm")) {
+        if(target == Arch.ARM || target == Arch.ARM8) {
             if(atomic.equals("_rx") || atomic.equals("_na")) {
                 return st;
             }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.utils.AliasAnalysis;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -102,19 +103,19 @@ public class Program extends Thread {
 	}
 
     @Override
-	public Thread compile(String target) {
+	public Thread compile(Arch target) {
 		return compile(target, false, 0, 0);
 	}
 
-    public Thread compile(String target, boolean noAlias) {
+    public Thread compile(Arch target, boolean noAlias) {
         return compile(target, noAlias, 0, 0);
     }
 
-	public Thread compile(String target, boolean noAlias, int firstEid) {
+	public Thread compile(Arch target, boolean noAlias, int firstEid) {
 		return compile(target, noAlias, firstEid, 0);
 	}
 
-	public Thread compile(String target, boolean noAlias, int firstEid, int firstTid) {
+	public Thread compile(Arch target, boolean noAlias, int firstEid, int firstTid) {
         for(int i = 0; i < threads.size(); i++){
             Thread t = threads.get(i).compile(target);
             firstTid = t.setTId(firstTid);

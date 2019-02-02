@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.dartagnan.wmm.utils.*;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -10,9 +10,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 
 import java.util.*;
 
@@ -33,8 +30,8 @@ public class Wmm {
     private boolean drawExecutionGraph = false;
     private Set<String> drawRelations = new HashSet<>();
 
-    public Wmm(String target) {
-        relationRepository = new RelationRepository(Arch.encodeCtrlPo(target));
+    public Wmm(Arch target) {
+        relationRepository = new RelationRepository(target.getIncludePoToCtrl());
     }
 
     public void setDrawExecutionGraph(){

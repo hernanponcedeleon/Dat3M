@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -22,8 +23,8 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
     }
 
     @Override
-    public Thread compile(String target) {
-        if(target.equals("sc")) {
+    public Thread compile(Arch target) {
+        if(target == Arch.NONE) {
             Register dummy = new Register(null);
             RMWLoad load = new RMWLoad(dummy, address, "Relaxed");
             Local local1 = new Local(dummy, new IExprBin(dummy, op, value));

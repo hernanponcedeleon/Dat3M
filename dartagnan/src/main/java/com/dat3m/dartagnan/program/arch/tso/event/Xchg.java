@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.arch.tso.event;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;
@@ -37,8 +38,8 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     }
 
     @Override
-    public Thread compile(String target) {
-        if(target.equals("tso") && atomic.equals("_rx")) {
+    public Thread compile(Arch target) {
+        if(target == Arch.TSO) {
             Register dummyReg = new Register(null);
             RMWLoad load = new RMWLoad(dummyReg, address, atomic);
             load.setHLId(hlId);

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
@@ -12,7 +13,6 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -26,17 +26,17 @@ public class Dartagnan {
 
         Options options = new Options();
 
-        Option targetOption = new Option("t", "target", true, "Target architecture to compile the program");
-        targetOption.setRequired(true);
-        options.addOption(targetOption);
-
-        Option inputOption = new Option("i", "input", true, "Path to the file containing the input program");
+        Option inputOption = new Option("i", "input", true, "Path to the file with input program");
         inputOption.setRequired(true);
         options.addOption(inputOption);
 
         Option catOption = new Option("cat", true, "Path to the CAT file");
         catOption.setRequired(true);
         options.addOption(catOption);
+
+        Option targetOption = new Option("t", "target", true, "Target architecture {none|arm|arm8|power|tso}");
+        catOption.setRequired(true);
+        options.addOption(targetOption);
 
         Option modeOption = new Option("m", "mode", true, "Encoding mode {relax|idl|lfp}");
         options.addOption(modeOption);
@@ -56,13 +56,6 @@ public class Dartagnan {
             return;
         }
 
-        String target = cmd.getOptionValue("target").trim();
-        if(!(Arch.targets.contains(target))){
-            System.out.println("Unrecognized target");
-            System.exit(0);
-            return;
-        }
-
         String inputFilePath = cmd.getOptionValue("input");
         if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus")) {
             System.out.println("Unrecognized program format");
@@ -71,6 +64,7 @@ public class Dartagnan {
         }
 
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
+        Arch target = Arch.get(cmd.getOptionValue("target"));
 
         Program p = parseProgram(inputFilePath);
         if(p.getAss() == null){
@@ -115,8 +109,8 @@ public class Dartagnan {
         }
     }
 
-    static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, String target, int steps,
-                                      Mode mode, boolean noAlias){
+    static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
+                               Mode mode, boolean noAlias){
 
         program.unroll(steps);
         program.compile(target, noAlias);

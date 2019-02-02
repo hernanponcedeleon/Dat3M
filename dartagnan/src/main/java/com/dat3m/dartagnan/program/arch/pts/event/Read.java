@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class Read extends MemEvent implements RegWriter {
 
@@ -42,12 +43,12 @@ public class Read extends MemEvent implements RegWriter {
     }
 
     @Override
-    public Thread compile(String target) {
+    public Thread compile(Arch target) {
         Load ld = new Load(resultRegister, address, atomic);
         ld.setHLId(hlId);
         ld.setCondLevel(this.condLevel);
 
-        if(!target.equals("power") && !target.equals("arm")) {
+        if(target != Arch.POWER && target != Arch.ARM && target != Arch.ARM8) {
             return ld;
         }
 
@@ -55,7 +56,7 @@ public class Read extends MemEvent implements RegWriter {
             return ld;
         }
 
-        if(target.equals("power")) {
+        if(target == Arch.POWER) {
             Fence lwsync = new Fence("Lwsync");
             lwsync.setCondLevel(this.condLevel);
             if(atomic.equals("_con") || atomic.equals("_acq")) {
@@ -69,7 +70,7 @@ public class Read extends MemEvent implements RegWriter {
             }
         }
 
-        if(target.equals("arm")) {
+        if(target == Arch.ARM || target == Arch.ARM8) {
             if(atomic.equals("_con") || atomic.equals("_acq") || atomic.equals("_sc")) {
                 Fence ish = new Fence("Ish");
                 ish.setCondLevel(this.condLevel);

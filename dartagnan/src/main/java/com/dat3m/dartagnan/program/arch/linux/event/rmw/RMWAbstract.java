@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.linux.event.rmw;
 
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -43,7 +44,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     }
 
     @Override
-    public Thread compile(String target) {
+    public Thread compile(Arch target) {
         throw new RuntimeException("Compilation to " + target + " is not supported for " + this.getClass().getName() + " " + atomic);
     }
 

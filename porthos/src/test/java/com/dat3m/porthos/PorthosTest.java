@@ -1,6 +1,7 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
@@ -25,10 +26,10 @@ public class PorthosTest {
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} steps={6} relax={7} idl={8}")
     public static Iterable<Object[]> data() throws IOException {
 
-        Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat", "sc");
-        Wmm wmmTso = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/tso.cat", "tso");
-        Wmm wmmPpc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/power.cat", "power");
-        Wmm wmmArm = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/arm.cat", "arm");
+        Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat", Arch.NONE);
+        Wmm wmmTso = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/tso.cat", Arch.TSO);
+        Wmm wmmPpc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/power.cat", Arch.POWER);
+        Wmm wmmArm = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/arm.cat", Arch.ARM);
 
         return Arrays.asList(new Object[][] {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, "sc", "tso", wmmSc, wmmTso, 2, Mode.RELAX },
@@ -107,14 +108,14 @@ public class PorthosTest {
 
     private String input;
     private boolean expected;
-    private String source;
-    private String target;
+    private Arch source;
+    private Arch target;
     private Wmm sourceWmm;
     private Wmm targetWmm;
     private int steps;
     private Mode mode;
 
-    public PorthosTest(String input, boolean expected, String source, String target, Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode) {
+    public PorthosTest(String input, boolean expected, Arch source, Arch target, Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode) {
         this.input = input;
         this.expected = expected;
         this.source = source;
