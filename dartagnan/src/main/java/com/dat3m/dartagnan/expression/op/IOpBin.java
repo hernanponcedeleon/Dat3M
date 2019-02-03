@@ -26,7 +26,7 @@ public enum IOpBin {
             case L_SHIFT:
                 return "<<";
             case R_SHIFT:
-                return ">>";
+                return ">>>";
             case AR_SHIFT:
                 return ">>";
         }
