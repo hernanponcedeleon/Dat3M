@@ -25,15 +25,15 @@ apt-get install maven
 
 Installation
 ======
-To build the tools, run
+To build the tools, from the Dat3m/ directory run
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
-mvn install -DskipTests
+mvn clean install -DskipTests
 ```
 To build the tools and execute some tests, run
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
-mvn install
+mvn clean install
 ```
 Set the following variable:
 ```
