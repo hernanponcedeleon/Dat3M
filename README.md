@@ -54,17 +54,17 @@ java -jar porthos/target/porthos-2.0-jar-with-dependencies.jar -s <source> -scat
 Dartagnan supports programs written in the .litmus or .pts formats (see below). For Porthos, programs shall be written in the .pts format.
 
 For programs written in the .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. They must be one of the following: 
-- sc
+- none
 - tso
 - power
 - arm
+- arm8
 
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
 Other optional arguments include:
-- -relax: uses the relax encodnig for fixed points,
-- -idl: uses the IDL encodnig for fixed points,
-- -noalias: no alias analysis is performed,
+- -m, --mode {relaxed, idl, kleene}: specifies the encodnig for fixed points. Relaxed (the default mode) uses the Knaster-Tarski encoding introduced in []. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step. Idl mode uses the Kleene iteration encoding introduced in []. 
+- -a, --alias {none, cfi, cfs}: specifies the alias-analysis used. cfi (the default parameter) uses a control-flow-insensitive method. cfs uses a control-flow-sensitive method and none performs no alias analysis.
 - -unroll: unrollifng bound for the BMC.
 
 The .pts format
