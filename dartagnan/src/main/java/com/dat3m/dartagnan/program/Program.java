@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.program.utils.AliasAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
@@ -104,18 +105,18 @@ public class Program extends Thread {
 
     @Override
 	public Thread compile(Arch target) {
-		return compile(target, false, 0, 0);
+		return compile(target, Alias.BASIC, 0, 0);
 	}
 
-    public Thread compile(Arch target, boolean noAlias) {
-        return compile(target, noAlias, 0, 0);
+    public Thread compile(Arch target, Alias alias) {
+        return compile(target, alias, 0, 0);
     }
 
-	public Thread compile(Arch target, boolean noAlias, int firstEid) {
-		return compile(target, noAlias, firstEid, 0);
+	public Thread compile(Arch target, Alias alias, int firstEid) {
+		return compile(target, alias, firstEid, 0);
 	}
 
-	public Thread compile(Arch target, boolean noAlias, int firstEid, int firstTid) {
+	public Thread compile(Arch target, Alias alias, int firstEid, int firstTid) {
         for(int i = 0; i < threads.size(); i++){
             Thread t = threads.get(i).compile(target);
             firstTid = t.setTId(firstTid);
@@ -129,7 +130,7 @@ public class Program extends Thread {
 			threads.set(i, t);
         }
         getEventRepository().clear();
-        new AliasAnalysis().calculateLocationSets(this, memory, noAlias);
+        new AliasAnalysis().calculateLocationSets(this, memory, alias);
 		return this;
 	}
 

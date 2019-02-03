@@ -1,6 +1,7 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -135,7 +136,7 @@ public class PorthosTest {
                 Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
                 Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
                 PorthosResult result = Porthos.testProgram(s1, s2, ctx,program,
-                        source, target, sourceWmm, targetWmm, steps, mode, false);
+                        source, target, sourceWmm, targetWmm, steps, mode, Alias.BASIC);
                 assertEquals(expected, result.getIsPortable());
             }
         } catch (IOException e){

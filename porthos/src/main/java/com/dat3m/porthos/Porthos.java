@@ -1,6 +1,7 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
@@ -50,10 +51,12 @@ public class Porthos {
         Option modeOption = new Option("m", "mode", true, "Encoding mode {relax|idl|lfp}");
         options.addOption(modeOption);
 
+        Option aliasOption = new Option("a", "alias", true, "Type of alias analysis {none|basic|cfs}");
+        options.addOption(aliasOption);
+
         options.addOption(new Option("unroll", true, "Unrolling steps"));
         options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
         options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
-        options.addOption(new Option("noalias", "No alias analysis"));
 
         CommandLineParser parserCmd = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -98,6 +101,7 @@ public class Porthos {
         }
 
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
+        Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
         Context ctx = new Context();
         Program program = Dartagnan.parseProgram(inputFilePath);
@@ -105,7 +109,7 @@ public class Porthos {
         Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
         PorthosResult result = testProgram(s1, s2, ctx, program, source, target, mcmS, mcmT,
-                steps, mode, cmd.hasOption("noalias"));
+                steps, mode, alias);
 
         if(result.getIsPortable()){
             System.out.println("The program is state-portable");
@@ -128,7 +132,7 @@ public class Porthos {
     }
 
     static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program program, Arch source, Arch target,
-                                     Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, boolean noAlias){
+                                     Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, Alias alias){
 
         program.unroll(steps);
 
@@ -140,9 +144,9 @@ public class Porthos {
         Program pSource = program.clone();
         Program pTarget = program.clone();
 
-        pSource.compile(source, noAlias);
+        pSource.compile(source, alias);
         int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;
-        pTarget.compile(target, noAlias, startEId);
+        pTarget.compile(target, alias, startEId);
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);

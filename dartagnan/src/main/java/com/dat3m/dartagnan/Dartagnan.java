@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -41,10 +42,12 @@ public class Dartagnan {
         Option modeOption = new Option("m", "mode", true, "Encoding mode {relax|idl|lfp}");
         options.addOption(modeOption);
 
+        Option aliasOption = new Option("a", "alias", true, "Type of alias analysis {none|basic|cfs}");
+        options.addOption(aliasOption);
+
         options.addOption(new Option("unroll", true, "Unrolling steps"));
         options.addOption(new Option("draw", true, "Path to save the execution graph if the state is reachable"));
         options.addOption(new Option("rels", true, "Relations to be drawn in the graph"));
-        options.addOption(new Option("noalias", "No alias analysis"));
 
         CommandLine cmd;
         try {
@@ -65,6 +68,7 @@ public class Dartagnan {
 
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
         Arch target = Arch.get(cmd.getOptionValue("target"));
+        Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
         Program p = parseProgram(inputFilePath);
         if(p.getAss() == null){
@@ -89,7 +93,7 @@ public class Dartagnan {
         Context ctx = new Context();
         Solver s = ctx.mkSolver(ctx.mkTactic(TACTIC));
 
-        boolean result = testProgram(s, ctx, p, mcm, target, steps, mode, cmd.hasOption("noalias"));
+        boolean result = testProgram(s, ctx, p, mcm, target, steps, mode, alias);
 
         if(p.getAssFilter() != null){
             System.out.println("Filter " + (p.getAssFilter()));
@@ -110,10 +114,10 @@ public class Dartagnan {
     }
 
     static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
-                               Mode mode, boolean noAlias){
+                               Mode mode, Alias alias){
 
         program.unroll(steps);
-        program.compile(target, noAlias);
+        program.compile(target, alias);
 
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){

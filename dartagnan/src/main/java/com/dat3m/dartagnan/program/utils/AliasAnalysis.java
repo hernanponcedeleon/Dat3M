@@ -23,8 +23,8 @@ public class AliasAnalysis {
     private List<Variable> variables = new LinkedList<>();
     private ImmutableSet<Address> maxAddressSet;
 
-    public void calculateLocationSets(Program program, Memory memory, boolean noAlias) {
-        if(noAlias){
+    public void calculateLocationSets(Program program, Memory memory, Alias alias) {
+        if(alias == Alias.NONE){
             calculateLocationSetsNoAlias(program, memory);
         } else {
             maxAddressSet = memory.getAllAddresses();
