@@ -21,9 +21,9 @@ public class ParserLitmusPPC implements ParserInterface {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-
         LitmusPPCLexer lexer = new LitmusPPCLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        stream.close();
 
         LitmusPPCParser parser = new LitmusPPCParser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));

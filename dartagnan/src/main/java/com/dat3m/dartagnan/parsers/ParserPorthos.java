@@ -17,9 +17,9 @@ public class ParserPorthos implements ParserInterface{
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-
         PorthosLexer lexer = new PorthosLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        stream.close();
 
         PorthosParser parser = new PorthosParser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));

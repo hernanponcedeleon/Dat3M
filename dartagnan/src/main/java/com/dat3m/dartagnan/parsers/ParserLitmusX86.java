@@ -21,9 +21,9 @@ public class ParserLitmusX86 implements ParserInterface {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-
         LitmusX86Lexer lexer = new LitmusX86Lexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        stream.close();
 
         LitmusX86Parser parser = new LitmusX86Parser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));

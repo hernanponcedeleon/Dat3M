@@ -19,6 +19,8 @@ public class ParserCat {
         CharStream charStream = CharStreams.fromStream(stream);
         CatLexer lexer = new CatLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        stream.close();
+
         CatParser parser = new CatParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
         ParserRuleContext parserEntryPoint = parser.mcm();

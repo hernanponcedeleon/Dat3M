@@ -20,16 +20,15 @@ public class ParserLitmusC implements ParserInterface {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-
         LitmusCLexer lexer = new LitmusCLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        stream.close();
 
         LitmusCParser parser = new LitmusCParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
         ProgramBuilder pb = new ProgramBuilder();
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusC visitor = new VisitorLitmusC(pb);
-
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);
