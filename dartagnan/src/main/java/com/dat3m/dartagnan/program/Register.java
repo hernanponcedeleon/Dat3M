@@ -73,6 +73,23 @@ public class Register extends IExpr implements ExprInterface, Variable {
         return name;
 	}
 
+    @Override
+    public int hashCode(){
+        return (name.hashCode() << 8) + threadId;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        Register rObj = (Register) obj;
+        return name.equals(rObj.name) && threadId == rObj.threadId;
+    }
+
 	@Override
 	public Register clone() {
 		return new Register(name, threadId);
