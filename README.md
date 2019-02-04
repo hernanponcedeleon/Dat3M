@@ -60,12 +60,12 @@ They must be one of the following:
 - arm
 - arm8
 
-Option target is mandatory in dartagnan when using the.pts format.
+**Note:** Option target is mandatory in dartagnan when using the.pts format.
 
 Other optional arguments include:
-- -m, --mode {relaxed, idl, kleene}: specifies the encodnig for fixed points. Relaxed (the default mode) uses the Knaster-Tarski encoding introduced in []. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step. Idl mode uses the Kleene iteration encoding introduced in []. 
-- -a, --alias {none, cfi, cfs}: specifies the alias-analysis used. cfi (the default parameter) uses a control-flow-insensitive method. cfs uses a control-flow-sensitive method and none performs no alias analysis.
-- -unroll: unrollifng bound for the BMC.
+- -m, --mode {relaxed, idl, kleene}: specifies the encoding for fixed points. Relaxed (the default mode) uses the Knaster-Tarski encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step. Mode idl uses the Kleene iteration encoding introduced in [2]. 
+- -a, --alias {none, cfi, cfs}: specifies the alias-analysis used. Option cfi (the default parameter) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
+- -unroll: unrolling bound for the BMC.
 
 The .pts format
 ======
@@ -102,3 +102,8 @@ Examples are provided in the **benchmarks/** folder.
 Author and Contact
 ======
 Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org), [Florian Furbach](mailto:f.furbach@tu-braunschweig.de) and [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi). Please feel free to contact us in case of questions or to send feedback.
+
+References
+======
+[1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: BMC with Memory Models as Modules. FMCAD 2018.
+[2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models. SAS 2017.
