@@ -30,11 +30,14 @@ To build the tools, from the Dat3m/ directory run
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean package -DskipTests
 ```
-To build the tools and execute some tests, run
+
+Unit Tests
+======
+We provide a set of unit tests that can be run by
 ```
-mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
-mvn clean package
+mvn test
 ```
+
 Usage
 ======
 For checking reachability:
