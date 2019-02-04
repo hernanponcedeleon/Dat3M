@@ -35,32 +35,28 @@ To build the tools and execute some tests, run
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean package
 ```
-Set the following variable:
-```
-export LD_LIBRARY_PATH=/path/to/the/project/Dat3M/lib
-```
-(use DYLD_LIBRARY_PATH in MacOS)
-
 Usage
 ======
 For checking reachability:
 ```
-java -jar dartagnan/target/dartagnan-2.0-jar-with-dependencies.jar -t <target> -cat <CAT file> -i <program file> [options]
+java -jar dartagnan/target/dartagnan-2.0-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
 ```
 For checking state inclusion:
 ```
 java -jar porthos/target/porthos-2.0-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-Dartagnan supports programs written in the .litmus or .pts formats (see below). For Porthos, programs shall be written in the .pts format.
+Dartagnan supports programs written in the .litmus or .pts formats (see below). For Porthos, programs shall be written in the .pts format since they need to be compiled to two different architectures.
 
-For programs written in the .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. They must be one of the following: 
+The -cat,-scat,-tcat options specify the paths to the CAT files.
+
+For programs written in the .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
+They must be one of the following: 
 - none
 - tso
 - power
 - arm
 - arm8
-
-The -cat,-scat,-tcat options specify the paths to the CAT files.
+Option target is mandatory in dartagnan when using the.pts format.
 
 Other optional arguments include:
 - -m, --mode {relaxed, idl, kleene}: specifies the encodnig for fixed points. Relaxed (the default mode) uses the Knaster-Tarski encoding introduced in []. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step. Idl mode uses the Kleene iteration encoding introduced in []. 
