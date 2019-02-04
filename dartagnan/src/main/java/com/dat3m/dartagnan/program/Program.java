@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.utils.EventRepository;
 
+import static com.dat3m.dartagnan.wmm.utils.Arch.NONE;
+
 import java.util.*;
 
 public class Program extends Thread {
@@ -24,6 +26,7 @@ public class Program extends Thread {
 	private List<Thread> threads;
 	private final ImmutableSet<Location> locations;
 	private Memory memory;
+	private Arch arch;
 
     public Program(Memory memory, ImmutableSet<Location> locations){
         this("", memory, locations);
@@ -38,6 +41,14 @@ public class Program extends Thread {
 
 	public void setName(String name){
 	    this.name = name;
+    }
+
+	public void setArch(Arch arch){
+	    this.arch = arch;
+    }
+
+	public Arch getArch(){
+	    return arch;
     }
 
     public AbstractAssert getAss() {

@@ -16,6 +16,8 @@ import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.commons.cli.*;
 
+import static com.dat3m.dartagnan.wmm.utils.Arch.NONE;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -36,7 +38,6 @@ public class Dartagnan {
         options.addOption(catOption);
 
         Option targetOption = new Option("t", "target", true, "Target architecture {none|arm|arm8|power|tso}");
-        catOption.setRequired(true);
         options.addOption(targetOption);
 
         Option modeOption = new Option("m", "mode", true, "Encoding mode {relaxed|idl|kleene}");
@@ -67,10 +68,22 @@ public class Dartagnan {
         }
 
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
-        Arch target = Arch.get(cmd.getOptionValue("target"));
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
         Program p = parseProgram(inputFilePath);
+        
+        Arch target = p.getArch();
+
+        if(p.getArch() == null && cmd.hasOption("target")) {
+        	target = Arch.get(cmd.getOptionValue("target"));
+        }
+        
+        if(target == null) {
+            System.out.println("Compilation target cannot be infered");
+            System.exit(0);
+            return;
+        }
+        
         if(p.getAss() == null){
             throw new RuntimeException("Assert is required for Dartagnan tests");
         }

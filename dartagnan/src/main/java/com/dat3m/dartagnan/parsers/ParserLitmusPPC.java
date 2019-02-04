@@ -4,7 +4,11 @@ import com.dat3m.dartagnan.parsers.utils.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.visitors.VisitorLitmusPPC;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+
 import org.antlr.v4.runtime.*;
+
+import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,6 +34,7 @@ public class ParserLitmusPPC implements ParserInterface {
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);
+        program.setArch(POWER);
         return program;
     }
 }
