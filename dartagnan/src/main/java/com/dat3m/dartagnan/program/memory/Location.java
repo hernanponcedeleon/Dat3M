@@ -53,6 +53,22 @@ public class Location implements ExprInterface, Variable {
 	}
 
 	@Override
+	public int hashCode(){
+		return address.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+
+		return address.hashCode() == obj.hashCode();
+	}
+
+	@Override
 	public Location clone() {
 		return this;
 	}

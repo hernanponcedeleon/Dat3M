@@ -50,6 +50,22 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
+    public int hashCode(){
+        return index;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        return index == ((Address)obj).index;
+    }
+
+    @Override
     public IntExpr toZ3Int(Context ctx){
         return ctx.mkIntConst("memory_" + index);
     }
