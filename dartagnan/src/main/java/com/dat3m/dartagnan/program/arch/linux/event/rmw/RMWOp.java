@@ -18,8 +18,8 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
     private IOpBin op;
 
-    public RMWOp(IExpr address, ExprInterface value, IOpBin op) {
-        super(address, new Register(null), value, "Relaxed");
+    public RMWOp(IExpr address, Register register, ExprInterface value, IOpBin op) {
+        super(address, register, value, "Relaxed");
         this.op = op;
         addFilters(EType.NORETURN);
     }
@@ -47,7 +47,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     public RMWOp clone() {
         if(clone == null){
-            clone = new RMWOp(address.clone(), value.clone(), op);
+            clone = new RMWOp(address.clone(), resultRegister.clone(), value.clone(), op);
             afterClone();
         }
         return (RMWOp)clone;

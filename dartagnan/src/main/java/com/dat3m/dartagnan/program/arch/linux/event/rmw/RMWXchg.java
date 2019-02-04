@@ -20,7 +20,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     public Thread compile(Arch target) {
         if(target == Arch.NONE) {
-            Register dummy = resultRegister == value ? new Register(null) : resultRegister;
+            Register dummy = resultRegister == value ? new Register(null, resultRegister.getThreadId()) : resultRegister;
             RMWLoad load = new RMWLoad(dummy, address, getLoadMO());
             RMWStore store = new RMWStore(load, address, value, getStoreMO());
 

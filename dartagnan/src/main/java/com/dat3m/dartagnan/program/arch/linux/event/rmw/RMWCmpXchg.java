@@ -25,7 +25,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     @Override
     public Thread compile(Arch target) {
         if(target == Arch.NONE) {
-            Register dummy = (resultRegister == value || resultRegister == cmp) ? new Register(null) : resultRegister;
+            Register dummy = (resultRegister == value || resultRegister == cmp) ? new Register(null, resultRegister.getThreadId()) : resultRegister;
             RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, getLoadMO());
             RMWStoreCond store = new RMWStoreCond(load, address, value, getStoreMO());
 

@@ -14,8 +14,6 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.utils.EventRepository;
 
-import static com.dat3m.dartagnan.wmm.utils.Arch.NONE;
-
 import java.util.*;
 
 public class Program extends Thread {
@@ -135,7 +133,6 @@ public class Program extends Thread {
             t.setMainThread(t);
             for(Register reg : t.getEventRepository().getRegisters()) {
                 reg.setMainThreadId(t.tid);
-                reg.setPrintMainThreadId(Integer.toString(i));
             }
             t.getEventRepository().clear();
 			threads.set(i, t);

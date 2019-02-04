@@ -21,19 +21,20 @@ public class Register extends IExpr implements ExprInterface, Variable {
 
 	private static int dummyCount = 0;
 
-	private String name;
+	private final String name;
+    private final int threadId;
 	private int mainThreadId = -1;
-	private String printMainThreadId;
 	private Set<Variable> aliasEdges = new HashSet<>();
 	private Set<Address> aliasAddresses = new HashSet<>();
 	private Set<MemEvent> aliasEvents = new HashSet<>();
 	private Map<Integer, SSAReg> SSAIds = new HashMap<>();
 
-	public Register(String name) {
+	public Register(String name, int threadId) {
 		if(name == null){
 			name = "DUMMY_REG_" + dummyCount++;
 		}
 		this.name = name;
+		this.threadId = threadId;
 	}
 	
 	public String getName() {
@@ -44,12 +45,8 @@ public class Register extends IExpr implements ExprInterface, Variable {
 		this.mainThreadId = t;
 	}
 
-	public void setPrintMainThreadId(String threadId){
-		this.printMainThreadId = threadId;
-	}
-
-	public String getPrintMainThreadId(){
-		return printMainThreadId;
+	public int getThreadId(){
+		return threadId;
 	}
 
 	@Override
@@ -78,7 +75,7 @@ public class Register extends IExpr implements ExprInterface, Variable {
 
 	@Override
 	public Register clone() {
-		return this;
+		return new Register(name, threadId);
 	}
 
 	@Override

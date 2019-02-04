@@ -377,7 +377,8 @@ public class VisitorLitmusC
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
         ExprInterface value = returnExpressionOrDefault(ctx.value, 1);
-        Thread t = new RMWOp(getAddress(ctx.address), value, ctx.op);
+        Register register = programBuilder.getOrCreateRegister(scope, null);
+        Thread t = new RMWOp(getAddress(ctx.address), register, value, ctx.op);
         programBuilder.addChild(currentThread, t);
         return null;
     }

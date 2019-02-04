@@ -25,7 +25,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
     @Override
     public Thread compile(Arch target) {
         if(target == Arch.NONE) {
-            Register dummy = new Register(null);
+            Register dummy = new Register(null, resultRegister.getThreadId());
             RMWLoad load = new RMWLoad(dummy, address, "Relaxed");
             Local local1 = new Local(dummy, new IExprBin(dummy, op, value));
             RMWStore store = new RMWStore(load, address, dummy, "Relaxed");

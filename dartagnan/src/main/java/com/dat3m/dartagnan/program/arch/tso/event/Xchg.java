@@ -40,7 +40,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     @Override
     public Thread compile(Arch target) {
         if(target == Arch.TSO) {
-            Register dummyReg = new Register(null);
+            Register dummyReg = new Register(null, resultRegister.getThreadId());
             RMWLoad load = new RMWLoad(dummyReg, address, atomic);
             load.setHLId(hlId);
             load.setCondLevel(condLevel);

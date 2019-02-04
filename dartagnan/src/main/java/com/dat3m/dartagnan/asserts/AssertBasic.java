@@ -35,7 +35,7 @@ public class AssertBasic extends AbstractAssert{
 
     private String valueToString(ExprInterface value){
         if(value instanceof Register){
-            return ((Register)value).getPrintMainThreadId() + ":" + value;
+            return ((Register)value).getThreadId() + ":" + value;
         }
         return value.toString();
     }

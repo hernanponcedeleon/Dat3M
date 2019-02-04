@@ -30,7 +30,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     @Override
     public Thread compile(Arch target) {
         if(target == Arch.NONE) {
-            Register dummy = new Register(null);
+            Register dummy = new Register(null, resultRegister.getThreadId());
             RMWReadCondUnless load = new RMWReadCondUnless(dummy, cmp, address, "Relaxed");
             RMWStoreCond store = new RMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), "Relaxed");
             Local local = new Local(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
