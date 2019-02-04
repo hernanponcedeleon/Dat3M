@@ -59,6 +59,7 @@ They must be one of the following:
 - power
 - arm
 - arm8
+
 Option target is mandatory in dartagnan when using the.pts format.
 
 Other optional arguments include:
