@@ -105,6 +105,6 @@ Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@forti
 
 References
 ======
-[1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: BMC with Memory Models as Modules. FMCAD 2018.
+[1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC with Memory Models as Modules**. FMCAD 2018.
 
-[2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models. SAS 2017.
+[2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**. SAS 2017.
