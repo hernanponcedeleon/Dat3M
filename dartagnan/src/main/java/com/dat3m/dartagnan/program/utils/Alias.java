@@ -9,7 +9,7 @@ public enum Alias {
             switch(alias){
                 case "none":
                     return NONE;
-                case "basic":
+                case "cfi":
                     return BASIC;
                 case "cfs":
                     return CFS;
@@ -24,7 +24,7 @@ public enum Alias {
             case NONE:
                 return "none";
             case BASIC:
-                return "basic";
+                return "cfi";
             case CFS:
                 return "cfs";
         }

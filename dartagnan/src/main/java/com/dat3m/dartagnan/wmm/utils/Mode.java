@@ -7,11 +7,11 @@ public enum Mode {
         if(mode != null){
             mode = mode.trim();
             switch(mode){
-                case "relax":
+                case "relaxed":
                     return RELAX;
                 case "idl":
                     return IDL;
-                case "lfp":
+                case "kleene":
                     return LFP;
             }
         }
@@ -22,11 +22,11 @@ public enum Mode {
     public String toString() {
         switch(this){
             case RELAX:
-                return "relax";
+                return "relaxed";
             case IDL:
                 return "idl";
             case LFP:
-                return "flp";
+                return "kleene";
         }
         return super.toString();
     }

@@ -39,10 +39,10 @@ public class Dartagnan {
         catOption.setRequired(true);
         options.addOption(targetOption);
 
-        Option modeOption = new Option("m", "mode", true, "Encoding mode {relax|idl|lfp}");
+        Option modeOption = new Option("m", "mode", true, "Encoding mode {relaxed|idl|kleene}");
         options.addOption(modeOption);
 
-        Option aliasOption = new Option("a", "alias", true, "Type of alias analysis {none|basic|cfs}");
+        Option aliasOption = new Option("a", "alias", true, "Type of alias analysis {none|cfi|cfs}");
         options.addOption(aliasOption);
 
         options.addOption(new Option("unroll", true, "Unrolling steps"));
