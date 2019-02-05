@@ -29,7 +29,9 @@ To build the tools, from the Dat3m/ directory run
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
+export LD_LIBRARY_PATH=./lib/
 ```
+(use DYLD_LIBRARY_PATH in MacOS)
 
 Unit Tests
 ======
@@ -63,8 +65,8 @@ They must be one of the following:
 **Note:** Option target is mandatory in dartagnan when using the.pts format.
 
 Other optional arguments include:
-- -m, --mode {relaxed, idl, kleene}: specifies the encoding for fixed points. Relaxed (the default mode) uses the Knaster-Tarski encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step. Mode idl uses the Kleene iteration encoding introduced in [2]. 
-- -a, --alias {none, cfi, cfs}: specifies the alias-analysis used. Option cfi (the default parameter) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
+- -m, --mode {relaxed, idl, kleene}: specifies the encoding for fixed points. Relaxed (default mode) uses the Knaster-Tarski encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step. Mode idl uses the Kleene iteration encoding introduced in [2]. 
+- -a, --alias {none, cfi, cfs}: specifies the alias-analysis used. Option cfi (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - -unroll: unrolling bound for the BMC.
 
 The .pts format
