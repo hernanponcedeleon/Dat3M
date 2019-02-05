@@ -1,8 +1,8 @@
 C Treiber
 {
-*ToS = A;
-*Anext = null;
-*Bnext = null;
+ToS = A;
+Anext = null;
+Bnext = null;
 0:continue = 1;
 1:continue = 1;
 1:next = null;
