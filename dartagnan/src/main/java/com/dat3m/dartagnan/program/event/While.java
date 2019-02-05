@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Seq;
 import com.dat3m.dartagnan.program.Thread;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class While extends Event {
 
@@ -37,8 +37,7 @@ public class While extends Event {
 			Thread copyT = t.clone();
 			copyT.decCondLevel();
 			copyT = copyT.unroll(steps);
-			ExprInterface newPred = pred.clone();
-			Thread newThread = new If(newPred, new Seq(copyT, unroll(steps - 1)), new Skip());
+			Thread newThread = new If(pred, new Seq(copyT, unroll(steps - 1)), new Skip());
 			newThread.setCondLevel(condLevel);
 			return newThread;
 		}
@@ -46,8 +45,8 @@ public class While extends Event {
 	}
 
 	@Override
-	public Set<Event> getEvents() {
-		Set<Event> ret = new HashSet<>(t.getEvents());
+	public List<Event> getEvents() {
+		List<Event> ret = new ArrayList<>(t.getEvents());
 		ret.add(this);
 		return ret;
 	}
@@ -63,7 +62,7 @@ public class While extends Event {
 		if(clone == null){
 			Thread newT = t.clone();
 			newT.decCondLevel();
-			clone = new While(pred.clone(), newT);
+			clone = new While(pred, newT);
 			afterClone();
 		}
 		return (While)clone;

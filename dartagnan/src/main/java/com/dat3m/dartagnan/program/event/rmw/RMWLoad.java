@@ -16,7 +16,7 @@ public class RMWLoad extends Load implements RegWriter {
     @Override
     public RMWLoad clone() {
         if(clone == null){
-            clone = new RMWLoad(resultRegister.clone(), address.clone(), atomic);
+            clone = new RMWLoad(resultRegister, address, atomic);
             afterClone();
         }
         return (RMWLoad)clone;

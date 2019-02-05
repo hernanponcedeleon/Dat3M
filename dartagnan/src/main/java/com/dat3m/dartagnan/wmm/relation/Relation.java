@@ -104,11 +104,28 @@ public abstract class Relation {
         return isStatic;
     }
 
+    @Override
     public String toString(){
         if(name != null){
             return name + " := " + term;
         }
         return term;
+    }
+
+    @Override
+    public int hashCode(){
+        return getName().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        return getName().equals(((Relation)obj).getName());
     }
 
     public BoolExpr encode() {

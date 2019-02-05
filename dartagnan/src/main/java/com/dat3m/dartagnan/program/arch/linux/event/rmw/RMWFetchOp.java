@@ -47,9 +47,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
     @Override
     public RMWFetchOp clone() {
         if(clone == null){
-            Register newReg = resultRegister.clone();
-            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
-            clone = new RMWFetchOp(address.clone(), newReg, newValue, op, atomic);
+            clone = new RMWFetchOp(address, resultRegister, value, op, atomic);
             afterClone();
         }
         return (RMWFetchOp)clone;

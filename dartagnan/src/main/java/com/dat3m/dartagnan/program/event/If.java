@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class If extends Event implements RegReaderData {
 
@@ -93,8 +93,8 @@ public class If extends Event implements RegReaderData {
     }
 
     @Override
-    public Set<Event> getEvents() {
-        Set<Event> ret = new HashSet<>();
+    public List<Event> getEvents() {
+        List<Event> ret = new ArrayList<>();
         ret.addAll(t1.getEvents());
         ret.addAll(t2.getEvents());
         ret.add(this);
@@ -115,8 +115,7 @@ public class If extends Event implements RegReaderData {
             newT1.decCondLevel();
             Thread newT2 = t2.clone();
             newT2.decCondLevel();
-            ExprInterface newPred = expr.clone();
-            clone = new If(newPred, newT1, newT2);
+            clone = new If(expr, newT1, newT2);
             afterClone();
         }
         return (If)clone;

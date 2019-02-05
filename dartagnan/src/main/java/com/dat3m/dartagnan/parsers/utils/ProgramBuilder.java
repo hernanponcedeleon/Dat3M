@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.utils;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.*;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.expression.IConst;
@@ -9,10 +10,6 @@ import com.dat3m.dartagnan.parsers.utils.branch.CondJump;
 import com.dat3m.dartagnan.parsers.utils.branch.Label;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.If;
-import com.dat3m.dartagnan.program.event.Init;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -32,6 +29,8 @@ public class ProgramBuilder {
 
     private AbstractAssert ass;
     private AbstractAssert assFilter;
+
+    private int lastHlId = 1;
 
     public Program build(){
         Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
@@ -55,6 +54,9 @@ public class ProgramBuilder {
     public Thread addChild(String thread, Thread child){
         if(!threads.containsKey(thread)){
             throw new RuntimeException("Thread " + thread + " is not initialised");
+        }
+        for(Event e : child.getEvents()){
+            e.setHLId(lastHlId++);
         }
         threads.get(thread).add(child);
         return child;

@@ -47,7 +47,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     public RMWOp clone() {
         if(clone == null){
-            clone = new RMWOp(address.clone(), resultRegister.clone(), value.clone(), op);
+            clone = new RMWOp(address, resultRegister, value, op);
             afterClone();
         }
         return (RMWOp)clone;

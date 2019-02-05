@@ -42,7 +42,7 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
     @Override
     public RMWStoreOptStatus clone() {
         if(clone == null){
-            clone = new RMWStoreOptStatus(register.clone(), storeEvent.clone());
+            clone = new RMWStoreOptStatus(register, storeEvent.clone());
             afterClone();
         }
         return (RMWStoreOptStatus)clone;

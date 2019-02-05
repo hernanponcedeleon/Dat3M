@@ -35,7 +35,7 @@ public class Init extends MemEvent {
 	@Override
 	public Init clone() {
 	    if(clone == null){
-            clone = new Init((Address) address.clone(), value.clone());
+            clone = new Init((Address) address, value);
             afterClone();
         }
 		return (Init)clone;

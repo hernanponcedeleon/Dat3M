@@ -46,7 +46,7 @@ public class Store extends MemEvent implements RegReaderData {
     @Override
     public Store clone() {
         if(clone == null){
-            clone = new Store(address.clone(), value.clone(), atomic);
+            clone = new Store(address, value, atomic);
             afterClone();
         }
         return (Store)clone;

@@ -78,8 +78,8 @@ public class Program extends Thread {
     }
 
 	@Override
-	public Set<Event> getEvents(){
-        Set<Event> events = new HashSet<>();
+	public List<Event> getEvents(){
+        List<Event> events = new ArrayList<>();
 		for(Thread t : threads){
 			events.addAll(t.getEvents());
 		}
@@ -88,20 +88,6 @@ public class Program extends Thread {
 
     @Override
 	public void beforeClone(){}
-
-    @Override
-	public Program clone() {
-        Program newP = new Program(name, memory, locations);
-		for(Thread t : threads){
-		    t.beforeClone();
-            newP.add(t.clone());
-        }
-		newP.setAss(ass.clone());
-		if(assFilter != null){
-			newP.setAssFilter(assFilter.clone());
-		}
-		return newP;
-	}
 
 	@Override
 	public Thread unroll(int steps) {

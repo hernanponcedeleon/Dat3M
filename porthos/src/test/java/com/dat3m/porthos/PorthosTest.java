@@ -130,15 +130,16 @@ public class PorthosTest {
     @Test
     public void test() {
         try {
-            Program program = Dartagnan.parseProgram(input);
-            if (program.getAss() != null) {
-                Context ctx = new Context();
-                Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-                Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-                PorthosResult result = Porthos.testProgram(s1, s2, ctx,program,
-                        source, target, sourceWmm, targetWmm, steps, mode, Alias.BASIC);
-                assertEquals(expected, result.getIsPortable());
-            }
+            Program pSource = Dartagnan.parseProgram(input);
+            Program pTarget = Dartagnan.parseProgram(input);
+
+            Context ctx = new Context();
+            Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+            Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+            PorthosResult result = Porthos.testProgram(s1, s2, ctx, pSource, pTarget,
+                    source, target, sourceWmm, targetWmm, steps, mode, Alias.NONE);
+            assertEquals(expected, result.getIsPortable());
+
         } catch (IOException e){
             fail("Missing resource file");
         }

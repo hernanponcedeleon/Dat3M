@@ -38,7 +38,7 @@ public class EventRepository {
     public static final int RCU = RCU_LOCK | RCU_UNLOCK | RCU_SYNC;
     public static final int VISIBLE = MEMORY | FENCE | RCU;
 
-    private Map<Integer, Set<Event>> sets = new HashMap<>();
+    private Map<Integer, List<Event>> events = new HashMap<>();
     private Set<Register> registers;
     private Thread thread;
 
@@ -46,17 +46,17 @@ public class EventRepository {
         this.thread = thread;
     }
 
-    public Set<Event> getEvents(int mask){
-        if(!sets.containsKey(mask)){
+    public List<Event> getEvents(int mask){
+        if(!events.containsKey(mask)){
             if(mask == EMPTY){
-                sets.put(mask, new HashSet<>());
+                events.put(mask, new ArrayList<>());
             } else if(mask == ALL){
-                sets.put(ALL, thread.getEvents());
+                events.put(ALL, thread.getEvents());
             } else {
-                sets.put(mask, getEvents(ALL).stream().filter(e -> is(e, mask)).collect(Collectors.toSet()));
+                events.put(mask, getEvents(ALL).stream().filter(e -> is(e, mask)).collect(Collectors.toList()));
             }
         }
-        return sets.get(mask);
+        return events.get(mask);
     }
 
     public List<Event> getSortedList(int mask){
@@ -65,7 +65,7 @@ public class EventRepository {
 
     public void clear(){
         registers = null;
-        sets.clear();
+        events.clear();
     }
 
     private boolean is(Event event, int mask){

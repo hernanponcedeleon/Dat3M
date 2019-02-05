@@ -59,7 +59,7 @@ public class RelCo extends Relation {
         BoolExpr enc = ctx.mkTrue();
         EventRepository eventRepository = program.getEventRepository();
         ImmutableSetMultimap<Address, Location> addressLocationMap = getAddressLocationMap();
-        Set<Event> writes = eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT);
+        List<Event> writes = eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT);
 
         for(Event e : eventRepository.getEvents(EventRepository.INIT)) {
             enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));

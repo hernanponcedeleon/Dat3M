@@ -96,7 +96,7 @@ class Encodings {
 	}
 
 	private static List<Event> sortedByHlId(Program program){
-        return program.getEventRepository()
+	    return program.getEventRepository()
                 .getEvents(EventRepository.MEMORY | EventRepository.LOCAL)
                 .stream()
                 .sorted(Comparator.comparing(Event::getHLId))

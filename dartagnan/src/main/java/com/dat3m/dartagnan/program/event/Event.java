@@ -5,9 +5,7 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public abstract class Event extends Thread implements Comparable<Event> {
 
@@ -75,8 +73,8 @@ public abstract class Event extends Thread implements Comparable<Event> {
     }
 
     @Override
-	public Set<Event> getEvents() {
-		Set<Event> ret = new HashSet<>();
+	public List<Event> getEvents() {
+		List<Event> ret = new ArrayList<>();
 		ret.add(this);
 		return ret;
 	}

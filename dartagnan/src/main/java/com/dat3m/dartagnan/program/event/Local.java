@@ -55,7 +55,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
     @Override
 	public Local clone() {
 	    if(clone == null){
-            clone = new Local(reg.clone(), expr.clone());
+            clone = new Local(reg, expr);
             afterClone();
         }
 		return (Local)clone;

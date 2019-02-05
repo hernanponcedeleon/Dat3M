@@ -104,11 +104,12 @@ public class Porthos {
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
         Context ctx = new Context();
-        Program program = Dartagnan.parseProgram(inputFilePath);
+        Program pSource = Dartagnan.parseProgram(inputFilePath);
+        Program pTarget = Dartagnan.parseProgram(inputFilePath);
         Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
         Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
-        PorthosResult result = testProgram(s1, s2, ctx, program, source, target, mcmS, mcmT,
+        PorthosResult result = testProgram(s1, s2, ctx, pSource, pTarget, source, target, mcmS, mcmT,
                 steps, mode, alias);
 
         if(result.getIsPortable()){
@@ -131,18 +132,11 @@ public class Porthos {
         }
     }
 
-    static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program program, Arch source, Arch target,
+    static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, Alias alias){
 
-        program.unroll(steps);
-
-        int baseHlId = 1;
-        for(Event e : program.getEvents()){
-            e.setHLId(baseHlId++);
-        }
-
-        Program pSource = program.clone();
-        Program pTarget = program.clone();
+        pSource.unroll(steps);
+        pTarget.unroll(steps);
 
         pSource.compile(source, alias);
         int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;

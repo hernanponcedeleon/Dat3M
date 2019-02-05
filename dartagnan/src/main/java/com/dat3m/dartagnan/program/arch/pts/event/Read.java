@@ -36,7 +36,7 @@ public class Read extends MemEvent implements RegWriter {
     @Override
     public Read clone() {
         if(clone == null){
-            clone = new Read(resultRegister.clone(), address.clone(), atomic);
+            clone = new Read(resultRegister, address, atomic);
             afterClone();
         }
         return (Read)clone;

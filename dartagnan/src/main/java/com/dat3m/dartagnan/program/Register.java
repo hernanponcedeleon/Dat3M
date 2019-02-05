@@ -90,9 +90,12 @@ public class Register extends IExpr implements ExprInterface, Variable {
         return name.equals(rObj.name) && threadId == rObj.threadId;
     }
 
+    @Deprecated
 	@Override
 	public Register clone() {
-		return new Register(name, threadId);
+		Register register = new Register(name, threadId);
+		register.setMainThreadId(mainThreadId);
+		return register;
 	}
 
 	@Override

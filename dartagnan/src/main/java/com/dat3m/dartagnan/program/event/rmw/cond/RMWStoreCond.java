@@ -27,7 +27,7 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     @Override
     public RMWStoreCond clone() {
         if(clone == null){
-            clone = new RMWStoreCond((RMWReadCond)loadEvent.clone(), address.clone(), value.clone(), atomic);
+            clone = new RMWStoreCond((RMWReadCond)loadEvent.clone(), address, value, atomic);
             afterClone();
         }
         return (RMWStoreCond)clone;

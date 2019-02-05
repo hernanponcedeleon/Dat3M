@@ -49,7 +49,7 @@ public class Load extends MemEvent implements RegWriter {
     @Override
     public Load clone() {
         if(clone == null){
-            clone = new Load(resultRegister.clone(), address.clone(), atomic);
+            clone = new Load(resultRegister, address, atomic);
             afterClone();
         }
         return (Load)clone;

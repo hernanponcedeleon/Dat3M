@@ -42,9 +42,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     public RMWXchg clone() {
         if(clone == null){
-            Register newReg = resultRegister.clone();
-            ExprInterface newValue = resultRegister == value ? newReg : value.clone();
-            clone = new RMWXchg(address.clone(), newReg, newValue, atomic);
+            clone = new RMWXchg(address, resultRegister, value, atomic);
             afterClone();
         }
         return (RMWXchg)clone;

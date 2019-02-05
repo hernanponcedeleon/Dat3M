@@ -64,7 +64,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     @Override
     public Xchg clone() {
         if(clone == null){
-            clone= new Xchg((Address) address.clone(), resultRegister.clone(), atomic);
+            clone= new Xchg((Address) address, resultRegister, atomic);
             afterClone();
         }
         return (Xchg)clone;

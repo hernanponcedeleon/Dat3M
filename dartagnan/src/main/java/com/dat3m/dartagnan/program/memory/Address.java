@@ -39,9 +39,10 @@ public class Address extends IConst implements ExprInterface {
         return ctx.mkTrue();
     }
 
+    @Deprecated
     @Override
     public Address clone(){
-        return this;
+        return new Address(index);
     }
 
     @Override

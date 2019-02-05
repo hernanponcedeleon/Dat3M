@@ -6,8 +6,8 @@ import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Skip;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Seq extends Thread {
 	
@@ -66,8 +66,8 @@ public class Seq extends Thread {
     }
 
     @Override
-    public Set<Event> getEvents() {
-        Set<Event> ret = new HashSet<>();
+    public List<Event> getEvents() {
+        List<Event> ret = new ArrayList<>();
         ret.addAll(t1.getEvents());
         ret.addAll(t2.getEvents());
         return ret;

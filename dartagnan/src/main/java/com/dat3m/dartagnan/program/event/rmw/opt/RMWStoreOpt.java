@@ -39,7 +39,7 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
     public RMWStoreOpt clone() {
         if(clone == null){
             RMWLoad newLoad = loadEvent != null ? loadEvent.clone() : null;
-            clone = new RMWStoreOpt(newLoad, address.clone(), value.clone(), atomic);
+            clone = new RMWStoreOpt(newLoad, address, value, atomic);
             afterClone();
         }
         return (RMWStoreOpt)clone;

@@ -22,7 +22,7 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     @Override
     public RMWReadCondUnless clone() {
         if(clone == null){
-            clone = new RMWReadCondUnless(resultRegister.clone(), cmp.clone(), address.clone(), atomic);
+            clone = new RMWReadCondUnless(resultRegister, cmp, address, atomic);
             afterClone();
         }
         return (RMWReadCondUnless)clone;
