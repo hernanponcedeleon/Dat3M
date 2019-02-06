@@ -153,7 +153,7 @@ public abstract class Relation {
     protected BoolExpr doEncode(){
         BoolExpr enc = encodeNegations();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
-            if(mode == Mode.LFP) {
+            if(mode == Mode.KLEENE) {
                 return ctx.mkAnd(enc, encodeLFP());
             } else if(mode == Mode.IDL) {
                 return ctx.mkAnd(enc, encodeIDL());

@@ -25,7 +25,7 @@ apt-get install maven
 
 Installation
 ======
-To build the tools, from the Dat3m/ directory run
+To build the tools, from the Dat3M/ directory run
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
@@ -39,6 +39,7 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
+Note that some of the parameterised tests generate thousands of test instances simultaneously, which can cause out of memory error in some systems. The issue will be addressed in a future release.
 
 Usage
 ======
@@ -65,8 +66,8 @@ They must be one of the following:
 **Note:** Option target is mandatory in dartagnan when using the.pts format.
 
 Other optional arguments include:
-- -m, --mode {relaxed, idl, kleene}: specifies the encoding for fixed points. Relaxed (default mode) uses the Knaster-Tarski encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step. Mode idl uses the Kleene iteration encoding introduced in [2]. 
-- -a, --alias {none, cfi, cfs}: specifies the alias-analysis used. Option cfi (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
+- -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [1]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [2]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
+- -a, --alias {none, andersen, cfs}: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - -unroll: unrolling bound for the BMC.
 
 The .pts format

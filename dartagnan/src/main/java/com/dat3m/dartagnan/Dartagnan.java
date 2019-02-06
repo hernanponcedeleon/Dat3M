@@ -40,10 +40,10 @@ public class Dartagnan {
         Option targetOption = new Option("t", "target", true, "Target architecture {none|arm|arm8|power|tso}");
         options.addOption(targetOption);
 
-        Option modeOption = new Option("m", "mode", true, "Encoding mode {relaxed|idl|kleene}");
+        Option modeOption = new Option("m", "mode", true, "Encoding mode {knastertarski|idl|kleene}");
         options.addOption(modeOption);
 
-        Option aliasOption = new Option("a", "alias", true, "Type of alias analysis {none|cfi|cfs}");
+        Option aliasOption = new Option("a", "alias", true, "Type of alias analysis {none|andersen|cfs}");
         options.addOption(aliasOption);
 
         options.addOption(new Option("unroll", true, "Unrolling steps"));

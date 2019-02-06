@@ -81,7 +81,7 @@ public class Wmm {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
         }
 
-        if(mode == Mode.RELAX && drawExecutionGraph){
+        if(mode == Mode.KNASTER && drawExecutionGraph){
             mode = Mode.IDL;
         }
 
@@ -136,7 +136,7 @@ public class Wmm {
             enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
         }
 
-        if(mode == Mode.LFP){
+        if(mode == Mode.KLEENE){
             for(RecursiveGroup group : recursiveGroups){
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }

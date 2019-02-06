@@ -100,7 +100,7 @@ public class Program extends Thread {
 
     @Override
 	public Thread compile(Arch target) {
-		return compile(target, Alias.BASIC, 0, 0);
+		return compile(target, Alias.CFIS, 0, 0);
 	}
 
     public Thread compile(Arch target, Alias alias) {

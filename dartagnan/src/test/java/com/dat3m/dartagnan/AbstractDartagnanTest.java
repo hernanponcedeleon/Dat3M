@@ -36,9 +36,9 @@ public abstract class AbstractDartagnanTest {
                 .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                 .collect(ArrayList::new,
                         (l, f) -> {
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.RELAX});
+                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.KNASTER});
                             l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.IDL});
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.LFP});
+                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.KLEENE});
                         }, ArrayList::addAll);
     }
 
@@ -65,7 +65,7 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, mode, Alias.BASIC));
+                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, mode, Alias.CFIS));
             }
         } catch (IOException e){
             fail("Missing resource file");

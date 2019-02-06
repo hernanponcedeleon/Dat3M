@@ -1,31 +1,31 @@
 package com.dat3m.dartagnan.wmm.utils;
 
 public enum Mode {
-    RELAX, IDL, LFP;
+    KNASTER, IDL, KLEENE;
 
     public static Mode get(String mode){
         if(mode != null){
             mode = mode.trim();
             switch(mode){
-                case "relaxed":
-                    return RELAX;
+                case "knastertarski":
+                    return KNASTER;
                 case "idl":
                     return IDL;
                 case "kleene":
-                    return LFP;
+                    return KLEENE;
             }
         }
-        return RELAX;
+        return KNASTER;
     }
 
     @Override
     public String toString() {
         switch(this){
-            case RELAX:
-                return "relaxed";
+            case KNASTER:
+                return "knastertarski";
             case IDL:
                 return "idl";
-            case LFP:
+            case KLEENE:
                 return "kleene";
         }
         return super.toString();
