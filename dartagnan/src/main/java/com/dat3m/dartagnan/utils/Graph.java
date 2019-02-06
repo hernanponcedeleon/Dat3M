@@ -30,15 +30,6 @@ public class Graph {
         colorMap.put("rf", "red");
         colorMap.put("co", "blue");
         colorMap.put("po", "brown");
-        colorMap.put("mfence", "black");
-        colorMap.put("sync", "black");
-        colorMap.put("isync", "black");
-        colorMap.put("lwsync", "black");
-        colorMap.put("isb", "black");
-        colorMap.put("ish", "black");
-        colorMap.put("mb", "black");
-        colorMap.put("rmb", "black");
-        colorMap.put("wmb", "black");
     }
 
     private Model model;
