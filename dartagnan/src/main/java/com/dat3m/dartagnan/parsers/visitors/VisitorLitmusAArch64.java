@@ -242,7 +242,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public IExpr visitExpressionConversion(LitmusAArch64Parser.ExpressionConversionContext ctx) {
-        // TODO: Implementation
+        // TODO: Implement when adding support for mixed-size accesses
         return programBuilder.getOrCreateRegister(mainThread, ctx.register32().id);
     }
 

@@ -41,7 +41,7 @@ public class Register extends IExpr implements ExprInterface, Variable {
 		return name;
 	}
 
-	public void setMainThreadId(int t) {
+	void setMainThreadId(int t) {
 		this.mainThreadId = t;
 	}
 

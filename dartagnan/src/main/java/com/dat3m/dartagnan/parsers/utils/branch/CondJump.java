@@ -36,8 +36,8 @@ public class CondJump extends Event {
 
     @Override
     public CondJump clone(){
-        // Instances of Label should not duplicated during cloning (multiple CondJump can refer to the same Label).
-        // Similar to conditional RMW cloning
-        throw new RuntimeException("Method clone is not implemented for " + getClass().getName());
+        // In principle, we can clone it if needed, just take care that instances of Label are not duplicated
+        // during cloning (multiple CondJump can refer to the same Label). Similar to conditional RMW cloning
+        throw new UnsupportedOperationException("Method clone is not implemented for " + getClass().getName());
     }
 }

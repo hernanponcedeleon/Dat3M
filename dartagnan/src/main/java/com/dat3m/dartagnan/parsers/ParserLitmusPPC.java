@@ -8,8 +8,6 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import org.antlr.v4.runtime.*;
 
-import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,7 +32,7 @@ public class ParserLitmusPPC implements ParserInterface {
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);
-        program.setArch(POWER);
+        program.setArch(Arch.POWER);
         return program;
     }
 }

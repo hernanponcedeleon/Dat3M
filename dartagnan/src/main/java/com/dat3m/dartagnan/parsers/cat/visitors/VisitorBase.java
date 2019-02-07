@@ -34,6 +34,7 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
         relationVisitor = new VisitorRelation(this);
     }
 
+    @Override
     public Object visitMcm(CatParser.McmContext ctx) {
         super.visitMcm(ctx);
         return wmm;

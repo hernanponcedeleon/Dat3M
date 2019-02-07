@@ -24,7 +24,7 @@ import static com.dat3m.dartagnan.utils.Utils.intCount;
  */
 public class RelTrans extends UnaryRelation {
 
-    protected Map<Event, Set<Event>> transitiveReachabilityMap;
+    Map<Event, Set<Event>> transitiveReachabilityMap;
     private TupleSet fullEncodeTupleSet;
 
     public static String makeTerm(Relation r1){

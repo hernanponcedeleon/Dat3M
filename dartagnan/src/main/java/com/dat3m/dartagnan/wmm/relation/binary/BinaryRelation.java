@@ -16,7 +16,7 @@ public abstract class BinaryRelation extends Relation {
     protected Relation r1;
     protected Relation r2;
 
-    protected int lastEncodedIteration = -1;
+    int lastEncodedIteration = -1;
 
     BinaryRelation(Relation r1, Relation r2) {
         this.r1 = r1;

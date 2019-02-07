@@ -16,17 +16,17 @@ import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Store;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 public class VisitorLitmusPPC
         extends LitmusPPCBaseVisitor<Object>
         implements LitmusPPCVisitor<Object> {
 
-    private final static Set<String> fences = new HashSet<>(Arrays.asList("Sync", "Lwsync", "Isync"));
+    private final static ImmutableSet<String> fences = ImmutableSet.of("Sync", "Lwsync", "Isync");
 
     private ProgramBuilder programBuilder;
     private String mainThread;

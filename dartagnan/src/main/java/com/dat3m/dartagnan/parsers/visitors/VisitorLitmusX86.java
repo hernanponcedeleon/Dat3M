@@ -14,17 +14,14 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.arch.tso.event.Xchg;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 public class VisitorLitmusX86
         extends LitmusX86BaseVisitor<Object>
         implements LitmusX86Visitor<Object> {
 
-    private final static Set<String> fences = new HashSet<>(Arrays.asList("Mfence"));
+    private final static ImmutableSet<String> fences = ImmutableSet.of("Mfence");
 
     private ProgramBuilder programBuilder;
     private String mainThread;

@@ -13,11 +13,11 @@ public class Cmp extends Event {
         this.right = right;
     }
 
-    public IExpr getLeft(){
+    IExpr getLeft(){
         return left;
     }
 
-    public IExpr getRight(){
+    IExpr getRight(){
         return right;
     }
 

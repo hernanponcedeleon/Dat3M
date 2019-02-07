@@ -3,6 +3,9 @@ package com.dat3m.dartagnan.asserts;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
+/*
+ * Or assertion of Cat model
+ */
 public class AssertCompositeOr extends AbstractAssert {
 
     private AbstractAssert a1;

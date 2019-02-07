@@ -6,7 +6,10 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 
-public class AssertBasic extends AbstractAssert{
+/*
+ * Elementary assertion of Cat model (e.g. x = 5 or 1:r1 = 42)
+ */
+public class AssertBasic extends AbstractAssert {
 
     private final ExprInterface e1;
     private final ExprInterface e2;

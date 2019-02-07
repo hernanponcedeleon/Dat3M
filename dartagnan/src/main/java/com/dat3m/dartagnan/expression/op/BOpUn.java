@@ -8,26 +8,14 @@ public enum BOpUn {
 
     @Override
     public String toString() {
-        switch(this){
-            case NOT:
-                return "!";
-        }
-        return super.toString();
+        return "!";
     }
 
     public BoolExpr encode(BoolExpr e, Context ctx) {
-        switch(this) {
-            case NOT:
-                return ctx.mkNot(e);
-        }
-        throw new UnsupportedOperationException("Encoding of not supported for BOpUn " + this);
+        return ctx.mkNot(e);
     }
 
     public boolean combine(boolean a){
-        switch(this){
-            case NOT:
-                return !a;
-        }
-        throw new UnsupportedOperationException("Illegal operator " + this + " in BOpUn");
+        return !a;
     }
 }

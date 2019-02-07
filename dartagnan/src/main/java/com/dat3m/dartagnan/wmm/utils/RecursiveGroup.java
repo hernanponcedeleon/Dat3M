@@ -63,7 +63,7 @@ public class RecursiveGroup {
             }
             iterationCounter++;
         }
-        // TODO: bounds
+        // iterationCounter + zero iteration + 1
         encodeIterations = iterationCounter + 2;
     }
 

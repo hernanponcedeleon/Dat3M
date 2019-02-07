@@ -15,11 +15,11 @@ public abstract class Axiom {
 
     private boolean negate = false;
 
-    public Axiom(Relation rel) {
+    Axiom(Relation rel) {
         this.rel = rel;
     }
 
-    public Axiom(Relation rel, boolean negate) {
+    Axiom(Relation rel, boolean negate) {
         this.rel = rel;
         this.negate = negate;
     }
