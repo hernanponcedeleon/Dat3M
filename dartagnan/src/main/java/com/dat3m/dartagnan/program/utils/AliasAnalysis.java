@@ -330,6 +330,11 @@ public class AliasAnalysis {
 
                 for(Register r : indexMapClone.keySet()){
                     indexMap.put(r, Integer.max(indexMap.getOrDefault(r, 0), indexMapClone.get(r)));
+                    if(indexMap.get(r) < indexMapClone.get(r)){
+                        r.getSSAReg(indexMap.get(r)).getAliasEdges().add(r.getSSAReg(indexMapClone.get(r)));
+                    } else if(indexMap.get(r) > indexMapClone.get(r)){
+                        r.getSSAReg(indexMapClone.get(r)).getAliasEdges().add(r.getSSAReg(indexMap.get(r)));
+                    }
                 }
                 i += t1Events.size() + t2Events.size();
             }
