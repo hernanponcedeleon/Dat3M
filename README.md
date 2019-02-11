@@ -41,8 +41,6 @@ mvn test
 ```
 Note that some of the parameterised tests generate thousands of test instances simultaneously, which can cause out of memory error in some systems. The issue will be addressed in a future release.
 
-Note that JUnit generates thousands of parametrised tests, which can cause out of memory error in some systems. The issue will be addressed in the next release.
-
 Usage
 ======
 For checking reachability:
