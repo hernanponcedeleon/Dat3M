@@ -5,13 +5,13 @@ This tool suite is currently composed of two tools.
 * **DARTAGNAN:** a tool to check state reachability under weak memory models.
 
 <p align="center"> 
-<img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/dartagnan_small.jpg">
+<img src="extras/dartagnan_small.jpg">
 </p>
 
 * **PORTHOS:** a tool to check state inclusion under weak memory models.
 
 <p align="center"> 
-<img src="https://github.com/hernanponcedeleon/Dat3M/blob/master/dartagnan/extras/porthos_small.jpg">
+<img src="extras/porthos_small.jpg">
 </p>
 
 Requeriments
@@ -40,6 +40,8 @@ We provide a set of unit tests that can be run by
 mvn test
 ```
 Note that some of the parameterised tests generate thousands of test instances simultaneously, which can cause out of memory error in some systems. The issue will be addressed in a future release.
+
+Note that JUnit generates thousands of parametrised tests, which can cause out of memory error in some systems. The issue will be addressed in the next release.
 
 Usage
 ======
