@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.asserts;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-/*
- * Not assertion of Cat model
- */
 public class AssertNot extends AbstractAssert {
 
     private AbstractAssert child;

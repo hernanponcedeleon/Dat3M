@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.asserts;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-/*
- * Abstract class for Cat model assertion
- */
 public abstract class AbstractAssert {
 
     public static final String ASSERT_TYPE_EXISTS = "exists";
