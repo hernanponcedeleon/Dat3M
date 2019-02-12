@@ -8,8 +8,6 @@ import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EventRepository;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -17,8 +15,6 @@ import org.apache.commons.cli.*;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 import static com.dat3m.porthos.Encodings.encodeCommonExecutions;
 import static com.dat3m.porthos.Encodings.encodeReachedState;
@@ -142,8 +138,7 @@ public class Porthos {
         pTarget.unroll(steps);
 
         pSource.compile(source, alias);
-        int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;
-        pTarget.compile(target, alias, startEId);
+        pTarget.compile(target, alias, pSource.getLastEid() + 1);
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);

@@ -167,6 +167,14 @@ public class Program extends Thread {
         return enc;
     }
 
+    public int getLastEid(){
+        int result = -1;
+        for(Event e : getEventRepository().getEvents(EventRepository.ALL)){
+            result = Integer.max(result, e.getEId());
+        }
+        return result;
+    }
+
     @Override
     public String toString() {
         ListIterator<Thread> it = threads.listIterator();
