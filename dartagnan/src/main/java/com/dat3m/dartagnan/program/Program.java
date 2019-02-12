@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.program.utils.AliasAnalysis;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -12,7 +13,6 @@ import com.dat3m.dartagnan.program.event.Init;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
-import com.dat3m.dartagnan.program.utils.EventRepository;
 
 import java.util.*;
 
@@ -94,7 +94,7 @@ public class Program extends Thread {
         for(int i = 0; i < threads.size(); i++){
             threads.set(i, threads.get(i).unroll(steps));
         }
-        getEventRepository().clear();
+        eventRepository = null;
 		return this;
 	}
 
@@ -120,10 +120,10 @@ public class Program extends Thread {
             for(Register reg : t.getEventRepository().getRegisters()) {
                 reg.setMainThreadId(t.tid);
             }
-            t.getEventRepository().clear();
+            t.eventRepository = null;
 			threads.set(i, t);
         }
-        getEventRepository().clear();
+        eventRepository = null;
         new AliasAnalysis().calculateLocationSets(this, memory, alias);
 		return this;
 	}
@@ -143,7 +143,7 @@ public class Program extends Thread {
 
     public BoolExpr encodeFinalValues(Context ctx){
         Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(EventRepository.ALL)){
+        for(Event e : getEventRepository().getEvents(EType.ANY)){
             if(e instanceof RegWriter){
                 Register reg = ((RegWriter)e).getResultRegister();
                 eMap.putIfAbsent(reg, new ArrayList<>());
@@ -169,7 +169,7 @@ public class Program extends Thread {
 
     public int getLastEid(){
         int result = -1;
-        for(Event e : getEventRepository().getEvents(EventRepository.ALL)){
+        for(Event e : getEventRepository().getEvents(EType.ANY)){
             result = Integer.max(result, e.getEId());
         }
         return result;

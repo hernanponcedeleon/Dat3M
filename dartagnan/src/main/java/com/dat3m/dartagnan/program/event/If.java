@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -26,6 +27,7 @@ public class If extends Event implements RegReaderData {
         t1.incCondLevel();
         t2.incCondLevel();
         dataRegs = expr.getRegs();
+        addFilters(EType.ANY, EType.CMP);
     }
 
     @Override
@@ -77,11 +79,6 @@ public class If extends Event implements RegReaderData {
         condLevel--;
         t1.decCondLevel();
         t2.decCondLevel();
-    }
-
-    @Override
-    public boolean is(String param){
-        return false;
     }
 
     @Override

@@ -8,5 +8,8 @@ public class EType {
     public static final String MEMORY   = "M";
     public static final String FENCE    = "F";
     public static final String RMW      = "RMW";
+    public static final String LOCAL    = "T";
+    public static final String CMP      = "C";
+    public static final String VISIBLE  = "V";
     public static final String ANY      = "_";
 }

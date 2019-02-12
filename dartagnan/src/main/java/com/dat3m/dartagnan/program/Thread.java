@@ -16,7 +16,7 @@ public abstract class Thread {
 	protected Thread mainThread;
 	protected int tid;
 	protected int condLevel;
-	private EventRepository eventRepository;
+    EventRepository eventRepository;
 
     public abstract void beforeClone();
 

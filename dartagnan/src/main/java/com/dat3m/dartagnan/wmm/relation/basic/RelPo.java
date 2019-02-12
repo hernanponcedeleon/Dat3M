@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EventRepository;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -11,7 +11,7 @@ import java.util.ListIterator;
 
 public class RelPo extends BasicRelation {
 
-    private int eventMask;
+    private String filter;
 
     public RelPo(){
         this(false);
@@ -20,10 +20,10 @@ public class RelPo extends BasicRelation {
     public RelPo(boolean includeLocalEvents){
         if(includeLocalEvents){
             term = "_po";
-            eventMask = EventRepository.ALL;
+            filter = EType.ANY;
         } else {
             term = "po";
-            eventMask = EventRepository.VISIBLE;
+            filter = EType.VISIBLE;
         }
         isStatic = true;
     }
@@ -33,7 +33,7 @@ public class RelPo extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Event> events = t.getEventRepository().getSortedList(eventMask);
+                List<Event> events = t.getEventRepository().getEvents(filter);
 
                 ListIterator<Event> it1 = events.listIterator();
                 while(it1.hasNext()){

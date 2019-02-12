@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.program.utils.EventRepository;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -42,14 +42,14 @@ public class RelFencerel extends Relation {
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
                 List<Fence> fences = t.getEventRepository()
-                        .getEvents(EventRepository.FENCE)
+                        .getEvents(EType.FENCE)
                         .stream()
                         .filter(e -> ((Fence)e).getName().equals(fenceName))
                         .map(e -> (Fence)e)
                         .collect(Collectors.toList());
 
                 if(!fences.isEmpty()){
-                    List<Event> events = t.getEventRepository().getSortedList(EventRepository.MEMORY);
+                    List<Event> events = t.getEventRepository().getEvents(EType.MEMORY);
                     ListIterator<Event> it1 = events.listIterator();
 
                     while(it1.hasNext()){
@@ -76,7 +76,7 @@ public class RelFencerel extends Relation {
         BoolExpr enc = ctx.mkTrue();
 
         Collection<Event> fences = program.getEventRepository()
-                .getEvents(EventRepository.FENCE)
+                .getEvents(EType.FENCE)
                 .stream()
                 .filter(e -> ((Fence)e).getName().equals(fenceName))
                 .collect(Collectors.toSet());

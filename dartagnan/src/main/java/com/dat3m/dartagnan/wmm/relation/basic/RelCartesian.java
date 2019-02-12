@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EventRepository;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -35,7 +35,7 @@ public class RelCartesian extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> events = program.getEventRepository().getEvents(EventRepository.ALL);
+            Collection<Event> events = program.getEventRepository().getEvents(EType.ANY);
             for(Event e1 : events){
                 if(filter1.filter(e1)){
                     for(Event e2 : events){
