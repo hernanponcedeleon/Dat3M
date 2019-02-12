@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
@@ -103,9 +104,11 @@ public class Porthos {
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
+        ProgramParser programParser = new ProgramParser();
+        Program pSource = programParser.parse(inputFilePath);
+        Program pTarget = programParser.parse(inputFilePath);
+
         Context ctx = new Context();
-        Program pSource = Dartagnan.parseProgram(inputFilePath);
-        Program pTarget = Dartagnan.parseProgram(inputFilePath);
         Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
         Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 

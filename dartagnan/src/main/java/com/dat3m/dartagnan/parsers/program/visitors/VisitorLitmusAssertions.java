@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.visitors;
+package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.asserts.*;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsVisitor;
-import com.dat3m.dartagnan.parsers.utils.ParsingException;
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.Location;
 
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert>

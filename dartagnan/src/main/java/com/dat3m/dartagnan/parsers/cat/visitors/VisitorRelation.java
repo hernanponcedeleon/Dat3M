@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.cat.visitors;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.parsers.cat.utils.CatSyntaxException;
+import com.dat3m.dartagnan.parsers.cat.utils.ParsingException;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -117,7 +117,7 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
 
     @Override
     public Relation visitExprRange(CatParser.ExprRangeContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 
     private Relation visitBinaryRelation(CatParser.ExpressionContext e1, CatParser.ExpressionContext e2, Class c){

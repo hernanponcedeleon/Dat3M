@@ -1,36 +1,37 @@
-package com.dat3m.dartagnan.parsers;
+package com.dat3m.dartagnan.parsers.program;
 
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.visitors.VisitorLitmusC;
+import com.dat3m.dartagnan.parsers.PorthosLexer;
+import com.dat3m.dartagnan.parsers.PorthosParser;
+import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.VisitorPorthos;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-
 import org.antlr.v4.runtime.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class ParserLitmusC implements ParserInterface {
+public class ParserPorthos implements ParserInterface{
 
     @Override
     public Program parse(String inputFilePath) throws IOException {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        LitmusCLexer lexer = new LitmusCLexer(charStream);
+        PorthosLexer lexer = new PorthosLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         stream.close();
 
-        LitmusCParser parser = new LitmusCParser(tokenStream);
-        parser.setErrorHandler(new BailErrorStrategy());
+        PorthosParser parser = new PorthosParser(tokenStream);
+        parser.addErrorListener(new DiagnosticErrorListener(true));
+        parser.addErrorListener(new ParserErrorListener());
         ProgramBuilder pb = new ProgramBuilder();
         ParserRuleContext parserEntryPoint = parser.main();
-        VisitorLitmusC visitor = new VisitorLitmusC(pb);
+        VisitorPorthos visitor = new VisitorPorthos(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);
-        program.setArch(Arch.NONE);
         return program;
     }
 }

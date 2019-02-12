@@ -1,6 +1,7 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -130,8 +131,9 @@ public class PorthosTest {
     @Test
     public void test() {
         try {
-            Program pSource = Dartagnan.parseProgram(input);
-            Program pTarget = Dartagnan.parseProgram(input);
+            ProgramParser programParser = new ProgramParser();
+            Program pSource = programParser.parse(input);
+            Program pTarget = programParser.parse(input);
 
             Context ctx = new Context();
             Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
