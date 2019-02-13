@@ -1,0 +1,36 @@
+#######################
+# IDE generated files #
+#######################
+.idea/
+*.iws
+*.iml
+.metadata
+.project
+.classpath
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+######################
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+##########
+# Builds #
+##########
+dartagnan/target/
+porthos/target/
