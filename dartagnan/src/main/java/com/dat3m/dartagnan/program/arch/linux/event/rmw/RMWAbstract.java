@@ -30,7 +30,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         this.atomic = atomic;
         this.condLevel = 0;
         this.dataRegs = value.getRegs();
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW);
+        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE, EType.RMW, EType.REG_WRITER, EType.REG_READER);
     }
 
     @Override

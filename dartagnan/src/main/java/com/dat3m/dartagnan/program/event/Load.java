@@ -17,7 +17,7 @@ public class Load extends MemEvent implements RegWriter {
         this.atomic = atomic;
         this.condLevel = 0;
         this.resultRegister = register;
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ);
+        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
     }
 
     @Override

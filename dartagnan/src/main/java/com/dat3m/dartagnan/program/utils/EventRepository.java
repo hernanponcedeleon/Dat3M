@@ -37,7 +37,7 @@ public class EventRepository {
         return events.get(filter);
     }
 
-    public Set<Register> getRegisters(){
+    public ImmutableSet<Register> getRegisters(){
         if(registers == null){
             ImmutableSet.Builder<Register> builder = new ImmutableSet.Builder<>();
             for(Event e : getEvents(FilterBasic.get(EType.ANY))){

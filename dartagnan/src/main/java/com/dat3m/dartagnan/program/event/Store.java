@@ -19,7 +19,7 @@ public class Store extends MemEvent implements RegReaderData {
         this.condLevel = 0;
         this.value = value;
         dataRegs = value.getRegs();
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE);
+        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
     }
 
     @Override

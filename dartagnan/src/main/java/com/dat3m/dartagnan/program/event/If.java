@@ -27,7 +27,7 @@ public class If extends Event implements RegReaderData {
         t1.incCondLevel();
         t2.incCondLevel();
         dataRegs = expr.getRegs();
-        addFilters(EType.ANY, EType.CMP);
+        addFilters(EType.ANY, EType.CMP, EType.REG_READER);
     }
 
     @Override

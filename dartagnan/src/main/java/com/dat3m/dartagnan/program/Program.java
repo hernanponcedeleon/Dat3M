@@ -144,12 +144,10 @@ public class Program extends Thread {
 
     public BoolExpr encodeFinalValues(Context ctx){
         Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(FilterBasic.get(EType.ANY))){
-            if(e instanceof RegWriter){
-                Register reg = ((RegWriter)e).getResultRegister();
-                eMap.putIfAbsent(reg, new ArrayList<>());
-                eMap.get(reg).add(e);
-            }
+        for(Event e : getEventRepository().getEvents(FilterBasic.get(EType.REG_WRITER))){
+            Register reg = ((RegWriter)e).getResultRegister();
+            eMap.putIfAbsent(reg, new ArrayList<>());
+            eMap.get(reg).add(e);
         }
 
         BoolExpr enc = ctx.mkTrue();

@@ -18,7 +18,7 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
     public RMWStoreOptStatus(Register register, RMWStoreOpt storeEvent){
         this.register = register;
         this.storeEvent = storeEvent;
-        addFilters(EType.ANY, EType.VISIBLE, EType.LOCAL);
+        addFilters(EType.ANY, EType.VISIBLE, EType.LOCAL, EType.REG_WRITER);
     }
 
     @Override

@@ -24,7 +24,7 @@ public class Write extends MemEvent implements RegReaderData {
         this.atomic = atomic;
         this.condLevel = 0;
         this.dataRegs = value.getRegs();
-        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE);
+        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
     }
 
     @Override
