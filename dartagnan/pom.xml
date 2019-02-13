@@ -47,6 +47,7 @@
           <listener>true</listener>
           <visitor>true</visitor>
           <libDirectory>${project.basedir}/src/main/antlr4/com/dat3m/dartagnan/parsers</libDirectory>
+          <outputDirectory>${project.build.directory}/generated-sources/antlr4/com/dat3m/dartagnan/parsers</outputDirectory>
           <arguments>
             <argument>-package</argument>
             <argument>com.dat3m.dartagnan.parsers</argument>
