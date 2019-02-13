@@ -2,17 +2,15 @@ package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.utils.Utils.edge;
 
@@ -41,15 +39,9 @@ public class RelFencerel extends Relation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Fence> fences = t.getEventRepository()
-                        .getEvents(EType.FENCE)
-                        .stream()
-                        .filter(e -> ((Fence)e).getName().equals(fenceName))
-                        .map(e -> (Fence)e)
-                        .collect(Collectors.toList());
-
+                List<Event> fences = t.getEventRepository().getEvents(FilterBasic.get(fenceName));
                 if(!fences.isEmpty()){
-                    List<Event> events = t.getEventRepository().getEvents(EType.MEMORY);
+                    List<Event> events = t.getEventRepository().getEvents(FilterBasic.get(EType.MEMORY));
                     ListIterator<Event> it1 = events.listIterator();
 
                     while(it1.hasNext()){
@@ -57,7 +49,7 @@ public class RelFencerel extends Relation {
                         ListIterator<Event> it2 = events.listIterator(it1.nextIndex());
                         while(it2.hasNext()){
                             Event e2 = it2.next();
-                            for(Fence f : fences) {
+                            for(Event f : fences) {
                                 if(f.getEId() > e1.getEId() && f.getEId() < e2.getEId()){
                                     maxTupleSet.add(new Tuple(e1, e2));
                                     break;
@@ -75,11 +67,7 @@ public class RelFencerel extends Relation {
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
-        Collection<Event> fences = program.getEventRepository()
-                .getEvents(EType.FENCE)
-                .stream()
-                .filter(e -> ((Fence)e).getName().equals(fenceName))
-                .collect(Collectors.toSet());
+        List<Event> fences = program.getEventRepository().getEvents(FilterBasic.get(fenceName));
 
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();

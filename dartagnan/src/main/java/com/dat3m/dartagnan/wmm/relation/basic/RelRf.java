@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -24,11 +26,12 @@ public class RelRf extends Relation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
 
-            // TODO: Use composite filter
-            List<Event> eventsLoad = program.getEventRepository().getEvents(EType.READ);
-            List<Event> eventsInit = program.getEventRepository().getEvents(EType.INIT);
-            List<Event> eventsStore = new ArrayList<>(program.getEventRepository().getEvents(EType.WRITE));
-            eventsStore.removeAll(eventsInit);
+            List<Event> eventsLoad = program.getEventRepository().getEvents(FilterBasic.get(EType.READ));
+            List<Event> eventsInit = program.getEventRepository().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsStore = program.getEventRepository().getEvents(FilterMinus.get(
+                    FilterBasic.get(EType.WRITE),
+                    FilterBasic.get(EType.INIT)
+            ));
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsLoad){

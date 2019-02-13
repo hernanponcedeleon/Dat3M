@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -22,7 +23,7 @@ public class RelLoc extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> events = program.getEventRepository().getEvents(EType.MEMORY);
+            Collection<Event> events = program.getEventRepository().getEvents(FilterBasic.get(EType.MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
                     if(e1.getEId() != e2.getEId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){

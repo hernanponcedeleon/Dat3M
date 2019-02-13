@@ -22,17 +22,17 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
 
     @Override
     public FilterAbstract visitExprIntersection(CatParser.ExprIntersectionContext ctx) {
-        return new FilterIntersection(ctx.e1.accept(this), ctx.e2.accept(this));
+        return FilterIntersection.get(ctx.e1.accept(this), ctx.e2.accept(this));
     }
 
     @Override
     public FilterAbstract visitExprMinus(CatParser.ExprMinusContext ctx) {
-        return new FilterMinus(ctx.e1.accept(this), ctx.e2.accept(this));
+        return FilterMinus.get(ctx.e1.accept(this), ctx.e2.accept(this));
     }
 
     @Override
     public FilterAbstract visitExprUnion(CatParser.ExprUnionContext ctx) {
-        return new FilterUnion(ctx.e1.accept(this), ctx.e2.accept(this));
+        return FilterUnion.get(ctx.e1.accept(this), ctx.e2.accept(this));
     }
 
     @Override
@@ -53,7 +53,7 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
     public FilterAbstract visitExprBasic(CatParser.ExprBasicContext ctx) {
         FilterAbstract filter = base.wmm.getFilter(ctx.getText());
         if(filter == null){
-            filter = new FilterBasic(ctx.getText());
+            filter = FilterBasic.get(ctx.getText());
             base.wmm.addFilter(filter);
         }
         return filter;

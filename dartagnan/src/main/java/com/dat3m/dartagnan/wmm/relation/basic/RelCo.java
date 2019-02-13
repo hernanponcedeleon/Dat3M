@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.IntExpr;
@@ -31,11 +33,11 @@ public class RelCo extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-
-            // TODO: Use composite filter
-            List<Event> eventsStore = new ArrayList<>(program.getEventRepository().getEvents(EType.WRITE));
-            List<Event> eventsInit = program.getEventRepository().getEvents(EType.INIT);
-            eventsStore.removeAll(eventsInit);
+            List<Event> eventsInit = program.getEventRepository().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsStore = program.getEventRepository().getEvents(FilterMinus.get(
+                    FilterBasic.get(EType.WRITE),
+                    FilterBasic.get(EType.INIT)
+            ));
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsStore){
@@ -62,10 +64,11 @@ public class RelCo extends Relation {
         EventRepository eventRepository = program.getEventRepository();
         ImmutableSetMultimap<Address, Location> addressLocationMap = getAddressLocationMap();
 
-        // TODO: Use composite filter
-        List<Event> eventsInit = program.getEventRepository().getEvents(EType.INIT);
-        List<Event> eventsStore = new ArrayList<>(eventRepository.getEvents(EType.WRITE));
-        eventsStore.removeAll(eventsInit);
+        List<Event> eventsInit = program.getEventRepository().getEvents(FilterBasic.get(EType.INIT));
+        List<Event> eventsStore = program.getEventRepository().getEvents(FilterMinus.get(
+                FilterBasic.get(EType.WRITE),
+                FilterBasic.get(EType.INIT)
+        ));
 
         for(Event e : eventsInit) {
             enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
@@ -78,7 +81,7 @@ public class RelCo extends Relation {
         }
         enc = ctx.mkAnd(enc, ctx.mkDistinct(intVars.toArray(new IntExpr[0])));
 
-        for(Event w :  eventRepository.getEvents(EType.WRITE)){
+        for(Event w :  eventRepository.getEvents(FilterBasic.get(EType.WRITE))){
             MemEvent w1 = (MemEvent)w;
             BoolExpr lastCo = w1.executes(ctx);
 

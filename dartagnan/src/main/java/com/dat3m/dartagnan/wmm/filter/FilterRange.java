@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import java.util.HashSet;
 import java.util.Set;
 
+// TODO: Mode the whole thing to relation
 public class FilterRange extends FilterAbstract {
 
     private Relation relation;
@@ -33,5 +34,22 @@ public class FilterRange extends FilterAbstract {
     @Override
     public void initialise(){
         range = null;
+    }
+
+    @Override
+    public int hashCode() {
+        return relation.getName().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        FilterRange fObj = (FilterRange) obj;
+        return fObj.relation.getName().equals(relation.getName());
     }
 }

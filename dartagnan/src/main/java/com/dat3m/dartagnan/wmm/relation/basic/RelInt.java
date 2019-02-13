@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.basic;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -20,7 +21,7 @@ public class RelInt extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                Collection<Event> events = t.getEventRepository().getEvents(EType.VISIBLE);
+                Collection<Event> events = t.getEventRepository().getEvents(FilterBasic.get(EType.VISIBLE));
                 for(Event e1 : events){
                     for(Event e2 : events){
                         maxTupleSet.add(new Tuple(e1, e2));

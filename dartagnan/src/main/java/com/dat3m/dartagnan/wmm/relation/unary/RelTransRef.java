@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -54,7 +55,7 @@ public class RelTransRef extends RelTrans {
             for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
                 entry.getValue().remove(entry.getKey());
             }
-            for(Event e : program.getEventRepository().getEvents(EType.ANY)){
+            for(Event e : program.getEventRepository().getEvents(FilterBasic.get(EType.ANY))){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }

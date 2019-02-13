@@ -8,7 +8,7 @@ public class Fence extends Event {
 
 	public Fence(String name){
         this.name = name;
-        this.addFilters(EType.ANY, EType.FENCE, name);
+        this.addFilters(EType.ANY, EType.VISIBLE, EType.FENCE, name);
 	}
 
 	public String getName(){

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.utils;
 
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
@@ -136,7 +137,7 @@ public class RelationRepository {
             case "fr":
                 return getRelation(RelComposition.class, getRelation("rf^-1"), getRelation("co")).setName("fr");
             case "(R*W)":
-                return getRelation(RelCartesian.class, new FilterBasic("R"), new FilterBasic("W"));
+                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.WRITE));
             case "idd^+":
                 return getRelation(RelTrans.class, getRelation("idd"));
             case "data":

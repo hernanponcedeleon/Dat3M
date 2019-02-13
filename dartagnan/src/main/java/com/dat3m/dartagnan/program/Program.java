@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.program.utils.AliasAnalysis;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -143,7 +144,7 @@ public class Program extends Thread {
 
     public BoolExpr encodeFinalValues(Context ctx){
         Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(EType.ANY)){
+        for(Event e : getEventRepository().getEvents(FilterBasic.get(EType.ANY))){
             if(e instanceof RegWriter){
                 Register reg = ((RegWriter)e).getResultRegister();
                 eMap.putIfAbsent(reg, new ArrayList<>());
@@ -169,7 +170,7 @@ public class Program extends Thread {
 
     public int getLastEid(){
         int result = -1;
-        for(Event e : getEventRepository().getEvents(EType.ANY)){
+        for(Event e : getEventRepository().getEvents(FilterBasic.get(EType.ANY))){
             result = Integer.max(result, e.getEId());
         }
         return result;
