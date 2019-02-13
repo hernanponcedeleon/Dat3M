@@ -127,7 +127,7 @@ public class Dartagnan {
                                Mode mode, Alias alias){
 
         program.unroll(steps);
-        program.compile(target, alias);
+        program.compile(target, alias, 0);
 
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){

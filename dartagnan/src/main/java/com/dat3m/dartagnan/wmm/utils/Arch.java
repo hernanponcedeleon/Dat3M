@@ -25,7 +25,7 @@ public enum Arch {
                     return TSO;
             }
         }
-        return NONE;
+        throw new UnsupportedOperationException("Unrecognized architecture " + arch);
     }
 
     public boolean getIncludePoToCtrl(){

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.program.utils.AliasAnalysis;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
@@ -17,7 +18,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.*;
 
-public class Program extends Thread {
+public class Program {
 
     private String name;
 	private AbstractAssert ass;
@@ -26,6 +27,7 @@ public class Program extends Thread {
 	private final ImmutableSet<Location> locations;
 	private Memory memory;
 	private Arch arch;
+    private ThreadCache cache;
 
     public Program(Memory memory, ImmutableSet<Location> locations){
         this("", memory, locations);
@@ -70,6 +72,13 @@ public class Program extends Thread {
 		threads.add(t);
 	}
 
+    public ThreadCache getCache(){
+        if(cache == null){
+            cache = new ThreadCache(getEvents());
+        }
+        return cache;
+    }
+
     public List<Thread> getThreads() {
         return threads;
     }
@@ -78,7 +87,6 @@ public class Program extends Thread {
         return locations;
     }
 
-	@Override
 	public List<Event> getEvents(){
         List<Event> events = new ArrayList<>();
 		for(Thread t : threads){
@@ -87,32 +95,15 @@ public class Program extends Thread {
 		return events;
 	}
 
-    @Override
-	public void beforeClone(){}
-
-	@Override
-	public Thread unroll(int steps) {
+	public void unroll(int steps) {
         for(int i = 0; i < threads.size(); i++){
             threads.set(i, threads.get(i).unroll(steps));
         }
         cache = null;
-		return this;
 	}
 
-    @Override
-	public Thread compile(Arch target) {
-		return compile(target, Alias.CFIS, 0, 0);
-	}
-
-    public Thread compile(Arch target, Alias alias) {
-        return compile(target, alias, 0, 0);
-    }
-
-	public Thread compile(Arch target, Alias alias, int firstEid) {
-		return compile(target, alias, firstEid, 0);
-	}
-
-	public Thread compile(Arch target, Alias alias, int firstEid, int firstTid) {
+	public void compile(Arch target, Alias alias, int firstEid) {
+        int firstTid = 0;
         for(int i = 0; i < threads.size(); i++){
             Thread t = threads.get(i).compile(target);
             firstTid = t.setTId(firstTid);
@@ -126,10 +117,8 @@ public class Program extends Thread {
         }
         cache = null;
         new AliasAnalysis().calculateLocationSets(this, memory, alias);
-		return this;
 	}
 
-	@Override
 	public BoolExpr encodeCF(Context ctx) {
         for(Event e : getEvents()){
             e.initialise(ctx);

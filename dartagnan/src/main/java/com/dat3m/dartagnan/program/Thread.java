@@ -51,7 +51,7 @@ public abstract class Thread {
 
     public ThreadCache getCache(){
         if(cache == null){
-            cache = new ThreadCache(this);
+            cache = new ThreadCache(getEvents());
         }
         return cache;
     }

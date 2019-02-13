@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.utils;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -18,10 +17,9 @@ public class ThreadCache {
     private Map<FilterAbstract, ImmutableList<Event>> events = new HashMap<>();
     private ImmutableSet<Register> registers;
 
-    public ThreadCache(Thread thread){
-        List<Event> allEvents = thread.getEvents();
-        allEvents.sort(Comparator.comparing(Event::getEId));
-        events.put(FilterBasic.get(EType.ANY), ImmutableList.copyOf(allEvents));
+    public ThreadCache(List<Event> events){
+        events.sort(Comparator.comparing(Event::getEId));
+        this.events.put(FilterBasic.get(EType.ANY), ImmutableList.copyOf(events));
     }
 
     public ImmutableList<Event> getEvents(FilterAbstract filter){

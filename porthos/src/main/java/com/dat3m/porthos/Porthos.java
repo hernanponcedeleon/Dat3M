@@ -137,7 +137,7 @@ public class Porthos {
         pSource.unroll(steps);
         pTarget.unroll(steps);
 
-        pSource.compile(source, alias);
+        pSource.compile(source, alias, 0);
         pTarget.compile(target, alias, pSource.getLastEid() + 1);
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
