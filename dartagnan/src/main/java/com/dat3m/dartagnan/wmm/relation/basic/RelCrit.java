@@ -11,7 +11,6 @@ public class RelCrit extends BasicRelation {
 
     public RelCrit(){
         term = "crit";
-        isStatic = true;
     }
 
     @Override

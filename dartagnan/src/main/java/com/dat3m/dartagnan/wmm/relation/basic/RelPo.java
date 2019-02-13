@@ -27,7 +27,6 @@ public class RelPo extends BasicRelation {
             term = "po";
             filter = FilterBasic.get(EType.VISIBLE);
         }
-        isStatic = true;
     }
 
     @Override

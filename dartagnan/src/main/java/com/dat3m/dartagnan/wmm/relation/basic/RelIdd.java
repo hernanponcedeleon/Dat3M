@@ -17,7 +17,6 @@ public class RelIdd extends BasicRegRelation {
     public RelIdd(){
         term = "idd";
         forceDoEncode = true;
-        isStatic = true;
     }
 
     @Override

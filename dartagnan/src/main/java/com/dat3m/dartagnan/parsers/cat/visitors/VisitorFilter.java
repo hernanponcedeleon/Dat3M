@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.cat.utils.ParsingException;
 import com.dat3m.dartagnan.wmm.filter.*;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 
 public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements CatVisitor<FilterAbstract> {
 
@@ -41,15 +40,6 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
     }
 
     @Override
-    public FilterAbstract visitExprRange(CatParser.ExprRangeContext ctx) {
-        Relation relation = ctx.expression().accept(base.relationVisitor);
-        if(relation != null){
-            return new FilterRange(relation);
-        }
-        throw new ParsingException(ctx.getText());
-    }
-
-    @Override
     public FilterAbstract visitExprBasic(CatParser.ExprBasicContext ctx) {
         FilterAbstract filter = base.wmm.getFilter(ctx.getText());
         if(filter == null){
@@ -71,6 +61,16 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
 
     @Override
     public FilterAbstract visitExprFencerel(CatParser.ExprFencerelContext ctx) {
+        throw new ParsingException(ctx.getText());
+    }
+
+    @Override
+    public FilterAbstract visitExprDomainIdentity(CatParser.ExprDomainIdentityContext ctx) {
+        throw new ParsingException(ctx.getText());
+    }
+
+    @Override
+    public FilterAbstract visitExprRangeIdentity(CatParser.ExprRangeIdentityContext ctx) {
         throw new ParsingException(ctx.getText());
     }
 
