@@ -23,12 +23,12 @@ import java.util.stream.Collectors;
 class Encodings {
 
 	static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
-		List<Event> p1Events = p1.getEventRepository().getEvents(FilterUnion.get(
+		List<Event> p1Events = p1.getCache().getEvents(FilterUnion.get(
                 FilterBasic.get(EType.MEMORY),
                 FilterBasic.get(EType.LOCAL)
         ));
 
-        List<Event> p2Events = p2.getEventRepository().getEvents(FilterUnion.get(
+        List<Event> p2Events = p2.getCache().getEvents(FilterUnion.get(
                 FilterBasic.get(EType.MEMORY),
                 FilterBasic.get(EType.LOCAL)
         ));
@@ -89,7 +89,7 @@ class Encodings {
 		for(Location loc : p.getLocations()) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
-		Set<RegWriter> executedEvents = p.getEventRepository().getEvents(FilterBasic.get(EType.ANY)).stream()
+		Set<RegWriter> executedEvents = p.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
                 .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
 				.filter(e -> e instanceof RegWriter)
                 .map(e -> (RegWriter)e)

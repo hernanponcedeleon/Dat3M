@@ -23,7 +23,7 @@ public class RelLoc extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> events = program.getEventRepository().getEvents(FilterBasic.get(EType.MEMORY));
+            Collection<Event> events = program.getCache().getEvents(FilterBasic.get(EType.MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
                     if(e1.getEId() != e2.getEId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){

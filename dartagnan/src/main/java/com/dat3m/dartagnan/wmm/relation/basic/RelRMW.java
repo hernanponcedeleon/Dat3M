@@ -21,7 +21,7 @@ public class RelRMW extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
-            for(Event store : program.getEventRepository().getEvents(filter)){
+            for(Event store : program.getCache().getEvents(filter)){
                 Event load = ((RMWStore)store).getLoadEvent();
                 // Can be null for STXR in Aarch64
                 if(load != null){

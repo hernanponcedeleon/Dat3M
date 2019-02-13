@@ -25,8 +25,8 @@ public class RelAddrDirect extends BasicRegRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Event> regWriters = t.getEventRepository().getEvents(FilterBasic.get(EType.REG_WRITER));
-                List<Event> regReaders = t.getEventRepository().getEvents(FilterBasic.get(EType.MEMORY));
+                List<Event> regWriters = t.getCache().getEvents(FilterBasic.get(EType.REG_WRITER));
+                List<Event> regReaders = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
                 for(Event e1 : regWriters){
                     Register register = ((RegWriter)e1).getResultRegister();
                     for(Event e2 : regReaders){

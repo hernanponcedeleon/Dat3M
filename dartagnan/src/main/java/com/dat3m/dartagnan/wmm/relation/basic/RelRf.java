@@ -26,9 +26,9 @@ public class RelRf extends Relation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
 
-            List<Event> eventsLoad = program.getEventRepository().getEvents(FilterBasic.get(EType.READ));
-            List<Event> eventsInit = program.getEventRepository().getEvents(FilterBasic.get(EType.INIT));
-            List<Event> eventsStore = program.getEventRepository().getEvents(FilterMinus.get(
+            List<Event> eventsLoad = program.getCache().getEvents(FilterBasic.get(EType.READ));
+            List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(EType.WRITE),
                     FilterBasic.get(EType.INIT)
             ));

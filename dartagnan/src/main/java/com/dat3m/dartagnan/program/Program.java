@@ -95,7 +95,7 @@ public class Program extends Thread {
         for(int i = 0; i < threads.size(); i++){
             threads.set(i, threads.get(i).unroll(steps));
         }
-        eventRepository = null;
+        cache = null;
 		return this;
 	}
 
@@ -118,13 +118,13 @@ public class Program extends Thread {
             firstTid = t.setTId(firstTid);
             firstEid = t.setEId(firstEid);
             t.setMainThread(t);
-            for(Register reg : t.getEventRepository().getRegisters()) {
+            for(Register reg : t.getCache().getRegisters()) {
                 reg.setMainThreadId(t.tid);
             }
-            t.eventRepository = null;
+            t.cache = null;
 			threads.set(i, t);
         }
-        eventRepository = null;
+        cache = null;
         new AliasAnalysis().calculateLocationSets(this, memory, alias);
 		return this;
 	}
@@ -144,7 +144,7 @@ public class Program extends Thread {
 
     public BoolExpr encodeFinalValues(Context ctx){
         Map<Register, List<Event>> eMap = new HashMap<>();
-        for(Event e : getEventRepository().getEvents(FilterBasic.get(EType.REG_WRITER))){
+        for(Event e : getCache().getEvents(FilterBasic.get(EType.REG_WRITER))){
             Register reg = ((RegWriter)e).getResultRegister();
             eMap.putIfAbsent(reg, new ArrayList<>());
             eMap.get(reg).add(e);
@@ -168,7 +168,7 @@ public class Program extends Thread {
 
     public int getLastEid(){
         int result = -1;
-        for(Event e : getEventRepository().getEvents(FilterBasic.get(EType.ANY))){
+        for(Event e : getCache().getEvents(FilterBasic.get(EType.ANY))){
             result = Integer.max(result, e.getEId());
         }
         return result;

@@ -35,7 +35,7 @@ public class RelPo extends BasicRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Event> events = t.getEventRepository().getEvents(filter);
+                List<Event> events = t.getCache().getEvents(filter);
 
                 ListIterator<Event> it1 = events.listIterator();
                 while(it1.hasNext()){

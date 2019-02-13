@@ -115,7 +115,7 @@ public class Graph {
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
-                for(Event e : t.getEventRepository().getEvents(FilterBasic.get(EType.VISIBLE))) {
+                for(Event e : t.getCache().getEvents(FilterBasic.get(EType.VISIBLE))) {
                     if(model.getConstInterp(e.executes(ctx)).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
@@ -141,7 +141,7 @@ public class Graph {
         String edge = " " + getEdgeDef("po") + ";\n";
 
         for(Thread thread : program.getThreads()) {
-            List<Event> events = thread.getEventRepository()
+            List<Event> events = thread.getCache()
                     .getEvents(FilterBasic.get(EType.VISIBLE))
                     .stream()
                     .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
@@ -161,7 +161,7 @@ public class Graph {
         String edge = " " + getEdgeDef("co") + ";\n";
 
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
-        for(Event e : program.getEventRepository().getEvents(FilterBasic.get(EType.WRITE))){
+        for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.executes(ctx)).isTrue()){
                 int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
@@ -196,7 +196,7 @@ public class Graph {
     private StringBuilder buildRelations(Program program){
         StringBuilder sb = new StringBuilder();
 
-        List<Event> events = program.getEventRepository()
+        List<Event> events = program.getCache()
                 .getEvents(FilterBasic.get(EType.VISIBLE))
                 .stream()
                 .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())

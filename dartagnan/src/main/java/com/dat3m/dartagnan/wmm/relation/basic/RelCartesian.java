@@ -34,8 +34,8 @@ public class RelCartesian extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            List<Event> l1 = program.getEventRepository().getEvents(filter1);
-            List<Event> l2 = program.getEventRepository().getEvents(filter2);
+            List<Event> l1 = program.getCache().getEvents(filter1);
+            List<Event> l2 = program.getCache().getEvents(filter2);
             for(Event e1 : l1){
                 for(Event e2 : l2){
                     maxTupleSet.add(new Tuple(e1, e2));

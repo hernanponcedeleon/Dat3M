@@ -18,7 +18,7 @@ public class RelCtrlDirect extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Event e1 : program.getEventRepository().getEvents(FilterBasic.get(EType.CMP))){
+            for(Event e1 : program.getCache().getEvents(FilterBasic.get(EType.CMP))){
                 for(Event e2 : ((If) e1).getT1().getEvents()){
                     maxTupleSet.add(new Tuple(e1, e2));
                 }

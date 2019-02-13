@@ -13,12 +13,12 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 
-public class EventRepository {
+public class ThreadCache {
 
     private Map<FilterAbstract, ImmutableList<Event>> events = new HashMap<>();
     private ImmutableSet<Register> registers;
 
-    public EventRepository(Thread thread){
+    public ThreadCache(Thread thread){
         List<Event> allEvents = thread.getEvents();
         allEvents.sort(Comparator.comparing(Event::getEId));
         events.put(FilterBasic.get(EType.ANY), ImmutableList.copyOf(allEvents));

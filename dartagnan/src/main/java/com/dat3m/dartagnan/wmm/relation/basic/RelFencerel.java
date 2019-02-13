@@ -39,9 +39,9 @@ public class RelFencerel extends Relation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Event> fences = t.getEventRepository().getEvents(FilterBasic.get(fenceName));
+                List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
                 if(!fences.isEmpty()){
-                    List<Event> events = t.getEventRepository().getEvents(FilterBasic.get(EType.MEMORY));
+                    List<Event> events = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
                     ListIterator<Event> it1 = events.listIterator();
 
                     while(it1.hasNext()){
@@ -67,7 +67,7 @@ public class RelFencerel extends Relation {
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
 
-        List<Event> fences = program.getEventRepository().getEvents(FilterBasic.get(fenceName));
+        List<Event> fences = program.getCache().getEvents(FilterBasic.get(fenceName));
 
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();

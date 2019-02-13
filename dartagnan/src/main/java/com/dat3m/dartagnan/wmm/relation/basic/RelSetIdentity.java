@@ -32,7 +32,7 @@ public class RelSetIdentity extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Event e1 : program.getEventRepository().getEvents(FilterBasic.get(EType.ANY))){
+            for(Event e1 : program.getCache().getEvents(FilterBasic.get(EType.ANY))){
                 if(filter.filter(e1)){
                     maxTupleSet.add(new Tuple(e1, e1));
                 }
