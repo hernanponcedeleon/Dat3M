@@ -5,6 +5,8 @@
 *.iws
 *.iml
 .metadata
+.project
+.classpath
 bin/
 tmp/
 *.tmp
