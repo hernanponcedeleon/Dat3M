@@ -141,6 +141,7 @@ public class PorthosTest {
             PorthosResult result = Porthos.testProgram(s1, s2, ctx, pSource, pTarget,
                     source, target, sourceWmm, targetWmm, steps, mode, Alias.NONE);
             assertEquals(expected, result.getIsPortable());
+            ctx.close();
 
         } catch (IOException e){
             fail("Missing resource file");

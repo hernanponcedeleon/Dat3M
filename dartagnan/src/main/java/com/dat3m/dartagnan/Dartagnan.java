@@ -121,6 +121,8 @@ public class Dartagnan {
             graph.build(p).draw(outputPath);
             System.out.println("Execution graph is written to " + outputPath);
         }
+
+        ctx.close();
     }
 
     static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,

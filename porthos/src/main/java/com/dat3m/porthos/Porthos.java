@@ -129,6 +129,8 @@ public class Porthos {
                 System.out.println("Execution graph is written to " + outputPath);
             }
         }
+
+        ctx.close();
     }
 
     static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
