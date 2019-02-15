@@ -112,7 +112,7 @@ public class Program {
             for(Register reg : t.getCache().getRegisters()) {
                 reg.setMainThreadId(t.tid);
             }
-            t.cache = null;
+            t.clearCache();
 			threads.set(i, t);
         }
         cache = null;

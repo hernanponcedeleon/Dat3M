@@ -14,9 +14,9 @@ import java.util.List;
 public abstract class Thread {
 
 	protected Thread mainThread;
-	protected int tid;
 	protected int condLevel;
-    ThreadCache cache;
+    protected int tid = -1;
+    private ThreadCache cache;
 
     public abstract void beforeClone();
 
@@ -56,8 +56,15 @@ public abstract class Thread {
         return cache;
     }
 
+    void clearCache(){
+        cache = null;
+    }
+
 	public String cfVar() {
-		return "CF" + hashCode();
+        if(tid > -1){
+            return "CF" + tid;
+        }
+        throw new RuntimeException("Tid is not set in " + this);
 	}
 
     protected final String nTimesCondLevel() {
