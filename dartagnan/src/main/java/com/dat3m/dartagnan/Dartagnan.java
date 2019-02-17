@@ -126,7 +126,7 @@ public class Dartagnan {
         }
     }
 
-    static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
+    public static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
                                Mode mode, Alias alias){
 
         program.unroll(steps);
