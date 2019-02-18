@@ -25,7 +25,7 @@ public class PorthosTest {
     private static final String CAT_RESOURCE_PATH = "../";
     private static final String BENCHMARKS_RESOURCE_PATH = "../";
 
-    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} steps={6} tk={7} idl={8}")
+    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
     public static Iterable<Object[]> data() throws IOException {
 
         Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat", Arch.NONE);
@@ -139,7 +139,7 @@ public class PorthosTest {
             Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             PorthosResult result = Porthos.testProgram(s1, s2, ctx, pSource, pTarget,
-                    source, target, sourceWmm, targetWmm, steps, mode, Alias.NONE);
+                    source, target, sourceWmm, targetWmm, steps, mode, Alias.CFIS);
             assertEquals(expected, result.getIsPortable());
             ctx.close();
 

@@ -11,7 +11,7 @@ import java.io.IOException;
 @RunWith(Parameterized.class)
 public class DartagnanLinuxTest extends AbstractDartagnanTest {
 
-    @Parameterized.Parameters(name = "{index}: {0} {2} untoll={4} relax={5} idl={6}")
+    @Parameterized.Parameters(name = "{index}: {0} arch={2} mode={5} alias=anderson unroll={4}")
     public static Iterable<Object[]> data() throws IOException {
         return buildParameters("litmus/C/", "cat/linux-kernel.cat", Arch.NONE, 2);
     }
