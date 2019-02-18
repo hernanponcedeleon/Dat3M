@@ -1,6 +1,5 @@
 package com.dat3m.ui;
 
-import static com.dat3m.dartagnan.Dartagnan.parseProgram;
 import static com.dat3m.dartagnan.program.utils.Alias.CFIS;
 import static com.dat3m.dartagnan.program.utils.Alias.CFS;
 import static com.dat3m.dartagnan.wmm.utils.Arch.ARM;
@@ -68,6 +67,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.utils.Alias;
@@ -437,8 +437,8 @@ public class Dat3m {
 			}
 			Writer writer = new PrintWriter(tmpProgramFile);
 			writer.write(pEditor.getText());
-			writer.close();			
-			Program p = parseProgram(TMPPROGPATH + loadedFormat);
+			writer.close();	
+	        Program p = new ProgramParser().parse(TMPPROGPATH + loadedFormat);
 			tmpProgramFile.delete();
 			
 			File tmpMMFile = new File(TMPMMPATH);
