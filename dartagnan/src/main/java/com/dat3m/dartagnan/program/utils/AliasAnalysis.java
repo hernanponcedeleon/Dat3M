@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.utils;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.rmw.opt.RMWStoreOptStatus;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableSet;
@@ -130,7 +129,7 @@ public class AliasAnalysis {
 
     private void processRegs(Program program) {
         for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
-            if(ev instanceof Local){
+            if(ev instanceof Local) {
                 Local e = (Local) ev;
                 Register register = e.getResultRegister();
                 ExprInterface expr = e.getExpr();
@@ -144,31 +143,30 @@ public class AliasAnalysis {
                     register.getAliasAddresses().add((Address) expr);
                     variables.add(register);
                 }
-            } else if(ev instanceof RMWStoreOptStatus) {
-                // TODO: Handle this case
             }
-
         }
     }
 
     private void cfsProcessRegs(Program program) {
         for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
-            Local e = (Local) ev;
-            Register register = e.getResultRegister();
-            int id = ssaMap.get(register).get(e) + 1;
-            SSAReg ssaReg1 = (register.getSSAReg(id));
-            ExprInterface expr = e.getExpr();
+            if(ev instanceof Local) {
+                Local e = (Local) ev;
+                Register register = e.getResultRegister();
+                int id = ssaMap.get(register).get(e) + 1;
+                SSAReg ssaReg1 = (register.getSSAReg(id));
+                ExprInterface expr = e.getExpr();
 
-            if (expr instanceof Register) {
-                // r1 = r2 -> add edge r2 --> r1
-                Register register2 = (Register) expr;
-                SSAReg ssaReg2 = (register2.getSSAReg(ssaMap.get(register2).get(e)));
-                ssaReg2.getAliasEdges().add(ssaReg1);
+                if (expr instanceof Register) {
+                    // r1 = r2 -> add edge r2 --> r1
+                    Register register2 = (Register) expr;
+                    SSAReg ssaReg2 = (register2.getSSAReg(ssaMap.get(register2).get(e)));
+                    ssaReg2.getAliasEdges().add(ssaReg1);
 
-            } else if (expr instanceof Address) {
-                // r = &a
-                ssaReg1.getAliasAddresses().add((Address) expr);
-                variables.add(ssaReg1);
+                } else if (expr instanceof Address) {
+                    // r = &a
+                    ssaReg1.getAliasAddresses().add((Address) expr);
+                    variables.add(ssaReg1);
+                }
             }
         }
     }
