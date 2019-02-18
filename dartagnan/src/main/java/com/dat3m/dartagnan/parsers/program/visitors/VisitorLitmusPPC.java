@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.visitors;
+package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
@@ -6,11 +6,11 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser;
 import com.dat3m.dartagnan.parsers.LitmusPPCVisitor;
-import com.dat3m.dartagnan.parsers.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.utils.ParsingException;
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.utils.branch.Cmp;
-import com.dat3m.dartagnan.parsers.utils.branch.CondJump;
+import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.utils.branch.Cmp;
+import com.dat3m.dartagnan.parsers.program.utils.branch.CondJump;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Load;
@@ -18,9 +18,6 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Store;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
-
-import java.util.Arrays;
-import java.util.Set;
 
 public class VisitorLitmusPPC
         extends LitmusPPCBaseVisitor<Object>

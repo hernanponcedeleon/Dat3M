@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.cat.visitors;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.parsers.cat.utils.CatSyntaxException;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -14,9 +13,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
-import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
+import com.dat3m.dartagnan.wmm.relation.unary.*;
 
 public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisitor<Relation> {
 
@@ -67,6 +64,16 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
     }
 
     @Override
+    public Relation visitExprDomainIdentity(CatParser.ExprDomainIdentityContext ctx) {
+        return visitUnaryRelation(ctx.e, RelDomainIdentity.class);
+    }
+
+    @Override
+    public Relation visitExprRangeIdentity(CatParser.ExprRangeIdentityContext ctx) {
+        return visitUnaryRelation(ctx.e, RelRangeIdentity.class);
+    }
+
+    @Override
     public Relation visitExprComplement(CatParser.ExprComplementContext ctx) {
         throw new RuntimeException("Relation complement is not implemented");
     }
@@ -113,11 +120,6 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
             relation = base.relationRepository.getRelation(RecursiveRelation.class, ctx.n.getText());
         }
         return relation;
-    }
-
-    @Override
-    public Relation visitExprRange(CatParser.ExprRangeContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
     }
 
     private Relation visitBinaryRelation(CatParser.ExpressionContext e1, CatParser.ExpressionContext e2, Class c){

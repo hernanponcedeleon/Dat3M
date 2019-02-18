@@ -1,6 +1,7 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -24,7 +25,7 @@ public class PorthosTest {
     private static final String CAT_RESOURCE_PATH = "../";
     private static final String BENCHMARKS_RESOURCE_PATH = "../";
 
-    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} steps={6} tk={7} idl={8}")
+    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
     public static Iterable<Object[]> data() throws IOException {
 
         Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat", Arch.NONE);
@@ -130,15 +131,17 @@ public class PorthosTest {
     @Test
     public void test() {
         try {
-            Program pSource = Dartagnan.parseProgram(input);
-            Program pTarget = Dartagnan.parseProgram(input);
+            ProgramParser programParser = new ProgramParser();
+            Program pSource = programParser.parse(input);
+            Program pTarget = programParser.parse(input);
 
             Context ctx = new Context();
             Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             PorthosResult result = Porthos.testProgram(s1, s2, ctx, pSource, pTarget,
-                    source, target, sourceWmm, targetWmm, steps, mode, Alias.NONE);
+                    source, target, sourceWmm, targetWmm, steps, mode, Alias.CFIS);
             assertEquals(expected, result.getIsPortable());
+            ctx.close();
 
         } catch (IOException e){
             fail("Missing resource file");

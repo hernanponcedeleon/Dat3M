@@ -5,10 +5,9 @@ import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EventRepository;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -16,8 +15,6 @@ import org.apache.commons.cli.*;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 import static com.dat3m.porthos.Encodings.encodeCommonExecutions;
 import static com.dat3m.porthos.Encodings.encodeReachedState;
@@ -103,9 +100,11 @@ public class Porthos {
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
+        ProgramParser programParser = new ProgramParser();
+        Program pSource = programParser.parse(inputFilePath);
+        Program pTarget = programParser.parse(inputFilePath);
+
         Context ctx = new Context();
-        Program pSource = Dartagnan.parseProgram(inputFilePath);
-        Program pTarget = Dartagnan.parseProgram(inputFilePath);
         Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
         Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
 
@@ -130,6 +129,8 @@ public class Porthos {
                 System.out.println("Execution graph is written to " + outputPath);
             }
         }
+
+        ctx.close();
     }
 
     static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
@@ -138,9 +139,8 @@ public class Porthos {
         pSource.unroll(steps);
         pTarget.unroll(steps);
 
-        pSource.compile(source, alias);
-        int startEId = Collections.max(pSource.getEventRepository().getEvents(EventRepository.INIT).stream().map(Event::getEId).collect(Collectors.toSet())) + 1;
-        pTarget.compile(target, alias, startEId);
+        pSource.compile(source, alias, 0);
+        pTarget.compile(target, alias, pSource.getLastEid() + 1);
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalValues(ctx);

@@ -43,9 +43,10 @@ expression
     |   e1 = expression BAR e2 = expression                             # exprUnion
     |   e1 = expression BSLASH e2 = expression                          # exprMinus
     |   e1 = expression AMP e2 = expression                             # exprIntersection
+    |   LBRAC DOMAIN LPAR e = expression RPAR RBRAC                     # exprDomainIdentity
+    |   LBRAC RANGE LPAR e = expression RPAR RBRAC                      # exprRangeIdentity
     |   (TOID LPAR e = expression RPAR | LBRAC e = expression RBRAC)    # exprIdentity
     |   FENCEREL LPAR n = NAME RPAR                                     # exprFencerel
-    |   RANGE LPAR e = expression RPAR                                  # exprRange
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
     ;
@@ -78,6 +79,7 @@ LBRAC   :   '[';
 RBRAC   :   ']';
 
 FENCEREL    :   'fencerel';
+DOMAIN      :   'domain';
 RANGE       :   'range';
 
 NAME    : [A-Za-z0-9\-_.]+;

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.rmw.opt;
 
+import com.dat3m.dartagnan.program.utils.EType;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -17,6 +18,7 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
     public RMWStoreOptStatus(Register register, RMWStoreOpt storeEvent){
         this.register = register;
         this.storeEvent = storeEvent;
+        addFilters(EType.ANY, EType.VISIBLE, EType.LOCAL, EType.REG_WRITER);
     }
 
     @Override

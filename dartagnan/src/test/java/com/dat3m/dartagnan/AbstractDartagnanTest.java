@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -61,11 +62,12 @@ public abstract class AbstractDartagnanTest {
     @Test
     public void test() {
         try {
-            Program program = Dartagnan.parseProgram(input);
+            Program program = new ProgramParser().parse(input);
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
                 assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, mode, Alias.CFIS));
+                ctx.close();
             }
         } catch (IOException e){
             fail("Missing resource file");

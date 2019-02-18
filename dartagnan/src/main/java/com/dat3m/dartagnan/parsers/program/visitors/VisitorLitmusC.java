@@ -1,11 +1,13 @@
-package com.dat3m.dartagnan.parsers.visitors;
+package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.parsers.*;
-import com.dat3m.dartagnan.parsers.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.utils.ParsingException;
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
+import com.dat3m.dartagnan.parsers.LitmusCParser;
+import com.dat3m.dartagnan.parsers.LitmusCVisitor;
+import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;

@@ -1,8 +1,10 @@
-package com.dat3m.dartagnan.parsers;
+package com.dat3m.dartagnan.parsers.program;
 
-import com.dat3m.dartagnan.parsers.utils.ParserErrorListener;
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.visitors.VisitorLitmusPPC;
+import com.dat3m.dartagnan.parsers.LitmusAArch64Lexer;
+import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
+import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusAArch64;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
@@ -12,27 +14,27 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class ParserLitmusPPC implements ParserInterface {
+public class ParserLitmusAArch64 implements ParserInterface {
 
     @Override
     public Program parse(String inputFilePath) throws IOException {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        LitmusPPCLexer lexer = new LitmusPPCLexer(charStream);
+        LitmusAArch64Lexer lexer = new LitmusAArch64Lexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         stream.close();
 
-        LitmusPPCParser parser = new LitmusPPCParser(tokenStream);
+        LitmusAArch64Parser parser = new LitmusAArch64Parser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
         ProgramBuilder pb = new ProgramBuilder();
         ParserRuleContext parserEntryPoint = parser.main();
-        VisitorLitmusPPC visitor = new VisitorLitmusPPC(pb);
+        VisitorLitmusAArch64 visitor = new VisitorLitmusAArch64(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);
-        program.setArch(Arch.POWER);
+        program.setArch(Arch.ARM8);
         return program;
     }
 }

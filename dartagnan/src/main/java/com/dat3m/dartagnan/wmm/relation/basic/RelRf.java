@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.utils.EventRepository;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -23,9 +25,13 @@ public class RelRf extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.INIT);
-            Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.STORE);
-            Collection<Event> eventsLoad = program.getEventRepository().getEvents(EventRepository.LOAD);
+
+            List<Event> eventsLoad = program.getCache().getEvents(FilterBasic.get(EType.READ));
+            List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
+                    FilterBasic.get(EType.WRITE),
+                    FilterBasic.get(EType.INIT)
+            ));
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsLoad){

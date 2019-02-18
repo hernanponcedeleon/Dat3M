@@ -5,7 +5,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Skip;
-import com.dat3m.dartagnan.program.utils.EventRepository;
+import com.dat3m.dartagnan.program.utils.ThreadCache;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,9 +14,9 @@ import java.util.List;
 public abstract class Thread {
 
 	protected Thread mainThread;
-	protected int tid;
 	protected int condLevel;
-	private EventRepository eventRepository;
+    protected int tid = -1;
+    private ThreadCache cache;
 
     public abstract void beforeClone();
 
@@ -49,15 +49,22 @@ public abstract class Thread {
         condLevel--;
     }
 
-    public EventRepository getEventRepository(){
-        if(eventRepository == null){
-            eventRepository = new EventRepository(this);
+    public ThreadCache getCache(){
+        if(cache == null){
+            cache = new ThreadCache(getEvents());
         }
-        return eventRepository;
+        return cache;
+    }
+
+    void clearCache(){
+        cache = null;
     }
 
 	public String cfVar() {
-		return "CF" + hashCode();
+        if(tid > -1){
+            return "CF" + tid;
+        }
+        throw new RuntimeException("Tid is not set in " + this);
 	}
 
     protected final String nTimesCondLevel() {

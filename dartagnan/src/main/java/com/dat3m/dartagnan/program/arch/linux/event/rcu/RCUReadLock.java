@@ -7,7 +7,7 @@ public class RCUReadLock extends Event {
 
     public RCUReadLock(){
         this.condLevel = 0;
-        this.addFilters(EType.ANY, EType.RCU_LOCK);
+        this.addFilters(EType.ANY, EType.VISIBLE, EType.RCU_LOCK);
     }
 
     @Override

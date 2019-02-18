@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.dat3m</groupId>
   <artifactId>dat3m</artifactId>
-  <version>2.0</version>
+  <version>2.0.1</version>
   <packaging>pom</packaging>
 
   <name>dat3m</name>
@@ -26,20 +28,6 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.1</version>
-        <configuration>
-          <forkMode>once</forkMode>
-          <argLine>-Djava.library.path=${project.parent.basedir}/lib</argLine>
-          <environmentVariables>
-            <LD_LIBRARY_PATH>${project.parent.basedir}/lib/</LD_LIBRARY_PATH>
-            <DYLD_LIBRARY_PATH>${project.parent.basedir}/lib/</DYLD_LIBRARY_PATH>
-          </environmentVariables>
-        </configuration>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>

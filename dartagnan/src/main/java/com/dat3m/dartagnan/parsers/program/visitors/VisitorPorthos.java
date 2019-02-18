@@ -1,11 +1,11 @@
-package com.dat3m.dartagnan.parsers.visitors;
+package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.PorthosBaseVisitor;
 import com.dat3m.dartagnan.parsers.PorthosParser;
 import com.dat3m.dartagnan.parsers.PorthosVisitor;
-import com.dat3m.dartagnan.parsers.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;

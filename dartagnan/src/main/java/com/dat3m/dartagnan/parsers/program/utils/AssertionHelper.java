@@ -1,9 +1,9 @@
-package com.dat3m.dartagnan.parsers.utils;
+package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsLexer;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
-import com.dat3m.dartagnan.parsers.visitors.VisitorLitmusAssertions;
+import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusAssertions;
 import org.antlr.v4.runtime.*;
 
 public class AssertionHelper {

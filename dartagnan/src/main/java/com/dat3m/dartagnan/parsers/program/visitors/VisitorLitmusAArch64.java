@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.visitors;
+package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -7,11 +7,11 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Visitor;
-import com.dat3m.dartagnan.parsers.utils.AssertionHelper;
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.utils.branch.Cmp;
-import com.dat3m.dartagnan.parsers.utils.branch.CondJump;
-import com.dat3m.dartagnan.parsers.utils.branch.Label;
+import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.utils.branch.Cmp;
+import com.dat3m.dartagnan.parsers.program.utils.branch.CondJump;
+import com.dat3m.dartagnan.parsers.program.utils.branch.Label;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.FenceOpt;

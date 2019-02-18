@@ -1,5 +1,8 @@
 package com.dat3m.porthos;
 
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;
@@ -10,7 +13,6 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.utils.EventRepository;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -21,8 +23,15 @@ import java.util.stream.Collectors;
 class Encodings {
 
 	static BoolExpr encodeCommonExecutions(Program p1, Program p2, Context ctx) {
-		List<Event> p1Events = sortedByHlId(p1);
-        List<Event> p2Events = sortedByHlId(p2);
+		List<Event> p1Events = p1.getCache().getEvents(FilterUnion.get(
+                FilterBasic.get(EType.MEMORY),
+                FilterBasic.get(EType.LOCAL)
+        ));
+
+        List<Event> p2Events = p2.getCache().getEvents(FilterUnion.get(
+                FilterBasic.get(EType.MEMORY),
+                FilterBasic.get(EType.LOCAL)
+        ));
 
         Iterator it1 = p1Events.iterator();
         Iterator it2 = p2Events.iterator();
@@ -80,7 +89,7 @@ class Encodings {
 		for(Location loc : p.getLocations()) {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
-		Set<RegWriter> executedEvents = p.getEventRepository().getEvents(EventRepository.ALL).stream()
+		Set<RegWriter> executedEvents = p.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
                 .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
 				.filter(e -> e instanceof RegWriter)
                 .map(e -> (RegWriter)e)
@@ -94,12 +103,4 @@ class Encodings {
 		}
 		return reachedState;
 	}
-
-	private static List<Event> sortedByHlId(Program program){
-	    return program.getEventRepository()
-                .getEvents(EventRepository.MEMORY | EventRepository.LOCAL)
-                .stream()
-                .sorted(Comparator.comparing(Event::getHLId))
-                .collect(Collectors.toList());
-    }
 }

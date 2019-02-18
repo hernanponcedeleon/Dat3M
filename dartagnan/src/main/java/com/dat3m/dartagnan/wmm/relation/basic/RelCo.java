@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.IntExpr;
@@ -7,16 +10,14 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.utils.EventRepository;
+import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import static com.dat3m.dartagnan.utils.Utils.edge;
 import static com.dat3m.dartagnan.utils.Utils.intVar;
@@ -32,8 +33,11 @@ public class RelCo extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> eventsStore = program.getEventRepository().getEvents(EventRepository.STORE);
-            Collection<Event> eventsInit = program.getEventRepository().getEvents(EventRepository.INIT);
+            List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
+                    FilterBasic.get(EType.WRITE),
+                    FilterBasic.get(EType.INIT)
+            ));
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsStore){
@@ -57,22 +61,26 @@ public class RelCo extends Relation {
     @Override
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
-        EventRepository eventRepository = program.getEventRepository();
         ImmutableSetMultimap<Address, Location> addressLocationMap = getAddressLocationMap();
-        List<Event> writes = eventRepository.getEvents(EventRepository.STORE | EventRepository.INIT);
 
-        for(Event e : eventRepository.getEvents(EventRepository.INIT)) {
+        List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
+        List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
+                FilterBasic.get(EType.WRITE),
+                FilterBasic.get(EType.INIT)
+        ));
+
+        for(Event e : eventsInit) {
             enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
         }
 
         List<IntExpr> intVars = new ArrayList<>();
-        for(Event w : eventRepository.getEvents(EventRepository.STORE)) {
+        for(Event w : eventsStore) {
             intVars.add(intVar("co", w, ctx));
             enc = ctx.mkAnd(enc, ctx.mkGt(Utils.intVar("co", w, ctx), ctx.mkInt(1)));
         }
         enc = ctx.mkAnd(enc, ctx.mkDistinct(intVars.toArray(new IntExpr[0])));
 
-        for(Event w :  writes){
+        for(Event w :  program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             MemEvent w1 = (MemEvent)w;
             BoolExpr lastCo = w1.executes(ctx);
 

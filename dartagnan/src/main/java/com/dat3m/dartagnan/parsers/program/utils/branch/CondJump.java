@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.utils.branch;
+package com.dat3m.dartagnan.parsers.program.utils.branch;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.op.COpBin;
