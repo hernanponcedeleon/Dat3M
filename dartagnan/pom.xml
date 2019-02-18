@@ -6,12 +6,12 @@
   <parent>
     <groupId>com.dat3m</groupId>
     <artifactId>dat3m</artifactId>
-    <version>2.0.1</version>
+    <version>2.0.2</version>
   </parent>
 
   <groupId>com.dat3m.dartagnan</groupId>
   <artifactId>dartagnan</artifactId>
-  <version>2.0.1</version>
+  <version>2.0.2</version>
   <packaging>jar</packaging>
 
   <name>dartagnan</name>
