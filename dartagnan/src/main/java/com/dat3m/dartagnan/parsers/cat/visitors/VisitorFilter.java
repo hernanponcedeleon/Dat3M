@@ -3,9 +3,8 @@ package com.dat3m.dartagnan.parsers.cat.visitors;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.parsers.cat.utils.CatSyntaxException;
+import com.dat3m.dartagnan.parsers.cat.utils.ParsingException;
 import com.dat3m.dartagnan.wmm.filter.*;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 
 public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements CatVisitor<FilterAbstract> {
 
@@ -22,17 +21,17 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
 
     @Override
     public FilterAbstract visitExprIntersection(CatParser.ExprIntersectionContext ctx) {
-        return new FilterIntersection(ctx.e1.accept(this), ctx.e2.accept(this));
+        return FilterIntersection.get(ctx.e1.accept(this), ctx.e2.accept(this));
     }
 
     @Override
     public FilterAbstract visitExprMinus(CatParser.ExprMinusContext ctx) {
-        return new FilterMinus(ctx.e1.accept(this), ctx.e2.accept(this));
+        return FilterMinus.get(ctx.e1.accept(this), ctx.e2.accept(this));
     }
 
     @Override
     public FilterAbstract visitExprUnion(CatParser.ExprUnionContext ctx) {
-        return new FilterUnion(ctx.e1.accept(this), ctx.e2.accept(this));
+        return FilterUnion.get(ctx.e1.accept(this), ctx.e2.accept(this));
     }
 
     @Override
@@ -41,19 +40,10 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
     }
 
     @Override
-    public FilterAbstract visitExprRange(CatParser.ExprRangeContext ctx) {
-        Relation relation = ctx.expression().accept(base.relationVisitor);
-        if(relation != null){
-            return new FilterRange(relation);
-        }
-        throw new CatSyntaxException(ctx.getText());
-    }
-
-    @Override
     public FilterAbstract visitExprBasic(CatParser.ExprBasicContext ctx) {
         FilterAbstract filter = base.wmm.getFilter(ctx.getText());
         if(filter == null){
-            filter = new FilterBasic(ctx.getText());
+            filter = FilterBasic.get(ctx.getText());
             base.wmm.addFilter(filter);
         }
         return filter;
@@ -61,41 +51,51 @@ public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements Cat
 
     @Override
     public FilterAbstract visitExprCartesian(CatParser.ExprCartesianContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 
     @Override
     public FilterAbstract visitExprComposition(CatParser.ExprCompositionContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 
     @Override
     public FilterAbstract visitExprFencerel(CatParser.ExprFencerelContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
+    }
+
+    @Override
+    public FilterAbstract visitExprDomainIdentity(CatParser.ExprDomainIdentityContext ctx) {
+        throw new ParsingException(ctx.getText());
+    }
+
+    @Override
+    public FilterAbstract visitExprRangeIdentity(CatParser.ExprRangeIdentityContext ctx) {
+        throw new ParsingException(ctx.getText());
     }
 
     @Override
     public FilterAbstract visitExprIdentity(CatParser.ExprIdentityContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 
     @Override
     public FilterAbstract visitExprInverse(CatParser.ExprInverseContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 
     @Override
     public FilterAbstract visitExprOptional(CatParser.ExprOptionalContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 
     @Override
     public FilterAbstract visitExprTransitive(CatParser.ExprTransitiveContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 
     @Override
     public FilterAbstract visitExprTransRef(CatParser.ExprTransRefContext ctx) {
-        throw new CatSyntaxException(ctx.getText());
+        throw new ParsingException(ctx.getText());
     }
 }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.parsers.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.Test;
@@ -24,7 +25,7 @@ public class DartagnanArrayIllegalTest {
                 .filter(f -> (f.toString().endsWith("litmus")))
                 .map(f -> new Object[]{f.toString()})
                 .collect(Collectors.toList());
-    };
+    }
 
     private String input;
 
@@ -35,7 +36,7 @@ public class DartagnanArrayIllegalTest {
     @Test
     public void test() {
         try{
-            Dartagnan.parseProgram(input);
+            new ProgramParser().parse(input);
             fail("Didn't throw an exception");
         } catch(ParseCancellationException | ParsingException e){
             // Test succeeded

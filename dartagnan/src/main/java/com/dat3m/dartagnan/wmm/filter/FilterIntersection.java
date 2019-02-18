@@ -2,12 +2,28 @@ package com.dat3m.dartagnan.wmm.filter;
 
 import com.dat3m.dartagnan.program.event.Event;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class FilterIntersection extends FilterAbstract {
+
+    private final static Map<String, FilterIntersection> instances = new HashMap<>();
+
+    public static FilterIntersection get(FilterAbstract filter1, FilterAbstract filter2){
+        String key = mkName(filter1, filter2);
+        instances.putIfAbsent(key, new FilterIntersection(filter1, filter2));
+        return instances.get(key);
+    }
+
+    private static String mkName(FilterAbstract filter1, FilterAbstract filter2){
+        return (filter1 instanceof FilterBasic ? filter1.toString() : "( " + filter1.toString() + " )")
+                + " & " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
+    }
 
     private FilterAbstract filter1;
     private FilterAbstract filter2;
 
-    public FilterIntersection(FilterAbstract filter1, FilterAbstract filter2){
+    private FilterIntersection(FilterAbstract filter1, FilterAbstract filter2){
         this.filter1 = filter1;
         this.filter2 = filter2;
     }
@@ -19,7 +35,23 @@ public class FilterIntersection extends FilterAbstract {
 
     @Override
     public String toString(){
-        return (filter1 instanceof FilterBasic ? filter1.toString() : "( " + filter1.toString() + " )")
-                + " & " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
+        return mkName(filter1, filter2);
+    }
+
+    @Override
+    public int hashCode() {
+        return filter1.hashCode() & filter2.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        FilterIntersection fObj = (FilterIntersection) obj;
+        return fObj.filter1.equals(filter1) && fObj.filter2.equals(filter2);
     }
 }

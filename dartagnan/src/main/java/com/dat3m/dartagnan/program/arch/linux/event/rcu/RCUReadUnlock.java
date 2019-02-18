@@ -10,7 +10,7 @@ public class RCUReadUnlock extends Event {
     public RCUReadUnlock(RCUReadLock lockEvent){
         this.condLevel = 0;
         this.lockEvent = lockEvent;
-        this.addFilters(EType.ANY, EType.RCU_UNLOCK);
+        this.addFilters(EType.ANY, EType.VISIBLE, EType.RCU_UNLOCK);
     }
 
     public RCUReadLock getLockEvent(){

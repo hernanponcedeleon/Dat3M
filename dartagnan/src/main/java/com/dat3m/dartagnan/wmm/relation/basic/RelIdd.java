@@ -1,23 +1,22 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.utils.EventRepository;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class RelIdd extends BasicRegRelation {
 
     public RelIdd(){
         term = "idd";
         forceDoEncode = true;
-        isStatic = true;
     }
 
     @Override
@@ -25,12 +24,12 @@ public class RelIdd extends BasicRegRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             for(Thread t : program.getThreads()){
-                List<Event> events = t.getEventRepository().getEvents(EventRepository.ALL);
-                Set<Event> regWriters = events.stream().filter(e -> e instanceof RegWriter).collect(Collectors.toSet());
-                Set<Event> regReaders = events.stream().filter(e -> e instanceof RegReaderData).collect(Collectors.toSet());
+                List<Event> regWriters = t.getCache().getEvents(FilterBasic.get(EType.REG_WRITER));
+                List<Event> regReaders = t.getCache().getEvents(FilterBasic.get(EType.REG_READER));
                 for(Event e1 : regWriters){
+                    Register register = ((RegWriter)e1).getResultRegister();
                     for(Event e2 : regReaders){
-                        if(e1.getEId() < e2.getEId() && ((RegReaderData)e2).getDataRegs().contains(((RegWriter)e1).getResultRegister())){
+                        if(e1.getEId() < e2.getEId() && ((RegReaderData)e2).getDataRegs().contains(register)){
                             maxTupleSet.add(new Tuple(e1, e2));
                         }
                     }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -32,7 +33,7 @@ public class DartagnanArrayValidTest {
                 .filter(f -> (f.toString().endsWith("litmus")))
                 .map(f -> new Object[]{f.toString(), wmm})
                 .collect(Collectors.toList());
-    };
+    }
 
     private String input;
     private Wmm wmm;
@@ -45,10 +46,11 @@ public class DartagnanArrayValidTest {
     @Test
     public void test() {
         try{
-            Program program = Dartagnan.parseProgram(input);
+            Program program = new ProgramParser().parse(input);
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, 2, Mode.KNASTER, Alias.CFIS));
+            ctx.close();
         } catch (IOException e){
             fail("Missing resource file");
         }

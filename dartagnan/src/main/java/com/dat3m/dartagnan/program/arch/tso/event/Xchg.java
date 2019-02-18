@@ -24,7 +24,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
         this.atomic = atomic;
         this.condLevel = 0;
         this.dataRegs = ImmutableSet.of(resultRegister);
-        addFilters(EType.ANY, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM);
+        addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM, EType.REG_WRITER, EType.REG_READER);
     }
 
     @Override

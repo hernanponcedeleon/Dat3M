@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils;
 
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -7,7 +9,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Init;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.utils.EventRepository;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -114,7 +115,7 @@ public class Graph {
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
-                for(Event e : t.getEventRepository().getSortedList(EventRepository.VISIBLE)) {
+                for(Event e : t.getCache().getEvents(FilterBasic.get(EType.VISIBLE))) {
                     if(model.getConstInterp(e.executes(ctx)).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
@@ -140,8 +141,8 @@ public class Graph {
         String edge = " " + getEdgeDef("po") + ";\n";
 
         for(Thread thread : program.getThreads()) {
-            List<Event> events = thread.getEventRepository()
-                    .getSortedList(EventRepository.VISIBLE)
+            List<Event> events = thread.getCache()
+                    .getEvents(FilterBasic.get(EType.VISIBLE))
                     .stream()
                     .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
                     .collect(Collectors.toList());
@@ -160,7 +161,7 @@ public class Graph {
         String edge = " " + getEdgeDef("co") + ";\n";
 
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
-        for(Event e : program.getEventRepository().getEvents(EventRepository.STORE | EventRepository.INIT)){
+        for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.executes(ctx)).isTrue()){
                 int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
@@ -195,8 +196,8 @@ public class Graph {
     private StringBuilder buildRelations(Program program){
         StringBuilder sb = new StringBuilder();
 
-        List<Event> events = program.getEventRepository()
-                .getSortedList(EventRepository.VISIBLE)
+        List<Event> events = program.getCache()
+                .getEvents(FilterBasic.get(EType.VISIBLE))
                 .stream()
                 .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
                 .collect(Collectors.toList());

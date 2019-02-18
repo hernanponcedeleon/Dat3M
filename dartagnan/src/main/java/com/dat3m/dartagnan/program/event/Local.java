@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -21,6 +22,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		this.expr = expr;
 		this.condLevel = 0;
 		dataRegs = expr.getRegs();
+		addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER, EType.REG_READER);
 	}
 
 	@Override

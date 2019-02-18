@@ -13,7 +13,7 @@ public class Init extends MemEvent {
 		this.address = address;
 		this.value = value;
 		this.condLevel = 0;
-		addFilters(EType.ANY, EType.MEMORY, EType.WRITE, EType.INIT);
+		addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.INIT);
 	}
 
 	@Override

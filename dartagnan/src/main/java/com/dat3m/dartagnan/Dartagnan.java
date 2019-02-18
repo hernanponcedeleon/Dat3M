@@ -8,15 +8,12 @@ import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.parsers.ParserInterface;
-import com.dat3m.dartagnan.parsers.ParserResolver;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.commons.cli.*;
-
-import static com.dat3m.dartagnan.wmm.utils.Arch.NONE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -70,7 +67,7 @@ public class Dartagnan {
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
-        Program p = parseProgram(inputFilePath);
+        Program p = new ProgramParser().parse(inputFilePath);
         
         Arch target = p.getArch();
 
@@ -124,13 +121,15 @@ public class Dartagnan {
             graph.build(p).draw(outputPath);
             System.out.println("Execution graph is written to " + outputPath);
         }
+
+        ctx.close();
     }
 
     public static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
                                Mode mode, Alias alias){
 
         program.unroll(steps);
-        program.compile(target, alias);
+        program.compile(target, alias, 0);
 
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
@@ -146,12 +145,6 @@ public class Dartagnan {
             result = !result;
         }
         return result;
-    }
-
-    public static Program parseProgram(String inputFilePath) throws IOException{
-        ParserResolver parserResolver = new ParserResolver();
-        ParserInterface parser = parserResolver.getParser(inputFilePath);
-        return parser.parse(inputFilePath);
     }
 
     private static boolean canDrawGraph(AbstractAssert ass, boolean result){

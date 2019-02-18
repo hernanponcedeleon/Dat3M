@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Seq;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.utils.EType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,7 @@ public class While extends Event {
 		this.pred = pred;
 		this.t = t;
 		t.incCondLevel();
+		addFilters(EType.ANY, EType.CMP);
 	}
 
 	@Override

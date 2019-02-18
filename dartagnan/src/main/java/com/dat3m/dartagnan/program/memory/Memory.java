@@ -30,7 +30,7 @@ public class Memory {
 
     public BoolExpr encode(Context ctx){
         BoolExpr enc = ctx.mkTrue();
-        List<IntExpr> expressions = new ArrayList<>();
+        Set<IntExpr> expressions = new HashSet<>();
 
         for(List<Address> array : arrays.values()){
             int size = array.size();

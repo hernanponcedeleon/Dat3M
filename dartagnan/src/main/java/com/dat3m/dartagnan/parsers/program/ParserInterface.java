@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers;
+package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.program.Program;
 

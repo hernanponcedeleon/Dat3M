@@ -1,8 +1,9 @@
-package com.dat3m.dartagnan.parsers;
+package com.dat3m.dartagnan.parsers.program;
 
-import com.dat3m.dartagnan.parsers.utils.ParserErrorListener;
-import com.dat3m.dartagnan.parsers.utils.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.visitors.VisitorLitmusX86;
+import com.dat3m.dartagnan.parsers.LitmusCLexer;
+import com.dat3m.dartagnan.parsers.LitmusCParser;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusC;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
@@ -12,27 +13,26 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class ParserLitmusX86 implements ParserInterface {
+public class ParserLitmusC implements ParserInterface {
 
     @Override
     public Program parse(String inputFilePath) throws IOException {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        LitmusX86Lexer lexer = new LitmusX86Lexer(charStream);
+        LitmusCLexer lexer = new LitmusCLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         stream.close();
 
-        LitmusX86Parser parser = new LitmusX86Parser(tokenStream);
-        parser.addErrorListener(new DiagnosticErrorListener(true));
-        parser.addErrorListener(new ParserErrorListener());
+        LitmusCParser parser = new LitmusCParser(tokenStream);
+        parser.setErrorHandler(new BailErrorStrategy());
         ProgramBuilder pb = new ProgramBuilder();
         ParserRuleContext parserEntryPoint = parser.main();
-        VisitorLitmusX86 visitor = new VisitorLitmusX86(pb);
+        VisitorLitmusC visitor = new VisitorLitmusC(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setName(inputFilePath);
-        program.setArch(Arch.TSO);
+        program.setArch(Arch.NONE);
         return program;
     }
 }

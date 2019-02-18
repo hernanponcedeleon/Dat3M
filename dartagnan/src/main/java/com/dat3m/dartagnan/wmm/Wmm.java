@@ -53,7 +53,7 @@ public class Wmm {
     public FilterAbstract getFilter(String name){
         FilterAbstract filter = filters.get(name);
         if(filter == null){
-            filter = new FilterBasic(name);
+            filter = FilterBasic.get(name);
         }
         return filter;
     }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.rmw.cond;
 
+import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -21,6 +22,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
         super(reg, address, atomic);
         this.cmp = cmp;
         this.dataRegs = cmp.getRegs();
+        addFilters(EType.REG_READER);
     }
 
     @Override

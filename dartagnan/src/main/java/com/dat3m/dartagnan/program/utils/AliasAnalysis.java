@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.utils;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
@@ -46,7 +47,7 @@ public class AliasAnalysis {
     }
 
     private void processLocs(Program program, Memory memory) {
-        for (Event ev : program.getEventRepository().getEvents(EventRepository.MEMORY)) {
+        for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             MemEvent e = (MemEvent) ev;
             IExpr address = e.getAddress();
 
@@ -85,7 +86,7 @@ public class AliasAnalysis {
     }
 
     private void cfsProcessLocs(Program program, Memory memory) {
-        for (Event ev : program.getEventRepository().getEvents(EventRepository.MEMORY)) {
+        for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             MemEvent e = (MemEvent) ev;
             IExpr address = e.getAddress();
 
@@ -127,41 +128,45 @@ public class AliasAnalysis {
     }
 
     private void processRegs(Program program) {
-        for (Event ev : program.getEventRepository().getEvents(EventRepository.LOCAL)) {
-            Local e = (Local) ev;
-            Register register = e.getResultRegister();
-            ExprInterface expr = e.getExpr();
+        for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
+            if(ev instanceof Local) {
+                Local e = (Local) ev;
+                Register register = e.getResultRegister();
+                ExprInterface expr = e.getExpr();
 
-            if (expr instanceof Register) {
-                // r1 = r2 -> add edge r2 --> r1
-                ((Register) expr).getAliasEdges().add(register);
+                if (expr instanceof Register) {
+                    // r1 = r2 -> add edge r2 --> r1
+                    ((Register) expr).getAliasEdges().add(register);
 
-            } else if (expr instanceof Address) {
-                // r = &a
-                register.getAliasAddresses().add((Address) expr);
-                variables.add(register);
+                } else if (expr instanceof Address) {
+                    // r = &a
+                    register.getAliasAddresses().add((Address) expr);
+                    variables.add(register);
+                }
             }
         }
     }
 
     private void cfsProcessRegs(Program program) {
-        for (Event ev : program.getEventRepository().getEvents(EventRepository.LOCAL)) {
-            Local e = (Local) ev;
-            Register register = e.getResultRegister();
-            int id = ssaMap.get(register).get(e) + 1;
-            SSAReg ssaReg1 = (register.getSSAReg(id));
-            ExprInterface expr = e.getExpr();
+        for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
+            if(ev instanceof Local) {
+                Local e = (Local) ev;
+                Register register = e.getResultRegister();
+                int id = ssaMap.get(register).get(e) + 1;
+                SSAReg ssaReg1 = (register.getSSAReg(id));
+                ExprInterface expr = e.getExpr();
 
-            if (expr instanceof Register) {
-                // r1 = r2 -> add edge r2 --> r1
-                Register register2 = (Register) expr;
-                SSAReg ssaReg2 = (register2.getSSAReg(ssaMap.get(register2).get(e)));
-                ssaReg2.getAliasEdges().add(ssaReg1);
+                if (expr instanceof Register) {
+                    // r1 = r2 -> add edge r2 --> r1
+                    Register register2 = (Register) expr;
+                    SSAReg ssaReg2 = (register2.getSSAReg(ssaMap.get(register2).get(e)));
+                    ssaReg2.getAliasEdges().add(ssaReg1);
 
-            } else if (expr instanceof Address) {
-                // r = &a
-                ssaReg1.getAliasAddresses().add((Address) expr);
-                variables.add(ssaReg1);
+                } else if (expr instanceof Address) {
+                    // r = &a
+                    ssaReg1.getAliasAddresses().add((Address) expr);
+                    variables.add(ssaReg1);
+                }
             }
         }
     }
@@ -250,7 +255,7 @@ public class AliasAnalysis {
     }
 
     private void processResults(Program program) {
-        for (Event e : program.getEventRepository().getEvents(EventRepository.MEMORY)) {
+        for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
             Set<Address> adresses;
             if (address instanceof Register) {
@@ -270,7 +275,7 @@ public class AliasAnalysis {
 
     private void calculateLocationSetsNoAlias(Program program, Memory memory) {
         ImmutableSet<Address> maxAddressSet = memory.getAllAddresses();
-        for (Event e : program.getEventRepository().getEvents(EventRepository.MEMORY)) {
+        for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
             if (address instanceof Address) {
                 ((MemEvent) e).setMaxAddressSet(ImmutableSet.of((Address) address));
@@ -284,7 +289,7 @@ public class AliasAnalysis {
         Map<Register, Map<Event, Integer>> ssaMap = new HashMap<>();
         Map<Register, Integer> indexMap = new HashMap<>();
         for(Thread thread : program.getThreads()){
-            List<Event> events = thread.getEventRepository().getSortedList(EventRepository.ALL);
+            List<Event> events = thread.getCache().getEvents(FilterBasic.get(EType.ANY));
             mkSsaIndices(events, ssaMap, indexMap);
         }
         return ssaMap;
@@ -323,8 +328,8 @@ public class AliasAnalysis {
 
             if(e instanceof If){
                 Map<Register, Integer> indexMapClone = new HashMap<>(indexMap);
-                List<Event> t1Events = ((If)e).getT1().getEventRepository().getSortedList(EventRepository.ALL);
-                List<Event> t2Events = ((If)e).getT2().getEventRepository().getSortedList(EventRepository.ALL);
+                List<Event> t1Events = ((If)e).getT1().getCache().getEvents(FilterBasic.get(EType.ANY));
+                List<Event> t2Events = ((If)e).getT2().getCache().getEvents(FilterBasic.get(EType.ANY));
                 mkSsaIndices(t1Events, ssaMap, indexMap);
                 mkSsaIndices(t2Events, ssaMap, indexMapClone);
 

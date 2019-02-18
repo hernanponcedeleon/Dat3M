@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.cat.visitors;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatVisitor;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.parsers.cat.utils.CatSyntaxException;
+import com.dat3m.dartagnan.parsers.cat.utils.ParsingException;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
@@ -45,12 +45,12 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
         try{
             Relation r = ctx.e.accept(relationVisitor);
             if(r == null){
-                throw new CatSyntaxException(ctx.getText());
+                throw new ParsingException(ctx.getText());
             }
             Constructor constructor = ctx.cls.getConstructor(Relation.class, boolean.class);
             wmm.addAxiom((Axiom) constructor.newInstance(r, ctx.negate != null));
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e){
-            throw new CatSyntaxException(ctx.getText());
+            throw new ParsingException(ctx.getText());
         }
         return null;
     }
@@ -77,7 +77,7 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
         RecursiveRelation rRecursive = (RecursiveRelation)relationRepository.getRelation(RecursiveRelation.class, ctx.n.getText());
         Relation rConcrete = ctx.e.accept(relationVisitor);
         if(rRecursive == null || rConcrete == null){
-            throw new CatSyntaxException(ctx.getText());
+            throw new ParsingException(ctx.getText());
         }
 
         rRecursive.setConcreteRelation(rConcrete);
@@ -97,7 +97,7 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
         RecursiveRelation rRecursive = (RecursiveRelation)relationRepository.getRelation(RecursiveRelation.class, ctx.n.getText());
         Relation rConcrete = ctx.e.accept(relationVisitor);
         if(rRecursive == null || rConcrete == null){
-            throw new CatSyntaxException(ctx.getText());
+            throw new ParsingException(ctx.getText());
         }
         rRecursive.setConcreteRelation(rConcrete);
         recursiveGroup.add(rRecursive);

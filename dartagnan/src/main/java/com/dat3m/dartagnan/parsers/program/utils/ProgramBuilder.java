@@ -1,13 +1,13 @@
-package com.dat3m.dartagnan.parsers.utils;
+package com.dat3m.dartagnan.parsers.program.utils;
 
+import com.dat3m.dartagnan.parsers.program.utils.branch.Cmp;
+import com.dat3m.dartagnan.parsers.program.utils.branch.CondJump;
+import com.dat3m.dartagnan.parsers.program.utils.branch.Label;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.parsers.utils.branch.Cmp;
-import com.dat3m.dartagnan.parsers.utils.branch.CondJump;
-import com.dat3m.dartagnan.parsers.utils.branch.Label;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;

@@ -7,7 +7,7 @@ public class RCUSync extends Event {
 
     public RCUSync(){
         this.condLevel = 0;
-        this.addFilters(EType.ANY, EType.RCU_SYNC);
+        this.addFilters(EType.ANY, EType.VISIBLE, EType.RCU_SYNC);
     }
 
     @Override
