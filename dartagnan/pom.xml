@@ -11,7 +11,6 @@
 
   <groupId>com.dat3m.dartagnan</groupId>
   <artifactId>dartagnan</artifactId>
-  <version>2.0.2</version>
   <packaging>jar</packaging>
 
   <name>dartagnan</name>
