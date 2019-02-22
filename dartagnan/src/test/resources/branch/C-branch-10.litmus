@@ -3,7 +3,7 @@ C C-branch-10.litmus
   x = 1; y = 1;
 }
 
-P0(intptr_t *x, intptr_t *y, intptr_t *z)
+P0(intptr_t *x, intptr_t *y)
 {
     int r1 = 1;
     int r2 = atomic_xchg(x, 2);
