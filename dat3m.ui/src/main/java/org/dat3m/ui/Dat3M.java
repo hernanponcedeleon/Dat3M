@@ -55,7 +55,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	    }
 	};
 
-    protected static final int widht = 2000;
+    protected static final int widht = getMainScreenWidht();
 	protected static JMenuBar menuBar = new JMenuBar();
 	protected static JMenu menu = new JMenu("Import");
 
@@ -134,7 +134,7 @@ public class Dat3M extends JPanel implements ActionListener {
         JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, clearButton);
 
         JPanel optionsPane = new JPanel(new GridLayout(1,0));
-        optionsPane.setPreferredSize(new Dimension(widht / 4, 100));
+        optionsPane.setPreferredSize(new Dimension(200, 100));
         optionsPane.add(sp7);
 
         TitledBorder titledBorder = createTitledBorder("Options");
@@ -287,4 +287,13 @@ public class Dat3M extends JPanel implements ActionListener {
 			// Nothing to do here				
 		}
 	};
+	
+	public static int getMainScreenWidht() {
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+	    GraphicsDevice[] gs = ge.getScreenDevices();
+	    for (int i = 0; i < gs.length; i++) {
+	        return (int) Math.round(gs[i].getDisplayMode().getWidth());
+	    }
+	    return 0;
+	}
 }
