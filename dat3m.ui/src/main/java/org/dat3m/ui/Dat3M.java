@@ -187,7 +187,8 @@ public class Dat3M extends JPanel implements ActionListener {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		menuBar.add(menu);
-		frame.setJMenuBar(menuBar); 
+		frame.setJMenuBar(menuBar);
+		frame.setIconImage(dat3mIcon.getImage());
 
         //Add content to the window.
         frame.add(new Dat3M());
