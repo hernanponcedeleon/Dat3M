@@ -72,6 +72,6 @@
   <modules>
     <module>dartagnan</module>
     <module>porthos</module>
-    <module>dat3m.ui</module>
+    <module>ui</module>
   </modules>
 </project>
