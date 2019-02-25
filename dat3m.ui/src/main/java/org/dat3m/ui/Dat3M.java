@@ -108,7 +108,7 @@ public class Dat3M extends JPanel implements ActionListener {
         consolePane = new JTextPane();
         consolePane.setEditable(false);
         JScrollPane scrollConsole = new JScrollPane(consolePane);
-        scrollConsole.setMinimumSize(new Dimension(widht, 150));
+        scrollConsole.setMinimumSize(new Dimension(0, 150));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         // Test button.
@@ -132,14 +132,15 @@ public class Dat3M extends JPanel implements ActionListener {
         JSplitPane sp5 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp4, testButton);
         JSplitPane sp6 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp5, scrollConsole);
         JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, clearButton);
+        JSplitPane sp8 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp7, new JPanel());
 
         JPanel optionsPane = new JPanel(new GridLayout(1,0));
-        optionsPane.setPreferredSize(new Dimension(200, 100));
-        optionsPane.add(sp7);
+        optionsPane.add(sp8);
 
         TitledBorder titledBorder = createTitledBorder("Options");
         titledBorder.setTitleJustification(CENTER);
         optionsPane.setBorder(titledBorder);
+        optionsPane.setMaximumSize(new Dimension(dartagnanIcon.getIconWidth(), 100));
         add(optionsPane);
 
         //Put the editors in a split pane.
