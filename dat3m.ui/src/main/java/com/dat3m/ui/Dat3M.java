@@ -74,6 +74,8 @@ public class Dat3M extends JPanel implements ActionListener {
 	protected Alias alias = Alias.CFS;
 	protected int bound = 1;
 
+	private JSplitPane splitEditors;
+
     public Dat3M() {
 
         setLayout(new BorderLayout());
@@ -144,7 +146,7 @@ public class Dat3M extends JPanel implements ActionListener {
         add(optionsPane);
 
         //Put the editors in a split pane.
-		JSplitPane splitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programEditor, mmEditor);
+		splitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programEditor, mmEditor);
         splitEditors.setOneTouchExpandable(true);
         splitEditors.setResizeWeight(0.5);
         splitEditors.setPreferredSize(new Dimension(2 * widht / 3, 100));
