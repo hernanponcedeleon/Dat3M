@@ -55,7 +55,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	    }
 	};
 
-    protected static final int widht = getMainScreenWidht();
+    protected static final int widht = getMainScreenWidth();
 	protected static JMenuBar menuBar = new JMenuBar();
 	protected static JMenu menu = new JMenu("Import");
 
@@ -292,11 +292,11 @@ public class Dat3M extends JPanel implements ActionListener {
 		}
 	};
 	
-	public static int getMainScreenWidht() {
+	public static int getMainScreenWidth() {
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 	    GraphicsDevice[] gs = ge.getScreenDevices();
-	    for (int i = 0; i < gs.length; i++) {
-	        return (int) Math.round(gs[i].getDisplayMode().getWidth());
+	    if (gs.length > 0) {
+	        return (int) Math.round(gs[0].getDisplayMode().getWidth());
 	    }
 	    return 0;
 	}
