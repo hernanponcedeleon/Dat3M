@@ -56,6 +56,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	};
 
     protected static final int widht = getMainScreenWidth();
+    protected static final int height = getMainScreenHeight();
 	protected static JMenuBar menuBar = new JMenuBar();
 	protected static JMenu menu = new JMenu("Import");
 
@@ -65,6 +66,8 @@ public class Dat3M extends JPanel implements ActionListener {
 
     private ProgramEditor programEditor;
 	private MMEditor mmEditor;
+	private MMEditor smmEditor;
+	private MMEditor tmmEditor;
 	private JTextPane consolePane;
 	private JTextField boundField;
 	
@@ -74,15 +77,17 @@ public class Dat3M extends JPanel implements ActionListener {
 	protected Alias alias = Alias.CFS;
 	protected int bound = 1;
 
-	private JSplitPane splitEditors;
+	private JSplitPane vSplitEditors;
 
     public Dat3M() {
 
         setLayout(new BorderLayout());
 
         programEditor = new ProgramEditor(menu);        
-        mmEditor = new MMEditor(menu);
-
+        mmEditor = new MMEditor(menu, new JEditorPane(), "Memory Model");
+        smmEditor = new MMEditor(menu, new JEditorPane(), "Source Memory Model");
+        tmmEditor = new MMEditor(menu, new JEditorPane(), "Target Memory Model");
+        
         Task[] tasks = { REACHABILITY, PORTABILITY };
 		JPanel taskPane = createSelector(tasks, "Task");
 
@@ -146,12 +151,17 @@ public class Dat3M extends JPanel implements ActionListener {
         add(optionsPane);
 
         //Put the editors in a split pane.
-		splitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programEditor, mmEditor);
-        splitEditors.setOneTouchExpandable(true);
-        splitEditors.setResizeWeight(0.5);
-        splitEditors.setPreferredSize(new Dimension(2 * widht / 3, 100));
+        vSplitEditors = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        vSplitEditors.setOneTouchExpandable(true);
+        vSplitEditors.setResizeWeight(0.5);
+        vSplitEditors.setTopComponent(mmEditor);
+        
+        JSplitPane hSplitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programEditor, vSplitEditors);
+        hSplitEditors.setOneTouchExpandable(true);
+        hSplitEditors.setResizeWeight(0.5);
+        hSplitEditors.setPreferredSize(new Dimension(2 * widht / 3, 100));
         JPanel editorsPane = new JPanel(new GridLayout(1,0));
-        editorsPane.add(splitEditors);
+        editorsPane.add(hSplitEditors);
         add(editorsPane, BorderLayout.LINE_END);
     }
 
@@ -162,6 +172,20 @@ public class Dat3M extends JPanel implements ActionListener {
             break;
         case PORTABILITY:
             iconPane.setIcon(porthosIcon);
+            break;
+        }
+    }
+
+    private void updateMMEditors() {
+        switch(task){
+        case REACHABILITY:
+            vSplitEditors.removeAll();
+            vSplitEditors.setTopComponent(mmEditor);
+            break;
+        case PORTABILITY:
+        	vSplitEditors.removeAll();
+            vSplitEditors.setTopComponent(smmEditor);
+            vSplitEditors.setBottomComponent(tmmEditor);
             break;
         }
     }
@@ -218,6 +242,7 @@ public class Dat3M extends JPanel implements ActionListener {
 			if(source instanceof JComboBox<?>) {
 				task = (Task) ((JComboBox<Task>)source).getSelectedItem();
 				updateTaskIcon();
+				updateMMEditors();
 			}
 		}
 
@@ -297,6 +322,15 @@ public class Dat3M extends JPanel implements ActionListener {
 	    GraphicsDevice[] gs = ge.getScreenDevices();
 	    if (gs.length > 0) {
 	        return (int) Math.round(gs[0].getDisplayMode().getWidth());
+	    }
+	    return 0;
+	}
+	
+	public static int getMainScreenHeight() {
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+	    GraphicsDevice[] gs = ge.getScreenDevices();
+	    if (gs.length > 0) {
+	        return (int) Math.round(gs[0].getDisplayMode().getHeight());
 	    }
 	    return 0;
 	}

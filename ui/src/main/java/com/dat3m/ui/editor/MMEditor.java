@@ -32,27 +32,29 @@ import com.dat3m.ui.Dat3M;
 
 public class MMEditor extends JScrollPane implements IEditor {
 
-	protected static final String MMLABEL = "Memory Model";
+	private String label;
 
 	static List<String> extensions = new ArrayList<>();
 	
 	protected Arch target = Arch.NONE;
 	
 	protected JMenu menu = null;
-	protected static JEditorPane editor = new JEditorPane();
+	protected JEditorPane editor;
 
 	protected int widht = 700;
 
-	public MMEditor(JMenu menu) {
+	public MMEditor(JMenu menu, JEditorPane editor, String label) {
 		super(editor);
 
 		this.menu = menu;
+		this.editor = editor;
+		this.label = label;
 		this.setVerticalScrollBarPolicy(
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		this.setHorizontalScrollBarPolicy(
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         this.setPreferredSize(new Dimension(widht / 3, 100));
-        TitledBorder titledBorder = createTitledBorder(MMLABEL);
+        TitledBorder titledBorder = createTitledBorder(label);
         titledBorder.setTitleJustification(CENTER);
 		this.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
 
@@ -64,7 +66,7 @@ public class MMEditor extends JScrollPane implements IEditor {
 	@Override
 	public void createImporter() {
 
-		JMenuItem openItem = new JMenuItem(MMLABEL);
+		JMenuItem openItem = new JMenuItem(label);
 		menu.add(openItem);
 
 		chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
