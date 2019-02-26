@@ -133,7 +133,7 @@ public class Porthos {
         ctx.close();
     }
 
-    static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
+    public static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, Alias alias){
 
         pSource.unroll(steps);

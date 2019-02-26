@@ -8,8 +8,9 @@ import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.porthos.Porthos;
+import com.dat3m.porthos.PorthosResult;
 import com.microsoft.z3.Context;
-
 import com.dat3m.ui.editor.MMEditor;
 import com.dat3m.ui.editor.ProgramEditor;
 
@@ -28,6 +29,8 @@ import static com.dat3m.ui.Task.REACHABILITY;
 import static com.dat3m.ui.editor.EditorUtils.parseMMEditor;
 import static com.dat3m.ui.editor.EditorUtils.parseProgramEditor;
 import static java.awt.FlowLayout.LEFT;
+import static javax.swing.BorderFactory.createCompoundBorder;
+import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.JOptionPane.showMessageDialog;
 import static javax.swing.SwingUtilities.invokeLater;
@@ -65,7 +68,6 @@ public class Dat3M extends JPanel implements ActionListener {
     protected JLabel iconPane = new JLabel(dartagnanIcon, JLabel.CENTER);
 
     private ProgramEditor programEditor;
-	private MMEditor mmEditor;
 	private MMEditor smmEditor;
 	private MMEditor tmmEditor;
 	private JTextPane consolePane;
@@ -83,10 +85,12 @@ public class Dat3M extends JPanel implements ActionListener {
 
         setLayout(new BorderLayout());
 
-        programEditor = new ProgramEditor(menu);        
-        mmEditor = new MMEditor(menu, new JEditorPane(), "Memory Model");
-        smmEditor = new MMEditor(menu, new JEditorPane(), "Source Memory Model");
+        programEditor = new ProgramEditor(menu);
+        programEditor.setMinimumSize(new Dimension(widht / 3, 100));
+        smmEditor = new MMEditor(menu, new JEditorPane(), "Memory Model");
+        smmEditor.setMinimumSize(new Dimension(100, height / 3));
         tmmEditor = new MMEditor(menu, new JEditorPane(), "Target Memory Model");
+        tmmEditor.setMinimumSize(new Dimension(100, height / 3));
         
         Task[] tasks = { REACHABILITY, PORTABILITY };
 		JPanel taskPane = createSelector(tasks, "Task");
@@ -137,32 +141,32 @@ public class Dat3M extends JPanel implements ActionListener {
         JSplitPane sp3 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp2, aliasPane);
         JSplitPane sp4 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp3, boundPane);
         JSplitPane sp5 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp4, testButton);
-        JSplitPane sp6 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp5, scrollConsole);
-        JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, clearButton);
-        JSplitPane sp8 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp7, new JPanel());
+        JSplitPane sp6 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp5, clearButton);
+        JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, scrollConsole);
 
         JPanel optionsPane = new JPanel(new GridLayout(1,0));
-        optionsPane.add(sp8);
+        optionsPane.add(sp7);
 
         TitledBorder titledBorder = createTitledBorder("Options");
         titledBorder.setTitleJustification(CENTER);
         optionsPane.setBorder(titledBorder);
         optionsPane.setMaximumSize(new Dimension(dartagnanIcon.getIconWidth(), 100));
-        add(optionsPane);
 
         //Put the editors in a split pane.
         vSplitEditors = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        vSplitEditors.setTopComponent(smmEditor);
         vSplitEditors.setOneTouchExpandable(true);
-        vSplitEditors.setResizeWeight(0.5);
-        vSplitEditors.setTopComponent(mmEditor);
+        vSplitEditors.setDividerSize(2);
+        vSplitEditors.setDividerLocation(0.5);
+        vSplitEditors.setMinimumSize(new Dimension(widht / 3, 100));
         
         JSplitPane hSplitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programEditor, vSplitEditors);
         hSplitEditors.setOneTouchExpandable(true);
-        hSplitEditors.setResizeWeight(0.5);
-        hSplitEditors.setPreferredSize(new Dimension(2 * widht / 3, 100));
-        JPanel editorsPane = new JPanel(new GridLayout(1,0));
-        editorsPane.add(hSplitEditors);
-        add(editorsPane, BorderLayout.LINE_END);
+        hSplitEditors.setDividerLocation(0.4);
+        hSplitEditors.setDividerSize(2);
+        
+        JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, hSplitEditors);
+        add(mainPane);
     }
 
     private void updateTaskIcon() {
@@ -177,17 +181,21 @@ public class Dat3M extends JPanel implements ActionListener {
     }
 
     private void updateMMEditors() {
-        switch(task){
+    	TitledBorder titledBorder = createTitledBorder("");
+        titledBorder.setTitleJustification(CENTER);
+    	switch(task){
         case REACHABILITY:
-            vSplitEditors.removeAll();
-            vSplitEditors.setTopComponent(mmEditor);
+        	if(vSplitEditors.getBottomComponent() == tmmEditor) {
+                vSplitEditors.remove(tmmEditor);        		
+        	}
+            titledBorder.setTitle("Memory Model");
             break;
         case PORTABILITY:
-        	vSplitEditors.removeAll();
-            vSplitEditors.setTopComponent(smmEditor);
             vSplitEditors.setBottomComponent(tmmEditor);
+            titledBorder.setTitle("Source Memory Model");
             break;
         }
+    	smmEditor.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
     }
 
 	private JPanel createSelector(Object[] options, String label) {
@@ -270,25 +278,44 @@ public class Dat3M extends JPanel implements ActionListener {
 		if(e.getActionCommand().equals("Test")) {
 			Program p = null;
 			try {
-				//TODO: fix loadedFormat
-				p = parseProgramEditor(programEditor.getEditor(), "litmus");
+				p = parseProgramEditor(programEditor.getEditor(), "pts");
 			} catch (Exception exp) {
 				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);
 				return;
 			}
 			
-			Wmm mm = null;
+			Wmm smm = null;
 			try {				
-				mm = parseMMEditor(mmEditor.getEditor(), target);
+				smm = parseMMEditor(smmEditor.getEditor(), target);
 			} catch (Exception exp) {
-				showMessageDialog(null, "The memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
+				showMessageDialog(null, "The source memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
 				return;
 			}
 			
-			String result = "Condition " + p.getAss().toStringWithType() + "\n";
+			Wmm tmm = null;
+			try {				
+				tmm = parseMMEditor(tmmEditor.getEditor(), target);
+			} catch (Exception exp) {
+				showMessageDialog(null, "The target memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
+				return;
+			}
+			
 			Context ctx = new Context();
-			result += testProgram(ctx.mkSolver(), ctx, p, mm, target, bound, mode, alias) ? "OK" : "No";
-			consolePane.setText(result);
+			String result = "";
+			
+	    	switch(task){
+	        case REACHABILITY:
+	    		result = "Condition " + p.getAss().toStringWithType() + "\n";
+	    		result += testProgram(ctx.mkSolver(), ctx, p, smm, target, bound, mode, alias) ? "OK" : "No";	    		
+				break;
+	        case PORTABILITY:
+	    		PorthosResult res = Porthos.testProgram(ctx.mkSolver(), ctx.mkSolver(), ctx, p, p, target, target,
+	                    smm, tmm, bound, mode, alias);
+	    		String baseRel = res.getIsPortable()? " " : " not ";
+	    		result = "The program is" + baseRel + "state-portable \nIterations: " + res.getIterations();
+	            break;
+	        }
+	    	consolePane.setText(result);
 		}
 
 		if(e.getActionCommand().equals("Clear")) {
