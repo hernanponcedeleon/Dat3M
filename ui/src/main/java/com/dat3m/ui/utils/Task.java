@@ -1,4 +1,4 @@
-package com.dat3m.ui;
+package com.dat3m.ui.utils;
 
 public enum Task {
 	

@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
+import com.dat3m.ui.utils.ImporterMenuItem;
+import com.dat3m.ui.utils.Task;
 import com.microsoft.z3.Context;
 
 import static com.dat3m.dartagnan.Dartagnan.testProgram;
@@ -22,10 +24,10 @@ import static com.dat3m.dartagnan.wmm.utils.Arch.TSO;
 import static com.dat3m.dartagnan.wmm.utils.Mode.IDL;
 import static com.dat3m.dartagnan.wmm.utils.Mode.KLEENE;
 import static com.dat3m.dartagnan.wmm.utils.Mode.KNASTER;
-import static com.dat3m.ui.Task.PORTABILITY;
-import static com.dat3m.ui.Task.REACHABILITY;
-import static com.dat3m.ui.editor.EditorUtils.parseMMEditor;
-import static com.dat3m.ui.editor.EditorUtils.parseProgramEditor;
+import static com.dat3m.ui.utils.Task.PORTABILITY;
+import static com.dat3m.ui.utils.Task.REACHABILITY;
+import static com.dat3m.ui.utils.EditorUtils.parseMMEditor;
+import static com.dat3m.ui.utils.EditorUtils.parseProgramEditor;
 import static java.awt.FlowLayout.LEFT;
 import static javax.swing.BorderFactory.createCompoundBorder;
 import static javax.swing.BorderFactory.createEmptyBorder;
@@ -49,7 +51,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
 	
 	// Used in ImporterMenuItem
-    protected static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
+    public static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
 	        g.drawImage(getImage(), x, y, c.getWidth(), c.getHeight(), c);

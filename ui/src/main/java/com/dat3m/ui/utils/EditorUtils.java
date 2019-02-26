@@ -1,4 +1,4 @@
-package com.dat3m.ui.editor;
+package com.dat3m.ui.utils;
 
 import java.io.File;
 import java.io.IOException;

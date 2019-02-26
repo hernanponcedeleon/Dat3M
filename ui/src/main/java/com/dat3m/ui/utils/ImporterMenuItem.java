@@ -1,4 +1,4 @@
-package com.dat3m.ui;
+package com.dat3m.ui.utils;
 
 import static java.lang.System.getProperty;
 import static java.util.stream.Collectors.joining;
@@ -18,6 +18,8 @@ import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import com.dat3m.ui.Dat3M;
 
 public class ImporterMenuItem extends JMenuItem {
 
