@@ -76,6 +76,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static JLabel iconPane = new JLabel(dartagnanIcon, JLabel.CENTER);
 	// Editors and Menu Items
 	private static JEditorPane pEditor = new JEditorPane();
+	private ImporterMenuItem pMenuItem;
 	private static JSplitPane vSplitEditors;
     private static JScrollPane smmScroll;
     private static JEditorPane smmEditor = new JEditorPane();
@@ -106,8 +107,8 @@ public class Dat3M extends JPanel implements ActionListener {
         ArrayList<String> pExtensions = new ArrayList<String>();
         pExtensions.add("litmus");
         pExtensions.add("pts");
-        ImporterMenuItem pMenuItem = new ImporterMenuItem("Program", chooser, pExtensions, pEditor);
-
+        pMenuItem = new ImporterMenuItem("Program", chooser, pExtensions, pEditor);
+        
         ArrayList<String> mmExtensions = new ArrayList<String>();
         mmExtensions.add("cat");
         smmMenuIte = new ImporterMenuItem(SMMLABEL, chooser, mmExtensions, smmEditor);
@@ -340,8 +341,8 @@ public class Dat3M extends JPanel implements ActionListener {
 	        Program pSource = null;
 	        Program pTarget = null;
 			try {
-				pSource = parseProgramEditor(pEditor, "pts");
-				pTarget = parseProgramEditor(pEditor, "pts");
+				//TODO: fix the extension
+				pSource = parseProgramEditor(pEditor, pMenuItem.getLoadedFormat());
 			} catch (Exception exp) {
 				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);
 				return;
@@ -357,7 +358,8 @@ public class Dat3M extends JPanel implements ActionListener {
 				return;
 			}
 			if(task == Task.PORTABILITY) {
-				try {				
+				try {
+					pTarget = parseProgramEditor(pEditor, "pts");
 					smm = parseMMEditor(smmEditor, source);
 				} catch (Exception exp) {
 					showMessageDialog(null, "The source memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	

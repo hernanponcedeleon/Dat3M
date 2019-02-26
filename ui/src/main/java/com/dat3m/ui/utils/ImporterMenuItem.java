@@ -23,6 +23,8 @@ import com.dat3m.ui.Dat3M;
 
 public class ImporterMenuItem extends JMenuItem {
 
+	String loadedFormat = "";
+	
 	public ImporterMenuItem(String label, JFileChooser chooser, List<String> extensions, JEditorPane editor) {
 		super(label);
 
@@ -36,8 +38,8 @@ public class ImporterMenuItem extends JMenuItem {
 				int r = chooser.showOpenDialog(null);
 				if(r == APPROVE_OPTION){
 					String path = chooser.getSelectedFile().getPath();
-					String ext = path.substring(path.lastIndexOf('.') + 1).trim();
-					if(!extensions.contains(ext)) {
+					loadedFormat = path.substring(path.lastIndexOf('.') + 1).trim();
+					if(!extensions.contains(loadedFormat)) {
 						showMessageDialog(null, "Please select a *." + extensions.stream().collect(joining(", *.")) + " file", "About", JOptionPane.INFORMATION_MESSAGE, Dat3M.dat3mIcon);	
 						return;
 					}
@@ -50,6 +52,10 @@ public class ImporterMenuItem extends JMenuItem {
 			}
 		});
 
+	}
+	
+	public String getLoadedFormat() {
+		return loadedFormat;
 	}
 	
 }
