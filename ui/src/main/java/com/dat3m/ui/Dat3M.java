@@ -341,7 +341,6 @@ public class Dat3M extends JPanel implements ActionListener {
 	        Program pSource = null;
 	        Program pTarget = null;
 			try {
-				//TODO: fix the extension
 				pSource = parseProgramEditor(pEditor, pMenuItem.getLoadedFormat());
 			} catch (Exception exp) {
 				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);
