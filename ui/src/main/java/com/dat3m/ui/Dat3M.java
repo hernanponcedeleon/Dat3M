@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
 import com.microsoft.z3.Context;
-import com.dat3m.ui.editor.MMEditor;
-import com.dat3m.ui.editor.ProgramEditor;
 
 import static com.dat3m.dartagnan.Dartagnan.testProgram;
 import static com.dat3m.dartagnan.program.utils.Alias.CFIS;
@@ -42,11 +40,16 @@ import java.util.ArrayList;
 
 public class Dat3M extends JPanel implements ActionListener {
 
+	private static final String PROGRAMLABEL = "Program";
 	private static final String MMLABEL = "Memory Model";
 	private static final String SMMLABEL = "Source Memory Model";
 	private static final String TMMLABEL = "Target Memory Model";
+    
+	private static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan");
+	private static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
 	
-    public static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
+	// Used in ImporterMenuItem
+    protected static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
 	        g.drawImage(getImage(), x, y, c.getWidth(), c.getHeight(), c);
@@ -63,62 +66,57 @@ public class Dat3M extends JPanel implements ActionListener {
 	    }
 	};
 
-    protected static final int widht = getMainScreenWidth();
-    protected static final int height = getMainScreenHeight();
-	protected static JMenuBar menuBar = new JMenuBar();
-	protected static JMenu menu = new JMenu("Import");
-
-    protected static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan");
-    protected static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
-    protected JLabel iconPane = new JLabel(dartagnanIcon, JLabel.CENTER);
-
-    private ProgramEditor programEditor;
-	private MMEditor smmEditor;
-	private MMEditor tmmEditor;
-	private JTextPane consolePane;
-	private JTextField boundField;
-	
-	protected Task task = Task.REACHABILITY;
-	protected Arch target = Arch.NONE;
-	protected Arch source = Arch.NONE;
-	protected Mode mode = Mode.KNASTER;
-	protected Alias alias = Alias.CFS;
-	protected int bound = 1;
-
-	private JSplitPane vSplitEditors;
+	private static final int widht = getMainScreenWidth();
+	private static final int height = getMainScreenHeight();
+    
+    // All these panes are fields since they need to be updated by the listener
+	private static JMenu menu = new JMenu("Import");
+	private static JLabel iconPane = new JLabel(dartagnanIcon, JLabel.CENTER);
+	// Editors and Menu Items
+	private static JEditorPane pEditor = new JEditorPane();
+	private static JSplitPane vSplitEditors;
+    private static JScrollPane smmScroll;
+    private static JEditorPane smmEditor = new JEditorPane();
+	private static ImporterMenuItem smmMenuIte;
+	private static JScrollPane tmmScroll;
+	private static JEditorPane tmmEditor = new JEditorPane();
+	private static ImporterMenuItem tmmMenuIte;
+	// Options
+	private static JTextPane consolePane;
+	private static JTextField boundField;
 	private JSplitPane archPane;
 	private JPanel sArchPane;
 	private JPanel tArchPane;
-	private JFileChooser chooser = new JFileChooser();
-
-	private ImporterMenuItem smmMenuIte;
-
-	private ImporterMenuItem pMenuItem;
-
-	private ImporterMenuItem tmmMenuIte;
+	
+	// All these are fields since they need to be updated by the listener
+	private static Task task = Task.REACHABILITY;
+	private static Arch target = Arch.NONE;
+	private static Arch source = Arch.NONE;
+	private static Mode mode = Mode.KNASTER;
+	private static Alias alias = Alias.CFS;
+	private static int bound = 1;
 
     public Dat3M() {
 
         setLayout(new BorderLayout());
-
-        programEditor = new ProgramEditor(menu);
-        programEditor.setMinimumSize(new Dimension(widht / 3, 100));
+        JFileChooser chooser = new JFileChooser();
+        
         ArrayList<String> pExtensions = new ArrayList<String>();
         pExtensions.add("litmus");
         pExtensions.add("pts");
-        pMenuItem = new ImporterMenuItem("Program", chooser, pExtensions, programEditor.getEditor());
-        menu.add(pMenuItem);
-        
-        smmEditor = new MMEditor(menu, new JEditorPane(), SMMLABEL);
-        smmEditor.setMinimumSize(new Dimension(100, height / 3));
+        ImporterMenuItem pMenuItem = new ImporterMenuItem("Program", chooser, pExtensions, pEditor);
+
         ArrayList<String> mmExtensions = new ArrayList<String>();
         mmExtensions.add("cat");
-        smmMenuIte = new ImporterMenuItem(SMMLABEL, chooser, mmExtensions, smmEditor.getEditor());
+        smmMenuIte = new ImporterMenuItem(SMMLABEL, chooser, mmExtensions, smmEditor);
+        tmmMenuIte = new ImporterMenuItem(MMLABEL, chooser, mmExtensions, tmmEditor);
         
-        tmmEditor = new MMEditor(menu, new JEditorPane(), MMLABEL);
-        tmmEditor.setMinimumSize(new Dimension(100, height / 3));
-        tmmMenuIte = new ImporterMenuItem(MMLABEL, chooser, mmExtensions, tmmEditor.getEditor());
+        menu.add(pMenuItem);
         menu.add(tmmMenuIte);
+
+        JScrollPane pScroll = createScroll(pEditor, PROGRAMLABEL);
+        smmScroll = createScroll(smmEditor, SMMLABEL);
+        tmmScroll = createScroll(tmmEditor, MMLABEL);
         
         Task[] tasks = { REACHABILITY, PORTABILITY };
 		JPanel taskPane = createSelector(tasks, "Task");
@@ -185,13 +183,13 @@ public class Dat3M extends JPanel implements ActionListener {
 
         //Put the editors in a split pane.
         vSplitEditors = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        vSplitEditors.setBottomComponent(tmmEditor);
+        vSplitEditors.setBottomComponent(tmmScroll);
         vSplitEditors.setOneTouchExpandable(true);
         vSplitEditors.setDividerSize(2);
         vSplitEditors.setDividerLocation(0.5);
-        vSplitEditors.setMinimumSize(new Dimension(widht / 3, 100));
+        vSplitEditors.setPreferredSize(new Dimension(widht / 3, height / 3));
         
-        JSplitPane hSplitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, programEditor, vSplitEditors);
+        JSplitPane hSplitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pScroll, vSplitEditors);
         hSplitEditors.setOneTouchExpandable(true);
         hSplitEditors.setDividerLocation(0.4);
         hSplitEditors.setDividerSize(2);
@@ -199,6 +197,17 @@ public class Dat3M extends JPanel implements ActionListener {
         JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, hSplitEditors);
         add(mainPane);
     }
+
+	private JScrollPane createScroll(JEditorPane editor, String label) {
+		JScrollPane pScroll = new JScrollPane(editor);
+        pScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        pScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        pScroll.setPreferredSize(new Dimension(widht / 3, height / 3));
+        TitledBorder pTitledBorder = createTitledBorder(label);
+        pTitledBorder.setTitleJustification(CENTER);
+        pScroll.setBorder(createCompoundBorder(pTitledBorder, createEmptyBorder(5,5,5,5)));
+		return pScroll;
+	}
 
     private void updateGUIonTask() {
     	TitledBorder titledBorder = createTitledBorder("");
@@ -208,8 +217,8 @@ public class Dat3M extends JPanel implements ActionListener {
         	// Update image
         	iconPane.setIcon(dartagnanIcon);
         	// Remove smmEditor
-        	if(vSplitEditors.getTopComponent() == smmEditor) {
-                vSplitEditors.remove(smmEditor);        		
+        	if(vSplitEditors.getTopComponent() == smmScroll) {
+                vSplitEditors.remove(smmScroll);        		
         	}
         	// Update editor and menutItem labels
         	titledBorder.setTitle(MMLABEL);
@@ -227,7 +236,7 @@ public class Dat3M extends JPanel implements ActionListener {
         	// Update image
         	iconPane.setIcon(porthosIcon);
         	// Add smmEditor
-            vSplitEditors.setTopComponent(smmEditor);
+            vSplitEditors.setTopComponent(smmScroll);
         	// Update editor and menutItem labels
             titledBorder.setTitle(TMMLABEL);
             menu.getItem(1).setText(TMMLABEL);
@@ -238,7 +247,7 @@ public class Dat3M extends JPanel implements ActionListener {
             break;
         }
     	consolePane.setText("");
-    	tmmEditor.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
+    	tmmScroll.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
     }
 
 	private JPanel createSelector(Object[] options, String label) {
@@ -263,6 +272,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        JMenuBar menuBar = new JMenuBar();
 		menuBar.add(menu);
 		frame.setJMenuBar(menuBar);
 		frame.setIconImage(dat3mIcon.getImage());
@@ -328,8 +338,8 @@ public class Dat3M extends JPanel implements ActionListener {
 	        Program pSource = null;
 	        Program pTarget = null;
 			try {
-				pSource = parseProgramEditor(programEditor.getEditor(), "pts");
-				pTarget = parseProgramEditor(programEditor.getEditor(), "pts");
+				pSource = parseProgramEditor(pEditor, "pts");
+				pTarget = parseProgramEditor(pEditor, "pts");
 			} catch (Exception exp) {
 				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);
 				return;
@@ -338,7 +348,7 @@ public class Dat3M extends JPanel implements ActionListener {
 			Wmm smm = null;
 			Wmm tmm = null;
 			try {				
-				tmm = parseMMEditor(tmmEditor.getEditor(), target);
+				tmm = parseMMEditor(tmmEditor, target);
 			} catch (Exception exp) {
 				String dummy =  task == REACHABILITY ? " " : " target ";
 				showMessageDialog(null, "The" +  dummy + "memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
@@ -346,7 +356,7 @@ public class Dat3M extends JPanel implements ActionListener {
 			}
 			if(task == Task.PORTABILITY) {
 				try {				
-					smm = parseMMEditor(smmEditor.getEditor(), source);
+					smm = parseMMEditor(smmEditor, source);
 				} catch (Exception exp) {
 					showMessageDialog(null, "The source memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
 					return;
