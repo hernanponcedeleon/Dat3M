@@ -46,7 +46,7 @@ public class MMEditor extends JScrollPane implements IEditor {
 	public MMEditor(JMenu menu, JEditorPane editor, String label) {
 		super(editor);
 
-		this.menu = menu;
+		//this.menu = menu;
 		this.editor = editor;
 		this.label = label;
 		this.setVerticalScrollBarPolicy(
@@ -58,9 +58,9 @@ public class MMEditor extends JScrollPane implements IEditor {
         titledBorder.setTitleJustification(CENTER);
 		this.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
 
-        extensions.add("cat");
+        //extensions.add("cat");
 	    
-	    createImporter();
+	    //createImporter();
 	}
 
 	@Override

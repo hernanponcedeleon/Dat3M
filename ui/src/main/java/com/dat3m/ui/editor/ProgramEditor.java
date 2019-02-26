@@ -45,7 +45,7 @@ public class ProgramEditor extends JScrollPane implements IEditor {
 	public ProgramEditor(JMenu menu) {
 		super(editor);
 
-		this.menu = menu;
+		//this.menu = menu;
 		this.setVerticalScrollBarPolicy(
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		this.setHorizontalScrollBarPolicy(
@@ -55,10 +55,10 @@ public class ProgramEditor extends JScrollPane implements IEditor {
         titledBorder.setTitleJustification(CENTER);
 		this.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
 
-        extensions.add("litmus");
-        extensions.add("pts");
+        //extensions.add("litmus");
+        //extensions.add("pts");
 	    
-	    createImporter();
+	    //createImporter();
 	}
 
 	@Override
