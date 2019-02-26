@@ -3,6 +3,7 @@ package com.dat3m.ui;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -75,6 +76,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	
 	protected Task task = Task.REACHABILITY;
 	protected Arch target = Arch.NONE;
+	protected Arch source = Arch.NONE;
 	protected Mode mode = Mode.KNASTER;
 	protected Alias alias = Alias.CFS;
 	protected int bound = 1;
@@ -96,7 +98,9 @@ public class Dat3M extends JPanel implements ActionListener {
 		JPanel taskPane = createSelector(tasks, "Task");
 
 		Arch[] archs = { Arch.NONE, TSO, POWER, ARM, ARM8 };
-		JPanel archPane = createSelector(archs, "Target");
+		JPanel sArchPane = createSelector(archs, "Target");
+		JPanel tArchPane = createSelector(archs, "Source");
+		JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tArchPane, sArchPane);
 
         Mode[] modes = { KNASTER, IDL, KLEENE };
         JPanel modePane = createSelector(modes, "Mode");
@@ -261,6 +265,13 @@ public class Dat3M extends JPanel implements ActionListener {
 			}
 		}
 
+		if(e.getActionCommand().equals("Source")) {
+			Object source = e.getSource();
+			if(source instanceof JComboBox<?>) {
+				source = (Arch) ((JComboBox<Arch>)source).getSelectedItem();
+			}
+		}
+
 		if(e.getActionCommand().equals("Mode")) {
 			Object source = e.getSource();
 			if(source instanceof JComboBox<?>) {
@@ -276,28 +287,31 @@ public class Dat3M extends JPanel implements ActionListener {
 		}
 
 		if(e.getActionCommand().equals("Test")) {
-			Program p = null;
+	        Program pSource = null;
+	        Program pTarget = null;
 			try {
-				p = parseProgramEditor(programEditor.getEditor(), "pts");
+				pSource = parseProgramEditor(programEditor.getEditor(), "pts");
+				pTarget = parseProgramEditor(programEditor.getEditor(), "pts");
 			} catch (Exception exp) {
 				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);
 				return;
 			}
 			
 			Wmm smm = null;
+			Wmm tmm = null;
 			try {				
 				smm = parseMMEditor(smmEditor.getEditor(), target);
 			} catch (Exception exp) {
 				showMessageDialog(null, "The source memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
 				return;
 			}
-			
-			Wmm tmm = null;
-			try {				
-				tmm = parseMMEditor(tmmEditor.getEditor(), target);
-			} catch (Exception exp) {
-				showMessageDialog(null, "The target memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
-				return;
+			if(task == Task.PORTABILITY) {
+				try {				
+					tmm = parseMMEditor(tmmEditor.getEditor(), target);
+				} catch (Exception exp) {
+					showMessageDialog(null, "The target memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
+					return;
+				}				
 			}
 			
 			Context ctx = new Context();
@@ -305,14 +319,14 @@ public class Dat3M extends JPanel implements ActionListener {
 			
 	    	switch(task){
 	        case REACHABILITY:
-	    		result = "Condition " + p.getAss().toStringWithType() + "\n";
-	    		result += testProgram(ctx.mkSolver(), ctx, p, smm, target, bound, mode, alias) ? "OK" : "No";	    		
+	    		result = "Condition " + pSource.getAss().toStringWithType() + "\n";
+	    		result += testProgram(ctx.mkSolver(), ctx, pSource, smm, target, bound, mode, alias) ? "OK" : "No";	    		
 				break;
 	        case PORTABILITY:
-	    		PorthosResult res = Porthos.testProgram(ctx.mkSolver(), ctx.mkSolver(), ctx, p, p, target, target,
+	    		PorthosResult res = Porthos.testProgram(ctx.mkSolver(), ctx.mkSolver(), ctx, pSource, pTarget, source, target,
 	                    smm, tmm, bound, mode, alias);
-	    		String baseRel = res.getIsPortable()? " " : " not ";
-	    		result = "The program is" + baseRel + "state-portable \nIterations: " + res.getIterations();
+	    		String dummy = res.getIsPortable()? " " : " not ";
+	    		result = "The program is" + dummy + "state-portable \nIterations: " + res.getIterations();
 	            break;
 	        }
 	    	consolePane.setText(result);
