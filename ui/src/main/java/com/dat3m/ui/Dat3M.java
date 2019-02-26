@@ -82,6 +82,9 @@ public class Dat3M extends JPanel implements ActionListener {
 	protected int bound = 1;
 
 	private JSplitPane vSplitEditors;
+	private JSplitPane archPane;
+	private JPanel sArchPane;
+	private JPanel tArchPane;
 
     public Dat3M() {
 
@@ -98,9 +101,11 @@ public class Dat3M extends JPanel implements ActionListener {
 		JPanel taskPane = createSelector(tasks, "Task");
 
 		Arch[] archs = { Arch.NONE, TSO, POWER, ARM, ARM8 };
-		JPanel sArchPane = createSelector(archs, "Target");
-		JPanel tArchPane = createSelector(archs, "Source");
-		JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tArchPane, sArchPane);
+		tArchPane = createSelector(archs, "Target");
+		sArchPane = createSelector(archs, "Source");
+		archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		archPane.setRightComponent(tArchPane);
+
 
         Mode[] modes = { KNASTER, IDL, KLEENE };
         JPanel modePane = createSelector(modes, "Mode");
@@ -193,10 +198,14 @@ public class Dat3M extends JPanel implements ActionListener {
                 vSplitEditors.remove(tmmEditor);        		
         	}
             titledBorder.setTitle("Memory Model");
+        	if(archPane.getLeftComponent() == sArchPane) {
+        		archPane.remove(sArchPane);        		
+        	}
             break;
         case PORTABILITY:
             vSplitEditors.setBottomComponent(tmmEditor);
             titledBorder.setTitle("Source Memory Model");
+            archPane.setLeftComponent(sArchPane);
             break;
         }
     	smmEditor.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
