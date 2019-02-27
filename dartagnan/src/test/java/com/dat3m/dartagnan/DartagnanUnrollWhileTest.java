@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class DartagnanUnrollWhileTest {
 
-    @Parameterized.Parameters(name = "{index}: {0} bound={1}")
+    @Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat", Arch.NONE);
         String test1 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-01.litmus";
