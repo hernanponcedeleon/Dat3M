@@ -172,7 +172,7 @@ public class Dat3M extends JPanel implements ActionListener {
         clearButton.addActionListener(this);
 
         // Graph button.
-        JButton graphButton = new JButton("Draw Execution Witness");
+        JButton graphButton = new JButton("Execution Witness");
         graphButton.setMaximumSize(new Dimension(widht, 50));
         graphButton.addActionListener(this);
 

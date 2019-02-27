@@ -3,7 +3,6 @@ package com.dat3m.ui.utils;
 import static guru.nidi.graphviz.engine.Format.PNG;
 import static guru.nidi.graphviz.engine.Graphviz.fromGraph;
 
-import java.awt.Dimension;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
