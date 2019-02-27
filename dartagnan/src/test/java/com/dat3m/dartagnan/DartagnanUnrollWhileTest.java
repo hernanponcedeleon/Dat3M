@@ -35,55 +35,43 @@ public class DartagnanUnrollWhileTest {
     @Parameterized.Parameters(name = "{index}: {0} bound={1}")
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat", Arch.NONE);
-        String input = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-01.litmus";
+        String test1 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-01.litmus";
+        String test2 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-02.litmus";
 
         List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{input, 1, new int[]{1, 2, 3, 1, 1, 1}, wmm});
-        data.add(new Object[]{input, 2, new int[]{2, 5, 9, 1, 2, 3}, wmm});
-        data.add(new Object[]{input, 3, new int[]{3, 9, 19, 1, 3, 6}, wmm});
-        data.add(new Object[]{input, 4, new int[]{4, 14, 34, 1, 4, 10}, wmm});
-        data.add(new Object[]{input, 5, new int[]{5, 20, 55, 1, 5, 15}, wmm});
+
+        data.add(new Object[]{test1, wmm, 1, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{1, 2, 3, 1, 1, 1}});
+        data.add(new Object[]{test1, wmm, 2, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{2, 5, 9, 1, 2, 3}});
+        data.add(new Object[]{test1, wmm, 3, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{3, 9, 19, 1, 3, 6}});
+        data.add(new Object[]{test1, wmm, 4, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{4, 14, 34, 1, 4, 10}});
+        data.add(new Object[]{test1, wmm, 5, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{5, 20, 55, 1, 5, 15}});
+
+        data.add(new Object[]{test2, wmm, 1, new String[]{"r1", "r11", "r111", "ri1", "re1", "ri11", "re11"}, new int[]{1, 1, 1, 1, 0, 0, 1}});
+        data.add(new Object[]{test2, wmm, 2, new String[]{"r1", "r11", "r111", "ri1", "re1", "ri11", "re11"}, new int[]{2, 2, 1, 2, 0, 0, 2}});
+        data.add(new Object[]{test2, wmm, 3, new String[]{"r1", "r11", "r111", "ri1", "re1", "ri11", "re11"}, new int[]{3, 3, 1, 3, 0, 0, 3}});
         return data;
     }
 
-    private static AbstractAssert mkAssert(Program program, int[] data){
-        Map<String, Register> registers = new HashMap<>();
-        for(Register register : program.getCache().getRegisters()){
-            registers.put(register.getName(), register);
-        }
-
-        AssertBasic assR1 = new AssertBasic(registers.get("r1"), COpBin.EQ, new IConst(data[0]));
-        AssertBasic assR2 = new AssertBasic(registers.get("r2"), COpBin.EQ, new IConst(data[1]));
-        AssertBasic assR3 = new AssertBasic(registers.get("r3"), COpBin.EQ, new IConst(data[2]));
-        AssertBasic assR11 = new AssertBasic(registers.get("r11"), COpBin.EQ, new IConst(data[3]));
-        AssertBasic assR22 = new AssertBasic(registers.get("r22"), COpBin.EQ, new IConst(data[4]));
-        AssertBasic assR33 = new AssertBasic(registers.get("r33"), COpBin.EQ, new IConst(data[5]));
-
-        AbstractAssert ass = new AssertCompositeAnd(assR1, assR2);
-        ass = new AssertCompositeAnd(ass, new AssertCompositeAnd(assR3, assR11));
-        ass = new AssertCompositeAnd(ass, new AssertCompositeAnd(assR22, assR33));
-        ass = new AssertNot(ass);
-        ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);
-        return ass;
-    }
 
     private String input;
-    private int bound;
-    private int[] data;
     private Wmm wmm;
+    private int bound;
+    private String[] names;
+    private int[] values;
 
-    public DartagnanUnrollWhileTest(String input, int bound, int[] data, Wmm wmm) {
+    public DartagnanUnrollWhileTest(String input, Wmm wmm, int bound, String[] names, int[] values) {
         this.input = input;
-        this.bound = bound;
-        this.data = data;
         this.wmm = wmm;
+        this.bound = bound;
+        this.names = names;
+        this.values = values;
     }
 
     @Test
     public void test() {
         try {
             Program program = new ProgramParser().parse(input);
-            program.setAss(mkAssert(program, data));
+            program.setAss(mkAssert(program, names, values));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, bound, Mode.KNASTER, Alias.CFIS));
@@ -91,5 +79,19 @@ public class DartagnanUnrollWhileTest {
         } catch (IOException e){
             fail("Missing resource file");
         }
+    }
+
+    private AbstractAssert mkAssert(Program program, String[] names, int[] values){
+        Map<String, Register> registers = new HashMap<>();
+        for(Register register : program.getCache().getRegisters()){
+            registers.put(register.getName(), register);
+        }
+        AbstractAssert ass = new AssertBasic(new IConst(0), COpBin.EQ, new IConst(0));
+        for(int i = 0; i < names.length; i++){
+            ass = new AssertCompositeAnd(ass, new AssertBasic(registers.get(names[i]), COpBin.EQ, new IConst(values[i])));
+        }
+        ass = new AssertNot(ass);
+        ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+        return ass;
     }
 }
