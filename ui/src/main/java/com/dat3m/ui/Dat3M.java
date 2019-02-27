@@ -336,15 +336,14 @@ public class Dat3M extends JPanel implements ActionListener {
 		if(e.getActionCommand().equals("Test")) {
 	        Program pSource = null;
 	        Program pTarget = null;
+			Wmm smm = null;
+			Wmm tmm = null;
 			try {
-				pSource = parseProgramEditor(pEditor, pMenuItem.getLoadedFormat());
+				pTarget = parseProgramEditor(pEditor, pMenuItem.getLoadedFormat());
 			} catch (Exception exp) {
 				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", INFORMATION_MESSAGE, dat3mIcon);
 				return;
 			}
-			
-			Wmm smm = null;
-			Wmm tmm = null;
 			try {				
 				tmm = parseMMEditor(tmmEditor, opt.getTarget());
 			} catch (Exception exp) {
@@ -353,8 +352,17 @@ public class Dat3M extends JPanel implements ActionListener {
 				return;
 			}
 			if(opt.getTask() == PORTABILITY) {
+				if(!pMenuItem.getLoadedFormat().equals("pts")) {
+					showMessageDialog(null, "Porthos only supports *.pts format", "About", INFORMATION_MESSAGE, dat3mIcon);
+					return;
+				}
 				try {
-					pTarget = parseProgramEditor(pEditor, "pts");
+					pSource = parseProgramEditor(pEditor, pMenuItem.getLoadedFormat());
+				} catch (Exception exp) {
+					showMessageDialog(null, "The program was not imported or cannot be parsed", "About", INFORMATION_MESSAGE, dat3mIcon);
+					return;
+				}
+				try {
 					smm = parseMMEditor(smmEditor, opt.getSource());
 				} catch (Exception exp) {
 					showMessageDialog(null, "The source memory model was not imported or cannot be parsed", "About", INFORMATION_MESSAGE, dat3mIcon);	
@@ -367,8 +375,9 @@ public class Dat3M extends JPanel implements ActionListener {
 			
 	    	switch(opt.getTask()){
 	        case REACHABILITY:
-	    		result = "Condition " + pSource.getAss().toStringWithType() + "\n";
-	    		result += testProgram(ctx.mkSolver(), ctx, pSource, tmm, opt.getTarget(), opt.getBound(), opt.getMode(), opt.getAlias()) ? "OK" : "No";	    		
+	    		result = "Condition " + pTarget.getAss().toStringWithType() + "\n";
+	    		Arch target = pTarget.getArch() == null ? opt.getTarget() : pTarget.getArch();
+	    		result += testProgram(ctx.mkSolver(), ctx, pTarget, tmm, target, opt.getBound(), opt.getMode(), opt.getAlias()) ? "OK" : "No";	    		
 				break;
 	        case PORTABILITY:
 	    		PorthosResult res = Porthos.testProgram(ctx.mkSolver(), ctx.mkSolver(), ctx, pSource, pTarget, opt.getSource(), opt.getTarget(),
