@@ -44,11 +44,11 @@ Usage
 ======
 For checking reachability:
 ```
-java -jar dartagnan/target/dartagnan-2.0-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
+java -jar dartagnan/target/dartagnan-2.0.2-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
 ```
 For checking state inclusion:
 ```
-java -jar porthos/target/porthos-2.0-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
+java -jar porthos/target/porthos-2.0.2-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
 Dartagnan supports programs written in the .litmus or .pts formats (see below). For Porthos, programs shall be written in the .pts format since they need to be compiled to two different architectures.
 
