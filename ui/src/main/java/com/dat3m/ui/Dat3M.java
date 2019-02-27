@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
 import com.dat3m.ui.utils.ImporterMenuItem;
+import com.dat3m.ui.utils.Option;
 import com.dat3m.ui.utils.Task;
 import com.microsoft.z3.Context;
 
@@ -32,6 +33,7 @@ import static java.awt.FlowLayout.LEFT;
 import static javax.swing.BorderFactory.createCompoundBorder;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.BorderFactory.createTitledBorder;
+import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
 import static javax.swing.SwingUtilities.invokeLater;
 import static javax.swing.border.TitledBorder.CENTER;
@@ -76,7 +78,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static JLabel iconPane = new JLabel(dartagnanIcon, JLabel.CENTER);
 	// Editors and Menu Items
 	private static JEditorPane pEditor = new JEditorPane();
-	private ImporterMenuItem pMenuItem;
+	private static ImporterMenuItem pMenuItem;
 	private static JSplitPane vSplitEditors;
     private static JScrollPane smmScroll;
     private static JEditorPane smmEditor = new JEditorPane();
@@ -84,20 +86,13 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static JScrollPane tmmScroll;
 	private static JEditorPane tmmEditor = new JEditorPane();
 	private static ImporterMenuItem tmmMenuIte;
-	// Options
+	// Options pane
 	private static JTextPane consolePane;
 	private static JTextField boundField;
-	private JSplitPane archPane;
-	private JPanel sArchPane;
-	private JPanel tArchPane;
-	
-	// All these are fields since they need to be updated by the listener
-	private static Task task = Task.REACHABILITY;
-	private static Arch target = Arch.NONE;
-	private static Arch source = Arch.NONE;
-	private static Mode mode = Mode.KNASTER;
-	private static Alias alias = Alias.CFS;
-	private static int bound = 1;
+	private static JSplitPane archPane;
+	private static JPanel sArchPane;
+	private static JPanel tArchPane;
+	private Option opt = new Option(REACHABILITY, Arch.NONE, Arch.NONE, KNASTER, CFS, 1);
 
     public Dat3M() {
 
@@ -115,6 +110,7 @@ public class Dat3M extends JPanel implements ActionListener {
         tmmMenuIte = new ImporterMenuItem(MMLABEL, chooser, mmExtensions, tmmEditor);
         
         menu.add(pMenuItem);
+        // Initially only one MM can be loaded
         menu.add(tmmMenuIte);
 
         JScrollPane pScroll = createScroll(pEditor, PROGRAMLABEL);
@@ -175,12 +171,10 @@ public class Dat3M extends JPanel implements ActionListener {
         JSplitPane sp5 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp4, testButton);
         JSplitPane sp6 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp5, clearButton);
         JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, scrollConsole);
-
         JPanel optionsPane = new JPanel(new GridLayout(1,0));
-        optionsPane.add(sp7);
-
         TitledBorder titledBorder = createTitledBorder("Options");
         titledBorder.setTitleJustification(CENTER);
+        optionsPane.add(sp7);
         optionsPane.setBorder(titledBorder);
         optionsPane.setMaximumSize(new Dimension(dartagnanIcon.getIconWidth(), 100));
 
@@ -215,7 +209,7 @@ public class Dat3M extends JPanel implements ActionListener {
     private void updateGUIonTask() {
     	TitledBorder titledBorder = createTitledBorder("");
         titledBorder.setTitleJustification(CENTER);
-    	switch(task){
+    	switch(opt.getTask()){
         case REACHABILITY:
         	// Update image
         	iconPane.setIcon(dartagnanIcon);
@@ -249,6 +243,7 @@ public class Dat3M extends JPanel implements ActionListener {
     		menu.add(smmMenuIte);
             break;
         }
+    	// The console is cleaned when the task is changed
     	consolePane.setText("");
     	tmmScroll.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
     }
@@ -297,6 +292,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		
+		// The bound field cannot be empty
 		if(boundField.getText().equals("")) {
 			boundField.setText("1");
 		}
@@ -304,7 +300,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		if(e.getActionCommand().equals("Task")) {
 			Object source = e.getSource();
 			if(source instanceof JComboBox<?>) {
-				task = (Task) ((JComboBox<Task>)source).getSelectedItem();
+				opt.setTak((Task) ((JComboBox<Task>)source).getSelectedItem());
 				updateGUIonTask();
 			}
 		}
@@ -312,28 +308,28 @@ public class Dat3M extends JPanel implements ActionListener {
 		if(e.getActionCommand().equals("Target")) {
 			Object source = e.getSource();
 			if(source instanceof JComboBox<?>) {
-				target = (Arch) ((JComboBox<Arch>)source).getSelectedItem();
+				opt.setTarget((Arch) ((JComboBox<Arch>)source).getSelectedItem());
 			}
 		}
 
 		if(e.getActionCommand().equals("Source")) {
 			Object source = e.getSource();
 			if(source instanceof JComboBox<?>) {
-				source = (Arch) ((JComboBox<Arch>)source).getSelectedItem();
+				opt.setSource((Arch) ((JComboBox<Arch>)source).getSelectedItem());
 			}
 		}
 
 		if(e.getActionCommand().equals("Mode")) {
 			Object source = e.getSource();
 			if(source instanceof JComboBox<?>) {
-				mode = (Mode) ((JComboBox<Mode>)source).getSelectedItem();
+				opt.setMode((Mode) ((JComboBox<Mode>)source).getSelectedItem());
 			}
 		}
 
 		if(e.getActionCommand().equals("Alias")) {
 			Object source = e.getSource();
 			if(source instanceof JComboBox<?>) {
-				alias = (Alias) ((JComboBox<Alias>)source).getSelectedItem();
+				opt.setAlias((Alias) ((JComboBox<Alias>)source).getSelectedItem());
 			}
 		}
 
@@ -343,25 +339,25 @@ public class Dat3M extends JPanel implements ActionListener {
 			try {
 				pSource = parseProgramEditor(pEditor, pMenuItem.getLoadedFormat());
 			} catch (Exception exp) {
-				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);
+				showMessageDialog(null, "The program was not imported or cannot be parsed", "About", INFORMATION_MESSAGE, dat3mIcon);
 				return;
 			}
 			
 			Wmm smm = null;
 			Wmm tmm = null;
 			try {				
-				tmm = parseMMEditor(tmmEditor, target);
+				tmm = parseMMEditor(tmmEditor, opt.getTarget());
 			} catch (Exception exp) {
-				String dummy =  task == REACHABILITY ? " " : " target ";
-				showMessageDialog(null, "The" +  dummy + "memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
+				String dummy =  opt.getTask() == REACHABILITY ? " " : " target ";
+				showMessageDialog(null, "The" +  dummy + "memory model was not imported or cannot be parsed", "About", INFORMATION_MESSAGE, dat3mIcon);	
 				return;
 			}
-			if(task == Task.PORTABILITY) {
+			if(opt.getTask() == PORTABILITY) {
 				try {
 					pTarget = parseProgramEditor(pEditor, "pts");
-					smm = parseMMEditor(smmEditor, source);
+					smm = parseMMEditor(smmEditor, opt.getSource());
 				} catch (Exception exp) {
-					showMessageDialog(null, "The source memory model was not imported or cannot be parsed", "About", JOptionPane.INFORMATION_MESSAGE, dat3mIcon);	
+					showMessageDialog(null, "The source memory model was not imported or cannot be parsed", "About", INFORMATION_MESSAGE, dat3mIcon);	
 					return;
 				}				
 			}
@@ -369,14 +365,14 @@ public class Dat3M extends JPanel implements ActionListener {
 			Context ctx = new Context();
 			String result = "";
 			
-	    	switch(task){
+	    	switch(opt.getTask()){
 	        case REACHABILITY:
 	    		result = "Condition " + pSource.getAss().toStringWithType() + "\n";
-	    		result += testProgram(ctx.mkSolver(), ctx, pSource, tmm, target, bound, mode, alias) ? "OK" : "No";	    		
+	    		result += testProgram(ctx.mkSolver(), ctx, pSource, tmm, opt.getTarget(), opt.getBound(), opt.getMode(), opt.getAlias()) ? "OK" : "No";	    		
 				break;
 	        case PORTABILITY:
-	    		PorthosResult res = Porthos.testProgram(ctx.mkSolver(), ctx.mkSolver(), ctx, pSource, pTarget, source, target,
-	                    smm, tmm, bound, mode, alias);
+	    		PorthosResult res = Porthos.testProgram(ctx.mkSolver(), ctx.mkSolver(), ctx, pSource, pTarget, opt.getSource(), opt.getTarget(),
+	                    smm, tmm, opt.getBound(), opt.getMode(), opt.getAlias());
 	    		String dummy = res.getIsPortable()? " " : " not ";
 	    		result = "The program is" + dummy + "state-portable \nIterations: " + res.getIterations();
 	            break;
@@ -393,7 +389,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		@Override
 		public void keyTyped(KeyEvent event) {
 			try {
-				bound = Integer.parseInt(boundField.getText());				
+				opt.setBound(Integer.parseInt(boundField.getText()));
 			} catch (Exception e) {
 				// Nothing to do here
 			}
@@ -401,12 +397,20 @@ public class Dat3M extends JPanel implements ActionListener {
 
 		@Override
 		public void keyPressed(KeyEvent arg0) {
-			// Nothing to do here
+			try {
+				opt.setBound(Integer.parseInt(boundField.getText()));
+			} catch (Exception e) {
+				// Nothing to do here
+			}
 		}
 
 		@Override
 		public void keyReleased(KeyEvent arg0) {
-			// Nothing to do here				
+			try {
+				opt.setBound(Integer.parseInt(boundField.getText()));
+			} catch (Exception e) {
+				// Nothing to do here
+			}
 		}
 	};
 	
