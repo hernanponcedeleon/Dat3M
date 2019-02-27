@@ -147,7 +147,7 @@ public class Dartagnan {
         return result;
     }
 
-    private static boolean canDrawGraph(AbstractAssert ass, boolean result){
+    public static boolean canDrawGraph(AbstractAssert ass, boolean result){
         String type = ass.getType();
         if(type == null){
             return result;

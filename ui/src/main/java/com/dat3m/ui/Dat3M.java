@@ -10,11 +10,14 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
+import com.dat3m.ui.utils.GraphOption;
 import com.dat3m.ui.utils.ImporterMenuItem;
 import com.dat3m.ui.utils.Option;
 import com.dat3m.ui.utils.Task;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Solver;
 
+import static com.dat3m.dartagnan.Dartagnan.canDrawGraph;
 import static com.dat3m.dartagnan.Dartagnan.testProgram;
 import static com.dat3m.dartagnan.program.utils.Alias.CFIS;
 import static com.dat3m.dartagnan.program.utils.Alias.CFS;
@@ -92,7 +95,15 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static JSplitPane archPane;
 	private static JPanel sArchPane;
 	private static JPanel tArchPane;
-	private Option opt = new Option(REACHABILITY, Arch.NONE, Arch.NONE, KNASTER, CFS, 1);
+	private static Option opt = new Option(REACHABILITY, Arch.NONE, Arch.NONE, KNASTER, CFS, 1);
+	
+	// Execution witness
+	private static GraphOption graph = new GraphOption();
+	private boolean isSat = false;
+	private static Program pTarget;
+	private static Context ctx = new Context();
+	private static Solver solver = ctx.mkSolver();
+	private static Solver solver2 = ctx.mkSolver();
 
     public Dat3M() {
 
@@ -160,6 +171,11 @@ public class Dat3M extends JPanel implements ActionListener {
         clearButton.setMaximumSize(new Dimension(widht, 50));
         clearButton.addActionListener(this);
 
+        // Graph button.
+        JButton graphButton = new JButton("Draw Execution Witness");
+        graphButton.setMaximumSize(new Dimension(widht, 50));
+        graphButton.addActionListener(this);
+
         iconPane.setIcon(dartagnanIcon);
 
         //Put the options in a split pane.
@@ -170,11 +186,12 @@ public class Dat3M extends JPanel implements ActionListener {
         JSplitPane sp4 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp3, boundPane);
         JSplitPane sp5 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp4, testButton);
         JSplitPane sp6 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp5, clearButton);
-        JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, scrollConsole);
+        JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, graphButton);
+        JSplitPane sp8 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp7, scrollConsole);
         JPanel optionsPane = new JPanel(new GridLayout(1,0));
         TitledBorder titledBorder = createTitledBorder("Options");
         titledBorder.setTitleJustification(CENTER);
-        optionsPane.add(sp7);
+        optionsPane.add(sp8);
         optionsPane.setBorder(titledBorder);
         optionsPane.setMaximumSize(new Dimension(dartagnanIcon.getIconWidth(), 100));
 
@@ -335,7 +352,6 @@ public class Dat3M extends JPanel implements ActionListener {
 
 		if(e.getActionCommand().equals("Test")) {
 	        Program pSource = null;
-	        Program pTarget = null;
 			Wmm smm = null;
 			Wmm tmm = null;
 			try {
@@ -370,17 +386,16 @@ public class Dat3M extends JPanel implements ActionListener {
 				}				
 			}
 			
-			Context ctx = new Context();
-			String result = "";
-			
-	    	switch(opt.getTask()){
+			String result = "";	    	
+			switch(opt.getTask()){
 	        case REACHABILITY:
 	    		result = "Condition " + pTarget.getAss().toStringWithType() + "\n";
 	    		Arch target = pTarget.getArch() == null ? opt.getTarget() : pTarget.getArch();
-	    		result += testProgram(ctx.mkSolver(), ctx, pTarget, tmm, target, opt.getBound(), opt.getMode(), opt.getAlias()) ? "OK" : "No";	    		
+	    		isSat = testProgram(solver, ctx, pTarget, tmm, target, opt.getBound(), opt.getMode(), opt.getAlias());
+				result += isSat ? "OK" : "No";
 				break;
 	        case PORTABILITY:
-	    		PorthosResult res = Porthos.testProgram(ctx.mkSolver(), ctx.mkSolver(), ctx, pSource, pTarget, opt.getSource(), opt.getTarget(),
+	    		PorthosResult res = Porthos.testProgram(solver, solver2, ctx, pSource, pTarget, opt.getSource(), opt.getTarget(),
 	                    smm, tmm, opt.getBound(), opt.getMode(), opt.getAlias());
 	    		String dummy = res.getIsPortable()? " " : " not ";
 	    		result = "The program is" + dummy + "state-portable \nIterations: " + res.getIterations();
@@ -391,6 +406,13 @@ public class Dat3M extends JPanel implements ActionListener {
 
 		if(e.getActionCommand().equals("Clear")) {
 			consolePane.setText("");
+		}
+
+		if(e.getActionCommand().equals("Draw Execution Witness")) {
+            if(canDrawGraph(pTarget.getAss(), isSat)) {
+            	graph.generate(solver, ctx, pTarget);
+            }
+        	invokeLater(new Runnable() {public void run() {graph.open();}});
 		}
 	}
 	
