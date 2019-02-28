@@ -85,7 +85,7 @@ public class Dartagnan {
             throw new RuntimeException("Assert is required for Dartagnan tests");
         }
 
-        Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"), target);
+        Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"));
 
         if(cmd.hasOption("draw")) {
             mcm.setDrawExecutionGraph();
@@ -128,7 +128,7 @@ public class Dartagnan {
     static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
                                Mode mode, Alias alias){
 
-        program.unroll(steps);
+        program.unroll(steps, 0);
         program.compile(target, alias, 0);
 
         solver.add(program.getAss().encode(ctx));
@@ -136,7 +136,7 @@ public class Dartagnan {
             solver.add(program.getAssFilter().encode(ctx));
         }
         solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeFinalValues(ctx));
+        solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, mode));
         solver.add(wmm.consistent(program, ctx));
 

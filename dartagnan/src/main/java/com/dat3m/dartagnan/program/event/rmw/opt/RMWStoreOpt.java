@@ -11,19 +11,12 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 
 public class RMWStoreOpt extends RMWStore implements RegReaderData {
 
-    public RMWStoreOpt(RMWLoad loadEvent, IExpr address, ExprInterface value, String atomic){
-        super(loadEvent, address, value, atomic);
+    public RMWStoreOpt(RMWLoad loadEvent, IExpr address, ExprInterface value, String mo){
+        super(loadEvent, address, value, mo);
     }
 
-    @Override
-    public BoolExpr encodeCF(Context ctx) {
-        if(loadEvent != null){
-            return ctx.mkAnd(
-                    ctx.mkImplies(executes(ctx), ctx.mkEq(memAddressExpr, loadEvent.getMemAddressExpr())),
-                    ctx.mkImplies(ctx.mkNot(ctx.mkBoolConst(cfVar())), ctx.mkNot(executes(ctx)))
-            );
-        }
-        return ctx.mkNot(executes(ctx));
+    private RMWStoreOpt(RMWStoreOpt other){
+        super(other);
     }
 
     @Override
@@ -36,12 +29,21 @@ public class RMWStoreOpt extends RMWStore implements RegReaderData {
     }
 
     @Override
-    public RMWStoreOpt clone() {
-        if(clone == null){
-            RMWLoad newLoad = loadEvent != null ? loadEvent.clone() : null;
-            clone = new RMWStoreOpt(newLoad, address, value, atomic);
-            afterClone();
+    protected BoolExpr encodeExec(Context ctx){
+        if(loadEvent != null){
+            return ctx.mkAnd(
+                    ctx.mkImplies(executes(ctx), ctx.mkEq(memAddressExpr, loadEvent.getMemAddressExpr())),
+                    ctx.mkImplies(ctx.mkNot(ctx.mkBoolConst(cfVar())), ctx.mkNot(executes(ctx)))
+            );
         }
-        return (RMWStoreOpt)clone;
+        return ctx.mkNot(executes(ctx));
+    }
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    protected RMWStoreOpt mkCopy(){
+        return new RMWStoreOpt(this);
     }
 }

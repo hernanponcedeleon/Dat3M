@@ -23,7 +23,6 @@ public class Register extends IExpr implements ExprInterface, Variable {
 
 	private final String name;
     private final int threadId;
-	private int mainThreadId = -1;
 	private Set<Variable> aliasEdges = new HashSet<>();
 	private Set<Address> aliasAddresses = new HashSet<>();
 	private Set<MemEvent> aliasEvents = new HashSet<>();
@@ -39,10 +38,6 @@ public class Register extends IExpr implements ExprInterface, Variable {
 	
 	public String getName() {
 		return name;
-	}
-
-	void setMainThreadId(int t) {
-		this.mainThreadId = t;
 	}
 
 	public int getThreadId(){
@@ -93,9 +88,7 @@ public class Register extends IExpr implements ExprInterface, Variable {
     @Deprecated
 	@Override
 	public Register clone() {
-		Register register = new Register(name, threadId);
-		register.setMainThreadId(mainThreadId);
-		return register;
+		return new Register(name, threadId);
 	}
 
 	@Override
@@ -114,10 +107,7 @@ public class Register extends IExpr implements ExprInterface, Variable {
 
 	@Override
 	public IntExpr getLastValueExpr(Context ctx){
-		if(mainThreadId > -1) {
-			return ctx.mkIntConst(getName() + "_" + mainThreadId + "_final");
-		}
-		throw new RuntimeException("Main thread is not set for " + this);
+		return ctx.mkIntConst(getName() + "_" + threadId + "_final");
 	}
 
 	@Override

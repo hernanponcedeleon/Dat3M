@@ -24,11 +24,6 @@ import java.util.Set;
 public class RelationRepository {
 
     private Map<String, Relation> relationMap = new HashMap<>();
-    private boolean includePoToCtrl;
-
-    public RelationRepository(boolean includePoToCtrl){
-        this.includePoToCtrl = includePoToCtrl;
-    }
 
     public Set<Relation> getRelations(){
         Set<Relation> set = new HashSet<>();
@@ -147,14 +142,7 @@ public class RelationRepository {
                         getRelation("addrDirect"),
                         getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))).setName("addr");
             case "ctrl":
-                if(includePoToCtrl){
-                    return getRelation(RelComposition.class,
-                            getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")),
-                            getRelation(RelUnion.class, getRelation("id"), getRelation("_po"))
-                    ).setName("ctrl");
-                } else {
-                    return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");
-                }
+                return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");
             case "po-loc":
                 return getRelation(RelIntersection.class, getRelation("po"), getRelation("loc")).setName("po-loc");
             case "rfe":

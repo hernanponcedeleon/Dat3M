@@ -8,9 +8,13 @@ public class RCUReadUnlock extends Event {
     private RCUReadLock lockEvent;
 
     public RCUReadUnlock(RCUReadLock lockEvent){
-        this.condLevel = 0;
         this.lockEvent = lockEvent;
         this.addFilters(EType.ANY, EType.VISIBLE, EType.RCU_UNLOCK);
+    }
+
+    private RCUReadUnlock(RCUReadUnlock other){
+        super(other);
+        this.lockEvent = (RCUReadLock)other.lockEvent.getCopy();
     }
 
     public RCUReadLock getLockEvent(){
@@ -27,12 +31,11 @@ public class RCUReadUnlock extends Event {
         return EType.RCU_UNLOCK;
     }
 
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public RCUReadUnlock clone() {
-        if(clone == null){
-            clone = new RCUReadUnlock(lockEvent.clone());
-            afterClone();
-        }
-        return (RCUReadUnlock)clone;
+    protected RCUReadUnlock mkCopy(){
+        return new RCUReadUnlock(this);
     }
 }

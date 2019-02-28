@@ -12,22 +12,29 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 
 public class Local extends Event implements RegWriter, RegReaderData {
 	
-	protected Register reg;
-	protected ExprInterface expr;
+	protected final Register register;
+	protected final ExprInterface expr;
+	private final ImmutableSet<Register> dataRegs;
 	private IntExpr regResultExpr;
-	private ImmutableSet<Register> dataRegs;
 	
-	public Local(Register reg, ExprInterface expr) {
-		this.reg = reg;
+	public Local(Register register, ExprInterface expr) {
+		this.register = register;
 		this.expr = expr;
-		this.condLevel = 0;
 		dataRegs = expr.getRegs();
 		addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER, EType.REG_READER);
 	}
 
+	protected Local(Local other){
+		super(other);
+		this.register = other.register;
+		this.expr = other.expr;
+		this.dataRegs = other.dataRegs;
+		this.regResultExpr = other.regResultExpr;
+	}
+
 	@Override
 	public void initialise(Context ctx) {
-		regResultExpr = reg.toZ3IntResult(this, ctx);
+		regResultExpr = register.toZ3IntResult(this, ctx);
 	}
 
 	public ExprInterface getExpr(){
@@ -36,7 +43,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	public Register getResultRegister(){
-		return reg;
+		return register;
 	}
 
 	@Override
@@ -51,20 +58,19 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
     @Override
 	public String toString() {
-		return nTimesCondLevel() + reg + " <- " + expr;
-	}
-
-    @Override
-	public Local clone() {
-	    if(clone == null){
-            clone = new Local(reg, expr);
-            afterClone();
-        }
-		return (Local)clone;
+		return register + " <- " + expr;
 	}
 
 	@Override
-	public BoolExpr encodeCF(Context ctx) {
-		return ctx.mkAnd(super.encodeCF(ctx), ctx.mkEq(regResultExpr,  expr.toZ3Int(this, ctx)));
+	protected BoolExpr encodeExec(Context ctx){
+		return ctx.mkAnd(super.encodeExec(ctx), ctx.mkEq(regResultExpr,  expr.toZ3Int(this, ctx)));
+	}
+
+	// Unrolling
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected Local mkCopy(){
+		return new Local(this);
 	}
 }

@@ -7,20 +7,16 @@ import com.dat3m.dartagnan.parsers.PorthosVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.arch.pts.event.Read;
 import com.dat3m.dartagnan.program.arch.pts.event.Write;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class VisitorPorthos extends PorthosBaseVisitor<Object> implements PorthosVisitor<Object> {
 
     private ProgramBuilder programBuilder;
-    private String currentThread;
+    private int currentThread;
 
     public VisitorPorthos(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -49,82 +45,77 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public Object visitThread(PorthosParser.ThreadContext ctx) {
-        currentThread = ctx.threadId().getText();
+        currentThread = ctx.threadId().id;
         programBuilder.initThread(currentThread);
-        programBuilder.addChild(currentThread, (Thread)ctx.expressionSequence().accept(this));
+        return ctx.expressionSequence().accept(this);
+    }
+
+    @Override
+    public Event visitExpressionWhile(PorthosParser.ExpressionWhileContext ctx) {
+        ExprInterface expr = (ExprInterface)ctx.boolExpr().accept(this);
+        Skip exitEvent = new Skip();
+        While whileEvent = new While(expr, exitEvent);
+        programBuilder.addChild(currentThread, whileEvent);
+        ctx.expressionSequence().accept(this);
+        return programBuilder.addChild(currentThread, exitEvent);
+    }
+
+    @Override
+    public Object visitExpressionIf(PorthosParser.ExpressionIfContext ctx) {
+        ExprInterface expr = (ExprInterface)ctx.boolExpr().accept(this);
+        Skip exitMainBranch = new Skip();
+        Skip exitElseBranch = new Skip();
+        If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+        programBuilder.addChild(currentThread, ifEvent);
+
+        ctx.expressionSequence(0).accept(this);
+        programBuilder.addChild(currentThread, exitMainBranch);
+
+        if(ctx.expressionSequence(1) != null){
+            ctx.expressionSequence(1).accept(this);
+        }
+        programBuilder.addChild(currentThread, exitElseBranch);
         return null;
     }
 
     @Override
-    public Thread visitExpressionInstruction(PorthosParser.ExpressionInstructionContext ctx) {
-        return (Thread)ctx.instruction().accept(this);
-    }
-
-    @Override
-    public Thread visitExpressionWhile(PorthosParser.ExpressionWhileContext ctx) {
-        BExpr e = (BExpr)ctx.boolExpr().accept(this);
-        Thread t = (Thread)ctx.expressionSequence().accept(this);
-        return new While(e, t);
-    }
-
-    @Override
-    public Thread visitExpressionIf(PorthosParser.ExpressionIfContext ctx) {
-        BExpr e = (BExpr)ctx.boolExpr().accept(this);
-        Thread t1 = (Thread)ctx.expressionSequence(0).accept(this);
-        if(ctx.expressionSequence(1) != null){
-            Thread t2 = (Thread)ctx.expressionSequence(1).accept(this);
-            return new If(e, t1, t2);
-        }
-        return new If(e, t1, new Skip());
-    }
-
-    @Override
-    public Thread visitExpressionSequence(PorthosParser.ExpressionSequenceContext ctx){
-        List<Thread> children = new ArrayList<>();
-        for(PorthosParser.ExpressionContext expression : ctx.expression()){
-            children.add((Thread)expression.accept(this));
-        }
-        return Thread.fromList(true, children);
-    }
-
-    @Override
-    public Thread visitInstructionLocal(PorthosParser.InstructionLocalContext ctx) {
+    public Event visitInstructionLocal(PorthosParser.InstructionLocalContext ctx) {
         Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText());
         IExpr expr = (IExpr)ctx.arithExpr().accept(this);
-        return new Local(register, expr);
+        return programBuilder.addChild(currentThread, new Local(register, expr));
     }
 
     @Override
-    public Thread visitInstructionLoad(PorthosParser.InstructionLoadContext ctx) {
+    public Event visitInstructionLoad(PorthosParser.InstructionLoadContext ctx) {
         Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText());
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
-        return new Load(register, location.getAddress(), "_rx");
+        return programBuilder.addChild(currentThread, new Load(register, location.getAddress(), null));
     }
 
     @Override
-    public Thread visitInstructionStore(PorthosParser.InstructionStoreContext ctx) {
+    public Event visitInstructionStore(PorthosParser.InstructionStoreContext ctx) {
         IExpr expr = (IExpr)ctx.arithExpr().accept(this);
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
-        return new Store(location.getAddress(), expr, "_rx");
+        return programBuilder.addChild(currentThread, new Store(location.getAddress(), expr, null));
     }
 
     @Override
-    public Thread visitInstructionRead(PorthosParser.InstructionReadContext ctx) {
+    public Event visitInstructionRead(PorthosParser.InstructionReadContext ctx) {
         Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText());
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
-        return new Read(register, location.getAddress(), ctx.MemoryOrder().getText());
+        return programBuilder.addChild(currentThread, new Read(register, location.getAddress(), ctx.MemoryOrder().getText()));
     }
 
     @Override
-    public Thread visitInstructionWrite(PorthosParser.InstructionWriteContext ctx) {
+    public Event visitInstructionWrite(PorthosParser.InstructionWriteContext ctx) {
         IExpr e = (IExpr)ctx.arithExpr().accept(this);
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
-        return new Write(location.getAddress(), e, ctx.MemoryOrder().getText());
+        return programBuilder.addChild(currentThread, new Write(location.getAddress(), e, ctx.MemoryOrder().getText()));
     }
 
     @Override
-    public Thread visitInstructionFence(PorthosParser.InstructionFenceContext ctx) {
-        return new Fence(ctx.getText());
+    public Event visitInstructionFence(PorthosParser.InstructionFenceContext ctx) {
+        return programBuilder.addChild(currentThread, new Fence(ctx.getText()));
     }
 
     @Override

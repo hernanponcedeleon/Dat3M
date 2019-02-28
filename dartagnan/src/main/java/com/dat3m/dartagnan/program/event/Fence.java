@@ -4,11 +4,16 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class Fence extends Event {
 
-	protected String name;
+	protected final String name;
 
 	public Fence(String name){
         this.name = name;
         this.addFilters(EType.ANY, EType.VISIBLE, EType.FENCE, name);
+	}
+
+	protected Fence(Fence other){
+		super(other);
+		this.name = other.name;
 	}
 
 	public String getName(){
@@ -17,23 +22,19 @@ public class Fence extends Event {
 
 	@Override
 	public String toString() {
-		if(atomic == null){
-			return nTimesCondLevel() + getName() + "(" + atomic + ")";
-		}
-		return nTimesCondLevel() + getName();
-	}
-
-	@Override
-	public Fence clone() {
-		if(clone == null){
-			clone = new Fence(name);
-			afterClone();
-		}
-		return (Fence)clone;
+		return getName();
 	}
 
 	@Override
 	public String label(){
 		return getName();
+	}
+
+	// Unrolling
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	protected Fence mkCopy(){
+		return new Fence(this);
 	}
 }

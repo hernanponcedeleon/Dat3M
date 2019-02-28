@@ -6,8 +6,11 @@ import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 public class RCUSync extends Event {
 
     public RCUSync(){
-        this.condLevel = 0;
         this.addFilters(EType.ANY, EType.VISIBLE, EType.RCU_SYNC);
+    }
+
+    private RCUSync(RCUSync other){
+        super(other);
     }
 
     @Override
@@ -20,12 +23,11 @@ public class RCUSync extends Event {
         return EType.RCU_SYNC;
     }
 
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public RCUSync clone() {
-        if(clone == null){
-            clone = new RCUSync();
-            afterClone();
-        }
-        return (RCUSync)clone;
+    protected RCUSync mkCopy(){
+        return new RCUSync(this);
     }
 }

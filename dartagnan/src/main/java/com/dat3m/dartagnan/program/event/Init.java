@@ -7,13 +7,21 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class Init extends MemEvent {
 
-	private IConst value;
+	private final IConst value;
 	
 	public Init(Address address, IConst value) {
-		this.address = address;
+		super(address);
 		this.value = value;
-		this.condLevel = 0;
 		addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.INIT);
+	}
+
+	private Init(Init other){
+		super(other);
+		this.value = other.value;
+	}
+
+	public IConst getValue(){
+		return value;
 	}
 
 	@Override
@@ -24,7 +32,7 @@ public class Init extends MemEvent {
 
 	@Override
 	public String toString() {
-		return nTimesCondLevel() + "*" + address + " := " + value;
+		return "*" + address + " := " + value;
 	}
 
 	@Override
@@ -32,16 +40,11 @@ public class Init extends MemEvent {
 		return "W";
 	}
 
-	@Override
-	public Init clone() {
-	    if(clone == null){
-            clone = new Init((Address) address, value);
-            afterClone();
-        }
-		return (Init)clone;
-	}
+	// Unrolling
+	// -----------------------------------------------------------------------------------------------------------------
 
-	public IConst getValue(){
-		return value;
+	@Override
+	protected Init mkCopy(){
+		return new Init(this);
 	}
 }

@@ -1,77 +1,127 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.program.Seq;
-import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 
-import java.util.ArrayList;
-import java.util.List;
+public class While extends Event implements RegReaderData {
 
-public class While extends Event {
+    private final ExprInterface expr;
+	private final Skip exitEvent;
+    private final ImmutableSet<Register> dataRegs;
 
-	private ExprInterface pred;
-	private Thread t;
-	
-	public While(ExprInterface pred, Thread t) {
-		this.pred = pred;
-		this.t = t;
-		t.incCondLevel();
-		addFilters(EType.ANY, EType.CMP);
+	public While(ExprInterface expr, Skip exitEvent) {
+		if(expr == null){
+			throw new IllegalArgumentException("If event requires non null expression");
+		}
+		if(exitEvent == null){
+			throw new IllegalArgumentException("If event requires non null exit event");
+		}
+		this.expr = expr;
+		this.exitEvent = exitEvent;
+		this.dataRegs = expr.getRegs();
+		addFilters(EType.ANY, EType.CMP, EType.REG_READER);
+	}
+
+	private While(While other){
+	    super(other);
+	    this.expr = other.expr;
+	    this.exitEvent = (Skip)other.exitEvent.getCopy();
+	    this.dataRegs = other.dataRegs;
+    }
+
+	public ExprInterface getExpr(){
+		return expr;
+	}
+
+	public Event getExitEvent(){
+		return exitEvent;
 	}
 
 	@Override
-	public void incCondLevel() {
-		condLevel++;
-		t.incCondLevel();
-	}
-
-    @Override
-	public void decCondLevel() {
-		condLevel--;
-		t.decCondLevel();
-	}
-
-    @Override
-	public Thread unroll(int steps) {
-		if(steps > 0){
-		    t.beforeClone();
-			Thread copyT = t.clone();
-			copyT.decCondLevel();
-			copyT = copyT.unroll(steps);
-			Thread newThread = new If(pred, new Seq(copyT, unroll(steps - 1)), new Skip());
-			newThread.setCondLevel(condLevel);
-			return newThread;
-		}
-		return new Skip();
+	public ImmutableSet<Register> getDataRegs(){
+		return dataRegs;
 	}
 
 	@Override
-	public List<Event> getEvents() {
-		List<Event> ret = new ArrayList<>(t.getEvents());
-		ret.add(this);
-		return ret;
+	public String toString() {
+		return "while(" + expr + ")";
 	}
 
-    @Override
-    public void beforeClone(){
-	    super.beforeClone();
-        t.beforeClone();
-    }
 
-    @Override
-	public While clone() {
-		if(clone == null){
-			Thread newT = t.clone();
-			newT.decCondLevel();
-			clone = new While(pred, newT);
-			afterClone();
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public int unroll(int bound, int nextId, Event predecessor) {
+		if(successor == null){
+			throw new RuntimeException("Malformed \"while\" event");
 		}
-		return (While)clone;
+
+		int currentBound = bound;
+		while(currentBound > 0){
+			successor.resetCopy();
+
+			Skip exitMainBranch = new Skip();
+			Skip exitElseBranch = new Skip();
+			If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+			ifEvent.oId = oId;
+			exitMainBranch.setOId(exitEvent.oId);
+			exitElseBranch.setOId(exitEvent.oId);
+			ifEvent.uId = nextId++;
+
+			predecessor.setSuccessor(ifEvent);
+			predecessor = ifEvent;
+
+			Event next = successor;
+			while(!next.equals(exitEvent)){
+				Event nextCopy = next.getCopy();
+				predecessor.successor = nextCopy;
+				predecessor = nextCopy;
+				next = next.getSuccessor();
+			}
+
+			predecessor.successor = exitMainBranch;
+			exitMainBranch.successor = exitElseBranch;
+			predecessor = exitElseBranch;
+
+			nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
+			currentBound--;
+		}
+
+		predecessor.successor = exitEvent.successor;
+		if(predecessor.successor != null){
+			nextId = predecessor.successor.unroll(bound, nextId, predecessor);
+		}
+
+		return nextId;
 	}
 
     @Override
-    public String toString() {
-        return nTimesCondLevel() + "while " + pred + " {\n" + t + "\n" + nTimesCondLevel() + "}";
+    protected While mkCopy(){
+        return new While(this);
     }
+
+
+    // Compilation
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public int compile(Arch target, int nextId, Event predecessor) {
+        throw new RuntimeException("Event 'while' must be unrolled before compilation");
+    }
+
+
+	// Encoding
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
+		throw new RuntimeException("While event must be unrolled before encoding");
+	}
 }

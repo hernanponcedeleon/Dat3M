@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -49,7 +48,7 @@ public class RelCo extends Relation {
 
             for(Event e1 : eventsStore){
                 for(Event e2 : eventsStore){
-                    if(e1.getEId() != e2.getEId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
+                    if(e1.getCId() != e2.getCId() && MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent)e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }

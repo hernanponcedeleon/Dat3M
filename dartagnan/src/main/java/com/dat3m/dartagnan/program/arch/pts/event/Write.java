@@ -1,30 +1,43 @@
 package com.dat3m.dartagnan.program.arch.pts.event;
 
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Seq;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.Thread;
+
+import java.util.LinkedList;
 
 public class Write extends MemEvent implements RegReaderData {
 
-    protected ExprInterface value;
-    private ImmutableSet<Register> dataRegs;
+    private final ExprInterface value;
+    private final String mo;
+    private final ImmutableSet<Register> dataRegs;
 
-    public Write(IExpr address, ExprInterface value, String atomic){
+    public Write(IExpr address, ExprInterface value, String mo){
+        super(address);
         this.value = value;
-        this.address = address;
-        this.atomic = atomic;
-        this.condLevel = 0;
+        this.mo = mo;
         this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
+    }
+
+    private Write(Write other){
+        super(other);
+        this.value = other.value;
+        this.mo = other.mo;
+        this.dataRegs = other.dataRegs;
+    }
+
+    @Override
+    public boolean is(String param){
+        return super.is(param) || (mo != null && mo.equals(param));
     }
 
     @Override
@@ -34,70 +47,54 @@ public class Write extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "store(*" + address + ", " +  value + ", " + (atomic != null ? ", " + atomic : "") + ")";
+        return "store(*" + address + ", " +  value + (mo != null ? ", " + mo : "") + ")";
     }
 
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public Write clone() {
-        if(clone == null){
-            clone = new Write(address, value, atomic);
-            afterClone();
-        }
-        return (Write)clone;
+    protected Write mkCopy(){
+        return new Write(this);
     }
 
+
+    // Compilation
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public Thread compile(Arch target) {
-        Store st = new Store(address, value, atomic);
-        st.setHLId(hlId);
-        st.setCondLevel(this.condLevel);
+    public int compile(Arch target, int nextId, Event predecessor) {
+        LinkedList<Event> events = new LinkedList<>();
+        events.add(new Store(address, value, mo));
 
-        if(target != Arch.POWER && target != Arch.ARM && target != Arch.ARM8 && atomic.equals("_sc")) {
-            Fence mfence = new Fence("Mfence");
-            mfence.setCondLevel(this.condLevel);
-            return new Seq(st, mfence);
+        switch (target){
+            case NONE:
+                break;
+            case TSO:
+                if(mo.equals("_sc")){
+                    events.addLast(new Fence("Mfence"));
+                }
+                break;
+            case POWER:
+                if(mo.equals("_rel")){
+                    events.addFirst(new Fence("Lwsync"));
+                } else if(mo.equals("_sc")){
+                    events.addFirst(new Fence("Sync"));
+                }
+                break;
+            case ARM: case ARM8:
+                if(mo.equals("_rel") || mo.equals("_sc")){
+                    events.addFirst(new Fence("Ish"));
+                    if(mo.equals("_sc")){
+                        events.addLast(new Fence("Ish"));
+                    }
+                }
+                break;
+                default:
+                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        if(target != Arch.POWER && target != Arch.ARM && target != Arch.ARM8) {
-            return st;
-        }
-
-        if(target == Arch.POWER) {
-            if(atomic.equals("_rx") || atomic.equals("_na")) {
-                return st;
-            }
-
-            Fence lwsync = new Fence("Lwsync");
-            lwsync.setCondLevel(this.condLevel);
-            if(atomic.equals("_rel")) {
-                return new Seq(lwsync, st);
-            }
-
-            if(atomic.equals("_sc")) {
-                Fence sync = new Fence("Sync");
-                sync.setCondLevel(this.condLevel);
-                return new Seq(sync, st);
-            }
-        }
-
-        if(target == Arch.ARM || target == Arch.ARM8) {
-            if(atomic.equals("_rx") || atomic.equals("_na")) {
-                return st;
-            }
-
-            Fence ish1 = new Fence("Ish");
-            ish1.setCondLevel(this.condLevel);
-            if(atomic.equals("_rel")) {
-                return new Seq(ish1, st);
-            }
-
-            Fence ish2 = new Fence("Ish");
-            ish2.setCondLevel(this.condLevel);
-            if(atomic.equals("_sc")) {
-                return new Seq(ish1, new Seq(st, ish2));
-            }
-        }
-
-        throw new RuntimeException("Compilation is not supported for " + this);
+        return compileSequence(target, nextId, predecessor, events);
     }
 }

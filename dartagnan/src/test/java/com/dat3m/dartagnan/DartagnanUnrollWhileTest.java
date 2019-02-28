@@ -10,9 +10,13 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.Context;
@@ -34,7 +38,7 @@ public class DartagnanUnrollWhileTest {
 
     @Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat", Arch.NONE);
+        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
         String test1 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-01.litmus";
         String test2 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-02.litmus";
 
@@ -76,6 +80,19 @@ public class DartagnanUnrollWhileTest {
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, bound, Mode.KNASTER, Alias.CFIS));
             ctx.close();
+
+            for(Thread thread : program.getThreads()){
+                List<Event> events = thread.getCache().getEvents(FilterBasic.get(EType.ANY));
+                Event lastEvent = events.get(0);
+                for(int i = 1; i < events.size(); i++){
+                    Event thisEvent = events.get(i);
+                    if(lastEvent.getUId() > thisEvent.getUId() || lastEvent.getCId() >= thisEvent.getCId()){
+                        fail("Malformed thread " + thread.getId());
+                    }
+                    lastEvent = thisEvent;
+                }
+            }
+
         } catch (IOException e){
             fail("Missing resource file");
         }

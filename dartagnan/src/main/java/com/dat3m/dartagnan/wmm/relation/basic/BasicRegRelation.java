@@ -20,7 +20,7 @@ public abstract class BasicRegRelation extends BasicRelation {
 
             BoolExpr clause = ctx.mkAnd(e1.executes(ctx), e2.executes(ctx));
             for(Tuple tuple2 : maxTupleSet.getBySecond(e2)){
-                if(register == ((RegWriter)tuple2.getFirst()).getResultRegister() && e1.getEId() < tuple2.getFirst().getEId()){
+                if(register == ((RegWriter)tuple2.getFirst()).getResultRegister() && e1.getCId() < tuple2.getFirst().getCId()){
                     clause = ctx.mkAnd(clause, ctx.mkNot(tuple2.getFirst().executes(ctx)));
                 }
             }

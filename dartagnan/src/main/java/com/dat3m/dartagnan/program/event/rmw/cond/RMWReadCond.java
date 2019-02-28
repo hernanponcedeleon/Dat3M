@@ -18,6 +18,13 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
 
     BoolExpr z3Cond;
 
+    protected RMWReadCond(RMWReadCond other){
+        super(other);
+        this.cmp = other.cmp;
+        this.dataRegs = other.dataRegs;
+        this.z3Cond = other.z3Cond;
+    }
+
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
         this.cmp = cmp;
@@ -44,8 +51,11 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
         return dataRegs;
     }
 
-    @Override
-    public abstract RMWReadCond clone();
-
     public abstract String condToString();
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    protected abstract RMWReadCond mkCopy();
 }

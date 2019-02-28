@@ -8,24 +8,29 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class RMWStore extends Store implements RegReaderData {
 
-    protected RMWLoad loadEvent;
+    protected final RMWLoad loadEvent;
 
-    public RMWStore(RMWLoad loadEvent, IExpr address, ExprInterface value, String atomic) {
-        super(address, value, atomic);
+    public RMWStore(RMWLoad loadEvent, IExpr address, ExprInterface value, String mo) {
+        super(address, value, mo);
         this.loadEvent = loadEvent;
         addFilters(EType.RMW);
+    }
+
+    protected RMWStore(RMWStore other){
+        super(other);
+        // Load event can be null for unpaired RMWStoreOpt
+        this.loadEvent = other.loadEvent != null ? (RMWLoad)other.loadEvent.getCopy() : null;
     }
 
     public RMWLoad getLoadEvent(){
         return loadEvent;
     }
 
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public RMWStore clone() {
-        if(clone == null){
-            clone = new RMWStore(loadEvent.clone(), address, value, atomic);
-            afterClone();
-        }
-        return (RMWStore)clone;
+    protected RMWStore mkCopy(){
+        return new RMWStore(this);
     }
 }

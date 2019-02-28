@@ -4,53 +4,65 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Seq;
+import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+
+import java.util.Arrays;
+import java.util.LinkedList;
 
 public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderData {
 
-    private IOpBin op;
+    private final IOpBin op;
 
     public RMWOpAndTest(IExpr address, Register register, ExprInterface value, IOpBin op) {
-        super(address, register, value, "Mb");
+        super(address, register, value, Mo.MB);
         this.op = op;
     }
 
-    @Override
-    public Thread compile(Arch target) {
-        if(target == Arch.NONE) {
-            Register dummy = new Register(null, resultRegister.getThreadId());
-            RMWLoad load = new RMWLoad(dummy, address, "Relaxed");
-            Local local1 = new Local(dummy, new IExprBin(dummy, op, value));
-            RMWStore store = new RMWStore(load, address, dummy, "Relaxed");
-            Local local2 = new Local(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(0)));
-
-            compileBasic(load);
-            compileBasic(store);
-
-            Thread result = new Seq(load, new Seq(local1, new Seq(store, local2)));
-            return insertFencesOnMb(result);
-        }
-        return super.compile(target);
+    private RMWOpAndTest(RMWOpAndTest other){
+        super(other);
+        this.op = other.op;
     }
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + resultRegister + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")";
+        return resultRegister + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")";
     }
 
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public RMWOpAndTest clone() {
-        if(clone == null){
-            clone = new RMWOpAndTest(address, resultRegister, value, op);
-            afterClone();
+    protected RMWOpAndTest mkCopy(){
+        return new RMWOpAndTest(this);
+    }
+
+
+    // Compilation
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public int compile(Arch target, int nextId, Event predecessor) {
+        if(target == Arch.NONE) {
+            Register dummy = new Register(null, resultRegister.getThreadId());
+            RMWLoad load = new RMWLoad(dummy, address, Mo.RELAXED);
+            Local local1 = new Local(dummy, new IExprBin(dummy, op, value));
+            RMWStore store = new RMWStore(load, address, dummy, Mo.RELAXED);
+            Local local2 = new Local(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(0)));
+
+            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, local1, store, local2));
+            events.addFirst(new Fence("Mb"));
+            events.addLast(new Fence("Mb"));
+
+            return compileSequence(target, nextId, predecessor, events);
         }
-        return (RMWOpAndTest)clone;
+        return super.compile(target, nextId, predecessor);
     }
 }

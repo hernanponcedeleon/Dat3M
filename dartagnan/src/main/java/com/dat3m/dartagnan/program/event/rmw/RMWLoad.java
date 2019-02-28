@@ -8,17 +8,20 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class RMWLoad extends Load implements RegWriter {
 
-    public RMWLoad(Register reg, IExpr address, String atomic) {
-        super(reg, address, atomic);
+    public RMWLoad(Register reg, IExpr address, String mo) {
+        super(reg, address, mo);
         addFilters(EType.RMW);
     }
 
+    protected RMWLoad(RMWLoad other){
+        super(other);
+    }
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public RMWLoad clone() {
-        if(clone == null){
-            clone = new RMWLoad(resultRegister, address, atomic);
-            afterClone();
-        }
-        return (RMWLoad)clone;
+    protected RMWLoad mkCopy(){
+        return new RMWLoad(this);
     }
 }

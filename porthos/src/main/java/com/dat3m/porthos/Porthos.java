@@ -78,8 +78,8 @@ public class Porthos {
             System.exit(0);
             return;
         }
-        Wmm mcmS = new ParserCat().parse(cmd.getOptionValue("scat"), source);
-        Wmm mcmT = new ParserCat().parse(cmd.getOptionValue("tcat"), target);
+        Wmm mcmS = new ParserCat().parse(cmd.getOptionValue("scat"));
+        Wmm mcmT = new ParserCat().parse(cmd.getOptionValue("tcat"));
 
         if(cmd.hasOption("draw")) {
             mcmS.setDrawExecutionGraph();
@@ -136,18 +136,18 @@ public class Porthos {
     static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, Alias alias){
 
-        pSource.unroll(steps);
-        pTarget.unroll(steps);
+        pSource.unroll(steps, 0);
+        pTarget.unroll(steps, 0);
 
-        pSource.compile(source, alias, 0);
-        pTarget.compile(target, alias, pSource.getLastEid() + 1);
+        int nextId = pSource.compile(source, alias, 0);
+        pTarget.compile(target, alias, nextId);
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
-        BoolExpr sourceFV = pSource.encodeFinalValues(ctx);
+        BoolExpr sourceFV = pSource.encodeFinalRegisterValues(ctx);
         BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, mode);
 
         s1.add(pTarget.encodeCF(ctx));
-        s1.add(pTarget.encodeFinalValues(ctx));
+        s1.add(pTarget.encodeFinalRegisterValues(ctx));
         s1.add(targetWmm.encode(pTarget, ctx, mode));
         s1.add(targetWmm.consistent(pTarget, ctx));
 

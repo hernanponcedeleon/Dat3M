@@ -2,25 +2,33 @@ package com.dat3m.dartagnan.program.arch.pts.event;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Seq;
+import com.dat3m.dartagnan.program.arch.pts.utils.Mo;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+
+import java.util.LinkedList;
 
 public class Read extends MemEvent implements RegWriter {
 
-    protected Register resultRegister;
+    private final Register resultRegister;
+    private final String mo;
 
-    public Read(Register register, IExpr address, String atomic) {
+    public Read(Register register, IExpr address, String mo) {
+        super(address);
         this.resultRegister = register;
-        this.address = address;
-        this.atomic = atomic;
-        this.condLevel = 0;
+        this.mo = mo;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
+    }
+
+    private Read(Read other){
+        super(other);
+        this.resultRegister = other.resultRegister;
+        this.mo = other.mo;
     }
 
     @Override
@@ -30,54 +38,47 @@ public class Read extends MemEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + resultRegister + " = load(*" + address + ", " + (atomic != null ? ", " + atomic : "") + ")";
+        return resultRegister + " = load(*" + address + (mo != null ? ", " + mo : "") + ")";
     }
 
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public Read clone() {
-        if(clone == null){
-            clone = new Read(resultRegister, address, atomic);
-            afterClone();
-        }
-        return (Read)clone;
+    protected Read mkCopy(){
+        return new Read(this);
     }
 
+
+    // Compilation
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public Thread compile(Arch target) {
-        Load ld = new Load(resultRegister, address, atomic);
-        ld.setHLId(hlId);
-        ld.setCondLevel(this.condLevel);
+    public int compile(Arch target, int nextId, Event predecessor) {
+        LinkedList<Event> events = new LinkedList<>();
+        events.add(new Load(resultRegister, address, mo));
 
-        if(target != Arch.POWER && target != Arch.ARM && target != Arch.ARM8) {
-            return ld;
+        switch (target) {
+            case NONE: case TSO:
+                break;
+            case POWER:
+                if(mo.equals(Mo.SC) || mo.equals(Mo.ACQUIRE) || mo.equals(Mo.CONSUME)){
+                    events.addLast(new Fence("Lwsync"));
+                    if(mo.equals(Mo.SC)){
+                        events.addFirst(new Fence("Sync"));
+                    }
+                }
+                break;
+            case ARM: case ARM8:
+                if(mo.equals(Mo.SC) || mo.equals(Mo.ACQUIRE) || mo.equals(Mo.CONSUME)) {
+                    events.addLast(new Fence("Ish"));
+                }
+                break;
+                default:
+                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        if(atomic.equals("_rx") || atomic.equals("_na")) {
-            return ld;
-        }
-
-        if(target == Arch.POWER) {
-            Fence lwsync = new Fence("Lwsync");
-            lwsync.setCondLevel(this.condLevel);
-            if(atomic.equals("_con") || atomic.equals("_acq")) {
-                return new Seq(ld, lwsync);
-            }
-
-            if(atomic.equals("_sc")) {
-                Fence sync = new Fence("Sync");
-                sync.setCondLevel(this.condLevel);
-                return new Seq(sync, new Seq(ld, lwsync));
-            }
-        }
-
-        if(target == Arch.ARM || target == Arch.ARM8) {
-            if(atomic.equals("_con") || atomic.equals("_acq") || atomic.equals("_sc")) {
-                Fence ish = new Fence("Ish");
-                ish.setCondLevel(this.condLevel);
-                return new Seq(ld, ish);
-            }
-        }
-
-        throw new RuntimeException("Compilation is not supported for " + this);
+        return compileSequence(target, nextId, predecessor, events);
     }
 }

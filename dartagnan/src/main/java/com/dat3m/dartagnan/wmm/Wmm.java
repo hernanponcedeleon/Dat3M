@@ -30,8 +30,8 @@ public class Wmm {
     private boolean drawExecutionGraph = false;
     private Set<String> drawRelations = new HashSet<>();
 
-    public Wmm(Arch target) {
-        relationRepository = new RelationRepository(target.getIncludePoToCtrl());
+    public Wmm() {
+        relationRepository = new RelationRepository();
     }
 
     public void setDrawExecutionGraph(){

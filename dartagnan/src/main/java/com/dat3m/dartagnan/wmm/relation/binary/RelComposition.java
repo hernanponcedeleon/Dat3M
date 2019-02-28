@@ -75,19 +75,19 @@ public class RelComposition extends BinaryRelation {
 
             Map<Integer, Set<Integer>> myMap = new HashMap<>();
             for(Tuple tuple : activeSet){
-                int eid1 = tuple.getFirst().getEId();
-                int eid2 = tuple.getSecond().getEId();
-                myMap.putIfAbsent(eid1, new HashSet<>());
-                myMap.get(eid1).add(eid2);
+                int id1 = tuple.getFirst().getCId();
+                int id2 = tuple.getSecond().getCId();
+                myMap.putIfAbsent(id1, new HashSet<>());
+                myMap.get(id1).add(id2);
             }
 
             for(Tuple tuple1 : r1.getMaxTupleSet()){
                 Event e1 = tuple1.getFirst();
-                Set<Integer> ends = myMap.get(e1.getEId());
+                Set<Integer> ends = myMap.get(e1.getCId());
                 if(ends == null) continue;
                 for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
                     Event e2 = tuple2.getSecond();
-                    if(ends.contains(e2.getEId())){
+                    if(ends.contains(e2.getCId())){
                         r1Set.add(tuple1);
                         r2Set.add(tuple2);
                     }
@@ -121,7 +121,7 @@ public class RelComposition extends BinaryRelation {
             Event e3 = tuple1.getSecond();
             for(Tuple tuple2 : r2Set.getByFirst(e3)){
                 Event e2 = tuple2.getSecond();
-                int id = Tuple.toHashCode(e1.getEId(), e2.getEId());
+                int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                 if(exprMap.containsKey(id)){
                     BoolExpr e = exprMap.get(id);
                     e = ctx.mkOr(e, ctx.mkAnd(Utils.edge(r1.getName(), e1, e3, ctx), Utils.edge(r2.getName(), e3, e2, ctx)));
@@ -168,7 +168,7 @@ public class RelComposition extends BinaryRelation {
             Event e3 = tuple1.getSecond();
             for(Tuple tuple2 : r2Set.getByFirst(e3)){
                 Event e2 = tuple2.getSecond();
-                int id = Tuple.toHashCode(e1.getEId(), e2.getEId());
+                int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                 if(orClauseMap.containsKey(id)){
                     BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
                     BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
@@ -232,7 +232,7 @@ public class RelComposition extends BinaryRelation {
                     Event e3 = tuple1.getSecond();
                     for(Tuple tuple2 : r2Set.getByFirst(e3)){
                         Event e2 = tuple2.getSecond();
-                        int id = Tuple.toHashCode(e1.getEId(), e2.getEId());
+                        int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                         if(exprMap.containsKey(id)){
                             BoolExpr e = exprMap.get(id);
                             e = ctx.mkOr(e, ctx.mkAnd(Utils.edge(r1Name, e1, e3, ctx), Utils.edge(r2Name, e3, e2, ctx)));

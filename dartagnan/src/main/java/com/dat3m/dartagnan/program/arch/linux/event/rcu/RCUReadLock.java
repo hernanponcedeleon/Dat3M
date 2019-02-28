@@ -6,8 +6,11 @@ import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 public class RCUReadLock extends Event {
 
     public RCUReadLock(){
-        this.condLevel = 0;
         this.addFilters(EType.ANY, EType.VISIBLE, EType.RCU_LOCK);
+    }
+
+    private RCUReadLock(RCUReadLock other){
+        super(other);
     }
 
     @Override
@@ -20,12 +23,11 @@ public class RCUReadLock extends Event {
         return EType.RCU_LOCK;
     }
 
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public RCUReadLock clone() {
-        if(clone == null){
-            clone = new RCUReadLock();
-            afterClone();
-        }
-        return (RCUReadLock)clone;
+    protected RCUReadLock mkCopy(){
+        return new RCUReadLock(this);
     }
 }

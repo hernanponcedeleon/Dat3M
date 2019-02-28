@@ -27,7 +27,7 @@ public abstract class AbstractDartagnanTest {
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target, int unroll) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Boolean> expectationMap = ResourceHelper.getExpectedResults();
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + cat, target);
+        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + cat);
 
         return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)

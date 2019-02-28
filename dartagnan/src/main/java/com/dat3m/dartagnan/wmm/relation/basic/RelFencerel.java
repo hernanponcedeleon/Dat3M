@@ -49,7 +49,7 @@ public class RelFencerel extends Relation {
                         while(it2.hasNext()){
                             Event e2 = it2.next();
                             for(Event f : fences) {
-                                if(f.getEId() > e1.getEId() && f.getEId() < e2.getEId()){
+                                if(f.getCId() > e1.getCId() && f.getCId() < e2.getCId()){
                                     maxTupleSet.add(new Tuple(e1, e2));
                                     break;
                                 }
@@ -74,7 +74,7 @@ public class RelFencerel extends Relation {
 
             BoolExpr orClause = ctx.mkFalse();
             for(Event fence : fences){
-                if(fence.getEId() > e1.getEId() && fence.getEId() < e2.getEId()){
+                if(fence.getCId() > e1.getCId() && fence.getCId() < e2.getCId()){
                     orClause = ctx.mkOr(orClause, fence.executes(ctx));
                 }
             }

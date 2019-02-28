@@ -56,7 +56,7 @@ public class AliasAnalysis {
                 ((Register) address).getAliasEvents().add(e);
 
             } else if (address instanceof Address) {
-                // Rule reg = &loc -> lo(reg) = {loc}
+                // Rule register = &loc -> lo(register) = {loc}
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
                     register.getAliasAddresses().add((Address) address);
@@ -97,7 +97,7 @@ public class AliasAnalysis {
                 ssaReg.getEventsWithAddr().add(e);
 
             } else if (address instanceof Address) {
-                // Rule reg = &loc -> lo(reg)={loc}
+                // Rule register = &loc -> lo(register)={loc}
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
                     SSAReg ssaReg = (register.getSSAReg(ssaMap.get(register).get(e)));
@@ -328,8 +328,8 @@ public class AliasAnalysis {
 
             if(e instanceof If){
                 Map<Register, Integer> indexMapClone = new HashMap<>(indexMap);
-                List<Event> t1Events = ((If)e).getT1().getCache().getEvents(FilterBasic.get(EType.ANY));
-                List<Event> t2Events = ((If)e).getT2().getCache().getEvents(FilterBasic.get(EType.ANY));
+                List<Event> t1Events = ((If)e).getMainBranchEvents();
+                List<Event> t2Events = ((If)e).getElseBranchEvents();
                 mkSsaIndices(t1Events, ssaMap, indexMap);
                 mkSsaIndices(t2Events, ssaMap, indexMapClone);
 

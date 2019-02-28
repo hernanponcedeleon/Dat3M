@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.parsers.program.utils.branch.Cmp;
-import com.dat3m.dartagnan.parsers.program.utils.branch.CondJump;
-import com.dat3m.dartagnan.parsers.program.utils.branch.Label;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.google.common.collect.ImmutableSet;
@@ -18,55 +15,48 @@ import java.util.*;
 
 public class ProgramBuilder {
 
-    private Map<String, Map<String, Register>> registers = new HashMap<>();
+    private Map<Integer, Thread> threads = new HashMap<>();
+
     private Map<String, Location> locations = new HashMap<>();
     private Map<String, Address> pointers = new HashMap<>();
 
-    private Map<String, Map<String, Label>> labels = new HashMap<>();
-    private Map<String, LinkedList<Thread>> threads = new HashMap<>();
     private Map<Address, IConst> iValueMap = new HashMap<>();
     private Memory memory = new Memory();
+
+    private Map<String, Label> labels = new HashMap<>();
 
     private AbstractAssert ass;
     private AbstractAssert assFilter;
 
-    private int lastHlId = 1;
+    private int lastOrigId = 0;
 
     public Program build(){
         Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
-        for(LinkedList<Thread> thread : threads.values()){
-            thread = buildBranches(thread);
-            program.add(Thread.fromList(true, thread));
-        }
-        for (Map.Entry<Address, IConst> entry : iValueMap.entrySet()) {
-            program.add(new Init(entry.getKey(), entry.getValue()));
+        // TODO: Validate labels
+        buildInitThreads();
+        for(Thread thread : threads.values()){
+            program.add(thread);
         }
         program.setAss(ass);
         program.setAssFilter(assFilter);
         return program;
     }
 
-    public void initThread(String thread){
-        registers.putIfAbsent(thread, new HashMap<>());
-        threads.putIfAbsent(thread, new LinkedList<>());
+    public void initThread(int id){
+        if(!threads.containsKey(id)){
+            Skip threadEntry = new Skip();
+            threadEntry.setOId(lastOrigId++);
+            threads.putIfAbsent(id, new Thread(id, threadEntry));
+        }
     }
 
-    public Thread addChild(String thread, Thread child){
+    public Event addChild(int thread, Event child){
         if(!threads.containsKey(thread)){
             throw new RuntimeException("Thread " + thread + " is not initialised");
         }
-        for(Event e : child.getEvents()){
-            e.setHLId(lastHlId++);
-        }
-        threads.get(thread).add(child);
+        child.setOId(lastOrigId++);
+        threads.get(thread).append(child);
         return child;
-    }
-
-    public Thread removeChild(String thread){
-        if(!threads.containsKey(thread)){
-            throw new RuntimeException("Thread " + thread + " is not initialised");
-        }
-        return Thread.fromList(true, threads.remove(thread));
     }
 
     public void setAssert(AbstractAssert ass){
@@ -96,19 +86,19 @@ public class ProgramBuilder {
         iValueMap.put(location.getAddress(), iValue);
     }
 
-    public void initRegEqLocPtr(String regThread, String regName, String locName){
+    public void initRegEqLocPtr(int regThread, String regName, String locName){
         Location loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName);
         addChild(regThread, new Local(reg, loc.getAddress()));
     }
 
-    public void initRegEqLocVal(String regThread, String regName, String locName){
+    public void initRegEqLocVal(int regThread, String regName, String locName){
         Location loc = getOrCreateLocation(locName);
         Register reg = getOrCreateRegister(regThread, regName);
         addChild(regThread, new Local(reg, iValueMap.get(loc.getAddress())));
     }
 
-    public void initRegEqConst(String regThread, String regName, IConst iValue){
+    public void initRegEqConst(int regThread, String regName, IConst iValue){
         addChild(regThread, new Local(getOrCreateRegister(regThread, regName), iValue));
     }
 
@@ -126,6 +116,10 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
+
+    public Event getLastEvent(int thread){
+        return threads.get(thread).getExit();
+    }
 
     public Location getLocation(String name){
         return locations.get(name);
@@ -147,103 +141,64 @@ public class ProgramBuilder {
         throw new ParsingException("Location " + name + " has not been initialised");
     }
 
-    public Register getRegister(String thread, String name){
-        if(registers.containsKey(thread)){
-            return registers.get(thread).get(name);
+    public Register getRegister(int thread, String name){
+        if(threads.containsKey(thread)){
+            return threads.get(thread).getRegister(name);
         }
         return null;
     }
 
-    public Register getOrCreateRegister(String thread, String name){
-        if(!registers.containsKey(thread)){
-            initThread(thread);
+    public Register getOrCreateRegister(int threadId, String name){
+        initThread(threadId);
+        Thread thread = threads.get(threadId);
+        Register register = thread.getRegister(name);
+        if(register == null){
+            return thread.addRegister(name);
         }
-        Map<String, Register> threadRegisters = registers.get(thread);
-        if(name == null || !(threadRegisters.keySet().contains(name))) {
-            threadRegisters.put(name, new Register(name, Integer.parseInt(thread)));
-        }
-        return threadRegisters.get(name);
+        return register;
     }
 
-    public Register getOrErrorRegister(String thread, String name){
-        if(registers.containsKey(thread)){
-            Register register = registers.get(thread).get(name);
+    public Register getOrErrorRegister(int thread, String name){
+        if(threads.containsKey(thread)){
+            Register register = threads.get(thread).getRegister(name);
             if(register != null){
                 return register;
             }
         }
-        throw new RuntimeException("Register " + thread + ":" + name + " is not initialised");
+        throw new ParsingException("Register " + thread + ":" + name + " is not initialised");
     }
 
-    public Label getLabel(String thread, String name){
-        if(labels.containsKey(thread)){
-            return labels.get(thread).get(name);
-        }
-        return null;
-    }
-
-    public Label getOrCreateLabel(String thread, String name){
-        labels.putIfAbsent(thread, new HashMap<>());
-        Map<String, Label> threadLabels = labels.get(thread);
-        threadLabels.putIfAbsent(name, new Label(name));
-        return threadLabels.get(name);
-    }
-
-    public Label getOrErrorLabel(String thread, String name){
-        if(labels.containsKey(thread)){
-            Label label = labels.get(thread).get(name);
-            if(label != null){
-                return label;
-            }
-        }
-        throw new RuntimeException("Label " + thread + ":" + name + " is not initialised");
+    public Label getOrCreateLabel(String name){
+        labels.putIfAbsent(name, new Label(name));
+        return labels.get(name);
     }
 
     public IConst getInitValue(Address address){
         return iValueMap.getOrDefault(address, new IConst(Location.DEFAULT_INIT_VALUE));
     }
 
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // A basic conversion from jump instructions to if structure
-
-    private LinkedList<Thread> buildBranches(LinkedList<Thread> events){
-        Stack<LinkedList<Thread>> bStack = new Stack<>();
-        LinkedList<Thread> thread = new LinkedList<>();
-
-        Cmp lastCmp = null;
-        for(Thread event : events){
-            if(event instanceof Cmp){
-                lastCmp = (Cmp)event;
-            } else if(event instanceof CondJump){
-                if(lastCmp == null){
-                    throw new RuntimeException("Unrecognised instruction sequence");
-                }
-                ((CondJump)event).setCmp(lastCmp);
-                bStack.push(thread);
-                thread = new LinkedList<>();
-                thread.add(event);
-            } else if(event instanceof Label){
-                Thread t;
-                do{
-                    CondJump jump = (CondJump)thread.pollFirst();
-                    if(jump == null || jump.getLabel() != event){
-                        throw new RuntimeException("Unrecognised instruction sequence");
-                    }
-                    If ifEvent = jump.toIf(new Skip(), Thread.fromList(true, thread));
-                    thread = bStack.pop();
-                    thread.add(ifEvent);
-                    t = thread.peekFirst();
-                } while (t instanceof CondJump && ((CondJump)t).getLabel() == event);
-            } else {
-                thread.add(event);
-            }
-        }
-
-        return thread;
-    }
-
     public Address getPointer(String name){
         return pointers.get(name);
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Private utility
+
+    private int nextThreadId(){
+        int maxId = -1;
+        for(int key : threads.keySet()){
+            maxId = Integer.max(maxId, key);
+        }
+        return maxId + 1;
+    }
+
+    private void buildInitThreads(){
+        int nextThreadId = nextThreadId();
+        for (Map.Entry<Address, IConst> entry : iValueMap.entrySet()) {
+            Event e = new Init(entry.getKey(), entry.getValue());
+            Thread thread = new Thread(nextThreadId, e);
+            threads.put(nextThreadId, thread);
+            nextThreadId++;
+        }
     }
 }
