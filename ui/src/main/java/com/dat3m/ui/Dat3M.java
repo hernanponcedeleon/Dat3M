@@ -101,7 +101,7 @@ public class Dat3M extends JPanel implements ActionListener {
         JFileChooser chooser = new JFileChooser();
         
         // Scales the figures
-        int newHeight = (int) Math.round((height / 2.5));
+        int newHeight = (int) Math.round((height / 3));
         int newWidth = dartagnanIcon.getIconWidth() * newHeight / dartagnanIcon.getIconHeight();  
         Image newDart = dartagnanIcon.getImage().getScaledInstance(newWidth, newHeight, 1);
         dartagnanIcon.setImage(newDart);
