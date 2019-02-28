@@ -59,7 +59,17 @@ public class Dat3M extends JPanel implements ActionListener {
     public static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
-	        g.drawImage(getImage(), x, y, 60, 60, c);
+	        g.drawImage(getImage(), x, y, c.getWidth(), c.getHeight(), c);
+	    }
+
+	    @Override 
+	    public int getIconHeight() {
+			return 60;
+	    }
+
+	    @Override
+	    public int getIconWidth() {
+			return 60;
 	    }	    
 	};
 
