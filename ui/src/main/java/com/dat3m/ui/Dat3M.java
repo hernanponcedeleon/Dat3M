@@ -52,25 +52,15 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static final String SMMLABEL = "Source Memory Model";
 	private static final String TMMLABEL = "Target Memory Model";
     
-	private static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan");
+	private static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan"); 
 	private static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
 	
 	// Used in ImporterMenuItem
     public static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
-	        g.drawImage(getImage(), x, y, c.getWidth(), c.getHeight(), c);
-	    }
-	    
-	    @Override 
-	    public int getIconHeight() {
-			return 60;
-	    }
-
-	    @Override
-	    public int getIconWidth() {
-			return 60;
-	    }
+	        g.drawImage(getImage(), x, y, 60, 60, c);
+	    }	    
 	};
 
 	private static final int widht = getMainScreenWidth();
@@ -109,6 +99,14 @@ public class Dat3M extends JPanel implements ActionListener {
 
         setLayout(new BorderLayout());
         JFileChooser chooser = new JFileChooser();
+        
+        // Scales the figures
+        int newHeight = (int) Math.round((height / 2.5));
+        int newWidth = dartagnanIcon.getIconWidth() * newHeight / dartagnanIcon.getIconHeight();  
+        Image newDart = dartagnanIcon.getImage().getScaledInstance(newWidth, newHeight, 1);
+        dartagnanIcon.setImage(newDart);
+        Image newPort = porthosIcon.getImage().getScaledInstance(newWidth, newHeight, 1);
+        porthosIcon.setImage(newPort);
         
         ArrayList<String> pExtensions = new ArrayList<String>();
         pExtensions.add("litmus");
