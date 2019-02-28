@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Dat3M
+Comment=Dat3M
+Exec=java -jar -Djava.library.path=/home/ponce/Dat3M/lib /home/ponce/Dat3M/ui/target/ui-2.0.2-jar-with-dependencies.jar
+Icon=/home/ponce/Dat3M/ui/src/main/resources/dat3m.png
+Terminal=false
