@@ -101,9 +101,9 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static GraphOption graph = new GraphOption();
 	private boolean isSat = false;
 	private static Program pTarget;
-	private static Context ctx = new Context();
-	private static Solver solver = ctx.mkSolver();
-	private static Solver solver2 = ctx.mkSolver();
+	private static Context ctx;
+	private static Solver solver;
+	private static Solver solver2;
 
     public Dat3M() {
 
@@ -394,6 +394,10 @@ public class Dat3M extends JPanel implements ActionListener {
 				}				
 			}
 			
+			ctx = new Context();
+			solver = ctx.mkSolver();
+			solver2 = ctx.mkSolver();
+			
 			String result = "";	    	
 			switch(opt.getTask()){
 	        case REACHABILITY:
@@ -410,6 +414,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	            break;
 	        }
 	    	consolePane.setText(result);
+	    	ctx.close();
 		}
 
 		if(e.getActionCommand().equals("Clear")) {
