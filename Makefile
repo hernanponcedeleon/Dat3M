@@ -8,6 +8,8 @@ ICONPATH=./ui/src/main/resources/dat3m.png
 all: install
 
 install:
+	mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
+	mvn clean install -DskipTests
 	mkdir -p $(APPPATH)
 	cp $(JARPATH) $(APPPATH)/$(JARNAME)
 	cp $(ICONPATH) $(APPPATH)
