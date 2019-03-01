@@ -24,11 +24,11 @@ public class PorthosResult {
         return iterations;
     }
 
-    Program getSourceProgram(){
+    public Program getSourceProgram(){
         return sourceProgram;
     }
 
-    Program getTargetProgram(){
+    public Program getTargetProgram(){
         return targetProgram;
     }
 }

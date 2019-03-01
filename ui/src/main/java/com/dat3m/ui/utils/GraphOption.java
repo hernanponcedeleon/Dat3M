@@ -19,6 +19,7 @@ import javax.swing.JScrollPane;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
+import com.dat3m.porthos.PorthosResult;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 
@@ -34,6 +35,23 @@ public class GraphOption {
 		Graph graph = new Graph(solver.getModel(), ctx);
       	try {
 			graph.build(p).draw(TMPDOTPATH);
+			File dotFile = new File(TMPDOTPATH);
+			// The previous png file needs to be deleted
+			Path fileToDeletePath = Paths.get(TMPPNGPATH);
+			Files.delete(fileToDeletePath);
+			InputStream targetStream = new FileInputStream(dotFile);
+			MutableGraph g = Parser.read(targetStream);
+			fromGraph(g).render(PNG).toFile(new File(TMPPNGPATH));
+			dotFile.delete();
+		} catch (IOException e) {
+			// This should never happen since the file is always created
+		}
+	}
+
+	public void generate(Solver solver, Context ctx, PorthosResult results) {
+		Graph graph = new Graph(solver.getModel(), ctx);
+      	try {
+			graph.build(results.getSourceProgram(), results.getTargetProgram()).draw(TMPDOTPATH);
 			File dotFile = new File(TMPDOTPATH);
 			// The previous png file needs to be deleted
 			Path fileToDeletePath = Paths.get(TMPPNGPATH);
