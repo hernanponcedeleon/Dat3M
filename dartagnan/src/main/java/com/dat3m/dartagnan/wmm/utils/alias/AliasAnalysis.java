@@ -1,8 +1,10 @@
-package com.dat3m.dartagnan.program.utils;
+package com.dat3m.dartagnan.wmm.utils.alias;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
+import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -27,26 +29,26 @@ public class AliasAnalysis {
     private ImmutableSet<Address> maxAddressSet;
     private Map<Register, Map<Event, Integer>> ssaMap;
 
-    public void calculateLocationSets(Program program, Memory memory, Alias alias) {
+    public void calculateLocationSets(Program program, Alias alias) {
         if(alias == Alias.NONE){
-            calculateLocationSetsNoAlias(program, memory);
+            calculateLocationSetsNoAlias(program);
         } else if (alias == Alias.CFS){
-            maxAddressSet = memory.getAllAddresses();
+            maxAddressSet = program.getMemory().getAllAddresses();
             ssaMap = getRegSsaMap(program);
-            cfsProcessLocs(program, memory);
+            cfsProcessLocs(program);
             cfsProcessRegs(program);
-            cfsAlgorithm(memory);
+            cfsAlgorithm(program);
             processResults(program);
         } else {
-            maxAddressSet = memory.getAllAddresses();
-            processLocs(program, memory);
+            maxAddressSet = program.getMemory().getAllAddresses();
+            processLocs(program);
             processRegs(program);
-            algorithm(memory);
+            algorithm(program);
             processResults(program);
         }
     }
 
-    private void processLocs(Program program, Memory memory) {
+    private void processLocs(Program program) {
         for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             MemEvent e = (MemEvent) ev;
             IExpr address = e.getAddress();
@@ -64,7 +66,7 @@ public class AliasAnalysis {
 
                 } else if (e instanceof Init) {
                     // Rule loc = &loc2 -> lo(loc) = {loc2} (only possible in init events)
-                    Location loc = memory.getLocationForAddress((Address) address);
+                    Location loc = program.getMemory().getLocationForAddress((Address) address);
                     IExpr value = ((Init) e).getValue();
                     if (loc != null && value instanceof Address) {
                         loc.getAliasAddresses().add((Address)value);
@@ -85,7 +87,7 @@ public class AliasAnalysis {
         }
     }
 
-    private void cfsProcessLocs(Program program, Memory memory) {
+    private void cfsProcessLocs(Program program) {
         for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             MemEvent e = (MemEvent) ev;
             IExpr address = e.getAddress();
@@ -106,7 +108,7 @@ public class AliasAnalysis {
 
                 } else if (e instanceof Init) {
                     // Rule loc=&loc2 -> lo(loc)={loc2} (only possible in init events)
-                    Location loc = memory.getLocationForAddress((Address) address);
+                    Location loc = program.getMemory().getLocationForAddress((Address) address);
                     IExpr value = ((Init) e).getValue();
                     if (loc != null && value instanceof Address) {
                         loc.getAliasAddresses().add((Address) value);
@@ -171,13 +173,13 @@ public class AliasAnalysis {
         }
     }
 
-    private void algorithm(Memory memory) {
+    private void algorithm(Program program) {
         while (!variables.isEmpty()) {
             Variable variable = variables.remove(0);
             if(variable instanceof Register){
                 // Process rules with *variable:
                 for (Address address : variable.getAliasAddresses()) {
-                    Location location = memory.getLocationForAddress(address);
+                    Location location = program.getMemory().getLocationForAddress(address);
                     if (location != null) {
                         for (MemEvent e : ((Register) variable).getAliasEvents()) {
                             // p = *variable:
@@ -212,12 +214,12 @@ public class AliasAnalysis {
         }
     }
 
-    private void cfsAlgorithm(Memory memory) {
+    private void cfsAlgorithm(Program program) {
         while (!variables.isEmpty()) {
             Variable variable = variables.remove(0);
             // Process rules with *variable:
             for (Address address : variable.getAliasAddresses()) {
-                Location location = memory.getLocationForAddress(address);
+                Location location = program.getMemory().getLocationForAddress(address);
                 if (location != null && variable instanceof SSAReg) {
                     for (MemEvent e : ((SSAReg) variable).getEventsWithAddr()) {
                         // p = *variable:
@@ -273,8 +275,8 @@ public class AliasAnalysis {
         }
     }
 
-    private void calculateLocationSetsNoAlias(Program program, Memory memory) {
-        ImmutableSet<Address> maxAddressSet = memory.getAllAddresses();
+    private void calculateLocationSetsNoAlias(Program program) {
+        ImmutableSet<Address> maxAddressSet = program.getMemory().getAllAddresses();
         for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
             if (address instanceof Address) {

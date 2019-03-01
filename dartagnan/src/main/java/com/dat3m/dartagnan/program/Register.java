@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Variable;
-import com.dat3m.dartagnan.program.utils.SSAReg;
+import com.dat3m.dartagnan.wmm.utils.alias.SSAReg;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;

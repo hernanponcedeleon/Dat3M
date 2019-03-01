@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.utils;
+package com.dat3m.dartagnan.wmm.utils.alias;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemEvent;

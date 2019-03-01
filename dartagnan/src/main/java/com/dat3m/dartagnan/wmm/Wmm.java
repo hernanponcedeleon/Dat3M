@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.wmm;
 
+import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.*;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -70,8 +72,9 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encode(Program program, Context ctx, Mode mode) {
+    public BoolExpr encode(Program program, Context ctx, Mode mode, Alias alias) {
         this.program = program;
+        new AliasAnalysis().calculateLocationSets(this.program, alias);
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);

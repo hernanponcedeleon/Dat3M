@@ -139,16 +139,16 @@ public class Porthos {
         pSource.unroll(steps, 0);
         pTarget.unroll(steps, 0);
 
-        int nextId = pSource.compile(source, alias, 0);
-        pTarget.compile(target, alias, nextId);
+        int nextId = pSource.compile(source, 0);
+        pTarget.compile(target, nextId);
 
         BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalRegisterValues(ctx);
-        BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, mode);
+        BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, mode, alias);
 
         s1.add(pTarget.encodeCF(ctx));
         s1.add(pTarget.encodeFinalRegisterValues(ctx));
-        s1.add(targetWmm.encode(pTarget, ctx, mode));
+        s1.add(targetWmm.encode(pTarget, ctx, mode, alias));
         s1.add(targetWmm.consistent(pTarget, ctx));
 
         s1.add(sourceCF);

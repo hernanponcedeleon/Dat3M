@@ -129,7 +129,7 @@ public class Dartagnan {
                                Mode mode, Alias alias){
 
         program.unroll(steps, 0);
-        program.compile(target, alias, 0);
+        program.compile(target, 0);
 
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
@@ -137,7 +137,7 @@ public class Dartagnan {
         }
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
-        solver.add(wmm.encode(program, ctx, mode));
+        solver.add(wmm.encode(program, ctx, mode, alias));
         solver.add(wmm.consistent(program, ctx));
 
         boolean result = (solver.check() == Status.SATISFIABLE);

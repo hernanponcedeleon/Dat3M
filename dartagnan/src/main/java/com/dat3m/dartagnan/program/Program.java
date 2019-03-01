@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.utils.Alias;
-import com.dat3m.dartagnan.program.utils.AliasAnalysis;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -65,6 +63,10 @@ public class Program {
 	    return arch;
     }
 
+    public Memory getMemory(){
+        return this.memory;
+    }
+
     public AbstractAssert getAss() {
         return ass;
     }
@@ -125,13 +127,12 @@ public class Program {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    public int compile(Arch target, Alias alias, int nextId) {
+    public int compile(Arch target, int nextId) {
         for(Thread thread : threads){
             nextId = thread.compile(target, nextId);
         }
         isCompiled = true;
         cache = null;
-        new AliasAnalysis().calculateLocationSets(this, memory, alias);
         return nextId;
     }
 
