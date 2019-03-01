@@ -406,11 +406,12 @@ public class Dat3M extends JPanel implements ActionListener {
 	            if(canDrawGraph(pTarget.getAss(), isSat)) {
 	            	graphButton.setEnabled(true);
 	            	graph.generate(solver, ctx, pTarget);
+	            } else {
+	            	graphButton.setEnabled(false);
 	            }
 				break;
 	        case PORTABILITY:
-	    		PorthosResult res = Porthos.testProgram(solver, solver2, ctx, pSource, pTarget, opt.getSource(), opt.getTarget(),
-	                    smm, tmm, opt.getBound(), opt.getMode(), opt.getAlias());
+	    		PorthosResult res = Porthos.testProgram(solver, solver2, ctx, pSource, pTarget, opt.getSource(), opt.getTarget(), smm, tmm, opt.getBound(), opt.getMode(), opt.getAlias());
 	    		String dummy = res.getIsPortable()? " " : " not ";
 	    		result = "The program is" + dummy + "state-portable \nIterations: " + res.getIterations();
 	            break;
