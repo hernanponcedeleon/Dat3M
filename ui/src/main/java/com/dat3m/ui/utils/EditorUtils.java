@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class EditorUtils {
 
-	static final String TMPPROGPATH = "./.tmp/program";
+	static final String TMPPROGPATH = "./.tmp/program.";
 	static final String TMPMMPATH = "./.tmp/mm.cat";
 
 	public static Program parseProgramEditor(JEditorPane editor, String loadedFormat) throws IOException {

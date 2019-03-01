@@ -24,14 +24,15 @@ public class ImporterMenuItem extends JMenuItem {
 
 	String loadedFormat = "";
 	
-	public ImporterMenuItem(String label, JFileChooser chooser, List<String> extensions, JEditorPane editor) {
+	public ImporterMenuItem(String label, JFileChooser chooser, List<String> extensions, JEditorPane editor, ActionListener caller) {
 		super(label);
 
 		chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
 		for(String ext : extensions) {
 			chooser.addChoosableFileFilter(new FileNameExtensionFilter("*." + ext, ext));			
 		}
-				
+
+		addActionListener(caller);
 		addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent event){
 				int r = chooser.showOpenDialog(null);

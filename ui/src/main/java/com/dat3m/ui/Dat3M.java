@@ -33,6 +33,9 @@ import static com.dat3m.ui.utils.Task.REACHABILITY;
 import static com.dat3m.ui.utils.EditorUtils.parseMMEditor;
 import static com.dat3m.ui.utils.EditorUtils.parseProgramEditor;
 import static java.awt.FlowLayout.LEFT;
+import static java.awt.FlowLayout.RIGHT;
+import static java.lang.Math.max;
+import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createCompoundBorder;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -107,8 +110,8 @@ public class Dat3M extends JPanel implements ActionListener {
         JFileChooser chooser = new JFileChooser();
         
         // Scales the figures
-        int newHeight = (int) Math.round((height / 3));
-        int newWidth = dartagnanIcon.getIconWidth() * newHeight / dartagnanIcon.getIconHeight();  
+        int newWidth = max(300, (int) round((height / 3)));
+        int newHeight = dartagnanIcon.getIconHeight() * newWidth / dartagnanIcon.getIconWidth();
         Image newDart = dartagnanIcon.getImage().getScaledInstance(newWidth, newHeight, 1);
         dartagnanIcon.setImage(newDart);
         Image newPort = porthosIcon.getImage().getScaledInstance(newWidth, newHeight, 1);
@@ -117,12 +120,13 @@ public class Dat3M extends JPanel implements ActionListener {
         ArrayList<String> pExtensions = new ArrayList<String>();
         pExtensions.add("litmus");
         pExtensions.add("pts");
-        pMenuItem = new ImporterMenuItem("Program", chooser, pExtensions, pEditor);
+        pMenuItem = new ImporterMenuItem("Program", chooser, pExtensions, pEditor, this);
+        pMenuItem.addActionListener(this);
         
         ArrayList<String> mmExtensions = new ArrayList<String>();
         mmExtensions.add("cat");
-        smmMenuIte = new ImporterMenuItem(SMMLABEL, chooser, mmExtensions, smmEditor);
-        tmmMenuIte = new ImporterMenuItem(MMLABEL, chooser, mmExtensions, tmmEditor);
+        smmMenuIte = new ImporterMenuItem(SMMLABEL, chooser, mmExtensions, smmEditor, this);
+        tmmMenuIte = new ImporterMenuItem(MMLABEL, chooser, mmExtensions, tmmEditor, this);
         
         menu.add(pMenuItem);
         // Initially only one MM can be loaded
@@ -138,8 +142,11 @@ public class Dat3M extends JPanel implements ActionListener {
 		Arch[] archs = { Arch.NONE, TSO, POWER, ARM, ARM8 };
 		tArchPane = createSelector(archs, "Target");
 		sArchPane = createSelector(archs, "Source");
+		sArchPane.setLayout(new FlowLayout(RIGHT));
 		archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-		archPane.setRightComponent(tArchPane);
+		archPane.add(tArchPane);
+		archPane.setPreferredSize(new Dimension(300, 0));
+		archPane.setDividerSize(0);
 
         Mode[] modes = { KNASTER, IDL, KLEENE };
         JPanel modePane = createSelector(modes, "Mode");
@@ -162,7 +169,7 @@ public class Dat3M extends JPanel implements ActionListener {
         consolePane = new JTextPane();
         consolePane.setEditable(false);
         JScrollPane scrollConsole = new JScrollPane(consolePane);
-        scrollConsole.setMinimumSize(new Dimension(0, 150));
+        scrollConsole.setMinimumSize(new Dimension(0, 120));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         // Test button.
@@ -185,14 +192,23 @@ public class Dat3M extends JPanel implements ActionListener {
 
         //Put the options in a split pane.
         JSplitPane sp0 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, iconPane, taskPane);
+        sp0.setDividerSize(2);
         JSplitPane sp1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp0, archPane);
+        sp1.setDividerSize(2);
         JSplitPane sp2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp1, modePane);
+        sp2.setDividerSize(2);
         JSplitPane sp3 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp2, aliasPane);
+        sp3.setDividerSize(2);
         JSplitPane sp4 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp3, boundPane);
+        sp4.setDividerSize(2);
         JSplitPane sp5 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp4, testButton);
+        sp5.setDividerSize(2);
         JSplitPane sp6 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp5, clearButton);
+        sp6.setDividerSize(2);
         JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, graphButton);
+        sp7.setDividerSize(2);
         JSplitPane sp8 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp7, scrollConsole);
+        sp8.setDividerSize(2);
         JPanel optionsPane = new JPanel(new GridLayout(1,0));
         TitledBorder titledBorder = createTitledBorder("Options");
         titledBorder.setTitleJustification(CENTER);
@@ -205,15 +221,14 @@ public class Dat3M extends JPanel implements ActionListener {
         vSplitEditors.setBottomComponent(tmmScroll);
         vSplitEditors.setOneTouchExpandable(true);
         vSplitEditors.setDividerSize(2);
-        vSplitEditors.setDividerLocation(0.5);
         vSplitEditors.setPreferredSize(new Dimension(widht / 3, height / 3));
         
         JSplitPane hSplitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pScroll, vSplitEditors);
         hSplitEditors.setOneTouchExpandable(true);
-        hSplitEditors.setDividerLocation(0.4);
         hSplitEditors.setDividerSize(2);
         
         JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, hSplitEditors);
+        mainPane.setDividerSize(2);
         add(mainPane);
     }
 
@@ -226,6 +241,17 @@ public class Dat3M extends JPanel implements ActionListener {
         pTitledBorder.setTitleJustification(CENTER);
         pScroll.setBorder(createCompoundBorder(pTitledBorder, createEmptyBorder(5,5,5,5)));
 		return pScroll;
+	}
+
+	private void updateTargetSource() {
+    	archPane.remove(sArchPane);        		
+    	archPane.remove(tArchPane);        		
+		if(!pMenuItem.getLoadedFormat().equals("litmus")) {
+			archPane.setLeftComponent(tArchPane);
+			if(opt.getTask().equals(PORTABILITY)) {
+				archPane.setRightComponent(sArchPane);
+			}
+		}
 	}
 
     private void updateGUIonTask() {
@@ -242,10 +268,6 @@ public class Dat3M extends JPanel implements ActionListener {
         	// Update editor and menutItem labels
         	titledBorder.setTitle(MMLABEL);
             menu.getItem(1).setText(MMLABEL);
-        	// Remove source selection option
-        	if(archPane.getLeftComponent() == sArchPane) {
-        		archPane.remove(sArchPane);        		
-        	}
         	// Remove source memory model importer item
         	if(menu.getItemCount() > 2 && menu.getItem(2) == smmMenuIte) {
         		menu.remove(smmMenuIte);        		
@@ -259,9 +281,6 @@ public class Dat3M extends JPanel implements ActionListener {
         	// Update editor and menutItem labels
             titledBorder.setTitle(TMMLABEL);
             menu.getItem(1).setText(TMMLABEL);
-        	// Add source selection option
-            archPane.setLeftComponent(tArchPane);
-        	// Add source memory model importer item
     		menu.add(smmMenuIte);
             break;
         }
@@ -427,6 +446,8 @@ public class Dat3M extends JPanel implements ActionListener {
 		if(e.getActionCommand().equals("Execution Witness")) {
         	invokeLater(new Runnable() {public void run() {graph.open();}});
 		}
+		
+		updateTargetSource();
 	}
 	
 	class BoundListener implements KeyListener {
@@ -462,7 +483,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 	    GraphicsDevice[] gs = ge.getScreenDevices();
 	    if (gs.length > 0) {
-	        return (int) Math.round(gs[0].getDisplayMode().getWidth());
+	        return (int) round(gs[0].getDisplayMode().getWidth());
 	    }
 	    return 0;
 	}
@@ -471,7 +492,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 	    GraphicsDevice[] gs = ge.getScreenDevices();
 	    if (gs.length > 0) {
-	        return (int) Math.round(gs[0].getDisplayMode().getHeight());
+	        return (int) round(gs[0].getDisplayMode().getHeight());
 	    }
 	    return 0;
 	}
