@@ -95,11 +95,11 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static JSplitPane archPane;
 	private static JPanel sArchPane;
 	private static JPanel tArchPane;
+	private static JButton graphButton;
 	private static Option opt = new Option(REACHABILITY, Arch.NONE, Arch.NONE, KNASTER, CFS, 1);
 	
 	// Execution witness
 	private static GraphOption graph = new GraphOption();
-	private boolean isSat = false;
 	private static Program pTarget;
 	private static Context ctx;
 	private static Solver solver;
@@ -180,9 +180,10 @@ public class Dat3M extends JPanel implements ActionListener {
         clearButton.addActionListener(this);
 
         // Graph button.
-        JButton graphButton = new JButton("Execution Witness");
+        graphButton = new JButton("Execution Witness");
         graphButton.setMaximumSize(new Dimension(widht, 50));
         graphButton.addActionListener(this);
+        graphButton.setEnabled(false);
 
         iconPane.setIcon(dartagnanIcon);
 
@@ -403,8 +404,11 @@ public class Dat3M extends JPanel implements ActionListener {
 	        case REACHABILITY:
 	    		result = "Condition " + pTarget.getAss().toStringWithType() + "\n";
 	    		Arch target = pTarget.getArch() == null ? opt.getTarget() : pTarget.getArch();
-	    		isSat = testProgram(solver, ctx, pTarget, tmm, target, opt.getBound(), opt.getMode(), opt.getAlias());
+	    		boolean isSat = testProgram(solver, ctx, pTarget, tmm, target, opt.getBound(), opt.getMode(), opt.getAlias());
 				result += isSat ? "OK" : "No";
+	            if(canDrawGraph(pTarget.getAss(), isSat)) {
+	            	graphButton.setEnabled(true);
+	            }
 				break;
 	        case PORTABILITY:
 	    		PorthosResult res = Porthos.testProgram(solver, solver2, ctx, pSource, pTarget, opt.getSource(), opt.getTarget(),
@@ -421,10 +425,8 @@ public class Dat3M extends JPanel implements ActionListener {
 			consolePane.setText("");
 		}
 
-		if(e.getActionCommand().equals("Draw Execution Witness")) {
-            if(canDrawGraph(pTarget.getAss(), isSat)) {
-            	graph.generate(solver, ctx, pTarget);
-            }
+		if(e.getActionCommand().equals("Execution Witness")) {
+           	graph.generate(solver, ctx, pTarget);
         	invokeLater(new Runnable() {public void run() {graph.open();}});
 		}
 	}
