@@ -85,12 +85,6 @@ public class Register extends IExpr implements ExprInterface, Variable {
         return name.equals(rObj.name) && threadId == rObj.threadId;
     }
 
-    @Deprecated
-	@Override
-	public Register clone() {
-		return new Register(name, threadId);
-	}
-
 	@Override
 	public IntExpr toZ3Int(Event e, Context ctx) {
 		return ctx.mkIntConst(getName() + "(" + e.repr() + ")");

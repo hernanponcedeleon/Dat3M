@@ -26,11 +26,6 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public IConst clone() {
-		return this;
-	}
-
-	@Override
 	public String toString() {
 		return Integer.toString(value);
 	}

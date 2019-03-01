@@ -41,11 +41,6 @@ public class Atom extends BExpr implements ExprInterface {
 	}
 
     @Override
-    public Atom clone() {
-        return new Atom(lhs.clone(), op, rhs.clone());
-    }
-
-    @Override
     public String toString() {
         return lhs + " " + op + " " + rhs;
     }

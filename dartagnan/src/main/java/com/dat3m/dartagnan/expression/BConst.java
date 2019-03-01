@@ -32,11 +32,6 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public BConst clone() {
-		return this;
-	}
-
-	@Override
 	public String toString() {
 		return value ? "True" : "False";
 	}

@@ -67,11 +67,6 @@ public class Location implements ExprInterface, Variable {
 	}
 
 	@Override
-	public Location clone() {
-		return this;
-	}
-
-	@Override
 	public ImmutableSet<Register> getRegs(){
 		return ImmutableSet.of();
 	}

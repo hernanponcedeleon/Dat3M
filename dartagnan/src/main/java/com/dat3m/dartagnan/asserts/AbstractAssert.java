@@ -39,6 +39,4 @@ public abstract class AbstractAssert {
     }
 
     public abstract BoolExpr encode(Context ctx);
-
-    public abstract AbstractAssert clone();
 }
