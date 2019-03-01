@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;

@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;

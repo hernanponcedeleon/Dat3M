@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.*;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;

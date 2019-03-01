@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;

@@ -1,7 +1,7 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
