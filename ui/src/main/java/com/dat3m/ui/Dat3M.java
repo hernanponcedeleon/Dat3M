@@ -100,11 +100,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	
 	// Execution witness
 	private static GraphOption graph = new GraphOption();
-	private static Program pTarget;
-	private static Context ctx;
-	private static Solver solver;
-	private static Solver solver2;
-
+	
     public Dat3M() {
 
         setLayout(new BorderLayout());
@@ -361,6 +357,7 @@ public class Dat3M extends JPanel implements ActionListener {
 
 		if(e.getActionCommand().equals("Test")) {
 	        Program pSource = null;
+	        Program pTarget = null;
 			Wmm smm = null;
 			Wmm tmm = null;
 			try {
@@ -395,9 +392,9 @@ public class Dat3M extends JPanel implements ActionListener {
 				}				
 			}
 			
-			ctx = new Context();
-			solver = ctx.mkSolver();
-			solver2 = ctx.mkSolver();
+			Context ctx = new Context();
+			Solver solver = ctx.mkSolver();
+			Solver solver2 = ctx.mkSolver();
 			
 			String result = "";	    	
 			switch(opt.getTask()){
@@ -408,6 +405,7 @@ public class Dat3M extends JPanel implements ActionListener {
 				result += isSat ? "OK" : "No";
 	            if(canDrawGraph(pTarget.getAss(), isSat)) {
 	            	graphButton.setEnabled(true);
+	            	graph.generate(solver, ctx, pTarget);
 	            }
 				break;
 	        case PORTABILITY:
@@ -418,7 +416,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	            break;
 	        }
 	    	consolePane.setText(result);
-	    	ctx.close();
+	    	//ctx.close();
 		}
 
 		if(e.getActionCommand().equals("Clear")) {
@@ -426,7 +424,6 @@ public class Dat3M extends JPanel implements ActionListener {
 		}
 
 		if(e.getActionCommand().equals("Execution Witness")) {
-           	graph.generate(solver, ctx, pTarget);
         	invokeLater(new Runnable() {public void run() {graph.open();}});
 		}
 	}
