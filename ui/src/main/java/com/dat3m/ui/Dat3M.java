@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
+import com.dat3m.ui.utils.EnabledSelector;
 import com.dat3m.ui.utils.GraphOption;
 import com.dat3m.ui.utils.ImporterMenuItem;
 import com.dat3m.ui.utils.Option;
@@ -94,7 +95,6 @@ public class Dat3M extends JPanel implements ActionListener {
 	// Options pane
 	private static JTextPane consolePane;
 	private static JTextField boundField;
-	private static JSplitPane archPane;
 	private static JPanel sArchPane;
 	private static JPanel tArchPane;
 	private static JButton graphButton;
@@ -136,22 +136,24 @@ public class Dat3M extends JPanel implements ActionListener {
         tmmScroll = createScroll(tmmEditor, MMLABEL);
         
         Task[] tasks = { REACHABILITY, PORTABILITY };
-		JPanel taskPane = createSelector(tasks, "Task");
+		JPanel taskPane = new EnabledSelector(tasks, "Task", this);
 
 		Arch[] archs = { Arch.NONE, TSO, POWER, ARM, ARM8 };
-		tArchPane = createSelector(archs, "Target");
-		sArchPane = createSelector(archs, "Source");
+		tArchPane = new EnabledSelector(archs, "Target", this);
+		sArchPane = new EnabledSelector(archs, "Source", this);
 		sArchPane.setLayout(new FlowLayout(RIGHT));
-		archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-		archPane.add(tArchPane);
+		JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		archPane.setLeftComponent(tArchPane);
+		archPane.setRightComponent(sArchPane);
+		sArchPane.setEnabled(false);
 		archPane.setPreferredSize(new Dimension(300, 0));
 		archPane.setDividerSize(0);
 
         Mode[] modes = { KNASTER, IDL, KLEENE };
-        JPanel modePane = createSelector(modes, "Mode");
+        JPanel modePane = new EnabledSelector(modes, "Mode", this);
 
         Alias[] aliases = { CFS, Alias.NONE, CFIS };
-        JPanel aliasPane = createSelector(aliases, "Alias");
+        JPanel aliasPane = new EnabledSelector(aliases, "Alias", this);
 
         // Bound editor
         boundField = new JTextField(3);
@@ -243,28 +245,6 @@ public class Dat3M extends JPanel implements ActionListener {
         border.setTitleJustification(CENTER);
         pScroll.setBorder(border);
 		return pScroll;
-	}
-
-	private void updateTargetSource() {
-    	archPane.remove(sArchPane);        		
-    	archPane.remove(tArchPane);        		
-		if(!pMenuItem.getLoadedFormat().equals("litmus")) {
-			archPane.setLeftComponent(tArchPane);
-			if(opt.getTask().equals(PORTABILITY)) {
-				archPane.setRightComponent(sArchPane);
-			}
-		}
-	}
-
-	private JPanel createSelector(Object[] options, String label) {
-		JComboBox<?> selector = new JComboBox<Object>(options);
-    	selector.setActionCommand(label);
-        selector.addActionListener(this);
-        JLabel sLabel = new JLabel(label + ": ");
-		JPanel pane = new JPanel(new FlowLayout(LEFT));
-        pane.add(sLabel);
-        pane.add(selector);
-		return pane;
 	}
 
     /**
@@ -450,7 +430,15 @@ public class Dat3M extends JPanel implements ActionListener {
         	invokeLater(new Runnable() {public void run() {graph.open();}});
 		}
 		
-		updateTargetSource();
+		// We update the task selectors
+		tArchPane.setEnabled(false);
+		sArchPane.setEnabled(false);
+		if(!pMenuItem.getLoadedFormat().equals("litmus")) {
+			tArchPane.setEnabled(true);
+			if(opt.getTask().equals(PORTABILITY)) {
+				sArchPane.setEnabled(true);
+			}
+		}
 	}
 	
 	class BoundListener implements KeyListener {
