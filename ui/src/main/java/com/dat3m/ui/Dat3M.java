@@ -10,9 +10,11 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
-import com.dat3m.ui.utils.GraphOption;
-import com.dat3m.ui.utils.Option;
+import com.dat3m.ui.option.GraphOption;
+import com.dat3m.ui.option.Option;
+import com.dat3m.ui.utils.Selector;
 import com.dat3m.ui.utils.Task;
+import com.datem.ui.menu.MenuItem;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 

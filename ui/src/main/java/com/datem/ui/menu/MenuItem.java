@@ -1,4 +1,4 @@
-package com.dat3m.ui;
+package com.datem.ui.menu;
 
 import static com.dat3m.ui.Dat3M.dat3mIcon;
 import static java.lang.System.getProperty;

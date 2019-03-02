@@ -1,4 +1,4 @@
-package com.dat3m.ui;
+package com.dat3m.ui.utils;
 
 import static java.awt.FlowLayout.LEFT;
 
