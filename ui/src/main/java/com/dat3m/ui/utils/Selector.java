@@ -1,4 +1,4 @@
-package com.dat3m.ui.utils;
+package com.dat3m.ui;
 
 import static java.awt.FlowLayout.LEFT;
 
@@ -9,11 +9,11 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-public class EnabledSelector extends JPanel {		
+public class Selector extends JPanel {		
 	
 	private JComboBox<?> selector;
 	
-	public EnabledSelector(Object[] options, String label, ActionListener caller) {
+	public Selector(Object[] options, String label, ActionListener caller) {
 		selector = new JComboBox<Object>(options);
 		selector.setActionCommand(label);
 		selector.addActionListener(caller);

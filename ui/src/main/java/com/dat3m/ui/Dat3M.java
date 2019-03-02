@@ -10,9 +10,7 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
-import com.dat3m.ui.utils.EnabledSelector;
 import com.dat3m.ui.utils.GraphOption;
-import com.dat3m.ui.utils.ImporterMenuItem;
 import com.dat3m.ui.utils.Option;
 import com.dat3m.ui.utils.Task;
 import com.microsoft.z3.Context;
@@ -31,8 +29,8 @@ import static com.dat3m.dartagnan.wmm.utils.Mode.KLEENE;
 import static com.dat3m.dartagnan.wmm.utils.Mode.KNASTER;
 import static com.dat3m.ui.utils.Task.PORTABILITY;
 import static com.dat3m.ui.utils.Task.REACHABILITY;
-import static com.dat3m.ui.utils.EditorUtils.parseMMEditor;
-import static com.dat3m.ui.utils.EditorUtils.parseProgramEditor;
+import static com.dat3m.ui.utils.Utils.parseMMEditor;
+import static com.dat3m.ui.utils.Utils.parseProgramEditor;
 import static java.awt.FlowLayout.LEFT;
 import static java.awt.FlowLayout.RIGHT;
 import static java.lang.Math.max;
@@ -84,14 +82,14 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static JLabel iconPane = new JLabel(dartagnanIcon, JLabel.CENTER);
 	// Editors and Menu Items
 	private static JEditorPane pEditor = new JEditorPane();
-	private static ImporterMenuItem pMenuItem;
+	private static MenuItem pMenuItem;
 	private static JSplitPane vSplitEditors;
     private static JScrollPane smmScroll;
     private static JEditorPane smmEditor = new JEditorPane();
-	private static ImporterMenuItem smmMenuIte;
+	private static MenuItem smmMenuIte;
 	private static JScrollPane tmmScroll;
 	private static JEditorPane tmmEditor = new JEditorPane();
-	private static ImporterMenuItem tmmMenuIte;
+	private static MenuItem tmmMenuIte;
 	// Options pane
 	private static JTextPane consolePane;
 	private static JTextField boundField;
@@ -119,13 +117,13 @@ public class Dat3M extends JPanel implements ActionListener {
         ArrayList<String> pExtensions = new ArrayList<String>();
         pExtensions.add("litmus");
         pExtensions.add("pts");
-        pMenuItem = new ImporterMenuItem("Program", chooser, pExtensions, pEditor, this);
+        pMenuItem = new MenuItem("Program", chooser, pExtensions, pEditor, this);
         pMenuItem.addActionListener(this);
         
         ArrayList<String> mmExtensions = new ArrayList<String>();
         mmExtensions.add("cat");
-        smmMenuIte = new ImporterMenuItem(SMMLABEL, chooser, mmExtensions, smmEditor, this);
-        tmmMenuIte = new ImporterMenuItem(MMLABEL, chooser, mmExtensions, tmmEditor, this);
+        smmMenuIte = new MenuItem(SMMLABEL, chooser, mmExtensions, smmEditor, this);
+        tmmMenuIte = new MenuItem(MMLABEL, chooser, mmExtensions, tmmEditor, this);
         
         menu.add(pMenuItem);
         // Initially only one MM can be loaded
@@ -136,11 +134,11 @@ public class Dat3M extends JPanel implements ActionListener {
         tmmScroll = createScroll(tmmEditor, MMLABEL);
         
         Task[] tasks = { REACHABILITY, PORTABILITY };
-		JPanel taskPane = new EnabledSelector(tasks, "Task", this);
+		JPanel taskPane = new Selector(tasks, "Task", this);
 
 		Arch[] archs = { Arch.NONE, TSO, POWER, ARM, ARM8 };
-		tArchPane = new EnabledSelector(archs, "Target", this);
-		sArchPane = new EnabledSelector(archs, "Source", this);
+		tArchPane = new Selector(archs, "Target", this);
+		sArchPane = new Selector(archs, "Source", this);
 		sArchPane.setLayout(new FlowLayout(RIGHT));
 		JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		archPane.setLeftComponent(tArchPane);
@@ -150,10 +148,10 @@ public class Dat3M extends JPanel implements ActionListener {
 		archPane.setDividerSize(0);
 
         Mode[] modes = { KNASTER, IDL, KLEENE };
-        JPanel modePane = new EnabledSelector(modes, "Mode", this);
+        JPanel modePane = new Selector(modes, "Mode", this);
 
         Alias[] aliases = { CFS, Alias.NONE, CFIS };
-        JPanel aliasPane = new EnabledSelector(aliases, "Alias", this);
+        JPanel aliasPane = new Selector(aliases, "Alias", this);
 
         // Bound editor
         boundField = new JTextField(3);

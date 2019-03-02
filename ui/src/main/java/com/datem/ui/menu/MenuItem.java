@@ -1,4 +1,4 @@
-package com.dat3m.ui.utils;
+package com.dat3m.ui;
 
 import static com.dat3m.ui.Dat3M.dat3mIcon;
 import static java.lang.System.getProperty;
@@ -20,11 +20,11 @@ import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-public class ImporterMenuItem extends JMenuItem {
+public class MenuItem extends JMenuItem {
 
 	String loadedFormat = "";
 	
-	public ImporterMenuItem(String label, JFileChooser chooser, List<String> extensions, JEditorPane editor, ActionListener caller) {
+	public MenuItem(String label, JFileChooser chooser, List<String> extensions, JEditorPane editor, ActionListener caller) {
 		super(label);
 
 		chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));

@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-public class EditorUtils {
+public class Utils {
 
 	static final String TMPPROGPATH = "./.tmp/program.";
 	static final String TMPMMPATH = "./.tmp/mm.cat";
