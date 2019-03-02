@@ -36,12 +36,12 @@ import static java.awt.FlowLayout.LEFT;
 import static java.awt.FlowLayout.RIGHT;
 import static java.lang.Math.max;
 import static java.lang.Math.round;
-import static javax.swing.BorderFactory.createCompoundBorder;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
 import static javax.swing.SwingUtilities.invokeLater;
+import static javax.swing.UIManager.getDefaults;
 import static javax.swing.border.TitledBorder.CENTER;
 
 import java.awt.*;
@@ -50,15 +50,14 @@ import java.util.ArrayList;
 
 public class Dat3M extends JPanel implements ActionListener {
 
-	private static final String PROGRAMLABEL = "Program";
-	private static final String MMLABEL = "Memory Model";
-	private static final String SMMLABEL = "Source Memory Model";
-	private static final String TMMLABEL = "Target Memory Model";
+	public static final String PROGRAMLABEL = "Program";
+	public static final String MMLABEL = "Memory Model";
+	public static final String SMMLABEL = "Source Memory Model";
+	public static final String TMMLABEL = "Target Memory Model";
     
-	private static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan"); 
-	private static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
+	public static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan"); 
+	public static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
 	
-	// Used in ImporterMenuItem
     public static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
@@ -220,12 +219,15 @@ public class Dat3M extends JPanel implements ActionListener {
         vSplitEditors = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         vSplitEditors.setBottomComponent(tmmScroll);
         vSplitEditors.setOneTouchExpandable(true);
-        vSplitEditors.setDividerSize(2);
+        vSplitEditors.setDividerSize(0);
         vSplitEditors.setPreferredSize(new Dimension(widht / 3, height / 3));
+        vSplitEditors.setBorder(new TitledBorder(""));
         
         JSplitPane hSplitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pScroll, vSplitEditors);
         hSplitEditors.setOneTouchExpandable(true);
         hSplitEditors.setDividerSize(2);
+        hSplitEditors.setBorder(new TitledBorder(""));
+
         
         JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, hSplitEditors);
         mainPane.setDividerSize(2);
@@ -237,9 +239,9 @@ public class Dat3M extends JPanel implements ActionListener {
         pScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         pScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         pScroll.setPreferredSize(new Dimension(widht / 3, height / 3));
-        TitledBorder pTitledBorder = createTitledBorder(label);
-        pTitledBorder.setTitleJustification(CENTER);
-        pScroll.setBorder(createCompoundBorder(pTitledBorder, createEmptyBorder(5,5,5,5)));
+        TitledBorder border = createTitledBorder(label);
+        border.setTitleJustification(CENTER);
+        pScroll.setBorder(border);
 		return pScroll;
 	}
 
@@ -253,41 +255,6 @@ public class Dat3M extends JPanel implements ActionListener {
 			}
 		}
 	}
-
-    private void updateGUIonTask() {
-    	TitledBorder titledBorder = createTitledBorder("");
-        titledBorder.setTitleJustification(CENTER);
-    	switch(opt.getTask()){
-        case REACHABILITY:
-        	// Update image
-        	iconPane.setIcon(dartagnanIcon);
-        	// Remove smmEditor
-        	if(vSplitEditors.getTopComponent() == smmScroll) {
-                vSplitEditors.remove(smmScroll);        		
-        	}
-        	// Update editor and menutItem labels
-        	titledBorder.setTitle(MMLABEL);
-            menu.getItem(1).setText(MMLABEL);
-        	// Remove source memory model importer item
-        	if(menu.getItemCount() > 2 && menu.getItem(2) == smmMenuIte) {
-        		menu.remove(smmMenuIte);        		
-        	}
-            break;
-        case PORTABILITY:
-        	// Update image
-        	iconPane.setIcon(porthosIcon);
-        	// Add smmEditor
-            vSplitEditors.setTopComponent(smmScroll);
-        	// Update editor and menutItem labels
-            titledBorder.setTitle(TMMLABEL);
-            menu.getItem(1).setText(TMMLABEL);
-    		menu.add(smmMenuIte);
-            break;
-        }
-    	// The console is cleaned when the task is changed
-    	consolePane.setText("");
-    	tmmScroll.setBorder(createCompoundBorder(titledBorder, createEmptyBorder(5,5,5,5)));
-    }
 
 	private JPanel createSelector(Object[] options, String label) {
 		JComboBox<?> selector = new JComboBox<Object>(options);
@@ -325,7 +292,7 @@ public class Dat3M extends JPanel implements ActionListener {
     }
 
     public static void main(String[] args) {
-		UIManager.getDefaults().put("SplitPane.border", BorderFactory.createEmptyBorder());
+		getDefaults().put("SplitPane.border", createEmptyBorder());
         invokeLater(new Runnable() {public void run() {createAndShowGUI();}});
     }
 
@@ -341,8 +308,38 @@ public class Dat3M extends JPanel implements ActionListener {
 		if(e.getActionCommand().equals("Task")) {
 			Object source = e.getSource();
 			if(source instanceof JComboBox<?>) {
-				opt.setTak((Task) ((JComboBox<Task>)source).getSelectedItem());
-				updateGUIonTask();
+				opt.setTask((Task) ((JComboBox<Task>)source).getSelectedItem());
+		    	TitledBorder border = (TitledBorder) tmmScroll.getBorder();
+		    	switch(opt.getTask()){
+		        case REACHABILITY:
+		        	// Update image
+		        	iconPane.setIcon(dartagnanIcon);
+		        	// Remove smmEditor
+		        	if(vSplitEditors.getTopComponent() == smmScroll) {
+		                vSplitEditors.remove(smmScroll);        		
+		        	}
+		        	// Update editor and menutItem labels
+		        	border.setTitle(MMLABEL);
+		            menu.getItem(1).setText(MMLABEL);
+		        	// Remove source memory model importer item
+		        	if(menu.getItemCount() > 2 && menu.getItem(2) == smmMenuIte) {
+		        		menu.remove(smmMenuIte);        		
+		        	}
+		            break;
+		        case PORTABILITY:
+		        	// Update image
+		        	iconPane.setIcon(porthosIcon);
+		        	// Add smmEditor
+		            vSplitEditors.setTopComponent(smmScroll);
+		        	// Update editor and menutItem labels
+		            border.setTitle(TMMLABEL);
+		            menu.getItem(1).setText(TMMLABEL);
+		    		menu.add(smmMenuIte);
+		            break;
+		        }
+		    	// The console is cleaned when the task is changed
+		    	consolePane.setText("");
+		    	tmmScroll.setBorder(border);
 			}
 		}
 

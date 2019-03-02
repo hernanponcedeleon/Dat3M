@@ -27,7 +27,7 @@ public class Option {
 		return task;
 	}
 	
-	public void setTak(Task task) {
+	public void setTask(Task task) {
 		this.task = task;
 	}
 
