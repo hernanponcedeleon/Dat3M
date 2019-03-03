@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
@@ -182,8 +179,9 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitBranch(LitmusAArch64Parser.BranchContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(ctx.label().getText());
         if(ctx.branchCondition() == null){
-            throw new RuntimeException("Unconditional branching is not implemented");
+            return programBuilder.addChild(mainThread, new Jump(label));
         }
         Event lastEvent = programBuilder.getLastEvent(mainThread);
         if(!(lastEvent instanceof Cmp)){
@@ -191,7 +189,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         }
         Cmp cmp = (Cmp)lastEvent;
         Atom expr = new Atom(cmp.getLeft(), ctx.branchCondition().op, cmp.getRight());
-        Label label = programBuilder.getOrCreateLabel(ctx.label().getText());
         return programBuilder.addChild(mainThread, new CondJump(expr, label));
     }
 

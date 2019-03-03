@@ -13276,3 +13276,14 @@ litmus/C/auto/C-LB-Lrw+R-A+R-Od+R-Oc.litmus,0
 litmus/C/auto/C-LB-Lrw+R-Oc+R-Od+R-Od.litmus,0
 litmus/C/auto/C-LB-LRR+R-Dd+R-Oc.litmus,1
 litmus/C/dart/C-basic-03.litmus,1
+litmus/AARCH64/ATOM/3.2W+poxxs.litmus,1
+litmus/AARCH64/ATOM/3.LB+poxxs.litmus,1
+litmus/AARCH64/ATOM/3.SB+poxxs.litmus,1
+litmus/AARCH64/ATOM/ISA2+poxxs.litmus,1
+litmus/AARCH64/ATOM/W+RWC+poxxs.litmus,1
+litmus/AARCH64/ATOM/Z6.0+poxxs.litmus,1
+litmus/AARCH64/ATOM/Z6.1+poxxs.litmus,1
+litmus/AARCH64/ATOM/Z6.2+poxxs.litmus,1
+litmus/AARCH64/ATOM/Z6.3+poxxs.litmus,1
+litmus/AARCH64/ATOM/Z6.4+poxxs.litmus,1
+litmus/AARCH64/ATOM/Z6.5+poxxs.litmus,1

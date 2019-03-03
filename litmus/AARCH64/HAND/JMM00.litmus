@@ -1,0 +1,29 @@
+AArch64 JMM00
+"DMB.STdWW Rfe DMB.STdRW Rfe DpAddrdR Fre"
+Prefetch=0:x=F,0:y=W,1:y=F,1:z=W,2:z=F,2:x=T
+Com=Rf Rf Fr
+Orig=DMB.STdWW Rfe DMB.STdRW Rfe DpAddrdR Fre
+{
+int t1;
+int *a;
+int *t2;
+int *b;
+int * 1:X0;
+%t10=t1; %a0=a;
+%a1=a; %t21=t2; %b1=b;
+%b2=b;
+int * 2:X0; int * 2:X1;
+2:X4=-1;
+}
+ P0             | P1               | P2                  ;
+ MOV W0,#1      | LDR X0,[%a1]     | LDR X0,[%b2]        ;
+ STR W0,[%t10]  | STR X0,[%t21]    | CBZ X0,LEXIT        ;
+ DMB ST         | DMB ST           | LDR X1,[X0]         ;
+ STR %t10,[%a0] | STR %t21,[%b1]   | CBZ X1,LEXIT        ;
+                |                  | LDR X2,[%b2]        ;
+                |                  | LDR X3,[X2]         ;
+                |                  | LDR W4,[X3]         ;
+                |                  |LEXIT:               ;
+locations [1:X0;2:X0;2:X1;]
+~exists (2:X4=0)
+

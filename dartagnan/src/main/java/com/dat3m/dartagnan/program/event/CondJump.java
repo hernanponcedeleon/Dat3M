@@ -17,15 +17,15 @@ public class CondJump extends Event implements RegReaderData {
 
     public CondJump(BExpr expr, Label label){
         if(expr == null){
-            throw new IllegalArgumentException("If event requires non null expression");
+            throw new IllegalArgumentException("CondJump event requires non null expression");
         }
         if(label == null){
-            throw new IllegalArgumentException("If event requires non null label event");
+            throw new IllegalArgumentException("CondJump event requires non null label event");
         }
         this.expr = expr;
         this.label = label;
         dataRegs = expr.getRegs();
-        addFilters(EType.ANY, EType.JUMP, EType.REG_READER);
+        addFilters(EType.ANY, EType.COND_JUMP, EType.REG_READER);
     }
 
     private CondJump(CondJump other){
@@ -42,7 +42,7 @@ public class CondJump extends Event implements RegReaderData {
 
     @Override
     public String toString(){
-        return "if(" + expr + "); then branch " + label;
+        return "if(" + expr + "); then goto " + label;
     }
 
 
