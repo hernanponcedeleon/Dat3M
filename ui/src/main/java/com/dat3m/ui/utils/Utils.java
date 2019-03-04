@@ -1,5 +1,9 @@
 package com.dat3m.ui.utils;
 
+import static java.lang.Math.round;
+
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -46,5 +50,23 @@ public class Utils {
 		writer.write(editor.getText());
 		writer.close();
 		return tmpProgramFile;
+	}
+	
+	public static int getMainScreenWidth() {
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+	    GraphicsDevice[] gs = ge.getScreenDevices();
+	    if (gs.length > 0) {
+	        return (int) round(gs[0].getDisplayMode().getWidth());
+	    }
+	    return 0;
+	}
+	
+	public static int getMainScreenHeight() {
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+	    GraphicsDevice[] gs = ge.getScreenDevices();
+	    if (gs.length > 0) {
+	        return (int) round(gs[0].getDisplayMode().getHeight());
+	    }
+	    return 0;
 	}
 }

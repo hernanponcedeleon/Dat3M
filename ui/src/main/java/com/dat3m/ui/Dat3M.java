@@ -31,6 +31,8 @@ import static com.dat3m.dartagnan.wmm.utils.Mode.KLEENE;
 import static com.dat3m.dartagnan.wmm.utils.Mode.KNASTER;
 import static com.dat3m.ui.utils.Task.PORTABILITY;
 import static com.dat3m.ui.utils.Task.REACHABILITY;
+import static com.dat3m.ui.utils.Utils.getMainScreenHeight;
+import static com.dat3m.ui.utils.Utils.getMainScreenWidth;
 import static com.dat3m.ui.utils.Utils.parseMMEditor;
 import static com.dat3m.ui.utils.Utils.parseProgramEditor;
 import static java.awt.FlowLayout.LEFT;
@@ -247,33 +249,25 @@ public class Dat3M extends JPanel implements ActionListener {
 		return pScroll;
 	}
 
-    /**
-     * Create the GUI and show it.  For thread safety,
-     * this method should be invoked from the
-     * event dispatch thread.
-     */
-	private static void createAndShowGUI() {
-        //Create and set up the window.
-        JFrame frame = new JFrame("Dat3M");
-		frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        JMenuBar menuBar = new JMenuBar();
-		menuBar.add(menu);
-		frame.setJMenuBar(menuBar);
-		frame.setIconImage(dat3mIcon.getImage());
-
-        //Add content to the window.
-        frame.add(new Dat3M());
-        
-        //Display the window.
-        frame.pack();
-        frame.setVisible(true);
-    }
-
     public static void main(String[] args) {
 		getDefaults().put("SplitPane.border", createEmptyBorder());
-        invokeLater(new Runnable() {public void run() {createAndShowGUI();}});
+        invokeLater(new Runnable() {public void run() {
+            JFrame frame = new JFrame("Dat3M");
+    		frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+            JMenuBar menuBar = new JMenuBar();
+    		menuBar.add(menu);
+    		frame.setJMenuBar(menuBar);
+    		frame.setIconImage(dat3mIcon.getImage());
+
+            //Add content to the window.
+            frame.add(new Dat3M());
+            
+            //Display the window.
+            frame.pack();
+            frame.setVisible(true);
+            ;}});
     }
 
 	@SuppressWarnings("unchecked")
@@ -469,22 +463,4 @@ public class Dat3M extends JPanel implements ActionListener {
 			}
 		}
 	};
-	
-	public static int getMainScreenWidth() {
-		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-	    GraphicsDevice[] gs = ge.getScreenDevices();
-	    if (gs.length > 0) {
-	        return (int) round(gs[0].getDisplayMode().getWidth());
-	    }
-	    return 0;
-	}
-	
-	public static int getMainScreenHeight() {
-		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-	    GraphicsDevice[] gs = ge.getScreenDevices();
-	    if (gs.length > 0) {
-	        return (int) round(gs[0].getDisplayMode().getHeight());
-	    }
-	    return 0;
-	}
 }
