@@ -5,20 +5,12 @@ import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 
 public class RCUReadUnlock extends Event {
 
-    private RCUReadLock lockEvent;
-
-    public RCUReadUnlock(RCUReadLock lockEvent){
-        this.lockEvent = lockEvent;
+    public RCUReadUnlock(){
         this.addFilters(EType.ANY, EType.VISIBLE, EType.RCU_UNLOCK);
     }
 
     private RCUReadUnlock(RCUReadUnlock other){
         super(other);
-        this.lockEvent = (RCUReadLock)other.lockEvent.getCopy();
-    }
-
-    public RCUReadLock getLockEvent(){
-        return lockEvent;
     }
 
     @Override

@@ -26,7 +26,6 @@ public class VisitorLitmusC
         implements LitmusCVisitor<Object> {
 
     private ProgramBuilder programBuilder;
-    private Stack<RCUReadLock> rcuLockStack = new Stack<>();
     private int currentThread;
     private int scope;
     private Register returnRegister;
@@ -159,10 +158,6 @@ public class VisitorLitmusC
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
 
-        // TODO: A separate lock stack for each branch
-        if(!rcuLockStack.empty()){
-            throw new ParsingException("Unbalanced RCU lock in thread " + currentThread);
-        }
         scope = currentThread = -1;
         return null;
     }
@@ -439,20 +434,12 @@ public class VisitorLitmusC
 
     @Override
     public Object visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
-        RCUReadLock lock = new RCUReadLock();
-        programBuilder.addChild(currentThread, lock);
-        rcuLockStack.push(lock);
-        return null;
+        return programBuilder.addChild(currentThread, new RCUReadLock());
     }
 
     @Override
     public Object visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
-        try {
-            RCUReadLock lock = rcuLockStack.pop();
-            return  programBuilder.addChild(currentThread, new RCUReadUnlock(lock));
-        } catch (EmptyStackException e){
-            throw new ParsingException("Unbalanced RCU unlock in thread " + currentThread);
-        }
+        return  programBuilder.addChild(currentThread, new RCUReadUnlock());
     }
 
     @Override
