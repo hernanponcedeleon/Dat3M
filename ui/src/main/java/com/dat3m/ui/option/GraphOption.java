@@ -28,8 +28,8 @@ import guru.nidi.graphviz.parse.Parser;
 
 public class GraphOption {
 
-	private String TMPDOTPATH = "./.tmp/output.dot";
-	private String TMPPNGPATH = "./.tmp/output.png";
+	private final String TMPDOTPATH = "./.tmp/output.dot";
+	private final String TMPPNGPATH = "./.tmp/output.png";
 	
 	public void generate(Solver solver, Context ctx, Program p) {
 		Graph graph = new Graph(solver.getModel(), ctx);

@@ -58,9 +58,50 @@ public class Dat3M extends JPanel implements ActionListener {
 	public static final String SMMLABEL = "Source Memory Model";
 	public static final String TMMLABEL = "Target Memory Model";
     
-	public static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan"); 
-	public static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
-	
+	private static final int width = getMainScreenWidth();
+	private static final int height = getMainScreenHeight();
+
+	// These two are not final since they can be scaled
+	public static final ImageIcon dartagnanOriginal = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan");
+	public static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan") {
+		    @Override
+		    public void paintIcon( Component c, Graphics g, int x, int y ) {
+		        g.drawImage(getImage(), x, y, c.getWidth(), c.getHeight(), c);
+		    }
+
+		    @Override 
+		    public int getIconHeight() {
+				return dartagnanOriginal.getIconHeight() * newWidth / dartagnanOriginal.getIconWidth();
+		    }
+
+		    @Override
+		    public int getIconWidth() {
+				return newWidth;
+		    }	    
+		    
+			private int newWidth = max(300, (int) round((height / 3)));
+	};
+
+	public static final ImageIcon porthosOriginal = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
+	public static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan") {
+	    @Override
+	    public void paintIcon( Component c, Graphics g, int x, int y ) {
+	        g.drawImage(getImage(), x, y, c.getWidth(), c.getHeight(), c);
+	    }
+
+	    @Override 
+	    public int getIconHeight() {
+			return porthosOriginal.getIconHeight() * newWidth / porthosOriginal.getIconWidth();
+	    }
+
+	    @Override
+	    public int getIconWidth() {
+			return newWidth;
+	    }	    
+	    
+		private int newWidth = max(300, (int) round((height / 3)));
+};
+
     public static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
@@ -78,9 +119,6 @@ public class Dat3M extends JPanel implements ActionListener {
 	    }	    
 	};
 
-	private static final int widht = getMainScreenWidth();
-	private static final int height = getMainScreenHeight();
-    
     // All these panes are fields since they need to be updated by the listener
 	private static JMenu menu = new JMenu("Import");
 	private static JLabel iconPane = new JLabel(dartagnanIcon, JLabel.CENTER);
@@ -109,14 +147,6 @@ public class Dat3M extends JPanel implements ActionListener {
 
         setLayout(new BorderLayout());
         JFileChooser chooser = new JFileChooser();
-        
-        // Scales the figures
-        int newWidth = max(300, (int) round((height / 3)));
-        int newHeight = dartagnanIcon.getIconHeight() * newWidth / dartagnanIcon.getIconWidth();
-        Image newDart = dartagnanIcon.getImage().getScaledInstance(newWidth, newHeight, 1);
-        dartagnanIcon.setImage(newDart);
-        Image newPort = porthosIcon.getImage().getScaledInstance(newWidth, newHeight, 1);
-        porthosIcon.setImage(newPort);
         
         ArrayList<String> pExtensions = new ArrayList<String>();
         pExtensions.add("litmus");
@@ -177,17 +207,17 @@ public class Dat3M extends JPanel implements ActionListener {
 
         // Test button.
         JButton testButton = new JButton("Test");
-        testButton.setMaximumSize(new Dimension(widht, 50));
+        testButton.setMaximumSize(new Dimension(width, 50));
         testButton.addActionListener(this);
 
         // Clear button.
         JButton clearButton = new JButton("Clear");
-        clearButton.setMaximumSize(new Dimension(widht, 50));
+        clearButton.setMaximumSize(new Dimension(width, 50));
         clearButton.addActionListener(this);
 
         // Graph button.
         graphButton = new JButton("Execution Witness");
-        graphButton.setMaximumSize(new Dimension(widht, 50));
+        graphButton.setMaximumSize(new Dimension(width, 50));
         graphButton.addActionListener(this);
         graphButton.setEnabled(false);
 
@@ -224,7 +254,7 @@ public class Dat3M extends JPanel implements ActionListener {
         vSplitEditors.setBottomComponent(tmmScroll);
         vSplitEditors.setOneTouchExpandable(true);
         vSplitEditors.setDividerSize(0);
-        vSplitEditors.setPreferredSize(new Dimension(widht / 3, height / 3));
+        vSplitEditors.setPreferredSize(new Dimension(width / 3, height / 3));
         vSplitEditors.setBorder(new TitledBorder(""));
         
         JSplitPane hSplitEditors = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pScroll, vSplitEditors);
@@ -242,7 +272,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		JScrollPane pScroll = new JScrollPane(editor);
         pScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         pScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        pScroll.setPreferredSize(new Dimension(widht / 3, height / 3));
+        pScroll.setPreferredSize(new Dimension(width / 3, height / 3));
         TitledBorder border = createTitledBorder(label);
         border.setTitleJustification(CENTER);
         pScroll.setBorder(border);
