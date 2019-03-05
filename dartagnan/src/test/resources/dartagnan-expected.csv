@@ -13221,15 +13221,6 @@ litmus/C/auto/C-RR-G+RR-R+RR-R+RR-R+RR-G+RR-G+RR-R.litmus,1
 litmus/AARCH64/dart/pointer-01.litmus,1
 litmus/AARCH64/dart/pointer-02.litmus,0
 litmus/AARCH64/dart/pointer-03.litmus,0
-litmus/AARCH64/dart/exclusive-01.litmus,0
-litmus/AARCH64/dart/exclusive-02.litmus,1
-litmus/AARCH64/dart/exclusive-03.litmus,0
-litmus/AARCH64/dart/exclusive-04.litmus,0
-litmus/AARCH64/dart/exclusive-05.litmus,0
-litmus/AARCH64/dart/exclusive-06.litmus,0
-litmus/AARCH64/dart/exclusive-07.litmus,1
-litmus/AARCH64/dart/exclusive-08.litmus,1
-litmus/AARCH64/dart/exclusive-09.litmus,0
 litmus/C/dart/C-atomic-operator-01.litmus,1
 litmus/C/dart/C-atomic-operator-02.litmus,0
 litmus/C/dart/C-re-01.litmus,1

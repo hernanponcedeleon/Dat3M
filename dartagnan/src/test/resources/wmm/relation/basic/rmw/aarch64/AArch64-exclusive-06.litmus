@@ -1,4 +1,5 @@
-AArch64 exclusive-03
+AArch64 AArch64-exclusive-06
+"Unmatched exclusive store, should always fail"
 {
 0:X1=x; 1:X1=x;
 }

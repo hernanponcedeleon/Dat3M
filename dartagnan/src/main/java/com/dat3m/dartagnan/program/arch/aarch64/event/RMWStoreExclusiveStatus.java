@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.rmw.opt;
+package com.dat3m.dartagnan.program.arch.aarch64.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
 import com.microsoft.z3.BoolExpr;
@@ -9,22 +9,16 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 
-public class RMWStoreOptStatus extends Event implements RegWriter {
+public class RMWStoreExclusiveStatus extends Event implements RegWriter {
 
     private final Register register;
-    private final RMWStoreOpt storeEvent;
+    private final RMWStoreExclusive storeEvent;
     private IntExpr regResultExpr;
 
-    public RMWStoreOptStatus(Register register, RMWStoreOpt storeEvent){
+    RMWStoreExclusiveStatus(Register register, RMWStoreExclusive storeEvent){
         this.register = register;
         this.storeEvent = storeEvent;
         addFilters(EType.ANY, EType.VISIBLE, EType.LOCAL, EType.REG_WRITER);
-    }
-
-    private RMWStoreOptStatus(RMWStoreOptStatus other){
-        super(other);
-        this.register = other.register;
-        this.storeEvent = (RMWStoreOpt)other.storeEvent.getCopy();
     }
 
     @Override
@@ -60,7 +54,12 @@ public class RMWStoreOptStatus extends Event implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RMWStoreOptStatus mkCopy(){
-        return new RMWStoreOptStatus(this);
+    public int unroll(int bound, int nextId, Event predecessor) {
+        throw new RuntimeException("RMWStoreExclusiveStatus cannot be unrolled: event must be generated during compilation");
+    }
+
+    @Override
+    protected RMWStoreExclusiveStatus mkCopy(){
+        throw new RuntimeException("RMWStoreExclusiveStatus cannot be unrolled: event must be generated during compilation");
     }
 }

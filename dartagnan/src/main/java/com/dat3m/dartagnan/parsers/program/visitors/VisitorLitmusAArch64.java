@@ -9,14 +9,10 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
+import com.dat3m.dartagnan.program.arch.aarch64.event.StoreExclusive;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
-import com.dat3m.dartagnan.program.event.rmw.opt.RMWStoreOpt;
-import com.dat3m.dartagnan.program.event.rmw.opt.RMWStoreOptStatus;
 import org.antlr.v4.runtime.misc.Interval;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         implements LitmusAArch64Visitor<Object> {
@@ -24,8 +20,6 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     private ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
-
-    private Map<Integer, RMWLoad> ldxrMap = new HashMap<>();
 
     public VisitorLitmusAArch64(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -147,8 +141,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        RMWLoad load = new RMWLoad(register, address, ctx.loadExclusiveInstruction().mo);
-        ldxrMap.put(mainThread, load);
+        RMWLoadExclusive load = new RMWLoadExclusive(register, address, ctx.loadExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -166,15 +159,12 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     public Object visitStoreExclusive(LitmusAArch64Parser.StoreExclusiveContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rV);
         Register statusReg = programBuilder.getOrCreateRegister(mainThread, ctx.rS);
-        RMWLoad loadEvent = ldxrMap.remove(mainThread);
         Register address = programBuilder.getOrErrorRegister(mainThread, ctx.address().id);
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        RMWStoreOpt store = new RMWStoreOpt(loadEvent, address, register, ctx.storeExclusiveInstruction().mo);
-        RMWStoreOptStatus status = new RMWStoreOptStatus(statusReg, store);
-        programBuilder.addChild(mainThread, store);
-        return programBuilder.addChild(mainThread, status);
+        StoreExclusive event = new StoreExclusive(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
+        return programBuilder.addChild(mainThread, event);
     }
 
     @Override

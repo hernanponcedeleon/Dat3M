@@ -1,4 +1,5 @@
-AArch64 exclusive-06
+AArch64 AArch64-exclusive-03
+"Unpredictable behaviour, can succeed or fail"
 {
 0:X1=x; 0:X2=y;
 }
