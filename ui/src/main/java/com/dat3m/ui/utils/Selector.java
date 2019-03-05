@@ -11,7 +11,7 @@ import javax.swing.JPanel;
 
 public class Selector extends JPanel {		
 	
-	private static JComboBox<?> selector;
+	private JComboBox<?> selector;
 	
 	public Selector(Object[] options, String label, ActionListener caller) {
 		selector = new JComboBox<Object>(options);

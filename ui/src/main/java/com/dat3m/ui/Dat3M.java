@@ -83,7 +83,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	};
 
 	public static final ImageIcon porthosOriginal = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
-	public static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan") {
+	public static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
 	        g.drawImage(getImage(), x, y, c.getWidth(), c.getHeight(), c);
@@ -376,6 +376,8 @@ public class Dat3M extends JPanel implements ActionListener {
 		}
 
 		if(e.getActionCommand().equals("Test")) {
+			String result = "";	    	
+			consolePane.setText(result);
 	        Program pSource = null;
 	        Program pTarget = null;
 			Wmm smm = null;
@@ -416,7 +418,6 @@ public class Dat3M extends JPanel implements ActionListener {
 			Solver solver = ctx.mkSolver();
 			Solver solver2 = ctx.mkSolver();
 			
-			String result = "";	    	
 			switch(opt.getTask()){
 	        case REACHABILITY:
 	    		result = "Condition " + pTarget.getAss().toStringWithType() + "\n";
@@ -443,7 +444,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	            break;
 	        }
 	    	consolePane.setText(result);
-	    	//ctx.close();
+	    	ctx.close();
 		}
 
 		if(e.getActionCommand().equals("Clear")) {

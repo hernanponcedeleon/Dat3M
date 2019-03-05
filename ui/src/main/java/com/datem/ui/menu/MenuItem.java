@@ -22,7 +22,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class MenuItem extends JMenuItem {
 
-	private static String loadedFormat = "";
+	private String loadedFormat = "";
 	
 	public MenuItem(String label, JFileChooser chooser, List<String> extensions, JEditorPane editor, ActionListener caller) {
 		super(label);
