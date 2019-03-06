@@ -38,16 +38,6 @@ public class If extends Event implements RegReaderData {
         addFilters(EType.ANY, EType.CMP, EType.REG_READER);
     }
 
-    private If(If other){
-        super(other);
-        this.expr = other.expr;
-        this.successorMain = other.successorMain;
-        this.successorElse = other.successorElse;
-        this.exitMainBranch = other.exitMainBranch.getCopy();
-        this.exitElseBranch = other.exitElseBranch.getCopy();
-        this.dataRegs = other.dataRegs;
-    }
-
     public Event getExitMainBranch(){
         return exitMainBranch;
     }
@@ -99,8 +89,18 @@ public class If extends Event implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected If mkCopy(){
-        return new If(this);
+    public If getCopy(){
+        Skip copyExitMainBranch = (Skip) exitMainBranch.getCopy();
+        Skip copyExitElseBranch =(Skip) exitElseBranch.getCopy();
+        If copy = new If(expr, copyExitMainBranch, copyExitElseBranch);
+        copy.setOId(oId);
+
+        Event ptr = copyPath(successor, exitMainBranch, copy);
+        ptr.successor = copyExitMainBranch;
+        ptr = copyPath(exitMainBranch.successor, exitElseBranch, copyExitMainBranch);
+        ptr.successor = copyExitElseBranch;
+
+        return copy;
     }
 
 

@@ -41,7 +41,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RMWFetchOp mkCopy(){
+    public RMWFetchOp getCopy(){
         return new RMWFetchOp(this);
     }
 

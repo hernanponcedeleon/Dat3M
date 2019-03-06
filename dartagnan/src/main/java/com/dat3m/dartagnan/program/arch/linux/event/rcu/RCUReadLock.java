@@ -27,7 +27,7 @@ public class RCUReadLock extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RCUReadLock mkCopy(){
+    public RCUReadLock getCopy(){
         return new RCUReadLock(this);
     }
 }

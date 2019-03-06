@@ -28,13 +28,6 @@ public class While extends Event implements RegReaderData {
 		addFilters(EType.ANY, EType.CMP, EType.REG_READER);
 	}
 
-	private While(While other){
-	    super(other);
-	    this.expr = other.expr;
-	    this.exitEvent = (Skip)other.exitEvent.getCopy();
-	    this.dataRegs = other.dataRegs;
-    }
-
 	public ExprInterface getExpr(){
 		return expr;
 	}
@@ -59,54 +52,45 @@ public class While extends Event implements RegReaderData {
 
 	@Override
 	public int unroll(int bound, int nextId, Event predecessor) {
-		if(successor == null){
-			throw new RuntimeException("Malformed \"while\" event");
-		}
+		if(successor != null){
+			int currentBound = bound;
 
-		int currentBound = bound;
-		while(currentBound > 0){
-			successor.resetCopy();
+			while(currentBound > 0){
+				Skip exitMainBranch = exitEvent.getCopy();
+				Skip exitElseBranch = exitEvent.getCopy();
+				If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+				ifEvent.oId = oId;
+				ifEvent.uId = nextId++;
 
-			Skip exitMainBranch = new Skip();
-			Skip exitElseBranch = new Skip();
-			If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
-			ifEvent.oId = oId;
-			exitMainBranch.setOId(exitEvent.oId);
-			exitElseBranch.setOId(exitEvent.oId);
-			ifEvent.uId = nextId++;
+				predecessor.setSuccessor(ifEvent);
+				predecessor = copyPath(successor, exitEvent, ifEvent);
+				predecessor.setSuccessor(exitMainBranch);
+				exitMainBranch.setSuccessor(exitElseBranch);
+				predecessor = exitElseBranch;
 
-			predecessor.setSuccessor(ifEvent);
-			predecessor = ifEvent;
-
-			Event next = successor;
-			while(!next.equals(exitEvent)){
-				Event nextCopy = next.getCopy();
-				predecessor.successor = nextCopy;
-				predecessor = nextCopy;
-				next = next.getSuccessor();
+				nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
+				currentBound--;
 			}
 
-			predecessor.successor = exitMainBranch;
-			exitMainBranch.successor = exitElseBranch;
-			predecessor = exitElseBranch;
-
-			nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
-			currentBound--;
+			predecessor.setSuccessor(exitEvent.getSuccessor());
+			if(predecessor.getSuccessor() != null){
+				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
+			}
+			return nextId;
 		}
 
-		predecessor.successor = exitEvent.successor;
-		if(predecessor.successor != null){
-			nextId = predecessor.successor.unroll(bound, nextId, predecessor);
-		}
-
-		return nextId;
+		throw new RuntimeException("Malformed While event");
 	}
 
-    @Override
-    protected While mkCopy(){
-        return new While(this);
-    }
-
+	@Override
+	public While getCopy(){
+		Skip newExit = exitEvent.getCopy();
+		While copy = new While(expr, newExit);
+		copy.setOId(oId);
+		Event ptr = copyPath(successor, exitEvent, copy);
+		ptr.setSuccessor(newExit);
+		return copy;
+	}
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------

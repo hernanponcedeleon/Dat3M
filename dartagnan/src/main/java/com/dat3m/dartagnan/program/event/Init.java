@@ -44,7 +44,7 @@ public class Init extends MemEvent {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected Init mkCopy(){
+	public Init getCopy(){
 		return new Init(this);
 	}
 }

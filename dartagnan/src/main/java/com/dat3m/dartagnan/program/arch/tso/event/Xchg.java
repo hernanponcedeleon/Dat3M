@@ -53,7 +53,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected Xchg mkCopy(){
+    public Xchg getCopy(){
         return new Xchg(this);
     }
 

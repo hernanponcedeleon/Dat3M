@@ -28,9 +28,4 @@ public class RMWStore extends Store implements RegReaderData {
     public int unroll(int bound, int nextId, Event predecessor) {
         throw new RuntimeException("RMWStore cannot be unrolled: event must be generated during compilation");
     }
-
-    @Override
-    protected RMWStore mkCopy(){
-        throw new RuntimeException("RMWStore cannot be unrolled: event must be generated during compilation");
-    }
 }

@@ -17,7 +17,6 @@ public abstract class Event implements Comparable<Event> {
 	protected final Set<String> filter;
 
 	protected transient Event successor;
-	private transient Event copy;
 
     protected transient BoolExpr cfEnc;
     protected transient BoolExpr cfCond;
@@ -101,21 +100,27 @@ public abstract class Event implements Comparable<Event> {
 	    return nextId;
     }
 
-    public void resetCopy(){
-		copy = null;
-		if(successor != null){
-			successor.resetCopy();
+	public Event getCopy(){
+		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
+	}
+
+	Event copyPath(Event from, Event until, Event appendTo){
+		while(from != null && !from.equals(until)){
+			Event copy = from.getCopy();
+			appendTo.setSuccessor(copy);
+			if(from instanceof If){
+				from = ((If)from).getExitElseBranch();
+				appendTo = ((If)copy).getExitElseBranch();
+			} else if(from instanceof While){
+				from = ((While)from).getExitEvent();
+				appendTo = ((While)copy).getExitEvent();
+			} else {
+				appendTo = copy;
+			}
+			from = from.successor;
 		}
-    }
-
-    public Event getCopy(){
-        if(copy == null){
-            copy = mkCopy();
-        }
-        return copy;
-    }
-
-    protected abstract Event mkCopy();
+		return appendTo;
+	}
 
 
     // Compilation

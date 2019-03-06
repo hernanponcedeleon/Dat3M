@@ -70,7 +70,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	protected Local mkCopy(){
+	public Local getCopy(){
 		return new Local(this);
 	}
 }

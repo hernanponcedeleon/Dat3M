@@ -41,7 +41,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RMWOpReturn mkCopy(){
+    public RMWOpReturn getCopy(){
         return new RMWOpReturn(this);
     }
 

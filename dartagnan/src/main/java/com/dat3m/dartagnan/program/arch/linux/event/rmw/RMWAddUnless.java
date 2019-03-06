@@ -45,7 +45,7 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RMWAddUnless mkCopy(){
+    public RMWAddUnless getCopy(){
         return new RMWAddUnless(this);
     }
 

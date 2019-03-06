@@ -27,7 +27,7 @@ public class RCUSync extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RCUSync mkCopy(){
+    public RCUSync getCopy(){
         return new RCUSync(this);
     }
 }

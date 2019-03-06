@@ -54,9 +54,4 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     public int unroll(int bound, int nextId, Event predecessor) {
         throw new RuntimeException("RMWReadCond cannot be unrolled: event must be generated during compilation");
     }
-
-    @Override
-    protected RMWReadCond mkCopy(){
-        throw new RuntimeException("RMWReadCond cannot be unrolled: event must be generated during compilation");
-    }
 }

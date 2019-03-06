@@ -29,7 +29,7 @@ public class Label extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected Label mkCopy(){
+    public Label getCopy(){
         throw new UnsupportedOperationException("Cloning is not implemented for Label event");
     }
 }

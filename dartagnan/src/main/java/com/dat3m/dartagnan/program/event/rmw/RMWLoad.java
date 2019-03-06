@@ -21,9 +21,4 @@ public class RMWLoad extends Load implements RegWriter {
     public int unroll(int bound, int nextId, Event predecessor) {
         throw new RuntimeException("RMWLoad cannot be unrolled: event must be generated during compilation");
     }
-
-    @Override
-    protected RMWLoad mkCopy(){
-        throw new RuntimeException("RMWLoad cannot be unrolled: event must be generated during compilation");
-    }
 }

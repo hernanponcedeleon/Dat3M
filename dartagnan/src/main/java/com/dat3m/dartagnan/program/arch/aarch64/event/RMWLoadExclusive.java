@@ -21,7 +21,7 @@ public class RMWLoadExclusive extends Load implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected RMWLoadExclusive mkCopy(){
+    public RMWLoadExclusive getCopy(){
         return new RMWLoadExclusive(this);
     }
 }
