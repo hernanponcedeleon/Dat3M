@@ -303,7 +303,12 @@ public class Dat3M extends JPanel implements ActionListener {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		
+
+		// The console is cleared after any change except opening the witness
+		if(!e.getActionCommand().equals("Execution Witness")) {
+			consolePane.setText("");
+		}
+
 		// The bound field cannot be empty
 		if(boundField.getText().equals("")) {
 			boundField.setText("1");
@@ -341,8 +346,6 @@ public class Dat3M extends JPanel implements ActionListener {
 		    		menu.add(smmMenuIte);
 		            break;
 		        }
-		    	// The console is cleaned when the task is changed
-		    	consolePane.setText("");
 		    	tmmScroll.setBorder(border);
 			}
 		}
@@ -376,8 +379,6 @@ public class Dat3M extends JPanel implements ActionListener {
 		}
 
 		if(e.getActionCommand().equals("Test")) {
-			String result = "";	    	
-			consolePane.setText(result);
 	        Program pSource = null;
 	        Program pTarget = null;
 			Wmm smm = null;
@@ -418,6 +419,8 @@ public class Dat3M extends JPanel implements ActionListener {
 			Solver solver = ctx.mkSolver();
 			Solver solver2 = ctx.mkSolver();
 			
+			String result = "";	    	
+
 			switch(opt.getTask()){
 	        case REACHABILITY:
 	    		result = "Condition " + pTarget.getAss().toStringWithType() + "\n";
@@ -447,10 +450,6 @@ public class Dat3M extends JPanel implements ActionListener {
 	    	ctx.close();
 		}
 
-		if(e.getActionCommand().equals("Clear")) {
-			consolePane.setText("");
-		}
-
 		if(e.getActionCommand().equals("Execution Witness")) {
         	invokeLater(new Runnable() {public void run() {graph.open();}});
 		}
@@ -470,6 +469,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		@Override
 		public void keyTyped(KeyEvent event) {
 			try {
+				consolePane.setText("");
 				opt.setBound(Integer.parseInt(boundField.getText()));
 			} catch (Exception e) {
 				// Nothing to do here
@@ -479,6 +479,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		@Override
 		public void keyPressed(KeyEvent arg0) {
 			try {
+				consolePane.setText("");
 				opt.setBound(Integer.parseInt(boundField.getText()));
 			} catch (Exception e) {
 				// Nothing to do here
@@ -488,6 +489,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		@Override
 		public void keyReleased(KeyEvent arg0) {
 			try {
+				consolePane.setText("");
 				opt.setBound(Integer.parseInt(boundField.getText()));
 			} catch (Exception e) {
 				// Nothing to do here
