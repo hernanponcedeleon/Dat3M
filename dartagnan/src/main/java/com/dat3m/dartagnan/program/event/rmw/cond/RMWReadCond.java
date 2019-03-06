@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.rmw.cond;
 
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -17,13 +18,6 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     private ImmutableSet<Register> dataRegs;
 
     BoolExpr z3Cond;
-
-    protected RMWReadCond(RMWReadCond other){
-        super(other);
-        this.cmp = other.cmp;
-        this.dataRegs = other.dataRegs;
-        this.z3Cond = other.z3Cond;
-    }
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
@@ -57,5 +51,12 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected abstract RMWReadCond mkCopy();
+    public int unroll(int bound, int nextId, Event predecessor) {
+        throw new RuntimeException("RMWReadCond cannot be unrolled: event must be generated during compilation");
+    }
+
+    @Override
+    protected RMWReadCond mkCopy(){
+        throw new RuntimeException("RMWReadCond cannot be unrolled: event must be generated during compilation");
+    }
 }

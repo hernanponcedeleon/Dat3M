@@ -30,6 +30,6 @@ public class Label extends Event {
 
     @Override
     protected Label mkCopy(){
-        throw new UnsupportedOperationException("Unrolling of Label inside cycles is not implemented");
+        throw new UnsupportedOperationException("Cloning is not implemented for Label event");
     }
 }

@@ -14,10 +14,6 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
         super(loadEvent, address, value, mo);
     }
 
-    private RMWStoreCond(RMWStoreCond other){
-        super(other);
-    }
-
     @Override
     public String toString(){
         return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + ((RMWReadCond)loadEvent).condToString();
@@ -32,7 +28,12 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    public int unroll(int bound, int nextId, Event predecessor) {
+        throw new RuntimeException("RMWStoreCond cannot be unrolled: event must be generated during compilation");
+    }
+
+    @Override
     protected RMWStoreCond mkCopy(){
-        return new RMWStoreCond(this);
+        throw new RuntimeException("RMWStoreCond cannot be unrolled: event must be generated during compilation");
     }
 }

@@ -59,7 +59,7 @@ public class CondJump extends Event implements RegReaderData {
 
     @Override
     protected CondJump mkCopy(){
-        return new CondJump(this);
+        throw new UnsupportedOperationException("Cloning is not implemented for CondJump event");
     }
 
 

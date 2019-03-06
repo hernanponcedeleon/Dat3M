@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.rmw;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -16,12 +17,6 @@ public class RMWStore extends Store implements RegReaderData {
         addFilters(EType.RMW);
     }
 
-    protected RMWStore(RMWStore other){
-        super(other);
-        // Load event can be null for unpaired RMWStoreOpt
-        this.loadEvent = other.loadEvent != null ? (RMWLoad)other.loadEvent.getCopy() : null;
-    }
-
     public RMWLoad getLoadEvent(){
         return loadEvent;
     }
@@ -30,7 +25,12 @@ public class RMWStore extends Store implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    public int unroll(int bound, int nextId, Event predecessor) {
+        throw new RuntimeException("RMWStore cannot be unrolled: event must be generated during compilation");
+    }
+
+    @Override
     protected RMWStore mkCopy(){
-        return new RMWStore(this);
+        throw new RuntimeException("RMWStore cannot be unrolled: event must be generated during compilation");
     }
 }

@@ -13,10 +13,6 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
         super(reg, cmp, address, mo);
     }
 
-    private RMWReadCondUnless(RMWReadCondUnless other){
-        super(other);
-    }
-
     @Override
     public void initialise(Context ctx) {
         super.initialise(ctx);
@@ -26,13 +22,5 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     @Override
     public String condToString(){
         return "# if not " + resultRegister + " = " + cmp;
-    }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    protected RMWReadCondUnless mkCopy(){
-        return new RMWReadCondUnless(this);
     }
 }

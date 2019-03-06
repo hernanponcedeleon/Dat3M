@@ -12,20 +12,9 @@ public class RMWReadCondCmp extends RMWReadCond implements RegWriter, RegReaderD
         super(reg, cmp, address, atomic);
     }
 
-    private RMWReadCondCmp(RMWReadCondCmp other){
-        super(other);
-    }
-
     @Override
     public String condToString(){
         return "# if " + resultRegister + " = " + cmp;
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    protected RMWReadCondCmp mkCopy(){
-        return new RMWReadCondCmp(this);
-    }
 }

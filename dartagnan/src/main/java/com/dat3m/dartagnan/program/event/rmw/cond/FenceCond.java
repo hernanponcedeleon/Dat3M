@@ -14,11 +14,6 @@ public class FenceCond extends Fence {
         this.loadEvent = loadEvent;
     }
 
-    private FenceCond(FenceCond other){
-        super(other);
-        this.loadEvent = (RMWReadCond)other.loadEvent.getCopy();
-    }
-
     @Override
     public String toString(){
         return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + loadEvent.condToString();
@@ -33,7 +28,12 @@ public class FenceCond extends Fence {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    public int unroll(int bound, int nextId, Event predecessor) {
+        throw new RuntimeException("FenceCond cannot be unrolled: event must be generated during compilation");
+    }
+
+    @Override
     protected FenceCond mkCopy(){
-        return new FenceCond(this);
+        throw new RuntimeException("FenceCond cannot be unrolled: event must be generated during compilation");
     }
 }

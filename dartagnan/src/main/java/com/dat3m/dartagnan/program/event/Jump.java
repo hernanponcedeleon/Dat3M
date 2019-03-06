@@ -33,7 +33,7 @@ public class Jump extends Event {
 
     @Override
     protected Jump mkCopy(){
-        return new Jump(this);
+        throw new UnsupportedOperationException("Cloning is not implemented for Jump event");
     }
 
 
