@@ -61,8 +61,8 @@ public class Dat3M extends JPanel implements ActionListener {
 	private static final int width = getMainScreenWidth();
 	private static final int height = getMainScreenHeight();
 
-	// These two are not final since they can be scaled
 	public static final ImageIcon dartagnanOriginal = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan");
+	// Scaled according to the display
 	public static final ImageIcon dartagnanIcon = new ImageIcon(Dat3M.class.getResource("/dartagnan.jpg"), "Dartagnan") {
 		    @Override
 		    public void paintIcon( Component c, Graphics g, int x, int y ) {
@@ -83,6 +83,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	};
 
 	public static final ImageIcon porthosOriginal = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos");
+	// Scaled according to the display
 	public static final ImageIcon porthosIcon = new ImageIcon(Dat3M.class.getResource("/porthos.jpg"), "Porthos") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
@@ -102,6 +103,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		private int newWidth = max(300, (int) round((height / 3)));
 };
 
+	// Scaled to icon size
     public static final ImageIcon dat3mIcon = new ImageIcon(Dat3M.class.getResource("/dat3m.png"), "Dat3m") {
 	    @Override
 	    public void paintIcon( Component c, Graphics g, int x, int y ) {
@@ -221,8 +223,6 @@ public class Dat3M extends JPanel implements ActionListener {
         graphButton.addActionListener(this);
         graphButton.setEnabled(false);
 
-        iconPane.setIcon(dartagnanIcon);
-
         //Put the options in a split pane.
         JSplitPane sp0 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, iconPane, taskPane);
         sp0.setDividerSize(2);
@@ -261,7 +261,6 @@ public class Dat3M extends JPanel implements ActionListener {
         hSplitEditors.setOneTouchExpandable(true);
         hSplitEditors.setDividerSize(2);
         hSplitEditors.setBorder(new TitledBorder(""));
-
         
         JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, hSplitEditors);
         mainPane.setDividerSize(2);
@@ -280,6 +279,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	}
 
     public static void main(String[] args) {
+    	// Necessary to avoid horrible layout on splitPane
 		getDefaults().put("SplitPane.border", createEmptyBorder());
         invokeLater(new Runnable() {public void run() {
             JFrame frame = new JFrame("Dat3M");
@@ -304,7 +304,7 @@ public class Dat3M extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 
-		// The console is cleared after any change except opening the witness
+		// The console and graph button are cleared after any change except opening the witness
 		if(!e.getActionCommand().equals("Execution Witness")) {
 			graphButton.setEnabled(false);
 			consolePane.setText("");

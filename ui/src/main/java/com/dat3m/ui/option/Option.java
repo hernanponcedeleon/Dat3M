@@ -7,7 +7,6 @@ import com.dat3m.ui.utils.Task;
 
 public class Option {
 
-	// All these are fields since they need to be updated by the listener
 	private static Task task = Task.REACHABILITY;
 	private static Arch target = Arch.NONE;
 	private static Arch source = Arch.NONE;
