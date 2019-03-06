@@ -32,7 +32,7 @@ public class While extends Event implements RegReaderData {
 		return expr;
 	}
 
-	public Event getExitEvent(){
+	public Skip getExitEvent(){
 		return exitEvent;
 	}
 

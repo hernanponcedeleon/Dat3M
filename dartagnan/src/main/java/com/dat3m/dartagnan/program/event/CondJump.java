@@ -28,11 +28,8 @@ public class CondJump extends Event implements RegReaderData {
         addFilters(EType.ANY, EType.COND_JUMP, EType.REG_READER);
     }
 
-    private CondJump(CondJump other){
-        super(other);
-        this.label = other.label;
-        this.expr = other.expr;
-        this.dataRegs = other.dataRegs;
+    public Label getLabel(){
+        return label;
     }
 
     @Override

@@ -17,9 +17,8 @@ public class Jump extends Event {
         addFilters(EType.ANY);
     }
 
-    private Jump(Jump other){
-        super(other);
-        this.label = other.label;
+    public Label getLabel(){
+        return label;
     }
 
     @Override
@@ -30,6 +29,14 @@ public class Jump extends Event {
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public int unroll(int bound, int nextId, Event predecessor) {
+        if(label.getOId() < oId){
+            throw new UnsupportedOperationException("Unrolling of cycles in Jump is not implemented");
+        }
+        return super.unroll(bound, nextId, predecessor);
+    }
 
     @Override
     public Jump getCopy(){
