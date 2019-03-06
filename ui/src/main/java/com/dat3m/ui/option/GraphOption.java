@@ -30,28 +30,17 @@ public class GraphOption {
 
 	private final String TMPDOTPATH = "./.tmp/output.dot";
 	private final String TMPPNGPATH = "./.tmp/output.png";
-	
-	public void generate(Solver solver, Context ctx, Program p) {
-		Graph graph = new Graph(solver.getModel(), ctx);
-      	try {
-			graph.build(p).draw(TMPDOTPATH);
-			File dotFile = new File(TMPDOTPATH);
-			// The previous png file needs to be deleted
-			Path fileToDeletePath = Paths.get(TMPPNGPATH);
-			Files.delete(fileToDeletePath);
-			InputStream targetStream = new FileInputStream(dotFile);
-			MutableGraph g = Parser.read(targetStream);
-			fromGraph(g).render(PNG).toFile(new File(TMPPNGPATH));
-			dotFile.delete();
-		} catch (IOException e) {
-			// This should never happen since the file is always created
-		}
-	}
 
-	public void generate(Solver solver, Context ctx, PorthosResult results) {
+	public void generate(Solver solver, Context ctx, Object o) {
 		Graph graph = new Graph(solver.getModel(), ctx);
       	try {
-			graph.build(results.getSourceProgram(), results.getTargetProgram()).draw(TMPDOTPATH);
+      		if(o instanceof Program) {
+      			Program p = (Program)o;
+    			graph.build(p).draw(TMPDOTPATH);	
+      		} else if (o instanceof PorthosResult) {
+      			PorthosResult result = (PorthosResult)o;
+    			graph.build(result.getSourceProgram(), result.getTargetProgram()).draw(TMPDOTPATH);
+      		}
 			File dotFile = new File(TMPDOTPATH);
 			// The previous png file needs to be deleted
 			Path fileToDeletePath = Paths.get(TMPPNGPATH);
@@ -67,7 +56,7 @@ public class GraphOption {
 
 	public void open() {
 		JLabel label = new JLabel();
-		// An image need to be created at every call since thet image changes
+		// An image need to be created at every call since the image changes
 		label.setIcon(new ImageIcon(getDefaultToolkit().createImage(TMPPNGPATH)));
         JScrollPane scroll = new JScrollPane(label);
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
