@@ -306,6 +306,7 @@ public class Dat3M extends JPanel implements ActionListener {
 
 		// The console is cleared after any change except opening the witness
 		if(!e.getActionCommand().equals("Execution Witness")) {
+			graphButton.setEnabled(false);
 			consolePane.setText("");
 		}
 
@@ -470,6 +471,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		public void keyTyped(KeyEvent event) {
 			try {
 				consolePane.setText("");
+				graphButton.setEnabled(false);
 				opt.setBound(Integer.parseInt(boundField.getText()));
 			} catch (Exception e) {
 				// Nothing to do here
@@ -480,6 +482,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		public void keyPressed(KeyEvent arg0) {
 			try {
 				consolePane.setText("");
+				graphButton.setEnabled(false);
 				opt.setBound(Integer.parseInt(boundField.getText()));
 			} catch (Exception e) {
 				// Nothing to do here
@@ -490,6 +493,7 @@ public class Dat3M extends JPanel implements ActionListener {
 		public void keyReleased(KeyEvent arg0) {
 			try {
 				consolePane.setText("");
+				graphButton.setEnabled(false);
 				opt.setBound(Integer.parseInt(boundField.getText()));
 			} catch (Exception e) {
 				// Nothing to do here
