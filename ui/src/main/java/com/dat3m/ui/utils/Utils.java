@@ -37,8 +37,7 @@ public class Utils {
 		return mm;
 	}
 	
-	private static File createTmpFile(JEditorPane editor, String path)
-			throws IOException, FileNotFoundException {
+	private static File createTmpFile(JEditorPane editor, String path) throws IOException {
 		File tmpProgramFile = new File(path);
 		if (!tmpProgramFile.getParentFile().exists()) {
 			tmpProgramFile.getParentFile().mkdirs();
@@ -56,7 +55,7 @@ public class Utils {
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 	    GraphicsDevice[] gs = ge.getScreenDevices();
 	    if (gs.length > 0) {
-	        return (int) round(gs[0].getDisplayMode().getWidth());
+	        return round(gs[0].getDisplayMode().getWidth());
 	    }
 	    return 0;
 	}
@@ -65,7 +64,7 @@ public class Utils {
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 	    GraphicsDevice[] gs = ge.getScreenDevices();
 	    if (gs.length > 0) {
-	        return (int) round(gs[0].getDisplayMode().getHeight());
+	        return round(gs[0].getDisplayMode().getHeight());
 	    }
 	    return 0;
 	}

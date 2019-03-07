@@ -1,7 +1,5 @@
 package com.dat3m.ui.utils;
 
-import static java.awt.FlowLayout.LEFT;
-
 import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
 
@@ -14,11 +12,11 @@ public class Selector extends JPanel {
 	private JComboBox<?> selector;
 	
 	public Selector(Object[] options, String label, ActionListener caller) {
-		selector = new JComboBox<Object>(options);
+		selector = new JComboBox<>(options);
 		selector.setActionCommand(label);
 		selector.addActionListener(caller);
 		JLabel sLabel = new JLabel(label + ": ");
-		this.setLayout(new FlowLayout(LEFT));
+		this.setLayout(new FlowLayout(FlowLayout.LEFT));
 		this.add(sLabel);
 		this.add(selector);
 	}
