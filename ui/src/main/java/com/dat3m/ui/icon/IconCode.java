@@ -22,7 +22,6 @@ public enum IconCode {
     }
 
     public URL getPath(){
-        System.out.println(getClass().getResource("test"));
         switch(this){
             case DAT3M:
                 return getResource("/dat3m.png");

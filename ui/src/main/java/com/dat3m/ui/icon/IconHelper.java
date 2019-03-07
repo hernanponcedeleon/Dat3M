@@ -24,7 +24,6 @@ public class IconHelper {
     }
 
     private static ImageIcon mkIcon(IconCode code, int height){
-        System.out.println("mkIcon called for " + code + " " + height);
         ImageIcon origImage = new ImageIcon(code.getPath(), code.toString());
         if(height == -1){
             return origImage;
