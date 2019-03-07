@@ -7,20 +7,20 @@ import com.dat3m.ui.utils.Task;
 
 public class Option {
 
-	private static Task task = Task.REACHABILITY;
-	private static Arch target = Arch.NONE;
-	private static Arch source = Arch.NONE;
-	private static Mode mode = Mode.KNASTER;
-	private static Alias alias = Alias.CFS;
-	private static int bound = 1;
+	private Task task;
+	private Arch target;
+	private Arch source;
+	private Mode mode;
+	private Alias alias;
+	private int bound;
 
 	public Option (Task task, Arch target, Arch source, Mode mode, Alias alias, int bound) {
-		Option.task = task;
-		Option.target = target;
-		Option.source = source;
-		Option.mode = mode;
-		Option.alias = alias;
-		Option.bound = bound;
+		this.task = task;
+		this.source = source;
+		this.target = target;
+		this.mode = mode;
+		this.alias = alias;
+		this.bound = bound;
 	}
 	
 	public Task getTask() {
@@ -28,7 +28,7 @@ public class Option {
 	}
 	
 	public void setTask(Task task) {
-		Option.task = task;
+		this.task = task;
 	}
 
 	public Arch getTarget() {
@@ -36,7 +36,7 @@ public class Option {
 	}
 	
 	public void setTarget(Arch target) {
-		Option.target = target;
+		this.target = target;
 	}
 
 	public Arch getSource() {
@@ -44,7 +44,7 @@ public class Option {
 	}
 	
 	public void setSource(Arch source) {
-		Option.source = source;
+		this.source = source;
 	}
 
 	public Mode getMode() {
@@ -52,7 +52,7 @@ public class Option {
 	}
 	
 	public void setMode(Mode mode) {
-		Option.mode = mode;
+		this.mode = mode;
 	}
 
 	public Alias getAlias() {
@@ -60,7 +60,7 @@ public class Option {
 	}
 	
 	public void setAlias(Alias alias) {
-		Option.alias = alias;
+		this.alias = alias;
 	}
 
 	public int getBound() {
@@ -68,6 +68,6 @@ public class Option {
 	}
 	
 	public void setBound(int bound) {
-		Option.bound = bound;
+		this.bound = bound;
 	}
 }
