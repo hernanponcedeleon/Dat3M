@@ -13,13 +13,19 @@ import java.io.IOException;
 
 public class ParserCat {
 
-    public Wmm parse(String inputFilePath, Arch target) throws IOException {
+    public Wmm parseFile(String inputFilePath, Arch target) throws IOException {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
-        CharStream charStream = CharStreams.fromStream(stream);
+        return parse(CharStreams.fromStream(stream), target);
+    }
+
+    public Wmm parse(String raw, Arch target) {
+        return parse(CharStreams.fromString(raw), target);
+    }
+
+    private Wmm parse(CharStream charStream, Arch target){
         CatLexer lexer = new CatLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        stream.close();
 
         CatParser parser = new CatParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());

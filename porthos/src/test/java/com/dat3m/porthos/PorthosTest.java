@@ -28,10 +28,10 @@ public class PorthosTest {
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
     public static Iterable<Object[]> data() throws IOException {
 
-        Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat", Arch.NONE);
-        Wmm wmmTso = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/tso.cat", Arch.TSO);
-        Wmm wmmPpc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/power.cat", Arch.POWER);
-        Wmm wmmArm = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/arm.cat", Arch.ARM);
+        Wmm wmmSc = new ParserCat().parseFile(CAT_RESOURCE_PATH + "cat/sc.cat", Arch.NONE);
+        Wmm wmmTso = new ParserCat().parseFile(CAT_RESOURCE_PATH + "cat/tso.cat", Arch.TSO);
+        Wmm wmmPpc = new ParserCat().parseFile(CAT_RESOURCE_PATH + "cat/power.cat", Arch.POWER);
+        Wmm wmmArm = new ParserCat().parseFile(CAT_RESOURCE_PATH + "cat/arm.cat", Arch.ARM);
 
         return Arrays.asList(new Object[][] {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},

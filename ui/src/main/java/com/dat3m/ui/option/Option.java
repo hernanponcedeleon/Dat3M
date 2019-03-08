@@ -7,12 +7,12 @@ import com.dat3m.ui.utils.Task;
 
 public class Option {
 
-	private Task task;
-	private Arch target;
-	private Arch source;
-	private Mode mode;
-	private Alias alias;
-	private int bound;
+	private final Task task;
+	private final Arch target;
+	private final Arch source;
+	private final Mode mode;
+	private final Alias alias;
+	private final int bound;
 
 	public Option (Task task, Arch target, Arch source, Mode mode, Alias alias, int bound) {
 		this.task = task;
@@ -26,48 +26,34 @@ public class Option {
 	public Task getTask() {
 		return task;
 	}
-	
-	public void setTask(Task task) {
-		this.task = task;
-	}
 
 	public Arch getTarget() {
 		return target;
-	}
-	
-	public void setTarget(Arch target) {
-		this.target = target;
 	}
 
 	public Arch getSource() {
 		return source;
 	}
-	
-	public void setSource(Arch source) {
-		this.source = source;
-	}
 
 	public Mode getMode() {
 		return mode;
-	}
-	
-	public void setMode(Mode mode) {
-		this.mode = mode;
 	}
 
 	public Alias getAlias() {
 		return alias;
 	}
-	
-	public void setAlias(Alias alias) {
-		this.alias = alias;
-	}
 
 	public int getBound() {
 		return bound;
 	}
-	
-	public void setBound(int bound) {
-		this.bound = bound;
-	}
+
+	// TODO: Implementation
+	public boolean validate(){
+		boolean somethingIsWrong = false;
+		if(somethingIsWrong){
+			// TODO: Show alert with what is wrong
+			return false;
+		}
+	    return true;
+    }
 }

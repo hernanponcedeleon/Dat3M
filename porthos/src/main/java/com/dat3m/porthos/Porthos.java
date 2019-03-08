@@ -78,8 +78,8 @@ public class Porthos {
             System.exit(0);
             return;
         }
-        Wmm mcmS = new ParserCat().parse(cmd.getOptionValue("scat"), source);
-        Wmm mcmT = new ParserCat().parse(cmd.getOptionValue("tcat"), target);
+        Wmm mcmS = new ParserCat().parseFile(cmd.getOptionValue("scat"), source);
+        Wmm mcmT = new ParserCat().parseFile(cmd.getOptionValue("tcat"), target);
 
         if(cmd.hasOption("draw")) {
             mcmS.setDrawExecutionGraph();

@@ -31,7 +31,7 @@ public class Utils {
 
 	public static Wmm parseMMEditor(JEditorPane editor, Arch target) throws IOException {
 		File tmpMMFile = createTmpFile(editor, TMPMMPATH);
-		Wmm mm = new ParserCat().parse(TMPMMPATH, target);
+		Wmm mm = new ParserCat().parseFile(TMPMMPATH, target);
 		tmpMMFile.delete();
 		return mm;
 	}

@@ -29,7 +29,7 @@ public class DartagnanBranchTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat", Arch.NONE);
+        Wmm wmm = new ParserCat().parseFile(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat", Arch.NONE);
         ImmutableMap<String, Boolean> expected = readExpectedResults();
         return Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/"))
                 .filter(Files::isRegularFile)

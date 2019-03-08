@@ -1,69 +1,113 @@
 package com.dat3m.ui.editor;
 
-import com.google.common.collect.ImmutableMap;
+import com.dat3m.ui.icon.IconCode;
+import com.dat3m.ui.icon.IconHelper;
+import com.google.common.collect.ImmutableSet;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.*;
 
-public class Editor {
+import static java.lang.System.getProperty;
+import static javax.swing.BorderFactory.createTitledBorder;
+import static javax.swing.JFileChooser.APPROVE_OPTION;
 
-    private final ImmutableMap<EditorCode, EditorPane> editorPanes = ImmutableMap.of(
-            EditorCode.PROGRAM, new EditorPane(EditorCode.PROGRAM, new JEditorPane(), "litmus", "pts"),
-            EditorCode.SOURCE_MM, new EditorPane(EditorCode.SOURCE_MM, new JEditorPane(), "cat"),
-            EditorCode.TARGET_MM, new EditorPane(EditorCode.TARGET_MM, new JEditorPane(), "cat")
-    );
+public class Editor extends JScrollPane implements ActionListener {
 
-    private final JMenu menu;
-    private final JMenuBar menuBar;
+    private final EditorCode code;
 
-    private final JSplitPane mmPane;
-    private final JSplitPane mainPane;
+    private final JEditorPane editorPane;
+    private final JMenuItem menuItem;
+    private final JFileChooser chooser;
 
+    private final ImmutableSet<String> allowedFormats;
+    private String loadedFormat = "";
 
-    public Editor(){
-        menu = new JMenu("Import");
-        menu.add(editorPanes.get(EditorCode.PROGRAM).getMenuItem());
-        menu.add(editorPanes.get(EditorCode.TARGET_MM).getMenuItem());
-        this.menuBar = new JMenuBar();
-        menuBar.add(menu);
+    private Set<ActionListener> actionListeners = new HashSet<>();
 
-        mmPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        mmPane.setBottomComponent(editorPanes.get(EditorCode.TARGET_MM));
-        mmPane.setOneTouchExpandable(true);
-        mmPane.setDividerSize(0);
-        mmPane.setBorder(new TitledBorder(""));
+    Editor(EditorCode code, JEditorPane editorPane, String... formats){
+        super(editorPane);
+        this.code = code;
+        this.editorPane = editorPane;
+        this.menuItem = new JMenuItem(code.toString());
+        menuItem.setActionCommand(code.editorMenuActionCommand());
+        menuItem.addActionListener(this);
 
-        mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editorPanes.get(EditorCode.PROGRAM), mmPane);
-        mainPane.setOneTouchExpandable(true);
-        mainPane.setDividerSize(2);
-        mainPane.setDividerLocation(0.5);
-        mainPane.setBorder(new TitledBorder(""));
+        this.allowedFormats = ImmutableSet.copyOf(Arrays.asList(formats));
+        this.chooser = new JFileChooser();
+        for(String format : allowedFormats) {
+            chooser.addChoosableFileFilter(new FileNameExtensionFilter("*." + format, format));
+        }
+
+        setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        TitledBorder border = createTitledBorder(code.toString());
+        border.setTitleJustification(TitledBorder.CENTER);
+        setBorder(border);
     }
 
-    public JMenuBar getMenuBar(){
-        return menuBar;
+    public void addActionListener(ActionListener actionListener){
+        actionListeners.add(actionListener);
     }
 
-    public JSplitPane getMainPane(){
-        return mainPane;
+    public String getLoadedFormat(){
+        return loadedFormat;
     }
 
-    public JEditorPane getEditor(EditorCode code){
-        return editorPanes.get(code).getEditor();
+    public String getText(){
+        return editorPane.getText();
     }
 
-    public String getLoadedFormat(EditorCode code){
-        return editorPanes.get(code).getLoadedFormat();
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        if(code.editorMenuActionCommand().equals(event.getActionCommand())){
+            chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
+            int result = chooser.showOpenDialog(null);
+            if(result == APPROVE_OPTION){
+                String path = chooser.getSelectedFile().getPath();
+                String format = path.substring(path.lastIndexOf('.') + 1).trim();
+                if(allowedFormats.contains(format)){
+                    loadedFormat = format;
+                    notifyListeners();
+                    try {
+                        editorPane.read(new InputStreamReader(new FileInputStream(path)), null);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(
+                                null,
+                                "Error reading input file",
+                                "Error",
+                                JOptionPane.ERROR_MESSAGE,
+                                IconHelper.getIcon(IconCode.DAT3M));
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "Please select a *." + String.join(", *.", allowedFormats) + " file",
+                            "Invalid file format",
+                            JOptionPane.INFORMATION_MESSAGE,
+                            IconHelper.getIcon(IconCode.DAT3M));
+                }
+            }
+        }
     }
 
-    public void setShowSourceMM(boolean flag){
-        if(flag){
-            mmPane.setTopComponent(editorPanes.get(EditorCode.SOURCE_MM));
-            mmPane.setDividerLocation(0.5);
-            menu.add(editorPanes.get(EditorCode.SOURCE_MM).getMenuItem(), 1);
-        } else {
-            mmPane.remove(editorPanes.get(EditorCode.SOURCE_MM));
-            menu.remove(editorPanes.get(EditorCode.SOURCE_MM).getMenuItem());
+    JMenuItem getMenuItem(){
+        return menuItem;
+    }
+
+    private void notifyListeners(){
+        ActionEvent dataLoadedEvent = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, code.editorActionCommand());
+        for(ActionListener actionListener : actionListeners){
+            actionListener.actionPerformed(dataLoadedEvent);
         }
     }
 }

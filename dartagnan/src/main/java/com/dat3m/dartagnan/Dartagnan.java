@@ -85,7 +85,7 @@ public class Dartagnan {
             throw new RuntimeException("Assert is required for Dartagnan tests");
         }
 
-        Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"), target);
+        Wmm mcm = new ParserCat().parseFile(cmd.getOptionValue("cat"), target);
 
         if(cmd.hasOption("draw")) {
             mcm.setDrawExecutionGraph();
