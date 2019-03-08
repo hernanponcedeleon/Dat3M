@@ -1,4 +1,4 @@
-package com.dat3m.ui.option;
+package com.dat3m.ui.graph;
 
 import static guru.nidi.graphviz.engine.Format.PNG;
 import static guru.nidi.graphviz.engine.Graphviz.fromGraph;

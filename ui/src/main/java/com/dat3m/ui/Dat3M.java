@@ -8,10 +8,14 @@ import com.dat3m.ui.editor.EditorsPane;
 import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
-import com.dat3m.ui.option.GraphOption;
-import com.dat3m.ui.option.Option;
+import com.dat3m.ui.graph.GraphOption;
+import com.dat3m.ui.options.Options;
 import com.dat3m.ui.options.OptionsPane;
 import com.dat3m.ui.options.utils.ControlCode;
+import com.dat3m.ui.result.Dat3mResult;
+import com.dat3m.ui.result.PortabilityResult;
+import com.dat3m.ui.result.ReachabilityResult;
+import com.dat3m.ui.utils.Task;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,6 +30,8 @@ public class Dat3M extends JFrame implements ActionListener {
 	private final OptionsPane optionsPane = new OptionsPane();
 	private final EditorsPane editorsPane = new EditorsPane();
 	private final GraphOption graph = new GraphOption();
+
+	private Dat3mResult testResult;
 
 	private Dat3M() {
 		getDefaults().put("SplitPane.border", createEmptyBorder());
@@ -70,6 +76,11 @@ public class Dat3M extends JFrame implements ActionListener {
 	    String command = event.getActionCommand();
 	    if(ControlCode.TEST.actionCommand().equals(command)){
             runTest();
+            if(testResult != null){
+                optionsPane.getConsolePane().setText(testResult.getVerdict());
+                optionsPane.getGraphButton().setEnabled(testResult.getGraph() != null);
+            }
+
         } else if(ControlCode.CLEAR.actionCommand().equals(command)){
             System.out.println("I should clear. What should I clear?");
             // TODO: Implementation
@@ -80,17 +91,46 @@ public class Dat3M extends JFrame implements ActionListener {
 	}
 
 	private void runTest(){
-		Option option = optionsPane.getOption();
-		if(option.validate()){
-			// TODO: Implementation
-			String programText = editorsPane.getEditor(EditorCode.PROGRAM).getText();
-			String format = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
-            Program program = new ProgramParser().parse(programText, format);
+		Options options = optionsPane.getOptions();
+		if(options.validate()){
+            testResult = null;
+		    try {
+                String programText = editorsPane.getEditor(EditorCode.PROGRAM).getText();
+                String format = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
+                Program program = new ProgramParser().parse(programText, format);
+                try {
+                    String targetModelRaw = editorsPane.getEditor(EditorCode.TARGET_MM).getText();
+                    Wmm targetModel = new ParserCat().parse(targetModelRaw, options.getTarget());
+                    if(options.getTask() == Task.REACHABILITY){
+                        testResult = new ReachabilityResult(program, targetModel, options);
 
+                    } else {
+                        try {
+                            Program sourceProgram = new ProgramParser().parse(programText, format);
+                            String sourceModelRaw = editorsPane.getEditor(EditorCode.SOURCE_MM).getText();
+                            Wmm sourceModel = new ParserCat().parse(sourceModelRaw, options.getSource());
+                            testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
 
-            String targetModelRaw = editorsPane.getEditor(EditorCode.TARGET_MM).getText();
-            Wmm targetModel = new ParserCat().parse(targetModelRaw, option.getTarget());
-
+                        } catch (Exception e){
+                            showError("The source memory model was not imported or cannot be parsed");
+                        }
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                    showError("The target memory model was not imported or cannot be parsed");
+                }
+            } catch (Exception e){
+                showError("The program was not imported or cannot be parsed");
+            }
 		}
 	}
+
+	private void showError(String msg){
+        JOptionPane.showMessageDialog(
+                null,
+                msg,
+                "Error",
+                JOptionPane.ERROR_MESSAGE,
+                IconHelper.getIcon(IconCode.DAT3M));
+    }
 }

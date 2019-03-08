@@ -1,11 +1,11 @@
-package com.dat3m.ui.option;
+package com.dat3m.ui.options;
 
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.ui.utils.Task;
 
-public class Option {
+public class Options {
 
 	private final Task task;
 	private final Arch target;
@@ -14,7 +14,7 @@ public class Option {
 	private final Alias alias;
 	private final int bound;
 
-	public Option (Task task, Arch target, Arch source, Mode mode, Alias alias, int bound) {
+	public Options(Task task, Arch target, Arch source, Mode mode, Alias alias, int bound) {
 		this.task = task;
 		this.source = source;
 		this.target = target;

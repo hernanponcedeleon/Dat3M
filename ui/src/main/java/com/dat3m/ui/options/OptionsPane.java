@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.ui.icon.IconCode;
-import com.dat3m.ui.option.Option;
 import com.dat3m.ui.options.utils.ArchManager;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.Task;
@@ -102,8 +101,12 @@ public class OptionsPane extends JPanel {
         return graphButton;
     }
 
-    public Option getOption(){
-        return new Option(
+    public JTextPane getConsolePane(){
+        return consolePane;
+    }
+
+    public Options getOptions(){
+        return new Options(
                 (Task)taskPane.getSelectedItem(),
                 (Arch)targetPane.getSelectedItem(),
                 (Arch)sourcePane.getSelectedItem(),
