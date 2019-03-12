@@ -41,18 +41,26 @@ public class DartagnanUnrollWhileTest {
         Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
         String test1 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-01.litmus";
         String test2 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-02.litmus";
+        String test3 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-03.litmus";
 
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{test1, wmm, 1, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{1, 2, 3, 1, 1, 1}});
-        data.add(new Object[]{test1, wmm, 2, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{2, 5, 9, 1, 2, 3}});
-        data.add(new Object[]{test1, wmm, 3, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{3, 9, 19, 1, 3, 6}});
-        data.add(new Object[]{test1, wmm, 4, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{4, 14, 34, 1, 4, 10}});
-        data.add(new Object[]{test1, wmm, 5, new String[]{"r1", "r2", "r3", "r11", "r22", "r33"}, new int[]{5, 20, 55, 1, 5, 15}});
+        data.add(new Object[]{test1, wmm, 1, new String[]{"r1", "r2", "r3", "r4", "r5", "r6"}, new int[]{1, 2, 3, 1, 1, 1}});
+        data.add(new Object[]{test1, wmm, 2, new String[]{"r1", "r2", "r3", "r4", "r5", "r6"}, new int[]{2, 5, 9, 1, 2, 3}});
+        data.add(new Object[]{test1, wmm, 3, new String[]{"r1", "r2", "r3", "r4", "r5", "r6"}, new int[]{3, 9, 19, 1, 3, 6}});
+        data.add(new Object[]{test1, wmm, 4, new String[]{"r1", "r2", "r3", "r4", "r5", "r6"}, new int[]{4, 14, 34, 1, 4, 10}});
+        data.add(new Object[]{test1, wmm, 5, new String[]{"r1", "r2", "r3", "r4", "r5", "r6"}, new int[]{5, 20, 55, 1, 5, 15}});
 
-        data.add(new Object[]{test2, wmm, 1, new String[]{"r1", "r11", "r111", "ri1", "re1", "ri11", "re11"}, new int[]{1, 1, 1, 1, 0, 0, 1}});
-        data.add(new Object[]{test2, wmm, 2, new String[]{"r1", "r11", "r111", "ri1", "re1", "ri11", "re11"}, new int[]{2, 2, 1, 2, 0, 0, 2}});
-        data.add(new Object[]{test2, wmm, 3, new String[]{"r1", "r11", "r111", "ri1", "re1", "ri11", "re11"}, new int[]{3, 3, 1, 3, 0, 0, 3}});
+        data.add(new Object[]{test2, wmm, 1, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{1, 1, 1, 1, 0, 0, 1}});
+        data.add(new Object[]{test2, wmm, 2, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{2, 2, 1, 2, 0, 0, 2}});
+        data.add(new Object[]{test2, wmm, 3, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{3, 3, 1, 3, 0, 0, 3}});
+
+        data.add(new Object[]{test3, wmm, 1, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{1, 1, 0, 1, 1, 1, 1}});
+        data.add(new Object[]{test3, wmm, 2, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{1, 2, 0, 3, 2, 1, 1}});
+        data.add(new Object[]{test3, wmm, 3, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{1, 3, 0, 6, 3, 1, 1}});
+        data.add(new Object[]{test3, wmm, 4, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{1, 4, 0, 10, 4, 1, 1}});
+        data.add(new Object[]{test3, wmm, 5, new String[]{"r1", "r2", "r3", "r4", "r5", "r6", "r7"}, new int[]{1, 5, 0, 15, 5, 1, 1}});
+
         return data;
     }
 
