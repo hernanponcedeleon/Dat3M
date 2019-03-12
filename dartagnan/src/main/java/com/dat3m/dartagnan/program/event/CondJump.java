@@ -9,27 +9,19 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-public class CondJump extends Event implements RegReaderData {
+public class CondJump extends Jump implements RegReaderData {
 
-    private final Label label;
     private final BExpr expr;
     private final ImmutableSet<Register> dataRegs;
 
     public CondJump(BExpr expr, Label label){
+        super(label);
         if(expr == null){
             throw new IllegalArgumentException("CondJump event requires non null expression");
         }
-        if(label == null){
-            throw new IllegalArgumentException("CondJump event requires non null label event");
-        }
         this.expr = expr;
-        this.label = label;
         dataRegs = expr.getRegs();
-        addFilters(EType.ANY, EType.COND_JUMP, EType.REG_READER);
-    }
-
-    public Label getLabel(){
-        return label;
+        addFilters(EType.COND_JUMP, EType.REG_READER);
     }
 
     @Override

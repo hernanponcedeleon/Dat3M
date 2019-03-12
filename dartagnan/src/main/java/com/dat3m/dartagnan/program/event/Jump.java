@@ -7,7 +7,7 @@ import com.microsoft.z3.Context;
 
 public class Jump extends Event {
 
-    private final Label label;
+    protected final Label label;
 
     public Jump(Label label){
         if(label == null){

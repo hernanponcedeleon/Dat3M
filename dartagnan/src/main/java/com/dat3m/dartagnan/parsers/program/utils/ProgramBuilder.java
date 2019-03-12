@@ -32,9 +32,9 @@ public class ProgramBuilder {
 
     public Program build(){
         Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
-        // TODO: Validate labels
         buildInitThreads();
         for(Thread thread : threads.values()){
+            validateLabels(thread);
             program.add(thread);
         }
         program.setAss(ass);
@@ -199,6 +199,30 @@ public class ProgramBuilder {
             Thread thread = new Thread(nextThreadId, e);
             threads.put(nextThreadId, thread);
             nextThreadId++;
+        }
+    }
+
+    private void validateLabels(Thread thread) throws ParsingException {
+        Map<String, Label> threadLabels = new HashMap<>();
+        Set<String> referencedLabels = new HashSet<>();
+        Event e = thread.getEntry();
+        while(e != null){
+            if(e instanceof Jump){
+                referencedLabels.add(((Jump) e).getLabel().getName());
+            } else if(e instanceof Label){
+                Label label = labels.remove(((Label) e).getName());
+                if(label == null){
+                    throw new ParsingException("Duplicated label " + ((Label) e).getName());
+                }
+                threadLabels.put(label.getName(), label);
+            }
+            e = e.getSuccessor();
+        }
+
+        for(String labelName : referencedLabels){
+            if(!threadLabels.containsKey(labelName)){
+                throw new ParsingException("Illegal jump to label " + labelName);
+            }
         }
     }
 }
