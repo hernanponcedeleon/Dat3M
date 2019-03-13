@@ -17,6 +17,7 @@ import java.util.EnumSet;
 import static com.dat3m.ui.utils.Utils.getMainScreenHeight;
 import static java.awt.FlowLayout.LEFT;
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.border.TitledBorder.CENTER;
@@ -121,7 +122,7 @@ public class OptionsPane extends JPanel {
     }
 
     private int getIconHeight(){
-        return max(300, (int) round((getMainScreenHeight() / 3)));
+        return min(500, (int) round((getMainScreenHeight() / 2)));
     }
 
     // TODO: Refactoring
