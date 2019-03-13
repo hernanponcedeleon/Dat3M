@@ -1,5 +1,6 @@
 package com.dat3m.ui.options.utils;
 
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.editor.Editor;
 import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.options.Selector;
@@ -11,13 +12,13 @@ import java.awt.event.ActionListener;
 
 public class ArchManager implements ActionListener {
 
-    private Selector sourceSelector;
-    private Selector targetSelector;
+    private Selector<Arch> sourceSelector;
+    private Selector<Arch> targetSelector;
 
     private boolean isEnabled = true;
     private boolean isSourceEnabled = false;
 
-    public ArchManager(Selector sourceSelector, Selector targetSelector){
+    public ArchManager(Selector<Arch> sourceSelector, Selector<Arch> targetSelector){
         this.targetSelector = targetSelector;
         this.sourceSelector = sourceSelector;
     }

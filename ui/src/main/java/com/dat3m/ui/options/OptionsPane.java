@@ -23,11 +23,11 @@ public class OptionsPane extends JPanel {
     private final IconPane iconPane;
 
     private final Selector<Task> taskPane;
-    private final Selector modePane;
-    private final Selector aliasPane;
+    private final Selector<Mode> modePane;
+    private final Selector<Alias> aliasPane;
 
-    private final Selector sourcePane;
-    private final Selector targetPane;
+    private final Selector<Arch> sourcePane;
+    private final Selector<Arch> targetPane;
 
     private final JTextField boundField;
 
@@ -45,13 +45,13 @@ public class OptionsPane extends JPanel {
 
         iconPane = new IconPane(IconCode.DARTAGNAN, getIconHeight(), JLabel.CENTER);
 
-        taskPane = new Selector<>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
-        modePane = new Selector<>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
-        aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
+        taskPane = new Selector<Task>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
+        modePane = new Selector<Mode>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
+        aliasPane = new Selector<Alias>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
 
         Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
-        sourcePane = new Selector<>(architectures, ControlCode.SOURCE);
-        targetPane = new Selector<>(architectures, ControlCode.TARGET);
+        sourcePane = new Selector<Arch>(architectures, ControlCode.SOURCE);
+        targetPane = new Selector<Arch>(architectures, ControlCode.TARGET);
         sourcePane.setEnabled(false);
         archManager = new ArchManager(sourcePane, targetPane);
 
@@ -81,7 +81,7 @@ public class OptionsPane extends JPanel {
         taskPane.addActionListener(iconPane);
     }
 
-    public Selector getTaskPane(){
+    public Selector<Task> getTaskPane(){
         return taskPane;
     }
 
