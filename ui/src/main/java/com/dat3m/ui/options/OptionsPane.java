@@ -38,7 +38,7 @@ public class OptionsPane extends JPanel {
     private final JButton clearButton;
     private final JButton graphButton;
 
-    private final JTextPane consolePane;
+    private final ConsolePane consolePane;
 
     private final ArchManager archManager;
 
@@ -63,14 +63,14 @@ public class OptionsPane extends JPanel {
         testButton = new JButton("Test");
         testButton.setActionCommand(ControlCode.TEST.actionCommand());
 
-        clearButton = new JButton("Clear");
+        clearButton = new JButton("Clear Console");
         clearButton.setActionCommand(ControlCode.CLEAR.actionCommand());
 
         graphButton = new JButton("Execution Witness");
         graphButton.setActionCommand(ControlCode.GRAPH.actionCommand());
         graphButton.setEnabled(false);
 
-        consolePane = new JTextPane();
+        consolePane = new ConsolePane();
         consolePane.setEditable(false);
 
         bindListeners();
@@ -106,7 +106,7 @@ public class OptionsPane extends JPanel {
         return graphButton;
     }
 
-    public JTextPane getConsolePane(){
+    public ConsolePane getConsolePane(){
         return consolePane;
     }
 

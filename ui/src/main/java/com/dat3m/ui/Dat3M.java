@@ -50,8 +50,9 @@ public class Dat3M extends JFrame implements ActionListener {
 		mainPane.setDividerSize(2);
 		add(mainPane);
 
-		// EditorsPane needs to know is task is changed in order to show / hide source model editor
+		// EditorsPane and ConsolePane need to know if task is changed in order to show / hide source model editor
 		optionsPane.getTaskPane().addActionListener(editorsPane);
+		optionsPane.getTaskPane().addActionListener(optionsPane.getConsolePane());
 
 		// ArchPane needs to know which program format has been loaded by editor in order to show / hide target
 		editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane.getArchManager());
@@ -59,6 +60,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		// Start listening to button events
 		optionsPane.getTestButton().addActionListener(this);
 		optionsPane.getClearButton().addActionListener(this);
+		optionsPane.getClearButton().addActionListener(optionsPane.getConsolePane());
 		optionsPane.getGraphButton().addActionListener(this);
 
 		pack();
@@ -80,10 +82,6 @@ public class Dat3M extends JFrame implements ActionListener {
                 optionsPane.getConsolePane().setText(testResult.getVerdict());
                 optionsPane.getGraphButton().setEnabled(testResult.getGraph() != null);
             }
-
-        } else if(ControlCode.CLEAR.actionCommand().equals(command)){
-            System.out.println("I should clear. What should I clear?");
-            // TODO: Implementation
         } else if(ControlCode.GRAPH.actionCommand().equals(command)){
             // TODO: Implementation
             EventQueue.invokeLater(graph::open);
@@ -103,20 +101,17 @@ public class Dat3M extends JFrame implements ActionListener {
                     Wmm targetModel = new ParserCat().parse(targetModelRaw, options.getTarget());
                     if(options.getTask() == Task.REACHABILITY){
                         testResult = new ReachabilityResult(program, targetModel, options);
-
                     } else {
                         try {
                             Program sourceProgram = new ProgramParser().parse(programText, format);
                             String sourceModelRaw = editorsPane.getEditor(EditorCode.SOURCE_MM).getText();
                             Wmm sourceModel = new ParserCat().parse(sourceModelRaw, options.getSource());
                             testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
-
                         } catch (Exception e){
                             showError("The source memory model was not imported or cannot be parsed");
                         }
                     }
                 } catch (Exception e){
-                    e.printStackTrace();
                     showError("The target memory model was not imported or cannot be parsed");
                 }
             } catch (Exception e){
