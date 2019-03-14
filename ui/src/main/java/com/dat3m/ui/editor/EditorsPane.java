@@ -6,6 +6,11 @@ import com.google.common.collect.ImmutableMap;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+
+import static com.dat3m.ui.utils.Utils.getMainScreenHeight;
+import static com.dat3m.ui.utils.Utils.getMainScreenWidth;
+
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -25,7 +30,11 @@ public class EditorsPane implements ActionListener {
         menu = new JMenu("Import");
         menu.add(editors.get(EditorCode.PROGRAM).getMenuItem());
         menu.add(editors.get(EditorCode.TARGET_MM).getMenuItem());
-
+        
+        Dimension editorsDimension = new Dimension(2 * getMainScreenWidth() / 5, getMainScreenHeight());
+		editors.get(EditorCode.PROGRAM).setPreferredSize(editorsDimension);
+        editors.get(EditorCode.TARGET_MM).setPreferredSize(editorsDimension);
+        
         mmPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         mmPane.setBottomComponent(editors.get(EditorCode.TARGET_MM));
         mmPane.setOneTouchExpandable(true);
