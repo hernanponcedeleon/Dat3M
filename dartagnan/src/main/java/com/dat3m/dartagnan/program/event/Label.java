@@ -11,11 +11,6 @@ public class Label extends Event {
         addFilters(EType.ANY);
     }
 
-    private Label(Label other){
-        super(other);
-        this.name = other.name;
-    }
-
     public String getName(){
         return name;
     }
