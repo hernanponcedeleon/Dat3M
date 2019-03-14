@@ -16,7 +16,6 @@ import java.util.EnumSet;
 
 import static com.dat3m.ui.utils.Utils.getMainScreenHeight;
 import static java.awt.FlowLayout.LEFT;
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -33,7 +32,7 @@ public class OptionsPane extends JPanel {
     private final Selector<Arch> sourcePane;
     private final Selector<Arch> targetPane;
 
-    private final JTextField boundField;
+    private final BoundPane boundField;
 
     private final JButton testButton;
     private final JButton clearButton;
@@ -59,9 +58,7 @@ public class OptionsPane extends JPanel {
         sourcePane.setEnabled(false);
         archManager = new ArchManager(sourcePane, targetPane);
 
-        // TODO: New class with a field which forbids illegal values
-        boundField = new JTextField("1", 3);
-        boundField.setActionCommand(ControlCode.BOUND.actionCommand());
+        boundField = new BoundPane();
 
         testButton = new JButton("Test");
         testButton.setActionCommand(ControlCode.TEST.actionCommand());
@@ -93,6 +90,10 @@ public class OptionsPane extends JPanel {
         return archManager;
     }
 
+    public BoundPane getBoundPane(){
+        return boundField;
+    }
+
     public JButton getTestButton(){
         return testButton;
     }
@@ -116,7 +117,6 @@ public class OptionsPane extends JPanel {
                 (Arch)sourcePane.getSelectedItem(),
                 (Mode)modePane.getSelectedItem(),
                 (Alias)aliasPane.getSelectedItem(),
-                // TODO: Handle possible exceptions in the new boundField class
                 Integer.parseInt(boundField.getText())
         );
     }

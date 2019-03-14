@@ -125,7 +125,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		}
 	}
 
-	private void showError(String msg){
+	public static void showError(String msg){
         JOptionPane.showMessageDialog(
                 null,
                 msg,
