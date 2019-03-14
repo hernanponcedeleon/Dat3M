@@ -5,6 +5,7 @@ import LinuxLexer, LitmusAssertions;
 @header{
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
+import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 }
 
 main
@@ -153,11 +154,6 @@ nre locals [IOpBin op, String mo, String name]
 
     |   WriteOnce LPar Ast address = re Comma value = re RPar {$mo = "Once";}                                           # nreWriteOnce
 
-    |   RcuReadLock LPar RPar                                                                                           # nreRcuReadLock
-    |   RcuReadUnlock LPar RPar                                                                                         # nreRcuReadUnlock
-    |   ( RcuSync LPar RPar
-        | RcuSyncExpedited LPar RPar)                                                                                   # nreSynchronizeRcu
-
     |   Ast? varName Equals re                                                                                          # nreAssignment
     |   typeSpecifier varName (Equals re)?                                                                              # nreRegDeclaration
 
@@ -170,7 +166,11 @@ nre locals [IOpBin op, String mo, String name]
         | FenceSmpRMb LPar RPar {$name = "Rmb";}
         | FenceSmpMbBeforeAtomic LPar RPar {$name = "Before-atomic";}
         | FenceSmpMbAfterAtomic LPar RPar {$name = "After-atomic";}
-        | FenceSmpMbAfterSpinLock LPar RPar {$name = "After-spinlock";})                                                # nreFence
+        | FenceSmpMbAfterSpinLock LPar RPar {$name = "After-spinlock";}
+        | RcuReadLock LPar RPar {$name = EType.RCU_LOCK;}
+        | RcuReadUnlock LPar RPar {$name = EType.RCU_UNLOCK;}
+        | (RcuSync | RcuSyncExpedited) LPar RPar {$name = EType.RCU_SYNC;})                                             # nreFence
+
     ;
 
 variableList

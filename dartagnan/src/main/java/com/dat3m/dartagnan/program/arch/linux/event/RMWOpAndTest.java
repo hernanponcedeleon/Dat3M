@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.arch.linux.event.rmw;
+package com.dat3m.dartagnan.program.arch.linux.event;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.arch.linux.event.rmw;
+package com.dat3m.dartagnan.program.arch.linux.event;
 
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;

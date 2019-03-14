@@ -10,11 +10,8 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.linux.event.*;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.arch.linux.event.rcu.RCUReadLock;
-import com.dat3m.dartagnan.program.arch.linux.event.rcu.RCUReadUnlock;
-import com.dat3m.dartagnan.program.arch.linux.event.rcu.RCUSync;
-import com.dat3m.dartagnan.program.arch.linux.event.rmw.*;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
@@ -430,21 +427,6 @@ public class VisitorLitmusC
             return null;
         }
         throw new ParsingException("Register " + ctx.varName().getText() + " is already initialised");
-    }
-
-    @Override
-    public Object visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
-        return programBuilder.addChild(currentThread, new RCUReadLock());
-    }
-
-    @Override
-    public Object visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
-        return  programBuilder.addChild(currentThread, new RCUReadUnlock());
-    }
-
-    @Override
-    public Object visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
-        return programBuilder.addChild(currentThread, new RCUSync());
     }
 
     @Override
