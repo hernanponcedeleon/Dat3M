@@ -16,6 +16,7 @@ import java.util.LinkedList;
 public class Read extends MemEvent implements RegWriter {
 
     private final Register resultRegister;
+    //TODO(HP) shouldn't it be com.dat3m.dartagnan.program.arch.pts.utils.Mo?
     private final String mo;
 
     public Read(Register register, IExpr address, String mo) {

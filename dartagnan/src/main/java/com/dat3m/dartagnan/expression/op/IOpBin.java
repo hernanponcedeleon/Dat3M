@@ -44,6 +44,7 @@ public enum IOpBin {
     }
 
     public IntExpr encode(IntExpr e1, IntExpr e2, Context ctx){
+    	//TODO(HP) add default case
         switch(this){
             case PLUS:
                 return (IntExpr)ctx.mkAdd(e1, e2);

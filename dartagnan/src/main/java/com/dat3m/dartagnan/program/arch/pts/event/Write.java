@@ -17,6 +17,7 @@ import java.util.LinkedList;
 public class Write extends MemEvent implements RegReaderData {
 
     private final ExprInterface value;
+    //TODO(HP) shouldn't it be com.dat3m.dartagnan.program.arch.pts.utils.Mo?
     private final String mo;
     private final ImmutableSet<Register> dataRegs;
 
@@ -72,6 +73,7 @@ public class Write extends MemEvent implements RegReaderData {
             case NONE:
                 break;
             case TSO:
+                //TODO(HP) shouldn't it be Mo.SC? Similar for the rest below
                 if(mo.equals("_sc")){
                     events.addLast(new Fence("Mfence"));
                 }

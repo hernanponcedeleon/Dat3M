@@ -54,6 +54,7 @@ public class RelationRepository {
             Relation relation = relationMap.get(term);
 
             if(relation == null){
+            	//TODO(HP) add type arguments if possible
                 Constructor constructor = cls.getConstructor(argClasses);
                 relation = (Relation)constructor.newInstance(args);
                 addRelation(relation);

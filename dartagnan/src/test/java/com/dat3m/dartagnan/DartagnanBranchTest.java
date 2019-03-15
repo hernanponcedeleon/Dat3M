@@ -51,6 +51,7 @@ public class DartagnanBranchTest {
     }
 
     private static ImmutableMap<String, Boolean> readExpectedResults() throws IOException {
+    	//TODO(HP) reader is never closed
         BufferedReader reader = new BufferedReader(new FileReader(ResourceHelper.TEST_RESOURCE_PATH + "branch/expected.csv"));
         ImmutableMap.Builder<String, Boolean> builder = new ImmutableMap.Builder<>();
         String str;

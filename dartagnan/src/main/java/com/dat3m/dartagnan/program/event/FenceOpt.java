@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 public class FenceOpt extends Fence {
 
+	//TODO(HP) I think this class can go. It was for some idea I never managed to implement
     private final String opt;
 
     public FenceOpt(String name, String opt){

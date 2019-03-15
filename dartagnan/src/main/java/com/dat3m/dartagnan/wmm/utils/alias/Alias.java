@@ -22,6 +22,7 @@ public enum Alias {
 
     @Override
     public String toString() {
+        //TODO(HP) can we use capital letters? This would like nicer in the ui
         switch(this){
             case NONE:
                 return "none";

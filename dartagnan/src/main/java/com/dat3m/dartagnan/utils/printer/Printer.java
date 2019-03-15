@@ -103,7 +103,7 @@ public class Printer {
     private void appendEvent(Event event){
         if(showAuxiliaryEvents || !isAuxiliary(event)){
             StringBuilder idSb = new StringBuilder();
-
+            //TODO(HP) add default
             switch(idType){
                 case ORIG:
                     idSb.append("(").append(event.getOId()).append(")");

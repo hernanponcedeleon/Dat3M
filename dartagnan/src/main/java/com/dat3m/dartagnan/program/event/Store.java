@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class Store extends MemEvent implements RegReaderData {
 
     protected final ExprInterface value;
+    //TODO(HP) shouldn't we have a MO class for this also?
     protected final String mo;
     private final ImmutableSet<Register> dataRegs;
 
