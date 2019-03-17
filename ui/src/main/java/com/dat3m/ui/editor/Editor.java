@@ -1,7 +1,5 @@
 package com.dat3m.ui.editor;
 
-import com.dat3m.ui.icon.IconCode;
-import com.dat3m.ui.icon.IconHelper;
 import com.google.common.collect.ImmutableSet;
 
 import javax.swing.*;
@@ -15,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
+import static com.dat3m.ui.Dat3M.showError;
 import static java.lang.System.getProperty;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
@@ -70,8 +69,7 @@ public class Editor extends JScrollPane implements ActionListener {
     public void actionPerformed(ActionEvent event) {
         if(code.editorMenuActionCommand().equals(event.getActionCommand())){
             chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
-            int result = chooser.showOpenDialog(null);
-            if(result == APPROVE_OPTION){
+            if(chooser.showOpenDialog(null) == APPROVE_OPTION){
                 String path = chooser.getSelectedFile().getPath();
                 String format = path.substring(path.lastIndexOf('.') + 1).trim();
                 if(allowedFormats.contains(format)){
@@ -80,21 +78,11 @@ public class Editor extends JScrollPane implements ActionListener {
                     try {
                         editorPane.read(new InputStreamReader(new FileInputStream(path)), null);
                     } catch (IOException e) {
-                        e.printStackTrace();
-                        JOptionPane.showMessageDialog(
-                                null,
-                                "Error reading input file",
-                                "Error",
-                                JOptionPane.ERROR_MESSAGE,
-                                IconHelper.getIcon(IconCode.DAT3M));
+                        showError("Error reading input file");
                     }
                 } else {
-                    JOptionPane.showMessageDialog(
-                            null,
-                            "Please select a *." + String.join(", *.", allowedFormats) + " file",
-                            "Invalid file format",
-                            JOptionPane.INFORMATION_MESSAGE,
-                            IconHelper.getIcon(IconCode.DAT3M));
+                	showError("Please select a *." + String.join(", *.", allowedFormats) + " file",
+                            "Invalid file format");
                 }
             }
         }

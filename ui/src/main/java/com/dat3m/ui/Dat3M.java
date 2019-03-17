@@ -123,12 +123,16 @@ public class Dat3M extends JFrame implements ActionListener {
 		}
 	}
 
-	public static void showError(String msg){
+	public static void showError(String msg, String title){
         JOptionPane.showMessageDialog(
                 null,
                 msg,
-                "Error",
+                title,
                 JOptionPane.ERROR_MESSAGE,
                 IconHelper.getIcon(IconCode.DAT3M, 60));
+    }
+
+	public static void showError(String msg){
+		showError(msg, "Error");
     }
 }
