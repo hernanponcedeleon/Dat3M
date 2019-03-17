@@ -129,6 +129,6 @@ public class Dat3M extends JFrame implements ActionListener {
                 msg,
                 "Error",
                 JOptionPane.ERROR_MESSAGE,
-                IconHelper.getIcon(IconCode.DAT3M));
+                IconHelper.getIcon(IconCode.DAT3M, 60));
     }
 }
