@@ -36,17 +36,17 @@ public class BoundListener implements KeyListener, FocusListener {
 		try {
 			int cBound = Integer.parseInt(cText);
 			if(cBound <= 0) {
-				showError("The bound should be greater than 1");
+				showError("The bound should be greater than 1", "Option error");
 				boundPane.setText(boundPane.getStableBound());
 			}
 			boundPane.setStableBound(cText);			
 		} catch (Exception e) {
-			// Empty string is allowed here. It will be handled by focusLost
+			// Empty string is allowed here to allow deleting. It will be handled by focusLost
 			if(cText.equals("")) {
 				return;
 			}
 			boundPane.setText(boundPane.getStableBound());
-			showError("The bound should be greater than 1");						
+			showError("The bound should be greater than 1", "Option error");
 		}
 	}
 
@@ -59,7 +59,7 @@ public class BoundListener implements KeyListener, FocusListener {
 	public void focusLost(FocusEvent arg0) {
 		if(boundPane.getText().equals("")) {
 			boundPane.setText(boundPane.getStableBound());
-			showError("The bound should be greatwer than 1");						
+			showError("The bound should be greater than 1", "Option error");
 		}
 	}
 }
