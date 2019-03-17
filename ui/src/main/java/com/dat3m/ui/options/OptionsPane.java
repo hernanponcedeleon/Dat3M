@@ -12,7 +12,9 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Iterator;
 
 import static com.dat3m.ui.utils.Utils.getMainScreenHeight;
 import static java.awt.FlowLayout.LEFT;
@@ -29,6 +31,7 @@ public class OptionsPane extends JPanel {
     private final Selector<Mode> modePane;
     private final Selector<Alias> aliasPane;
 
+    private final ArchManager archManager;
     private final Selector<Arch> sourcePane;
     private final Selector<Arch> targetPane;
 
@@ -39,9 +42,6 @@ public class OptionsPane extends JPanel {
     private final JButton graphButton;
 
     private final ConsolePane consolePane;
-
-    private final ArchManager archManager;
-
 
     public OptionsPane(){
         super(new GridLayout(1,0));
@@ -54,8 +54,8 @@ public class OptionsPane extends JPanel {
 
         Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
         sourcePane = new Selector<Arch>(architectures, ControlCode.SOURCE);
-        targetPane = new Selector<Arch>(architectures, ControlCode.TARGET);
         sourcePane.setEnabled(false);
+        targetPane = new Selector<Arch>(architectures, ControlCode.TARGET);
         archManager = new ArchManager(sourcePane, targetPane);
 
         boundField = new BoundPane();
@@ -133,71 +133,46 @@ public class OptionsPane extends JPanel {
         return min(500, (int) round((getMainScreenHeight() / 2)));
     }
 
-    // TODO: Refactoring
     private void mkGrid(){
         int width = 300;
 
-        // Dimensions
-        testButton.setMaximumSize(new Dimension(width, 50));
-        clearButton.setMaximumSize(new Dimension(width, 50));
-        graphButton.setMaximumSize(new Dimension(width, 50));
+        // Buttons dimension
+        Dimension buttonDimention = new Dimension(width, 50);
+		testButton.setMaximumSize(buttonDimention);
+        clearButton.setMaximumSize(buttonDimention);
+        graphButton.setMaximumSize(buttonDimention);
 
         JScrollPane scrollConsole = new JScrollPane(consolePane);
         scrollConsole.setMaximumSize(new Dimension(width, 120));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JLabel uLabel = new JLabel("Unrolling Bound: ");
         JPanel boundPane = new JPanel(new FlowLayout(LEFT));
-        boundPane.add(uLabel);
+        boundPane.add(new JLabel("Unrolling Bound: "));
         boundPane.add(boundField);
 
         JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         archPane.setLeftComponent(sourcePane);
         archPane.setRightComponent(targetPane);
-        archPane.setPreferredSize(new Dimension(300, 0));
+        archPane.setPreferredSize(new Dimension(width, 0));
         archPane.setDividerSize(0);
-
-        //Put the options in a split pane.
-        JSplitPane sp0 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, iconPane, taskPane);
-        sp0.setDividerSize(2);
-        JSplitPane sp1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp0, archPane);
-        sp1.setDividerSize(2);
-        JSplitPane sp2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp1, modePane);
-        sp2.setDividerSize(2);
-        JSplitPane sp3 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp2, aliasPane);
-        sp3.setDividerSize(2);
-        JSplitPane sp4 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp3, boundPane);
-        sp4.setDividerSize(2);
-        JSplitPane sp5 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp4, testButton);
-        sp5.setDividerSize(2);
-        JSplitPane sp6 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp5, clearButton);
-        sp6.setDividerSize(2);
-        JSplitPane sp7 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp6, graphButton);
-        sp7.setDividerSize(2);
-        JSplitPane sp8 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp7, scrollConsole);
-        sp8.setDividerSize(2);
-        add(sp8);
 
         // Inner borders
         Border emptyBorder = BorderFactory.createEmptyBorder();
 
-        iconPane.setBorder(emptyBorder);
-        taskPane.setBorder(emptyBorder);
-        modePane.setBorder(emptyBorder);
-        aliasPane.setBorder(emptyBorder);
-        archPane.setBorder(emptyBorder);
-        sourcePane.setBorder(emptyBorder);
-        taskPane.setBorder(emptyBorder);
-
-        sp0.setBorder(emptyBorder);
-        sp1.setBorder(emptyBorder);
-        sp2.setBorder(emptyBorder);
-        sp3.setBorder(emptyBorder);
-        sp4.setBorder(emptyBorder);
-        sp5.setBorder(emptyBorder);
-        sp6.setBorder(emptyBorder);
-        sp7.setBorder(emptyBorder);
-        sp8.setBorder(emptyBorder);
+        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, boundPane, testButton, clearButton, graphButton, scrollConsole };
+        Iterator<JComponent> it = Arrays.asList(panes).iterator();
+        JComponent current = iconPane;
+        current.setBorder(emptyBorder);
+        while(it.hasNext()) {
+        	JComponent next = it.next();
+        	current = new JSplitPane(JSplitPane.VERTICAL_SPLIT, current, next);
+        	((JSplitPane)current).setDividerSize(2);
+        	current.setBorder(emptyBorder);
+        	if(!(next instanceof JButton)) {
+            	next.setBorder(emptyBorder);
+        	}
+        }
+        add(current);
 
         // Outer border
         TitledBorder titledBorder = createTitledBorder("Options");

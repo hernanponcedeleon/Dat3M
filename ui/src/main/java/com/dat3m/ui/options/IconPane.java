@@ -2,6 +2,7 @@ package com.dat3m.ui.options;
 
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
+import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.utils.Task;
 
 import javax.swing.*;
@@ -19,9 +20,8 @@ public class IconPane extends JLabel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        Object source = event.getSource();
-        if(source instanceof JComboBox<?>){
-            JComboBox<?> selector = (JComboBox<?>)source;
+        if(ControlCode.TASK.actionCommand().equals(event.getActionCommand())){
+            JComboBox<?> selector = (JComboBox<?>)event.getSource();
             if(selector.getModel().getSelectedItem().equals(Task.PORTABILITY)){
                 setIcon(IconHelper.getIcon(IconCode.PORTHOS, height));
             } else {
