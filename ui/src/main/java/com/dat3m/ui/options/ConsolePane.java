@@ -18,6 +18,9 @@ public class ConsolePane extends JTextPane implements ActionListener {
 	    if(ControlCode.TASK.actionCommand().equals(command)){
 	    	setText("");
 	    }
+	    if(ControlCode.BOUND.actionCommand().equals(command)){
+	    	setText("");
+	    }
 	    // TODO clear the console when every option is changed
 	}	
 }

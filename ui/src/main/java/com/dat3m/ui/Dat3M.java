@@ -63,8 +63,9 @@ public class Dat3M extends JFrame implements ActionListener {
 		optionsPane.getClearButton().addActionListener(this);
 		optionsPane.getGraphButton().addActionListener(this);
 
-		// ConsolePane need to listen to clear button to clean the console
+		// ConsolePane needs to listen to clean the console
 		optionsPane.getClearButton().addActionListener(optionsPane.getConsolePane());
+		optionsPane.getBoundPane().addActionListener(optionsPane.getConsolePane());
 
 		pack();
 	}
