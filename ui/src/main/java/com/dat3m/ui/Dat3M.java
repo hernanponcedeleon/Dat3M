@@ -50,8 +50,9 @@ public class Dat3M extends JFrame implements ActionListener {
 		mainPane.setDividerSize(2);
 		add(mainPane);
 
-		// EditorsPane and ConsolePane need to know if task is changed in order to show / hide source model editor
+		// EditorsPane needs to know if task is changed in order to show / hide source model editor
 		optionsPane.getTaskPane().addActionListener(editorsPane);
+		// ConsolePane need to know if task is changed to clean the console
 		optionsPane.getTaskPane().addActionListener(optionsPane.getConsolePane());
 
 		// ArchPane needs to know which program format has been loaded by editor in order to show / hide target
@@ -60,8 +61,10 @@ public class Dat3M extends JFrame implements ActionListener {
 		// Start listening to button events
 		optionsPane.getTestButton().addActionListener(this);
 		optionsPane.getClearButton().addActionListener(this);
-		optionsPane.getClearButton().addActionListener(optionsPane.getConsolePane());
 		optionsPane.getGraphButton().addActionListener(this);
+
+		// ConsolePane need to listen to clear button to clean the console
+		optionsPane.getClearButton().addActionListener(optionsPane.getConsolePane());
 
 		pack();
 	}
