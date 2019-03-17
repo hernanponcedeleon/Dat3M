@@ -86,6 +86,14 @@ public class OptionsPane extends JPanel {
         return taskPane;
     }
 
+    public Selector<Arch> getTargetPane(){
+        return targetPane;
+    }
+
+    public Selector<Arch> getSourcePane(){
+        return sourcePane;
+    }
+
     public ArchManager getArchManager(){
         return archManager;
     }

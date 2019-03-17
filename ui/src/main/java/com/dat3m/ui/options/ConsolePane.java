@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JTextPane;
 
+import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.options.utils.ControlCode;
 
 public class ConsolePane extends JTextPane implements ActionListener {
@@ -12,15 +13,30 @@ public class ConsolePane extends JTextPane implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent event) {
 	    String command = event.getActionCommand();
-	    if(ControlCode.CLEAR.actionCommand().equals(command)){
+	    // TODO(HP): cleaner way?
+	    if(ControlCode.TASK.actionCommand().equals(command)){
 	    	setText("");
 	    }
-	    if(ControlCode.TASK.actionCommand().equals(command)){
+	    if(ControlCode.TARGET.actionCommand().equals(command)){
+	    	setText("");
+	    }
+	    if(ControlCode.SOURCE.actionCommand().equals(command)){
 	    	setText("");
 	    }
 	    if(ControlCode.BOUND.actionCommand().equals(command)){
 	    	setText("");
 	    }
-	    // TODO clear the console when every option is changed
+	    if(ControlCode.CLEAR.actionCommand().equals(command)){
+	    	setText("");
+	    }
+	    if(EditorCode.PROGRAM.editorActionCommand().equals(command)){
+	    	setText("");
+	    }
+	    if(EditorCode.SOURCE_MM.editorActionCommand().equals(command)){
+	    	setText("");
+	    }
+	    if(EditorCode.TARGET_MM.editorActionCommand().equals(command)){
+	    	setText("");
+	    }
 	}	
 }
