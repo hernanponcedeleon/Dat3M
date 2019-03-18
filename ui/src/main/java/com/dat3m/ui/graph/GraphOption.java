@@ -17,12 +17,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
-import com.dat3m.porthos.PorthosResult;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
-
+import com.dat3m.ui.result.Dat3mResult;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.parse.Parser;
 
@@ -31,25 +27,20 @@ public class GraphOption {
 	private final String TMPDOTPATH = "./.tmp/output.dot";
 	private final String TMPPNGPATH = "./.tmp/output.png";
 
-	public void generate(Solver solver, Context ctx, Object o) {
-		Graph graph = new Graph(solver.getModel(), ctx);
-      	try {
-      		if(o instanceof Program) {
-      			Program p = (Program)o;
-    			graph.build(p).draw(TMPDOTPATH);	
-      		} else if (o instanceof PorthosResult) {
-      			PorthosResult result = (PorthosResult)o;
-    			graph.build(result.getSourceProgram(), result.getTargetProgram()).draw(TMPDOTPATH);
-      		}
-			File dotFile = new File(TMPDOTPATH);
-			// The previous png file needs to be deleted
-			Path fileToDeletePath = Paths.get(TMPPNGPATH);
-			Files.delete(fileToDeletePath);
-			InputStream targetStream = new FileInputStream(dotFile);
-			MutableGraph g = Parser.read(targetStream);
-			fromGraph(g).render(PNG).toFile(new File(TMPPNGPATH));
-			dotFile.delete();
-		} catch (IOException e) {
+	public void generate(Dat3mResult res) {
+		try {
+			if(res.isSat()) {
+				Graph graph = res.getGraph();
+				File dotFile = graph.draw(TMPDOTPATH);
+				// The previous png file needs to be deleted
+				Path fileToDeletePath = Paths.get(TMPPNGPATH);
+				Files.delete(fileToDeletePath);
+				InputStream targetStream = new FileInputStream(dotFile);
+				MutableGraph g = Parser.read(targetStream);
+				fromGraph(g).render(PNG).toFile(new File(TMPPNGPATH));
+				dotFile.delete();				
+			}
+      	} catch (IOException e) {
 			// This should never happen since the file is always created
 		}
 	}

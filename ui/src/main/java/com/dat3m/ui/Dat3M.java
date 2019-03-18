@@ -86,12 +86,12 @@ public class Dat3M extends JFrame implements ActionListener {
                 optionsPane.getGraphButton().setEnabled(testResult.getGraph() != null);
             }
         } else if(ControlCode.GRAPH.actionCommand().equals(command)){
-            // TODO: Implementation
             EventQueue.invokeLater(graph::open);
         }
 	}
 
 	private void runTest(){
+		// TODO(HP): fail for porthos when *.litmus
 		Options options = optionsPane.getOptions();
 		if(options.validate()){
             testResult = null;
@@ -120,6 +120,9 @@ public class Dat3M extends JFrame implements ActionListener {
             } catch (Exception e){
                 showError("The program was not imported or cannot be parsed");
             }
+		    if(testResult != null && testResult.isSat()) {
+	            graph.generate(testResult);
+		    }
 		}
 	}
 

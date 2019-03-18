@@ -7,4 +7,6 @@ public interface Dat3mResult {
     String getVerdict();
 
     Graph getGraph();
+    
+    boolean isSat();
 }

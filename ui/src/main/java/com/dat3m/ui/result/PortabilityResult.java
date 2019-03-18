@@ -16,6 +16,7 @@ public class PortabilityResult implements Dat3mResult {
     private final Wmm sourceWmm;
     private final Wmm targetWmm;
     private final Options options;
+    private boolean isSat = false;
 
     private Graph graph;
     private String verdict;
@@ -29,6 +30,14 @@ public class PortabilityResult implements Dat3mResult {
         run();
     }
 
+    public Program getSourceProgram() {
+    	return sourceProgram;
+    }
+    
+    public Program getTargetProgram() {
+    	return targetProgram;
+    }
+    
     public Graph getGraph(){
         return graph;
     }
@@ -51,7 +60,13 @@ public class PortabilityResult implements Dat3mResult {
         if(!result.getIsPortable()){
             graph = new Graph(s1.getModel(), ctx);
             graph.build(sourceProgram, targetProgram);
+            isSat = true;
         }
         ctx.close();
     }
+
+	@Override
+	public boolean isSat() {
+		return isSat;
+	}
 }

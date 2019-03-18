@@ -87,11 +87,12 @@ public class Graph {
         return this;
     }
 
-    public void draw(String filename) throws IOException {
+    public File draw(String filename) throws IOException {
         File newTextFile = new File(filename);
         FileWriter fw = new FileWriter(newTextFile);
         fw.write(buffer.toString());
         fw.close();
+        return newTextFile;
     }
 
     private StringBuilder buildProgramGraph(Program program){
