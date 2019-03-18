@@ -3,6 +3,9 @@ package com.dat3m.ui.options;
 import com.dat3m.dartagnan.program.utils.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.ui.button.ClearButton;
+import com.dat3m.ui.button.GraphButton;
+import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.options.utils.ArchManager;
 import com.dat3m.ui.options.utils.ControlCode;
@@ -19,7 +22,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 
 import static com.dat3m.ui.utils.Utils.getMainScreenHeight;
-import static java.awt.FlowLayout.LEFT;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -27,6 +29,8 @@ import static javax.swing.border.TitledBorder.CENTER;
 
 public class OptionsPane extends JPanel implements ActionListener {
 
+	public final static int OPTWIDTH = 300;
+	
     private final IconPane iconPane;
 
     private final Selector<Task> taskPane;
@@ -37,7 +41,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     private final Selector<Arch> sourcePane;
     private final Selector<Arch> targetPane;
 
-    private final BoundPane boundField;
+    private final BoundField boundField;
 
     private final JButton testButton;
     private final JButton clearButton;
@@ -60,17 +64,11 @@ public class OptionsPane extends JPanel implements ActionListener {
         targetPane = new Selector<Arch>(architectures, ControlCode.TARGET);
         archManager = new ArchManager(sourcePane, targetPane);
 
-        boundField = new BoundPane();
+        boundField = new BoundField();
 
-        testButton = new JButton("Test");
-        testButton.setActionCommand(ControlCode.TEST.actionCommand());
-
-        clearButton = new JButton("Clear Console");
-        clearButton.setActionCommand(ControlCode.CLEAR.actionCommand());
-
-        graphButton = new JButton("Execution Witness");
-        graphButton.setActionCommand(ControlCode.GRAPH.actionCommand());
-        graphButton.setEnabled(false);
+        testButton = new TestButton();
+        clearButton = new ClearButton();
+        graphButton = new GraphButton();
 
         consolePane = new JTextPane();
         consolePane.setEditable(false);
@@ -107,7 +105,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         return archManager;
     }
 
-    public BoundPane getBoundPane(){
+    public BoundField getBoundPane(){
         return boundField;
     }
 
@@ -143,26 +141,18 @@ public class OptionsPane extends JPanel implements ActionListener {
     }
 
     private void mkGrid(){
-        int width = 300;
-
-        // Buttons dimension
-        Dimension buttonDimention = new Dimension(width, 50);
-		testButton.setMaximumSize(buttonDimention);
-        clearButton.setMaximumSize(buttonDimention);
-        graphButton.setMaximumSize(buttonDimention);
 
         JScrollPane scrollConsole = new JScrollPane(consolePane);
-        scrollConsole.setMaximumSize(new Dimension(width, 120));
+        scrollConsole.setMaximumSize(new Dimension(OPTWIDTH, 120));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        JPanel boundPane = new JPanel(new FlowLayout(LEFT));
-        boundPane.add(new JLabel("Unrolling Bound: "));
+        JPanel boundPane = new BoundPane();
         boundPane.add(boundField);
 
         JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         archPane.setLeftComponent(sourcePane);
         archPane.setRightComponent(targetPane);
-        archPane.setPreferredSize(new Dimension(width, 0));
+        archPane.setPreferredSize(new Dimension(OPTWIDTH, 0));
         archPane.setDividerSize(0);
 
         // Inner borders

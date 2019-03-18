@@ -7,13 +7,13 @@ import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-import com.dat3m.ui.options.BoundPane;
+import com.dat3m.ui.options.BoundField;
 
 public class BoundListener implements KeyListener, FocusListener {
 	
-	private BoundPane boundPane;
+	private BoundField boundPane;
 
-	public BoundListener(BoundPane pane) {
+	public BoundListener(BoundField pane) {
 		this.boundPane = pane;
 	}
 	
