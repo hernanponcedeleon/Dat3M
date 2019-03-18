@@ -82,6 +82,13 @@ public class OptionsPane extends JPanel implements ActionListener {
     private void bindListeners(){
         taskPane.addActionListener(archManager);
         taskPane.addActionListener(iconPane);
+		// optionsPane needs to listen to options to clean the console
+		// Alias and Mode do not change the result and thus we don't listen to them 
+        taskPane.addActionListener(this);
+		targetPane.addActionListener(this);
+		sourcePane.addActionListener(this);
+		boundField.addActionListener(this);
+		clearButton.addActionListener(this);
     }
 
     public Selector<Task> getTaskPane(){
