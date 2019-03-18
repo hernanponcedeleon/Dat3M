@@ -40,6 +40,4 @@ public class Cmp extends Skip {
     public Cmp getCopy(){
         return new Cmp(this);
     }
-    
-    //TODO(HP) no compilation needed?
 }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.arch.pts.event;
 
+import com.dat3m.dartagnan.program.arch.pts.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
@@ -17,7 +18,6 @@ import java.util.LinkedList;
 public class Write extends MemEvent implements RegReaderData {
 
     private final ExprInterface value;
-    //TODO(HP) shouldn't it be com.dat3m.dartagnan.program.arch.pts.utils.Mo?
     private final String mo;
     private final ImmutableSet<Register> dataRegs;
 
@@ -73,22 +73,21 @@ public class Write extends MemEvent implements RegReaderData {
             case NONE:
                 break;
             case TSO:
-                //TODO(HP) shouldn't it be Mo.SC? Similar for the rest below
-                if(mo.equals("_sc")){
+                if(mo.equals(Mo.SC)){
                     events.addLast(new Fence("Mfence"));
                 }
                 break;
             case POWER:
-                if(mo.equals("_rel")){
+                if(mo.equals(Mo.RELEASE)){
                     events.addFirst(new Fence("Lwsync"));
-                } else if(mo.equals("_sc")){
+                } else if(mo.equals(Mo.SC)){
                     events.addFirst(new Fence("Sync"));
                 }
                 break;
             case ARM: case ARM8:
-                if(mo.equals("_rel") || mo.equals("_sc")){
+                if(mo.equals(Mo.RELEASE) || mo.equals(Mo.SC)){
                     events.addFirst(new Fence("Ish"));
-                    if(mo.equals("_sc")){
+                    if(mo.equals(Mo.SC)){
                         events.addLast(new Fence("Ish"));
                     }
                 }

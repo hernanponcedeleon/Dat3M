@@ -15,8 +15,6 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
 
     protected final Register resultRegister;
     protected final ExprInterface value;
-    //TODO(HP): why not having a class as in com.dat3m.dartagnan.program.arch.aarch64.utils.Mo
-    //Actually I just found com.dat3m.dartagnan.program.arch.linux.utils.Mo
     protected final String mo;
     protected ImmutableSet<Register> dataRegs;
 

@@ -23,7 +23,6 @@ public class RelCtrlDirect extends BasicRelation {
 
             for(Thread thread : program.getThreads()){
                 for(Event e1 : thread.getCache().getEvents(FilterBasic.get(EType.CMP))){
-                	//TODO(HP) does the filter guarantees that e1 can be safely csat?
                     for(Event e2 : ((If) e1).getMainBranchEvents()){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }

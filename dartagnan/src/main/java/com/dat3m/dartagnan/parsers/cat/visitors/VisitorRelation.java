@@ -122,8 +122,7 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
         return relation;
     }
 
-    //TODO(HP) is it possible to remove warning due to "Class is a raw type"?
-    private Relation visitBinaryRelation(CatParser.ExpressionContext e1, CatParser.ExpressionContext e2, Class c){
+    private Relation visitBinaryRelation(CatParser.ExpressionContext e1, CatParser.ExpressionContext e2, Class<?> c){
         Relation r1 = e1.accept(this);
         Relation r2 = e2.accept(this);
         if(r1 != null && r2 != null){
@@ -132,8 +131,7 @@ public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisi
         return null;
     }
 
-    //TODO(HP) is it possible to remove warning due to "Class is a raw type"?
-    private Relation visitUnaryRelation(CatParser.ExpressionContext e, Class c){
+    private Relation visitUnaryRelation(CatParser.ExpressionContext e, Class<?> c){
         Relation r = e.accept(this);
         if(r != null){
             return base.relationRepository.getRelation(c, r);
