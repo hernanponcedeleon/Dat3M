@@ -91,7 +91,6 @@ public class Dat3M extends JFrame implements ActionListener {
 	}
 
 	private void runTest(){
-		// TODO(HP): fail for porthos when *.litmus
 		Options options = optionsPane.getOptions();
 		if(options.validate()){
             testResult = null;
@@ -106,19 +105,23 @@ public class Dat3M extends JFrame implements ActionListener {
                         testResult = new ReachabilityResult(program, targetModel, options);
                     } else {
                         try {
+                        	if(!editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat().equals("pts")) {
+                        		showError("PORTHOS only supports *.pts files", "Loading error");
+                        		return;
+                        	}
                             Program sourceProgram = new ProgramParser().parse(programText, format);
                             String sourceModelRaw = editorsPane.getEditor(EditorCode.SOURCE_MM).getText();
                             Wmm sourceModel = new ParserCat().parse(sourceModelRaw, options.getSource());
                             testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
                         } catch (Exception e){
-                            showError("The source memory model was not imported or cannot be parsed");
+                            showError("The source memory model was not imported or cannot be parsed", "Loading or parsing error");
                         }
                     }
                 } catch (Exception e){
-                    showError("The target memory model was not imported or cannot be parsed");
+                    showError("The target memory model was not imported or cannot be parsed", "Loading or parsing error");
                 }
             } catch (Exception e){
-                showError("The program was not imported or cannot be parsed");
+                showError("The program was not imported or cannot be parsed", "Loading or parsing error");
             }
 		    if(testResult != null && testResult.isSat()) {
 	            graph.generate(testResult);
