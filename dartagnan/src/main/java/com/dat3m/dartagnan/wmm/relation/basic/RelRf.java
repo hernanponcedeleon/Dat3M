@@ -84,7 +84,6 @@ public class RelRf extends Relation {
         int num = set.size();
 
         BoolExpr enc = ctx.mkEq(mkL(readId, 0), ctx.mkFalse());
-        enc = ctx.mkAnd(enc, ctx.mkNot(ctx.mkAnd(set.get(0), mkL(readId, 0))));
         BoolExpr atLeastOne = set.get(0);
 
         for(int i = 1; i < num; i++){
