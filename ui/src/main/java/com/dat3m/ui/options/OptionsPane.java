@@ -181,7 +181,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// Any change in the (relevant) options clears the console
+		// Any change in the (relevant) options clears the console and disable graph button
 		getConsolePane().setText("");
+		graphButton.setEnabled(false);
 	}
 }
