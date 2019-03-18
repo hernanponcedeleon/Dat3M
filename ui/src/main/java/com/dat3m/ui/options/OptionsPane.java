@@ -12,6 +12,8 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -23,7 +25,7 @@ import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.border.TitledBorder.CENTER;
 
-public class OptionsPane extends JPanel {
+public class OptionsPane extends JPanel implements ActionListener {
 
     private final IconPane iconPane;
 
@@ -41,7 +43,7 @@ public class OptionsPane extends JPanel {
     private final JButton clearButton;
     private final JButton graphButton;
 
-    private final ConsolePane consolePane;
+    private final JTextPane consolePane;
 
     public OptionsPane(){
         super(new GridLayout(1,0));
@@ -70,7 +72,7 @@ public class OptionsPane extends JPanel {
         graphButton.setActionCommand(ControlCode.GRAPH.actionCommand());
         graphButton.setEnabled(false);
 
-        consolePane = new ConsolePane();
+        consolePane = new JTextPane();
         consolePane.setEditable(false);
 
         bindListeners();
@@ -114,7 +116,7 @@ public class OptionsPane extends JPanel {
         return graphButton;
     }
 
-    public ConsolePane getConsolePane(){
+    public JTextPane getConsolePane(){
         return consolePane;
     }
 
@@ -179,4 +181,10 @@ public class OptionsPane extends JPanel {
         titledBorder.setTitleJustification(CENTER);
         setBorder(titledBorder);
     }
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// Any change in the (relevant) options clears the console
+		getConsolePane().setText("");
+	}
 }

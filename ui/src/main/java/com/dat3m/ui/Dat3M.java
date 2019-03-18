@@ -61,15 +61,16 @@ public class Dat3M extends JFrame implements ActionListener {
 		optionsPane.getClearButton().addActionListener(this);
 		optionsPane.getGraphButton().addActionListener(this);
 
-		// ConsolePane needs to listen to be cleaned
-		optionsPane.getTaskPane().addActionListener(optionsPane.getConsolePane());
-		optionsPane.getTargetPane().addActionListener(optionsPane.getConsolePane());
-		optionsPane.getSourcePane().addActionListener(optionsPane.getConsolePane());
-		optionsPane.getClearButton().addActionListener(optionsPane.getConsolePane());
-		optionsPane.getBoundPane().addActionListener(optionsPane.getConsolePane());
-		editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane.getConsolePane());
-		editorsPane.getEditor(EditorCode.SOURCE_MM).addActionListener(optionsPane.getConsolePane());
-		editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane.getConsolePane());
+		// optionsPane needs to listen to options to clean the console
+		// Alias and Mode do not change the result and thus we don't listen to them 
+		optionsPane.getTaskPane().addActionListener(optionsPane);
+		optionsPane.getTargetPane().addActionListener(optionsPane);
+		optionsPane.getSourcePane().addActionListener(optionsPane);
+		optionsPane.getBoundPane().addActionListener(optionsPane);
+		optionsPane.getClearButton().addActionListener(optionsPane);
+		editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane);
+		editorsPane.getEditor(EditorCode.SOURCE_MM).addActionListener(optionsPane);
+		editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane);
 
 		pack();
 	}
