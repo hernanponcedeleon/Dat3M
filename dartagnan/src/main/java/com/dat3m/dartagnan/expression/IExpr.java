@@ -13,9 +13,6 @@ public abstract class IExpr implements ExprInterface {
 	}
 
     @Override
-    public abstract IExpr clone();
-
-    @Override
     public boolean getBoolValue(Event e, Context ctx, Model model){
         return getIntValue(e, ctx, model) > 0;
     }

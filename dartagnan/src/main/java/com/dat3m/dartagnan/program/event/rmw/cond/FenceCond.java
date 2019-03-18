@@ -7,16 +7,11 @@ import com.dat3m.dartagnan.program.event.Fence;
 
 public class FenceCond extends Fence {
 
-    private RMWReadCond loadEvent;
+    private final RMWReadCond loadEvent;
 
     public FenceCond (RMWReadCond loadEvent, String name){
         super(name);
         this.loadEvent = loadEvent;
-    }
-
-    @Override
-    public BoolExpr encodeCF(Context ctx) {
-        return ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(cfVar()), loadEvent.getCond()), executes(ctx));
     }
 
     @Override
@@ -25,11 +20,15 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public FenceCond clone() {
-        if(clone == null){
-            clone = new FenceCond(loadEvent.clone(), name);
-            afterClone();
-        }
-        return (FenceCond)clone;
+    protected BoolExpr encodeExec(Context ctx){
+        return ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(cfVar()), (loadEvent).getCond()), executes(ctx));
+    }
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public int unroll(int bound, int nextId, Event predecessor) {
+        throw new RuntimeException("FenceCond cannot be unrolled: event must be generated during compilation");
     }
 }

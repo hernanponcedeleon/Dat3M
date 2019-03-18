@@ -39,8 +39,9 @@ public enum IOpBin {
                 return "add";
             case MINUS:
                 return "sub";
+            default:
+            	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
         }
-        throw new UnsupportedOperationException("Linux op name is not defined for " + this);
     }
 
     public IntExpr encode(IntExpr e1, IntExpr e2, Context ctx){
@@ -59,8 +60,9 @@ public enum IOpBin {
                 return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
             case XOR:
                 return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
+            default:
+                throw new UnsupportedOperationException("Encoding of not supported for AOpBin " + this);
         }
-        throw new UnsupportedOperationException("Encoding of not supported for AOpBin " + this);
     }
 
     public int combine(int a, int b){

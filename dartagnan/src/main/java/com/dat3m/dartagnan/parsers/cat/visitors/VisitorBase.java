@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -27,8 +26,8 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
     boolean recursiveDef;
     private Set<RecursiveRelation> recursiveGroup;
 
-    public VisitorBase(Arch target){
-        this.wmm = new Wmm(target);
+    public VisitorBase(){
+        this.wmm = new Wmm();
         relationRepository = wmm.getRelationRepository();
         filterVisitor = new VisitorFilter(this);
         relationVisitor = new VisitorRelation(this);
@@ -47,7 +46,7 @@ public class VisitorBase extends CatBaseVisitor<Object> implements CatVisitor<Ob
             if(r == null){
                 throw new ParsingException(ctx.getText());
             }
-            Constructor constructor = ctx.cls.getConstructor(Relation.class, boolean.class);
+            Constructor<?> constructor = ctx.cls.getConstructor(Relation.class, boolean.class);
             wmm.addAxiom((Axiom) constructor.newInstance(r, ctx.negate != null));
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e){
             throw new ParsingException(ctx.getText());

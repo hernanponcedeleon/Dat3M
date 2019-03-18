@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+
+import java.util.List;
 
 public class RelCtrlDirect extends BasicRelation {
 
@@ -17,12 +20,26 @@ public class RelCtrlDirect extends BasicRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Event e1 : program.getCache().getEvents(FilterBasic.get(EType.CMP))){
-                for(Event e2 : ((If) e1).getT1().getEvents()){
-                    maxTupleSet.add(new Tuple(e1, e2));
+
+            for(Thread thread : program.getThreads()){
+                for(Event e1 : thread.getCache().getEvents(FilterBasic.get(EType.CMP))){
+                    for(Event e2 : ((If) e1).getMainBranchEvents()){
+                        maxTupleSet.add(new Tuple(e1, e2));
+                    }
+                    for(Event e2 : ((If) e1).getElseBranchEvents()){
+                        maxTupleSet.add(new Tuple(e1, e2));
+                    }
                 }
-                for(Event e2 : ((If) e1).getT2().getEvents()){
-                    maxTupleSet.add(new Tuple(e1, e2));
+
+                List<Event> condJumps = thread.getCache().getEvents(FilterBasic.get(EType.COND_JUMP));
+                if(!condJumps.isEmpty()){
+                    for(Event e2 : thread.getCache().getEvents(FilterBasic.get(EType.ANY))){
+                        for(Event e1 : condJumps){
+                            if(e1.getCId() < e2.getCId()){
+                                maxTupleSet.add(new Tuple(e1, e2));
+                            }
+                        }
+                    }
                 }
             }
         }

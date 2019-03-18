@@ -24,11 +24,6 @@ import java.util.Set;
 public class RelationRepository {
 
     private Map<String, Relation> relationMap = new HashMap<>();
-    private boolean includePoToCtrl;
-
-    public RelationRepository(boolean includePoToCtrl){
-        this.includePoToCtrl = includePoToCtrl;
-    }
 
     public Set<Relation> getRelations(){
         Set<Relation> set = new HashSet<>();
@@ -52,14 +47,14 @@ public class RelationRepository {
     }
 
     public Relation getRelation(Class<?> cls, Object... args){
-        Class<?> argClasses[] = getArgsForClass(cls);
+        Class<?>[] argClasses = getArgsForClass(cls);
         try{
             Method method = cls.getMethod("makeTerm", argClasses);
             String term = (String)method.invoke(null, args);
             Relation relation = relationMap.get(term);
 
             if(relation == null){
-                Constructor constructor = cls.getConstructor(argClasses);
+                Constructor<?> constructor = cls.getConstructor(argClasses);
                 relation = (Relation)constructor.newInstance(args);
                 addRelation(relation);
             }
@@ -147,14 +142,7 @@ public class RelationRepository {
                         getRelation("addrDirect"),
                         getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))).setName("addr");
             case "ctrl":
-                if(includePoToCtrl){
-                    return getRelation(RelComposition.class,
-                            getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")),
-                            getRelation(RelUnion.class, getRelation("id"), getRelation("_po"))
-                    ).setName("ctrl");
-                } else {
-                    return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");
-                }
+                return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");
             case "po-loc":
                 return getRelation(RelIntersection.class, getRelation("po"), getRelation("loc")).setName("po-loc");
             case "rfe":

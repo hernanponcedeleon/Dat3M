@@ -22,9 +22,4 @@ public class AssertCompositeOr extends AbstractAssert {
     public String toString() {
         return "(" + a1 + " || " + a2 + ")";
     }
-
-    @Override
-    public AssertCompositeOr clone() {
-        return new AssertCompositeOr(a1, a2);
-    }
 }

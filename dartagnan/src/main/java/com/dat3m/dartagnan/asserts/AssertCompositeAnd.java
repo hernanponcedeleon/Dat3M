@@ -22,9 +22,4 @@ public class AssertCompositeAnd extends AbstractAssert {
     public String toString() {
         return a1 + " && " + a2;
     }
-
-    @Override
-    public AssertCompositeAnd clone() {
-        return new AssertCompositeAnd(a1, a2);
-    }
 }

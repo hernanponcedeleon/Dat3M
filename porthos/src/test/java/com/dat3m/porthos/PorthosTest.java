@@ -2,7 +2,11 @@ package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -16,6 +20,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -28,10 +33,10 @@ public class PorthosTest {
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
     public static Iterable<Object[]> data() throws IOException {
 
-        Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat", Arch.NONE);
-        Wmm wmmTso = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/tso.cat", Arch.TSO);
-        Wmm wmmPpc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/power.cat", Arch.POWER);
-        Wmm wmmArm = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/arm.cat", Arch.ARM);
+        Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat");
+        Wmm wmmTso = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/tso.cat");
+        Wmm wmmPpc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/power.cat");
+        Wmm wmmArm = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/arm.cat");
 
         return Arrays.asList(new Object[][] {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
@@ -142,6 +147,30 @@ public class PorthosTest {
                     source, target, sourceWmm, targetWmm, steps, mode, Alias.CFIS);
             assertEquals(expected, result.getIsPortable());
             ctx.close();
+
+            for(Thread thread : pSource.getThreads()){
+                List<Event> events = thread.getCache().getEvents(FilterBasic.get(EType.ANY));
+                Event lastEvent = events.get(0);
+                for(int i = 1; i < events.size(); i++){
+                    Event thisEvent = events.get(i);
+                    if(lastEvent.getUId() > thisEvent.getUId() || lastEvent.getCId() >= thisEvent.getCId()){
+                        fail("Malformed thread " + thread.getId() + " in program compiled to " + source);
+                    }
+                    lastEvent = thisEvent;
+                }
+            }
+
+            for(Thread thread : pTarget.getThreads()){
+                List<Event> events = thread.getCache().getEvents(FilterBasic.get(EType.ANY));
+                Event lastEvent = events.get(0);
+                for(int i = 1; i < events.size(); i++){
+                    Event thisEvent = events.get(i);
+                    if(lastEvent.getUId() > thisEvent.getUId() || lastEvent.getCId() >= thisEvent.getCId()){
+                        fail("Malformed thread " + thread.getId() + " in program compiled to " + target);
+                    }
+                    lastEvent = thisEvent;
+                }
+            }
 
         } catch (IOException e){
             fail("Missing resource file");

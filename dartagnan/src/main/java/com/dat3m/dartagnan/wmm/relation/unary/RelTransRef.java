@@ -71,7 +71,7 @@ public class RelTransRef extends RelTrans {
         activeSet.retainAll(maxTupleSet);
 
         for(Tuple tuple : activeSet){
-            if(tuple.getFirst().getEId() == tuple.getSecond().getEId()){
+            if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
                 identityEncodeTupleSet.add(tuple);
             }
         }

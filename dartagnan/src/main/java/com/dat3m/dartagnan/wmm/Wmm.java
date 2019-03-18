@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.wmm;
 
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.*;
+import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -19,7 +21,7 @@ import java.util.*;
  */
 public class Wmm {
 
-    private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
+    private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect", "rmw");
 
     private List<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<>();
@@ -30,8 +32,8 @@ public class Wmm {
     private boolean drawExecutionGraph = false;
     private Set<String> drawRelations = new HashSet<>();
 
-    public Wmm(Arch target) {
-        relationRepository = new RelationRepository(target.getIncludePoToCtrl());
+    public Wmm() {
+        relationRepository = new RelationRepository();
     }
 
     public void setDrawExecutionGraph(){
@@ -70,8 +72,9 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encode(Program program, Context ctx, Mode mode) {
+    public BoolExpr encode(Program program, Context ctx, Mode mode, Alias alias) {
         this.program = program;
+        new AliasAnalysis().calculateLocationSets(this.program, alias);
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);

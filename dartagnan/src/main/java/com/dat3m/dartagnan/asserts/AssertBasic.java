@@ -28,11 +28,6 @@ public class AssertBasic extends AbstractAssert {
         return valueToString(e1) + op + valueToString(e2);
     }
 
-    @Override
-    public AbstractAssert clone(){
-        return new AssertBasic(e1.clone(), op, e2.clone());
-    }
-
     private String valueToString(ExprInterface value){
         if(value instanceof Register){
             return ((Register)value).getThreadId() + ":" + value;

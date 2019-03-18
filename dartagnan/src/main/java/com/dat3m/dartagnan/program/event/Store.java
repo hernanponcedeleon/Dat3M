@@ -10,16 +10,28 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class Store extends MemEvent implements RegReaderData {
 
-    protected ExprInterface value;
-    private ImmutableSet<Register> dataRegs;
+    protected final ExprInterface value;
+    protected final String mo;
+    private final ImmutableSet<Register> dataRegs;
 
-    public Store(IExpr address, ExprInterface value, String atomic){
-        this.address = address;
-        this.atomic = atomic;
-        this.condLevel = 0;
+    public Store(IExpr address, ExprInterface value, String mo){
+        super(address);
+        this.mo = mo;
         this.value = value;
         dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
+    }
+
+    protected Store(Store other){
+        super(other);
+        this.mo = other.mo;
+        this.value = other.value;
+        dataRegs = other.dataRegs;
+    }
+
+    @Override
+    public boolean is(String param){
+        return super.is(param) || (mo != null && mo.equals(param));
     }
 
     @Override
@@ -35,25 +47,24 @@ public class Store extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + "store(*" + address + ", " + value + (atomic != null ? ", " + atomic : "") + ")";
+        return "store(*" + address + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
     @Override
     public String label(){
-        return "W_" + atomic;
-    }
-
-    @Override
-    public Store clone() {
-        if(clone == null){
-            clone = new Store(address, value, atomic);
-            afterClone();
-        }
-        return (Store)clone;
+        return "W" + (mo != null ? "_" + mo : "");
     }
 
     @Override
     public ExprInterface getMemValue(){
         return value;
+    }
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public Store getCopy(){
+        return new Store(this);
     }
 }

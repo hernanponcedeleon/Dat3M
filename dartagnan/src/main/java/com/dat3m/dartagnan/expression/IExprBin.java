@@ -42,11 +42,6 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public IExprBin clone() {
-        return new IExprBin(lhs.clone(), op, rhs.clone());
-    }
-
-    @Override
     public String toString() {
         return "(" + lhs + " " + op + " " + rhs + ")";
     }

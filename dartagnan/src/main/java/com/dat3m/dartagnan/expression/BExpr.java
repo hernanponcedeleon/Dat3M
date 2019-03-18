@@ -13,9 +13,6 @@ public abstract class BExpr implements ExprInterface {
     }
 
     @Override
-    public abstract BExpr clone();
-
-    @Override
     public int getIntValue(Event e, Context ctx, Model model){
         return getBoolValue(e, ctx, model) ? 1 : 0;
     }

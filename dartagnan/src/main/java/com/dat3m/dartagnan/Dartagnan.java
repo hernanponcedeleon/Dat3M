@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -85,7 +85,7 @@ public class Dartagnan {
             throw new RuntimeException("Assert is required for Dartagnan tests");
         }
 
-        Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"), target);
+        Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"));
 
         if(cmd.hasOption("draw")) {
             mcm.setDrawExecutionGraph();
@@ -125,19 +125,19 @@ public class Dartagnan {
         ctx.close();
     }
 
-    static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
+    public static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, int steps,
                                Mode mode, Alias alias){
 
-        program.unroll(steps);
-        program.compile(target, alias, 0);
+        program.unroll(steps, 0);
+        program.compile(target, 0);
 
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
         solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeFinalValues(ctx));
-        solver.add(wmm.encode(program, ctx, mode));
+        solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(wmm.encode(program, ctx, mode, alias));
         solver.add(wmm.consistent(program, ctx));
 
         boolean result = (solver.check() == Status.SATISFIABLE);
