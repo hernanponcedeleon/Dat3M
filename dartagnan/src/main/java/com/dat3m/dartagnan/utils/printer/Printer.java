@@ -113,8 +113,8 @@ public class Printer {
                 case COMPILED:
                     idSb.append(event.getCId()).append(":");
                     break;
-                    default:
-                        throw new RuntimeException("Unrecognized event id type " + idType);
+                default:
+                	throw new RuntimeException("Unrecognized event id type " + idType);
             }
             result.append(idSb);
             result.append(padding, idSb.length(), padding.length());
