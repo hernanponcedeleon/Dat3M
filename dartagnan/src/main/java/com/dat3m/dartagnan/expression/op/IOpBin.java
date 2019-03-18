@@ -39,8 +39,9 @@ public enum IOpBin {
                 return "add";
             case MINUS:
                 return "sub";
+                default:
+                    throw new UnsupportedOperationException("Linux op name is not defined for " + this);
         }
-        throw new UnsupportedOperationException("Linux op name is not defined for " + this);
     }
 
     public IntExpr encode(IntExpr e1, IntExpr e2, Context ctx){

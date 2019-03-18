@@ -33,8 +33,8 @@ class Encodings {
                 FilterBasic.get(EType.LOCAL)
         ));
 
-        Iterator it1 = p1Events.iterator();
-        Iterator it2 = p2Events.iterator();
+        Iterator<Event> it1 = p1Events.iterator();
+        Iterator<Event> it2 = p2Events.iterator();
 
         Set<Tuple> rTuples = new TupleSet();
         Set<Tuple> wTuples = new TupleSet();

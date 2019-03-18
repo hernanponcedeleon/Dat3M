@@ -103,7 +103,6 @@ public class Printer {
     private void appendEvent(Event event){
         if(showAuxiliaryEvents || !isAuxiliary(event)){
             StringBuilder idSb = new StringBuilder();
-
             switch(idType){
                 case ORIG:
                     idSb.append("(").append(event.getOId()).append(")");
@@ -114,6 +113,8 @@ public class Printer {
                 case COMPILED:
                     idSb.append(event.getCId()).append(":");
                     break;
+                    default:
+                        throw new RuntimeException("Unrecognized event id type " + idType);
             }
             result.append(idSb);
             result.append(padding, idSb.length(), padding.length());

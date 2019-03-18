@@ -60,6 +60,7 @@ public class DartagnanBranchTest {
                 builder.put(line[0], Integer.parseInt(line[1]) == 1);
             }
         }
+        reader.close();
         return builder.build();
     }
 

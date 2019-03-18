@@ -47,14 +47,14 @@ public class RelationRepository {
     }
 
     public Relation getRelation(Class<?> cls, Object... args){
-        Class<?> argClasses[] = getArgsForClass(cls);
+        Class<?>[] argClasses = getArgsForClass(cls);
         try{
             Method method = cls.getMethod("makeTerm", argClasses);
             String term = (String)method.invoke(null, args);
             Relation relation = relationMap.get(term);
 
             if(relation == null){
-                Constructor constructor = cls.getConstructor(argClasses);
+                Constructor<?> constructor = cls.getConstructor(argClasses);
                 relation = (Relation)constructor.newInstance(args);
                 addRelation(relation);
             }
