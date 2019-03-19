@@ -2,6 +2,8 @@ package com.dat3m.ui.icon;
 
 import com.dat3m.ui.Dat3M;
 
+import static com.dat3m.ui.utils.Utils.getResource;
+
 import java.net.URL;
 
 public enum IconCode {
@@ -31,9 +33,5 @@ public enum IconCode {
                 return getResource("/porthos.jpg");
         }
         throw new RuntimeException("Illegal IconCode option");
-    }
-
-    private URL getResource(String filename){
-        return Dat3M.class.getResource(filename);
     }
 }
