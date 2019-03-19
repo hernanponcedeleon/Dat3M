@@ -24,21 +24,20 @@ import guru.nidi.graphviz.parse.Parser;
 
 public class GraphOption {
 
-	private final String TMPDOTPATH = "./.tmp/output.dot";
-	private final String TMPPNGPATH = "./.tmp/output.png";
+	//TODO(HP): make it work when run from launcher
+	private File dotFile = new File(".tmp/output.dot");
+	private File pngFile = new File(".tmp/output.png");
 
 	public void generate(Dat3mResult res) {
 		try {
 			if(res.isSat()) {
 				Graph graph = res.getGraph();
-				File dotFile = graph.draw(TMPDOTPATH);
+				File dot2File = graph.draw(dotFile.getAbsolutePath());
 				// The previous png file needs to be deleted
-				Path fileToDeletePath = Paths.get(TMPPNGPATH);
-				Files.delete(fileToDeletePath);
-				InputStream targetStream = new FileInputStream(dotFile);
+				pngFile.delete();
+				InputStream targetStream = new FileInputStream(dot2File);
 				MutableGraph g = Parser.read(targetStream);
-				fromGraph(g).render(PNG).toFile(new File(TMPPNGPATH));
-				dotFile.delete();				
+				fromGraph(g).render(PNG).toFile(pngFile);
 			}
       	} catch (IOException e) {
 			// This should never happen since the file is always created
@@ -48,7 +47,7 @@ public class GraphOption {
 	public void open() {
 		JLabel label = new JLabel();
 		// An image need to be created at every call since the image changes
-		label.setIcon(new ImageIcon(getDefaultToolkit().createImage(TMPPNGPATH)));
+		label.setIcon(new ImageIcon(getDefaultToolkit().createImage(pngFile.getAbsolutePath())));
         JScrollPane scroll = new JScrollPane(label);
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
