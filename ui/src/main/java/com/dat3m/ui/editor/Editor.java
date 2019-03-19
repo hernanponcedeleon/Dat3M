@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
-import static com.dat3m.ui.Dat3M.showError;
+import static com.dat3m.ui.utils.Utils.showError;
 import static java.lang.System.getProperty;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
@@ -78,7 +78,7 @@ public class Editor extends JScrollPane implements ActionListener {
                     try {
                         editorPane.read(new InputStreamReader(new FileInputStream(path)), null);
                     } catch (IOException e) {
-                        showError("Error reading input file");
+                    	showError("Error reading input file");
                     }
                 } else {
                 	showError("Please select a *." + String.join(", *.", allowedFormats) + " file",

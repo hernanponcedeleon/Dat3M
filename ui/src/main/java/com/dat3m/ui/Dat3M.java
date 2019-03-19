@@ -22,6 +22,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.UIManager.getDefaults;
 
@@ -128,17 +129,4 @@ public class Dat3M extends JFrame implements ActionListener {
 		    }
 		}
 	}
-
-	public static void showError(String msg, String title){
-        JOptionPane.showMessageDialog(
-                null,
-                msg,
-                title,
-                JOptionPane.ERROR_MESSAGE,
-                IconHelper.getIcon(IconCode.DAT3M, 60));
-    }
-
-	public static void showError(String msg){
-		showError(msg, "Error");
-    }
 }

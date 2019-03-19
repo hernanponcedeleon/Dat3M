@@ -1,6 +1,6 @@
 package com.dat3m.ui.listener;
 
-import static com.dat3m.ui.Dat3M.showError;
+import static com.dat3m.ui.utils.Utils.showError;
 
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;

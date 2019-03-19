@@ -10,11 +10,15 @@ import java.io.PrintWriter;
 import java.io.Writer;
 
 import javax.swing.JEditorPane;
+import javax.swing.JOptionPane;
+
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.ui.icon.IconCode;
+import com.dat3m.ui.icon.IconHelper;
 
 public class Utils {
 
@@ -67,4 +71,17 @@ public class Utils {
 	    }
 	    return 0;
 	}
+	
+	public static void showError(String msg, String title){
+        JOptionPane.showMessageDialog(
+                null,
+                msg,
+                title,
+                JOptionPane.ERROR_MESSAGE,
+                IconHelper.getIcon(IconCode.DAT3M, 60));
+    }
+
+	public static void showError(String msg){
+		showError(msg, "Error");
+    }
 }
