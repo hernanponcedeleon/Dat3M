@@ -1,7 +1,5 @@
 package com.dat3m.ui.icon;
 
-import com.dat3m.ui.Dat3M;
-
 import static com.dat3m.ui.utils.Utils.getResource;
 
 import java.net.URL;
