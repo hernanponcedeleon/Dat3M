@@ -92,12 +92,12 @@ public class Dat3M extends JFrame implements ActionListener {
 	}
 
 	private void runTest(){
+		// TODO(HP): talk with Natalia for the best way to normalize parsers
 		Options options = optionsPane.getOptions();
 		if(options.validate()){
             testResult = null;
 		    try {
                 String programText = editorsPane.getEditor(EditorCode.PROGRAM).getText();
-                String format = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
                 Program program = new ProgramParser().parse(programText);
                 try {
                     String targetModelRaw = editorsPane.getEditor(EditorCode.TARGET_MM).getText();
