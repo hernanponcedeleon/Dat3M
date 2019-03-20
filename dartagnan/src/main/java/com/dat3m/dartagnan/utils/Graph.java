@@ -62,7 +62,7 @@ public class Graph {
     public Graph build(Program program){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n")
-                .append(L1).append("subgraph cluster_Target { ").append("\n")
+        		.append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
                 .append(buildProgramGraph(program))
                 .append(L1).append("}\n")
                 .append("}\n");

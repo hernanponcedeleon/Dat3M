@@ -98,7 +98,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		    try {
                 String programText = editorsPane.getEditor(EditorCode.PROGRAM).getText();
                 String format = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
-                Program program = new ProgramParser().parse(programText, format);
+                Program program = new ProgramParser().parse(programText);
                 try {
                     String targetModelRaw = editorsPane.getEditor(EditorCode.TARGET_MM).getText();
                     Wmm targetModel = new ParserCat().parse(targetModelRaw);
@@ -110,7 +110,7 @@ public class Dat3M extends JFrame implements ActionListener {
                         		showError("PORTHOS only supports *.pts files", "Loading error");
                         		return;
                         	}
-                            Program sourceProgram = new ProgramParser().parse(programText, format);
+                            Program sourceProgram = new ProgramParser().parse(programText);
                             String sourceModelRaw = editorsPane.getEditor(EditorCode.SOURCE_MM).getText();
                             Wmm sourceModel = new ParserCat().parse(sourceModelRaw);
                             testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);

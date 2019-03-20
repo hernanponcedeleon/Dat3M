@@ -1,9 +1,10 @@
 package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.program.Program;
-import org.antlr.v4.runtime.CharStream;
+
+import java.io.IOException;
 
 public interface ParserInterface {
 
-    Program parse(CharStream charStream);
+    Program parse(String inputFilePath) throws IOException;
 }
