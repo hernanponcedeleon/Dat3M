@@ -8,9 +8,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -24,13 +23,20 @@ import guru.nidi.graphviz.parse.Parser;
 
 public class GraphOption {
 
-	//TODO(HP): make it work when run from launcher
 	private File dotFile = new File(".tmp/output.dot");
 	private File pngFile = new File(".tmp/output.png");
 
 	public void generate(Dat3mResult res) {
 		try {
 			if(res.isSat()) {
+		        List<File> files = Arrays.asList(dotFile, pngFile);
+		        // Create the file and parent directry if they do not exist
+		        for(File f : files) {
+					if (f.getParentFile() != null) {
+						f.getParentFile().mkdirs();
+						}
+					f.createNewFile();		        	
+		        }
 				Graph graph = res.getGraph();
 				File dot2File = graph.draw(dotFile.getAbsolutePath());
 				// The previous png file needs to be deleted
