@@ -5,21 +5,23 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class Skip extends Event {
 	
 	public Skip() {
-		this.condLevel = 0;
 		addFilters(EType.ANY);
+	}
+
+	protected Skip(Skip other){
+		super(other);
 	}
 
 	@Override
 	public String toString() {
-		return nTimesCondLevel() + "skip";
+		return "skip";
 	}
 
+	// Unrolling
+	// -----------------------------------------------------------------------------------------------------------------
+
 	@Override
-	public Skip clone() {
-		if(clone == null){
-			clone = new Skip();
-			afterClone();
-		}
-		return (Skip)clone;
+	public Skip getCopy(){
+		return new Skip(this);
 	}
 }

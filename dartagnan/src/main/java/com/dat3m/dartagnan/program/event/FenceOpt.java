@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 public class FenceOpt extends Fence {
 
-    private String opt;
+    private final String opt;
 
     public FenceOpt(String name, String opt){
         super(name);
@@ -10,16 +10,21 @@ public class FenceOpt extends Fence {
         filter.add(name + "." + opt);
     }
 
+    protected FenceOpt(FenceOpt other){
+        super(other);
+        this.opt = other.opt;
+    }
+
+    @Override
     public String getName(){
         return name + "." + opt;
     }
 
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
     @Override
-    public FenceOpt clone() {
-        if(clone == null){
-            clone = new FenceOpt(name, opt);
-            afterClone();
-        }
-        return (FenceOpt)clone;
+    public FenceOpt getCopy(){
+        return new FenceOpt(this);
     }
 }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -9,13 +10,8 @@ import com.dat3m.dartagnan.parsers.LitmusPPCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.parsers.program.utils.branch.Cmp;
-import com.dat3m.dartagnan.parsers.program.utils.branch.CondJump;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.program.event.Load;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.event.*;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -26,8 +22,8 @@ public class VisitorLitmusPPC
     private final static ImmutableSet<String> fences = ImmutableSet.of("Sync", "Lwsync", "Isync");
 
     private ProgramBuilder programBuilder;
-    private String mainThread;
-    private Integer threadCount = 0;
+    private int mainThread;
+    private int threadCount = 0;
 
     public VisitorLitmusPPC(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -104,7 +100,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitInstructionRow(LitmusPPCParser.InstructionRowContext ctx) {
         for(Integer i = 0; i < threadCount; i++){
-            mainThread = i.toString();
+            mainThread = i;
             visitInstruction(ctx.instruction(i));
         }
         return null;
@@ -175,15 +171,19 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitBranchCond(LitmusPPCParser.BranchCondContext ctx) {
-        return programBuilder.addChild(mainThread, new CondJump(
-                ctx.cond().op,
-                programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText())
-        ));
+        Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
+        Event lastEvent = programBuilder.getLastEvent(mainThread);
+        if(!(lastEvent instanceof Cmp)){
+            throw new ParsingException("Invalid syntax near " + ctx.getText());
+        }
+        Cmp cmp = (Cmp)lastEvent;
+        Atom expr = new Atom(cmp.getLeft(), ctx.cond().op, cmp.getRight());
+        return programBuilder.addChild(mainThread, new CondJump(expr, label));
     }
 
     @Override
     public Object visitLabel(LitmusPPCParser.LabelContext ctx) {
-        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(ctx.Label().getText()));
     }
 
     @Override

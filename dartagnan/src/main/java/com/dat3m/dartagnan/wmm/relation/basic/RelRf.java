@@ -74,28 +74,27 @@ public class RelRf extends Relation {
         }
 
         for(MemEvent r : rfMap.keySet()){
-            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(r.getEId(), rfMap.get(r))));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(r.getCId(), rfMap.get(r))));
         }
 
         return enc;
     }
 
-    private BoolExpr encodeEO(int readEid, List<BoolExpr> set){
+    private BoolExpr encodeEO(int readId, List<BoolExpr> set){
         int num = set.size();
 
-        BoolExpr enc = ctx.mkEq(mkL(readEid, 0), ctx.mkFalse());
-        enc = ctx.mkAnd(enc, ctx.mkNot(ctx.mkAnd(set.get(0), mkL(readEid, 0))));
+        BoolExpr enc = ctx.mkEq(mkL(readId, 0), ctx.mkFalse());
         BoolExpr atLeastOne = set.get(0);
 
         for(int i = 1; i < num; i++){
-            enc = ctx.mkAnd(enc, ctx.mkEq(mkL(readEid, i), ctx.mkOr(mkL(readEid, i - 1), set.get(i - 1))));
-            enc = ctx.mkAnd(enc, ctx.mkNot(ctx.mkAnd(set.get(i), mkL(readEid, i))));
+            enc = ctx.mkAnd(enc, ctx.mkEq(mkL(readId, i), ctx.mkOr(mkL(readId, i - 1), set.get(i - 1))));
+            enc = ctx.mkAnd(enc, ctx.mkNot(ctx.mkAnd(set.get(i), mkL(readId, i))));
             atLeastOne = ctx.mkOr(atLeastOne, set.get(i));
         }
         return ctx.mkAnd(enc, atLeastOne);
     }
 
-    private BoolExpr mkL(int eid, int i) {
-        return (BoolExpr) ctx.mkConst("l(" + eid + "," + i + ")", ctx.mkBoolSort());
+    private BoolExpr mkL(int readId, int i) {
+        return (BoolExpr) ctx.mkConst("l(" + readId + "," + i + ")", ctx.mkBoolSort());
     }
 }

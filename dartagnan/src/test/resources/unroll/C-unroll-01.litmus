@@ -7,9 +7,9 @@ P0()
     int r1 = 0;
     int r2 = 0;
     int r3 = 0;
-    int r11 = 0;
-    int r22 = 0;
-    int r33 = 0;
+    int r4 = 0;
+    int r5 = 0;
+    int r6 = 0;
 
     while(1 == 1){
         r1 = r1 + 1;
@@ -21,9 +21,11 @@ P0()
             while(3 == 3){
                 r3 = r3 + 1;
             }
-            r33 = r33 + 1;
+            r6 = r6 + 1;
         }
-        r22 = r22 + 1;
+        r5 = r5 + 1;
     }
-    r11 = r11 + 1;
+    r4 = r4 + 1;
 }
+
+forall 0:r4 = 1;

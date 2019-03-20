@@ -33,8 +33,8 @@ class Encodings {
                 FilterBasic.get(EType.LOCAL)
         ));
 
-        Iterator it1 = p1Events.iterator();
-        Iterator it2 = p2Events.iterator();
+        Iterator<Event> it1 = p1Events.iterator();
+        Iterator<Event> it2 = p2Events.iterator();
 
         Set<Tuple> rTuples = new TupleSet();
         Set<Tuple> wTuples = new TupleSet();
@@ -45,8 +45,8 @@ class Encodings {
             Event e1 = (Event) it1.next();
             Event e2 = (Event) it2.next();
 
-            if(e1.getHLId() != e2.getHLId()){
-                throw new RuntimeException("Invalid HLId");
+            if(e1.getUId() != e2.getUId()){
+                throw new RuntimeException("Invalid unrolled Id");
             }
             enc = ctx.mkAnd(enc, ctx.mkEq(e1.executes(ctx), e2.executes(ctx)));
 
@@ -73,7 +73,7 @@ class Encodings {
             Event w1From = wTupleFrom.getFirst();
             Event w2From = wTupleFrom.getSecond();
             for(Tuple wTupleTo : wTuples){
-                if(w1From.getEId() != wTupleTo.getFirst().getEId()){
+                if(w1From.getCId() != wTupleTo.getFirst().getCId()){
                     enc = ctx.mkAnd(enc, ctx.mkEq(
                             Utils.edge("co", w1From, wTupleTo.getFirst(), ctx),
                             Utils.edge("co", w2From, wTupleTo.getSecond(), ctx)

@@ -101,7 +101,7 @@ public class Dat3M extends JFrame implements ActionListener {
                 Program program = new ProgramParser().parse(programText, format);
                 try {
                     String targetModelRaw = editorsPane.getEditor(EditorCode.TARGET_MM).getText();
-                    Wmm targetModel = new ParserCat().parse(targetModelRaw, options.getTarget());
+                    Wmm targetModel = new ParserCat().parse(targetModelRaw);
                     if(options.getTask() == Task.REACHABILITY){
                         testResult = new ReachabilityResult(program, targetModel, options);
                     } else {
@@ -112,7 +112,7 @@ public class Dat3M extends JFrame implements ActionListener {
                         	}
                             Program sourceProgram = new ProgramParser().parse(programText, format);
                             String sourceModelRaw = editorsPane.getEditor(EditorCode.SOURCE_MM).getText();
-                            Wmm sourceModel = new ParserCat().parse(sourceModelRaw, options.getSource());
+                            Wmm sourceModel = new ParserCat().parse(sourceModelRaw);
                             testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
                         } catch (Exception e){
                             showError("The source memory model was not imported or cannot be parsed", "Loading or parsing error");

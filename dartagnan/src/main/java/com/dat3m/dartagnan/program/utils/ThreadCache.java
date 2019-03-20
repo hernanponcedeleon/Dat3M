@@ -18,7 +18,6 @@ public class ThreadCache {
     private ImmutableSet<Register> registers;
 
     public ThreadCache(List<Event> events){
-        events.sort(Comparator.comparing(Event::getEId));
         this.events.put(FilterBasic.get(EType.ANY), ImmutableList.copyOf(events));
     }
 

@@ -10,12 +10,8 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.arch.linux.event.*;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.arch.linux.event.rcu.RCUReadLock;
-import com.dat3m.dartagnan.program.arch.linux.event.rcu.RCUReadUnlock;
-import com.dat3m.dartagnan.program.arch.linux.event.rcu.RCUSync;
-import com.dat3m.dartagnan.program.arch.linux.event.rmw.*;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.misc.Interval;
@@ -27,11 +23,9 @@ public class VisitorLitmusC
         implements LitmusCVisitor<Object> {
 
     private ProgramBuilder programBuilder;
-    private Stack<RCUReadLock> rcuLockStack = new Stack<>();
-    private String currentThread;
-    private String scope;
+    private int currentThread;
+    private int scope;
     private Register returnRegister;
-    private int innerThreadIndex = 0;
 
     public VisitorLitmusC(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -79,7 +73,7 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
-        programBuilder.initRegEqConst(ctx.threadId().getText(), ctx.varName().getText(), new IConst(value));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName().getText(), new IConst(value));
         return null;
     }
 
@@ -102,14 +96,14 @@ public class VisitorLitmusC
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
         if(ctx.Ast() == null){
-            programBuilder.initRegEqLocPtr(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
             Address address = programBuilder.getPointer(rightName);
             if(address != null){
-                programBuilder.initRegEqConst(ctx.threadId().getText(), ctx.varName(0).getText(), address);
+                programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), address);
             } else {
-                programBuilder.initRegEqLocVal(ctx.threadId().getText(), ctx.varName(0).getText(), ctx.varName(1).getText());
+                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText());
             }
         }
         return null;
@@ -161,11 +155,7 @@ public class VisitorLitmusC
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
 
-        // TODO: A separate lock stack for each branch
-        if(!rcuLockStack.empty()){
-            throw new ParsingException("Unbalanced RCU lock in thread " + currentThread);
-        }
-        scope = currentThread = null;
+        scope = currentThread = -1;
         return null;
     }
 
@@ -191,31 +181,33 @@ public class VisitorLitmusC
     @Override
     public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
         ExprInterface expr = (ExprInterface) ctx.re().accept(this);
-        programBuilder.addChild(currentThread, new While(expr, visitInnerThread(ctx.expression())));
-        return null;
+        Skip exitEvent = new Skip();
+        While whileEvent = new While(expr, exitEvent);
+        programBuilder.addChild(currentThread, whileEvent);
+
+        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
+            expressionContext.accept(this);
+
+        return programBuilder.addChild(currentThread, exitEvent);
     }
 
     @Override
     public Object visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
         ExprInterface expr = (ExprInterface) ctx.re().accept(this);
-        Thread t1 = visitInnerThread(ctx.expression());
-        Thread t2 = ctx.elseExpression() == null ? new Skip() : visitInnerThread(ctx.elseExpression().expression());
-        programBuilder.addChild(currentThread, new If(expr, t1, t2));
-        return null;
-    }
+        Skip exitMainBranch = new Skip();
+        Skip exitElseBranch = new Skip();
+        If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+        programBuilder.addChild(currentThread, ifEvent);
 
-    private Thread visitInnerThread(Collection<LitmusCParser.ExpressionContext> ctx){
-        if(ctx != null){
-            String origThread = currentThread;
-            String tName = newInnerThreadIndex();
-            currentThread = tName;
-            programBuilder.initThread(tName);
-            for(LitmusCParser.ExpressionContext expressionContext : ctx)
-                expressionContext.accept(this);
-            currentThread = origThread;
-            return programBuilder.removeChild(tName);
+        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
+            expressionContext.accept(this);
+        programBuilder.addChild(currentThread, exitMainBranch);
+
+        if(ctx.elseExpression() != null){
+            ctx.elseExpression().accept(this);
         }
-        return new Skip();
+        programBuilder.addChild(currentThread, exitElseBranch);
+        return null;
     }
 
 
@@ -227,8 +219,8 @@ public class VisitorLitmusC
     public IExpr visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
         Register register = getReturnRegister(true);
         ExprInterface value = returnExpressionOrDefault(ctx.value, 1);
-        Thread thread = new RMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
-        programBuilder.addChild(currentThread, thread);
+        Event event = new RMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
@@ -237,8 +229,8 @@ public class VisitorLitmusC
     public IExpr visitReAtomicFetchOp(LitmusCParser.ReAtomicFetchOpContext ctx){
         Register register = getReturnRegister(true);
         ExprInterface value = returnExpressionOrDefault(ctx.value, 1);
-        Thread thread = new RMWFetchOp(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
-        programBuilder.addChild(currentThread, thread);
+        Event event = new RMWFetchOp(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
@@ -246,8 +238,8 @@ public class VisitorLitmusC
     public IExpr visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
         Register register = getReturnRegister(true);
         ExprInterface value = returnExpressionOrDefault(ctx.value, 1);
-        Thread thread = new RMWOpAndTest(getAddress(ctx.address), register, value, ctx.op);
-        programBuilder.addChild(currentThread, thread);
+        Event event = new RMWOpAndTest(getAddress(ctx.address), register, value, ctx.op);
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
@@ -265,8 +257,8 @@ public class VisitorLitmusC
     public IExpr visitReXchg(LitmusCParser.ReXchgContext ctx){
         Register register = getReturnRegister(true);
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
-        Thread t = new RMWXchg(getAddress(ctx.address), register, value, ctx.mo);
-        programBuilder.addChild(currentThread, t);
+        Event event = new RMWXchg(getAddress(ctx.address), register, value, ctx.mo);
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
@@ -275,32 +267,32 @@ public class VisitorLitmusC
         Register register = getReturnRegister(true);
         ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
-        Thread t = new RMWCmpXchg(getAddress(ctx.address), register, cmp, value, ctx.mo);
-        programBuilder.addChild(currentThread, t);
+        Event event = new RMWCmpXchg(getAddress(ctx.address), register, cmp, value, ctx.mo);
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
     @Override
     public IExpr visitReLoad(LitmusCParser.ReLoadContext ctx){
         Register register = getReturnRegister(true);
-        Thread t = new Load(register, getAddress(ctx.address), ctx.mo);
-        programBuilder.addChild(currentThread, t);
+        Event event = new Load(register, getAddress(ctx.address), ctx.mo);
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
     @Override
     public IExpr visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
         Register register = getReturnRegister(true);
-        Thread t = new Load(register, getAddress(ctx.address), ctx.mo);
-        programBuilder.addChild(currentThread, t);
+        Event event = new Load(register, getAddress(ctx.address), ctx.mo);
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
     @Override
     public IExpr visitReReadNa(LitmusCParser.ReReadNaContext ctx){
         Register register = getReturnRegister(true);
-        Thread t = new Load(register, getAddress(ctx.address), "NA");
-        programBuilder.addChild(currentThread, t);
+        Event event = new Load(register, getAddress(ctx.address), "NA");
+        programBuilder.addChild(currentThread, event);
         return register;
     }
 
@@ -380,31 +372,27 @@ public class VisitorLitmusC
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
         ExprInterface value = returnExpressionOrDefault(ctx.value, 1);
         Register register = programBuilder.getOrCreateRegister(scope, null);
-        Thread t = new RMWOp(getAddress(ctx.address), register, value, ctx.op);
-        programBuilder.addChild(currentThread, t);
-        return null;
+        Event event = new RMWOp(getAddress(ctx.address), register, value, ctx.op);
+        return programBuilder.addChild(currentThread, event);
     }
 
     @Override
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
         if(ctx.mo.equals("Mb")){
-            Thread t = new Store(getAddress(ctx.address), value, "Relaxed");
-            t = Thread.fromArray(false, t, new Fence("Mb"));
-            programBuilder.addChild(currentThread, t);
-            return null;
+            Event event = new Store(getAddress(ctx.address), value, "Relaxed");
+            programBuilder.addChild(currentThread, event);
+            return programBuilder.addChild(currentThread, new Fence("Mb"));
         }
-        Thread t = new Store(getAddress(ctx.address), value, ctx.mo);
-        programBuilder.addChild(currentThread, t);
-        return null;
+        Event event = new Store(getAddress(ctx.address), value, ctx.mo);
+        return programBuilder.addChild(currentThread, event);
     }
 
     @Override
     public Object visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
-        Thread t = new Store(getAddress(ctx.address), value, ctx.mo);
-        programBuilder.addChild(currentThread, t);
-        return null;
+        Event event = new Store(getAddress(ctx.address), value, ctx.mo);
+        return programBuilder.addChild(currentThread, event);
     }
 
     @Override
@@ -421,9 +409,8 @@ public class VisitorLitmusC
 
         ExprInterface value = (ExprInterface)ctx.re().accept(this);
         if(variable instanceof Address || variable instanceof Register){
-            Thread result = new Store((IExpr) variable, value, "NA");
-            programBuilder.addChild(currentThread, result);
-            return null;
+            Event event = new Store((IExpr) variable, value, "NA");
+            return programBuilder.addChild(currentThread, event);
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
@@ -443,34 +430,8 @@ public class VisitorLitmusC
     }
 
     @Override
-    public Object visitNreRcuReadLock(LitmusCParser.NreRcuReadLockContext ctx){
-        RCUReadLock lock = new RCUReadLock();
-        programBuilder.addChild(currentThread, lock);
-        rcuLockStack.push(lock);
-        return null;
-    }
-
-    @Override
-    public Object visitNreRcuReadUnlock(LitmusCParser.NreRcuReadUnlockContext ctx){
-        try {
-            RCUReadLock lock = rcuLockStack.pop();
-            programBuilder.addChild(currentThread, new RCUReadUnlock(lock));
-            return null;
-        } catch (EmptyStackException e){
-            throw new ParsingException("Unbalanced RCU unlock in thread " + currentThread);
-        }
-    }
-
-    @Override
-    public Object visitNreSynchronizeRcu(LitmusCParser.NreSynchronizeRcuContext ctx){
-        programBuilder.addChild(currentThread, new RCUSync());
-        return null;
-    }
-
-    @Override
     public Object visitNreFence(LitmusCParser.NreFenceContext ctx){
-        programBuilder.addChild(currentThread, new Fence(ctx.name));
-        return null;
+        return programBuilder.addChild(currentThread, new Fence(ctx.name));
     }
 
 
@@ -479,7 +440,7 @@ public class VisitorLitmusC
 
     @Override
     public IExpr visitVarName(LitmusCParser.VarNameContext ctx){
-        if(scope != null){
+        if(scope > -1){
             Register register = programBuilder.getRegister(scope, ctx.getText());
             if(register != null){
                 return register;
@@ -524,9 +485,5 @@ public class VisitorLitmusC
             programBuilder.addChild(currentThread, new Local(register, value));
         }
         return value;
-    }
-
-    private String newInnerThreadIndex(){
-        return "inner_" + innerThreadIndex++;
     }
 }

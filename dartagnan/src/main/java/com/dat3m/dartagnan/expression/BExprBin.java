@@ -39,11 +39,6 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public BExprBin clone() {
-        return new BExprBin(b1.clone(), op, b2.clone());
-    }
-
-    @Override
     public String toString() {
         return "(" + b1 + " " + op + " " + b2 + ")";
     }

@@ -9,23 +9,14 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 
 public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData {
 
-    public RMWReadCondUnless(Register reg, ExprInterface cmp, IExpr address, String atomic) {
-        super(reg, cmp, address, atomic);
+    public RMWReadCondUnless(Register reg, ExprInterface cmp, IExpr address, String mo) {
+        super(reg, cmp, address, mo);
     }
 
     @Override
     public void initialise(Context ctx) {
         super.initialise(ctx);
         this.z3Cond = ctx.mkNot(z3Cond);
-    }
-
-    @Override
-    public RMWReadCondUnless clone() {
-        if(clone == null){
-            clone = new RMWReadCondUnless(resultRegister, cmp, address, atomic);
-            afterClone();
-        }
-        return (RMWReadCondUnless)clone;
     }
 
     @Override

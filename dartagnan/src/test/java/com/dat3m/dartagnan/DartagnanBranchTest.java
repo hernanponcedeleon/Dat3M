@@ -3,7 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.utils.Alias;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -20,6 +20,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -29,13 +30,24 @@ public class DartagnanBranchTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parseFile(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat", Arch.NONE);
         ImmutableMap<String, Boolean> expected = readExpectedResults();
-        return Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/"))
+
+        Wmm linuxWmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
+        Wmm aarch64Wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat");
+
+        List<Object[]> data = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/C/"))
                 .filter(Files::isRegularFile)
                 .filter(f -> (f.toString().endsWith("litmus")))
-                .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), wmm})
+                .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), linuxWmm})
                 .collect(Collectors.toList());
+
+        data.addAll(Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/AARCH64/"))
+                .filter(Files::isRegularFile)
+                .filter(f -> (f.toString().endsWith("litmus")))
+                .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), aarch64Wmm})
+                .collect(Collectors.toList()));
+
+        return data;
     }
 
     private static ImmutableMap<String, Boolean> readExpectedResults() throws IOException {
@@ -48,6 +60,7 @@ public class DartagnanBranchTest {
                 builder.put(line[0], Integer.parseInt(line[1]) == 1);
             }
         }
+        reader.close();
         return builder.build();
     }
 

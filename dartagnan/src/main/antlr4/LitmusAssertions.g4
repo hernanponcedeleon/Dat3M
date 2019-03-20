@@ -57,9 +57,9 @@ assertionCompare returns [COpBin op]
     |   Greater                 {$op = COpBin.GT;}
     ;
 
-threadId returns [String id]
-    :   t = ThreadIdentifier {$id = $t.text.replace("P", "");}
-    |   t = DigitSequence {$id = $t.text;}
+threadId returns [int id]
+    :   t = ThreadIdentifier {$id = Integer.parseInt($t.text.replace("P", ""));}
+    |   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
 AssertionListExpectationTest

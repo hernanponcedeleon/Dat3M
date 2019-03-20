@@ -108,14 +108,14 @@ public class Graph {
 
         int tId = 0;
         for(Thread t : program.getThreads()) {
-
-            if(t instanceof Init){
-                Init e = (Init)t.getEvents().iterator().next();
+            Event firstEvent = t.getEntry().getSuccessor();
+            if(firstEvent instanceof Init){
+                Init e = (Init)firstEvent;
                 Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model));
                 String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
-                sb.append(L2).append("subgraph cluster_Thread_").append(t.getTId()).append(" { ").append(getThreadDef(tId++)).append("\n");
+                sb.append(L2).append("subgraph cluster_Thread_").append(t.getId()).append(" { ").append(getThreadDef(tId++)).append("\n");
                 for(Event e : t.getCache().getEvents(FilterBasic.get(EType.VISIBLE))) {
                     if(model.getConstInterp(e.executes(ctx)).isTrue()){
                         String label = e.label();
@@ -127,7 +127,7 @@ public class Graph {
                             }
                             label += " " + location + " = " + value.toString();
                         }
-                        sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label, t.getTId())).append(";\n");
+                        sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label, t.getId())).append(";\n");
                     }
                 }
                 sb.append(L2).append("}\n");

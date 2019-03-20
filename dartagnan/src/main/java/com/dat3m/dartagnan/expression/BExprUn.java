@@ -36,11 +36,6 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public BExprUn clone() {
-        return new BExprUn(op, b.clone());
-    }
-
-    @Override
     public String toString() {
         return "(" + op + " " + b + ")";
     }

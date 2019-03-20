@@ -24,8 +24,8 @@ public class VisitorLitmusX86
     private final static ImmutableSet<String> fences = ImmutableSet.of("Mfence");
 
     private ProgramBuilder programBuilder;
-    private String mainThread;
-    private Integer threadCount = 0;
+    private int mainThread;
+    private int threadCount = 0;
 
     public VisitorLitmusX86(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -102,7 +102,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitInstructionRow(LitmusX86Parser.InstructionRowContext ctx) {
         for(Integer i = 0; i < threadCount; i++){
-            mainThread = i.toString();
+            mainThread = i;
             visitInstruction(ctx.instruction(i));
         }
         return null;
@@ -140,7 +140,7 @@ public class VisitorLitmusX86
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        return programBuilder.addChild(mainThread, new Xchg(location.getAddress(), register,"_rx"));
+        return programBuilder.addChild(mainThread, new Xchg(location.getAddress(), register));
     }
 
     @Override

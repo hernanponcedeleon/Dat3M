@@ -1,45 +1,67 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 import java.util.*;
 
-public abstract class Event extends Thread implements Comparable<Event> {
+public abstract class Event implements Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	private int eid = -1;
-	protected int hlId;
-	protected Event clone;
-	protected String atomic;
-	protected Set<String> filter = new HashSet<>();
-	
-	public int getEId() {
-		return eid;
+	protected int oId = -1;		// ID after parsing (original)
+	protected int uId = -1;		// ID after unrolling
+	protected int cId = -1;		// ID after compilation
+
+	protected final Set<String> filter;
+
+	protected transient Event successor;
+
+    protected transient BoolExpr cfEnc;
+    protected transient BoolExpr cfCond;
+
+	protected Event(){
+		filter = new HashSet<>();
 	}
 
-	public int setEId(int i) {
-		this.eid = i;
-		return i + 1;
+	protected Event(Event other){
+		this.oId = other.oId;
+        this.uId = other.uId;
+        this.cId = other.cId;
+        this.filter = other.filter;
+    }
+
+	public int getOId() {
+		return oId;
 	}
 
-	public int getHLId() {
-		return hlId;
-	}
-	
-	public void setHLId(int id) {
-		this.hlId = id;
+	public void setOId(int id) {
+		this.oId = id;
 	}
 
-	public String repr() {
-		return "E" + eid;
+	public int getUId(){
+		return uId;
 	}
 
-	public BoolExpr executes(Context ctx) {
-		return ctx.mkBoolConst("ex(" + repr() + ")");
+	public int getCId() {
+		return cId;
+	}
+
+	public Event getSuccessor(){
+		return successor;
+	}
+
+	public void setSuccessor(Event event){
+		successor = event;
+	}
+
+	public LinkedList<Event> getSuccessors(){
+		LinkedList<Event> result = successor != null
+				? successor.getSuccessors()
+				: new LinkedList<>();
+		result.addFirst(this);
+		return result;
 	}
 
 	public String label(){
@@ -47,50 +69,131 @@ public abstract class Event extends Thread implements Comparable<Event> {
 	}
 
 	public boolean is(String param){
-		return param != null && (filter.contains(param) || param.equals(atomic));
+		return param != null && (filter.contains(param));
 	}
 
 	public void addFilters(String... params){
 		filter.addAll(Arrays.asList(params));
 	}
 
-	public void initialise(Context ctx){}
-
 	@Override
-	public int compareTo(Event o){
-		// TODO: Exception if called before compilation or (better) limit to internal events only
-		return Integer.compare(eid, o.getEId());
+	public int compareTo(Event e){
+		int result = Integer.compare(cId, e.cId);
+		if(result == 0){
+			result = Integer.compare(uId, e.uId);
+			if(result == 0){
+				result = Integer.compare(oId, e.oId);
+			}
+		}
+		return result;
 	}
 
-	@Override
-	public void beforeClone(){
-		clone = null;
-	}
 
-	protected void afterClone(){
-        clone.setCondLevel(condLevel);
-        clone.setHLId(hlId);
+	// Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public int unroll(int bound, int nextId, Event predecessor) {
+		uId = nextId++;
+		if(successor != null){
+			nextId = successor.unroll(bound, nextId, this);
+		}
+	    return nextId;
     }
 
-    @Override
-	public List<Event> getEvents() {
-		List<Event> ret = new ArrayList<>();
-		ret.add(this);
-		return ret;
+	public Event getCopy(){
+		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-    @Override
-	public Thread unroll(int steps) {
-		return this;
+	Event copyPath(Event from, Event until, Event appendTo){
+		while(from != null && !from.equals(until)){
+			Event copy = from.getCopy();
+			appendTo.setSuccessor(copy);
+			if(from instanceof If){
+				from = ((If)from).getExitElseBranch();
+				appendTo = ((If)copy).getExitElseBranch();
+			} else if(from instanceof While){
+				from = ((While)from).getExitEvent();
+				appendTo = ((While)copy).getExitEvent();
+			} else {
+				appendTo = copy;
+			}
+			from = from.successor;
+		}
+		return appendTo;
 	}
 
-    @Override
-	public Thread compile(Arch target) {
-		return this;
+
+    // Compilation
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public int compile(Arch target, int nextId, Event predecessor) {
+		cId = nextId++;
+		if(successor != null){
+			return successor.compile(target, nextId, this);
+		}
+        return nextId;
+    }
+
+    protected int compileSequence(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence){
+        for(Event e : sequence){
+        	e.oId = oId;
+			e.uId = uId;
+            e.cId = nextId++;
+            predecessor.setSuccessor(e);
+            predecessor = e;
+        }
+        if(successor != null){
+            predecessor.successor = successor;
+            return successor.compile(target, nextId, predecessor);
+        }
+        return nextId;
+    }
+
+
+	// Encoding
+	// -----------------------------------------------------------------------------------------------------------------
+
+	public void initialise(Context ctx){}
+
+	public String repr() {
+		if(cId > -1){
+			return "E" + cId;
+		}
+		throw new RuntimeException("Event ID is not set in " + this);
 	}
 
-	@Override
-	public BoolExpr encodeCF(Context ctx) {
+	public BoolExpr executes(Context ctx) {
+		if(cId > -1){
+			return ctx.mkBoolConst("ex(" + repr() + ")");
+		}
+		throw new RuntimeException("Event ID is not set in " + this);
+	}
+
+	public String cfVar(){
+		if(cId > -1){
+			return "CF_" + cId;
+		}
+		throw new RuntimeException("Event ID is not set in " + this);
+	}
+
+	public void addCfCond(Context ctx, BoolExpr cond){
+		cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
+	}
+
+	public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
+		if(cfEnc == null){
+			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
+			BoolExpr var = ctx.mkBoolConst(cfVar());
+			cfEnc = ctx.mkEq(var, cfCond);
+			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
+			if(successor != null){
+				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, var));
+			}
+		}
+		return cfEnc;
+	}
+
+	protected BoolExpr encodeExec(Context ctx){
 		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
 	}
 }

@@ -9,11 +9,23 @@ import com.dat3m.dartagnan.program.memory.Address;
 
 public abstract class MemEvent extends Event {
 
-    protected IExpr address;
-    protected ImmutableSet<Address> maxAddressSet;
+    protected final IExpr address;
 
     protected IntExpr memAddressExpr;
     protected IntExpr memValueExpr;
+    private ImmutableSet<Address> maxAddressSet;
+
+    public MemEvent(IExpr address){
+        this.address = address;
+    }
+
+    protected MemEvent(MemEvent other){
+        super(other);
+        this.address = other.address;
+        this.maxAddressSet = other.maxAddressSet;
+        this.memAddressExpr = other.memAddressExpr;
+        this.memValueExpr = other.memValueExpr;
+    }
 
     public IntExpr getMemAddressExpr(){
         if(memAddressExpr != null){
@@ -46,12 +58,6 @@ public abstract class MemEvent extends Event {
 
     public ExprInterface getMemValue(){
         throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
-    }
-
-    @Override
-    protected void afterClone(){
-        super.afterClone();
-        ((MemEvent)clone).setMaxAddressSet(maxAddressSet);
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){

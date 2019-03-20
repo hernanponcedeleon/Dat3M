@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Variable;
-import com.dat3m.dartagnan.program.utils.SSAReg;
+import com.dat3m.dartagnan.wmm.utils.alias.SSAReg;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -23,7 +23,6 @@ public class Register extends IExpr implements ExprInterface, Variable {
 
 	private final String name;
     private final int threadId;
-	private int mainThreadId = -1;
 	private Set<Variable> aliasEdges = new HashSet<>();
 	private Set<Address> aliasAddresses = new HashSet<>();
 	private Set<MemEvent> aliasEvents = new HashSet<>();
@@ -39,10 +38,6 @@ public class Register extends IExpr implements ExprInterface, Variable {
 	
 	public String getName() {
 		return name;
-	}
-
-	void setMainThreadId(int t) {
-		this.mainThreadId = t;
 	}
 
 	public int getThreadId(){
@@ -90,14 +85,6 @@ public class Register extends IExpr implements ExprInterface, Variable {
         return name.equals(rObj.name) && threadId == rObj.threadId;
     }
 
-    @Deprecated
-	@Override
-	public Register clone() {
-		Register register = new Register(name, threadId);
-		register.setMainThreadId(mainThreadId);
-		return register;
-	}
-
 	@Override
 	public IntExpr toZ3Int(Event e, Context ctx) {
 		return ctx.mkIntConst(getName() + "(" + e.repr() + ")");
@@ -114,10 +101,7 @@ public class Register extends IExpr implements ExprInterface, Variable {
 
 	@Override
 	public IntExpr getLastValueExpr(Context ctx){
-		if(mainThreadId > -1) {
-			return ctx.mkIntConst(getName() + "_" + mainThreadId + "_final");
-		}
-		throw new RuntimeException("Main thread is not set for " + this);
+		return ctx.mkIntConst(getName() + "_" + threadId + "_final");
 	}
 
 	@Override

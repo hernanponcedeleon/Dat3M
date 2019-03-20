@@ -10,14 +10,25 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class Load extends MemEvent implements RegWriter {
 
-    protected Register resultRegister;
+    protected final Register resultRegister;
+    protected final String mo;
 
-    public Load(Register register, IExpr address, String atomic) {
-        this.address = address;
-        this.atomic = atomic;
-        this.condLevel = 0;
+    public Load(Register register, IExpr address, String mo) {
+        super(address);
+        this.mo = mo;
         this.resultRegister = register;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
+    }
+
+    protected Load(Load other){
+        super(other);
+        this.mo = other.mo;
+        this.resultRegister = other.resultRegister;
+    }
+
+    @Override
+    public boolean is(String param){
+        return super.is(param) || (mo != null && mo.equals(param));
     }
 
     @Override
@@ -38,25 +49,24 @@ public class Load extends MemEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return nTimesCondLevel() + resultRegister + " = load(*" + address + (atomic != null ? ", " + atomic : "") + ")";
+        return resultRegister + " = load(*" + address + (mo != null ? ", " + mo : "") + ")";
     }
 
     @Override
     public String label(){
-        return "R_" + atomic;
-    }
-
-    @Override
-    public Load clone() {
-        if(clone == null){
-            clone = new Load(resultRegister, address, atomic);
-            afterClone();
-        }
-        return (Load)clone;
+        return "R" + (mo != null ? "_" + mo : "");
     }
 
     @Override
     public ExprInterface getMemValue(){
         return resultRegister;
+    }
+
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public Load getCopy(){
+        return new Load(this);
     }
 }
