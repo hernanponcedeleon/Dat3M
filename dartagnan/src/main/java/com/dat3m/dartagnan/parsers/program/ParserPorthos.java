@@ -19,9 +19,16 @@ public class ParserPorthos implements ParserInterface{
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        PorthosLexer lexer = new PorthosLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        Program p = parse(charStream);
         stream.close();
+        p.setName(inputFilePath);
+        return p;
+    }
+
+    @Override
+	public Program parse(CharStream charStream) throws IOException {
+		PorthosLexer lexer = new PorthosLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         PorthosParser parser = new PorthosParser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
@@ -31,7 +38,6 @@ public class ParserPorthos implements ParserInterface{
         VisitorPorthos visitor = new VisitorPorthos(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setName(inputFilePath);
         return program;
-    }
+	}
 }

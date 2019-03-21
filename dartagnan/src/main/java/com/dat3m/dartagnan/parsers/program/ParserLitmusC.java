@@ -20,9 +20,15 @@ public class ParserLitmusC implements ParserInterface {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        LitmusCLexer lexer = new LitmusCLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        Program p = parse(charStream);
         stream.close();
+        p.setName(inputFilePath);
+        return p;
+    }
+
+	public Program parse(CharStream charStream) throws IOException {
+		LitmusCLexer lexer = new LitmusCLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusCParser parser = new LitmusCParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
@@ -31,8 +37,7 @@ public class ParserLitmusC implements ParserInterface {
         VisitorLitmusC visitor = new VisitorLitmusC(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setName(inputFilePath);
         program.setArch(Arch.NONE);
         return program;
-    }
+	}    
 }

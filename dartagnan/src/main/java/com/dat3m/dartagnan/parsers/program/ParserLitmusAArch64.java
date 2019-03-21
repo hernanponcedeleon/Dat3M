@@ -21,9 +21,16 @@ public class ParserLitmusAArch64 implements ParserInterface {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        LitmusAArch64Lexer lexer = new LitmusAArch64Lexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        Program p = parse(charStream);
         stream.close();
+        p.setName(inputFilePath);
+        return p;
+    }
+
+    @Override
+	public Program parse(CharStream charStream) throws IOException {
+		LitmusAArch64Lexer lexer = new LitmusAArch64Lexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusAArch64Parser parser = new LitmusAArch64Parser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
@@ -33,8 +40,7 @@ public class ParserLitmusAArch64 implements ParserInterface {
         VisitorLitmusAArch64 visitor = new VisitorLitmusAArch64(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setName(inputFilePath);
         program.setArch(Arch.ARM8);
         return program;
-    }
+	}
 }

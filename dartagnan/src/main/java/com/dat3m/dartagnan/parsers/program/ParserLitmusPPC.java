@@ -21,9 +21,16 @@ public class ParserLitmusPPC implements ParserInterface {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        LitmusPPCLexer lexer = new LitmusPPCLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        Program p = parse(charStream);
         stream.close();
+        p.setName(inputFilePath);
+        return p;
+    }
+
+    @Override
+	public Program parse(CharStream charStream) throws IOException {
+		LitmusPPCLexer lexer = new LitmusPPCLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusPPCParser parser = new LitmusPPCParser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
@@ -33,8 +40,7 @@ public class ParserLitmusPPC implements ParserInterface {
         VisitorLitmusPPC visitor = new VisitorLitmusPPC(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setName(inputFilePath);
         program.setArch(Arch.POWER);
         return program;
-    }
+	}
 }

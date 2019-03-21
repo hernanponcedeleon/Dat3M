@@ -16,13 +16,18 @@ public class ParserCat {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        CatLexer lexer = new CatLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        Wmm wmm = parse(charStream);
         stream.close();
+        return wmm;
+    }
+
+	public Wmm parse(CharStream charStream) throws IOException {
+		CatLexer lexer = new CatLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         CatParser parser = new CatParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
         ParserRuleContext parserEntryPoint = parser.mcm();
         return (Wmm) parserEntryPoint.accept(new VisitorBase());
-    }
+	}
 }

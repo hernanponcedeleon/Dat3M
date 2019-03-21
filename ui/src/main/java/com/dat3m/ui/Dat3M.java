@@ -18,6 +18,10 @@ import com.dat3m.ui.result.ReachabilityResult;
 import com.dat3m.ui.utils.Task;
 
 import javax.swing.*;
+
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -92,27 +96,27 @@ public class Dat3M extends JFrame implements ActionListener {
 	}
 
 	private void runTest(){
-		// TODO(HP): talk with Natalia for the best way to normalize parsers
 		Options options = optionsPane.getOptions();
 		if(options.validate()){
             testResult = null;
 		    try {
-                String programText = editorsPane.getEditor(EditorCode.PROGRAM).getText();
-                Program program = new ProgramParser().parse(programText);
+                String loadedFormat = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
+                CharStream programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
+				Program program = new ProgramParser().parse(programStream, loadedFormat);
                 try {
-                    String targetModelRaw = editorsPane.getEditor(EditorCode.TARGET_MM).getText();
-                    Wmm targetModel = new ParserCat().parse(targetModelRaw);
+                	CharStream tmmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.TARGET_MM).getText());
+                    Wmm targetModel = new ParserCat().parse(tmmStream);
                     if(options.getTask() == Task.REACHABILITY){
                         testResult = new ReachabilityResult(program, targetModel, options);
                     } else {
                         try {
-                        	if(!editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat().equals("pts")) {
+                        	if(!loadedFormat.equals("pts")) {
                         		showError("PORTHOS only supports *.pts files", "Loading error");
                         		return;
                         	}
-                            Program sourceProgram = new ProgramParser().parse(programText);
-                            String sourceModelRaw = editorsPane.getEditor(EditorCode.SOURCE_MM).getText();
-                            Wmm sourceModel = new ParserCat().parse(sourceModelRaw);
+                            Program sourceProgram = new ProgramParser().parse(programStream, loadedFormat);
+                            CharStream smmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.SOURCE_MM).getText());
+                            Wmm sourceModel = new ParserCat().parse(smmStream);
                             testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
                         } catch (Exception e){
                             showError("The source memory model was not imported or cannot be parsed", "Loading or parsing error");

@@ -8,9 +8,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import org.antlr.v4.runtime.CharStream;
+
 public class ProgramParser {
 
-    private static final String TYPE_LITMUS_AARCH64     = "AARCH64";
+    private static final String TYPE_LITMUS_AARCH64     = "AArch64";
     private static final String TYPE_LITMUS_PPC         = "PPC";
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_C           = "C";
@@ -40,7 +42,32 @@ public class ProgramParser {
         throw new ParsingException("Unknown input file type");
     }
 
-    private String readFirstLine(String inputFilePath) throws IOException{
+
+    public Program parse(CharStream charStream, String format) throws IOException {
+        ParserInterface parser = null;
+        String programText = charStream.toString();
+
+        if(format.equals("pts")){
+            return new ParserPorthos().parse(charStream);
+        } else if(format.equals("litmus")){
+			if(programText.indexOf(TYPE_LITMUS_AARCH64) == 0){
+                parser = new ParserLitmusAArch64();
+            } else if(programText.indexOf(TYPE_LITMUS_C) == 0){
+                parser = new ParserLitmusC();
+            } else if(programText.indexOf(TYPE_LITMUS_PPC) == 0){
+                parser = new ParserLitmusPPC();
+            } else if(programText.indexOf(TYPE_LITMUS_X86) == 0){
+                parser = new ParserLitmusX86();
+            }
+        }
+
+        if(parser != null){
+            return parser.parse(charStream);
+        }
+        throw new ParsingException("Unknown input file type");
+    }
+
+private String readFirstLine(String inputFilePath) throws IOException{
         File file = new File(inputFilePath);
         FileReader fileReader = new FileReader(file);
         BufferedReader bufferedReader = new BufferedReader(fileReader);

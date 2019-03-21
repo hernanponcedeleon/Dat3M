@@ -21,10 +21,17 @@ public class ParserLitmusX86 implements ParserInterface {
         File file = new File(inputFilePath);
         FileInputStream stream = new FileInputStream(file);
         CharStream charStream = CharStreams.fromStream(stream);
-        LitmusX86Lexer lexer = new LitmusX86Lexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        Program p = parse(charStream);
         stream.close();
+        p.setName(inputFilePath);
+        return p;
+    }
 
+    @Override
+	public Program parse(CharStream charStream) throws IOException {
+		LitmusX86Lexer lexer = new LitmusX86Lexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+ 
         LitmusX86Parser parser = new LitmusX86Parser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
@@ -33,8 +40,7 @@ public class ParserLitmusX86 implements ParserInterface {
         VisitorLitmusX86 visitor = new VisitorLitmusX86(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setName(inputFilePath);
         program.setArch(Arch.TSO);
         return program;
-    }
+	}
 }
