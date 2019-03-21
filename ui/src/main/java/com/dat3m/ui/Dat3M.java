@@ -97,42 +97,40 @@ public class Dat3M extends JFrame implements ActionListener {
 
 	private void runTest(){
 		Options options = optionsPane.getOptions();
-		if(options.validate()){
-            testResult = null;
-		    try {
-                String loadedFormat = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
-                CharStream programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
-				Program program = new ProgramParser().parse(programStream, loadedFormat);
-                try {
-                	CharStream tmmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.TARGET_MM).getText());
-                    Wmm targetModel = new ParserCat().parse(tmmStream);
-                    if(options.getTask() == Task.REACHABILITY){
-                        testResult = new ReachabilityResult(program, targetModel, options);
-                    } else {
-                        try {
-                        	if(!loadedFormat.equals("pts")) {
-                        		showError("PORTHOS only supports *.pts files", "Loading error");
-                        		return;
-                        	}
-                        	// We need to create the stream again to be read from the beginning
-                        	programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
-                            Program sourceProgram = new ProgramParser().parse(programStream, loadedFormat);
-                            CharStream smmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.SOURCE_MM).getText());
-                            Wmm sourceModel = new ParserCat().parse(smmStream);
-                            testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
-                        } catch (Exception e){
-                            showError("The source memory model was not imported or cannot be parsed", "Loading or parsing error");
-                        }
+        testResult = null;
+	    try {
+            String loadedFormat = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
+            CharStream programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
+			Program program = new ProgramParser().parse(programStream, loadedFormat);
+            try {
+            	CharStream tmmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.TARGET_MM).getText());
+                Wmm targetModel = new ParserCat().parse(tmmStream);
+                if(options.getTask() == Task.REACHABILITY){
+                    testResult = new ReachabilityResult(program, targetModel, options);
+                } else {
+                    try {
+                    	if(!loadedFormat.equals("pts")) {
+                    		showError("PORTHOS only supports *.pts files", "Loading error");
+                    		return;
+                    	}
+                    	// We need to create the stream again to be read from the beginning
+                    	programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
+                        Program sourceProgram = new ProgramParser().parse(programStream, loadedFormat);
+                        CharStream smmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.SOURCE_MM).getText());
+                        Wmm sourceModel = new ParserCat().parse(smmStream);
+                        testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
+                    } catch (Exception e){
+                        showError("The source memory model was not imported or cannot be parsed", "Loading or parsing error");
                     }
-                } catch (Exception e){
-                    showError("The target memory model was not imported or cannot be parsed", "Loading or parsing error");
                 }
             } catch (Exception e){
-                showError("The program was not imported or cannot be parsed", "Loading or parsing error");
+                showError("The target memory model was not imported or cannot be parsed", "Loading or parsing error");
             }
-		    if(testResult != null && testResult.isSat()) {
-	            graph.generate(testResult);
-		    }
-		}
+        } catch (Exception e){
+            showError("The program was not imported or cannot be parsed", "Loading or parsing error");
+        }
+	    if(testResult != null && testResult.isSat()) {
+            graph.generate(testResult);
+	    }
 	}
 }
