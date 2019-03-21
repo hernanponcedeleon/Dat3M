@@ -73,7 +73,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane);
 
 		// The console shall be cleaned every time the program or MM is modified from the editor
-    	EditorListener listener = new EditorListener(optionsPane.getConsolePane());
+    	EditorListener listener = new EditorListener(optionsPane.getConsolePane(), optionsPane.getGraphButton());
     	editorsPane.getEditor(EditorCode.PROGRAM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.SOURCE_MM).getEditorPane().addKeyListener(listener);
