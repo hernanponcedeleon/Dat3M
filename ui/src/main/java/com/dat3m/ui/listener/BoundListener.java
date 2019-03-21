@@ -24,7 +24,8 @@ public class BoundListener implements KeyListener, FocusListener {
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		runTest();	}
+		runTest();	
+	}
 
 	@Override
 	public void keyTyped(KeyEvent e) {

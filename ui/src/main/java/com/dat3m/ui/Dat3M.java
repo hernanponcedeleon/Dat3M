@@ -8,6 +8,7 @@ import com.dat3m.ui.editor.EditorsPane;
 import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
+import com.dat3m.ui.listener.EditorListener;
 import com.dat3m.ui.graph.GraphOption;
 import com.dat3m.ui.options.Options;
 import com.dat3m.ui.options.OptionsPane;
@@ -70,6 +71,12 @@ public class Dat3M extends JFrame implements ActionListener {
 		editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane);
 		editorsPane.getEditor(EditorCode.SOURCE_MM).addActionListener(optionsPane);
 		editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane);
+
+		// The console shall be cleaned every time the program or MM is modified from the editor
+    	EditorListener listener = new EditorListener(optionsPane.getConsolePane());
+    	editorsPane.getEditor(EditorCode.PROGRAM).getEditorPane().addKeyListener(listener);
+    	editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().addKeyListener(listener);
+    	editorsPane.getEditor(EditorCode.SOURCE_MM).getEditorPane().addKeyListener(listener);
 
 		pack();
 	}

@@ -92,6 +92,10 @@ public class Editor extends JScrollPane implements ActionListener {
         return menuItem;
     }
 
+    public JEditorPane getEditorPane(){
+        return editorPane;
+    }
+
     private void notifyListeners(){
         ActionEvent dataLoadedEvent = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, code.editorActionCommand());
         for(ActionListener actionListener : actionListeners){
