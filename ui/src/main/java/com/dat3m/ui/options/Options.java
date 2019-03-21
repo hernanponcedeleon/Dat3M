@@ -46,14 +46,4 @@ public class Options {
 	public int getBound() {
 		return bound;
 	}
-
-	// TODO: Implementation
-	public boolean validate(){
-		boolean somethingIsWrong = false;
-		if(somethingIsWrong){
-			// TODO: Show alert with what is wrong
-			return false;
-		}
-	    return true;
-    }
 }
