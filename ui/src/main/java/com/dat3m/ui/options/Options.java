@@ -1,8 +1,8 @@
 package com.dat3m.ui.options;
 
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.ui.utils.Task;
 
 public class Options {
