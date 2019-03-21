@@ -114,6 +114,8 @@ public class Dat3M extends JFrame implements ActionListener {
                         		showError("PORTHOS only supports *.pts files", "Loading error");
                         		return;
                         	}
+                        	// We need to create the stream again to be read from the beginning
+                        	programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
                             Program sourceProgram = new ProgramParser().parse(programStream, loadedFormat);
                             CharStream smmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.SOURCE_MM).getText());
                             Wmm sourceModel = new ParserCat().parse(smmStream);
