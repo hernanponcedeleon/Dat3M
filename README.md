@@ -43,7 +43,7 @@ Usage
 ======
 You can start Dat3M using the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher in Linux, or in MacOS running
 ```
-java -jar ui/target/
+java -jar ui/target/ui-2.0.3-jar-with-dependencies.jar
 ```
 Additionally, you can run DARTAGNAN and PORTHOS from the console.
 
