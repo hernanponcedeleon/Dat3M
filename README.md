@@ -1,18 +1,13 @@
 # Dat3M: Memory Model Aware Verification
 
+<p align="center"> 
+<img src="ui/src/main/resources/dat3m.png">
+</p>
+
 This tool suite is currently composed of two tools.
 
 * **DARTAGNAN:** a tool to check state reachability under weak memory models.
-
-<p align="center"> 
-<img src="extras/dartagnan_small.jpg">
-</p>
-
 * **PORTHOS:** a tool to check state inclusion under weak memory models.
-
-<p align="center"> 
-<img src="extras/porthos_small.jpg">
-</p>
 
 Requeriments
 ======
@@ -26,12 +21,16 @@ apt-get install maven
 Installation
 ======
 To build the tools, from the Dat3M/ directory run
+* **Linux:**
+```
+make
+```
+* **MacOS:**
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
-export LD_LIBRARY_PATH=./lib/
+export DYLD_LIBRARY_PATH=./lib/
 ```
-(use DYLD_LIBRARY_PATH in MacOS)
 
 Unit Tests
 ======
@@ -42,6 +41,12 @@ mvn test
 
 Usage
 ======
+You can start Dat3M using the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher in Linux, or in MacOS running
+```
+java -jar ui/target/ui-2.0.3-jar-with-dependencies.jar
+```
+Additionally, you can run DARTAGNAN and PORTHOS from the console.
+
 For checking reachability:
 ```
 java -jar dartagnan/target/dartagnan-2.0.3-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
@@ -50,7 +55,7 @@ For checking state inclusion:
 ```
 java -jar porthos/target/porthos-2.0.3-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-Dartagnan supports programs written in the .litmus or .pts formats (see below). For Porthos, programs shall be written in the .pts format since they need to be compiled to two different architectures.
+DARTAGNAN supports programs written in the .litmus or .pts formats (see below). For PORTHOS, programs shall be written in the .pts format since they need to be compiled to two different architectures.
 
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
@@ -62,7 +67,7 @@ They must be one of the following:
 - arm
 - arm8
 
-**Note:** Option target is mandatory in dartagnan when using the.pts format.
+**Note:** Option target is mandatory in DARTAGNAN when using the.pts format.
 
 Other optional arguments include:
 - -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [1]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [2]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
@@ -101,7 +106,7 @@ Examples are provided in the **benchmarks/** folder.
           | ⟨expr⟩ % ⟨expr⟩ 
   ```
 
-Author and Contact
+Authors and Contact
 ======
 Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org), [Florian Furbach](mailto:f.furbach@tu-braunschweig.de) and [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi). Please feel free to contact us in case of questions or to send feedback.
 
