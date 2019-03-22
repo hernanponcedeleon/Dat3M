@@ -1,13 +1,12 @@
 # Dat3M: Memory Model Aware Verification
 
+<p align="center"> 
+<img src="ui/src/main/resources/dat3m.png">
+</p>
+
 This tool suite is currently composed of two tools.
 
 * **DARTAGNAN:** a tool to check state reachability under weak memory models.
-
-<p align="center"> 
-<img src="extras/dartagnan_small.jpg">
-</p>
-
 * **PORTHOS:** a tool to check state inclusion under weak memory models.
 
 <p align="center"> 
@@ -26,12 +25,16 @@ apt-get install maven
 Installation
 ======
 To build the tools, from the Dat3M/ directory run
+* **Linux:**
+```
+make
+```
+* **MacOS:**
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
-export LD_LIBRARY_PATH=./lib/
+export DYLD_LIBRARY_PATH=./lib/
 ```
-(use DYLD_LIBRARY_PATH in MacOS)
 
 Unit Tests
 ======
@@ -42,6 +45,11 @@ mvn test
 
 Usage
 ======
+You can launch Dat3M using the <img src="ui/src/main/resources/dat3m.png"> launche in Linux, or in MacOS running
+```
+java -jar ui/target/
+```
+Additionally, you can run DARTAGNAN and PORTHOS from the console.
 For checking reachability:
 ```
 java -jar dartagnan/target/dartagnan-2.0.3-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
