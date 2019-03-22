@@ -55,7 +55,7 @@ For checking state inclusion:
 ```
 java -jar porthos/target/porthos-2.0.3-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-Dartagnan supports programs written in the .litmus or .pts formats (see below). For Porthos, programs shall be written in the .pts format since they need to be compiled to two different architectures.
+DARTAGNAN supports programs written in the .litmus or .pts formats (see below). For PORTHOS, programs shall be written in the .pts format since they need to be compiled to two different architectures.
 
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
@@ -67,7 +67,7 @@ They must be one of the following:
 - arm
 - arm8
 
-**Note:** Option target is mandatory in dartagnan when using the.pts format.
+**Note:** Option target is mandatory in DARTAGNAN when using the.pts format.
 
 Other optional arguments include:
 - -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [1]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [2]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
