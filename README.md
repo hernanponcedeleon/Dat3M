@@ -9,10 +9,6 @@ This tool suite is currently composed of two tools.
 * **DARTAGNAN:** a tool to check state reachability under weak memory models.
 * **PORTHOS:** a tool to check state inclusion under weak memory models.
 
-<p align="center"> 
-<img src="extras/porthos_small.jpg">
-</p>
-
 Requeriments
 ======
 [Maven](https://maven.apache.org/) - Dependency Management
@@ -45,11 +41,12 @@ mvn test
 
 Usage
 ======
-You can launch Dat3M using the <img src="ui/src/main/resources/dat3m.png"> launche in Linux, or in MacOS running
+You can start Dat3M using the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher in Linux, or in MacOS running
 ```
 java -jar ui/target/
 ```
 Additionally, you can run DARTAGNAN and PORTHOS from the console.
+
 For checking reachability:
 ```
 java -jar dartagnan/target/dartagnan-2.0.3-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
@@ -109,7 +106,7 @@ Examples are provided in the **benchmarks/** folder.
           | ⟨expr⟩ % ⟨expr⟩ 
   ```
 
-Author and Contact
+Authors and Contact
 ======
 Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org), [Florian Furbach](mailto:f.furbach@tu-braunschweig.de) and [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi). Please feel free to contact us in case of questions or to send feedback.
 
