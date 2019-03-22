@@ -41,7 +41,7 @@ mvn test
 
 Usage
 ======
-* **Linux:** You can start Dat3M using the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
+* **Linux:** You can start the tool by double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
 * **MacOS:** To run the tool, from the Dat3M/ directory run
 ```
 java -jar ui/target/ui-2.0.3-jar-with-dependencies.jar
