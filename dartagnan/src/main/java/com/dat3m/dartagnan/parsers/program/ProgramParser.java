@@ -28,10 +28,10 @@ public class ProgramParser {
             throw new ParsingException("Unknown input file type");
         }
         
-        if(format.endsWith("pts")){
+        if(format.equals("pts")){
             parser = new ParserPorthos();
 
-        } else if(format.endsWith("litmus")){
+        } else if(format.equals("litmus")){
             if(chooser.indexOf(TYPE_LITMUS_AARCH64) == 0){
                 parser = new ParserLitmusAArch64();
             } else if(chooser.indexOf(TYPE_LITMUS_C) == 0){
