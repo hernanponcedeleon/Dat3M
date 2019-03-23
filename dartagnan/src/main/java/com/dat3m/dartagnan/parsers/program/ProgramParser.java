@@ -12,7 +12,7 @@ import org.antlr.v4.runtime.CharStream;
 
 public class ProgramParser {
 
-    private static final String TYPE_LITMUS_AARCH64     = "AArch64";
+    private static final String TYPE_LITMUS_AARCH64     = "AARCH64";
     private static final String TYPE_LITMUS_PPC         = "PPC";
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_C           = "C";
@@ -45,11 +45,11 @@ public class ProgramParser {
 
     public Program parse(CharStream charStream, String format) throws IOException {
         ParserInterface parser = null;
-        String programText = charStream.toString();
 
         if(format.equals("pts")){
             return new ParserPorthos().parse(charStream);
         } else if(format.equals("litmus")){
+            String programText = charStream.toString().toUpperCase();
 			if(programText.indexOf(TYPE_LITMUS_AARCH64) == 0){
                 parser = new ParserLitmusAArch64();
             } else if(programText.indexOf(TYPE_LITMUS_C) == 0){
