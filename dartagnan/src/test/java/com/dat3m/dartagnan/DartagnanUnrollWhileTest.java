@@ -82,7 +82,8 @@ public class DartagnanUnrollWhileTest {
     @Test
     public void test() {
         try {
-            Program program = new ProgramParser().parse(input);
+        	// Only litmus are tested
+            Program program = new ProgramParser().parse(input, "litmus");
             program.setAss(mkAssert(program, names, values));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

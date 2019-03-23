@@ -36,7 +36,8 @@ public class DartagnanArrayIllegalTest {
     @Test
     public void test() {
         try{
-            new ProgramParser().parse(input);
+        	// Only litmus are tested
+            new ProgramParser().parse(input, "litmus");
             fail("Didn't throw an exception");
         } catch(ParseCancellationException | ParsingException e){
             // Test succeeded

@@ -62,7 +62,8 @@ public abstract class AbstractDartagnanTest {
     @Test
     public void test() {
         try {
-            Program program = new ProgramParser().parse(input);
+        	// Only litmus are tested
+            Program program = new ProgramParser().parse(input, "litmus");
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
