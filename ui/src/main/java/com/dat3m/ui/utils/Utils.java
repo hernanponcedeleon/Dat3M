@@ -30,7 +30,7 @@ public class Utils {
 	public static Program parseProgramEditor(JEditorPane editor, String loadedFormat) throws IOException {
 		String path = TMPPROGPATH + loadedFormat;
 		File tmpProgramFile = createTmpFile(editor, path);	
-	    Program p = new ProgramParser().parse(path);
+	    Program p = new ProgramParser().parse(path, loadedFormat);
 		tmpProgramFile.delete();
 		return p;
 	}

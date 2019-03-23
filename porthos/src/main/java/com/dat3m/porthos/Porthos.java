@@ -73,7 +73,7 @@ public class Porthos {
         Arch target = Arch.get(cmd.getOptionValue("target"));
 
         String inputFilePath = cmd.getOptionValue("input");
-        if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus")) {
+        if(!inputFilePath.endsWith("pts")) {
             System.out.println("Unrecognized program format");
             System.exit(0);
             return;
@@ -101,8 +101,9 @@ public class Porthos {
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
         ProgramParser programParser = new ProgramParser();
-        Program pSource = programParser.parse(inputFilePath);
-        Program pTarget = programParser.parse(inputFilePath);
+        // PORTHOS only supports pts
+        Program pSource = programParser.parse(inputFilePath, "pts");
+        Program pTarget = programParser.parse(inputFilePath, "pts");
 
         Context ctx = new Context();
         Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

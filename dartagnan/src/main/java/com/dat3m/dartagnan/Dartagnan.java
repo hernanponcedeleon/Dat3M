@@ -67,7 +67,8 @@ public class Dartagnan {
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
-        Program p = new ProgramParser().parse(inputFilePath);
+        String format = inputFilePath.endsWith("pts") ? "pts" : "litmus";
+        Program p = new ProgramParser().parse(inputFilePath, format);
         
         Arch target = p.getArch();
 
