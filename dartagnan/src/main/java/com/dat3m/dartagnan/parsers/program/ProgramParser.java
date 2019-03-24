@@ -17,18 +17,29 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_C           = "C";
 
-    public Program parse(Object input, String format) throws IOException {
+    public Program parse(String inputFilePath) throws IOException {
         ParserInterface parser = null;
-        String chooser = null;
-        if(input instanceof String) {
-            chooser = readFirstLine((String)input).toUpperCase();
-        } else if(input instanceof CharStream) {
-            chooser = ((CharStream)input).toString().toUpperCase();
-        } else {
-            throw new ParsingException("Unknown input file type");
+        String format = inputFilePath.endsWith("pts") ? "pts" : "litmus";
+        parser = parserResolver(readFirstLine(inputFilePath).toUpperCase(), format);
+        if(parser != null){
+            return parser.parse(inputFilePath);
         }
-        
-        if(format.equals("pts")){
+        throw new ParsingException("Unknown input file type");
+    }
+
+    public Program parse(CharStream input, String format) throws IOException {
+        ParserInterface parser = null;
+        parser = parserResolver(input.toString().toUpperCase(), format);
+        if(parser != null){
+            return parser.parse(input);
+        }
+        throw new ParsingException("Unknown input file type");
+    }
+
+	public ParserInterface parserResolver(String chooser, String format) {
+		ParserInterface parser = null;
+		
+		if(format.equals("pts")){
             parser = new ParserPorthos();
 
         } else if(format.equals("litmus")){
@@ -42,12 +53,8 @@ public class ProgramParser {
                 parser = new ParserLitmusX86();
             }
         }
-
-        if(parser != null){
-            return parser.parse(chooser);
-        }
-        throw new ParsingException("Unknown input file type");
-    }
+		return parser;
+	}
 
     private String readFirstLine(String inputFilePath) throws IOException{
         File file = new File(inputFilePath);

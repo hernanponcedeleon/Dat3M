@@ -69,8 +69,7 @@ public class ExclusivePairsTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-        	// Only litmus are tested
-            Program program = new ProgramParser().parse(input, "litmus");
+            Program program = new ProgramParser().parse(input);
 
             // Test final state
             assertEquals(expectedState, Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), 1, Mode.KNASTER, Alias.CFIS));
@@ -99,8 +98,7 @@ public class ExclusivePairsTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-        	// Only litmus are tested
-            Program program = new ProgramParser().parse(input, "litmus");
+            Program program = new ProgramParser().parse(input);
 
             // Add program without assertions
             program.unroll(1, 0);

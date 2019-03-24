@@ -137,9 +137,8 @@ public class PorthosTest {
     public void test() {
         try {
             ProgramParser programParser = new ProgramParser();
-        	// Only pts are tested
-            Program pSource = programParser.parse(input, "pts");
-            Program pTarget = programParser.parse(input, "pts");
+            Program pSource = programParser.parse(input);
+            Program pTarget = programParser.parse(input);
 
             Context ctx = new Context();
             Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

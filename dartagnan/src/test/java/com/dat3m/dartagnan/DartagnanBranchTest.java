@@ -77,8 +77,7 @@ public class DartagnanBranchTest {
     @Test
     public void test() {
         try{
-        	// Only litmus are tested
-            Program program = new ProgramParser().parse(input, "litmus");
+            Program program = new ProgramParser().parse(input);
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, 1, Mode.KNASTER, Alias.CFIS));
