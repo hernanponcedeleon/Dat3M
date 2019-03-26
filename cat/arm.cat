@@ -32,7 +32,7 @@ let ppo = (R*W & ic) | (R*R & ii)
 (* fences *)
 (**********)
 
-let fence = isb
+let fence = ish
 
 (* happens before *)
 let hb = ppo | fence | rfe
@@ -40,7 +40,7 @@ acyclic hb
 
 (* prop *)
 let propbase = (fence | (rfe;fence));hb*
-let prop = (W*W & propbase)| (com*;propbase*;isb;hb*)
+let prop = (W*W & propbase)| (com*;propbase*;ish;hb*)
 
 acyclic co | prop
 irreflexive fre;prop;hb*
