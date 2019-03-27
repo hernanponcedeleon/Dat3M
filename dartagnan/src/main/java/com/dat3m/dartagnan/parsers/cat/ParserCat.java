@@ -28,7 +28,6 @@ public class ParserCat {
 
         CatParser parser = new CatParser(tokenStream);
         parser.addErrorListener(new ParserErrorListener());
-        parser.setErrorHandler(new BailErrorStrategy());
         ParserRuleContext parserEntryPoint = parser.mcm();
         return (Wmm) parserEntryPoint.accept(new VisitorBase());
 	}

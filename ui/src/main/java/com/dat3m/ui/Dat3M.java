@@ -128,16 +128,16 @@ public class Dat3M extends JFrame implements ActionListener {
                         testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
                     } catch (Exception e){
                     	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
-                        showError(msg, "Source memory model parsing error");
+                        showError(msg, "Source memory model error");
                     }
                 }
             } catch (Exception e){
             	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
-                showError(msg, "Target memory model parsing error");
+                showError(msg, "Target memory model error");
             }
         } catch (Exception e){
         	String msg = e.getMessage() == null? "Program cannot be parsed" : e.getMessage();
-            showError(msg, "Program parsing error");
+            showError(msg, "Program error");
         }
 	    if(testResult != null && testResult.isSat()) {
             graph.generate(testResult);
