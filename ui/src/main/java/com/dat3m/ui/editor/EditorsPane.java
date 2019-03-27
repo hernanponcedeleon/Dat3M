@@ -66,6 +66,7 @@ public class EditorsPane implements ActionListener {
             JComboBox<?> selector = (JComboBox<?>)event.getSource();
             if(selector.getModel().getSelectedItem().equals(Task.PORTABILITY)){
                 mmPane.setTopComponent(editors.get(EditorCode.SOURCE_MM));
+                mmPane.setDividerSize(2);
                 mmPane.setDividerLocation(0.5);
                 menu.add(editors.get(EditorCode.SOURCE_MM).getMenuItem(), 1);
             } else {
