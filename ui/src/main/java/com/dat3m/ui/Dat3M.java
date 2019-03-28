@@ -1,10 +1,9 @@
 package com.dat3m.ui;
 
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.editor.EditorsPane;
+import com.dat3m.ui.editor.Editor;
 import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
@@ -20,9 +19,6 @@ import com.dat3m.ui.utils.Task;
 
 import javax.swing.*;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -35,8 +31,8 @@ public class Dat3M extends JFrame implements ActionListener {
 
 	private final OptionsPane optionsPane = new OptionsPane();
 	private final EditorsPane editorsPane = new EditorsPane();
-	private final GraphOption graph = new GraphOption();
-
+	private final GraphOption graph = new GraphOption(optionsPane, editorsPane);
+	
 	private Dat3mResult testResult;
 
 	private Dat3M() {
@@ -50,6 +46,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(editorsPane.getMenu());
+		menuBar.add(graph.getMenu());
 		setJMenuBar(menuBar);
 
 		JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, editorsPane.getMainPane());
@@ -106,26 +103,27 @@ public class Dat3M extends JFrame implements ActionListener {
 		Options options = optionsPane.getOptions();
         testResult = null;
 	    try {
-            String loadedFormat = editorsPane.getEditor(EditorCode.PROGRAM).getLoadedFormat();
-            CharStream programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
-			Program program = new ProgramParser().parse(programStream, loadedFormat);
+			Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
+			programEditor.load();
+			Program program = (Program) programEditor.getLoaded();
             try {
-            	CharStream tmmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.TARGET_MM).getText());
-                Wmm targetModel = new ParserCat().parse(tmmStream);
+                Editor targetEditor = editorsPane.getEditor(EditorCode.TARGET_MM);
+                targetEditor.load();
+				Wmm targetModel = (Wmm) targetEditor.getLoaded();
                 if(options.getTask() == Task.REACHABILITY){
-                    testResult = new ReachabilityResult(program, targetModel, options);
+                    testResult = new ReachabilityResult(program, targetModel, options, graph);
                 } else {
                     try {
-                    	if(!loadedFormat.equals("pts")) {
+                    	if(!programEditor.getLoadedFormat().equals("pts")) {
                     		showError("PORTHOS only supports *.pts files", "Loading error");
                     		return;
                     	}
                     	// We need to create the stream again to be read from the beginning
-                    	programStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.PROGRAM).getText());
-                        Program sourceProgram = new ProgramParser().parse(programStream, loadedFormat);
-                        CharStream smmStream = CharStreams.fromString(editorsPane.getEditor(EditorCode.SOURCE_MM).getText());
-                        Wmm sourceModel = new ParserCat().parse(smmStream);
-                        testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
+                        Program sourceProgram = (Program) programEditor.getLoaded();
+                        Editor sourceEditor = editorsPane.getEditor(EditorCode.SOURCE_MM);
+                        sourceEditor.load();
+						Wmm sourceModel = (Wmm) sourceEditor.getLoaded();
+                        testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options, graph);
                     } catch (Exception e){
                     	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
                         showError(msg, "Source memory model error");

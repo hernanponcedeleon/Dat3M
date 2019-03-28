@@ -1,10 +1,15 @@
 package com.dat3m.ui.editor;
 
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.google.common.collect.ImmutableSet;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import org.antlr.v4.runtime.CharStreams;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -13,6 +18,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
+import static com.dat3m.ui.editor.EditorCode.PROGRAM;
+import static com.dat3m.ui.editor.EditorCode.SOURCE_MM;
+import static com.dat3m.ui.editor.EditorCode.TARGET_MM;
 import static com.dat3m.ui.utils.Utils.showError;
 import static java.lang.System.getProperty;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -22,6 +30,8 @@ public class Editor extends JScrollPane implements ActionListener {
 
     private final EditorCode code;
 
+    private Object loaded;
+    
     private final JEditorPane editorPane;
     private final JMenuItem menuItem;
     private final JFileChooser chooser;
@@ -69,6 +79,20 @@ public class Editor extends JScrollPane implements ActionListener {
         return editorPane.getText();
     }
 
+    public void load() throws IOException {
+    	if(code.equals(PROGRAM)) {
+			loaded = new ProgramParser().parse(CharStreams.fromString(getText()), loadedFormat);
+    	} else if(code.equals(SOURCE_MM)) {
+			loaded = new ParserCat().parse(CharStreams.fromString(getText()));
+    	} else if(code.equals(TARGET_MM)) {
+			loaded = new ParserCat().parse(CharStreams.fromString(getText()));
+    	}  
+    }
+    
+    public Object getLoaded() {
+    	return loaded;
+    }
+    
     @Override
     public void actionPerformed(ActionEvent event) {
         if(code.editorMenuActionCommand().equals(event.getActionCommand())){

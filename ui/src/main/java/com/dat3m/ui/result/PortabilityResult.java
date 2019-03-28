@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
+import com.dat3m.ui.graph.GraphOption;
 import com.dat3m.ui.options.Options;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
@@ -18,15 +19,17 @@ public class PortabilityResult implements Dat3mResult {
     private final Options options;
     private boolean isSat = false;
 
+    private GraphOption gOptions;
     private Graph graph;
     private String verdict;
 
-    public PortabilityResult(Program sourceProgram, Program targetProgram, Wmm sourceWmm, Wmm targetWmm, Options options){
+    public PortabilityResult(Program sourceProgram, Program targetProgram, Wmm sourceWmm, Wmm targetWmm, Options options, GraphOption gOptions){
         this.sourceProgram = sourceProgram;
         this.targetProgram = targetProgram;
         this.sourceWmm = sourceWmm;
         this.targetWmm = targetWmm;
         this.options = options;
+        this.gOptions = gOptions;
         run();
     }
 
@@ -59,6 +62,7 @@ public class PortabilityResult implements Dat3mResult {
 
         if(!result.getIsPortable()){
             graph = new Graph(s1.getModel(), ctx);
+            graph.addRelations(gOptions.getSelector().getSelection());
             graph.build(sourceProgram, targetProgram);
             isSat = true;
         }

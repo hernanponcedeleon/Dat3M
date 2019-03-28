@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.ui.graph.GraphOption;
 import com.dat3m.ui.options.Options;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
@@ -16,12 +17,14 @@ public class ReachabilityResult implements Dat3mResult {
     private final Options options;
     private boolean isSat = false;
 
+    private GraphOption gOptions;
     private Graph graph;
     private String verdict;
 
-    public ReachabilityResult(Program program, Wmm wmm, Options options){
+    public ReachabilityResult(Program program, Wmm wmm, Options options, GraphOption gOptions){
         this.program = program;
         this.wmm = wmm;
+        this.gOptions = gOptions;
         this.options = options;
         run();
     }
@@ -49,6 +52,7 @@ public class ReachabilityResult implements Dat3mResult {
 
         if(Dartagnan.canDrawGraph(program.getAss(), result)){
             graph = new Graph(solver.getModel(), ctx);
+            graph.addRelations(gOptions.getSelector().getSelection());
             graph.build(program);
             isSat = true;
         }
