@@ -39,7 +39,7 @@ public class GraphOption implements ActionListener {
 	private final OptionsPane options;
 	private final EditorsPane editor;
     private final JMenu menu;
-    private final RelSelector selector;
+    private final RelSelector selector = new RelSelector();
 
     public GraphOption(OptionsPane options, EditorsPane editor) {
     	this.options = options;
@@ -49,7 +49,6 @@ public class GraphOption implements ActionListener {
     	menuItem.setActionCommand("menu_graph_relations");
     	menuItem.addActionListener(this);
     	this.menu.add(menuItem);
-    	this.selector = new RelSelector();
     }
  
     public JMenu getMenu(){

@@ -18,6 +18,7 @@ public class RelSelector extends JFrame implements ActionListener {
 
 	private Wmm tmm;
 	private Wmm smm;
+	private Set<String> names;
 	private Set<String> selection = new HashSet<>();
 	
 	public void setTMM(Wmm mm) {
@@ -33,6 +34,7 @@ public class RelSelector extends JFrame implements ActionListener {
 	}
 
 	public void open() {
+		names = new HashSet<>();
         JPanel radioPanel = new JPanel(new GridLayout(0, 1));
         int nButton = 0;
         
@@ -52,6 +54,10 @@ public class RelSelector extends JFrame implements ActionListener {
         			.filter(ev -> !ev.getName().equals(ev.getTerm()))
         			.map(ev -> ev.getName()).collect(Collectors.toSet());
         	for(String name : rels) {
+        		if(names.contains(name)) {
+        			continue;
+        		}
+        		names.add(name);
                 JRadioButton button = new JRadioButton(name);
                 button.setName(name);
                 button.addActionListener(this);
@@ -66,10 +72,11 @@ public class RelSelector extends JFrame implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		JRadioButton button = (JRadioButton)e.getSource();
+		String name = button.getName();
 		if(button.isSelected()) {
-			selection.add(button.getName());			
+			selection.add(name);			
 		} else {
-			selection.remove(button.getName());
+			selection.remove(name);
 		}
 	}
 }
