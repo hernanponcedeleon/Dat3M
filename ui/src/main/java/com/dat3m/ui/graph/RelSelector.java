@@ -18,6 +18,7 @@ public class RelSelector extends JFrame implements ActionListener {
 
 	private Wmm tmm;
 	private Wmm smm;
+	// To avoid repeating names of common relations between both MM
 	private Set<String> names;
 	private Set<String> selection = new HashSet<>();
 	
@@ -36,11 +37,13 @@ public class RelSelector extends JFrame implements ActionListener {
 	public void open() {
 		names = new HashSet<>();
         JPanel radioPanel = new JPanel(new GridLayout(0, 1));
+        // To have the height based on the number of options
         int nButton = 0;
         
         nButton = createButtons(tmm, radioPanel, nButton);
         nButton = createButtons(smm, radioPanel, nButton);
 
+        // To have a minimal height when there are no relations
         nButton = Math.max(nButton, 2);
         radioPanel.setPreferredSize(new Dimension(200, nButton * 30));
         setContentPane(radioPanel);
@@ -61,6 +64,7 @@ public class RelSelector extends JFrame implements ActionListener {
                 JRadioButton button = new JRadioButton(name);
                 button.setName(name);
                 button.addActionListener(this);
+                // To remember previous choice
                 button.setSelected(selection.contains(name));
                 radioPanel.add(button);
                 nButtom ++;

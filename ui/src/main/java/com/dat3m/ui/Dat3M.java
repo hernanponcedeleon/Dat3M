@@ -31,7 +31,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
 	private final OptionsPane optionsPane = new OptionsPane();
 	private final EditorsPane editorsPane = new EditorsPane();
-	private final GraphOption graph = new GraphOption(optionsPane, editorsPane);
+	private final GraphOption graph = new GraphOption(editorsPane);
 	
 	private Dat3mResult testResult;
 
@@ -118,7 +118,6 @@ public class Dat3M extends JFrame implements ActionListener {
                     		showError("PORTHOS only supports *.pts files", "Loading error");
                     		return;
                     	}
-                    	// We need to create the stream again to be read from the beginning
                         Program sourceProgram = (Program) programEditor.getLoaded();
                         Editor sourceEditor = editorsPane.getEditor(EditorCode.SOURCE_MM);
                         sourceEditor.load();

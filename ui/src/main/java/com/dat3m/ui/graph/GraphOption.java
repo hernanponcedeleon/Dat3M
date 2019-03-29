@@ -24,10 +24,7 @@ import javax.swing.JScrollPane;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.editor.EditorsPane;
-import com.dat3m.ui.options.OptionsPane;
 import com.dat3m.ui.result.Dat3mResult;
-import com.dat3m.ui.utils.Task;
-
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.parse.Parser;
 
@@ -36,13 +33,12 @@ public class GraphOption implements ActionListener {
 	private File dotFile = new File(".tmp/output.dot");
 	private File pngFile = new File(".tmp/output.png");
 
-	private final OptionsPane options;
+	// We need to load the MMs to populate the relation selector in the menu
 	private final EditorsPane editor;
     private final JMenu menu;
     private final RelSelector selector = new RelSelector();
 
-    public GraphOption(OptionsPane options, EditorsPane editor) {
-    	this.options = options;
+    public GraphOption(EditorsPane editor) {
     	this.editor = editor;
     	this.menu = new JMenu("Graph Options");
     	JMenuItem menuItem = new JMenuItem("Select Displayed Relations");
@@ -102,17 +98,11 @@ public class GraphOption implements ActionListener {
         	try {
 				editor.getEditor(TARGET_MM).load();
 	        	selector.setTMM((Wmm) editor.getEditor(TARGET_MM).getLoaded());
+				editor.getEditor(SOURCE_MM).load();
+            	selector.setSMM((Wmm) editor.getEditor(SOURCE_MM).getLoaded());        		
         	} catch (Exception e) {
 				// Nothing to be done
 			}
-        	if(options.getOptions().getTask().equals(Task.PORTABILITY)) {
-            	try {
-					editor.getEditor(SOURCE_MM).load();
-	            	selector.setSMM((Wmm) editor.getEditor(SOURCE_MM).getLoaded());        		
-            	} catch (Exception e) {
-					// Nothing to be done
-				}
-        	}
         	selector.open();
         }
 	}
