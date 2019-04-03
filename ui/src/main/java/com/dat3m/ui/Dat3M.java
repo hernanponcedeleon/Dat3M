@@ -16,13 +16,14 @@ import com.dat3m.ui.result.Dat3mResult;
 import com.dat3m.ui.result.PortabilityResult;
 import com.dat3m.ui.result.ReachabilityResult;
 import com.dat3m.ui.utils.Task;
-
 import javax.swing.*;
+
+import org.antlr.v4.runtime.InputMismatchException;
+import org.antlr.v4.runtime.Token;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
 import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.UIManager.getDefaults;
@@ -134,7 +135,12 @@ public class Dat3M extends JFrame implements ActionListener {
             }
         } catch (Exception e){
         	String msg = e.getMessage() == null? "Program cannot be parsed" : e.getMessage();
-            showError(msg, "Program error");
+        	Throwable cause = e.getCause();
+			if(cause instanceof InputMismatchException) {
+        		Token token = ((InputMismatchException)cause).getOffendingToken();
+				msg = "Problem with \"" + token.getText() + "\" at line " + token.getLine();
+        	}
+        	showError(msg, "Program error");
         }
 	    if(testResult != null && testResult.isSat()) {
             graph.generate(testResult);
