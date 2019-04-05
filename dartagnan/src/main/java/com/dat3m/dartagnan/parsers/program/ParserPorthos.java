@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.VisitorPorthos;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.*;
 
-public class ParserPorthos implements ParserInterface{
+class ParserPorthos implements ParserInterface{
 
     @Override
     public Program parse(CharStream charStream) {

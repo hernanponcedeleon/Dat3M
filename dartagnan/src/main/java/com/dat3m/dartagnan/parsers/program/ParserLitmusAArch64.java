@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import org.antlr.v4.runtime.*;
 
-public class ParserLitmusAArch64 implements ParserInterface {
+class ParserLitmusAArch64 implements ParserInterface {
 
     @Override
     public Program parse(CharStream charStream) {
