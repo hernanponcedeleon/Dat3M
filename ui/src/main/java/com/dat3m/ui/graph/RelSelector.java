@@ -51,7 +51,7 @@ public class RelSelector extends JFrame implements ActionListener {
         setVisible(true);
     }
 
-	public int createButtons(Wmm mm, JPanel radioPanel, int nButtom) {
+	private int createButtons(Wmm mm, JPanel radioPanel, int nButtom) {
 		if(mm != null) {
         	Set<String> rels = mm.getRelationRepository().getRelations().stream()
         			.filter(ev -> !ev.getName().equals(ev.getTerm()))

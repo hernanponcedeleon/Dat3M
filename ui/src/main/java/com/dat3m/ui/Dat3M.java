@@ -64,6 +64,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		optionsPane.getTestButton().addActionListener(this);
 		optionsPane.getClearButton().addActionListener(this);
 		optionsPane.getGraphButton().addActionListener(this);
+		optionsPane.getRelsButton().addActionListener(this);
 
 		// optionsPane needs to listen to editor to clean the console
 		editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane);
@@ -71,7 +72,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane);
 
 		// The console shall be cleaned every time the program or MM is modified from the editor
-    	EditorListener listener = new EditorListener(optionsPane.getConsolePane(), optionsPane.getGraphButton());
+    	EditorListener listener = new EditorListener(optionsPane.getConsolePane(), optionsPane.getClearButton());
     	editorsPane.getEditor(EditorCode.PROGRAM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.SOURCE_MM).getEditorPane().addKeyListener(listener);
@@ -93,10 +94,12 @@ public class Dat3M extends JFrame implements ActionListener {
             runTest();
             if(testResult != null){
                 optionsPane.getConsolePane().setText(testResult.getVerdict());
-                optionsPane.getGraphButton().setEnabled(testResult.getGraph() != null);
+                if(optionsPane.getGraphButton().isSelected()) {
+                    EventQueue.invokeLater(graph::open);                	
+                }
             }
-        } else if(ControlCode.GRAPH.actionCommand().equals(command)){
-            EventQueue.invokeLater(graph::open);
+        } else if(ControlCode.RELS.actionCommand().equals(command)){
+        	graph.getSelector().open();
         }
 	}
 

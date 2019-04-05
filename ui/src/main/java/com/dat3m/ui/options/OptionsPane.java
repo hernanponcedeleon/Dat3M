@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.GraphButton;
+import com.dat3m.ui.button.RelsButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.options.utils.ArchManager;
@@ -45,7 +46,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     private final JButton testButton;
     private final JButton clearButton;
-    private final JButton graphButton;
+    private final GraphButton graphButton;
+    private final RelsButton relsButton;
 
     private final JTextPane consolePane;
 
@@ -69,6 +71,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         testButton = new TestButton();
         clearButton = new ClearButton();
         graphButton = new GraphButton();
+        relsButton = new RelsButton();
 
         consolePane = new JTextPane();
         consolePane.setEditable(false);
@@ -87,6 +90,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 		sourcePane.addActionListener(this);
 		boundField.addActionListener(this);
 		clearButton.addActionListener(this);
+		graphButton.addActionListener(relsButton);
+		modePane.addActionListener(graphButton);
     }
 
     public Selector<Task> getTaskPane(){
@@ -117,8 +122,12 @@ public class OptionsPane extends JPanel implements ActionListener {
         return clearButton;
     }
 
-    public JButton getGraphButton(){
+    public GraphButton getGraphButton(){
         return graphButton;
+    }
+
+    public RelsButton getRelsButton(){
+        return relsButton;
     }
 
     public JTextPane getConsolePane(){
@@ -158,7 +167,10 @@ public class OptionsPane extends JPanel implements ActionListener {
         // Inner borders
         Border emptyBorder = BorderFactory.createEmptyBorder();
 
-        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, boundPane, testButton, clearButton, graphButton, scrollConsole };
+        JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        graphPane.setLeftComponent(graphButton);
+        graphPane.setRightComponent(relsButton);
+        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, boundPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);
@@ -181,8 +193,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// Any change in the (relevant) options clears the console and disable graph button
+		// Any change in the (relevant) options clears the console
 		getConsolePane().setText("");
-		graphButton.setEnabled(false);
 	}
 }
