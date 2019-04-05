@@ -16,7 +16,7 @@ public class DartagnanPPCTest extends AbstractDartagnanTest {
         return buildParameters("litmus/PPC/", "cat/power.cat", Arch.POWER, 2);
     }
 
-    public DartagnanPPCTest(String input, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
-        super(input, expected, target, wmm, unroll, mode);
+    public DartagnanPPCTest(String path, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
+        super(path, expected, target, wmm, unroll, mode);
     }
 }

@@ -66,14 +66,14 @@ public class DartagnanUnrollWhileTest {
     }
 
 
-    private String input;
+    private String path;
     private Wmm wmm;
     private int bound;
     private String[] names;
     private int[] values;
 
-    public DartagnanUnrollWhileTest(String input, Wmm wmm, int bound, String[] names, int[] values) {
-        this.input = input;
+    public DartagnanUnrollWhileTest(String path, Wmm wmm, int bound, String[] names, int[] values) {
+        this.path = path;
         this.wmm = wmm;
         this.bound = bound;
         this.names = names;
@@ -83,7 +83,7 @@ public class DartagnanUnrollWhileTest {
     @Test
     public void test() {
         try {
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
             program.setAss(mkAssert(program, names, values));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

@@ -68,7 +68,7 @@ public class Dartagnan {
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
-        Program p = new ProgramParser().parse(inputFilePath);
+        Program p = new ProgramParser().parse(new File(inputFilePath));
         
         Arch target = p.getArch();
 

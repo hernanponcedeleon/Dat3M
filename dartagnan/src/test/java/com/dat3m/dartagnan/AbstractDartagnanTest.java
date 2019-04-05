@@ -44,15 +44,15 @@ public abstract class AbstractDartagnanTest {
                         }, ArrayList::addAll);
     }
 
-    private String input;
+    private String path;
     private boolean expected;
     private Arch target;
     private Wmm wmm;
     private int unroll;
     private Mode mode;
 
-    AbstractDartagnanTest(String input, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
-        this.input = input;
+    AbstractDartagnanTest(String path, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
+        this.path = path;
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;
@@ -63,7 +63,7 @@ public abstract class AbstractDartagnanTest {
     @Test
     public void test() {
         try {
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

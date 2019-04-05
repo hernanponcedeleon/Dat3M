@@ -65,12 +65,12 @@ public class DartagnanBranchTest {
         return builder.build();
     }
 
-    private String input;
+    private String path;
     private Wmm wmm;
     private boolean expected;
 
-    public DartagnanBranchTest(String input, boolean expected, Wmm wmm) {
-        this.input = input;
+    public DartagnanBranchTest(String path, boolean expected, Wmm wmm) {
+        this.path = path;
         this.expected = expected;
         this.wmm = wmm;
     }
@@ -78,7 +78,7 @@ public class DartagnanBranchTest {
     @Test
     public void test() {
         try{
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, 1, Mode.KNASTER, Alias.CFIS));

@@ -16,7 +16,7 @@ public class DartagnanLinuxTest extends AbstractDartagnanTest {
         return buildParameters("litmus/C/", "cat/linux-kernel.cat", Arch.NONE, 2);
     }
 
-    public DartagnanLinuxTest(String input, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
-        super(input, expected, target, wmm, unroll, mode);
+    public DartagnanLinuxTest(String path, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
+        super(path, expected, target, wmm, unroll, mode);
     }
 }

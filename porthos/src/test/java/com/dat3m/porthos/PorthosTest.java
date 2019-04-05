@@ -114,7 +114,7 @@ public class PorthosTest {
         });
     }
 
-    private String input;
+    private String programFilePath;
     private boolean expected;
     private Arch source;
     private Arch target;
@@ -123,8 +123,8 @@ public class PorthosTest {
     private int steps;
     private Mode mode;
 
-    public PorthosTest(String input, boolean expected, Arch source, Arch target, Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode) {
-        this.input = input;
+    public PorthosTest(String path, boolean expected, Arch source, Arch target, Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode) {
+        this.programFilePath = path;
         this.expected = expected;
         this.source = source;
         this.target = target;
@@ -138,8 +138,8 @@ public class PorthosTest {
     public void test() {
         try {
             ProgramParser programParser = new ProgramParser();
-            Program pSource = programParser.parse(input);
-            Program pTarget = programParser.parse(input);
+            Program pSource = programParser.parse(new File(programFilePath));
+            Program pTarget = programParser.parse(new File(programFilePath));
 
             Context ctx = new Context();
             Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

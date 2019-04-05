@@ -102,8 +102,8 @@ public class Porthos {
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
         ProgramParser programParser = new ProgramParser();
-        Program pSource = programParser.parse(inputFilePath);
-        Program pTarget = programParser.parse(inputFilePath);
+        Program pSource = programParser.parse(new File(inputFilePath));
+        Program pTarget = programParser.parse(new File(inputFilePath));
 
         Context ctx = new Context();
         Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

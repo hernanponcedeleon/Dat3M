@@ -43,12 +43,12 @@ public class RelCritTest {
         return data;
     }
 
-    private String input;
+    private String path;
     private Wmm wmm;
     private int[] expectedEdges;
 
-    public RelCritTest(String input, Wmm wmm, int[] expectedEdges) {
-        this.input = input;
+    public RelCritTest(String path, Wmm wmm, int[] expectedEdges) {
+        this.path = path;
         this.wmm = wmm;
         this.expectedEdges = expectedEdges;
     }
@@ -58,7 +58,7 @@ public class RelCritTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
 
             // Force encoding all possible "crit" relations
             wmm.setDrawExecutionGraph();

@@ -15,14 +15,13 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_C           = "C";
 
-    public Program parse(String inputFilePath) throws IOException {
-        ParserInterface parser = getConcreteParser(inputFilePath);
-        File file = new File(inputFilePath);
+    public Program parse(File file) throws IOException {
         FileInputStream stream = new FileInputStream(file);
+        ParserInterface parser = getConcreteParser(file);
         CharStream charStream = CharStreams.fromStream(stream);
         Program program = parser.parse(charStream);
         stream.close();
-        program.setName(inputFilePath);
+        program.setName(file.getName());
         return program;
     }
 
@@ -35,11 +34,13 @@ public class ProgramParser {
         throw new ParsingException("Unknown input file type");
     }
 
-    private ParserInterface getConcreteParser(String inputFilePath) throws IOException {
-        if(inputFilePath.endsWith("pts")){
+    private ParserInterface getConcreteParser(File file) throws IOException {
+        String name = file.getName();
+        String format = name.substring(name.lastIndexOf(".") + 1);
+        if(format.equals("pts")){
             return new ParserPorthos();
-        } else if(inputFilePath.endsWith("litmus")){
-            return getConcreteLitmusParser(readFirstLine(inputFilePath).toUpperCase());
+        } else if(format.equals("litmus")){
+            return getConcreteLitmusParser(readFirstLine(file).toUpperCase());
         }
         throw new ParsingException("Unknown input file type");
     }
@@ -57,8 +58,7 @@ public class ProgramParser {
         throw new ParsingException("Unknown input file type");
     }
 
-    private String readFirstLine(String inputFilePath) throws IOException{
-        File file = new File(inputFilePath);
+    private String readFirstLine(File file) throws IOException{
         FileReader fileReader = new FileReader(file);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
         String line = bufferedReader.readLine();
