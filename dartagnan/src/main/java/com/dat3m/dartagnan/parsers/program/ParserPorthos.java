@@ -8,26 +8,11 @@ import com.dat3m.dartagnan.parsers.program.visitors.VisitorPorthos;
 import com.dat3m.dartagnan.program.Program;
 import org.antlr.v4.runtime.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-
 public class ParserPorthos implements ParserInterface{
 
     @Override
-    public Program parse(String inputFilePath) throws IOException {
-        File file = new File(inputFilePath);
-        FileInputStream stream = new FileInputStream(file);
-        CharStream charStream = CharStreams.fromStream(stream);
-        Program p = parse(charStream);
-        stream.close();
-        p.setName(inputFilePath);
-        return p;
-    }
-
-    @Override
-	public Program parse(CharStream charStream) throws IOException {
-		PorthosLexer lexer = new PorthosLexer(charStream);
+    public Program parse(CharStream charStream) {
+        PorthosLexer lexer = new PorthosLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         PorthosParser parser = new PorthosParser(tokenStream);
@@ -37,7 +22,6 @@ public class ParserPorthos implements ParserInterface{
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorPorthos visitor = new VisitorPorthos(pb);
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
-	}
+        return (Program) parserEntryPoint.accept(visitor);
+    }
 }

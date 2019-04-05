@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -28,7 +29,7 @@ public class ExclusivePairsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat");
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
         String path = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rmw/aarch64/";
 
         List<Object[]> data = new ArrayList<>();

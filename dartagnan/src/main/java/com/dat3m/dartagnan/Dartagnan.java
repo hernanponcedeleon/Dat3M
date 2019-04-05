@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.commons.cli.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -85,7 +86,7 @@ public class Dartagnan {
             throw new RuntimeException("Assert is required for Dartagnan tests");
         }
 
-        Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"));
+        Wmm mcm = new ParserCat().parse(new File(cmd.getOptionValue("cat")));
 
         if(cmd.hasOption("draw")) {
             mcm.setDrawExecutionGraph();

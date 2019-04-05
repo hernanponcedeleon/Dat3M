@@ -10,26 +10,11 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import org.antlr.v4.runtime.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-
 public class ParserLitmusAArch64 implements ParserInterface {
 
     @Override
-    public Program parse(String inputFilePath) throws IOException {
-        File file = new File(inputFilePath);
-        FileInputStream stream = new FileInputStream(file);
-        CharStream charStream = CharStreams.fromStream(stream);
-        Program p = parse(charStream);
-        stream.close();
-        p.setName(inputFilePath);
-        return p;
-    }
-
-    @Override
-	public Program parse(CharStream charStream) throws IOException {
-		LitmusAArch64Lexer lexer = new LitmusAArch64Lexer(charStream);
+    public Program parse(CharStream charStream) {
+        LitmusAArch64Lexer lexer = new LitmusAArch64Lexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusAArch64Parser parser = new LitmusAArch64Parser(tokenStream);
@@ -42,5 +27,5 @@ public class ParserLitmusAArch64 implements ParserInterface {
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setArch(Arch.ARM8);
         return program;
-	}
+    }
 }

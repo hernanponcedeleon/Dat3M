@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.apache.commons.cli.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -78,8 +79,8 @@ public class Porthos {
             System.exit(0);
             return;
         }
-        Wmm mcmS = new ParserCat().parse(cmd.getOptionValue("scat"));
-        Wmm mcmT = new ParserCat().parse(cmd.getOptionValue("tcat"));
+        Wmm mcmS = new ParserCat().parse(new File(cmd.getOptionValue("scat")));
+        Wmm mcmT = new ParserCat().parse(new File(cmd.getOptionValue("tcat")));
 
         if(cmd.hasOption("draw")) {
             mcmS.setDrawExecutionGraph();

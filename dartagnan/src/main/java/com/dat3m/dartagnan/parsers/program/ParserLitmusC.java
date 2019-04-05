@@ -9,25 +9,11 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import org.antlr.v4.runtime.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-
 public class ParserLitmusC implements ParserInterface {
 
     @Override
-    public Program parse(String inputFilePath) throws IOException {
-        File file = new File(inputFilePath);
-        FileInputStream stream = new FileInputStream(file);
-        CharStream charStream = CharStreams.fromStream(stream);
-        Program p = parse(charStream);
-        stream.close();
-        p.setName(inputFilePath);
-        return p;
-    }
-
-	public Program parse(CharStream charStream) throws IOException {
-		LitmusCLexer lexer = new LitmusCLexer(charStream);
+    public Program parse(CharStream charStream) {
+        LitmusCLexer lexer = new LitmusCLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusCParser parser = new LitmusCParser(tokenStream);
@@ -39,5 +25,5 @@ public class ParserLitmusC implements ParserInterface {
         Program program = (Program) parserEntryPoint.accept(visitor);
         program.setArch(Arch.NONE);
         return program;
-	}    
+    }
 }

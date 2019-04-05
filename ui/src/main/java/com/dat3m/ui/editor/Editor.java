@@ -8,8 +8,6 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import org.antlr.v4.runtime.CharStreams;
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -75,17 +73,13 @@ public class Editor extends JScrollPane implements ActionListener {
         return loadedFormat;
     }
 
-    public String getText(){
-        return editorPane.getText();
-    }
-
-    public void load() throws IOException {
+    public void load() {
     	if(code.equals(PROGRAM)) {
-			loaded = new ProgramParser().parse(CharStreams.fromString(getText()), loadedFormat);
+			loaded = new ProgramParser().parse(editorPane.getText(), loadedFormat);
     	} else if(code.equals(SOURCE_MM)) {
-			loaded = new ParserCat().parse(CharStreams.fromString(getText()));
+			loaded = new ParserCat().parse(editorPane.getText());
     	} else if(code.equals(TARGET_MM)) {
-			loaded = new ParserCat().parse(CharStreams.fromString(getText()));
+			loaded = new ParserCat().parse(editorPane.getText());
     	}  
     }
     

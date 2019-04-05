@@ -12,6 +12,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +28,7 @@ public abstract class AbstractDartagnanTest {
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target, int unroll) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Boolean> expectationMap = ResourceHelper.getExpectedResults();
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + cat);
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
         return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)

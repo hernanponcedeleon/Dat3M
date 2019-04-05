@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -33,10 +34,10 @@ public class PorthosTest {
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
     public static Iterable<Object[]> data() throws IOException {
 
-        Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat");
-        Wmm wmmTso = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/tso.cat");
-        Wmm wmmPpc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/power.cat");
-        Wmm wmmArm = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/arm.cat");
+        Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
+        Wmm wmmTso = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/tso.cat"));
+        Wmm wmmPpc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/power.cat"));
+        Wmm wmmArm = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/arm.cat"));
 
         return Arrays.asList(new Object[][] {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},

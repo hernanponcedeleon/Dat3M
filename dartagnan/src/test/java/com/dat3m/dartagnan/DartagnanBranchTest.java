@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,8 +33,8 @@ public class DartagnanBranchTest {
     public static Iterable<Object[]> data() throws IOException {
         ImmutableMap<String, Boolean> expected = readExpectedResults();
 
-        Wmm linuxWmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
-        Wmm aarch64Wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat");
+        Wmm linuxWmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
+        Wmm aarch64Wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
 
         List<Object[]> data = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/C/"))
                 .filter(Files::isRegularFile)
