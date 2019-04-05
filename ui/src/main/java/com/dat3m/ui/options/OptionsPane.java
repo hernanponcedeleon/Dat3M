@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Iterator;
 
-import static com.dat3m.ui.utils.Utils.getMainScreenHeight;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -137,7 +136,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     }
 
     private int getIconHeight(){
-        return min(500, (int) round((getMainScreenHeight() / 2)));
+        return min(500, (int) round((Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 2)));
     }
 
     private void mkGrid(){
