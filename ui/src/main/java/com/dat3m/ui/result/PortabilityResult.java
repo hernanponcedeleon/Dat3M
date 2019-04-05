@@ -17,7 +17,6 @@ public class PortabilityResult implements Dat3mResult {
     private final Wmm sourceWmm;
     private final Wmm targetWmm;
     private final Options options;
-    private boolean isSat = false;
 
     private GraphOption gOptions;
     private Graph graph;
@@ -31,14 +30,6 @@ public class PortabilityResult implements Dat3mResult {
         this.options = options;
         this.gOptions = gOptions;
         run();
-    }
-
-    public Program getSourceProgram() {
-    	return sourceProgram;
-    }
-    
-    public Program getTargetProgram() {
-    	return targetProgram;
     }
     
     public Graph getGraph(){
@@ -64,13 +55,7 @@ public class PortabilityResult implements Dat3mResult {
             graph = new Graph(s1.getModel(), ctx);
             graph.addRelations(gOptions.getSelector().getSelection());
             graph.build(sourceProgram, targetProgram);
-            isSat = true;
         }
         ctx.close();
     }
-
-	@Override
-	public boolean isSat() {
-		return isSat;
-	}
 }

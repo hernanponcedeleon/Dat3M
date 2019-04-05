@@ -142,7 +142,7 @@ public class Dat3M extends JFrame implements ActionListener {
         	}
         	showError(msg, "Program error");
         }
-	    if(testResult != null && testResult.isSat()) {
+	    if(testResult != null && testResult.getGraph() != null) {
             graph.generate(testResult);
 	    }
 	}

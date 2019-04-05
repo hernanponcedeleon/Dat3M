@@ -15,7 +15,6 @@ public class ReachabilityResult implements Dat3mResult {
     private final Program program;
     private final Wmm wmm;
     private final Options options;
-    private boolean isSat = false;
 
     private GraphOption gOptions;
     private Graph graph;
@@ -27,10 +26,6 @@ public class ReachabilityResult implements Dat3mResult {
         this.gOptions = gOptions;
         this.options = options;
         run();
-    }
-
-    public Program getProgram() {
-    	return program;
     }
     
     public Graph getGraph(){
@@ -54,7 +49,6 @@ public class ReachabilityResult implements Dat3mResult {
             graph = new Graph(solver.getModel(), ctx);
             graph.addRelations(gOptions.getSelector().getSelection());
             graph.build(program);
-            isSat = true;
         }
         ctx.close();
     }
@@ -68,9 +62,4 @@ public class ReachabilityResult implements Dat3mResult {
         sb.append(result ? "OK" : "No").append("\n");
         verdict = sb.toString();
     }
-
-	@Override
-	public boolean isSat() {
-		return isSat;
-	}
 }

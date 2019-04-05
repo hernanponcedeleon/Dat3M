@@ -55,27 +55,28 @@ public class GraphOption implements ActionListener {
         return selector;
     }
 
-	public void generate(Dat3mResult res) {
-		try {
-			if(res.isSat()) {
-		        List<File> files = Arrays.asList(dotFile, pngFile);
-		        // Create the file and parent directory if they do not exist
-		        for(File f : files) {
+	public void generate(Dat3mResult result) {
+		Graph graph = result.getGraph();
+		if(graph != null) {
+			try {
+				List<File> files = Arrays.asList(dotFile, pngFile);
+				// Create the file and parent directory if they do not exist
+				for(File f : files) {
 					if (f.getParentFile() != null) {
 						f.getParentFile().mkdirs();
-						}
-					f.createNewFile();		        	
-		        }
-				Graph graph = res.getGraph();
+					}
+					f.createNewFile();
+				}
 				File dot2File = graph.draw(dotFile.getAbsolutePath());
 				// The previous png file needs to be deleted
 				pngFile.delete();
 				InputStream targetStream = new FileInputStream(dot2File);
 				MutableGraph g = Parser.read(targetStream);
 				fromGraph(g).render(PNG).toFile(pngFile);
+
+			} catch (IOException e) {
+				// This should never happen since the file is always created
 			}
-      	} catch (IOException e) {
-			// This should never happen since the file is always created
 		}
 	}
 
