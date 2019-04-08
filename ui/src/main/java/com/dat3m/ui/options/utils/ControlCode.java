@@ -26,7 +26,7 @@ public enum ControlCode {
             case GRAPH:
                 return "Graph";
             case RELS:
-                return "Select Relations";
+                return "Relations";
         }
         return super.toString();
     }

@@ -90,8 +90,11 @@ public class OptionsPane extends JPanel implements ActionListener {
 		sourcePane.addActionListener(this);
 		boundField.addActionListener(this);
 		clearButton.addActionListener(this);
-		graphButton.addActionListener(relsButton);
+		// Enabling graph options depends on mode
 		modePane.addActionListener(graphButton);
+		// Enabling rel selector depends on mode and graph button 
+		modePane.addActionListener(relsButton);
+		graphButton.addActionListener(relsButton);
     }
 
     public Selector<Task> getTaskPane(){

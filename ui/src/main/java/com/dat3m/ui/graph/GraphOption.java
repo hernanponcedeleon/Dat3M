@@ -40,7 +40,7 @@ public class GraphOption {
 		        for(File f : files) {
 					if (f.getParentFile() != null) {
 						f.getParentFile().mkdirs();
-						}
+					}
 					f.createNewFile();		        	
 		        }
 				Graph graph = res.getGraph();

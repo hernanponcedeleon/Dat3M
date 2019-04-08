@@ -10,7 +10,6 @@ import java.awt.event.ActionListener;
 import javax.swing.JComboBox;
 import javax.swing.JRadioButton;
 
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.ui.options.utils.ControlCode;
 
 public class GraphButton extends JRadioButton implements ActionListener {
@@ -18,14 +17,15 @@ public class GraphButton extends JRadioButton implements ActionListener {
 	public GraphButton() {
         super("Draw Graph");
         setActionCommand(ControlCode.GRAPH.actionCommand());
+		setEnabled(false);
+		setToolTipText("Knaster-Tarski mode does not allow to generate execution graph");
 		setMaximumSize(new Dimension(OPTWIDTH/2, 50));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if(e.getActionCommand().equals(ControlCode.MODE.actionCommand())){
-				setEnabled(!(((JComboBox<Mode>)e.getSource()).getSelectedItem()).equals(KNASTER));				
+		if(e.getActionCommand().equals(ControlCode.MODE.actionCommand()) && e.getSource() instanceof JComboBox<?>){
+			setEnabled(!(((JComboBox<?>)e.getSource()).getSelectedItem()).equals(KNASTER));								
 		}
 	}
 }
