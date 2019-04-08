@@ -4,7 +4,10 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,8 +43,7 @@ public class RelSelector extends JFrame implements ActionListener {
         // To have the height based on the number of options
         int nButton = 0;
         
-        nButton = createButtons(tmm, radioPanel, nButton);
-        nButton = createButtons(smm, radioPanel, nButton);
+        nButton = createButtons(smm, tmm, radioPanel, nButton);
 
         // To have a minimal height when there are no relations
         nButton = Math.max(nButton, 2);
@@ -51,25 +53,32 @@ public class RelSelector extends JFrame implements ActionListener {
         setVisible(true);
     }
 
-	private int createButtons(Wmm mm, JPanel radioPanel, int nButtom) {
-		if(mm != null) {
-        	Set<String> rels = mm.getRelationRepository().getRelations().stream()
+	private int createButtons(Wmm smm, Wmm tmm, JPanel radioPanel, int nButtom) {
+		List<String> rels = new ArrayList<>();
+		if(smm != null) {
+        	rels.addAll(smm.getRelationRepository().getRelations().stream()
         			.filter(ev -> !ev.getName().equals(ev.getTerm()))
-        			.map(ev -> ev.getName()).collect(Collectors.toSet());
-        	for(String name : rels) {
-        		if(names.contains(name)) {
-        			continue;
-        		}
-        		names.add(name);
-                JRadioButton button = new JRadioButton(name);
-                button.setName(name);
-                button.addActionListener(this);
-                // To remember previous choice
-                button.setSelected(selection.contains(name));
-                radioPanel.add(button);
-                nButtom ++;
-        	}        	
-        }
+        			.map(ev -> ev.getName()).collect(Collectors.toList()));
+		}
+    	if(tmm != null) {
+        	rels.addAll(tmm.getRelationRepository().getRelations().stream()
+        			.filter(ev -> !ev.getName().equals(ev.getTerm()))
+        			.map(ev -> ev.getName()).collect(Collectors.toList()));        		
+    	}
+    	Collections.sort(rels);
+    	for(String name : rels) {
+    		if(names.contains(name)) {
+    			continue;
+    		}
+    		names.add(name);
+            JRadioButton button = new JRadioButton(name);
+            button.setName(name);
+            button.addActionListener(this);
+            // To remember previous choice
+            button.setSelected(selection.contains(name));
+            radioPanel.add(button);
+            nButtom ++;
+    	}        	
 		return nButtom;
 	}
 

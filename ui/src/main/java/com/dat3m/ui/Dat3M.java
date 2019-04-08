@@ -24,6 +24,9 @@ import org.antlr.v4.runtime.Token;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
+import static com.dat3m.ui.editor.EditorCode.SOURCE_MM;
+import static com.dat3m.ui.editor.EditorCode.TARGET_MM;
 import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.UIManager.getDefaults;
@@ -32,7 +35,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
 	private final OptionsPane optionsPane = new OptionsPane();
 	private final EditorsPane editorsPane = new EditorsPane();
-	private final GraphOption graph = new GraphOption(editorsPane);
+	private final GraphOption graph = new GraphOption();
 	
 	private Dat3mResult testResult;
 
@@ -47,7 +50,6 @@ public class Dat3M extends JFrame implements ActionListener {
 
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(editorsPane.getMenu());
-		menuBar.add(graph.getMenu());
 		setJMenuBar(menuBar);
 
 		JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, editorsPane.getMainPane());
@@ -99,6 +101,14 @@ public class Dat3M extends JFrame implements ActionListener {
                 }
             }
         } else if(ControlCode.RELS.actionCommand().equals(command)){
+        	try {
+        		editorsPane.getEditor(TARGET_MM).load();
+        		graph.getSelector().setTMM((Wmm) editorsPane.getEditor(TARGET_MM).getLoaded());
+        		editorsPane.getEditor(SOURCE_MM).load();
+        		graph.getSelector().setSMM((Wmm) editorsPane.getEditor(SOURCE_MM).getLoaded());        		
+        	} catch (Exception e) {
+				// Nothing to be done
+			}
         	graph.getSelector().open();
         }
 	}

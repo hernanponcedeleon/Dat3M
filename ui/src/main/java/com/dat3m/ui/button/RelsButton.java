@@ -12,9 +12,6 @@ import com.dat3m.ui.options.utils.ControlCode;
 
 public class RelsButton extends JButton implements ActionListener {
 
-	private boolean drawGraphSelected = false;
-	//private boolean mmParsed = false;
-	
 	public RelsButton() {
         super("Relation Selector");
         setActionCommand(ControlCode.RELS.actionCommand());
@@ -22,15 +19,10 @@ public class RelsButton extends JButton implements ActionListener {
 		setMaximumSize(new Dimension(OPTWIDTH/2, 50));
 	}
 
-	public void refreshButton() {
-		setEnabled(drawGraphSelected);
-	}
-	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if(e.getActionCommand().equals(ControlCode.GRAPH.actionCommand())){
-			drawGraphSelected = ((GraphButton)e.getSource()).isSelected();
-			refreshButton();
+			setEnabled(((GraphButton)e.getSource()).isSelected());
 		}
 	}
 }
