@@ -2,7 +2,7 @@ package com.dat3m.ui.options.utils;
 
 public enum ControlCode {
 
-    TASK, SOURCE, TARGET, MODE, ALIAS, BOUND, TEST, CLEAR, GRAPH;
+    TASK, SOURCE, TARGET, MODE, ALIAS, BOUND, TEST, CLEAR, GRAPH, RELS;
 
     @Override
     public String toString(){
@@ -25,6 +25,8 @@ public enum ControlCode {
                 return "Clear";
             case GRAPH:
                 return "Graph";
+            case RELS:
+                return "Relations";
         }
         return super.toString();
     }
@@ -49,6 +51,8 @@ public enum ControlCode {
                 return "control_command_clear";
             case GRAPH:
                 return "control_command_graph";
+            case RELS:
+                return "control_command_rels";
         }
         throw new RuntimeException("Illegal EditorCode");
     }

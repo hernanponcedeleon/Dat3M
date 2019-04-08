@@ -1,5 +1,7 @@
 package com.dat3m.ui;
 
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.editor.EditorsPane;
@@ -24,6 +26,9 @@ import org.antlr.v4.runtime.Token;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
+import static com.dat3m.ui.editor.EditorCode.SOURCE_MM;
+import static com.dat3m.ui.editor.EditorCode.TARGET_MM;
 import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.UIManager.getDefaults;
@@ -32,7 +37,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
 	private final OptionsPane optionsPane = new OptionsPane();
 	private final EditorsPane editorsPane = new EditorsPane();
-	private final GraphOption graph = new GraphOption(editorsPane);
+	private final GraphOption graph = new GraphOption();
 	
 	private Dat3mResult testResult;
 
@@ -47,7 +52,6 @@ public class Dat3M extends JFrame implements ActionListener {
 
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(editorsPane.getMenu());
-		menuBar.add(graph.getMenu());
 		setJMenuBar(menuBar);
 
 		JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, editorsPane.getMainPane());
@@ -62,8 +66,7 @@ public class Dat3M extends JFrame implements ActionListener {
 
 		// Start listening to button events
 		optionsPane.getTestButton().addActionListener(this);
-		optionsPane.getClearButton().addActionListener(this);
-		optionsPane.getGraphButton().addActionListener(this);
+		optionsPane.getRelsButton().addActionListener(this);
 
 		// optionsPane needs to listen to editor to clean the console
 		editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane);
@@ -71,7 +74,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		editorsPane.getEditor(EditorCode.TARGET_MM).addActionListener(optionsPane);
 
 		// The console shall be cleaned every time the program or MM is modified from the editor
-    	EditorListener listener = new EditorListener(optionsPane.getConsolePane(), optionsPane.getGraphButton());
+    	EditorListener listener = new EditorListener(optionsPane.getConsolePane());
     	editorsPane.getEditor(EditorCode.PROGRAM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.SOURCE_MM).getEditorPane().addKeyListener(listener);
@@ -93,11 +96,34 @@ public class Dat3M extends JFrame implements ActionListener {
             runTest();
             if(testResult != null){
                 optionsPane.getConsolePane().setText(testResult.getVerdict());
-                optionsPane.getGraphButton().setEnabled(testResult.getGraph() != null);
+                if(testResult.getGraph() != null && optionsPane.getGraphButton().isSelected() && optionsPane.getGraphButton().isEnabled()) {
+                    EventQueue.invokeLater(graph::open);                	
+                }
             }
-        } else if(ControlCode.GRAPH.actionCommand().equals(command)){
-            EventQueue.invokeLater(graph::open);
         }
+	    if(ControlCode.RELS.actionCommand().equals(command)){
+	    	try {
+        		Wmm tmm = new ParserCat().parse(editorsPane.getEditor(TARGET_MM).getEditorPane().getText());
+        		graph.getSelector().setTMM(tmm);
+	    	} catch (Exception e) {
+            	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
+                showError("Relation Selector requires the memory model to be correctly parsed.\n" + msg, "Target memory model error");
+                return;
+			}
+	    	if(optionsPane.getOptions().getTask().equals(Task.PORTABILITY)) {
+		    	try {
+	        		Wmm smm = new ParserCat().parse(editorsPane.getEditor(SOURCE_MM).getEditorPane().getText());
+	        		graph.getSelector().setSMM(smm);
+		    	} catch (Exception e) {
+	            	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
+	                showError("Relation Selector requires the memory model to be correctly parsed.\n" + msg, "Source memory model error");
+	                return;
+				}	    		
+	    	} else if(optionsPane.getOptions().getTask().equals(Task.REACHABILITY)) {
+        		graph.getSelector().setSMM(null);
+	    	}
+        	graph.getSelector().open();
+	    }
 	}
 
 	private void runTest(){
@@ -105,12 +131,9 @@ public class Dat3M extends JFrame implements ActionListener {
         testResult = null;
 	    try {
 			Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
-			programEditor.load();
-			Program program = (Program) programEditor.getLoaded();
+			Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
             try {
-                Editor targetEditor = editorsPane.getEditor(EditorCode.TARGET_MM);
-                targetEditor.load();
-				Wmm targetModel = (Wmm) targetEditor.getLoaded();
+        		Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(TARGET_MM).getEditorPane().getText());
                 if(options.getTask() == Task.REACHABILITY){
                     testResult = new ReachabilityResult(program, targetModel, options, graph);
                 } else {
@@ -119,10 +142,8 @@ public class Dat3M extends JFrame implements ActionListener {
                     		showError("PORTHOS only supports *.pts files", "Loading error");
                     		return;
                     	}
-                        Program sourceProgram = (Program) programEditor.getLoaded();
-                        Editor sourceEditor = editorsPane.getEditor(EditorCode.SOURCE_MM);
-                        sourceEditor.load();
-						Wmm sourceModel = (Wmm) sourceEditor.getLoaded();
+            			Program sourceProgram = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
+                		Wmm sourceModel = new ParserCat().parse(editorsPane.getEditor(SOURCE_MM).getEditorPane().getText());
                         testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options, graph);
                     } catch (Exception e){
                     	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
