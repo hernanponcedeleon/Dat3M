@@ -45,7 +45,7 @@ public class RelSelector extends JFrame implements ActionListener {
 
 		setTitle("Relations");
         List<JRadioButton> relButtons = createButtons(smm, tmm);
-        JPanel radioPanel = new JPanel(new GridLayout(relButtons.size() / COLS, COLS));
+        JPanel radioPanel = new JPanel(new GridLayout(0, COLS));
 
         Iterator<JRadioButton> it = relButtons.iterator();
         while(it.hasNext()) {
