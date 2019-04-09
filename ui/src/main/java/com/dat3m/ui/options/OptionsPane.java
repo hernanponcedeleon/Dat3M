@@ -73,12 +73,12 @@ public class OptionsPane extends JPanel implements ActionListener {
         testButton = new TestButton();
         clearButton = new ClearButton();
         graphButton = new GraphButton();
-        relsButton = new RelsButton();
+
+        relSelector = new RelSelector(taskPane);
+        relsButton = new RelsButton(relSelector);
 
         consolePane = new JTextPane();
         consolePane.setEditable(false);
-
-        relSelector = new RelSelector();
 
         bindListeners();
         mkGrid();
@@ -105,36 +105,16 @@ public class OptionsPane extends JPanel implements ActionListener {
         return taskPane;
     }
 
-    public Selector<Arch> getTargetPane(){
-        return targetPane;
-    }
-
-    public Selector<Arch> getSourcePane(){
-        return sourcePane;
-    }
-
     public ArchManager getArchManager(){
         return archManager;
-    }
-
-    public BoundField getBoundPane(){
-        return boundField;
     }
 
     public JButton getTestButton(){
         return testButton;
     }
 
-    public JButton getClearButton(){
-        return clearButton;
-    }
-
     public GraphButton getGraphButton(){
         return graphButton;
-    }
-
-    public RelsButton getRelsButton(){
-        return relsButton;
     }
 
     public JTextPane getConsolePane(){

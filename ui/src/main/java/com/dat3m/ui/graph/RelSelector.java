@@ -3,37 +3,40 @@ package com.dat3m.ui.graph;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.ui.editor.Editor;
+import com.dat3m.ui.options.Selector;
+import com.dat3m.ui.utils.Task;
+
+import static com.dat3m.ui.utils.Utils.showError;
 
 public class RelSelector extends JFrame implements ActionListener {
 
     private static final int COLS = 5;
 
-	private Wmm tmm;
-	private Wmm smm;
-	// To avoid repeating names of common relations between both MM
-	private Set<String> names;
-	// To remember previous selections
+    private final Selector<Task> taskSelector;
+	private Editor sourceWmmEditor;
+	private Editor targetWmmEditor;
 	private Set<String> selection = new HashSet<>();
-	
-	public void setTMM(Wmm mm) {
-		this.tmm = mm;
+
+	public RelSelector(Selector<Task> taskSelector){
+		this.taskSelector = taskSelector;
 	}
 
-	public void setSMM(Wmm mm) {
-		this.smm = mm;
+	public void setSourceWmmEditor(Editor editor){
+		sourceWmmEditor = editor;
+	}
+
+	public void setTargetWmmEditor(Editor editor){
+		targetWmmEditor = editor;
 	}
 
 	public Set<String> getSelection() {
@@ -41,51 +44,48 @@ public class RelSelector extends JFrame implements ActionListener {
 	}
 
 	public void open() {
-		names = new HashSet<>();
-
-		setTitle("Relations");
-        List<JRadioButton> relButtons = createButtons(smm, tmm);
-        JPanel radioPanel = new JPanel(new GridLayout(0, COLS));
-
-        Iterator<JRadioButton> it = relButtons.iterator();
-        while(it.hasNext()) {
-        	radioPanel.add(it.next());
-        }
-        setContentPane(radioPanel);
-        pack();
-        setVisible(true);
+		SortedSet<String> relations = mkRelations();
+		if(relations != null){
+			setTitle("Relations");
+			JPanel radioPanel = new JPanel(new GridLayout(0, COLS));
+			for(String relation : relations){
+				JRadioButton button = new JRadioButton(relation);
+				button.setName(relation);
+				button.addActionListener(this);
+				button.setSelected(selection.contains(relation));
+				radioPanel.add(button);
+			}
+			setContentPane(radioPanel);
+			pack();
+			setVisible(true);
+		}
     }
 
-	private List<JRadioButton> createButtons(Wmm smm, Wmm tmm) {
-		List<JRadioButton> ret = new ArrayList<>();
-		
-		List<String> relNames = new ArrayList<>();
-		if(smm != null) {
-        	relNames.addAll(smm.getRelationRepository().getRelations().stream()
-        			.filter(ev -> !ev.getName().equals(ev.getTerm()))
-        			.map(ev -> ev.getName()).collect(Collectors.toList()));
+    private SortedSet<String> mkRelations(){
+		SortedSet<String> relations = new TreeSet<>();
+		try {
+			addWmmRelations(relations, targetWmmEditor);
+			if(Task.PORTABILITY == taskSelector.getSelectedItem()){
+				addWmmRelations(relations, sourceWmmEditor);
+			}
+			return relations;
+		} catch (Exception e){
+			String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
+			showError("Relation Selector requires the memory model to be correctly parsed.\n" + msg, "Memory model error");
+			return null;
 		}
-    	if(tmm != null) {
-        	relNames.addAll(tmm.getRelationRepository().getRelations().stream()
-        			.filter(ev -> !ev.getName().equals(ev.getTerm()))
-        			.map(ev -> ev.getName()).collect(Collectors.toList()));        		
-    	}
-    	Collections.sort(relNames);
-    	
-    	for(String name : relNames) {
-    		if(names.contains(name)) {
-    			continue;
-    		}
-    		names.add(name);
-            JRadioButton button = new JRadioButton(name);
-            button.setName(name);
-            button.addActionListener(this);
-            // To remember previous choice
-            button.setSelected(selection.contains(name));
-            ret.add(button);
-    	}        
-    	
-		return ret;
+	}
+
+    private void addWmmRelations(SortedSet<String> set, Editor editor){
+		if(editor == null){
+			throw new RuntimeException("Editor is not set in " + getClass().getName());
+		}
+		Wmm wmm = new ParserCat().parse(editor.getEditorPane().getText());
+		for(Relation relation : wmm.getRelationRepository().getRelations()){
+			if(!relation.getName().equals(relation.getTerm())){
+				set.add(relation.getName());
+			}
+		}
 	}
 
 	@Override

@@ -27,7 +27,7 @@ public class Selector<T> extends JPanel {
         selector.addActionListener(listener);
     }
 
-    Object getSelectedItem(){
+    public Object getSelectedItem(){
         return selector.getSelectedItem();
     }
 }

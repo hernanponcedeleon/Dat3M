@@ -66,7 +66,6 @@ public class Dat3M extends JFrame implements ActionListener {
 
 		// Start listening to button events
 		optionsPane.getTestButton().addActionListener(this);
-		optionsPane.getRelsButton().addActionListener(this);
 
 		// optionsPane needs to listen to editor to clean the console
 		editorsPane.getEditor(EditorCode.PROGRAM).addActionListener(optionsPane);
@@ -78,6 +77,9 @@ public class Dat3M extends JFrame implements ActionListener {
     	editorsPane.getEditor(EditorCode.PROGRAM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.SOURCE_MM).getEditorPane().addKeyListener(listener);
+
+        optionsPane.getRelSelector().setSourceWmmEditor(editorsPane.getEditor(EditorCode.SOURCE_MM));
+        optionsPane.getRelSelector().setTargetWmmEditor(editorsPane.getEditor(EditorCode.TARGET_MM));
 
 		pack();
 	}
@@ -101,29 +103,6 @@ public class Dat3M extends JFrame implements ActionListener {
                 }
             }
         }
-	    if(ControlCode.RELS.actionCommand().equals(command)){
-	    	try {
-        		Wmm tmm = new ParserCat().parse(editorsPane.getEditor(TARGET_MM).getEditorPane().getText());
-				optionsPane.getRelSelector().setTMM(tmm);
-	    	} catch (Exception e) {
-            	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
-                showError("Relation Selector requires the memory model to be correctly parsed.\n" + msg, "Target memory model error");
-                return;
-			}
-	    	if(optionsPane.getOptions().getTask().equals(Task.PORTABILITY)) {
-		    	try {
-	        		Wmm smm = new ParserCat().parse(editorsPane.getEditor(SOURCE_MM).getEditorPane().getText());
-					optionsPane.getRelSelector().setSMM(smm);
-		    	} catch (Exception e) {
-	            	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
-	                showError("Relation Selector requires the memory model to be correctly parsed.\n" + msg, "Source memory model error");
-	                return;
-				}	    		
-	    	} else if(optionsPane.getOptions().getTask().equals(Task.REACHABILITY)) {
-				optionsPane.getRelSelector().setSMM(null);
-	    	}
-			optionsPane.getRelSelector().open();
-	    }
 	}
 
 	private void runTest(){
