@@ -25,13 +25,6 @@ public class GraphOption {
 	private File dotFile = new File(".tmp/output.dot");
 	private File pngFile = new File(".tmp/output.png");
 
-    //private final JMenu menu;
-    private final RelSelector selector = new RelSelector();
-
-    public RelSelector getSelector(){
-        return selector;
-    }
-
 	public void generate(Dat3mResult result) {
 		Graph graph = result.getGraph();
 		if(graph != null) {

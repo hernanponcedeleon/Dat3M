@@ -7,6 +7,7 @@ import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.GraphButton;
 import com.dat3m.ui.button.RelsButton;
 import com.dat3m.ui.button.TestButton;
+import com.dat3m.ui.graph.RelSelector;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.options.utils.ArchManager;
 import com.dat3m.ui.options.utils.ControlCode;
@@ -50,19 +51,21 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     private final JTextPane consolePane;
 
+    private final RelSelector relSelector;
+
     public OptionsPane(){
         super(new GridLayout(1,0));
 
         iconPane = new IconPane(IconCode.DARTAGNAN, getIconHeight(), JLabel.CENTER);
 
-        taskPane = new Selector<Task>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
-        modePane = new Selector<Mode>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
-        aliasPane = new Selector<Alias>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
+        taskPane = new Selector<>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
+        modePane = new Selector<>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
+        aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
 
         Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
-        sourcePane = new Selector<Arch>(architectures, ControlCode.SOURCE);
+        sourcePane = new Selector<>(architectures, ControlCode.SOURCE);
         sourcePane.setEnabled(false);
-        targetPane = new Selector<Arch>(architectures, ControlCode.TARGET);
+        targetPane = new Selector<>(architectures, ControlCode.TARGET);
         archManager = new ArchManager(sourcePane, targetPane);
 
         boundField = new BoundField();
@@ -74,6 +77,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         consolePane = new JTextPane();
         consolePane.setEditable(false);
+
+        relSelector = new RelSelector();
 
         bindListeners();
         mkGrid();
@@ -136,6 +141,10 @@ public class OptionsPane extends JPanel implements ActionListener {
         return consolePane;
     }
 
+    public RelSelector getRelSelector(){
+        return relSelector;
+    }
+
     public Options getOptions(){
         return new Options(
                 (Task)taskPane.getSelectedItem(),
@@ -143,7 +152,9 @@ public class OptionsPane extends JPanel implements ActionListener {
                 (Arch)sourcePane.getSelectedItem(),
                 (Mode)modePane.getSelectedItem(),
                 (Alias)aliasPane.getSelectedItem(),
-                Integer.parseInt(boundField.getText())
+                Integer.parseInt(boundField.getText()),
+                graphButton.isEnabled() && graphButton.isSelected(),
+                relSelector.getSelection()
         );
     }
 

@@ -104,7 +104,7 @@ public class Dat3M extends JFrame implements ActionListener {
 	    if(ControlCode.RELS.actionCommand().equals(command)){
 	    	try {
         		Wmm tmm = new ParserCat().parse(editorsPane.getEditor(TARGET_MM).getEditorPane().getText());
-        		graph.getSelector().setTMM(tmm);
+				optionsPane.getRelSelector().setTMM(tmm);
 	    	} catch (Exception e) {
             	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
                 showError("Relation Selector requires the memory model to be correctly parsed.\n" + msg, "Target memory model error");
@@ -113,58 +113,60 @@ public class Dat3M extends JFrame implements ActionListener {
 	    	if(optionsPane.getOptions().getTask().equals(Task.PORTABILITY)) {
 		    	try {
 	        		Wmm smm = new ParserCat().parse(editorsPane.getEditor(SOURCE_MM).getEditorPane().getText());
-	        		graph.getSelector().setSMM(smm);
+					optionsPane.getRelSelector().setSMM(smm);
 		    	} catch (Exception e) {
 	            	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
 	                showError("Relation Selector requires the memory model to be correctly parsed.\n" + msg, "Source memory model error");
 	                return;
 				}	    		
 	    	} else if(optionsPane.getOptions().getTask().equals(Task.REACHABILITY)) {
-        		graph.getSelector().setSMM(null);
+				optionsPane.getRelSelector().setSMM(null);
 	    	}
-        	graph.getSelector().open();
+			optionsPane.getRelSelector().open();
 	    }
 	}
 
 	private void runTest(){
 		Options options = optionsPane.getOptions();
-        testResult = null;
-	    try {
-			Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
-			Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
-            try {
-        		Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(TARGET_MM).getEditorPane().getText());
-                if(options.getTask() == Task.REACHABILITY){
-                    testResult = new ReachabilityResult(program, targetModel, options, graph);
-                } else {
-                    try {
-                    	if(!programEditor.getLoadedFormat().equals("pts")) {
-                    		showError("PORTHOS only supports *.pts files", "Loading error");
-                    		return;
-                    	}
-            			Program sourceProgram = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
-                		Wmm sourceModel = new ParserCat().parse(editorsPane.getEditor(SOURCE_MM).getEditorPane().getText());
-                        testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options, graph);
-                    } catch (Exception e){
-                    	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
-                        showError(msg, "Source memory model error");
-                    }
-                }
-            } catch (Exception e){
-            	String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
-                showError(msg, "Target memory model error");
-            }
-        } catch (Exception e){
-        	String msg = e.getMessage() == null? "Program cannot be parsed" : e.getMessage();
-        	Throwable cause = e.getCause();
-			if(cause instanceof InputMismatchException) {
-        		Token token = ((InputMismatchException)cause).getOffendingToken();
-				msg = "Problem with \"" + token.getText() + "\" at line " + token.getLine();
-        	}
-        	showError(msg, "Program error");
-        }
-	    if(testResult != null && testResult.getGraph() != null) {
-            graph.generate(testResult);
-	    }
+		if(options.validate()){
+			testResult = null;
+			try {
+				Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
+				Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
+				try {
+					Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(TARGET_MM).getEditorPane().getText());
+					if(options.getTask() == Task.REACHABILITY){
+						testResult = new ReachabilityResult(program, targetModel, options);
+					} else {
+						try {
+							if(!programEditor.getLoadedFormat().equals("pts")) {
+								showError("PORTHOS only supports *.pts files", "Loading error");
+								return;
+							}
+							Program sourceProgram = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
+							Wmm sourceModel = new ParserCat().parse(editorsPane.getEditor(SOURCE_MM).getEditorPane().getText());
+							testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
+						} catch (Exception e){
+							String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
+							showError(msg, "Source memory model error");
+						}
+					}
+				} catch (Exception e){
+					String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
+					showError(msg, "Target memory model error");
+				}
+			} catch (Exception e){
+				String msg = e.getMessage() == null? "Program cannot be parsed" : e.getMessage();
+				Throwable cause = e.getCause();
+				if(cause instanceof InputMismatchException) {
+					Token token = ((InputMismatchException)cause).getOffendingToken();
+					msg = "Problem with \"" + token.getText() + "\" at line " + token.getLine();
+				}
+				showError(msg, "Program error");
+			}
+			if(testResult != null && testResult.getGraph() != null) {
+				graph.generate(testResult);
+			}
+		}
 	}
 }

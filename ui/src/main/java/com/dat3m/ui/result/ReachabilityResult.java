@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.ui.graph.GraphOption;
 import com.dat3m.ui.options.Options;
+import com.dat3m.ui.utils.Utils;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 
@@ -16,14 +16,12 @@ public class ReachabilityResult implements Dat3mResult {
     private final Wmm wmm;
     private final Options options;
 
-    private GraphOption gOptions;
     private Graph graph;
     private String verdict;
 
-    public ReachabilityResult(Program program, Wmm wmm, Options options, GraphOption gOptions){
+    public ReachabilityResult(Program program, Wmm wmm, Options options){
         this.program = program;
         this.wmm = wmm;
-        this.gOptions = gOptions;
         this.options = options;
         run();
     }
@@ -37,20 +35,28 @@ public class ReachabilityResult implements Dat3mResult {
     }
 
     private void run(){
-        Context ctx = new Context();
-        Solver solver = ctx.mkSolver();
-        Arch target = program.getArch() == null ? options.getTarget() : program.getArch();
-        boolean result = Dartagnan.testProgram(solver, ctx, program, wmm, target, options.getBound(),
-                options.getMode(), options.getAlias());
+        if(validate()){
+            Context ctx = new Context();
+            Solver solver = ctx.mkSolver();
 
-        buildVerdict(result);
+            if(options.getDrawGraph()) {
+                wmm.setDrawExecutionGraph();
+                wmm.addDrawRelations(Graph.getDefaultRelations());
+                wmm.addDrawRelations(options.getRelations());
+            }
 
-        if(Dartagnan.canDrawGraph(program.getAss(), result)){
-            graph = new Graph(solver.getModel(), ctx);
-            graph.addRelations(gOptions.getSelector().getSelection());
-            graph.build(program);
+            boolean result = Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), options.getBound(),
+                    options.getMode(), options.getAlias());
+
+            buildVerdict(result);
+
+            if(options.getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result)){
+                graph = new Graph(solver.getModel(), ctx);
+                graph.addRelations(options.getRelations());
+                graph.build(program);
+            }
+            ctx.close();
         }
-        ctx.close();
     }
 
     private void buildVerdict(boolean result){
@@ -61,5 +67,19 @@ public class ReachabilityResult implements Dat3mResult {
         sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
         sb.append(result ? "OK" : "No").append("\n");
         verdict = sb.toString();
+    }
+
+    private boolean validate(){
+        Arch target = program.getArch() == null ? options.getTarget() : program.getArch();
+        if(target == null) {
+            Utils.showError("Missing target architecture.");
+            return false;
+        }
+        if(program.getAss() == null){
+            Utils.showError("Program must include assertion clause.");
+            return false;
+        }
+        program.setArch(target);
+        return true;
     }
 }
