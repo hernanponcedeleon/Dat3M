@@ -1,12 +1,12 @@
-C pointers50
+C pointers60
 
 { x0 = 1; }
 
-P0(int *x0, int *x1, int *x51, int *y)
+P0(int *x0, int *x1, int *x61, int *y)
 {
     p = READ_ONCE(*x0);
     WRITE_ONCE(*x1, p);
-    t = READ_ONCE(*x51);
+    t = READ_ONCE(*x61);
     WRITE_ONCE(*y, t);
 }
 P1(int *x1, int *x2)
@@ -258,6 +258,56 @@ P50(int *x50, int *x51)
 {
     t = READ_ONCE(*x50);
     WRITE_ONCE(*x51, t);
+}
+P51(int *x51, int *x52)
+{
+    t = READ_ONCE(*x51);
+    WRITE_ONCE(*x52, t);
+}
+P52(int *x52, int *x53)
+{
+    t = READ_ONCE(*x52);
+    WRITE_ONCE(*x53, t);
+}
+P53(int *x53, int *x54)
+{
+    t = READ_ONCE(*x53);
+    WRITE_ONCE(*x54, t);
+}
+P54(int *x54, int *x55)
+{
+    t = READ_ONCE(*x54);
+    WRITE_ONCE(*x55, t);
+}
+P55(int *x55, int *x56)
+{
+    t = READ_ONCE(*x55);
+    WRITE_ONCE(*x56, t);
+}
+P56(int *x56, int *x57)
+{
+    t = READ_ONCE(*x56);
+    WRITE_ONCE(*x57, t);
+}
+P57(int *x57, int *x58)
+{
+    t = READ_ONCE(*x57);
+    WRITE_ONCE(*x58, t);
+}
+P58(int *x58, int *x59)
+{
+    t = READ_ONCE(*x58);
+    WRITE_ONCE(*x59, t);
+}
+P59(int *x59, int *x60)
+{
+    t = READ_ONCE(*x59);
+    WRITE_ONCE(*x60, t);
+}
+P60(int *x60, int *x61)
+{
+    t = READ_ONCE(*x60);
+    WRITE_ONCE(*x61, t);
 }
 
 exists (y = 1)
