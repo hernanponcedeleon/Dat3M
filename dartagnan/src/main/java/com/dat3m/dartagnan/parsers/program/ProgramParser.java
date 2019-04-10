@@ -29,7 +29,7 @@ public class ProgramParser {
         if(format.equals("pts")){
             return new ParserPorthos().parse(CharStreams.fromString(raw));
         } else if(format.equals("litmus")){
-            return getConcreteLitmusParser(raw).parse(CharStreams.fromString(raw));
+            return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
         }
         throw new ParsingException("Unknown input file type");
     }
