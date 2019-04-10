@@ -99,7 +99,7 @@ public class Dat3M extends JFrame implements ActionListener {
             if(testResult != null){
                 optionsPane.getConsolePane().setText(testResult.getVerdict());
                 if(testResult.getGraph() != null && optionsPane.getGraphButton().isSelected() && optionsPane.getGraphButton().isEnabled()) {
-                    EventQueue.invokeLater(graph::open);                	
+					graph.open(testResult.getGraph());
                 }
             }
         }
@@ -142,9 +142,6 @@ public class Dat3M extends JFrame implements ActionListener {
 					msg = "Problem with \"" + token.getText() + "\" at line " + token.getLine();
 				}
 				showError(msg, "Program error");
-			}
-			if(testResult != null && testResult.getGraph() != null) {
-				graph.generate(testResult);
 			}
 		}
 	}

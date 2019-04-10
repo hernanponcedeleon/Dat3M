@@ -120,13 +120,10 @@ public class Porthos {
             System.out.println("The program is not state-portable");
             System.out.println("Iterations: " + result.getIterations());
             if(cmd.hasOption("draw")) {
-                ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-                Graph graph = new Graph(s1.getModel(), ctx);
                 String outputPath = cmd.getOptionValue("draw");
-                if(cmd.hasOption("rels")) {
-                    graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
-                }
-                graph.build(result.getSourceProgram(), result.getTargetProgram()).draw(outputPath);
+                String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
+                ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+                Dartagnan.drawGraph(new Graph(s1.getModel(), ctx, pSource, pTarget, relations), outputPath);
                 System.out.println("Execution graph is written to " + outputPath);
             }
         }

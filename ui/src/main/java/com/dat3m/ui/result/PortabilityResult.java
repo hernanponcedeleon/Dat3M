@@ -61,9 +61,7 @@ public class PortabilityResult implements Dat3mResult {
                     + "Iterations: " + result.getIterations();
 
             if(!result.getIsPortable()){
-                graph = new Graph(s1.getModel(), ctx);
-                graph.addRelations(options.getRelations());
-                graph.build(sourceProgram, targetProgram);
+                graph = new Graph(s1.getModel(), ctx, sourceProgram, targetProgram, options.getRelations().toArray(new String[0]));
             }
             ctx.close();
         }
