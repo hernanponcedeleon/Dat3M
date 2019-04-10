@@ -23,11 +23,12 @@ import javax.swing.text.Utilities;
 
 class LineNumbersView extends JComponent implements CaretListener, ComponentListener, ActionListener {
 
-    private JTextComponent editor;
-    private Font font;
+    private final JTextComponent editor;
+    private final Font font;
 
-    public LineNumbersView(JTextComponent editor) {
+    LineNumbersView(JTextComponent editor) {
       this.editor = editor;
+      this.font = new Font(Font.MONOSPACED, Font.BOLD, editor.getFont().getSize());
       editor.addComponentListener(this);
       editor.addCaretListener(this);
     }
@@ -47,7 +48,6 @@ class LineNumbersView extends JComponent implements CaretListener, ComponentList
             int x = getInsets().left + 2;
             int y = getOffsetY(startOffset);
 
-            font = font != null ? font : new Font(Font.MONOSPACED, Font.BOLD, editor.getFont().getSize());
             g.setFont(font);
 
             g.setColor(isCurrentLine(startOffset) ? Color.RED : Color.BLACK);
@@ -56,9 +56,9 @@ class LineNumbersView extends JComponent implements CaretListener, ComponentList
           }
 
           startOffset = Utilities.getRowEnd(editor, startOffset) + 1;
+
         } catch (BadLocationException e) {
           e.printStackTrace();
-          // ignore and continue
         }
       }
     }
@@ -72,7 +72,6 @@ class LineNumbersView extends JComponent implements CaretListener, ComponentList
       Element root = editor.getDocument().getDefaultRootElement();
       int index = root.getElementIndex(offset);
       Element line = root.getElement(index);
-
       return line.getStartOffset() == offset ? String.format("%3d", index + 1) : null;
     }
 
@@ -83,11 +82,8 @@ class LineNumbersView extends JComponent implements CaretListener, ComponentList
     private int getOffsetY(int offset) throws BadLocationException {
       FontMetrics fontMetrics = editor.getFontMetrics(editor.getFont());
       int descent = fontMetrics.getDescent();
-
       Rectangle r = editor.modelToView(offset);
-      int y = r.y + r.height - descent;
-
-      return y;
+      return r.y + r.height - descent;
     }
 
     /**
@@ -104,9 +100,7 @@ class LineNumbersView extends JComponent implements CaretListener, ComponentList
      * Schedules a refresh of the line number margin on a separate thread.
      */
     private void documentChanged() {
-      SwingUtilities.invokeLater(() -> {
-        repaint();
-      });
+      SwingUtilities.invokeLater(this::repaint);
     }
 
     /**
