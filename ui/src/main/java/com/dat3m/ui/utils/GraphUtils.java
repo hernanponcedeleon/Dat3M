@@ -3,6 +3,9 @@ package com.dat3m.ui.utils;
 import static guru.nidi.graphviz.engine.Format.SVG;
 import static guru.nidi.graphviz.engine.Graphviz.fromGraph;
 
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,7 +26,11 @@ public class GraphUtils {
 				JLabel label = new JLabel();
 				InputStream stream = new ByteArrayInputStream(graph.toString().getBytes());
 				MutableGraph g = Parser.read(stream);
-				label.setIcon(new ImageIcon(fromGraph(g).render(SVG).toImage()));
+				BufferedImage image = fromGraph(g).render(SVG).toImage();
+				int height = (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 5/6;
+		        int width = image.getWidth() * height / image.getHeight();
+		        Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+				label.setIcon(new ImageIcon(scaledImage));
 				JScrollPane scroll = new JScrollPane(label);
 				scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 				scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -31,7 +38,6 @@ public class GraphUtils {
 				frame.add(scroll);
 				frame.pack();
 				frame.setVisible(true);
-
 			} catch (IOException e){
 				Utils.showError("Failed to render a graph");
 			}
