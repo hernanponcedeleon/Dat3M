@@ -1,6 +1,6 @@
 package com.dat3m.ui.utils;
 
-import static guru.nidi.graphviz.engine.Format.PNG;
+import static guru.nidi.graphviz.engine.Format.SVG;
 import static guru.nidi.graphviz.engine.Graphviz.fromGraph;
 
 import java.io.ByteArrayInputStream;
@@ -23,7 +23,7 @@ public class GraphUtils {
 				JLabel label = new JLabel();
 				InputStream stream = new ByteArrayInputStream(graph.toString().getBytes());
 				MutableGraph g = Parser.read(stream);
-				label.setIcon(new ImageIcon(fromGraph(g).render(PNG).toImage()));
+				label.setIcon(new ImageIcon(fromGraph(g).render(SVG).toImage()));
 				JScrollPane scroll = new JScrollPane(label);
 				scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 				scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
