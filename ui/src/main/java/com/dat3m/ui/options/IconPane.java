@@ -3,7 +3,7 @@ package com.dat3m.ui.options;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.options.utils.ControlCode;
-import com.dat3m.ui.utils.Task;
+import com.dat3m.ui.options.utils.Task;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

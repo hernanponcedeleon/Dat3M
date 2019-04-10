@@ -1,9 +1,8 @@
-package com.dat3m.ui.options;
+package com.dat3m.ui.options.utils;
 
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.dat3m.ui.utils.Task;
 import com.dat3m.ui.utils.Utils;
 import com.google.common.collect.ImmutableSet;
 
@@ -20,7 +19,7 @@ public class Options {
 	private final boolean drawGraph;
 	private final ImmutableSet<String> relations;
 
-	Options(Task task, Arch target, Arch source, Mode mode, Alias alias, int bound,
+	public Options(Task task, Arch target, Arch source, Mode mode, Alias alias, int bound,
 			boolean drawGraph, Collection<String> relations) {
 		this.task = task;
 		this.source = source;

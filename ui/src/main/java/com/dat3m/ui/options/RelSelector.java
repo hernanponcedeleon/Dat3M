@@ -1,4 +1,4 @@
-package com.dat3m.ui.graph;
+package com.dat3m.ui.options;
 
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -13,8 +13,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.ui.editor.Editor;
-import com.dat3m.ui.options.Selector;
-import com.dat3m.ui.utils.Task;
+import com.dat3m.ui.options.utils.Task;
 
 import static com.dat3m.ui.utils.Utils.showError;
 
@@ -27,8 +26,12 @@ public class RelSelector extends JFrame implements ActionListener {
 	private Editor targetWmmEditor;
 	private Set<String> selection = new HashSet<>();
 
-	public RelSelector(Selector<Task> taskSelector){
+	RelSelector(Selector<Task> taskSelector){
 		this.taskSelector = taskSelector;
+	}
+
+	Set<String> getSelection() {
+		return selection;
 	}
 
 	public void setSourceWmmEditor(Editor editor){
@@ -37,10 +40,6 @@ public class RelSelector extends JFrame implements ActionListener {
 
 	public void setTargetWmmEditor(Editor editor){
 		targetWmmEditor = editor;
-	}
-
-	public Set<String> getSelection() {
-		return selection;
 	}
 
 	public void open() {

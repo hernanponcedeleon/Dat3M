@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.editor.Editor;
 import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.options.Selector;
-import com.dat3m.ui.utils.Task;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

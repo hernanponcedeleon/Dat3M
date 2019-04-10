@@ -10,14 +10,14 @@ import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.listener.EditorListener;
-import com.dat3m.ui.graph.GraphOption;
-import com.dat3m.ui.options.Options;
+import com.dat3m.ui.utils.GraphUtils;
+import com.dat3m.ui.options.utils.Options;
 import com.dat3m.ui.options.OptionsPane;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.result.Dat3mResult;
 import com.dat3m.ui.result.PortabilityResult;
 import com.dat3m.ui.result.ReachabilityResult;
-import com.dat3m.ui.utils.Task;
+import com.dat3m.ui.options.utils.Task;
 import javax.swing.*;
 
 import org.antlr.v4.runtime.InputMismatchException;
@@ -37,7 +37,6 @@ public class Dat3M extends JFrame implements ActionListener {
 
 	private final OptionsPane optionsPane = new OptionsPane();
 	private final EditorsPane editorsPane = new EditorsPane();
-	private final GraphOption graph = new GraphOption();
 	
 	private Dat3mResult testResult;
 
@@ -99,7 +98,7 @@ public class Dat3M extends JFrame implements ActionListener {
             if(testResult != null){
                 optionsPane.getConsolePane().setText(testResult.getVerdict());
                 if(testResult.getGraph() != null && optionsPane.getGraphButton().isSelected() && optionsPane.getGraphButton().isEnabled()) {
-					graph.open(testResult.getGraph());
+					GraphUtils.showGraph(testResult.getGraph());
                 }
             }
         }

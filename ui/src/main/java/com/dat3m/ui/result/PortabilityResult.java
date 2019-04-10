@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
-import com.dat3m.ui.options.Options;
+import com.dat3m.ui.options.utils.Options;
 import com.dat3m.ui.utils.Utils;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;

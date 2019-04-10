@@ -1,7 +1,7 @@
 package com.dat3m.ui.editor;
 
 import com.dat3m.ui.options.utils.ControlCode;
-import com.dat3m.ui.utils.Task;
+import com.dat3m.ui.options.utils.Task;
 import com.google.common.collect.ImmutableMap;
 
 import javax.swing.*;

@@ -8,7 +8,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 
 import com.dat3m.dartagnan.wmm.utils.Mode;
-import com.dat3m.ui.graph.RelSelector;
+import com.dat3m.ui.options.RelSelector;
 import com.dat3m.ui.options.OptionsPane;
 import com.dat3m.ui.options.utils.ControlCode;
 

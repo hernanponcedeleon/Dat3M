@@ -7,11 +7,11 @@ import com.dat3m.ui.button.ClearButton;
 import com.dat3m.ui.button.GraphButton;
 import com.dat3m.ui.button.RelsButton;
 import com.dat3m.ui.button.TestButton;
-import com.dat3m.ui.graph.RelSelector;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.options.utils.ArchManager;
 import com.dat3m.ui.options.utils.ControlCode;
-import com.dat3m.ui.utils.Task;
+import com.dat3m.ui.options.utils.Options;
+import com.dat3m.ui.options.utils.Task;
 
 import javax.swing.*;
 import javax.swing.border.Border;

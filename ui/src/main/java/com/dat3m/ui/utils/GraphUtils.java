@@ -1,4 +1,4 @@
-package com.dat3m.ui.graph;
+package com.dat3m.ui.utils;
 
 import static guru.nidi.graphviz.engine.Format.PNG;
 import static guru.nidi.graphviz.engine.Graphviz.fromGraph;
@@ -12,13 +12,12 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 
 import com.dat3m.dartagnan.utils.Graph;
-import com.dat3m.ui.utils.Utils;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.parse.Parser;
 
-public class GraphOption {
+public class GraphUtils {
 
-	public void open(Graph graph) {
+	public static void showGraph(Graph graph) {
 		if(graph != null) {
 			try {
 				JLabel label = new JLabel();
