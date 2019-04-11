@@ -50,7 +50,10 @@ public class Dat3M extends JFrame implements ActionListener {
 		setIconImage(IconHelper.getIcon(IconCode.DAT3M).getImage());
 
 		JMenuBar menuBar = new JMenuBar();
-		menuBar.add(editorsPane.getMenu());
+		JMenu fileMenu = new JMenu("File");
+		fileMenu.add(editorsPane.getMenuImporter());
+		fileMenu.add(editorsPane.getMenuExporter());
+		menuBar.add(fileMenu);
 		setJMenuBar(menuBar);
 
 		JSplitPane mainPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, optionsPane, editorsPane.getMainPane());

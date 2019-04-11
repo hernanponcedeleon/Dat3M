@@ -17,14 +17,26 @@ public enum EditorCode {
         return super.toString();
     }
 
-    public String editorMenuActionCommand(){
+    public String editorMenuImportActionCommand(){
         switch(this){
             case PROGRAM:
-                return "editor_menu_action_program";
+                return "editor_menu_import_action_program";
             case SOURCE_MM:
-                return "editor_menu_action_source_mm";
+                return "editor_menu_import_action_source_mm";
             case TARGET_MM:
-                return "editor_menu_action_target_mm";
+                return "editor_menu_import_action_target_mm";
+        }
+        throw new RuntimeException("Illegal EditorCode");
+    }
+
+    public String editorMenuExportActionCommand(){
+        switch(this){
+            case PROGRAM:
+                return "editor_menu_export_action_program";
+            case SOURCE_MM:
+                return "editor_menu_export_action_source_mm";
+            case TARGET_MM:
+                return "editor_menu_export_action_target_mm";
         }
         throw new RuntimeException("Illegal EditorCode");
     }

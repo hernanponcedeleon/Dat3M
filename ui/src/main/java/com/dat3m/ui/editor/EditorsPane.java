@@ -21,12 +21,17 @@ public class EditorsPane implements ActionListener {
 
     private final JSplitPane mmPane;
     private final JSplitPane mainPane;
-    private final JMenu menu;
+    private final JMenu menuImporter;
+    private final JMenu menuExporter;
 
     public EditorsPane(){
-        menu = new JMenu("Import");
-        menu.add(editors.get(EditorCode.PROGRAM).getMenuItem());
-        menu.add(editors.get(EditorCode.TARGET_MM).getMenuItem());
+        menuImporter = new JMenu("Import");
+        menuImporter.add(editors.get(EditorCode.PROGRAM).getImporterItem());
+        menuImporter.add(editors.get(EditorCode.TARGET_MM).getImporterItem());
+
+        menuExporter = new JMenu("Export");
+        menuExporter.add(editors.get(EditorCode.PROGRAM).getExporterItem());
+        menuExporter.add(editors.get(EditorCode.TARGET_MM).getExporterItem());
 
         Dimension screenDimension = Toolkit.getDefaultToolkit().getScreenSize();
         Dimension editorsDimension = new Dimension((int)(2 * screenDimension.getWidth() / 5), (int)screenDimension.getHeight());
@@ -46,8 +51,12 @@ public class EditorsPane implements ActionListener {
         mainPane.setBorder(new TitledBorder(""));
     }
 
-    public JMenu getMenu(){
-        return menu;
+    public JMenu getMenuImporter(){
+        return menuImporter;
+    }
+
+    public JMenu getMenuExporter(){
+        return menuExporter;
     }
 
     public JSplitPane getMainPane(){
@@ -66,10 +75,12 @@ public class EditorsPane implements ActionListener {
                 mmPane.setTopComponent(editors.get(EditorCode.SOURCE_MM));
                 mmPane.setDividerSize(2);
                 mmPane.setDividerLocation(0.5);
-                menu.add(editors.get(EditorCode.SOURCE_MM).getMenuItem(), 1);
+                menuImporter.add(editors.get(EditorCode.SOURCE_MM).getImporterItem(), 1);
+                menuExporter.add(editors.get(EditorCode.SOURCE_MM).getExporterItem(), 1);
             } else {
                 mmPane.remove(editors.get(EditorCode.SOURCE_MM));
-                menu.remove(editors.get(EditorCode.SOURCE_MM).getMenuItem());
+                menuImporter.remove(editors.get(EditorCode.SOURCE_MM).getImporterItem());
+                menuExporter.remove(editors.get(EditorCode.SOURCE_MM).getExporterItem());
             }
         }
     }

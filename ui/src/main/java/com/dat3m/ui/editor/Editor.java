@@ -10,6 +10,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
@@ -24,7 +25,8 @@ public class Editor extends JScrollPane implements ActionListener {
     private final EditorCode code;
 
     private final JEditorPane editorPane;
-    private final JMenuItem menuItem;
+    private final JMenuItem importerItem;
+    private final JMenuItem exporterItem;
     private final JFileChooser chooser;
     private final LineNumbersView lineNumbers;
 
@@ -39,9 +41,12 @@ public class Editor extends JScrollPane implements ActionListener {
         this.editorPane = editorPane;
         this.lineNumbers = new LineNumbersView(editorPane);
         this.addActionListener(lineNumbers);
-        this.menuItem = new JMenuItem(code.toString());
-        menuItem.setActionCommand(code.editorMenuActionCommand());
-        menuItem.addActionListener(this);
+        this.importerItem = new JMenuItem(code.toString());
+        importerItem.setActionCommand(code.editorMenuImportActionCommand());
+        importerItem.addActionListener(this);
+        this.exporterItem = new JMenuItem(code.toString());
+        exporterItem.setActionCommand(code.editorMenuExportActionCommand());
+        exporterItem.addActionListener(this);
 
         this.allowedFormats = ImmutableSet.copyOf(Arrays.asList(formats));
         this.chooser = new JFileChooser();
@@ -68,7 +73,7 @@ public class Editor extends JScrollPane implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        if(code.editorMenuActionCommand().equals(event.getActionCommand())){
+        if(code.editorMenuImportActionCommand().equals(event.getActionCommand())){
             chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
             if(chooser.showOpenDialog(null) == APPROVE_OPTION){
                 String path = chooser.getSelectedFile().getPath();
@@ -87,10 +92,35 @@ public class Editor extends JScrollPane implements ActionListener {
                 }
             }
         }
+        if(code.editorMenuExportActionCommand().equals(event.getActionCommand())){
+            chooser.setCurrentDirectory(new File(getProperty("user.dir") + "/.."));
+            if(chooser.showSaveDialog(null) == APPROVE_OPTION){
+                String path = chooser.getSelectedFile().getPath();
+                String format = path.substring(path.lastIndexOf('.') + 1).trim();
+                if(allowedFormats.contains(format)){
+                    notifyListeners();
+					try {
+						File newTextFile = new File(path);
+                    	FileWriter fw = new FileWriter(newTextFile);
+	                    fw.write(editorPane.getText());
+	                    fw.close();                    
+					} catch (IOException e) {
+						// This should never happen since the file is created above
+					}
+                } else {
+                	showError("Please select a *." + String.join(", *.", allowedFormats) + " file",
+                            "Invalid file format");
+                }
+            }
+        }
     }
 
-    JMenuItem getMenuItem(){
-        return menuItem;
+    JMenuItem getImporterItem(){
+        return importerItem;
+    }
+
+    JMenuItem getExporterItem(){
+        return exporterItem;
     }
 
     public JEditorPane getEditorPane(){
