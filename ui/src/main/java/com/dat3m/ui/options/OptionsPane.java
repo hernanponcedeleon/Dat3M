@@ -56,7 +56,8 @@ public class OptionsPane extends JPanel implements ActionListener {
     public OptionsPane(){
         super(new GridLayout(1,0));
 
-        iconPane = new IconPane(IconCode.DARTAGNAN, getIconHeight(), JLabel.CENTER);
+        int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
+        iconPane = new IconPane(IconCode.DARTAGNAN, height, JLabel.CENTER);
 
         taskPane = new Selector<>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
         modePane = new Selector<>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
@@ -154,7 +155,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         archPane.setLeftComponent(sourcePane);
         archPane.setRightComponent(targetPane);
-        archPane.setPreferredSize(new Dimension(OPTWIDTH, 0));
+        archPane.setMaximumSize(new Dimension(OPTWIDTH, 50));
         archPane.setDividerSize(0);
 
         // Inner borders
