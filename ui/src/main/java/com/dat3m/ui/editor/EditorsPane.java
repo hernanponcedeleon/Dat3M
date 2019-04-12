@@ -34,7 +34,7 @@ public class EditorsPane implements ActionListener {
         menuExporter.add(editors.get(EditorCode.TARGET_MM).getExporterItem());
 
         Dimension screenDimension = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension editorsDimension = new Dimension((int)(2 * screenDimension.getWidth() / 5), (int)screenDimension.getHeight());
+        Dimension editorsDimension = new Dimension((int)(screenDimension.getWidth() *1/3), (int)screenDimension.getHeight());
 		editors.get(EditorCode.PROGRAM).setPreferredSize(editorsDimension);
         editors.get(EditorCode.TARGET_MM).setPreferredSize(editorsDimension);
         
