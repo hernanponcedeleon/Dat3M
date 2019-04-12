@@ -27,7 +27,7 @@ public class GraphUtils {
 				InputStream stream = new ByteArrayInputStream(graph.toString().getBytes());
 				MutableGraph g = Parser.read(stream);
 				BufferedImage image = fromGraph(g).render(SVG).toImage();
-				int height = (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 5/6;
+				int height = (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight());
 		        int width = image.getWidth() * height / image.getHeight();
 		        Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
 				label.setIcon(new ImageIcon(scaledImage));
