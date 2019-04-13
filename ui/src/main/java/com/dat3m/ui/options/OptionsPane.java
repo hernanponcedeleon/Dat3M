@@ -164,6 +164,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setLeftComponent(graphButton);
         graphPane.setRightComponent(relsButton);
+        graphPane.setDividerSize(0);
         JComponent[] panes = { taskPane, archPane, modePane, aliasPane, boundPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
