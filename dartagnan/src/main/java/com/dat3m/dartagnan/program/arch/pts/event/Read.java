@@ -19,7 +19,7 @@ public class Read extends MemEvent implements RegWriter {
     private final String mo;
 
     public Read(Register register, IExpr address, String mo) {
-        super(address);
+        super(address, mo);
         this.resultRegister = register;
         this.mo = mo;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
@@ -63,15 +63,15 @@ public class Read extends MemEvent implements RegWriter {
             case NONE: case TSO:
                 break;
             case POWER:
-                if(mo.equals(Mo.SC) || mo.equals(Mo.ACQUIRE) || mo.equals(Mo.CONSUME)){
+                if(Mo.SC.equals(mo) || Mo.ACQUIRE.equals(mo) || Mo.CONSUME.equals(mo)){
                     events.addLast(new Fence("Lwsync"));
-                    if(mo.equals(Mo.SC)){
+                    if(Mo.SC.equals(mo)){
                         events.addFirst(new Fence("Sync"));
                     }
                 }
                 break;
             case ARM: case ARM8:
-                if(mo.equals(Mo.SC) || mo.equals(Mo.ACQUIRE) || mo.equals(Mo.CONSUME)) {
+                if(Mo.SC.equals(mo) || Mo.ACQUIRE.equals(mo) || Mo.CONSUME.equals(mo)) {
                     events.addLast(new Fence("Ish"));
                 }
                 break;

@@ -58,7 +58,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
             if (dummy != resultRegister) {
                 events.addLast(new Local(resultRegister, dummy));
             }
-            if (mo.equals(Mo.MB)) {
+            if (Mo.MB.equals(mo)) {
                 events.addFirst(new Fence("Mb"));
                 events.addLast(new Fence("Mb"));
             }

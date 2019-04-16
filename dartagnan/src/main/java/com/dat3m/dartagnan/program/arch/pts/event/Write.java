@@ -22,7 +22,7 @@ public class Write extends MemEvent implements RegReaderData {
     private final ImmutableSet<Register> dataRegs;
 
     public Write(IExpr address, ExprInterface value, String mo){
-        super(address);
+        super(address, mo);
         this.value = value;
         this.mo = mo;
         this.dataRegs = value.getRegs();
@@ -34,11 +34,6 @@ public class Write extends MemEvent implements RegReaderData {
         this.value = other.value;
         this.mo = other.mo;
         this.dataRegs = other.dataRegs;
-    }
-
-    @Override
-    public boolean is(String param){
-        return super.is(param) || (mo != null && mo.equals(param));
     }
 
     @Override
@@ -73,21 +68,21 @@ public class Write extends MemEvent implements RegReaderData {
             case NONE:
                 break;
             case TSO:
-                if(mo.equals(Mo.SC)){
+                if(Mo.SC.equals(mo)){
                     events.addLast(new Fence("Mfence"));
                 }
                 break;
             case POWER:
-                if(mo.equals(Mo.RELEASE)){
+                if(Mo.RELEASE.equals(mo)){
                     events.addFirst(new Fence("Lwsync"));
-                } else if(mo.equals(Mo.SC)){
+                } else if(Mo.SC.equals(mo)){
                     events.addFirst(new Fence("Sync"));
                 }
                 break;
             case ARM: case ARM8:
-                if(mo.equals(Mo.RELEASE) || mo.equals(Mo.SC)){
+                if(Mo.RELEASE.equals(mo) || Mo.SC.equals(mo)){
                     events.addFirst(new Fence("Ish"));
-                    if(mo.equals(Mo.SC)){
+                    if(Mo.SC.equals(mo)){
                         events.addLast(new Fence("Ish"));
                     }
                 }
