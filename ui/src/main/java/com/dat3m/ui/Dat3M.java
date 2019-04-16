@@ -27,8 +27,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import static com.dat3m.ui.editor.EditorCode.SOURCE_MM;
-import static com.dat3m.ui.editor.EditorCode.TARGET_MM;
 import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
 import static javax.swing.UIManager.getDefaults;
@@ -115,7 +113,7 @@ public class Dat3M extends JFrame implements ActionListener {
 				Editor programEditor = editorsPane.getEditor(EditorCode.PROGRAM);
 				Program program = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
 				try {
-					Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(TARGET_MM).getEditorPane().getText());
+					Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText());
 					if(options.getTask() == Task.REACHABILITY){
 						testResult = new ReachabilityResult(program, targetModel, options);
 					} else {
@@ -125,7 +123,7 @@ public class Dat3M extends JFrame implements ActionListener {
 								return;
 							}
 							Program sourceProgram = new ProgramParser().parse(programEditor.getEditorPane().getText(), programEditor.getLoadedFormat());
-							Wmm sourceModel = new ParserCat().parse(editorsPane.getEditor(SOURCE_MM).getEditorPane().getText());
+							Wmm sourceModel = new ParserCat().parse(editorsPane.getEditor(EditorCode.SOURCE_MM).getEditorPane().getText());
 							testResult = new PortabilityResult(sourceProgram, program, sourceModel, targetModel, options);
 						} catch (Exception e){
 							String msg = e.getMessage() == null? "Memory model cannot be parsed" : e.getMessage();
