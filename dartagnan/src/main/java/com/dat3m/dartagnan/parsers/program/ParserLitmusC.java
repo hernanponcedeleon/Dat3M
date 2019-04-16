@@ -17,7 +17,6 @@ class ParserLitmusC implements ParserInterface {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LitmusCParser parser = new LitmusCParser(tokenStream);
-        parser.setErrorHandler(new BailErrorStrategy());
         ProgramBuilder pb = new ProgramBuilder();
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusC visitor = new VisitorLitmusC(pb);

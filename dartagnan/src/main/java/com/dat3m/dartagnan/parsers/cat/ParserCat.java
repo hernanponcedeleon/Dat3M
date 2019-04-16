@@ -29,8 +29,6 @@ public class ParserCat {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         CatParser parser = new CatParser(tokenStream);
-        // TODO: Why error handler was removed?
-        // parser.setErrorHandler(new BailErrorStrategy());
         parser.addErrorListener(new ParserErrorListener());
         ParserRuleContext parserEntryPoint = parser.mcm();
         return (Wmm) parserEntryPoint.accept(new VisitorBase());
