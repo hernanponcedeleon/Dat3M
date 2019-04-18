@@ -39,6 +39,10 @@ We provide a set of unit tests that can be run by
 mvn test
 ```
 
+Binaries
+======
+See "release" section.
+
 Usage
 ======
 * **Linux:** You can start the tool by double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
