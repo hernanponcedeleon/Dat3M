@@ -39,6 +39,10 @@ We provide a set of unit tests that can be run by
 mvn test
 ```
 
+Binaries
+======
+The precompiled jars can be found in the "[release](https://github.com/hernanponcedeleon/Dat3M/releases)" section.
+
 Usage
 ======
 * **Linux:** You can start the tool by double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
@@ -68,10 +72,10 @@ They must be one of the following:
 - arm
 - arm8
 
-**Note:** Option target is mandatory in DARTAGNAN when using the.pts format.
+**Note:** Option target is mandatory in DARTAGNAN when using the .pts format.
 
 Other optional arguments include:
-- -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [1]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [2]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
+- -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [3]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
 - -a, --alias {none, andersen, cfs}: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - -unroll: unrolling bound for the BMC.
 
@@ -113,6 +117,9 @@ Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@forti
 
 References
 ======
-[1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC with Memory Models as Modules**. FMCAD 2018.
+[1] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**. CAV 2019.
 
-[2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**. SAS 2017.
+[2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC with Memory Models as Modules**. FMCAD 2018.
+
+[3] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**. SAS 2017.
+
