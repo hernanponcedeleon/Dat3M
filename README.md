@@ -41,7 +41,7 @@ mvn test
 
 Binaries
 ======
-See "release" section.
+See "[release](https://github.com/hernanponcedeleon/Dat3M/releases)" section.
 
 Usage
 ======
