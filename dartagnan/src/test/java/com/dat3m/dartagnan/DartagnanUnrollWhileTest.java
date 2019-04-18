@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ public class DartagnanUnrollWhileTest {
 
     @Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
         String test1 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-01.litmus";
         String test2 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-02.litmus";
         String test3 = ResourceHelper.TEST_RESOURCE_PATH + "unroll/C-unroll-03.litmus";
@@ -65,14 +66,14 @@ public class DartagnanUnrollWhileTest {
     }
 
 
-    private String input;
+    private String path;
     private Wmm wmm;
     private int bound;
     private String[] names;
     private int[] values;
 
-    public DartagnanUnrollWhileTest(String input, Wmm wmm, int bound, String[] names, int[] values) {
-        this.input = input;
+    public DartagnanUnrollWhileTest(String path, Wmm wmm, int bound, String[] names, int[] values) {
+        this.path = path;
         this.wmm = wmm;
         this.bound = bound;
         this.names = names;
@@ -82,7 +83,7 @@ public class DartagnanUnrollWhileTest {
     @Test
     public void test() {
         try {
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
             program.setAss(mkAssert(program, names, values));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

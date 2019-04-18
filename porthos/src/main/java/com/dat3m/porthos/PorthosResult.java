@@ -2,7 +2,7 @@ package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.program.Program;
 
-class PorthosResult {
+public class PorthosResult {
 
     private boolean isPortable;
     private int iterations;
@@ -16,19 +16,19 @@ class PorthosResult {
         this.targetProgram = targetProgram;
     }
 
-    boolean getIsPortable(){
+    public boolean getIsPortable(){
         return isPortable;
     }
 
-    int getIterations(){
+    public int getIterations(){
         return iterations;
     }
 
-    Program getSourceProgram(){
+    public Program getSourceProgram(){
         return sourceProgram;
     }
 
-    Program getTargetProgram(){
+    public Program getTargetProgram(){
         return targetProgram;
     }
 }

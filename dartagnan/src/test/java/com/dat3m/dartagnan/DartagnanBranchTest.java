@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,8 +33,8 @@ public class DartagnanBranchTest {
     public static Iterable<Object[]> data() throws IOException {
         ImmutableMap<String, Boolean> expected = readExpectedResults();
 
-        Wmm linuxWmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
-        Wmm aarch64Wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat");
+        Wmm linuxWmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
+        Wmm aarch64Wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
 
         List<Object[]> data = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/C/"))
                 .filter(Files::isRegularFile)
@@ -64,12 +65,12 @@ public class DartagnanBranchTest {
         return builder.build();
     }
 
-    private String input;
+    private String path;
     private Wmm wmm;
     private boolean expected;
 
-    public DartagnanBranchTest(String input, boolean expected, Wmm wmm) {
-        this.input = input;
+    public DartagnanBranchTest(String path, boolean expected, Wmm wmm) {
+        this.path = path;
         this.expected = expected;
         this.wmm = wmm;
     }
@@ -77,7 +78,7 @@ public class DartagnanBranchTest {
     @Test
     public void test() {
         try{
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, 1, Mode.KNASTER, Alias.CFIS));

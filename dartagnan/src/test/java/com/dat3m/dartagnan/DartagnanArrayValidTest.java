@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -27,7 +28,7 @@ public class DartagnanArrayValidTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
         return Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "arrays/ok/"))
                 .filter(Files::isRegularFile)
                 .filter(f -> (f.toString().endsWith("litmus")))
@@ -35,18 +36,18 @@ public class DartagnanArrayValidTest {
                 .collect(Collectors.toList());
     }
 
-    private String input;
+    private String path;
     private Wmm wmm;
 
-    public DartagnanArrayValidTest(String input, Wmm wmm) {
-        this.input = input;
+    public DartagnanArrayValidTest(String path, Wmm wmm) {
+        this.path = path;
         this.wmm = wmm;
     }
 
     @Test
     public void test() {
         try{
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
             assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, 2, Mode.KNASTER, Alias.CFIS));

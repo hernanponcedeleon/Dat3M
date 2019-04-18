@@ -16,7 +16,7 @@ public class DartagnanAARCH64Test extends AbstractDartagnanTest {
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", Arch.ARM8, 2);
     }
 
-    public DartagnanAARCH64Test(String input, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
-        super(input, expected, target, wmm, unroll, mode);
+    public DartagnanAARCH64Test(String path, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
+        super(path, expected, target, wmm, unroll, mode);
     }
 }

@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -26,7 +27,7 @@ public class RelCritTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat");
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
         String path = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/crit/";
 
         List<Object[]> data = new ArrayList<>();
@@ -42,12 +43,12 @@ public class RelCritTest {
         return data;
     }
 
-    private String input;
+    private String path;
     private Wmm wmm;
     private int[] expectedEdges;
 
-    public RelCritTest(String input, Wmm wmm, int[] expectedEdges) {
-        this.input = input;
+    public RelCritTest(String path, Wmm wmm, int[] expectedEdges) {
+        this.path = path;
         this.wmm = wmm;
         this.expectedEdges = expectedEdges;
     }
@@ -57,7 +58,7 @@ public class RelCritTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
 
             // Force encoding all possible "crit" relations
             wmm.setDrawExecutionGraph();

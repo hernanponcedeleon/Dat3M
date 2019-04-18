@@ -11,12 +11,10 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class Store extends MemEvent implements RegReaderData {
 
     protected final ExprInterface value;
-    protected final String mo;
     private final ImmutableSet<Register> dataRegs;
 
     public Store(IExpr address, ExprInterface value, String mo){
-        super(address);
-        this.mo = mo;
+        super(address, mo);
         this.value = value;
         dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
@@ -24,14 +22,8 @@ public class Store extends MemEvent implements RegReaderData {
 
     protected Store(Store other){
         super(other);
-        this.mo = other.mo;
         this.value = other.value;
         dataRegs = other.dataRegs;
-    }
-
-    @Override
-    public boolean is(String param){
-        return super.is(param) || (mo != null && mo.equals(param));
     }
 
     @Override

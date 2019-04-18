@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -33,10 +34,10 @@ public class PorthosTest {
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
     public static Iterable<Object[]> data() throws IOException {
 
-        Wmm wmmSc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/sc.cat");
-        Wmm wmmTso = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/tso.cat");
-        Wmm wmmPpc = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/power.cat");
-        Wmm wmmArm = new ParserCat().parse(CAT_RESOURCE_PATH + "cat/arm.cat");
+        Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
+        Wmm wmmTso = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/tso.cat"));
+        Wmm wmmPpc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/power.cat"));
+        Wmm wmmArm = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/arm.cat"));
 
         return Arrays.asList(new Object[][] {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
@@ -113,7 +114,7 @@ public class PorthosTest {
         });
     }
 
-    private String input;
+    private String programFilePath;
     private boolean expected;
     private Arch source;
     private Arch target;
@@ -122,8 +123,8 @@ public class PorthosTest {
     private int steps;
     private Mode mode;
 
-    public PorthosTest(String input, boolean expected, Arch source, Arch target, Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode) {
-        this.input = input;
+    public PorthosTest(String path, boolean expected, Arch source, Arch target, Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode) {
+        this.programFilePath = path;
         this.expected = expected;
         this.source = source;
         this.target = target;
@@ -137,8 +138,8 @@ public class PorthosTest {
     public void test() {
         try {
             ProgramParser programParser = new ProgramParser();
-            Program pSource = programParser.parse(input);
-            Program pTarget = programParser.parse(input);
+            Program pSource = programParser.parse(new File(programFilePath));
+            Program pTarget = programParser.parse(new File(programFilePath));
 
             Context ctx = new Context();
             Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

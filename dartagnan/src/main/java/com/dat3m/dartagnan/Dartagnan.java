@@ -15,6 +15,8 @@ import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.commons.cli.*;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -67,7 +69,7 @@ public class Dartagnan {
         Mode mode = Mode.get(cmd.getOptionValue("mode"));
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
-        Program p = new ProgramParser().parse(inputFilePath);
+        Program p = new ProgramParser().parse(new File(inputFilePath));
         
         Arch target = p.getArch();
 
@@ -85,7 +87,7 @@ public class Dartagnan {
             throw new RuntimeException("Assert is required for Dartagnan tests");
         }
 
-        Wmm mcm = new ParserCat().parse(cmd.getOptionValue("cat"));
+        Wmm mcm = new ParserCat().parse(new File(cmd.getOptionValue("cat")));
 
         if(cmd.hasOption("draw")) {
             mcm.setDrawExecutionGraph();
@@ -112,13 +114,10 @@ public class Dartagnan {
         System.out.println(result ? "Ok" : "No");
 
         if(cmd.hasOption("draw") && canDrawGraph(p.getAss(), result)) {
-            Graph graph = new Graph(s.getModel(), ctx);
             String outputPath = cmd.getOptionValue("draw");
+            String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
             ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-            if(cmd.hasOption("rels")) {
-                graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
-            }
-            graph.build(p).draw(outputPath);
+            drawGraph(new Graph(s.getModel(), ctx, p, relations), outputPath);
             System.out.println("Execution graph is written to " + outputPath);
         }
 
@@ -147,7 +146,7 @@ public class Dartagnan {
         return result;
     }
 
-    private static boolean canDrawGraph(AbstractAssert ass, boolean result){
+    public static boolean canDrawGraph(AbstractAssert ass, boolean result){
         String type = ass.getType();
         if(type == null){
             return result;
@@ -157,5 +156,12 @@ public class Dartagnan {
             return type.equals(AbstractAssert.ASSERT_TYPE_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FINAL);
         }
         return type.equals(AbstractAssert.ASSERT_TYPE_NOT_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FORALL);
+    }
+
+    public static void drawGraph(Graph graph, String path) throws IOException {
+        File newTextFile = new File(path);
+        FileWriter fw = new FileWriter(newTextFile);
+        fw.write(graph.toString());
+        fw.close();
     }
 }

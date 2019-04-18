@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.apache.commons.cli.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -73,13 +74,13 @@ public class Porthos {
         Arch target = Arch.get(cmd.getOptionValue("target"));
 
         String inputFilePath = cmd.getOptionValue("input");
-        if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus")) {
+        if(!inputFilePath.endsWith("pts")) {
             System.out.println("Unrecognized program format");
             System.exit(0);
             return;
         }
-        Wmm mcmS = new ParserCat().parse(cmd.getOptionValue("scat"));
-        Wmm mcmT = new ParserCat().parse(cmd.getOptionValue("tcat"));
+        Wmm mcmS = new ParserCat().parse(new File(cmd.getOptionValue("scat")));
+        Wmm mcmT = new ParserCat().parse(new File(cmd.getOptionValue("tcat")));
 
         if(cmd.hasOption("draw")) {
             mcmS.setDrawExecutionGraph();
@@ -101,8 +102,8 @@ public class Porthos {
         Alias alias = Alias.get(cmd.getOptionValue("alias"));
 
         ProgramParser programParser = new ProgramParser();
-        Program pSource = programParser.parse(inputFilePath);
-        Program pTarget = programParser.parse(inputFilePath);
+        Program pSource = programParser.parse(new File(inputFilePath));
+        Program pTarget = programParser.parse(new File(inputFilePath));
 
         Context ctx = new Context();
         Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
@@ -119,13 +120,10 @@ public class Porthos {
             System.out.println("The program is not state-portable");
             System.out.println("Iterations: " + result.getIterations());
             if(cmd.hasOption("draw")) {
-                ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-                Graph graph = new Graph(s1.getModel(), ctx);
                 String outputPath = cmd.getOptionValue("draw");
-                if(cmd.hasOption("rels")) {
-                    graph.addRelations(Arrays.asList(cmd.getOptionValue("rels").split(",")));
-                }
-                graph.build(result.getSourceProgram(), result.getTargetProgram()).draw(outputPath);
+                String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
+                ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+                Dartagnan.drawGraph(new Graph(s1.getModel(), ctx, pSource, pTarget, relations), outputPath);
                 System.out.println("Execution graph is written to " + outputPath);
             }
         }
@@ -133,7 +131,7 @@ public class Porthos {
         ctx.close();
     }
 
-    static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
+    public static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode, Alias alias){
 
         pSource.unroll(steps, 0);

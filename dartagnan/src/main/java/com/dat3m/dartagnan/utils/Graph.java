@@ -10,9 +10,6 @@ import com.dat3m.dartagnan.program.event.Init;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Location;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,27 +46,38 @@ public class Graph {
 
     private final String DEFAULT_EDGE_COLOR = "indigo";
 
-    public Graph(Model model, Context ctx){
+    public Graph(Model model, Context ctx, Program program, String... relations){
+        this(model, ctx, relations);
+        build(program);
+    }
+
+    public Graph(Model model, Context ctx, Program pSource, Program pTarget, String... relations){
+        this(model, ctx, relations);
+        build(pSource, pTarget);
+    }
+
+    private Graph(Model model, Context ctx, String... relations){
         this.model = model;
         this.ctx = ctx;
-        relations.add("rf");
+        this.relations.add("rf");
+        this.relations.addAll(Arrays.asList(relations));
     }
 
-    public void addRelations(Collection<String> relations){
-        this.relations.addAll(relations);
+    @Override
+    public String toString(){
+        return buffer.toString();
     }
 
-    public Graph build(Program program){
+    private void build(Program program){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n")
-                .append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
+        		.append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
                 .append(buildProgramGraph(program))
                 .append(L1).append("}\n")
                 .append("}\n");
-        return this;
     }
 
-    public Graph build(Program pSource, Program pTarget){
+    private void build(Program pSource, Program pTarget){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n");
 
@@ -83,15 +91,6 @@ public class Graph {
                 .append(L1).append("}\n");
 
         buffer.append("}\n");
-
-        return this;
-    }
-
-    public void draw(String filename) throws IOException {
-        File newTextFile = new File(filename);
-        FileWriter fw = new FileWriter(newTextFile);
-        fw.write(buffer.toString());
-        fw.close();
     }
 
     private StringBuilder buildProgramGraph(Program program){
