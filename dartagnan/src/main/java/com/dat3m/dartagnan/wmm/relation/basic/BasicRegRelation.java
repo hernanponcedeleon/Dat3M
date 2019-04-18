@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
+<<<<<<< HEAD
 import com.dat3m.dartagnan.expression.IConst;
+=======
+>>>>>>> 8af9e3c5... Refactoring
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -35,7 +38,7 @@ abstract class BasicRegRelation extends BasicRelation {
     BoolExpr doEncodeApprox(Collection<Event> regReaders) {
         BoolExpr enc = ctx.mkTrue();
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = program.getCache().getRegWriterMap();
-
+        
         for (Event regReader : regReaders) {
             for (Register register : getRegisters(regReader)) {
                 List<Event> writers = regWriterMap.getOrDefault(register, ImmutableList.of());
