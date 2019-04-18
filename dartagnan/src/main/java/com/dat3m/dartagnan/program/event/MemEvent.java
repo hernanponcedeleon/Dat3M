@@ -10,13 +10,18 @@ import com.dat3m.dartagnan.program.memory.Address;
 public abstract class MemEvent extends Event {
 
     protected final IExpr address;
+    protected final String mo;
 
     protected IntExpr memAddressExpr;
     protected IntExpr memValueExpr;
     private ImmutableSet<Address> maxAddressSet;
 
-    public MemEvent(IExpr address){
+    public MemEvent(IExpr address, String mo){
         this.address = address;
+        this.mo = mo;
+        if(mo != null){
+            addFilters(mo);
+        }
     }
 
     protected MemEvent(MemEvent other){
@@ -25,6 +30,7 @@ public abstract class MemEvent extends Event {
         this.maxAddressSet = other.maxAddressSet;
         this.memAddressExpr = other.memAddressExpr;
         this.memValueExpr = other.memValueExpr;
+        this.mo = other.mo;
     }
 
     public IntExpr getMemAddressExpr(){

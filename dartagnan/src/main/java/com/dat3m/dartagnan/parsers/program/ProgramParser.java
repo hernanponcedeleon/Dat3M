@@ -3,10 +3,10 @@ package com.dat3m.dartagnan.parsers.program;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 
 public class ProgramParser {
 
@@ -15,33 +15,50 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_C           = "C";
 
-    public Program parse(String inputFilePath) throws IOException {
-        ParserInterface parser = null;
+    public Program parse(File file) throws IOException {
+        FileInputStream stream = new FileInputStream(file);
+        ParserInterface parser = getConcreteParser(file);
+        CharStream charStream = CharStreams.fromStream(stream);
+        Program program = parser.parse(charStream);
+        stream.close();
+        program.setName(file.getName());
+        return program;
+    }
 
-        if(inputFilePath.endsWith("pts")){
-            parser = new ParserPorthos();
-
-        } else if(inputFilePath.endsWith("litmus")){
-            String header = readFirstLine(inputFilePath).toUpperCase();
-            if(header.indexOf(TYPE_LITMUS_AARCH64) == 0){
-                parser = new ParserLitmusAArch64();
-            } else if(header.indexOf(TYPE_LITMUS_C) == 0){
-                parser = new ParserLitmusC();
-            } else if(header.indexOf(TYPE_LITMUS_PPC) == 0){
-                parser = new ParserLitmusPPC();
-            } else if(header.indexOf(TYPE_LITMUS_X86) == 0){
-                parser = new ParserLitmusX86();
-            }
-        }
-
-        if(parser != null){
-            return parser.parse(inputFilePath);
+    public Program parse(String raw, String format) {
+        if(format.equals("pts")){
+            return new ParserPorthos().parse(CharStreams.fromString(raw));
+        } else if(format.equals("litmus")){
+            return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
         }
         throw new ParsingException("Unknown input file type");
     }
 
-    private String readFirstLine(String inputFilePath) throws IOException{
-        File file = new File(inputFilePath);
+    private ParserInterface getConcreteParser(File file) throws IOException {
+        String name = file.getName();
+        String format = name.substring(name.lastIndexOf(".") + 1);
+        if(format.equals("pts")){
+            return new ParserPorthos();
+        } else if(format.equals("litmus")){
+            return getConcreteLitmusParser(readFirstLine(file).toUpperCase());
+        }
+        throw new ParsingException("Unknown input file type");
+    }
+
+    private ParserInterface getConcreteLitmusParser(String programText){
+        if(programText.indexOf(TYPE_LITMUS_AARCH64) == 0){
+            return new ParserLitmusAArch64();
+        } else if(programText.indexOf(TYPE_LITMUS_C) == 0){
+            return new ParserLitmusC();
+        } else if(programText.indexOf(TYPE_LITMUS_PPC) == 0){
+            return new ParserLitmusPPC();
+        } else if(programText.indexOf(TYPE_LITMUS_X86) == 0){
+            return new ParserLitmusX86();
+        }
+        throw new ParsingException("Unknown input file type");
+    }
+
+    private String readFirstLine(File file) throws IOException{
         FileReader fileReader = new FileReader(file);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
         String line = bufferedReader.readLine();

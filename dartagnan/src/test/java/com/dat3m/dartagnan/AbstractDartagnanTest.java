@@ -12,6 +12,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +28,7 @@ public abstract class AbstractDartagnanTest {
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target, int unroll) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Boolean> expectationMap = ResourceHelper.getExpectedResults();
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + cat);
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
         return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)
@@ -43,15 +44,15 @@ public abstract class AbstractDartagnanTest {
                         }, ArrayList::addAll);
     }
 
-    private String input;
+    private String path;
     private boolean expected;
     private Arch target;
     private Wmm wmm;
     private int unroll;
     private Mode mode;
 
-    AbstractDartagnanTest(String input, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
-        this.input = input;
+    AbstractDartagnanTest(String path, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
+        this.path = path;
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;
@@ -62,7 +63,7 @@ public abstract class AbstractDartagnanTest {
     @Test
     public void test() {
         try {
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));

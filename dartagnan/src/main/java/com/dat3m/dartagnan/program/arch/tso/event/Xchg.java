@@ -22,7 +22,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     private final ImmutableSet<Register> dataRegs;
 
     public Xchg(Address address, Register register) {
-        super(address);
+        super(address, null);
         this.resultRegister = register;
         this.dataRegs = ImmutableSet.of(resultRegister);
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM, EType.REG_WRITER, EType.REG_READER);

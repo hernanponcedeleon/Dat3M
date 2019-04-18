@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -27,16 +28,16 @@ public class DartagnanArrayIllegalTest {
                 .collect(Collectors.toList());
     }
 
-    private String input;
+    private String path;
 
-    public DartagnanArrayIllegalTest(String input) {
-        this.input = input;
+    public DartagnanArrayIllegalTest(String path) {
+        this.path = path;
     }
 
     @Test
     public void test() {
         try{
-            new ProgramParser().parse(input);
+            new ProgramParser().parse(new File(path));
             fail("Didn't throw an exception");
         } catch(ParseCancellationException | ParsingException e){
             // Test succeeded

@@ -13,7 +13,6 @@ public class AssertionHelper {
         LitmusAssertionsLexer lexer = new LitmusAssertionsLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         LitmusAssertionsParser parser = new LitmusAssertionsParser(tokenStream);
-        parser.setErrorHandler(new BailErrorStrategy());
         ParserRuleContext parserEntryPoint = parser.assertionList();
         return parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
     }
@@ -23,7 +22,6 @@ public class AssertionHelper {
         LitmusAssertionsLexer lexer = new LitmusAssertionsLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         LitmusAssertionsParser parser = new LitmusAssertionsParser(tokenStream);
-        parser.setErrorHandler(new BailErrorStrategy());
         ParserRuleContext parserEntryPoint = parser.assertionFilter();
         return parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
     }

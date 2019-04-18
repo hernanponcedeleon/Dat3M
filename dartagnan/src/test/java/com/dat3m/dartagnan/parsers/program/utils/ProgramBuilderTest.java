@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -19,7 +20,7 @@ public class ProgramBuilderTest {
                 .filter(f -> (f.toString().endsWith("litmus")))
                 .forEach(f -> {
                             try{
-                                new ProgramParser().parse(f.toString());
+                                new ProgramParser().parse(new File(f.toString()));
                             } catch(ParsingException e){
                                 // Test succeeded
                             } catch (IOException e){

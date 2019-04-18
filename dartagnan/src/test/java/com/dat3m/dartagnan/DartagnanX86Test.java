@@ -16,7 +16,7 @@ public class DartagnanX86Test extends AbstractDartagnanTest {
         return buildParameters("litmus/X86/", "cat/tso.cat", Arch.TSO, 2);
     }
 
-    public DartagnanX86Test(String input, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
-        super(input, expected, target, wmm, unroll, mode);
+    public DartagnanX86Test(String path, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
+        super(path, expected, target, wmm, unroll, mode);
     }
 }

@@ -58,7 +58,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
             RMWStore store = new RMWStore(load, address, resultRegister, Mo.storeMO(mo));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, local, store));
-            if (mo.equals(Mo.MB)) {
+            if (Mo.MB.equals(mo)) {
                 events.addFirst(new Fence("Mb"));
                 events.addLast(new Fence("Mb"));
             }

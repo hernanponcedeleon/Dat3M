@@ -15,14 +15,12 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
 
     protected final Register resultRegister;
     protected final ExprInterface value;
-    protected final String mo;
     protected ImmutableSet<Register> dataRegs;
 
     RMWAbstract(IExpr address, Register register, ExprInterface value, String mo) {
-        super(address);
+        super(address, mo);
         this.resultRegister = register;
         this.value = value;
-        this.mo = mo;
         this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE,
                 EType.RMW, EType.REG_WRITER, EType.REG_READER);
@@ -32,13 +30,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;
-        this.mo = other.mo;
         this.dataRegs = other.dataRegs;
-    }
-
-    @Override
-    public boolean is(String param){
-        return super.is(param) || (mo != null && mo.equals(param));
     }
 
     @Override

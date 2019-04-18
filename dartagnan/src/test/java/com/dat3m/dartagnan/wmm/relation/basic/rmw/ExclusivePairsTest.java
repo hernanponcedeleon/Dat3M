@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -28,7 +29,7 @@ public class ExclusivePairsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat");
+        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
         String path = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rmw/aarch64/";
 
         List<Object[]> data = new ArrayList<>();
@@ -50,14 +51,14 @@ public class ExclusivePairsTest {
         return data;
     }
 
-    private String input;
+    private String path;
     private Wmm wmm;
     private boolean expectedState;
     private boolean expectedFlag;
     private int[] expectedEdges;
 
-    public ExclusivePairsTest(String input, Wmm wmm, boolean expectedState, boolean expectedFlag, int[] expectedEdges) {
-        this.input = input;
+    public ExclusivePairsTest(String path, Wmm wmm, boolean expectedState, boolean expectedFlag, int[] expectedEdges) {
+        this.path = path;
         this.wmm = wmm;
         this.expectedState = expectedState;
         this.expectedFlag = expectedFlag;
@@ -69,7 +70,7 @@ public class ExclusivePairsTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
 
             // Test final state
             assertEquals(expectedState, Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), 1, Mode.KNASTER, Alias.CFIS));
@@ -98,7 +99,7 @@ public class ExclusivePairsTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-            Program program = new ProgramParser().parse(input);
+            Program program = new ProgramParser().parse(new File(path));
 
             // Add program without assertions
             program.unroll(1, 0);
