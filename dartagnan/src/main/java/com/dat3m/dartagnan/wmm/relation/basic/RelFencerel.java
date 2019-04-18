@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import java.util.List;
 import java.util.ListIterator;
 
-import static com.dat3m.dartagnan.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelFencerel extends Relation {
 

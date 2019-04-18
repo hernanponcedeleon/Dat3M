@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collection;
 
-import static com.dat3m.dartagnan.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelLoc extends BasicRelation {
 

@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.BoolExpr;
 
-import static com.dat3m.dartagnan.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelCrit extends BasicRelation {
 

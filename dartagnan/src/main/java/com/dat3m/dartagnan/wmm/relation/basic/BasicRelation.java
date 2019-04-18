@@ -4,7 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
-import static com.dat3m.dartagnan.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public abstract class BasicRelation extends Relation {
 

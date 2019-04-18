@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
@@ -16,6 +17,7 @@ public class ThreadCache {
 
     private Map<FilterAbstract, ImmutableList<Event>> events = new HashMap<>();
     private ImmutableSet<Register> registers;
+    private ImmutableMap<Register, ImmutableList<Event>> regWriterMap;
 
     public ThreadCache(List<Event> events){
         this.events.put(FilterBasic.get(EType.ANY), ImmutableList.copyOf(events));
@@ -52,5 +54,26 @@ public class ThreadCache {
             registers = builder.build();
         }
         return registers;
+    }
+
+    public ImmutableMap<Register, ImmutableList<Event>> getRegWriterMap(){
+        if(regWriterMap == null){
+            Map<Register, Set<Event>> setMap = new HashMap<>();
+            for (Event e : getEvents(FilterBasic.get(EType.REG_WRITER))) {
+                Register register = ((RegWriter) e).getResultRegister();
+                setMap.putIfAbsent(register, new TreeSet<>());
+                setMap.get(register).add(e);
+            }
+
+            ImmutableMap.Builder<Register, ImmutableList<Event>> builder = new ImmutableMap.Builder<>();
+            for (Register register : setMap.keySet()) {
+                List<Event> list = new ArrayList<>(setMap.get(register));
+                Collections.sort(list);
+                builder.put(register, ImmutableList.copyOf(list));
+            }
+
+            regWriterMap = builder.build();
+        }
+        return regWriterMap;
     }
 }

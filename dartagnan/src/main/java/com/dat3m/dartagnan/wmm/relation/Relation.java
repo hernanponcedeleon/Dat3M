@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
  *

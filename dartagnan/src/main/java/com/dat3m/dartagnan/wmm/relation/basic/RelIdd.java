@@ -1,16 +1,14 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
-import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.microsoft.z3.BoolExpr;
 
-import java.util.List;
+import java.util.*;
 
 public class RelIdd extends BasicRegRelation {
 
@@ -22,20 +20,18 @@ public class RelIdd extends BasicRegRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            for(Thread t : program.getThreads()){
-                List<Event> regWriters = t.getCache().getEvents(FilterBasic.get(EType.REG_WRITER));
-                List<Event> regReaders = t.getCache().getEvents(FilterBasic.get(EType.REG_READER));
-                for(Event e1 : regWriters){
-                    Register register = ((RegWriter)e1).getResultRegister();
-                    for(Event e2 : regReaders){
-                        if(e1.getCId() < e2.getCId() && ((RegReaderData)e2).getDataRegs().contains(register)){
-                            maxTupleSet.add(new Tuple(e1, e2));
-                        }
-                    }
-                }
-            }
+            mkMaxTupleSet(program.getCache().getEvents(FilterBasic.get(EType.REG_READER)));
         }
         return maxTupleSet;
+    }
+
+    @Override
+    protected BoolExpr encodeApprox() {
+        return doEncodeApprox(program.getCache().getEvents(FilterBasic.get(EType.REG_READER)));
+    }
+
+    @Override
+    Collection<Register> getRegisters(Event regReader){
+        return ((RegReaderData) regReader).getDataRegs();
     }
 }

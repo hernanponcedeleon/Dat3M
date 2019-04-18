@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.utils.Utils;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -18,8 +18,8 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.utils.Utils.edge;
-import static com.dat3m.dartagnan.utils.Utils.intVar;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class RelCo extends Relation {
 
@@ -74,8 +74,9 @@ public class RelCo extends Relation {
 
         List<IntExpr> intVars = new ArrayList<>();
         for(Event w : eventsStore) {
-            intVars.add(intVar("co", w, ctx));
-            enc = ctx.mkAnd(enc, ctx.mkGt(Utils.intVar("co", w, ctx), ctx.mkInt(1)));
+            IntExpr coVar = intVar("co", w, ctx);
+            enc = ctx.mkAnd(enc, ctx.mkGt(coVar, ctx.mkInt(1)));
+            intVars.add(coVar);
         }
         enc = ctx.mkAnd(enc, ctx.mkDistinct(intVars.toArray(new IntExpr[0])));
 
