@@ -133,14 +133,19 @@ public class RelationRepository {
                 return getRelation(RelComposition.class, getRelation("rf^-1"), getRelation("co")).setName("fr");
             case "(R*W)":
                 return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.WRITE));
+            case "(R*M)":
+                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.MEMORY));
             case "idd^+":
                 return getRelation(RelTrans.class, getRelation("idd"));
             case "data":
                 return getRelation(RelIntersection.class, getRelation("idd^+"), getRelation("(R*W)")).setName("data");
             case "addr":
-                return getRelation(RelUnion.class,
-                        getRelation("addrDirect"),
-                        getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))).setName("addr");
+                return getRelation(RelIntersection.class,
+                        getRelation(
+                                RelUnion.class,
+                                getRelation("addrDirect"),
+                                getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))
+                        ), getRelation("(R*M)")).setName("addr");
             case "ctrl":
                 return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");
             case "po-loc":
