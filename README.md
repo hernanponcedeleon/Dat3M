@@ -72,7 +72,7 @@ They must be one of the following:
 - arm
 - arm8
 
-**Note:** Option target is mandatory in DARTAGNAN when using the.pts format.
+**Note:** Option target is mandatory in DARTAGNAN when using the .pts format.
 
 Other optional arguments include:
 - -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [3]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
