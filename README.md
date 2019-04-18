@@ -41,7 +41,7 @@ mvn test
 
 Binaries
 ======
-See "[release](https://github.com/hernanponcedeleon/Dat3M/releases)" section.
+The precompiled jars can be found in the "[release](https://github.com/hernanponcedeleon/Dat3M/releases)" section.
 
 Usage
 ======
