@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -21,7 +22,7 @@ abstract class BasicRegRelation extends BasicRelation {
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = program.getCache().getRegWriterMap();
         for(Event regReader : regReaders){
             for(Register register : getRegisters(regReader)){
-                for(Event regWriter : regWriterMap.get(register)){
+                for(Event regWriter : regWriterMap.getOrDefault(register, ImmutableList.of())){
                     if(regWriter.getCId() >= regReader.getCId()){
                         break;
                     }
@@ -37,44 +38,45 @@ abstract class BasicRegRelation extends BasicRelation {
 
         for (Event regReader : regReaders) {
             for (Register register : getRegisters(regReader)) {
-                List<Event> writers = regWriterMap.get(register);
-                if (writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()) {
-                    throw new RuntimeException("Missing initial write to register in " + regReader.getCId() + ":" + regReader);
-                }
+                List<Event> writers = regWriterMap.getOrDefault(register, ImmutableList.of());
+                if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
+                    enc = ctx.mkAnd(enc, ctx.mkEq(register.toZ3Int(regReader, ctx), new IConst(0).toZ3Int(ctx)));
 
-                ListIterator<Event> writerIt = writers.listIterator();
-                while (writerIt.hasNext()) {
-                    Event regWriter = writerIt.next();
-                    if (regWriter.getCId() >= regReader.getCId()) {
-                        break;
-                    }
-
-                    // RegReader uses the value of RegWriter if it is executed ..
-                    BoolExpr clause = regWriter.executes(ctx);
-                    BoolExpr lastRegVal = Utils.bindRegVal(register, regWriter, regReader, ctx);
-                    BoolExpr edge = Utils.edge(this.getName(), regWriter, regReader, ctx);
-
-                    // .. and no other write to the same register is executed in between
-                    ListIterator<Event> otherIt = writers.listIterator(writerIt.nextIndex());
-                    while (otherIt.hasNext()) {
-                        Event other = otherIt.next();
-                        if (other.getCId() >= regReader.getCId()) {
+                } else {
+                    ListIterator<Event> writerIt = writers.listIterator();
+                    while (writerIt.hasNext()) {
+                        Event regWriter = writerIt.next();
+                        if (regWriter.getCId() >= regReader.getCId()) {
                             break;
                         }
-                        clause = ctx.mkAnd(clause, ctx.mkNot(other.executes(ctx)));
+
+                        // RegReader uses the value of RegWriter if it is executed ..
+                        BoolExpr clause = regWriter.executes(ctx);
+                        BoolExpr lastRegVal = Utils.bindRegVal(register, regWriter, regReader, ctx);
+                        BoolExpr edge = Utils.edge(this.getName(), regWriter, regReader, ctx);
+
+                        // .. and no other write to the same register is executed in between
+                        ListIterator<Event> otherIt = writers.listIterator(writerIt.nextIndex());
+                        while (otherIt.hasNext()) {
+                            Event other = otherIt.next();
+                            if (other.getCId() >= regReader.getCId()) {
+                                break;
+                            }
+                            clause = ctx.mkAnd(clause, ctx.mkNot(other.executes(ctx)));
+                        }
+
+                        // RegReader receives value from this RegWriter
+                        enc = ctx.mkAnd(enc, ctx.mkEq(lastRegVal, clause));
+
+                        // Encode value binding (might be needed even if reader is not executed, e.g. in the address of LKW)
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(lastRegVal, ctx.mkEq(
+                                ((RegWriter) regWriter).getResultRegisterExpr(),
+                                register.toZ3Int(regReader, ctx)
+                        )));
+
+                        // Encode edge (exists only if both events are executed)
+                        enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkAnd(lastRegVal, regReader.executes(ctx))));
                     }
-
-                    // RegReader receives value from this RegWriter
-                    enc = ctx.mkAnd(enc, ctx.mkEq(lastRegVal, clause));
-
-                    // Encode value binding (might be needed even if reader is not executed, e.g. in the address of LKW)
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(lastRegVal, ctx.mkEq(
-                            ((RegWriter) regWriter).getResultRegisterExpr(),
-                            register.toZ3Int(regReader, ctx)
-                    )));
-
-                    // Encode edge (exists only if both events are executed)
-                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkAnd(lastRegVal, regReader.executes(ctx))));
                 }
             }
         }
