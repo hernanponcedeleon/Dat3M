@@ -51,8 +51,7 @@ abstract class BasicRegRelation extends BasicRelation {
                         }
 
                         // RegReader uses the value of RegWriter if it is executed ..
-                        BoolExpr clause = regWriter.executes(ctx);
-                        BoolExpr lastRegVal = Utils.bindRegVal(register, regWriter, regReader, ctx);
+                        BoolExpr clause = ctx.mkAnd(regWriter.executes(ctx), regReader.executes(ctx));
                         BoolExpr edge = Utils.edge(this.getName(), regWriter, regReader, ctx);
 
                         // .. and no other write to the same register is executed in between
@@ -65,17 +64,12 @@ abstract class BasicRegRelation extends BasicRelation {
                             clause = ctx.mkAnd(clause, ctx.mkNot(other.executes(ctx)));
                         }
 
-                        // RegReader receives value from this RegWriter
-                        enc = ctx.mkAnd(enc, ctx.mkEq(lastRegVal, clause));
-
-                        // Encode value binding (might be needed even if reader is not executed, e.g. in the address of LKW)
-                        enc = ctx.mkAnd(enc, ctx.mkImplies(lastRegVal, ctx.mkEq(
+                        // Encode edge and value binding
+                        enc = ctx.mkAnd(enc, ctx.mkEq(edge, clause));
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(edge, ctx.mkEq(
                                 ((RegWriter) regWriter).getResultRegisterExpr(),
                                 register.toZ3Int(regReader, ctx)
                         )));
-
-                        // Encode edge (exists only if both events are executed)
-                        enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkAnd(lastRegVal, regReader.executes(ctx))));
                     }
                 }
             }
