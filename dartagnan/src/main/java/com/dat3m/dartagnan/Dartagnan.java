@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 public class Dartagnan {
 
-    public static final String TACTIC = "qfufbv";
+    public static final String TACTIC = "qfbv";
 
     public static void main(String[] args) throws IOException {
 
