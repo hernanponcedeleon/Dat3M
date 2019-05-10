@@ -116,7 +116,7 @@ public class Graph {
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getId()).append(" { ").append(getThreadDef(tId++)).append("\n");
                 for(Event e : t.getCache().getEvents(FilterBasic.get(EType.VISIBLE))) {
-                    if(model.getConstInterp(e.executes(ctx)).isTrue()){
+                    if(model.getConstInterp(e.exec()).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
                             Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model));
@@ -144,7 +144,7 @@ public class Graph {
             List<Event> events = thread.getCache()
                     .getEvents(FilterBasic.get(EType.VISIBLE))
                     .stream()
-                    .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                    .filter(e -> model.getConstInterp(e.exec()).isTrue())
                     .collect(Collectors.toList());
 
             for(int i = 1; i < events.size(); i++){
@@ -162,7 +162,7 @@ public class Graph {
 
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
-            if(model.getConstInterp(e.executes(ctx)).isTrue()){
+            if(model.getConstInterp(e.exec()).isTrue()){
                 int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
@@ -199,7 +199,7 @@ public class Graph {
         List<Event> events = program.getCache()
                 .getEvents(FilterBasic.get(EType.VISIBLE))
                 .stream()
-                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                .filter(e -> model.getConstInterp(e.exec()).isTrue())
                 .collect(Collectors.toList());
 
         for(String relName : relations) {

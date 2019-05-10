@@ -21,7 +21,7 @@ public class FenceCond extends Fence {
 
     @Override
     protected BoolExpr encodeExec(Context ctx){
-        return ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(cfVar()), (loadEvent).getCond()), executes(ctx));
+        return ctx.mkEq(execVar, ctx.mkAnd(cfVar, loadEvent.getCond()));
     }
 
     // Unrolling

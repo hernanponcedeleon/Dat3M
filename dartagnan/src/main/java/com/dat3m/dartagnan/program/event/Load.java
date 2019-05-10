@@ -25,8 +25,8 @@ public class Load extends MemEvent implements RegWriter {
 
     @Override
     public void initialise(Context ctx) {
+        super.initialise(ctx);
         memValueExpr = resultRegister.toZ3IntResult(this, ctx);
-        memAddressExpr = address.toZ3Int(this, ctx);
     }
 
     @Override

@@ -82,7 +82,7 @@ public class RelCo extends Relation {
 
         for(Event w :  program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             MemEvent w1 = (MemEvent)w;
-            BoolExpr lastCo = w1.executes(ctx);
+            BoolExpr lastCo = w1.exec();
 
             for(Tuple t : maxTupleSet.getByFirst(w1)){
                 MemEvent w2 = (MemEvent)t.getSecond();
@@ -90,7 +90,7 @@ public class RelCo extends Relation {
                 lastCo = ctx.mkAnd(lastCo, ctx.mkNot(edge("co", w1, w2, ctx)));
 
                 enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
-                        ctx.mkAnd(ctx.mkAnd(w1.executes(ctx), w2.executes(ctx)), ctx.mkEq(w1.getMemAddressExpr(), w2.getMemAddressExpr())),
+                        ctx.mkAnd(ctx.mkAnd(w1.exec(), w2.exec()), ctx.mkEq(w1.getMemAddressExpr(), w2.getMemAddressExpr())),
                         ctx.mkLt(Utils.intVar("co", w1, ctx), Utils.intVar("co", w2, ctx))
                 )));
             }

@@ -64,9 +64,8 @@ public class Jump extends Event {
     public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
         if(cfEnc == null){
             cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-            BoolExpr var = ctx.mkBoolConst(cfVar());
-            label.addCfCond(ctx, var);
-            cfEnc = ctx.mkAnd(ctx.mkEq(var, cfCond), encodeExec(ctx));
+            label.addCfCond(ctx, cfVar);
+            cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx));
             cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkFalse()));
         }
         return cfEnc;

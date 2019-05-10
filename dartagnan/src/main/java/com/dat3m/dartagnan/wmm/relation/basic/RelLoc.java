@@ -40,7 +40,7 @@ public class RelLoc extends BasicRelation {
         for(Tuple tuple : encodeTupleSet) {
             BoolExpr rel = edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
             enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(
-                    ctx.mkAnd(tuple.getFirst().executes(ctx), tuple.getSecond().executes(ctx)),
+                    ctx.mkAnd(tuple.getFirst().exec(), tuple.getSecond().exec()),
                     ctx.mkEq(((MemEvent)tuple.getFirst()).getMemAddressExpr(), ((MemEvent)tuple.getSecond()).getMemAddressExpr())
             )));
         }

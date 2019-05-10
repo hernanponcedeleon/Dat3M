@@ -75,12 +75,12 @@ public class RelFencerel extends Relation {
             BoolExpr orClause = ctx.mkFalse();
             for(Event fence : fences){
                 if(fence.getCId() > e1.getCId() && fence.getCId() < e2.getCId()){
-                    orClause = ctx.mkOr(orClause, fence.executes(ctx));
+                    orClause = ctx.mkOr(orClause, fence.exec());
                 }
             }
 
             BoolExpr rel = edge(this.getName(), e1, e2, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(e1.executes(ctx), e2.executes(ctx), orClause)));
+            enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(e1.exec(), e2.exec(), orClause)));
         }
 
         return enc;
