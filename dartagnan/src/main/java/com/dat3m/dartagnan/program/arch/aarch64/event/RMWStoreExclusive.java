@@ -27,7 +27,7 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     @Override
     protected BoolExpr encodeExec(Context ctx){
-        return ctx.mkImplies(ctx.mkNot(ctx.mkBoolConst(cfVar())), ctx.mkNot(executes(ctx)));
+        return ctx.mkImplies(executes(ctx), ctx.mkBoolConst(cfVar()));
     }
 
     // Unrolling
