@@ -51,7 +51,7 @@ abstract class BasicRegRelation extends BasicRelation {
                         }
 
                         // RegReader uses the value of RegWriter if it is executed ..
-                        BoolExpr clause = ctx.mkAnd(regWriter.executes(ctx), regReader.executes(ctx));
+                        BoolExpr clause = ctx.mkAnd(regWriter.exec(), regReader.exec());
                         BoolExpr edge = Utils.edge(this.getName(), regWriter, regReader, ctx);
 
                         // .. and no other write to the same register is executed in between
@@ -61,7 +61,7 @@ abstract class BasicRegRelation extends BasicRelation {
                             if (other.getCId() >= regReader.getCId()) {
                                 break;
                             }
-                            clause = ctx.mkAnd(clause, ctx.mkNot(other.executes(ctx)));
+                            clause = ctx.mkAnd(clause, ctx.mkNot(other.exec()));
                         }
 
                         // Encode edge and value binding

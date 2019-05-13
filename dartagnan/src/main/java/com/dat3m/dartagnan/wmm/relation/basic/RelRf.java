@@ -65,7 +65,7 @@ public class RelRf extends Relation {
             rfMap.get(r).add(rel);
 
             enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
-                    ctx.mkAnd(w.executes(ctx), r.executes(ctx)),
+                    ctx.mkAnd(w.exec(), r.exec()),
                     ctx.mkAnd(
                             ctx.mkEq(w.getMemAddressExpr(), r.getMemAddressExpr()),
                             ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr())
@@ -74,7 +74,7 @@ public class RelRf extends Relation {
         }
 
         for(MemEvent r : rfMap.keySet()){
-            enc = ctx.mkAnd(enc, ctx.mkImplies(r.executes(ctx), encodeEO(r.getCId(), rfMap.get(r))));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(r.exec(), encodeEO(r.getCId(), rfMap.get(r))));
         }
 
         return enc;

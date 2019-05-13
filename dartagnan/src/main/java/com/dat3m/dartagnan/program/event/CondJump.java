@@ -72,13 +72,10 @@ public class CondJump extends Jump implements RegReaderData {
     public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
         if(cfEnc == null){
             cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-            BoolExpr var = ctx.mkBoolConst(cfVar());
             BoolExpr ifCond = expr.toZ3Bool(this, ctx);
-
-            label.addCfCond(ctx, ctx.mkAnd(ifCond, var));
-
-            cfEnc = ctx.mkAnd(ctx.mkEq(var, cfCond), encodeExec(ctx));
-            cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), var)));
+            label.addCfCond(ctx, ctx.mkAnd(ifCond, cfVar));
+            cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx));
+            cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
         }
         return cfEnc;
     }

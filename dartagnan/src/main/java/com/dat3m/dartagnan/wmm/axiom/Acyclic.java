@@ -59,7 +59,7 @@ public class Acyclic extends Axiom {
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
-            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.executes(ctx), ctx.mkGt(Utils.intVar(rel.getName(), e1, ctx), ctx.mkInt(0))));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(e1.exec(), ctx.mkGt(Utils.intVar(rel.getName(), e1, ctx), ctx.mkInt(0))));
             enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(rel.getName(), e1, e2, ctx), ctx.mkLt(Utils.intVar(rel.getName(), e1, ctx), Utils.intVar(rel.getName(), e2, ctx))));
         }
         return enc;
@@ -101,8 +101,8 @@ public class Acyclic extends Axiom {
             enc = ctx.mkAnd(enc, ctx.mkImplies(
                     cycleEdge(name, e1, e2, ctx),
                     ctx.mkAnd(
-                            e1.executes(ctx),
-                            e2.executes(ctx),
+                            e1.exec(),
+                            e2.exec(),
                             edge(name, e1, e2, ctx),
                             cycleVar(name, e1, ctx),
                             cycleVar(name, e2, ctx)

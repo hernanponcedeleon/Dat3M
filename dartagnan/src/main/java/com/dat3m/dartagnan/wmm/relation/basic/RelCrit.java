@@ -44,7 +44,7 @@ public class RelCrit extends BasicRelation {
                     if(lock.getCId() < unlock.getCId()){
                         Tuple tuple = new Tuple(lock, unlock);
                         if(encodeTupleSet.contains(tuple)){
-                            BoolExpr relation = ctx.mkAnd(lock.executes(ctx), unlock.executes(ctx));
+                            BoolExpr relation = ctx.mkAnd(lock.exec(), unlock.exec());
                             for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){
                                 if(otherLock.getCId() > lock.getCId() && otherLock.getCId() < unlock.getCId()){
                                     relation = ctx.mkAnd(relation, ctx.mkNot(edge("crit", otherLock, unlock, ctx)));

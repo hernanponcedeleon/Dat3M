@@ -34,6 +34,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	public void initialise(Context ctx) {
+		super.initialise(ctx);
 		regResultExpr = register.toZ3IntResult(this, ctx);
 	}
 

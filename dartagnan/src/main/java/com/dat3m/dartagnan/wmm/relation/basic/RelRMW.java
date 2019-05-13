@@ -87,7 +87,7 @@ public class RelRMW extends BasicRelation {
 
                         // Encode if load and store form an exclusive pair
                         BoolExpr isPair = exclPair(load, store, ctx);
-                        BoolExpr isExecPair = ctx.mkAnd(isPair, store.executes(ctx));
+                        BoolExpr isExecPair = ctx.mkAnd(isPair, store.exec());
                         enc = ctx.mkAnd(enc, ctx.mkEq(isPair, pairingCond(thread, load, store)));
 
                         // If load and store have the same address
@@ -103,23 +103,23 @@ public class RelRMW extends BasicRelation {
                         storeExec = ctx.mkOr(storeExec, isPair);
                     }
                 }
-                enc = ctx.mkAnd(enc, ctx.mkImplies(store.executes(ctx), storeExec));
+                enc = ctx.mkAnd(enc, ctx.mkImplies(store.exec(), storeExec));
             }
         }
         return ctx.mkAnd(enc, ctx.mkEq(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
     }
 
     private BoolExpr pairingCond(Thread thread, Event load, Event store){
-        BoolExpr pairingCond = ctx.mkAnd(load.executes(ctx), ctx.mkBoolConst(store.cfVar()));
+        BoolExpr pairingCond = ctx.mkAnd(load.exec(), store.cf());
 
         for (Event otherLoad : thread.getCache().getEvents(loadFilter)) {
             if (otherLoad.getCId() > load.getCId() && otherLoad.getCId() < store.getCId()) {
-                pairingCond = ctx.mkAnd(pairingCond, ctx.mkNot(otherLoad.executes(ctx)));
+                pairingCond = ctx.mkAnd(pairingCond, ctx.mkNot(otherLoad.exec()));
             }
         }
         for (Event otherStore : thread.getCache().getEvents(storeFilter)) {
             if (otherStore.getCId() > load.getCId() && otherStore.getCId() < store.getCId()) {
-                pairingCond = ctx.mkAnd(pairingCond, ctx.mkNot(ctx.mkBoolConst(otherStore.cfVar())));
+                pairingCond = ctx.mkAnd(pairingCond, ctx.mkNot(otherStore.cf()));
             }
         }
         return pairingCond;

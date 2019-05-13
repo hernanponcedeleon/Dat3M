@@ -21,6 +21,9 @@ public abstract class Event implements Comparable<Event> {
     protected transient BoolExpr cfEnc;
     protected transient BoolExpr cfCond;
 
+	protected transient BoolExpr cfVar;
+	protected transient BoolExpr execVar;
+
 	protected Event(){
 		filter = new HashSet<>();
 	}
@@ -153,27 +156,24 @@ public abstract class Event implements Comparable<Event> {
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initialise(Context ctx){}
+	public void initialise(Context ctx){
+		if(cId < 0){
+			throw new RuntimeException("Event ID is not set in " + this);
+		}
+		execVar = ctx.mkBoolConst("exec(" + repr() + ")");
+		cfVar = ctx.mkBoolConst("cf(" + repr() + ")");
+	}
 
 	public String repr() {
-		if(cId > -1){
-			return "E" + cId;
-		}
-		throw new RuntimeException("Event ID is not set in " + this);
+		return "E" + cId;
 	}
 
-	public BoolExpr executes(Context ctx) {
-		if(cId > -1){
-			return ctx.mkBoolConst("ex(" + repr() + ")");
-		}
-		throw new RuntimeException("Event ID is not set in " + this);
+	public BoolExpr exec(){
+		return execVar;
 	}
 
-	public String cfVar(){
-		if(cId > -1){
-			return "CF_" + cId;
-		}
-		throw new RuntimeException("Event ID is not set in " + this);
+	public BoolExpr cf(){
+		return cfVar;
 	}
 
 	public void addCfCond(Context ctx, BoolExpr cond){
@@ -183,17 +183,16 @@ public abstract class Event implements Comparable<Event> {
 	public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
 		if(cfEnc == null){
 			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-			BoolExpr var = ctx.mkBoolConst(cfVar());
-			cfEnc = ctx.mkEq(var, cfCond);
+			cfEnc = ctx.mkEq(cfVar, cfCond);
 			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
 			if(successor != null){
-				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, var));
+				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, cfVar));
 			}
 		}
 		return cfEnc;
 	}
 
 	protected BoolExpr encodeExec(Context ctx){
-		return ctx.mkEq(ctx.mkBoolConst(cfVar()), executes(ctx));
+		return ctx.mkEq(execVar, cfVar);
 	}
 }

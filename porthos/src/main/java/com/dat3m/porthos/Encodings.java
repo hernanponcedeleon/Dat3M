@@ -42,13 +42,13 @@ class Encodings {
         BoolExpr enc = ctx.mkTrue();
 
         while(it1.hasNext() && it2.hasNext()) {
-            Event e1 = (Event) it1.next();
-            Event e2 = (Event) it2.next();
+            Event e1 = it1.next();
+            Event e2 = it2.next();
 
             if(e1.getUId() != e2.getUId()){
                 throw new RuntimeException("Invalid unrolled Id");
             }
-            enc = ctx.mkAnd(enc, ctx.mkEq(e1.executes(ctx), e2.executes(ctx)));
+            enc = ctx.mkAnd(enc, ctx.mkEq(e1.exec(), e2.exec()));
 
             if(e1 instanceof Load && e2 instanceof Load){
                 rTuples.add(new Tuple(e1, e2));
@@ -90,7 +90,7 @@ class Encodings {
 			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
 		Set<RegWriter> executedEvents = p.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
-                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                .filter(e -> model.getConstInterp(e.exec()).isTrue())
 				.filter(e -> e instanceof RegWriter)
                 .map(e -> (RegWriter)e)
                 .collect(Collectors.toSet());
