@@ -1,9 +1,5 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Variable;
-import com.dat3m.dartagnan.wmm.utils.alias.SSAReg;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -12,21 +8,12 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-public class Register extends IExpr implements ExprInterface, Variable {
+public class Register extends IExpr implements ExprInterface {
 
 	private static int dummyCount = 0;
 
 	private final String name;
     private final int threadId;
-	private Set<Variable> aliasEdges = new HashSet<>();
-	private Set<Address> aliasAddresses = new HashSet<>();
-	private Set<MemEvent> aliasEvents = new HashSet<>();
-	private Map<Integer, SSAReg> SSAIds = new HashMap<>();
 
 	public Register(String name, int threadId) {
 		if(name == null){
@@ -42,25 +29,6 @@ public class Register extends IExpr implements ExprInterface, Variable {
 
 	public int getThreadId(){
 		return threadId;
-	}
-
-	@Override
-	public Set<Variable> getAliasEdges() {
-		return aliasEdges;
-	}
-
-	@Override
-	public Set<Address> getAliasAddresses() {
-		return aliasAddresses;
-	}
-
-	public Set<MemEvent> getAliasEvents() {
-		return aliasEvents ;
-	}
-
-	public SSAReg getSSAReg(int i){
-		SSAIds.putIfAbsent(i, new SSAReg(i, this));
-		return SSAIds.get(i);
 	}
 
 	@Override
