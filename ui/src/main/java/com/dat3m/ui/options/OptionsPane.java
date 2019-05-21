@@ -1,5 +1,6 @@
 package com.dat3m.ui.options;
 
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -10,7 +11,7 @@ import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.options.utils.ArchManager;
 import com.dat3m.ui.options.utils.ControlCode;
-import com.dat3m.ui.options.utils.Options;
+import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.options.utils.Task;
 
 import javax.swing.*;
@@ -126,17 +127,19 @@ public class OptionsPane extends JPanel implements ActionListener {
         return relSelector;
     }
 
-    public Options getOptions(){
-        return new Options(
-                (Task)taskPane.getSelectedItem(),
-                (Arch)targetPane.getSelectedItem(),
-                (Arch)sourcePane.getSelectedItem(),
+    public UiOptions getOptions(){
+        Settings settings = new Settings(
                 (Mode)modePane.getSelectedItem(),
                 (Alias)aliasPane.getSelectedItem(),
                 Integer.parseInt(boundField.getText()),
                 graphButton.isEnabled() && graphButton.isSelected(),
                 relSelector.getSelection()
         );
+
+        Task task = (Task)taskPane.getSelectedItem();
+        Arch source = (Arch)sourcePane.getSelectedItem();
+        Arch target = (Arch)targetPane.getSelectedItem();
+        return new UiOptions(task, source, target, settings);
     }
 
     private int getIconHeight(){

@@ -11,7 +11,7 @@ import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.listener.EditorListener;
 import com.dat3m.ui.utils.GraphUtils;
-import com.dat3m.ui.options.utils.Options;
+import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.options.OptionsPane;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.result.Dat3mResult;
@@ -106,7 +106,7 @@ public class Dat3M extends JFrame implements ActionListener {
 	}
 
 	private void runTest(){
-		Options options = optionsPane.getOptions();
+		UiOptions options = optionsPane.getOptions();
 		if(options.validate()){
 			testResult = null;
 			try {

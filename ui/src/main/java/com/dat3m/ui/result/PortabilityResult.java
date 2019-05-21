@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.porthos.Porthos;
 import com.dat3m.porthos.PorthosResult;
-import com.dat3m.ui.options.utils.Options;
+import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
@@ -17,12 +17,12 @@ public class PortabilityResult implements Dat3mResult {
     private final Program targetProgram;
     private final Wmm sourceWmm;
     private final Wmm targetWmm;
-    private final Options options;
+    private final UiOptions options;
 
     private Graph graph;
     private String verdict;
 
-    public PortabilityResult(Program sourceProgram, Program targetProgram, Wmm sourceWmm, Wmm targetWmm, Options options){
+    public PortabilityResult(Program sourceProgram, Program targetProgram, Wmm sourceWmm, Wmm targetWmm, UiOptions options){
         this.sourceProgram = sourceProgram;
         this.targetProgram = targetProgram;
         this.sourceWmm = sourceWmm;
@@ -45,23 +45,15 @@ public class PortabilityResult implements Dat3mResult {
             Solver s1 = ctx.mkSolver();
             Solver s2 = ctx.mkSolver();
 
-            if(options.getDrawGraph()) {
-                sourceWmm.setDrawExecutionGraph();
-                targetWmm.setDrawExecutionGraph();
-                sourceWmm.addDrawRelations(Graph.getDefaultRelations());
-                targetWmm.addDrawRelations(Graph.getDefaultRelations());
-                sourceWmm.addDrawRelations(options.getRelations());
-                targetWmm.addDrawRelations(options.getRelations());
-            }
-
             PorthosResult result = Porthos.testProgram(s1, s2, ctx, sourceProgram, targetProgram, sourceProgram.getArch(),
-                    targetProgram.getArch(), sourceWmm, targetWmm, options.getBound(), options.getMode(), options.getAlias());
+                    targetProgram.getArch(), sourceWmm, targetWmm, options.getSettings());
 
-            verdict = "The program is" + (result.getIsPortable() ? " " : " not ") + "state-portable\n"
+            verdict = "Settings: " + options.getSettings() + "\n"
+                    + "The program is" + (result.getIsPortable() ? " " : " not ") + "state-portable\n"
                     + "Iterations: " + result.getIterations();
 
             if(!result.getIsPortable()){
-                graph = new Graph(s1.getModel(), ctx, sourceProgram, targetProgram, options.getRelations().toArray(new String[0]));
+                graph = new Graph(s1.getModel(), ctx, sourceProgram, targetProgram, options.getSettings().getGraphRelations());
             }
             ctx.close();
         }

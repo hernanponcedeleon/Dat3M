@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
@@ -29,25 +30,26 @@ public class ExclusivePairsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
         String path = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rmw/aarch64/";
 
         List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{path + "AArch64-exclusive-01.litmus", wmm, true,  false, new int[]{2, 4}});
-        data.add(new Object[]{path + "AArch64-exclusive-02.litmus", wmm, true,  false, new int[]{}});
-        data.add(new Object[]{path + "AArch64-exclusive-03.litmus", wmm, true,  true,  new int[]{}});
-        data.add(new Object[]{path + "AArch64-exclusive-04.litmus", wmm, true,  true,  new int[]{}});
-        data.add(new Object[]{path + "AArch64-exclusive-05.litmus", wmm, false, false, null});
-        data.add(new Object[]{path + "AArch64-exclusive-06.litmus", wmm, false, false, null});
-        data.add(new Object[]{path + "AArch64-exclusive-07.litmus", wmm, true,  false, new int[]{}});
-        data.add(new Object[]{path + "AArch64-exclusive-08.litmus", wmm, true,  false, new int[]{}});
-        data.add(new Object[]{path + "AArch64-exclusive-09.litmus", wmm, false, false, null});
-        data.add(new Object[]{path + "AArch64-exclusive-10.litmus", wmm, true,  false, new int[]{4, 5}});
-        data.add(new Object[]{path + "AArch64-exclusive-11.litmus", wmm, true,  false, new int[]{5, 6}});
-        data.add(new Object[]{path + "AArch64-exclusive-12.litmus", wmm, false, false, null});
-        data.add(new Object[]{path + "AArch64-exclusive-13.litmus", wmm, true,  false, new int[]{4, 5}});
-        data.add(new Object[]{path + "AArch64-exclusive-14.litmus", wmm, true,  true,  null});
-        data.add(new Object[]{path + "AArch64-exclusive-15.litmus", wmm, true,  true,  null});
+        data.add(new Object[]{path + "AArch64-exclusive-01.litmus", wmm, settings, true,  false, new int[]{2, 4}});
+        data.add(new Object[]{path + "AArch64-exclusive-02.litmus", wmm, settings, true,  false, new int[]{}});
+        data.add(new Object[]{path + "AArch64-exclusive-03.litmus", wmm, settings, true,  true,  new int[]{}});
+        data.add(new Object[]{path + "AArch64-exclusive-04.litmus", wmm, settings, true,  true,  new int[]{}});
+        data.add(new Object[]{path + "AArch64-exclusive-05.litmus", wmm, settings, false, false, null});
+        data.add(new Object[]{path + "AArch64-exclusive-06.litmus", wmm, settings, false, false, null});
+        data.add(new Object[]{path + "AArch64-exclusive-07.litmus", wmm, settings, true,  false, new int[]{}});
+        data.add(new Object[]{path + "AArch64-exclusive-08.litmus", wmm, settings, true,  false, new int[]{}});
+        data.add(new Object[]{path + "AArch64-exclusive-09.litmus", wmm, settings, false, false, null});
+        data.add(new Object[]{path + "AArch64-exclusive-10.litmus", wmm, settings, true,  false, new int[]{4, 5}});
+        data.add(new Object[]{path + "AArch64-exclusive-11.litmus", wmm, settings, true,  false, new int[]{5, 6}});
+        data.add(new Object[]{path + "AArch64-exclusive-12.litmus", wmm, settings, false, false, null});
+        data.add(new Object[]{path + "AArch64-exclusive-13.litmus", wmm, settings, true,  false, new int[]{4, 5}});
+        data.add(new Object[]{path + "AArch64-exclusive-14.litmus", wmm, settings, true,  true,  null});
+        data.add(new Object[]{path + "AArch64-exclusive-15.litmus", wmm, settings, true,  true,  null});
         return data;
     }
 
@@ -56,10 +58,12 @@ public class ExclusivePairsTest {
     private boolean expectedState;
     private boolean expectedFlag;
     private int[] expectedEdges;
+    private Settings settings;
 
-    public ExclusivePairsTest(String path, Wmm wmm, boolean expectedState, boolean expectedFlag, int[] expectedEdges) {
+    public ExclusivePairsTest(String path, Wmm wmm, Settings settings, boolean expectedState, boolean expectedFlag, int[] expectedEdges) {
         this.path = path;
         this.wmm = wmm;
+        this.settings = settings;
         this.expectedState = expectedState;
         this.expectedFlag = expectedFlag;
         this.expectedEdges = expectedEdges;
@@ -69,11 +73,11 @@ public class ExclusivePairsTest {
     public void testReachableStates() {
         try{
             Context ctx = new Context();
-            Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+            Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Program program = new ProgramParser().parse(new File(path));
 
             // Test final state
-            assertEquals(expectedState, Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), 1, Mode.KNASTER, Alias.CFIS));
+            assertEquals(expectedState, Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings));
 
             // Test edges
             if(expectedEdges != null){
@@ -98,7 +102,7 @@ public class ExclusivePairsTest {
     public void testUnpredictableBehaviourFlag(){
         try{
             Context ctx = new Context();
-            Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+            Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Program program = new ProgramParser().parse(new File(path));
 
             // Add program without assertions
@@ -106,7 +110,7 @@ public class ExclusivePairsTest {
             program.compile(program.getArch(), 0);
             solver.add(program.encodeCF(ctx));
             solver.add(program.encodeFinalRegisterValues(ctx));
-            solver.add(wmm.encode(program, ctx, Mode.KNASTER, Alias.CFIS));
+            solver.add(wmm.encode(program, ctx, settings));
             solver.add(wmm.consistent(program, ctx));
 
             // Check flag

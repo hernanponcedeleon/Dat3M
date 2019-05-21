@@ -15,7 +15,7 @@ public enum Mode {
                     return KLEENE;
             }
         }
-        return KNASTER;
+        throw new UnsupportedOperationException("Illegal mode value");
     }
 
     @Override

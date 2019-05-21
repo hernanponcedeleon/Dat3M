@@ -5,12 +5,13 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.EdgeTestHelper;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,15 +58,14 @@ public class RelCritTest {
     public void test() {
         try{
             Context ctx = new Context();
-            Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+            Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Program program = new ProgramParser().parse(new File(path));
 
             // Force encoding all possible "crit" relations
-            wmm.setDrawExecutionGraph();
-            wmm.addDrawRelations(Arrays.asList("crit"));
+            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, true, "crit");
 
             // Sanity check, can be skipped
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), 1, Mode.KNASTER, Alias.CFIS));
+            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings));
 
             // Test edges
             EdgeTestHelper helper = new EdgeTestHelper(

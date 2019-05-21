@@ -47,21 +47,21 @@ public class Graph {
 
     private final String DEFAULT_EDGE_COLOR = "indigo";
 
-    public Graph(Model model, Context ctx, Program program, String... relations){
+    public Graph(Model model, Context ctx, Program program, Collection<String> relations){
         this(model, ctx, relations);
         build(program);
     }
 
-    public Graph(Model model, Context ctx, Program pSource, Program pTarget, String... relations){
+    public Graph(Model model, Context ctx, Program pSource, Program pTarget, Collection<String> relations){
         this(model, ctx, relations);
         build(pSource, pTarget);
     }
 
-    private Graph(Model model, Context ctx, String... relations){
+    private Graph(Model model, Context ctx, Collection<String> relations){
         this.model = model;
         this.ctx = ctx;
         this.relations.add("rf");
-        this.relations.addAll(Arrays.asList(relations));
+        this.relations.addAll(relations);
     }
 
     @Override
