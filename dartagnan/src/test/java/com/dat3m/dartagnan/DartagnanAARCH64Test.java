@@ -11,7 +11,7 @@ import java.io.IOException;
 @RunWith(Parameterized.class)
 public class DartagnanAARCH64Test extends AbstractDartagnanTest {
 
-    @Parameterized.Parameters(name = "{index}: {0} arch={2} mode={5} alias=anderson unroll={4}")
+    @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", Arch.ARM8);
     }

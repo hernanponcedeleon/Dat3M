@@ -11,7 +11,7 @@ import java.io.IOException;
 @RunWith(Parameterized.class)
 public class DartagnanPPCTest extends AbstractDartagnanTest {
 
-    @Parameterized.Parameters(name = "{index}: {0} arch={2} mode={5} alias=anderson unroll={4}")
+    @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
         return buildParameters("litmus/PPC/", "cat/power.cat", Arch.POWER);
     }

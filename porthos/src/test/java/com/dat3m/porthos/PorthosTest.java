@@ -31,7 +31,7 @@ public class PorthosTest {
     private static final String CAT_RESOURCE_PATH = "../";
     private static final String BENCHMARKS_RESOURCE_PATH = "../";
 
-    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
+    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} {6}")
     public static Iterable<Object[]> data() throws IOException {
 
         Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
