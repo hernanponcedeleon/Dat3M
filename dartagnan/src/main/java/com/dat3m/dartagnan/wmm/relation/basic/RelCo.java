@@ -69,13 +69,13 @@ public class RelCo extends Relation {
         ));
 
         for(Event e : eventsInit) {
-            enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(1)));
+            enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(0)));
         }
 
         List<IntExpr> intVars = new ArrayList<>();
         for(Event w : eventsStore) {
             IntExpr coVar = intVar("co", w, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkGt(coVar, ctx.mkInt(1)));
+            enc = ctx.mkAnd(enc, ctx.mkGt(coVar, ctx.mkInt(0)));
             intVars.add(coVar);
         }
         enc = ctx.mkAnd(enc, ctx.mkDistinct(intVars.toArray(new IntExpr[0])));
