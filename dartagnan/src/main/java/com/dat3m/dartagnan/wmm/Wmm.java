@@ -83,7 +83,7 @@ public class Wmm {
         }
 
         for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(program, ctx, settings.getMode());
+            relation.initialise(program, ctx, settings);
         }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){

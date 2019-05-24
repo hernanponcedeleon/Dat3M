@@ -67,6 +67,16 @@ public class Settings {
         return relations;
     }
 
+    // TODO: UI and command line options for this parameter
+    public boolean getUseSeqEncoding(){
+        return false;
+    }
+
+    // TODO: UI and command line options for this parameter
+    public boolean canAccessUninitializedMemory(){
+        return true;
+    }
+
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();

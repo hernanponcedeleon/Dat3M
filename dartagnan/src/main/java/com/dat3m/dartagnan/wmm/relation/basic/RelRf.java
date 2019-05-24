@@ -55,46 +55,69 @@ public class RelRf extends Relation {
     @Override
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
-        Map<MemEvent, List<BoolExpr>> rfMap = new HashMap<>();
+        Map<MemEvent, List<BoolExpr>> edgeMap = new HashMap<>();
+        Map<MemEvent, BoolExpr> memInitMap = new HashMap<>();
 
         for(Tuple tuple : maxTupleSet){
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();
-            BoolExpr rel = edge("rf", w, r, ctx);
-            rfMap.putIfAbsent(r, new ArrayList<>());
-            rfMap.get(r).add(rel);
+            BoolExpr edge = edge(term, w, r, ctx);
+            BoolExpr sameAddress = ctx.mkEq(w.getMemAddressExpr(), r.getMemAddressExpr());
+            BoolExpr sameValue = ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr());
 
-            enc = ctx.mkAnd(enc, ctx.mkImplies(rel, ctx.mkAnd(
-                    ctx.mkAnd(w.exec(), r.exec()),
-                    ctx.mkAnd(
-                            ctx.mkEq(w.getMemAddressExpr(), r.getMemAddressExpr()),
-                            ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr())
-                    )
-            )));
+            edgeMap.putIfAbsent(r, new ArrayList<>());
+            edgeMap.get(r).add(edge);
+            if(w.is(EType.INIT)){
+                memInitMap.put(r, ctx.mkOr(memInitMap.getOrDefault(r, ctx.mkFalse()), sameAddress));
+            }
+            enc = ctx.mkAnd(enc, ctx.mkImplies(edge, ctx.mkAnd(w.exec(), r.exec(), sameAddress, sameValue)));
         }
 
-        for(MemEvent r : rfMap.keySet()){
-            enc = ctx.mkAnd(enc, ctx.mkImplies(r.exec(), encodeEO(r.getCId(), rfMap.get(r))));
-        }
+        for(MemEvent r : edgeMap.keySet()){
+            BoolExpr forceEdge = settings.getUseSeqEncoding()
+                    ? encodeExactlyOneSeq(r.getCId(), edgeMap.get(r))
+                    : encodeExactlyOneNaive(edgeMap.get(r));
 
+            if(settings.canAccessUninitializedMemory()){
+                enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(r.exec(), memInitMap.get(r)), forceEdge));
+            } else {
+                enc = ctx.mkAnd(enc, ctx.mkImplies(r.exec(), forceEdge));
+            }
+        }
         return enc;
     }
 
-    private BoolExpr encodeEO(int readId, List<BoolExpr> set){
-        int num = set.size();
-
-        BoolExpr enc = ctx.mkEq(mkL(readId, 0), ctx.mkFalse());
-        BoolExpr atLeastOne = set.get(0);
-
-        for(int i = 1; i < num; i++){
-            enc = ctx.mkAnd(enc, ctx.mkEq(mkL(readId, i), ctx.mkOr(mkL(readId, i - 1), set.get(i - 1))));
-            enc = ctx.mkAnd(enc, ctx.mkNot(ctx.mkAnd(set.get(i), mkL(readId, i))));
-            atLeastOne = ctx.mkOr(atLeastOne, set.get(i));
+    private BoolExpr encodeExactlyOneNaive(List<BoolExpr> edges){
+        BoolExpr enc = ctx.mkFalse();
+        for(BoolExpr thisEdge : edges){
+            BoolExpr clause = ctx.mkTrue();
+            for(BoolExpr otherEdge : edges){
+                if(!thisEdge.equals(otherEdge)){
+                    clause = ctx.mkAnd(clause, ctx.mkNot(otherEdge));
+                }
+            }
+            enc = ctx.mkOr(enc, ctx.mkAnd(thisEdge, ctx.mkAnd(clause)));
         }
-        return ctx.mkAnd(enc, atLeastOne);
+        return enc;
     }
 
-    private BoolExpr mkL(int readId, int i) {
-        return (BoolExpr) ctx.mkConst("l(" + readId + "," + i + ")", ctx.mkBoolSort());
+    private BoolExpr encodeExactlyOneSeq(int readId, List<BoolExpr> edges){
+        BoolExpr lastSeqVar = mkSeqVar(readId, 0);
+        BoolExpr newSeqVar = lastSeqVar;
+        BoolExpr enc = ctx.mkEq(lastSeqVar, edges.get(0));
+
+        for(int i = 1; i < edges.size(); i++){
+            newSeqVar = mkSeqVar(readId, i);
+            enc = ctx.mkAnd(enc,
+                    ctx.mkEq(newSeqVar, ctx.mkOr(lastSeqVar, edges.get(i))),
+                    ctx.mkNot(ctx.mkAnd(edges.get(i), lastSeqVar)));
+            lastSeqVar = newSeqVar;
+        }
+
+        return ctx.mkAnd(enc, ctx.mkOr(newSeqVar, edges.get(edges.size() - 1)));
+    }
+
+    private BoolExpr mkSeqVar(int readId, int i) {
+        return (BoolExpr) ctx.mkConst("s(" + term + ",E" + readId + "," + i + ")", ctx.mkBoolSort());
     }
 }
