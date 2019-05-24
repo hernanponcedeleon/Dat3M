@@ -7,12 +7,17 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Settings {
 
     public static final String TACTIC = "qfbv";
 
-    private static final boolean FORCE_PRECISE_EDGES_IN_GRAPH = true;
+    // TODO: UI and console options to set these flags
+    public static final int FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS      = 0;
+    public static final int FLAG_USE_SEQ_ENCODING                   = 1;
+    public static final int FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY    = 2;
 
     private Mode mode;
     private Alias alias;
@@ -20,6 +25,12 @@ public class Settings {
 
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
+
+    private Map<Integer, Boolean> flags = new HashMap<Integer, Boolean>(){{
+            put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, true);
+            put(FLAG_USE_SEQ_ENCODING, false);
+            put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
+    }};
 
     public Settings(Mode mode, Alias alias, int bound){
         this.mode = mode == null ? Mode.KNASTER : mode;
@@ -31,7 +42,7 @@ public class Settings {
         this(mode, alias, bound);
         if(draw){
             this.draw = true;
-            if(FORCE_PRECISE_EDGES_IN_GRAPH && mode == Mode.KNASTER){
+            if(flags.get(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS) && mode == Mode.KNASTER){
                 this.mode = Mode.IDL;
             }
             ImmutableSet.Builder<String> builder = new ImmutableSet.Builder<>();
@@ -67,14 +78,18 @@ public class Settings {
         return relations;
     }
 
-    // TODO: UI and command line options for this parameter
-    public boolean getUseSeqEncoding(){
-        return false;
+    public boolean getFlag(int flag){
+        if(!flags.containsKey(flag)){
+            throw new UnsupportedOperationException("Unrecognized settings flag");
+        }
+        return flags.get(flag);
     }
 
-    // TODO: UI and command line options for this parameter
-    public boolean canAccessUninitializedMemory(){
-        return true;
+    public void setFlag(int flag, boolean value){
+        if(!flags.containsKey(flag)){
+            throw new UnsupportedOperationException("Unrecognized settings flag");
+        }
+        flags.put(flag, value);
     }
 
     @Override

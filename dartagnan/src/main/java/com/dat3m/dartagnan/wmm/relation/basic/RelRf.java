@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.basic;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BoolExpr;
@@ -74,11 +75,11 @@ public class RelRf extends Relation {
         }
 
         for(MemEvent r : edgeMap.keySet()){
-            BoolExpr forceEdge = settings.getUseSeqEncoding()
+            BoolExpr forceEdge = settings.getFlag(Settings.FLAG_USE_SEQ_ENCODING)
                     ? encodeExactlyOneSeq(r.getCId(), edgeMap.get(r))
                     : encodeExactlyOneNaive(edgeMap.get(r));
 
-            if(settings.canAccessUninitializedMemory()){
+            if(settings.getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)){
                 enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(r.exec(), memInitMap.get(r)), forceEdge));
             } else {
                 enc = ctx.mkAnd(enc, ctx.mkImplies(r.exec(), forceEdge));
