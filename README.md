@@ -9,7 +9,7 @@ This tool suite is currently composed of two tools.
 * **DARTAGNAN:** a tool to check state reachability under weak memory models.
 * **PORTHOS:** a tool to check state inclusion under weak memory models.
 
-Requeriments
+Requirements
 ======
 [Maven](https://maven.apache.org/) - Dependency Management
 
