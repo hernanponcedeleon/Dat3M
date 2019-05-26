@@ -75,7 +75,7 @@ public class RelRf extends Relation {
         }
 
         for(MemEvent r : edgeMap.keySet()){
-            BoolExpr forceEdge = settings.getFlag(Settings.FLAG_USE_SEQ_ENCODING)
+            BoolExpr forceEdge = settings.getFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF)
                     ? encodeExactlyOneSeq(r.getCId(), edgeMap.get(r))
                     : encodeExactlyOneNaive(edgeMap.get(r));
 
