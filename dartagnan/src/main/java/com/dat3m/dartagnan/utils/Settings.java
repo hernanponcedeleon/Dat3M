@@ -27,7 +27,7 @@ public class Settings {
     private ImmutableSet<String> relations = ImmutableSet.of();
 
     private Map<Integer, Boolean> flags = new HashMap<Integer, Boolean>(){{
-            put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, false);
+            put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, true);
             put(FLAG_USE_SEQ_ENCODING_REL_RF, true);
             put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
     }};
