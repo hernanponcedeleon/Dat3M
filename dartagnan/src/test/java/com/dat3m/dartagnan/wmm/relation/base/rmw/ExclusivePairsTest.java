@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.relation.basic.rmw;
+package com.dat3m.dartagnan.wmm.relation.base.rmw;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;

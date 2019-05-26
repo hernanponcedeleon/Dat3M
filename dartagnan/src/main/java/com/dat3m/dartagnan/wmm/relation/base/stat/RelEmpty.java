@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.wmm.relation.Relation;

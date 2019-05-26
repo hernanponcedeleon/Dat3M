@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
+import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -18,7 +19,7 @@ import com.microsoft.z3.Context;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
-public class RelRMW extends BasicRelation {
+public class RelRMW extends StaticRelation {
 
     private final FilterAbstract loadFilter  = FilterIntersection.get(
             FilterBasic.get(EType.EXCL),

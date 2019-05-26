@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import java.util.List;
 import java.util.ListIterator;
 
-public class RelPo extends BasicRelation {
+public class RelPo extends StaticRelation {
 
     private FilterAbstract filter;
 

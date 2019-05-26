@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -6,13 +6,13 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
-public abstract class BasicRelation extends Relation {
+public abstract class StaticRelation extends Relation {
 
-    public BasicRelation() {
+    public StaticRelation() {
         super();
     }
 
-    public BasicRelation(String name) {
+    public StaticRelation(String name) {
         super(name);
     }
 

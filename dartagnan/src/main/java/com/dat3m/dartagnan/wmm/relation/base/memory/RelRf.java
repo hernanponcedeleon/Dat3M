@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;

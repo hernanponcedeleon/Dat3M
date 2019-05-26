@@ -1,6 +1,7 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -13,7 +14,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 
 import java.util.*;
 
-abstract class BasicRegRelation extends BasicRelation {
+abstract class BasicRegRelation extends StaticRelation {
 
     abstract Collection<Register> getRegisters(Event regReader);
 

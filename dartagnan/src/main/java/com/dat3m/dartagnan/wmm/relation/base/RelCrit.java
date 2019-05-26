@@ -1,16 +1,17 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.BoolExpr;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
-public class RelCrit extends BasicRelation {
+public class RelCrit extends StaticRelation {
 
     public RelCrit(){
         term = "crit";

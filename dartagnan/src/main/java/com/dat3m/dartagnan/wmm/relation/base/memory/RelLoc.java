@@ -1,7 +1,8 @@
-package com.dat3m.dartagnan.wmm.relation.basic;
+package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -12,7 +13,7 @@ import java.util.Collection;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
-public class RelLoc extends BasicRelation {
+public class RelLoc extends Relation {
 
     public RelLoc(){
         term = "loc";
