@@ -58,7 +58,7 @@ public class Location implements ExprInterface {
 
 	@Override
 	public IntExpr getLastValueExpr(Context ctx){
-		return ctx.mkIntConst("memory_" + getAddress() + "_final");
+		return address.getLastMemValueExpr(ctx);
 	}
 
 	@Override

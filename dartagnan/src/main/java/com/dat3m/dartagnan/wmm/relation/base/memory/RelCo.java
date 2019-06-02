@@ -3,13 +3,11 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -60,7 +58,6 @@ public class RelCo extends Relation {
     @Override
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
-        ImmutableSetMultimap<Address, Location> addressLocationMap = getAddressLocationMap();
 
         List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
         List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
@@ -99,22 +96,12 @@ public class RelCo extends Relation {
             enc = ctx.mkAnd(enc, ctx.mkEq(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
-                for(Location location : addressLocationMap.get(address)){
-                    enc = ctx.mkAnd(enc, ctx.mkImplies(
-                            ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3Int(ctx))),
-                            ctx.mkEq(location.getLastValueExpr(ctx), w1.getMemValueExpr())
-                    ));
-                }
+                enc = ctx.mkAnd(enc, ctx.mkImplies(
+                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3Int(ctx))),
+                        ctx.mkEq(address.getLastMemValueExpr(ctx), w1.getMemValueExpr())
+                ));
             }
         }
         return enc;
-    }
-
-    private ImmutableSetMultimap<Address, Location> getAddressLocationMap(){
-        ImmutableSetMultimap.Builder<Address, Location> builder = new ImmutableSetMultimap.Builder<>();
-        for(Location location : program.getLocations()){
-            builder.put(location.getAddress(), location);
-        }
-        return builder.build();
     }
 }

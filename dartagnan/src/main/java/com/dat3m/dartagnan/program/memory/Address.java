@@ -34,6 +34,10 @@ public class Address extends IConst implements ExprInterface {
         return toZ3Int(ctx);
     }
 
+    public IntExpr getLastMemValueExpr(Context ctx){
+        return ctx.mkIntConst("last_val_at_memory_" + index);
+    }
+
     @Override
     public BoolExpr toZ3Bool(Event e, Context ctx){
         return ctx.mkTrue();
