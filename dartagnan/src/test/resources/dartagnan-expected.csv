@@ -7822,6 +7822,8 @@ litmus/C/dart/no-herd/basic-04.litmus,0
 litmus/C/dart/no-herd/basic-05.litmus,1
 litmus/C/dart/no-herd/basic-06.litmus,1
 litmus/C/dart/no-herd/basic-07.litmus,0
+litmus/C/dart/no-herd/C-bool-const-01.litmus,1
+litmus/C/dart/no-herd/C-bool-const-02.litmus,1
 litmus/C/luc/PaulRelAcqChain/C-RW-rra+RW-ra+RW-rra+CK.litmus,0
 litmus/C/luc/PaulRelAcqChain/C-RW-rra+RW-ra+RW-rwa+CK.litmus,0
 litmus/C/luc/PaulRelAcqChain/C-RW-rwa+RW-ra+RW-rra+CK.litmus,1

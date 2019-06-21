@@ -129,6 +129,7 @@ re locals [IOpBin op, String mo]
 //    |   SpinTrylock LPar address = re RPar                                                                            # reSpinTryLock
 //    |   SpiIsLocked LPar address = re RPar                                                                            # reSpinIsLocked
 
+    |   boolConst                                                                                                       # reBoolConst
     |   Excl re                                                                                                         # reOpBoolNot
     |   re opBool re                                                                                                    # reOpBool
     |   re opCompare re                                                                                                 # reOpCompare
@@ -175,6 +176,11 @@ nre locals [IOpBin op, String mo, String name]
 
 variableList
     :   Locations LBracket (threadVariable | varName) (Semi (threadVariable | varName))* Semi? RBracket
+    ;
+
+boolConst returns [Boolean value]
+    :   True    {$value = true;}
+    |   False   {$value = false;}
     ;
 
 opBool returns [BOpBin op]
@@ -265,6 +271,14 @@ If
 
 Else
     :   'else'
+    ;
+
+True
+    :   'true'
+    ;
+
+False
+    :   'false'
     ;
 
 Volatile
