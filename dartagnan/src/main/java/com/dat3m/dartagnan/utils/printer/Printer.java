@@ -14,6 +14,7 @@ public class Printer {
     private StringBuilder padding;
 
     private boolean showAuxiliaryEvents = true;
+    private boolean showInitThreads = false;
     private IDType idType = IDType.AUTO;
 
     private String paddingBase = "      ";
@@ -53,7 +54,15 @@ public class Printer {
         return this;
     }
 
+    public Printer setShowInitThreads(boolean flag){
+        this.showInitThreads = flag;
+        return this;
+    }
+
     private boolean shouldPrintThread(Thread thread){
+        if(showInitThreads){
+            return true;
+        }
         Event firstEvent = thread.getEntry().getSuccessor();
         return firstEvent != null && !(firstEvent instanceof Init);
     }
