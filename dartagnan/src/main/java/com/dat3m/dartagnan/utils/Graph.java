@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils;
 
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Utils;
@@ -122,11 +124,14 @@ public class Graph {
                         String label = e.label();
                         if(e instanceof MemEvent) {
                             Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model));
-                            IntExpr value = ((MemEvent) e).getMemValueExpr();
-                            if(!(value instanceof IntNum)){
-                                value = (IntExpr) model.getConstInterp(value);
+                            int value = 0;
+                            if(e instanceof Load){
+                                Register r = ((Load) e).getResultRegister();
+                                value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());
+                            } else {
+                                value = ((MemEvent) e).getMemValue().getIntValue(e, ctx, model);
                             }
-                            label += " " + location + " = " + value.toString();
+                            label += " " + location + " = " + value;
                         }
                         sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label, t.getId())).append(";\n");
                     }

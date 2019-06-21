@@ -40,6 +40,12 @@ public class Init extends MemEvent {
 		return "W";
 	}
 
+	@Override
+	public IConst getMemValue(){
+		return value;
+	}
+
+
 	// Unrolling
 	// -----------------------------------------------------------------------------------------------------------------
 
