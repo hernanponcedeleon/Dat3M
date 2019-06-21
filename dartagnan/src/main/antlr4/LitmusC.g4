@@ -185,8 +185,8 @@ opBool returns [BOpBin op]
 opCompare returns [COpBin op]
     :   EqualsEquals    {$op = COpBin.EQ;}
     |   NotEquals       {$op = COpBin.NEQ;}
-    |   LessEquals      {$op = COpBin.GTE;}
-    |   GreaterEquals   {$op = COpBin.LTE;}
+    |   LessEquals      {$op = COpBin.LTE;}
+    |   GreaterEquals   {$op = COpBin.GTE;}
     |   Less            {$op = COpBin.LT;}
     |   Greater         {$op = COpBin.GT;}
     ;
