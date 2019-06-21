@@ -60,8 +60,10 @@ public class Graph {
     private Graph(Model model, Context ctx, Collection<String> relations){
         this.model = model;
         this.ctx = ctx;
-        this.relations.add("rf");
         this.relations.addAll(relations);
+        this.relations.add("rf");
+        this.relations.remove("po");
+        this.relations.remove("co");
     }
 
     @Override
