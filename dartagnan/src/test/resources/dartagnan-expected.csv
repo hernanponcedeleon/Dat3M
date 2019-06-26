@@ -11869,7 +11869,6 @@ litmus/PPC/SB+lwsync+sync.litmus,1
 litmus/PPC/SB+lwsyncs.litmus,1
 litmus/PPC/SB+sync+isync.litmus,1
 litmus/PPC/SB+sync+po.litmus,1
-litmus/PPC/SB-PPC.litmus,1
 litmus/PPC/SB.litmus,1
 litmus/PPC/STFW-PPC.litmus,1
 litmus/PPC/W+RWC+lwsync+lwsync+po.litmus,1
