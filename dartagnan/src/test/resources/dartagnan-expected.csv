@@ -11955,7 +11955,9 @@ litmus/PPC/WRR+2W+sync+po.litmus,1
 litmus/PPC/WRR+2W+sync+rfi-data.litmus,1
 litmus/PPC/WRR+2W+syncs.litmus,0
 litmus/PPC/WRR+2W.litmus,1
+litmus/PPC/WRW+2W+data+lwsync.litmus,1
 litmus/PPC/WRW+2W+data+rfi-data.litmus,1
+litmus/PPC/WRW+2W+data+sync.litmus,1
 litmus/PPC/WRW+2W+lwsync+isync.litmus,1
 litmus/PPC/WRW+2W+lwsync+po.litmus,1
 litmus/PPC/WRW+2W+lwsync+rfi-data.litmus,1
