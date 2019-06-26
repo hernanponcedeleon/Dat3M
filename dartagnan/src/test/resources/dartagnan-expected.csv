@@ -10327,13 +10327,12 @@ litmus/C/manual/plain/MP+wmbplainplain+rmbplainplain.litmus,0
 litmus/C/manual/rcu/C-rcu-link-after.litmus,1
 litmus/C/manual/rcu/C-rcu-link-before.litmus,1
 litmus/PPC/2+2W+isync+po.litmus,1
-litmus/PPC/2+2W+isync+po.litmus,1
-litmus/PPC/2+2W+isync+po.litmus,1
 litmus/PPC/2+2W+isyncs.litmus,1
 litmus/PPC/2+2W+lwsync+isync.litmus,1
 litmus/PPC/2+2W+lwsync+po.litmus,1
 litmus/PPC/2+2W+lwsync+rfi-data.litmus,1
 litmus/PPC/2+2W+lwsync+sync.litmus,0
+litmus/PPC/2+2W+lwsync.litmus,0
 litmus/PPC/2+2W+rfi-datas.litmus,1
 litmus/PPC/2+2W+sync+isync.litmus,1
 litmus/PPC/2+2W+sync+lwsync.litmus,0
