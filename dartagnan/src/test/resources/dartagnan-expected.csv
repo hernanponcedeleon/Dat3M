@@ -11869,6 +11869,7 @@ litmus/PPC/SB+lwsync+sync.litmus,1
 litmus/PPC/SB+lwsyncs.litmus,1
 litmus/PPC/SB+sync+isync.litmus,1
 litmus/PPC/SB+sync+po.litmus,1
+litmus/PPC/SB+syncs.litmus,0
 litmus/PPC/SB.litmus,1
 litmus/PPC/STFW-PPC.litmus,1
 litmus/PPC/W+RWC+lwsync+lwsync+po.litmus,1
@@ -12018,6 +12019,7 @@ litmus/PPC/Z6.0+sync+sync+lwsync.litmus,1
 litmus/PPC/Z6.0+sync+sync+po.litmus,1
 litmus/PPC/Z6.0+syncs.litmus,0
 litmus/PPC/Z6.0.litmus,1
+litmus/PPC/Z6.1+lwsync+lwsync+data.litmus,0
 litmus/PPC/Z6.1+lwsync+lwsync+po.litmus,1
 litmus/PPC/Z6.1+lwsync+lwsync+sync.litmus,0
 litmus/PPC/Z6.1+lwsync+po+lwsync.litmus,1
