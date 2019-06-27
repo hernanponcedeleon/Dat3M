@@ -1,13 +1,14 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import org.junit.Test;
@@ -25,10 +26,14 @@ import static org.junit.Assert.fail;
 
 public abstract class AbstractDartagnanTest {
 
-    static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target, int unroll) throws IOException {
+    static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Boolean> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
+
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1);
+        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1);
 
         return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)
@@ -38,9 +43,9 @@ public abstract class AbstractDartagnanTest {
                 .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                 .collect(ArrayList::new,
                         (l, f) -> {
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.KNASTER});
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.IDL});
-                            l.add(new Object[]{f[0], f[1], target, wmm, unroll, Mode.KLEENE});
+                            l.add(new Object[]{f[0], f[1], target, wmm, s1});
+                            l.add(new Object[]{f[0], f[1], target, wmm, s2});
+                            l.add(new Object[]{f[0], f[1], target, wmm, s3});
                         }, ArrayList::addAll);
     }
 
@@ -48,16 +53,14 @@ public abstract class AbstractDartagnanTest {
     private boolean expected;
     private Arch target;
     private Wmm wmm;
-    private int unroll;
-    private Mode mode;
+    private Settings settings;
 
-    AbstractDartagnanTest(String path, boolean expected, Arch target, Wmm wmm, int unroll, Mode mode) {
+    AbstractDartagnanTest(String path, boolean expected, Arch target, Wmm wmm, Settings settings) {
         this.path = path;
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;
-        this.unroll = unroll;
-        this.mode = mode;
+        this.settings = settings;
     }
 
     @Test
@@ -66,8 +69,8 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 Context ctx = new Context();
-                Solver solver = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, unroll, mode, Alias.CFIS));
+                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
+                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, settings));
                 ctx.close();
             }
         } catch (IOException e){

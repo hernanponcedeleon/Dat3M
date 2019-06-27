@@ -335,6 +335,11 @@ public class VisitorLitmusC
     }
 
     @Override
+    public ExprInterface visitReBoolConst(LitmusCParser.ReBoolConstContext ctx){
+        return new BConst(ctx.boolConst().value);
+    }
+
+    @Override
     public ExprInterface visitReParenthesis(LitmusCParser.ReParenthesisContext ctx){
         return (ExprInterface)ctx.re().accept(this);
     }

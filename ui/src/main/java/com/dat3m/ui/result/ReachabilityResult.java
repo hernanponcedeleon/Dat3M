@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.ui.options.utils.Options;
+import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
@@ -14,12 +14,12 @@ public class ReachabilityResult implements Dat3mResult {
 
     private final Program program;
     private final Wmm wmm;
-    private final Options options;
+    private final UiOptions options;
 
     private Graph graph;
     private String verdict;
 
-    public ReachabilityResult(Program program, Wmm wmm, Options options){
+    public ReachabilityResult(Program program, Wmm wmm, UiOptions options){
         this.program = program;
         this.wmm = wmm;
         this.options = options;
@@ -38,20 +38,10 @@ public class ReachabilityResult implements Dat3mResult {
         if(validate()){
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
-
-            if(options.getDrawGraph()) {
-                wmm.setDrawExecutionGraph();
-                wmm.addDrawRelations(Graph.getDefaultRelations());
-                wmm.addDrawRelations(options.getRelations());
-            }
-
-            boolean result = Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), options.getBound(),
-                    options.getMode(), options.getAlias());
-
+            boolean result = Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), options.getSettings());
             buildVerdict(result);
-
-            if(options.getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result)){
-                graph = new Graph(solver.getModel(), ctx, program, options.getRelations().toArray(new String[0]));
+            if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result)){
+                graph = new Graph(solver.getModel(), ctx, program, options.getSettings().getGraphRelations());
             }
             ctx.close();
         }
@@ -59,6 +49,7 @@ public class ReachabilityResult implements Dat3mResult {
 
     private void buildVerdict(boolean result){
         StringBuilder sb = new StringBuilder();
+        sb.append("Settings: ").append(options.getSettings()).append("\n");
         if(program.getAssFilter() != null){
             sb.append("Filter ").append(program.getAssFilter());
         }

@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.memory.Variable;
 
 import java.util.*;
 
@@ -23,9 +22,11 @@ import java.util.*;
  */
 public class AliasAnalysis {
 
-    private List<Variable> variables = new LinkedList<>();
+    private List<Object> variables = new LinkedList<>();
     private ImmutableSet<Address> maxAddressSet;
     private Map<Register, Map<Event, Integer>> ssaMap;
+
+    private Graph graph = new Graph();
 
     public void calculateLocationSets(Program program, Alias alias) {
         if(alias == Alias.NONE){
@@ -53,13 +54,13 @@ public class AliasAnalysis {
 
             // Collect for each v events of form: p = *v, *v = q
             if (address instanceof Register) {
-                ((Register) address).getAliasEvents().add(e);
+                graph.addEvent((Register) address, e);
 
             } else if (address instanceof Address) {
                 // Rule register = &loc -> lo(register) = {loc}
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
-                    register.getAliasAddresses().add((Address) address);
+                    graph.addAddress(register, (Address) address);
                     variables.add(register);
 
                 } else if (e instanceof Init) {
@@ -67,7 +68,7 @@ public class AliasAnalysis {
                     Location loc = program.getMemory().getLocationForAddress((Address) address);
                     IExpr value = ((Init) e).getValue();
                     if (loc != null && value instanceof Address) {
-                        loc.getAliasAddresses().add((Address)value);
+                        graph.addAddress(loc, (Address)value);
                         variables.add(loc);
                     }
                 }
@@ -76,7 +77,7 @@ public class AliasAnalysis {
                 // r = *(CompExpr) -> loc(r) = max
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
-                    register.getAliasAddresses().addAll(maxAddressSet);
+                    graph.addAllAddresses(register, maxAddressSet);
                     variables.add(register);
                 }
                 // We allow for more address calculations
@@ -93,15 +94,15 @@ public class AliasAnalysis {
             // Collect for each v events of form: p = *v, *v = q
             if (address instanceof Register) {
                 Register register = (Register) address;
-                SSAReg ssaReg = (register.getSSAReg(ssaMap.get(register).get(e)));
+                SSAReg ssaReg = graph.getSSAReg(register, ssaMap.get(register).get(e));
                 ssaReg.getEventsWithAddr().add(e);
 
             } else if (address instanceof Address) {
                 // Rule register = &loc -> lo(register)={loc}
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
-                    SSAReg ssaReg = (register.getSSAReg(ssaMap.get(register).get(e)));
-                    ssaReg.getAliasAddresses().add((Address) address);
+                    SSAReg ssaReg = graph.getSSAReg(register, ssaMap.get(register).get(e));
+                    graph.addAddress(ssaReg, (Address) address);
                     variables.add(ssaReg);
 
                 } else if (e instanceof Init) {
@@ -109,15 +110,15 @@ public class AliasAnalysis {
                     Location loc = program.getMemory().getLocationForAddress((Address) address);
                     IExpr value = ((Init) e).getValue();
                     if (loc != null && value instanceof Address) {
-                        loc.getAliasAddresses().add((Address) value);
+                        graph.addAddress(loc, (Address) value);
                         variables.add(loc);
                     }
                 }
             } else {
                 if (e instanceof RegWriter) {
                     Register register = ((RegWriter) e).getResultRegister();
-                    SSAReg ssaReg = (register.getSSAReg(ssaMap.get(register).get(e)));
-                    ssaReg.getAliasAddresses().addAll(maxAddressSet);
+                    SSAReg ssaReg = graph.getSSAReg(register, ssaMap.get(register).get(e));
+                    graph.addAllAddresses(ssaReg, maxAddressSet);
                     variables.add(ssaReg);
                 }
 
@@ -136,11 +137,11 @@ public class AliasAnalysis {
 
                 if (expr instanceof Register) {
                     // r1 = r2 -> add edge r2 --> r1
-                    ((Register) expr).getAliasEdges().add(register);
+                    graph.addEdge((Register) expr, register);
 
                 } else if (expr instanceof Address) {
                     // r = &a
-                    register.getAliasAddresses().add((Address) expr);
+                    graph.addAddress(register, (Address) expr);
                     variables.add(register);
                 }
             }
@@ -153,18 +154,18 @@ public class AliasAnalysis {
                 Local e = (Local) ev;
                 Register register = e.getResultRegister();
                 int id = ssaMap.get(register).get(e) + 1;
-                SSAReg ssaReg1 = (register.getSSAReg(id));
+                SSAReg ssaReg1 = graph.getSSAReg(register, id);
                 ExprInterface expr = e.getExpr();
 
                 if (expr instanceof Register) {
                     // r1 = r2 -> add edge r2 --> r1
                     Register register2 = (Register) expr;
-                    SSAReg ssaReg2 = (register2.getSSAReg(ssaMap.get(register2).get(e)));
-                    ssaReg2.getAliasEdges().add(ssaReg1);
+                    SSAReg ssaReg2 = graph.getSSAReg(register2, ssaMap.get(register2).get(e));
+                    graph.addEdge(ssaReg2, ssaReg1);
 
                 } else if (expr instanceof Address) {
                     // r = &a
-                    ssaReg1.getAliasAddresses().add((Address) expr);
+                    graph.addAddress(ssaReg1, (Address) expr);
                     variables.add(ssaReg1);
                 }
             }
@@ -173,17 +174,17 @@ public class AliasAnalysis {
 
     private void algorithm(Program program) {
         while (!variables.isEmpty()) {
-            Variable variable = variables.remove(0);
+            Object variable = variables.remove(0);
             if(variable instanceof Register){
                 // Process rules with *variable:
-                for (Address address : variable.getAliasAddresses()) {
+                for (Address address : graph.getAddresses(variable)) {
                     Location location = program.getMemory().getLocationForAddress(address);
                     if (location != null) {
-                        for (MemEvent e : ((Register) variable).getAliasEvents()) {
+                        for (MemEvent e : graph.getEvents((Register) variable)) {
                             // p = *variable:
                             if (e instanceof RegWriter) {
                                 // Add edge from location to p
-                                if (location.getAliasEdges().add(((RegWriter) e).getResultRegister())) {
+                                if (graph.addEdge(location, ((RegWriter) e).getResultRegister())) {
                                     // Add location to variables if edge is new.
                                     variables.add(location);
                                 }
@@ -193,7 +194,7 @@ public class AliasAnalysis {
                                 if (value instanceof Register) {
                                     Register register = (Register) value;
                                     // Add edge from register to location
-                                    if (register.getAliasEdges().add(location)) {
+                                    if (graph.addEdge(register, location)) {
                                         // Add register to variables if edge is new.
                                         variables.add(register);
                                     }
@@ -204,8 +205,8 @@ public class AliasAnalysis {
                 }
             }
             // Process edges
-            for (Variable q : variable.getAliasEdges()) {
-                if (q.getAliasAddresses().addAll(variable.getAliasAddresses())) {
+            for (Object q : graph.getEdges(variable)) {
+                if (graph.addAllAddresses(q, graph.getAddresses(variable))) {
                     variables.add(q);
                 }
             }
@@ -214,9 +215,9 @@ public class AliasAnalysis {
 
     private void cfsAlgorithm(Program program) {
         while (!variables.isEmpty()) {
-            Variable variable = variables.remove(0);
+            Object variable = variables.remove(0);
             // Process rules with *variable:
-            for (Address address : variable.getAliasAddresses()) {
+            for (Address address : graph.getAddresses(variable)) {
                 Location location = program.getMemory().getLocationForAddress(address);
                 if (location != null && variable instanceof SSAReg) {
                     for (MemEvent e : ((SSAReg) variable).getEventsWithAddr()) {
@@ -224,8 +225,8 @@ public class AliasAnalysis {
                         if (e instanceof RegWriter) {
                             // Add edge from location to p
                             Register reg = ((RegWriter) e).getResultRegister();
-                            SSAReg ssaReg = reg.getSSAReg(ssaMap.get(reg).get(e) + 1);
-                            if (location.getAliasEdges().add(ssaReg)) {
+                            SSAReg ssaReg = graph.getSSAReg(reg, ssaMap.get(reg).get(e) + 1);
+                            if (graph.addEdge(location, ssaReg)) {
                                 //add a to W if edge is new.
                                 variables.add(location);
                             }
@@ -234,9 +235,9 @@ public class AliasAnalysis {
                             ExprInterface value = e.getMemValue();
                             if (value instanceof Register) {
                                 Register register = (Register) value;
-                                SSAReg ssaReg = register.getSSAReg(ssaMap.get(register).get(e));
+                                SSAReg ssaReg = graph.getSSAReg(register, ssaMap.get(register).get(e));
                                 // Add edge from register to location
-                                if (ssaReg.getAliasEdges().add(location)) {
+                                if (graph.addEdge(ssaReg, location)) {
                                     // Add register to variables if edge is new.
                                     variables.add(ssaReg);
                                 }
@@ -246,8 +247,8 @@ public class AliasAnalysis {
                 }
             }
             // Process edges
-            for (Variable q : variable.getAliasEdges()) {
-                if (q.getAliasAddresses().addAll(variable.getAliasAddresses())) {
+            for (Object q : graph.getEdges(variable)) {
+                if (graph.addAllAddresses(q, graph.getAddresses(variable))) {
                     variables.add(q);
                 }
             }
@@ -259,7 +260,7 @@ public class AliasAnalysis {
             IExpr address = ((MemEvent) e).getAddress();
             Set<Address> adresses;
             if (address instanceof Register) {
-                adresses = ((Register) address).getAliasAddresses();
+                adresses = graph.getAddresses(((Register) address));
             } else if (address instanceof Address) {
                     adresses = ImmutableSet.of(((Address) address));
             } else {
@@ -336,9 +337,9 @@ public class AliasAnalysis {
                 for(Register r : indexMapClone.keySet()){
                     indexMap.put(r, Integer.max(indexMap.getOrDefault(r, 0), indexMapClone.get(r)));
                     if(indexMap.get(r) < indexMapClone.get(r)){
-                        r.getSSAReg(indexMap.get(r)).getAliasEdges().add(r.getSSAReg(indexMapClone.get(r)));
+                        graph.addEdge(graph.getSSAReg(r, indexMap.get(r)), graph.getSSAReg(r, indexMapClone.get(r)));
                     } else if(indexMap.get(r) > indexMapClone.get(r)){
-                        r.getSSAReg(indexMapClone.get(r)).getAliasEdges().add(r.getSSAReg(indexMap.get(r)));
+                        graph.addEdge(graph.getSSAReg(r, indexMapClone.get(r)), graph.getSSAReg(r, indexMap.get(r)));
                     }
                 }
                 i += t1Events.size() + t2Events.size();

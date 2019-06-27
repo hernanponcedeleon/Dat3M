@@ -21,7 +21,7 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
 
     @Override
     protected BoolExpr encodeExec(Context ctx){
-        return ctx.mkEq(ctx.mkAnd(ctx.mkBoolConst(cfVar()), ((RMWReadCond)loadEvent).getCond()), executes(ctx));
+        return ctx.mkEq(execVar, ctx.mkAnd(cfVar, ((RMWReadCond)loadEvent).getCond()));
     }
 
     // Unrolling

@@ -164,9 +164,9 @@ public class Program {
             List<Event> events = eMap.get(reg);
             events.sort(Collections.reverseOrder());
             for(int i = 0; i <  events.size(); i++){
-                BoolExpr lastModReg = eMap.get(reg).get(i).executes(ctx);
+                BoolExpr lastModReg = eMap.get(reg).get(i).exec();
                 for(int j = 0; j < i; j++){
-                    lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).executes(ctx)));
+                    lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).exec()));
                 }
                 enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
                         ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)events.get(i)).getResultRegisterExpr())));

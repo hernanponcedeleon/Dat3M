@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
-import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.program.Program;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.Utils;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -15,8 +15,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.utils.Utils.edge;
-import static com.dat3m.dartagnan.utils.Utils.intCount;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intCount;
 
 /**
  *
@@ -42,8 +42,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Mode mode){
-        super.initialise(program, ctx, mode);
+    public void initialise(Program program, Context ctx, Settings settings){
+        super.initialise(program, ctx, settings);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }

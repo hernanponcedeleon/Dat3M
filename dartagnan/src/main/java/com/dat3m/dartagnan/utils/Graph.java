@@ -1,7 +1,10 @@
 package com.dat3m.dartagnan.utils;
 
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.microsoft.z3.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -46,21 +49,23 @@ public class Graph {
 
     private final String DEFAULT_EDGE_COLOR = "indigo";
 
-    public Graph(Model model, Context ctx, Program program, String... relations){
+    public Graph(Model model, Context ctx, Program program, Collection<String> relations){
         this(model, ctx, relations);
         build(program);
     }
 
-    public Graph(Model model, Context ctx, Program pSource, Program pTarget, String... relations){
+    public Graph(Model model, Context ctx, Program pSource, Program pTarget, Collection<String> relations){
         this(model, ctx, relations);
         build(pSource, pTarget);
     }
 
-    private Graph(Model model, Context ctx, String... relations){
+    private Graph(Model model, Context ctx, Collection<String> relations){
         this.model = model;
         this.ctx = ctx;
+        this.relations.addAll(relations);
         this.relations.add("rf");
-        this.relations.addAll(Arrays.asList(relations));
+        this.relations.remove("po");
+        this.relations.remove("co");
     }
 
     @Override
@@ -115,15 +120,18 @@ public class Graph {
             } else {
                 sb.append(L2).append("subgraph cluster_Thread_").append(t.getId()).append(" { ").append(getThreadDef(tId++)).append("\n");
                 for(Event e : t.getCache().getEvents(FilterBasic.get(EType.VISIBLE))) {
-                    if(model.getConstInterp(e.executes(ctx)).isTrue()){
+                    if(model.getConstInterp(e.exec()).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
                             Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model));
-                            IntExpr value = ((MemEvent) e).getMemValueExpr();
-                            if(!(value instanceof IntNum)){
-                                value = (IntExpr) model.getConstInterp(value);
+                            int value = 0;
+                            if(e instanceof Load){
+                                Register r = ((Load) e).getResultRegister();
+                                value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());
+                            } else {
+                                value = ((MemEvent) e).getMemValue().getIntValue(e, ctx, model);
                             }
-                            label += " " + location + " = " + value.toString();
+                            label += " " + location + " = " + value;
                         }
                         sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label, t.getId())).append(";\n");
                     }
@@ -143,7 +151,7 @@ public class Graph {
             List<Event> events = thread.getCache()
                     .getEvents(FilterBasic.get(EType.VISIBLE))
                     .stream()
-                    .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                    .filter(e -> model.getConstInterp(e.exec()).isTrue())
                     .collect(Collectors.toList());
 
             for(int i = 1; i < events.size(); i++){
@@ -161,7 +169,7 @@ public class Graph {
 
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
-            if(model.getConstInterp(e.executes(ctx)).isTrue()){
+            if(model.getConstInterp(e.exec()).isTrue()){
                 int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
@@ -198,7 +206,7 @@ public class Graph {
         List<Event> events = program.getCache()
                 .getEvents(FilterBasic.get(EType.VISIBLE))
                 .stream()
-                .filter(e -> model.getConstInterp(e.executes(ctx)).isTrue())
+                .filter(e -> model.getConstInterp(e.exec()).isTrue())
                 .collect(Collectors.toList());
 
         for(String relName : relations) {

@@ -5,7 +5,15 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.basic.*;
+import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
+import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
+import com.dat3m.dartagnan.wmm.relation.base.local.RelAddrDirect;
+import com.dat3m.dartagnan.wmm.relation.base.local.RelIdd;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
+import com.dat3m.dartagnan.wmm.relation.base.stat.*;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
@@ -133,14 +141,19 @@ public class RelationRepository {
                 return getRelation(RelComposition.class, getRelation("rf^-1"), getRelation("co")).setName("fr");
             case "(R*W)":
                 return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.WRITE));
+            case "(R*M)":
+                return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.MEMORY));
             case "idd^+":
                 return getRelation(RelTrans.class, getRelation("idd"));
             case "data":
                 return getRelation(RelIntersection.class, getRelation("idd^+"), getRelation("(R*W)")).setName("data");
             case "addr":
-                return getRelation(RelUnion.class,
-                        getRelation("addrDirect"),
-                        getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))).setName("addr");
+                return getRelation(RelIntersection.class,
+                        getRelation(
+                                RelUnion.class,
+                                getRelation("addrDirect"),
+                                getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))
+                        ), getRelation("(R*M)")).setName("addr");
             case "ctrl":
                 return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");
             case "po-loc":

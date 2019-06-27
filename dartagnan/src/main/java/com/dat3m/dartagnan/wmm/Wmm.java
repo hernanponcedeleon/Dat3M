@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.*;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class Wmm {
 
-    private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect", "rmw");
+    private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
 
     private List<Axiom> axioms = new ArrayList<>();
     private Map<String, FilterAbstract> filters = new HashMap<>();
@@ -29,19 +29,9 @@ public class Wmm {
     private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     private Program program;
-    private boolean drawExecutionGraph = false;
-    private Set<String> drawRelations = new HashSet<>();
 
     public Wmm() {
         relationRepository = new RelationRepository();
-    }
-
-    public void setDrawExecutionGraph(){
-        drawExecutionGraph = true;
-    }
-
-    public void addDrawRelations(Collection<String> relNames){
-        drawRelations.addAll(relNames);
     }
 
     public void addAxiom(Axiom ax) {
@@ -72,9 +62,9 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encode(Program program, Context ctx, Mode mode, Alias alias) {
+    public BoolExpr encode(Program program, Context ctx, Settings settings) {
         this.program = program;
-        new AliasAnalysis().calculateLocationSets(this.program, alias);
+        new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);
@@ -82,10 +72,6 @@ public class Wmm {
 
         for (Axiom ax : axioms) {
             ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
-        }
-
-        if(mode == Mode.KNASTER && drawExecutionGraph){
-            mode = Mode.IDL;
         }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
@@ -97,7 +83,7 @@ public class Wmm {
         }
 
         for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(program, ctx, mode);
+            relation.initialise(program, ctx, settings);
         }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
@@ -112,8 +98,8 @@ public class Wmm {
             relationRepository.getRelation(relName).getMaxTupleSet();
         }
 
-        if(drawExecutionGraph){
-            for(String relName : drawRelations){
+        if(settings.getDrawGraph()){
+            for(String relName : settings.getGraphRelations()){
                 Relation relation = relationRepository.getRelation(relName);
                 if(relation != null){
                     relation.addEncodeTupleSet(relation.getMaxTupleSet());
@@ -139,7 +125,7 @@ public class Wmm {
             enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
         }
 
-        if(mode == Mode.KLEENE){
+        if(settings.getMode() == Mode.KLEENE){
             for(RecursiveGroup group : recursiveGroups){
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }

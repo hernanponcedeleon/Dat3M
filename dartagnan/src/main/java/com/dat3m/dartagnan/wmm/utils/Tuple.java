@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.wmm.utils;
 
 import com.dat3m.dartagnan.program.event.Event;
 
-public class Tuple {
+public class Tuple implements Comparable<Tuple> {
 
     private Event first;
     private Event second;
@@ -44,5 +44,14 @@ public class Tuple {
         Tuple tObj = (Tuple) obj;
         return first.getCId() == tObj.getFirst().getCId()
                 && second.getCId() == tObj.getSecond().getCId();
+    }
+
+    @Override
+    public int compareTo(Tuple o) {
+        int result = first.compareTo(o.first);
+        if(result == 0){
+            return second.compareTo(o.second);
+        }
+        return result;
     }
 }

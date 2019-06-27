@@ -1,10 +1,9 @@
 package com.dat3m.porthos;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -12,6 +11,7 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import org.junit.Test;
@@ -31,7 +31,7 @@ public class PorthosTest {
     private static final String CAT_RESOURCE_PATH = "../";
     private static final String BENCHMARKS_RESOURCE_PATH = "../";
 
-    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} mode={7} unroll={6} alias=anderson")
+    @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} {6}")
     public static Iterable<Object[]> data() throws IOException {
 
         Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
@@ -39,78 +39,82 @@ public class PorthosTest {
         Wmm wmmPpc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/power.cat"));
         Wmm wmmArm = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/arm.cat"));
 
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
+        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 2);
+        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 2);
+
         return Arrays.asList(new Object[][] {
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KNASTER},
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.IDL },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s2 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, 2, Mode.KLEENE},
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s3 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KNASTER},
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s1 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.IDL },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s2 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, 2, Mode.KLEENE},
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.POWER, wmmTso, wmmPpc, s3 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KNASTER},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KNASTER},
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s1 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.IDL },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.IDL },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s2 },
 
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KLEENE},
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, 2, Mode.KLEENE}
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Bakery.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Burns.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Dekker.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Lamport.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Parker.pts", false, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Peterson.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/Szymanski.pts", true, Arch.TSO, Arch.ARM, wmmTso, wmmArm, s3 }
         });
     }
 
@@ -120,18 +124,16 @@ public class PorthosTest {
     private Arch target;
     private Wmm sourceWmm;
     private Wmm targetWmm;
-    private int steps;
-    private Mode mode;
+    private Settings settings;
 
-    public PorthosTest(String path, boolean expected, Arch source, Arch target, Wmm sourceWmm, Wmm targetWmm, int steps, Mode mode) {
+    public PorthosTest(String path, boolean expected, Arch source, Arch target, Wmm sourceWmm, Wmm targetWmm, Settings settings) {
         this.programFilePath = path;
         this.expected = expected;
         this.source = source;
         this.target = target;
         this.sourceWmm = sourceWmm;
         this.targetWmm = targetWmm;
-        this.steps = steps;
-        this.mode = mode;
+        this.settings = settings;
     }
 
     @Test
@@ -142,10 +144,10 @@ public class PorthosTest {
             Program pTarget = programParser.parse(new File(programFilePath));
 
             Context ctx = new Context();
-            Solver s1 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
-            Solver s2 = ctx.mkSolver(ctx.mkTactic(Dartagnan.TACTIC));
+            Solver s1 = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
+            Solver s2 = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             PorthosResult result = Porthos.testProgram(s1, s2, ctx, pSource, pTarget,
-                    source, target, sourceWmm, targetWmm, steps, mode, Alias.CFIS);
+                    source, target, sourceWmm, targetWmm, settings);
             assertEquals(expected, result.getIsPortable());
             ctx.close();
 

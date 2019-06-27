@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.Utils;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.collect.HashMultimap;

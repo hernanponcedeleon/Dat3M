@@ -17,7 +17,7 @@ public enum Alias {
                     return CFS;
             }
         }
-        return CFIS;
+        throw new UnsupportedOperationException("Illegal alias value");
     }
 
     @Override

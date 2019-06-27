@@ -4,7 +4,7 @@ include "fences.cat"
 include "filters.cat"
 
 (* All communication relations *)
-let com = (rf | fr | co)
+let com = (co | fr | rf)
 
 (* Uniproc *)
 acyclic (po-loc | com) as uniproc
@@ -14,7 +14,7 @@ empty rmw & (fre;coe)
 let implied = po & W*R & ((M * A) | (A * M))
 
 (* Communication relations for TSO *)
-let com-tso = (rfe | co | fr)
+let com-tso = (co | fr | rfe)
 
 (* Program order for TSO *)
 let po-tso = ((po \ W*R) | mfence)

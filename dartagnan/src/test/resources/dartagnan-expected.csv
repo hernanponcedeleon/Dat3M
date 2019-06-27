@@ -7822,6 +7822,8 @@ litmus/C/dart/no-herd/basic-04.litmus,0
 litmus/C/dart/no-herd/basic-05.litmus,1
 litmus/C/dart/no-herd/basic-06.litmus,1
 litmus/C/dart/no-herd/basic-07.litmus,0
+litmus/C/dart/no-herd/C-bool-const-01.litmus,1
+litmus/C/dart/no-herd/C-bool-const-02.litmus,1
 litmus/C/luc/PaulRelAcqChain/C-RW-rra+RW-ra+RW-rra+CK.litmus,0
 litmus/C/luc/PaulRelAcqChain/C-RW-rra+RW-ra+RW-rwa+CK.litmus,0
 litmus/C/luc/PaulRelAcqChain/C-RW-rwa+RW-ra+RW-rra+CK.litmus,1
@@ -10325,13 +10327,12 @@ litmus/C/manual/plain/MP+wmbplainplain+rmbplainplain.litmus,0
 litmus/C/manual/rcu/C-rcu-link-after.litmus,1
 litmus/C/manual/rcu/C-rcu-link-before.litmus,1
 litmus/PPC/2+2W+isync+po.litmus,1
-litmus/PPC/2+2W+isync+po.litmus,1
-litmus/PPC/2+2W+isync+po.litmus,1
 litmus/PPC/2+2W+isyncs.litmus,1
 litmus/PPC/2+2W+lwsync+isync.litmus,1
 litmus/PPC/2+2W+lwsync+po.litmus,1
 litmus/PPC/2+2W+lwsync+rfi-data.litmus,1
 litmus/PPC/2+2W+lwsync+sync.litmus,0
+litmus/PPC/2+2W+lwsync.litmus,0
 litmus/PPC/2+2W+rfi-datas.litmus,1
 litmus/PPC/2+2W+sync+isync.litmus,1
 litmus/PPC/2+2W+sync+lwsync.litmus,0
@@ -11868,7 +11869,7 @@ litmus/PPC/SB+lwsync+sync.litmus,1
 litmus/PPC/SB+lwsyncs.litmus,1
 litmus/PPC/SB+sync+isync.litmus,1
 litmus/PPC/SB+sync+po.litmus,1
-litmus/PPC/SB-PPC.litmus,1
+litmus/PPC/SB+syncs.litmus,0
 litmus/PPC/SB.litmus,1
 litmus/PPC/STFW-PPC.litmus,1
 litmus/PPC/W+RWC+lwsync+lwsync+po.litmus,1
@@ -11954,7 +11955,9 @@ litmus/PPC/WRR+2W+sync+po.litmus,1
 litmus/PPC/WRR+2W+sync+rfi-data.litmus,1
 litmus/PPC/WRR+2W+syncs.litmus,0
 litmus/PPC/WRR+2W.litmus,1
+litmus/PPC/WRW+2W+data+lwsync.litmus,1
 litmus/PPC/WRW+2W+data+rfi-data.litmus,1
+litmus/PPC/WRW+2W+data+sync.litmus,1
 litmus/PPC/WRW+2W+lwsync+isync.litmus,1
 litmus/PPC/WRW+2W+lwsync+po.litmus,1
 litmus/PPC/WRW+2W+lwsync+rfi-data.litmus,1
@@ -12016,6 +12019,7 @@ litmus/PPC/Z6.0+sync+sync+lwsync.litmus,1
 litmus/PPC/Z6.0+sync+sync+po.litmus,1
 litmus/PPC/Z6.0+syncs.litmus,0
 litmus/PPC/Z6.0.litmus,1
+litmus/PPC/Z6.1+lwsync+lwsync+data.litmus,0
 litmus/PPC/Z6.1+lwsync+lwsync+po.litmus,1
 litmus/PPC/Z6.1+lwsync+lwsync+sync.litmus,0
 litmus/PPC/Z6.1+lwsync+po+lwsync.litmus,1
