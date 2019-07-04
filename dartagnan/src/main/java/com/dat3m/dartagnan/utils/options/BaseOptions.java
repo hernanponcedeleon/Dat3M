@@ -50,7 +50,7 @@ public abstract class BaseOptions extends Options {
         parseGraphFilePath(cmd);
 
         String inputFilePath = cmd.getOptionValue("input");
-        if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus")) {
+        if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus") && !inputFilePath.endsWith("bpl")) {
             throw new RuntimeException("Unrecognized program format");
         }
         programFilePath = cmd.getOptionValue("input");

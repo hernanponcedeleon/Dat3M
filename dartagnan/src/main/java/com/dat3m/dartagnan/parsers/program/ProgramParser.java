@@ -41,7 +41,9 @@ public class ProgramParser {
         String format = name.substring(name.lastIndexOf(".") + 1);
         if(format.equals("pts")){
             return new ParserPorthos();
-        } else if(format.equals("litmus")){
+        } else if(format.equals("bpl")){
+            return new ParserBoogie();
+        }else if(format.equals("litmus")){
             return getConcreteLitmusParser(readFirstLine(file).toUpperCase());
         }
         throw new ParsingException("Unknown input file type");

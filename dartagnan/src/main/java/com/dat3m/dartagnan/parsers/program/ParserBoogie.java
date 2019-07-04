@@ -16,7 +16,6 @@ class ParserBoogie implements ParserInterface{
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         BoogieParser parser = new BoogieParser(tokenStream);
-        parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
         ProgramBuilder pb = new ProgramBuilder();
         ParserRuleContext parserEntryPoint = parser.main();

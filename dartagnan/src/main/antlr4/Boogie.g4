@@ -15,7 +15,7 @@ const_decl
     ;
 
 func_decl
-    :   'function' attr* ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( 'returns' LPar var_or_type RPar | Colon type ) ( LBrace expr LBrace | Semi )
+    :   'function' attr* ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( 'returns' LPar var_or_type RPar | Colon type ) ( LBrace expr RBrace | Semi )
     ;
 
 impl_decl
@@ -23,11 +23,11 @@ impl_decl
     ;
 
 proc_decl
-    :   'procedure' proc_sign ( Comma spec* | spec* impl_body )
+    :   'procedure' proc_sign ( Semi spec* | spec* impl_body )
     ;
 
 type_decl
-    :   'type' attr* ident ident* ('=' type)? (Comma ident ident* ( Equals type )? )* Semi
+    :   'type' attr* ident ident* (Equals type)? (Comma ident ident* ( Equals type )? )* Semi
     ;
 
 var_decl
@@ -115,7 +115,7 @@ havoc_cmd
     ;
 
 if_cmd
-    :   'if' guard LBrace ('else' ( if_cmd | LBrace stmt_list RBrace ))?
+    :   'if' guard LBrace stmt_list RBrace ('else' ( if_cmd | LBrace stmt_list RBrace ))?
     ;
 
 label
@@ -139,11 +139,11 @@ yield_cmd
     ;
 
 call_params
-    :   ident ( LPar exprs? RPar | (Comma idents)? ':=' ident exprs? RPar )
+    :   ident ( LPar exprs? RPar | (Comma idents)? ':=' ident LPar exprs? RPar )
     ;
 
 guard
-    :   LPar ( '*' | expr ) RPar
+    :   LPar ( Ast | expr ) RPar
     ;
 
 type
@@ -191,7 +191,7 @@ Explies_op
     ;
 
 logical_expr
-    :   rel_expr (And_op rel_expr (And_op rel_expr)* | Or_op rel_expr (Or_op rel_expr)*)
+    :   rel_expr (And_op rel_expr (And_op rel_expr)* | Or_op rel_expr (Or_op rel_expr)*)?
     ;
 
 And_op
@@ -243,7 +243,7 @@ neg_op
     ;
 
 coercion_expr
-    :   array_expr (Colon ( type | digits ))*
+    :   array_expr (Colon ( type | Digits ))*
     ;
 
 array_expr
@@ -251,7 +251,7 @@ array_expr
     ;
 
 atom_expr
-    :   bool_lit | digits | dec | bv_lit | ident (LPar expr RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
+    :   bool_lit | dec | Digits | bv_lit | ident (LPar expr RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
     ;
 
 bool_lit
@@ -259,19 +259,21 @@ bool_lit
     ;
 
 dec
-    :   decimal | dec_float
+//    :   decimal | dec_float
+    :   dec_float    
     ;
 
-decimal
-    :   digits 'e' Minus? Digits
-    ;
+//decimal
+//    :   Digits 'e' Minus? Digits
+//    ;
 
 dec_float
-    :   digits Period Digits ('e' Minus? digits)?
+    //:   Digits Period Digits ('e' Minus? Digits)?
+	:   Digits Period Digits
     ;
 
 bv_lit
-    :   digits 'bv' digits
+    :   Digits 'bv' Digits
     ;
 
 old_expr
@@ -383,27 +385,21 @@ quote
     ;
     
 ident
-    :    DBar? Non_digit (Non_digit | Digit)*
+    :    DBar? Non_digit (Digits | Non_digit)*
     ;
     
 Non_digit
     :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question 
     ;
 
-digits
-    :   Digit+
+Digits
+    :   ([0-9])+
     ;
 
 DBar
     :   '\\'
     ;
 
-fragment
-Digit
-    :   [0-9]
-    ;
-
-fragment
 Letter
     :   [A-Za-z]
     ;
