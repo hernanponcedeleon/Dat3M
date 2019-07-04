@@ -26,8 +26,10 @@ public class ProgramParser {
     }
 
     public Program parse(String raw, String format) {
-        if(format.equals("pts")){
+    	if(format.equals("pts")){
             return new ParserPorthos().parse(CharStreams.fromString(raw));
+        } else if(format.equals("bpl")){
+            return new ParserBoogie().parse(CharStreams.fromString(raw));
         } else if(format.equals("litmus")){
             return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
         }

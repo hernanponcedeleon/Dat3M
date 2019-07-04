@@ -14,7 +14,7 @@ import java.awt.event.ActionListener;
 public class EditorsPane implements ActionListener {
 
     private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
-            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new JEditorPane(), "litmus", "pts"),
+            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new JEditorPane(), "litmus", "pts", "bpl"),
             EditorCode.SOURCE_MM, new Editor(EditorCode.SOURCE_MM, new JEditorPane(), "cat"),
             EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new JEditorPane(), "cat")
     );
