@@ -491,7 +491,7 @@ Yield
     ;
     
 Int
-    :    'Int'
+    :    'int'
     ;
     
 Real
