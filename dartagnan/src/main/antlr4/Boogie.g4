@@ -7,35 +7,35 @@ main
     ;
 
 axiom_decl
-    :   'axiom' attr* proposition Semi
+    :   Axiom attr* proposition Semi
     ;
 
 const_decl
-    :   'const' attr* 'unique'? typed_idents order_spec? Semi
+    :   Const attr* Unique? typed_idents order_spec? Semi
     ;
 
 func_decl
-    :   'function' attr* ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( 'returns' LPar var_or_type RPar | Colon type ) ( LBrace expr RBrace | Semi )
+    :   Function attr* ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( Returns LPar var_or_type RPar | Colon type ) ( LBrace expr RBrace | Semi )
     ;
 
 impl_decl
-    :   'implementation' proc_sign impl_body
+    :   Implementation proc_sign impl_body
     ;
 
 proc_decl
-    :   'procedure' proc_sign ( Semi spec* | spec* impl_body )
+    :   Procedure proc_sign ( Semi spec* | spec* impl_body )
     ;
 
 type_decl
-    :   'type' attr* ident ident* (Equals type)? (Comma ident ident* ( Equals type )? )* Semi
+    :   Type attr* ident ident* (Equals type)? (Comma ident ident* ( Equals type )? )* Semi
     ;
 
 var_decl
-    :   'var' attr* typed_idents_wheres Semi
+    :   Var attr* typed_idents_wheres Semi
     ;
 
 order_spec
-    :   'extends' ( 'unique'? ident ( Comma 'unique'? ident )* )? 'complete'?
+    :   Extends ( Unique? ident ( Comma Unique? ident )* )? Complete?
     ;
 
 var_or_type
@@ -43,7 +43,7 @@ var_or_type
     ;
 
 proc_sign
-    :   attr* ident type_params? LPar attr_typed_idents_wheres? RPar ('returns' LPar attr_typed_idents_wheres? RPar)?
+    :   attr* ident type_params? LPar attr_typed_idents_wheres? RPar (Returns LPar attr_typed_idents_wheres? RPar)?
     ;
 
 impl_body
@@ -55,7 +55,7 @@ stmt_list
     ;
 
 local_vars
-    :   'var' attr* typed_idents_wheres Semi
+    :   Var attr* typed_idents_wheres Semi
     ;
 
 spec
@@ -63,15 +63,15 @@ spec
     ;
 
 modifies_spec
-    :   'modifies' idents? Semi
+    :   Modifies idents? Semi
     ;
 
 requires_spec
-    :  'free'? 'requires' attr* proposition Semi
+    :  Free? Requires attr* proposition Semi
     ;
 
 ensures_spec
-    :  'free'? 'ensures' attr* proposition Semi
+    :  Free? Ensures attr* proposition Semi
     ;
 
 label_or_cmd
@@ -87,35 +87,35 @@ structured_cmd
     ;
 
 assert_cmd
-    :   'assert' attr* proposition Semi
+    :   Assert attr* proposition Semi
     ;
 
 assign_cmd
-    :   ident (LBracket exprs? RBracket)* (Comma ident (LBracket exprs? RBracket )*)* ':=' exprs Semi
+    :   ident (LBracket exprs? RBracket)* (Comma ident (LBracket exprs? RBracket )*)* Define exprs Semi
     ;
 
 assume_cmd
-    :   'assume' attr* proposition Semi
+    :   Assume attr* proposition Semi
     ;
 
 break_cmd
-    :   'break' ident Semi
+    :   Break ident Semi
     ;
 
 call_cmd
-    :   'async'? 'free'? 'call' attr* call_params Semi
+    :   Async? Free? Call attr* call_params Semi
     ;
 
 goto_cmd
-    :   'goto' idents Semi
+    :   Goto idents Semi
     ;
 
 havoc_cmd
-    :   'havoc' idents Semi
+    :   Havoc idents Semi
     ;
 
 if_cmd
-    :   'if' guard LBrace stmt_list RBrace ('else' ( if_cmd | LBrace stmt_list RBrace ))?
+    :   If guard LBrace stmt_list RBrace (Else ( if_cmd | LBrace stmt_list RBrace ))?
     ;
 
 label
@@ -123,23 +123,23 @@ label
     ;
 
 par_call_cmd
-    :   'par' attr* call_params (Bar call_params)* Semi
+    :   Par attr* call_params (Bar call_params)* Semi
     ;
 
 return_cmd
-    :   'return' Semi
+    :   Return Semi
     ;
 
 while_cmd
-    :   'while' guard ( 'free'? 'invariant' attr* expr Comma )* LBrace stmt_list RBrace
+    :   While guard ( Free? Invariant attr* expr Comma )* LBrace stmt_list RBrace
     ;
 
 yield_cmd
-    :   'yield' Semi
+    :   Yield Semi
     ;
 
 call_params
-    :   ident ( LPar exprs? RPar | (Comma idents)? ':=' ident LPar exprs? RPar )
+    :   ident ( LPar exprs? RPar | (Comma idents)? Define ident LPar exprs? RPar )
     ;
 
 guard
@@ -155,7 +155,7 @@ type_args
     ;
 
 type_atom
-    :   'int' | 'real' | 'bool' | RPar type RPar
+    :   Int | Real | Bool | RPar type RPar
     ;
 
 map_type
@@ -203,10 +203,10 @@ Or_op
     ;
 
 rel_expr
-    :   bv_term (rel_op bv_term)*
+    :   bv_term (Rel_op bv_term)*
     ;
 
-rel_op
+Rel_op
     :   '==' | Greater | Less | '<=' | '>=' | '!=' | '<:'
     ;
 
@@ -227,7 +227,7 @@ factor
     ;
 
 mul_op
-    :   Ast | Slash | 'div' | 'mod'
+    :   Ast | Slash | Div | Mod
     ;
 
 power
@@ -235,7 +235,7 @@ power
     ;
 
 unary_expr
-    :   '-' unary_expr | neg_op unary_expr | coercion_expr
+    :   Minus unary_expr | neg_op unary_expr | coercion_expr
     ;
 
 neg_op
@@ -247,7 +247,7 @@ coercion_expr
     ;
 
 array_expr
-    :   atom_expr (LBracket (exprs (':=' expr)? | ':=' expr)? RBracket)*
+    :   atom_expr (LBracket (exprs (Define expr)? | Define expr)? RBracket)*
     ;
 
 atom_expr
@@ -255,7 +255,7 @@ atom_expr
     ;
 
 bool_lit
-    :   'true' | 'false'
+    :   True | False
     ;
 
 dec
@@ -273,15 +273,15 @@ dec_float
     ;
 
 bv_lit
-    :   Digits 'bv' Digits
+    :   Digits Bv Digits
     ;
 
 old_expr
-    :   'old' LPar expr RPar
+    :   Old LPar expr RPar
     ;
 
 arith_coercion_expr
-    :   'int' LPar expr RPar | 'real' LPar expr RPar
+    :   Int LPar expr RPar | Real LPar expr RPar
     ;
 
 paren_expr
@@ -300,18 +300,6 @@ lambda_expr
     :   LPar Lambda quant_body RPar
     ;
 
-Forall
-    :   'forall'
-    ;
-
-Exists
-    :   'exists'
-    ;
-
-Lambda
-    :   'lambda'
-    ;
-
 quant_body
     :   (type_params bound_vars? | bound_vars) Qsep attr_or_trigger* expr
     ;
@@ -325,7 +313,7 @@ Qsep
     ;
 
 if_then_else_expr
-    :   'if' expr 'then' expr 'else' expr
+    :   If expr Then expr Else expr
     ;
 
 code_expr
@@ -333,7 +321,7 @@ code_expr
     ;
 
 spec_block
-    :   ident Comma label_or_cmd* ('goto' idents | 'return' expr) Semi
+    :   ident Comma label_or_cmd* (Goto idents | Return expr) Semi
     ;
 
 attr_typed_idents_wheres
@@ -349,7 +337,7 @@ typed_idents_wheres
     ;
     
 typed_idents_where
-    :    typed_idents ('where' expr)?
+    :    typed_idents (Where expr)?
     ;
 
 typed_idents
@@ -377,17 +365,197 @@ attr_param
     ;
     
 string
-    :    quote (Letter | '\\"')* quote
-    ;
-    
-quote
-    :    '"'
+    :    Quote (Letter | '\\"')* Quote
     ;
     
 ident
     :    DBar? Non_digit (Digits | Non_digit)*
     ;
+
+// Key words /////////////////
+
+If
+    :    'if'
+    ;
     
+Then
+    :    'then'
+    ;
+    
+Else
+    :    'else'
+    ;
+    
+Axiom
+    :    'axiom'
+    ;
+    
+Const
+    :    'const'
+    ;
+    
+Function
+    :    'function'
+    ;
+    
+Implementation
+    :    'implementation'
+    ;
+    
+Procedure
+    :    'procedure'
+    ;
+    
+Type
+    :    'type'
+    ;
+    
+Var
+    :    'var'
+    ;
+    
+Extends
+    :    'extends'
+    ;
+    
+Unique
+    :    'unique'
+    ;
+    
+Complete
+    :    'complete'
+    ;
+    
+Returns
+    :    'returns'
+    ;
+    
+Modifies
+    :    'modifies'
+    ;
+    
+Free
+    :    'free'
+    ;
+    
+Requires
+    :    'requires'
+    ;
+    
+Ensures
+    :    'ensures'
+    ;
+    
+Assert
+    :    'assert'
+    ;
+    
+Assume
+    :    'assume'
+    ;
+    
+Break
+    :    'break'
+    ;
+    
+Async
+    :    'async'
+    ;
+    
+Call
+    :    'call'
+    ;
+    
+Goto
+    :    'goto'
+    ;
+    
+Havoc
+    :    'havoc'
+    ;
+    
+Par
+    :    'par'
+    ;
+    
+Return
+    :    'return'
+    ;
+    
+While
+    :    'while'
+    ;
+    
+Yield
+    :    'yield'
+    ;
+    
+Int
+    :    'Int'
+    ;
+    
+Real
+    :    'real'
+    ;
+    
+Bool
+    :    'bool'
+    ;
+    
+Div
+    :    'div'
+    ;
+    
+Mod
+    :    'mod'
+    ;
+    
+True
+    :    'true'
+    ;
+    
+False
+    :    'false'
+    ;
+    
+Bv
+    :    'bv'
+    ;
+    
+Old
+    :    'old'
+    ;
+    
+Forall
+    :   'forall'
+    ;
+
+Exists
+    :   'exists'
+    ;
+
+Lambda
+    :   'lambda'
+    ;
+
+Invariant
+    :   'invariant'
+    ;
+
+Where
+    :   'where'
+    ;
+////////////////////////
+
+Quote
+    :    '"'
+    ;
+    
+Define
+    :   ':=' 
+    ;
+
+
 Non_digit
     :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question 
     ;
