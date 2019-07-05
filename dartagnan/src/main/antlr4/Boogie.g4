@@ -251,7 +251,7 @@ array_expr
     ;
 
 atom_expr
-    :   bool_lit | dec | Int | Bv_lit | Ident (LPar exprs RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
+    :   bool_lit | dec | Int | Bv_lit | Ident (LPar exprs* RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
     ;
 
 bool_lit
@@ -430,3 +430,7 @@ WS
 LINE_COMMENT
 	:	'//' .*? '\r'? '\n' -> skip
 	;
+
+COMMENT
+	: '/*' .*? '*/' -> skip
+	;	
