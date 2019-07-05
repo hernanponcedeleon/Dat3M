@@ -260,17 +260,12 @@ bool_lit
 
 dec
 //    :   decimal | dec_float
-    :   dec_float    
+    :   Dec_float    
     ;
 
 //decimal
 //    :   Digits 'e' Minus? Digits
 //    ;
-
-dec_float
-    //:   Digits Period Digits ('e' Minus? Digits)?
-	:   Int Period Int
-    ;
 
 Bv_lit
     :   Int 'bv' Int
@@ -422,6 +417,11 @@ Letter
 Int
 	: [0-9]+
 	;
+
+Dec_float
+    //:   Digits Period Digits ('e' Minus? Digits)?
+	:   Int Period Int
+    ;
 
 WS
 	:	[ \t\r\n]+ -> skip
