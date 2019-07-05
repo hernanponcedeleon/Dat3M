@@ -389,9 +389,9 @@ Define
     ;
 
 
+fragment
 Non_digit
-//    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question 
-	:   Tilde | Num | Dollar | Circ | Underscore | Period | Question
+    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question 
     ;
 
 //Digits
@@ -411,7 +411,7 @@ DBar
 //    ;
    
 Ident
-	:	Letter (Letter | Int)*
+	:	Non_digit (Non_digit | Int)*
 	;	
 
 fragment
@@ -424,4 +424,9 @@ Int
 	;
 
 WS
-	:	[ \t\r\n]+ -> skip ;
+	:	[ \t\r\n]+ -> skip
+	;
+	
+LINE_COMMENT
+	:	'//' .*? '\r'? '\n' -> skip
+	;
