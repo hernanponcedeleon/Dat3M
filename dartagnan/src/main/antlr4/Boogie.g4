@@ -243,7 +243,7 @@ neg_op
     ;
 
 coercion_expr
-    :   array_expr (Colon ( type | Digit+ ))*
+    :   array_expr (Colon ( type | Int ))*
     ;
 
 array_expr
@@ -251,7 +251,7 @@ array_expr
     ;
 
 atom_expr
-    :   bool_lit | dec | Digit+ | bv_lit | Ident (LPar expr RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
+    :   bool_lit | dec | Int | Bv_lit | Ident (LPar expr RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
     ;
 
 bool_lit
@@ -269,11 +269,11 @@ dec
 
 dec_float
     //:   Digits Period Digits ('e' Minus? Digits)?
-	:   Digit* Period Digit+
+	:   Int Period Int
     ;
 
-bv_lit
-    :   Digit+ 'bv' Digit+
+Bv_lit
+    :   Int 'bv' Int
     ;
 
 old_expr
@@ -411,7 +411,7 @@ DBar
 //    ;
    
 Ident
-	:	Letter (Letter | Digit)*
+	:	Letter (Letter | Int)*
 	;	
 
 fragment
@@ -419,9 +419,8 @@ Letter
 	: [A-Za-z]
 	;
 
-fragment
-Digit
-	: [0-9]
+Int
+	: [0-9]+
 	;
 
 WS
