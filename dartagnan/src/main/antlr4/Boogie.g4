@@ -7,43 +7,43 @@ main
     ;
 
 axiom_decl
-    :   Axiom attr* proposition Semi
+    :   'axiom' attr* proposition Semi
     ;
 
 const_decl
-    :   Const attr* Unique? typed_idents order_spec? Semi
+    :   'const' attr* 'unique'? typed_idents order_spec? Semi
     ;
 
 func_decl
-    :   Function attr* ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( Returns LPar var_or_type RPar | Colon type ) ( LBrace expr RBrace | Semi )
+    :   'function' attr* Ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( 'returns' LPar var_or_type RPar | Colon type ) ( LBrace expr RBrace | Semi )
     ;
 
 impl_decl
-    :   Implementation proc_sign impl_body
+    :   'implementation' proc_sign impl_body
     ;
 
 proc_decl
-    :   Procedure proc_sign ( Semi spec* | spec* impl_body )
+    :   'procedure' proc_sign ( Semi spec* | spec* impl_body )
     ;
 
 type_decl
-    :   Type attr* ident ident* (Equals type)? (Comma ident ident* ( Equals type )? )* Semi
+    :   'type' attr* Ident Ident* (Equals type)? (Comma Ident Ident* ( Equals type )? )* Semi
     ;
 
 var_decl
-    :   Var attr* typed_idents_wheres Semi
+    :   'var' attr* typed_idents_wheres Semi
     ;
 
 order_spec
-    :   Extends ( Unique? ident ( Comma Unique? ident )* )? Complete?
+    :   'extends' ( 'unique'? Ident ( Comma 'unique'? Ident )* )? 'complete'?
     ;
 
 var_or_type
-    :   attr* ( type | ident (Colon type)? )
+    :   attr* ( type | Ident (Colon type)? )
     ;
 
 proc_sign
-    :   attr* ident type_params? LPar attr_typed_idents_wheres? RPar (Returns LPar attr_typed_idents_wheres? RPar)?
+    :   attr* Ident type_params? LPar attr_typed_idents_wheres? RPar ('returns' LPar attr_typed_idents_wheres? RPar)?
     ;
 
 impl_body
@@ -55,7 +55,7 @@ stmt_list
     ;
 
 local_vars
-    :   Var attr* typed_idents_wheres Semi
+    :   'var' attr* typed_idents_wheres Semi
     ;
 
 spec
@@ -63,15 +63,15 @@ spec
     ;
 
 modifies_spec
-    :   Modifies idents? Semi
+    :   'modifies' idents? Semi
     ;
 
 requires_spec
-    :  Free? Requires attr* proposition Semi
+    :  'free'? 'requires' attr* proposition Semi
     ;
 
 ensures_spec
-    :  Free? Ensures attr* proposition Semi
+    :  'free'? 'ensures' attr* proposition Semi
     ;
 
 label_or_cmd
@@ -87,39 +87,39 @@ structured_cmd
     ;
 
 assert_cmd
-    :   Assert attr* proposition Semi
+    :   'assert' attr* proposition Semi
     ;
 
 assign_cmd
-    :   ident (LBracket exprs? RBracket)* (Comma ident (LBracket exprs? RBracket )*)* Define exprs Semi
+    :   Ident (LBracket exprs? RBracket)* (Comma Ident (LBracket exprs? RBracket )*)* Define exprs Semi
     ;
 
 assume_cmd
-    :   Assume attr* proposition Semi
+    :   'assume' attr* proposition Semi
     ;
 
 break_cmd
-    :   Break ident Semi
+    :   'break' Ident Semi
     ;
 
 call_cmd
-    :   Async? Free? Call attr* call_params Semi
+    :   'async'? 'free'? 'call' attr* call_params Semi
     ;
 
 goto_cmd
-    :   Goto idents Semi
+    :   'goto' idents Semi
     ;
 
 havoc_cmd
-    :   Havoc idents Semi
+    :   'havoc' idents Semi
     ;
 
 if_cmd
-    :   If guard LBrace stmt_list RBrace (Else ( if_cmd | LBrace stmt_list RBrace ))?
+    :   'if' guard LBrace stmt_list RBrace ('else' ( if_cmd | LBrace stmt_list RBrace ))?
     ;
 
 label
-    :   ident Colon
+    :   Ident Colon
     ;
 
 par_call_cmd
@@ -127,19 +127,19 @@ par_call_cmd
     ;
 
 return_cmd
-    :   Return Semi
+    :   'return' Semi
     ;
 
 while_cmd
-    :   While guard ( Free? Invariant attr* expr Comma )* LBrace stmt_list RBrace
+    :   'while' guard ( 'free'? 'invariant' attr* expr Comma )* LBrace stmt_list RBrace
     ;
 
 yield_cmd
-    :   Yield Semi
+    :   'yield' Semi
     ;
 
 call_params
-    :   ident ( LPar exprs? RPar | (Comma idents)? Define ident LPar exprs? RPar )
+    :   Ident ( LPar exprs? RPar | (Comma idents)? Define Ident LPar exprs? RPar )
     ;
 
 guard
@@ -147,15 +147,15 @@ guard
     ;
 
 type
-    :   type_atom | ident type_args? | map_type
+    :   type_atom | Ident type_args? | map_type
     ;
 
 type_args
-    :   type_atom type_args? | ident type_args? | map_type
+    :   type_atom type_args? | Ident type_args? | map_type
     ;
 
 type_atom
-    :   Int | Real | Bool | RPar type RPar
+    :   'int' | 'real' | 'bool' | RPar type RPar
     ;
 
 map_type
@@ -227,7 +227,7 @@ factor
     ;
 
 mul_op
-    :   Ast | Slash | Div | Mod
+    :   Ast | Slash | 'div' | 'mod'
     ;
 
 power
@@ -243,7 +243,7 @@ neg_op
     ;
 
 coercion_expr
-    :   array_expr (Colon ( type | Digits ))*
+    :   array_expr (Colon ( type | Digit+ ))*
     ;
 
 array_expr
@@ -251,11 +251,11 @@ array_expr
     ;
 
 atom_expr
-    :   bool_lit | dec | Digits | bv_lit | ident (LPar expr RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
+    :   bool_lit | dec | Digit+ | bv_lit | Ident (LPar expr RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
     ;
 
 bool_lit
-    :   True | False
+    :   'true' | 'false'
     ;
 
 dec
@@ -269,19 +269,19 @@ dec
 
 dec_float
     //:   Digits Period Digits ('e' Minus? Digits)?
-	:   Digits Period Digits
+	:   Digit* Period Digit+
     ;
 
 bv_lit
-    :   Digits Bv Digits
+    :   Digit+ 'bv' Digit+
     ;
 
 old_expr
-    :   Old LPar expr RPar
+    :   'old' LPar expr RPar
     ;
 
 arith_coercion_expr
-    :   Int LPar expr RPar | Real LPar expr RPar
+    :   'int' LPar expr RPar | 'real' LPar expr RPar
     ;
 
 paren_expr
@@ -313,7 +313,7 @@ Qsep
     ;
 
 if_then_else_expr
-    :   If expr Then expr Else expr
+    :   'if' expr 'then' expr 'else' expr
     ;
 
 code_expr
@@ -321,7 +321,7 @@ code_expr
     ;
 
 spec_block
-    :   ident Comma label_or_cmd* (Goto idents | Return expr) Semi
+    :   Ident Comma label_or_cmd* ('goto' idents | 'return' expr) Semi
     ;
 
 attr_typed_idents_wheres
@@ -337,7 +337,7 @@ typed_idents_wheres
     ;
     
 typed_idents_where
-    :    typed_idents (Where expr)?
+    :    typed_idents ('where' expr)?
     ;
 
 typed_idents
@@ -345,7 +345,7 @@ typed_idents
     ;
     
 idents
-    :    ident (Comma ident)*
+    :    Ident (Comma Ident)*
     ;
     
 type_params
@@ -357,173 +357,15 @@ attr
     ;
     
 attr_or_trigger
-    :    LBrace ( Colon ident (attr_param (Comma attr_param)*)? | exprs ) RBrace
+    :    LBrace ( Colon Ident (attr_param (Comma attr_param)*)? | exprs ) RBrace
     ;
     
 attr_param
-    :    string | expr
+    :    String | expr
     ;
     
-string
+String
     :    Quote (Letter | '\\"')* Quote
-    ;
-    
-ident
-    :    DBar? Non_digit (Digits | Non_digit)*
-    ;
-
-// Key words /////////////////
-
-If
-    :    'if'
-    ;
-    
-Then
-    :    'then'
-    ;
-    
-Else
-    :    'else'
-    ;
-    
-Axiom
-    :    'axiom'
-    ;
-    
-Const
-    :    'const'
-    ;
-    
-Function
-    :    'function'
-    ;
-    
-Implementation
-    :    'implementation'
-    ;
-    
-Procedure
-    :    'procedure'
-    ;
-    
-Type
-    :    'type'
-    ;
-    
-Var
-    :    'var'
-    ;
-    
-Extends
-    :    'extends'
-    ;
-    
-Unique
-    :    'unique'
-    ;
-    
-Complete
-    :    'complete'
-    ;
-    
-Returns
-    :    'returns'
-    ;
-    
-Modifies
-    :    'modifies'
-    ;
-    
-Free
-    :    'free'
-    ;
-    
-Requires
-    :    'requires'
-    ;
-    
-Ensures
-    :    'ensures'
-    ;
-    
-Assert
-    :    'assert'
-    ;
-    
-Assume
-    :    'assume'
-    ;
-    
-Break
-    :    'break'
-    ;
-    
-Async
-    :    'async'
-    ;
-    
-Call
-    :    'call'
-    ;
-    
-Goto
-    :    'goto'
-    ;
-    
-Havoc
-    :    'havoc'
-    ;
-    
-Par
-    :    'par'
-    ;
-    
-Return
-    :    'return'
-    ;
-    
-While
-    :    'while'
-    ;
-    
-Yield
-    :    'yield'
-    ;
-    
-Int
-    :    'int'
-    ;
-    
-Real
-    :    'real'
-    ;
-    
-Bool
-    :    'bool'
-    ;
-    
-Div
-    :    'div'
-    ;
-    
-Mod
-    :    'mod'
-    ;
-    
-True
-    :    'true'
-    ;
-    
-False
-    :    'false'
-    ;
-    
-Bv
-    :    'bv'
-    ;
-    
-Old
-    :    'old'
     ;
     
 Forall
@@ -538,15 +380,6 @@ Lambda
     :   'lambda'
     ;
 
-Invariant
-    :   'invariant'
-    ;
-
-Where
-    :   'where'
-    ;
-////////////////////////
-
 Quote
     :    '"'
     ;
@@ -557,17 +390,39 @@ Define
 
 
 Non_digit
-    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question 
+//    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question 
+	:   Tilde | Num | Dollar | Circ | Underscore | Period | Question
     ;
 
-Digits
-    :   ([0-9])+
-    ;
+//Digits
+//    :   ([0-9])+
+//    ;
 
 DBar
     :   '\\'
     ;
 
+//Letter
+//    :   [A-Za-z]
+//    ;
+
+//Ident
+//    :    DBar? Non_digit (Digits | Non_digit)*
+//    ;
+   
+Ident
+	:	Letter (Letter | Digit)*
+	;	
+
+fragment
 Letter
-    :   [A-Za-z]
-    ;
+	: [A-Za-z]
+	;
+
+fragment
+Digit
+	: [0-9]
+	;
+
+WS
+	:	[ \t\r\n]+ -> skip ;
