@@ -203,10 +203,10 @@ Or_op
     ;
 
 rel_expr
-    :   bv_term (Rel_op bv_term)*
+    :   bv_term (rel_op bv_term)*
     ;
 
-Rel_op
+rel_op
     :   '==' | Greater | Less | '<=' | '>=' | '!=' | '<:'
     ;
 
@@ -259,13 +259,8 @@ bool_lit
     ;
 
 dec
-//    :   decimal | dec_float
-    :   Dec_float    
+    :   Decimal | Dec_float
     ;
-
-//decimal
-//    :   Digits 'e' Minus? Digits
-//    ;
 
 Bv_lit
     :   Int 'bv' Int
@@ -386,25 +381,13 @@ Define
 
 fragment
 Non_digit
-    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question | '`' | '\''
+    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question | '`' | '\'' | '\\'
     ;
-
-//Digits
-//    :   ([0-9])+
-//    ;
 
 DBar
     :   '\\'
     ;
 
-//Letter
-//    :   [A-Za-z]
-//    ;
-
-//Ident
-//    :    DBar? Non_digit (Digits | Non_digit)*
-//    ;
-   
 Mod
 	:	'mod' | '%'
 	;	
@@ -425,7 +408,11 @@ Int
 
 Dec_float
     //:   Digits Period Digits ('e' Minus? Digits)?
-	:   Int Period Int
+	:   Int Period Int ('e' Minus? Int)?
+    ;
+
+Decimal
+    :   Int 'e' Minus? Int
     ;
 
 WS
