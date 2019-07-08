@@ -407,7 +407,6 @@ Int
 	;
 
 Dec_float
-    //:   Digits Period Digits ('e' Minus? Digits)?
 	:   Int Period Int ('e' Minus? Int)?
     ;
 
