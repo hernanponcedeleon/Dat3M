@@ -99,7 +99,7 @@ assume_cmd
     ;
 
 break_cmd
-    :   'break' Ident Semi
+    :   'break' Ident? Semi
     ;
 
 call_cmd
@@ -123,7 +123,7 @@ label
     ;
 
 par_call_cmd
-    :   Par attr* call_params (Bar call_params)* Semi
+    :   'par' attr* call_params (Bar call_params)* Semi
     ;
 
 return_cmd
@@ -131,7 +131,7 @@ return_cmd
     ;
 
 while_cmd
-    :   'while' guard ( 'free'? 'invariant' attr* expr Comma )* LBrace stmt_list RBrace
+    :   'while' guard ( 'free'? 'invariant' attr* expr Semi )* LBrace stmt_list RBrace
     ;
 
 yield_cmd
@@ -155,7 +155,7 @@ type_args
     ;
 
 type_atom
-    :   'int' | 'real' | 'bool' | RPar type RPar
+    :   'int' | 'real' | 'bool' | LPar type RPar
     ;
 
 map_type
@@ -227,7 +227,7 @@ factor
     ;
 
 mul_op
-    :   Ast | Slash | 'div' | 'mod'
+    :   Ast | Slash | 'div' | Mod
     ;
 
 power
@@ -316,7 +316,7 @@ code_expr
     ;
 
 spec_block
-    :   Ident Comma label_or_cmd* ('goto' idents | 'return' expr) Semi
+    :   Ident Colon label_or_cmd* ('goto' idents | 'return' expr) Semi
     ;
 
 attr_typed_idents_wheres
@@ -344,7 +344,7 @@ idents
     ;
     
 type_params
-    :    Less idents Greater
+    :    '<' idents '>'
     ;
     
 attr
@@ -386,7 +386,7 @@ Define
 
 fragment
 Non_digit
-    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question 
+    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question | '`' | '\''
     ;
 
 //Digits
@@ -405,6 +405,11 @@ DBar
 //    :    DBar? Non_digit (Digits | Non_digit)*
 //    ;
    
+Mod
+	:	'mod' | '%'
+	;	
+
+
 Ident
 	:	Non_digit (Non_digit | Int)*
 	;	
