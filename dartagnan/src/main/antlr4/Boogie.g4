@@ -227,12 +227,12 @@ rel_expr
     ;
 
 rel_op returns [COpBin op]
-    :   EqualsEquals    {$op = COpBin.EQ;}
-    |   NotEquals       {$op = COpBin.NEQ;}
-    |   LessEquals      {$op = COpBin.LTE;}
-    |   GreaterEquals   {$op = COpBin.GTE;}
-    |   Less            {$op = COpBin.LT;}
-    |   Greater         {$op = COpBin.GT;}
+    :   '=='		{$op = COpBin.EQ;}
+    |   '!='		{$op = COpBin.NEQ;}
+    |   '<='		{$op = COpBin.LTE;}
+    |   '>='		{$op = COpBin.GTE;}
+    |   Less		{$op = COpBin.LT;}
+    |   Greater		{$op = COpBin.GT;}
     |	'<:'
     ;
 
