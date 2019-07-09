@@ -4,7 +4,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 
 public enum IOpBin {
-    PLUS, MINUS, MULT, DIV, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
+    PLUS, MINUS, MULT, DIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
 
     @Override
     public String toString() {
@@ -17,6 +17,8 @@ public enum IOpBin {
                 return "*";
             case DIV:
                 return "/";
+            case MOD:
+                return "%";
             case AND:
                 return "&";
             case OR:
@@ -54,6 +56,8 @@ public enum IOpBin {
                 return (IntExpr)ctx.mkMul(e1, e2);
             case DIV:
                 return (IntExpr)ctx.mkDiv(e1, e2);
+            case MOD:
+                return (IntExpr)ctx.mkMod(e1, e2);
             case AND:
                 return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
             case OR:
@@ -75,6 +79,8 @@ public enum IOpBin {
                 return a * b;
             case DIV:
                 return a / b;
+            case MOD:
+                return a % b;
             case AND:
                 return a & b;
             case OR:
