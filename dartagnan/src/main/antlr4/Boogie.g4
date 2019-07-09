@@ -2,8 +2,12 @@ grammar Boogie;
 
 import BaseLexer;
 
+@header{
+import com.dat3m.dartagnan.expression.op.*;
+}
+
 main
-    :    (axiom_decl | const_decl | func_decl | impl_decl | proc_decl |  type_decl | var_decl)* EOF
+    :    ( axiom_decl | const_decl | func_decl | impl_decl | proc_decl |  type_decl | var_decl )* EOF
     ;
 
 axiom_decl
@@ -59,7 +63,9 @@ local_vars
     ;
 
 spec
-    :   modifies_spec | requires_spec | ensures_spec
+    :	modifies_spec
+    |	requires_spec
+    |	ensures_spec
     ;
 
 modifies_spec
@@ -75,15 +81,25 @@ ensures_spec
     ;
 
 label_or_cmd
-    :   assert_cmd | assign_cmd | assume_cmd | call_cmd | havoc_cmd | label | par_call_cmd | yield_cmd
+    :	assert_cmd
+    |	assign_cmd
+    |	assume_cmd
+    |	call_cmd
+    |	havoc_cmd
+    |	label
+    |	par_call_cmd
+    |	yield_cmd
     ;
 
 transfer_cmd
-    :   break_cmd | if_cmd | while_cmd
+    :	break_cmd
+    |	if_cmd
+    |	while_cmd
     ;
 
 structured_cmd
-    :   goto_cmd | return_cmd
+    :	goto_cmd
+    |	return_cmd
     ;
 
 assert_cmd
@@ -147,11 +163,15 @@ guard
     ;
 
 type
-    :   type_atom | Ident type_args? | map_type
+    :	type_atom
+    |	Ident type_args?
+    |	map_type
     ;
 
 type_args
-    :   type_atom type_args? | Ident type_args? | map_type
+    :	type_atom type_args?
+    |	Ident type_args?
+    |	map_type
     ;
 
 type_atom
@@ -191,23 +211,29 @@ Explies_op
     ;
 
 logical_expr
-    :   rel_expr (And_op rel_expr (And_op rel_expr)* | Or_op rel_expr (Or_op rel_expr)*)?
+    :   rel_expr (and_op rel_expr (and_op rel_expr)* | Or_op rel_expr (Or_op rel_expr)*)?
     ;
 
-And_op
-    :   '&&'
+and_op returns [BOpBin op]
+    :   '&&'		{$op = BOpBin.AND;}
     ;
 
-Or_op
-    :   '||'
+or_op returns [BOpBin op]
+    :   '||'		{$op = BOpBin.OR;}
     ;
 
 rel_expr
     :   bv_term (rel_op bv_term)*
     ;
 
-rel_op
-    :   '==' | Greater | Less | '<=' | '>=' | '!=' | '<:'
+rel_op returns [COpBin op]
+    :   EqualsEquals    {$op = COpBin.EQ;}
+    |   NotEquals       {$op = COpBin.NEQ;}
+    |   LessEquals      {$op = COpBin.LTE;}
+    |   GreaterEquals   {$op = COpBin.GTE;}
+    |   Less            {$op = COpBin.LT;}
+    |   Greater         {$op = COpBin.GT;}
+    |	'<:'
     ;
 
 bv_term
@@ -218,16 +244,19 @@ term
     :   factor (add_op factor)*
     ;
 
-add_op
-    :   Plus | Minus
+add_op returns [IOpBin op]
+    :   Plus		{$op = IOpBin.PLUS;} 
+    |	Minus		{$op = IOpBin.MINUS;}
     ;
 
 factor
     :   power (mul_op power)*
     ;
 
-mul_op
-    :   Ast | Slash | 'div' | Mod
+mul_op returns [IOpBin op]
+    :	Ast			{$op = IOpBin.MULT;}
+    |	Div			{$op = IOpBin.DIV;}
+    |	Mod			{$op = IOpBin.MOD;}
     ;
 
 power
@@ -235,7 +264,9 @@ power
     ;
 
 unary_expr
-    :   Minus unary_expr | neg_op unary_expr | coercion_expr
+    :	Minus unary_expr
+    |	neg_op unary_expr
+    |	coercion_expr
     ;
 
 neg_op
@@ -251,15 +282,29 @@ array_expr
     ;
 
 atom_expr
-    :   bool_lit | dec | Int | Bv_lit | Ident (LPar exprs* RPar)? | old_expr | arith_coercion_expr | paren_expr | forall_expr | exists_expr | lambda_expr | if_then_else_expr | code_expr
+    :	bool_lit
+    |	dec
+    |	Int
+    |	Bv_lit
+    |	Ident (LPar exprs* RPar)?
+    |	old_expr
+    |	arith_coercion_expr
+    |	paren_expr
+    |	forall_expr
+    |	exists_expr
+    |	lambda_expr
+    |	if_then_else_expr
+    |	code_expr
     ;
 
-bool_lit
-    :   'true' | 'false'
+bool_lit returns [Boolean value]
+    :	'true'		{$value = true;}
+    |	'false'		{$value = false;}
     ;
 
 dec
-    :   Decimal | Dec_float
+    :	Decimal
+    |	Dec_float
     ;
 
 Bv_lit
@@ -271,7 +316,8 @@ old_expr
     ;
 
 arith_coercion_expr
-    :   'int' LPar expr RPar | 'real' LPar expr RPar
+    :	'int' LPar expr RPar
+    |	'real' LPar expr RPar
     ;
 
 paren_expr
@@ -291,15 +337,11 @@ lambda_expr
     ;
 
 quant_body
-    :   (type_params bound_vars? | bound_vars) Qsep attr_or_trigger* expr
+    :   (type_params bound_vars? | bound_vars) '::' attr_or_trigger* expr
     ;
 
 bound_vars
     :   attr_typed_idents_wheres
-    ;
-
-Qsep
-    :   '::'
     ;
 
 if_then_else_expr
@@ -351,7 +393,8 @@ attr_or_trigger
     ;
     
 attr_param
-    :    String | expr
+    :	String
+    |	expr
     ;
     
 String
@@ -360,7 +403,8 @@ String
 
 fragment
 ESC
-	:	'\\"' | '\\\\'
+	:	'\\"'
+	|	'\\\\'
 	;
 
 Forall
@@ -381,7 +425,17 @@ Define
 
 fragment
 Non_digit
-    :   Letter | Tilde | Num | Dollar | Circ | Underscore | Period | Question | '`' | '\'' | '\\'
+    :	Letter
+    |	Tilde
+    |	Num
+    |	Dollar
+    |	Circ
+    |	Underscore
+    |	Period
+    |	Question
+    |	'`'
+    |	'\''
+    |	'\\'
     ;
 
 DBar
@@ -389,9 +443,14 @@ DBar
     ;
 
 Mod
-	:	'mod' | '%'
+	:	'mod'
+	|	'%'
 	;	
 
+Div
+	:	'div'
+	|	'/'
+	;	
 
 Ident
 	:	Non_digit (Non_digit | Int)*
