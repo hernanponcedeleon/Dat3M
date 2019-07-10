@@ -20,6 +20,8 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.If;
+import com.dat3m.dartagnan.program.event.Jump;
+import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Skip;
@@ -176,6 +178,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
         
 		return null;
+	}
+
+	@Override
+	public Object visitLabel(BoogieParser.LabelContext ctx) {
+		Label label = programBuilder.getOrCreateLabel(ctx.children.get(0).getText());
+        programBuilder.addChild(currentThread, label);
+        return null;
+	}
+
+	@Override
+	public Object visitGoto_cmd(BoogieParser.Goto_cmdContext ctx) {
+		Label label = programBuilder.getOrCreateLabel(ctx.idents().children.get(0).getText());
+        programBuilder.addChild(currentThread, new Jump(label));
+        return null;	
 	}
 
 	@Override
