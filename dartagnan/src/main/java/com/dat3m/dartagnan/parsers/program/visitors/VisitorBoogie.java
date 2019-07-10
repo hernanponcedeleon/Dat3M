@@ -130,6 +130,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         ExprInterface value = (ExprInterface)ctx.exprs(index).expr(0).accept(this);
 		
         for(int i : IntStream.range(0, ctx.Ident().size()).toArray()) {
+        	if(ctx.exprs(index).expr().size() != 1 && ctx.exprs(index).expr().size() != ctx.Ident().size()) {
+                throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
+        	}
         	// No need to recompute value in the first iteration
 			if(ctx.exprs(index).expr().size() != 1 && i != 0) {
 				// if there is more than one expression, there should be exactly one per variable, thus we use 'i'
