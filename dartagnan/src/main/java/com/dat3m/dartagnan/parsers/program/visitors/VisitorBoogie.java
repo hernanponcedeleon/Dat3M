@@ -4,12 +4,19 @@ import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BExprBin;
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.If;
@@ -24,7 +31,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	private ProgramBuilder programBuilder;
     private int currentThread = 0;
-    private int scope = 0;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -32,11 +38,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
     @Override
     public Object visitMain(BoogieParser.MainContext ctx) {
-    	IntStream.range(0, ctx.var_decl().size()).forEach(n -> {
-        	visitVar_decl(ctx.var_decl(n));});
-    	IntStream.range(0, ctx.proc_decl().size()).forEach(n -> {
-        	visitProc_decl(ctx.proc_decl(n));});
-        return programBuilder.build();
+    	for(Var_declContext varDelContext : ctx.var_decl()) {
+    		visitVar_decl(varDelContext);
+    	}
+
+    	for(Proc_declContext procDecContext : ctx.proc_decl()) {
+    		visitProc_decl(procDecContext);
+    	}
+        
+    	return programBuilder.build();
     }
 
     @Override
@@ -61,18 +71,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     @Override
     public Object visitProc_decl(BoogieParser.Proc_declContext ctx) {
     	currentThread ++;
-    	scope = currentThread;
         programBuilder.initThread(currentThread);
         
-        IntStream.range(0, ctx.impl_body().local_vars().size()).forEach(n -> {
-        	visitLocal_vars(ctx.impl_body().local_vars(n), scope);
-        });
+        for(Local_varsContext localVarContext : ctx.impl_body().local_vars()) {
+        	visitLocal_vars(localVarContext, currentThread);
+        }
         
         for(ParseTree stmt : ctx.impl_body().stmt_list().children) {
         	stmt.accept(this);
         }
 
-        scope = -1;
         return null;
     }
     
@@ -98,9 +106,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         ctx.stmt_list(0).accept(this);
         programBuilder.addChild(currentThread, exitMainBranch);
 
+        // case when the else branch is a stmt list
         if(ctx.stmt_list().size() > 1){
             ctx.stmt_list(1).accept(this);
         }
+
+        // case when the else branch is another if        
+        if(ctx.if_cmd() != null) {
+        	ctx.if_cmd().accept(this);
+        }
+        
         programBuilder.addChild(currentThread, exitElseBranch);
         return null;
 
@@ -108,28 +123,38 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAssign_cmd(BoogieParser.Assign_cmdContext ctx) {
-		//TODO handle the case when ident or expr is more than one
-		if(scope > -1){
-            Register register = programBuilder.getRegister(scope, ctx.Ident(0).getText());
-            if(register != null){
-                ExprInterface value = (ExprInterface)ctx.exprs(0).accept(this);
-                programBuilder.addChild(currentThread, new Local(register, value));
-            }
-            Location location = programBuilder.getLocation(ctx.Ident(0).getText());
-            if(location != null){
-                ExprInterface value = (ExprInterface)ctx.exprs(0).accept(this);
-                programBuilder.addChild(currentThread, new Store(location.getAddress(), value, "NA"));
-            }
-        }
+		//TODO handle complex lhs ... e.g lala(expr)
+
+		// To be sure we get the exprs after the define
+		int index = ctx.exprs().size() == 1? 0 : 1;
+        ExprInterface value = (ExprInterface)ctx.exprs(index).expr(0).accept(this);
+		
+        for(int i : IntStream.range(0, ctx.Ident().size()).toArray()) {
+        	// No need to recompute value in the first iteration
+			if(ctx.exprs(index).expr().size() != 1 && i != 0) {
+				// if there is more than one expression, there should be exactly one per variable, thus we use 'i'
+				value = (ExprInterface)ctx.exprs(index).expr(i).accept(this);
+			}
+			Register register = programBuilder.getRegister(currentThread, ctx.Ident(i).getText());
+	        if(register != null){
+	            programBuilder.addChild(currentThread, new Local(register, value));
+	        }
+	        Location location = programBuilder.getLocation(ctx.Ident(i).getText());
+	        if(location != null){
+	            programBuilder.addChild(currentThread, new Store(location.getAddress(), value, "NA"));
+	        }
+		}
+        
 		return null;
 	}
 
 	@Override
 	public Object visitRel_expr(BoogieParser.Rel_exprContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.bv_term(0).accept(this);
-		if(ctx.bv_term().size() > 1) {
-			ExprInterface v2 = (ExprInterface)ctx.bv_term(1).accept(this);
-			return new Atom(v1, ctx.rel_op(0).op, v2);
+		ExprInterface v2 = null;
+		for(int i : IntStream.range(0, ctx.bv_term().size()-1).toArray()) {
+			v2 = (ExprInterface)ctx.bv_term(i+1).accept(this);
+			v1 = new Atom(v1, ctx.rel_op(i).op, v2);
 		}
 		return v1;
 	}
@@ -157,24 +182,34 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 
 	@Override
-	public Object visitAtom_expr(BoogieParser.Atom_exprContext ctx) {
-        if(scope > -1){
-            Register register = programBuilder.getRegister(scope, ctx.getText());
-            if(register != null){
-                return register;
-            }
-            Location location = programBuilder.getLocation(ctx.getText());
-            if(location != null){
-                register = programBuilder.getOrCreateRegister(scope, null);
-                programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
-                return register;
-            }
-            return programBuilder.getOrCreateRegister(scope, ctx.getText());
+	public Object visitVar_expr(BoogieParser.Var_exprContext ctx) {
+        Register register = programBuilder.getRegister(currentThread, ctx.getText());
+        if(register != null){
+            return register;
         }
-//        Location location = programBuilder.getOrCreateLocation(ctx.getText());
-//        Register register = programBuilder.getOrCreateRegister(scope, null);
-//        programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
-//        return register;
+        Location location = programBuilder.getLocation(ctx.getText());
+        if(location != null){
+            register = programBuilder.getOrCreateRegister(currentThread, null);
+            programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
+            return register;
+        }
         return null;
 	}
+	
+	@Override
+	public Object visitInt_expr(BoogieParser.Int_exprContext ctx) {
+		return new IConst(Integer.parseInt(ctx.getText()));
+	}
+	
+	@Override
+	public Object visitBool_lit(BoogieParser.Bool_litContext ctx) {
+		return new BConst(Boolean.parseBoolean(ctx.getText()));
+	}
+
+	@Override
+	public Object visitDec(BoogieParser.DecContext ctx) {
+        throw new ParsingException("Floats are not yet supported");
+	}
+
+
 }

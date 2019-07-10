@@ -284,9 +284,9 @@ array_expr
 atom_expr
     :	bool_lit
     |	dec
-    |	Int
+    |	int_expr
     |	Bv_lit
-    |	Ident (LPar exprs* RPar)?
+    |	var_expr
     |	old_expr
     |	arith_coercion_expr
     |	paren_expr
@@ -295,6 +295,14 @@ atom_expr
     |	lambda_expr
     |	if_then_else_expr
     |	code_expr
+    ;
+
+int_expr
+    :   Int
+    ;
+
+var_expr
+    :   Ident (LPar exprs* RPar)?
     ;
 
 bool_lit returns [Boolean value]
