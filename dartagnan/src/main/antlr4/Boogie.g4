@@ -211,7 +211,15 @@ Explies_op
     ;
 
 logical_expr
-    :   rel_expr (and_op rel_expr (and_op rel_expr)* | or_op rel_expr (or_op rel_expr)*)?
+    :   rel_expr ((and_op  and_expr) | (or_op or_expr))?
+    ;
+
+and_expr
+    :   rel_expr (and_op rel_expr)*
+    ;
+
+or_expr
+    :   rel_expr (or_op rel_expr)*
     ;
 
 and_op returns [BOpBin op]
@@ -265,8 +273,12 @@ power
 
 unary_expr
     :	Minus unary_expr
-    |	neg_op unary_expr
+    |	neg_expr
     |	coercion_expr
+    ;
+
+neg_expr
+    :   neg_op unary_expr
     ;
 
 neg_op

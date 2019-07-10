@@ -5,9 +5,12 @@ import java.util.stream.IntStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BExprBin;
+import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
@@ -192,6 +195,48 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		Label label = programBuilder.getOrCreateLabel(ctx.idents().children.get(0).getText());
         programBuilder.addChild(currentThread, new Jump(label));
         return null;	
+	}
+
+	@Override
+	public Object visitLogical_expr(BoogieParser.Logical_exprContext ctx) {
+		ExprInterface v1 = (ExprInterface)ctx.rel_expr().accept(this);
+		if(ctx.and_expr() != null) {
+			ExprInterface vAnd = (ExprInterface)ctx.and_expr().accept(this);
+			v1 = new BExprBin(v1, ctx.and_op().op, vAnd);
+		}
+		if(ctx.or_expr() != null) {
+			ExprInterface vAnd = (ExprInterface)ctx.or_expr().accept(this);
+			v1 = new BExprBin(v1, ctx.or_op().op, vAnd);
+		}
+		return v1;
+	}
+
+	@Override
+	public Object visitNeg_expr(BoogieParser.Neg_exprContext ctx) {
+		ExprInterface v = (ExprInterface)ctx.unary_expr().accept(this);
+		return new BExprUn(BOpUn.NOT, v);
+	}
+
+	@Override
+	public Object visitAnd_expr(BoogieParser.And_exprContext ctx) {
+		ExprInterface v1 = (ExprInterface)ctx.rel_expr(0).accept(this);
+		ExprInterface v2 = null;
+		for(int i : IntStream.range(0, ctx.rel_expr().size()-1).toArray()) {
+			v2 = (ExprInterface)ctx.rel_expr(i+1).accept(this);
+			v1 = new BExprBin(v1, ctx.and_op(i).op, v2);
+		}
+		return v1;
+	}
+
+	@Override
+	public Object visitOr_expr(BoogieParser.Or_exprContext ctx) {
+		ExprInterface v1 = (ExprInterface)ctx.rel_expr(0).accept(this);
+		ExprInterface v2 = null;
+		for(int i : IntStream.range(0, ctx.rel_expr().size()-1).toArray()) {
+			v2 = (ExprInterface)ctx.rel_expr(i+1).accept(this);
+			v1 = new BExprBin(v1, ctx.or_op(i).op, v2);
+		}
+		return v1;
 	}
 
 	@Override
