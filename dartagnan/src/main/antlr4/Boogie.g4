@@ -211,7 +211,7 @@ Explies_op
     ;
 
 logical_expr
-    :   rel_expr (and_op rel_expr (and_op rel_expr)* | Or_op rel_expr (Or_op rel_expr)*)?
+    :   rel_expr (and_op rel_expr (and_op rel_expr)* | or_op rel_expr (or_op rel_expr)*)?
     ;
 
 and_op returns [BOpBin op]
