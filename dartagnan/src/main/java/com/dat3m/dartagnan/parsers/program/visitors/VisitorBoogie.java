@@ -5,13 +5,13 @@ import java.util.stream.IntStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BExprBin;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
@@ -41,11 +41,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	for(Var_declContext varDelContext : ctx.var_decl()) {
     		visitVar_decl(varDelContext);
     	}
-
     	for(Proc_declContext procDecContext : ctx.proc_decl()) {
     		visitProc_decl(procDecContext);
     	}
-        
+    	for(Impl_declContext implDecContext : ctx.impl_decl()) {
+    		visitImpl_decl(implDecContext);
+    	}
     	return programBuilder.build();
     }
 
@@ -65,7 +66,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(programBuilder.getLocation(ident.getText()) != null) {
 	                throw new ParsingException("Variable " + ident.getText() + " is already defined globally");
 				}
-
 				programBuilder.getOrCreateRegister(scope, ident.getText());
 			}			
 		}
@@ -74,6 +74,29 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
     @Override
     public Object visitProc_decl(BoogieParser.Proc_declContext ctx) {
+    	if(ctx.impl_body() == null) {
+    		return null;
+    	}
+    	
+    	currentThread ++;
+        programBuilder.initThread(currentThread);
+        
+        for(Local_varsContext localVarContext : ctx.impl_body().local_vars()) {
+        	visitLocal_vars(localVarContext, currentThread);
+        }
+        
+        for(ParseTree stmt : ctx.impl_body().stmt_list().children) {
+        	stmt.accept(this);
+        }
+
+        return null;
+    }
+    
+    @Override public Object visitImpl_decl(BoogieParser.Impl_declContext ctx) { 
+    	if(ctx.impl_body() == null) {
+    		return null;
+    	}
+    	
     	currentThread ++;
         programBuilder.initThread(currentThread);
         
@@ -202,7 +225,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         }
         return null;
 	}
-	
+
+	@Override
+	public Object visitParen_expr(BoogieParser.Paren_exprContext ctx) {
+		return ctx.expr().accept(this);
+	}
+
 	@Override
 	public Object visitInt_expr(BoogieParser.Int_exprContext ctx) {
 		return new IConst(Integer.parseInt(ctx.getText()));
