@@ -62,6 +62,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitLocal_vars(BoogieParser.Local_varsContext ctx, int scope) {
 		for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+				if(programBuilder.getLocation(ident.getText()) != null) {
+	                throw new ParsingException("Variable " + ident.getText() + " is already defined globally");
+				}
+
 				programBuilder.getOrCreateRegister(scope, ident.getText());
 			}			
 		}
