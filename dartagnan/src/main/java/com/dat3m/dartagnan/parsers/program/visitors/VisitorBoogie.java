@@ -1,10 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
+
 import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.expression.BExprBin;
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -22,6 +25,7 @@ import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
@@ -36,6 +40,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	private ProgramBuilder programBuilder;
     private int currentThread = 0;
+    private boolean endLabel = false;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -51,6 +56,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
     	for(Impl_declContext implDecContext : ctx.impl_decl()) {
     		visitImpl_decl(implDecContext);
+    	}
+    	if(endLabel) {
+			Label label = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
+    		programBuilder.addChild(currentThread, label);
     	}
     	return programBuilder.build();
     }
@@ -187,6 +196,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
         
 		return null;
+	}
+
+	@Override
+	public Object visitAssume_cmd(BoogieParser.Assume_cmdContext ctx) {
+		if(!ctx.proposition().expr().getText().equals("true")) {
+			Label label = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
+			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
+	        programBuilder.addChild(currentThread, new CondJump(new BExprUn(NOT, c), label));
+	        endLabel = true;
+		}
+        return null;
 	}
 
 	@Override
