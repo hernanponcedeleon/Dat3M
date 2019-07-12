@@ -208,10 +208,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAssume_cmd(BoogieParser.Assume_cmdContext ctx) {
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
+			Label current = null;
 			Label pairingLabel = null;
 			if(!processingLabels.isEmpty()) {
 				// We process the current label
-				Label current = processingLabels.get(0);
+				current = processingLabels.get(0);
 				// If it has a pairing label, this will be the next jump,
 				// if not the next jump will be the end of the program
 				if(pairLabels.get(current) != null) {
@@ -245,14 +246,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitGoto_cmd(BoogieParser.Goto_cmdContext ctx) {
 		Label l1 = programBuilder.getOrCreateLabel(ctx.idents().children.get(0).getText());
-		if(ctx.idents().children.size() > 1) {
-			// We know there are 2 labels and a comma in the middle
-			Label l2 = programBuilder.getOrCreateLabel(ctx.idents().children.get(2).getText());
-			processingLabels.add(l1);
-			processingLabels.add(l2);
-			pairLabels.put(l1, l2);
-		}
         programBuilder.addChild(currentThread, new Jump(l1));
+		if(ctx.idents().children.size() > 1) {
+			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
+				l1 = programBuilder.getOrCreateLabel(ctx.idents().children.get(index - 2).getText());
+				if(!processingLabels.contains(l1)) {
+					processingLabels.add(l1);	
+				}
+				// We know there are 2 labels and a comma in the middle
+				Label l2 = programBuilder.getOrCreateLabel(ctx.idents().children.get(index).getText());
+				if(!processingLabels.contains(l1)) {
+					processingLabels.add(l2);	
+				}
+				pairLabels.put(l1, l2);				
+			}
+		}
         return null;	
 	}
 
