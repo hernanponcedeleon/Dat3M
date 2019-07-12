@@ -2,6 +2,10 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -41,6 +45,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private ProgramBuilder programBuilder;
     private int currentThread = 0;
     private boolean endLabel = false;
+    private List<Label> processingLabels = new ArrayList<>();
+    private Map<Label, Label> pairLabels = new HashMap<>();
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -200,11 +206,31 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAssume_cmd(BoogieParser.Assume_cmdContext ctx) {
+		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
-			Label label = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
+			Label pairingLabel = null;
+			if(!processingLabels.isEmpty()) {
+				// We process the current label
+				Label current = processingLabels.get(0);
+				// If it has a pairing label, this will be the next jump,
+				// if not the next jump will be the end of the program
+				if(pairLabels.get(current) != null) {
+					pairingLabel = pairLabels.get(current);								
+				} else {
+					pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
+					// We set the flag to create the end label
+					endLabel = true;
+				}
+				// We are done processing current one
+				processingLabels.remove(current);
+			} else {
+				// If there nothing to be processed, we jump to the end of the program
+				pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
+				// We set the flag to create the end label
+				endLabel = true;
+			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
-	        programBuilder.addChild(currentThread, new CondJump(new BExprUn(NOT, c), label));
-	        endLabel = true;
+	        programBuilder.addChild(currentThread, new CondJump(new BExprUn(NOT, c), pairingLabel));
 		}
         return null;
 	}
@@ -218,8 +244,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitGoto_cmd(BoogieParser.Goto_cmdContext ctx) {
-		Label label = programBuilder.getOrCreateLabel(ctx.idents().children.get(0).getText());
-        programBuilder.addChild(currentThread, new Jump(label));
+		Label l1 = programBuilder.getOrCreateLabel(ctx.idents().children.get(0).getText());
+		if(ctx.idents().children.size() > 1) {
+			// We know there are 2 labels and a comma in the middle
+			Label l2 = programBuilder.getOrCreateLabel(ctx.idents().children.get(2).getText());
+			processingLabels.add(l1);
+			processingLabels.add(l2);
+			pairLabels.put(l1, l2);
+		}
+        programBuilder.addChild(currentThread, new Jump(l1));
         return null;	
 	}
 
