@@ -61,13 +61,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
     	for(Proc_declContext procDecContext : ctx.proc_decl()) {
     		visitProc_decl(procDecContext);
+        	if(endLabel) {
+            	String labelName = "END_OF_" + currentThread;
+    			Label label = programBuilder.getOrCreateLabel(labelName);
+        		programBuilder.addChild(currentThread, label);
+        		endLabel = false;
+        	}
     	}
     	for(Impl_declContext implDecContext : ctx.impl_decl()) {
     		visitImpl_decl(implDecContext);
-    	}
-    	if(endLabel) {
-			Label label = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
-    		programBuilder.addChild(currentThread, label);
+        	if(endLabel) {
+            	String labelName = "END_OF_" + currentThread;
+    			Label label = programBuilder.getOrCreateLabel(labelName);
+        		programBuilder.addChild(currentThread, label);
+        		endLabel = false;
+        	}
     	}
     	return programBuilder.build();
     }
@@ -112,7 +120,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         for(Local_varsContext localVarContext : ctx.impl_body().local_vars()) {
         	visitLocal_vars(localVarContext, currentThread);
         }
-        
+
         for(ParseTree stmt : ctx.impl_body().stmt_list().children) {
         	stmt.accept(this);
         }
@@ -220,7 +228,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(pairLabels.get(current) != null) {
 					pairingLabel = pairLabels.get(current);								
 				} else {
-					pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
+		        	String labelName = "END_OF_" + currentThread;
+		        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
 					// We set the flag to create the end label
 					endLabel = true;
 				}
@@ -228,7 +237,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				processingLabels.remove(current);
 			} else {
 				// If there nothing to be processed, we jump to the end of the program
-				pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + programBuilder.hashCode());
+	        	String labelName = "END_OF_" + currentThread;
+	        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
 				// We set the flag to create the end label
 				endLabel = true;
 			}
@@ -240,23 +250,27 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitLabel(BoogieParser.LabelContext ctx) {
-		Label label = programBuilder.getOrCreateLabel(ctx.children.get(0).getText());
+		String labelName = ctx.children.get(0).getText() + "_" + currentThread;
+		Label label = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(currentThread, label);
         return null;
 	}
 
 	@Override
 	public Object visitGoto_cmd(BoogieParser.Goto_cmdContext ctx) {
-		Label l1 = programBuilder.getOrCreateLabel(ctx.idents().children.get(0).getText());
+    	String labelName = ctx.idents().children.get(0).getText() + "_" + currentThread;
+		Label l1 = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(currentThread, new Jump(l1));
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
-				l1 = programBuilder.getOrCreateLabel(ctx.idents().children.get(index - 2).getText());
+		    	labelName = ctx.idents().children.get(index - 2).getText() + "_" + currentThread;
+				l1 = programBuilder.getOrCreateLabel(labelName);
 				if(!processingLabels.contains(l1)) {
 					processingLabels.add(l1);	
 				}
 				// We know there are 2 labels and a comma in the middle
-				Label l2 = programBuilder.getOrCreateLabel(ctx.idents().children.get(index).getText());
+		    	labelName = ctx.idents().children.get(index).getText() + "_" + currentThread;
+				Label l2 = programBuilder.getOrCreateLabel(labelName);
 				if(!processingLabels.contains(l1)) {
 					processingLabels.add(l2);	
 				}
