@@ -272,9 +272,13 @@ power
     ;
 
 unary_expr
-    :	Minus unary_expr
+    :	minus_expr
     |	neg_expr
     |	coercion_expr
+    ;
+
+minus_expr
+    :   Minus unary_expr
     ;
 
 neg_expr

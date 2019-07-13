@@ -17,7 +17,9 @@ import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
@@ -276,6 +278,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			v1 = new BExprBin(v1, ctx.or_op().op, vAnd);
 		}
 		return v1;
+	}
+
+	@Override
+	public Object visitMinus_expr(BoogieParser.Minus_exprContext ctx) {
+		ExprInterface v = (ExprInterface)ctx.unary_expr().accept(this);
+		return new IExprUn(IOpUn.MINUS, v);
 	}
 
 	@Override
