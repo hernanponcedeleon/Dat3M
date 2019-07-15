@@ -19,7 +19,11 @@ const_decl
     ;
 
 func_decl
-    :   'function' attr* Ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( 'returns' LPar var_or_type RPar | Colon type ) ( LBrace expr RBrace | Semi )
+    :   'function' attr* Ident type_params? LPar (var_or_type (Comma var_or_type)*)? RPar ( 'returns' return_var_or_type | Colon type ) ( LBrace expr RBrace | Semi )
+    ;
+
+return_var_or_type
+    :   LPar var_or_type RPar
     ;
 
 impl_decl
@@ -303,6 +307,7 @@ atom_expr
     |	int_expr
     |	Bv_lit
     |	var_expr
+    |	fun_expr
     |	old_expr
     |	arith_coercion_expr
     |	paren_expr
@@ -318,7 +323,11 @@ int_expr
     ;
 
 var_expr
-    :   Ident (LPar exprs* RPar)?
+    :   Ident
+    ;
+
+fun_expr
+    :   Ident LPar (expr (Comma expr)*)? RPar
     ;
 
 bool_lit returns [Boolean value]

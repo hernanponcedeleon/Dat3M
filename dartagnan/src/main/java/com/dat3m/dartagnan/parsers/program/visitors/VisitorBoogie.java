@@ -57,8 +57,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
     @Override
     public Object visitMain(BoogieParser.MainContext ctx) {
-    	for(Var_declContext varDelContext : ctx.var_decl()) {
-    		visitVar_decl(varDelContext);
+    	for(Var_declContext varDecContext : ctx.var_decl()) {
+    		visitVar_decl(varDecContext);
     	}
     	for(Proc_declContext procDecContext : ctx.proc_decl()) {
     		visitProc_decl(procDecContext);
@@ -374,7 +374,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
             return register;
         }
-        return null;
+        return programBuilder.getOrCreateRegister(currentThread, ctx.getText());
 	}
 
 	@Override
