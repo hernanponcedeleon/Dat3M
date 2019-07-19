@@ -95,6 +95,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFunc_decl(BoogieParser.Func_declContext ctx) {
+		// Nested definitions of functions is not working 
 		functions.put(ctx.Ident().getText(), new Function(ctx.var_or_type(), ctx.expr()));
 		return null;
 	}
