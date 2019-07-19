@@ -234,8 +234,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					// We set the flag to create the end label
 					endLabel = true;
 				}
-				// We are done processing current one
-				processingLabels.remove(current);
 			} else {
 				// If there nothing to be processed, we jump to the end of the program
 	        	String labelName = "END_OF_" + currentThread;
@@ -254,6 +252,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String labelName = ctx.children.get(0).getText() + "_" + currentThread;
 		Label label = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(currentThread, label);
+        // We remove the first label from the list when we visit a NEW label
+		if(!processingLabels.isEmpty() && !processingLabels.get(0).equals(label)) {
+			processingLabels.remove(0);
+		}
         return null;
 	}
 
