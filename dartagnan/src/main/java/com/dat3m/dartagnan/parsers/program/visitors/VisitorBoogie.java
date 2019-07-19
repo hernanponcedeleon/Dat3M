@@ -24,11 +24,15 @@ import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Var_or_typeContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
+import com.dat3m.dartagnan.parsers.boogie.Function;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -47,9 +51,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	private ProgramBuilder programBuilder;
     private int currentThread = 0;
+    
     private boolean endLabel = false;
     private List<Label> processingLabels = new ArrayList<>();
     private Map<Label, Label> pairLabels = new HashMap<>();
+    
+    private Map<String, Function> functions = new HashMap<>();
+    private boolean replaceMode = false;
+    private String currentFunction = null;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -57,6 +66,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
     @Override
     public Object visitMain(BoogieParser.MainContext ctx) {
+    	for(Func_declContext funDecContext : ctx.func_decl()) {
+    		visitFunc_decl(funDecContext);
+    	}
     	for(Var_declContext varDecContext : ctx.var_decl()) {
     		visitVar_decl(varDecContext);
     	}
@@ -80,6 +92,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
     	return programBuilder.build();
     }
+
+	@Override
+	public Object visitFunc_decl(BoogieParser.Func_declContext ctx) {
+		functions.put(ctx.Ident().getText(), new Function(ctx.var_or_type(), ctx.expr()));
+		return null;
+	}
 
     @Override
     public Object visitVar_decl(BoogieParser.Var_declContext ctx) {
@@ -366,17 +384,41 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitVar_expr(BoogieParser.Var_exprContext ctx) {
-        Register register = programBuilder.getRegister(currentThread, ctx.getText());
+		String name = replaceMode ? functions.get(currentFunction).getReplaceMap().get(ctx.getText()) : ctx.getText();
+        Register register = programBuilder.getRegister(currentThread, name);
         if(register != null){
             return register;
         }
-        Location location = programBuilder.getLocation(ctx.getText());
+        Location location = programBuilder.getLocation(name);
         if(location != null){
             register = programBuilder.getOrCreateRegister(currentThread, null);
             programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
             return register;
         }
-        return programBuilder.getOrCreateRegister(currentThread, ctx.getText());
+        return programBuilder.getOrCreateRegister(currentThread, name);
+	}
+
+	@Override
+	public Object visitFun_expr(BoogieParser.Fun_exprContext ctx) {
+		currentFunction = ctx.Ident().getText();
+		Function function = functions.get(currentFunction);
+		if(function == null) {
+			throw new ParsingException("Function " + currentFunction + " is not defined");
+		}
+		ExprContext body = function.getBody();
+		List<Var_or_typeContext> signature = function.getSignature();
+		List<ExprContext> callParam = ctx.expr();
+		if(!(signature.size() == callParam.size())) {
+			throw new ParsingException("The number of parameters in the function call does not match the function signature");
+		}
+        for(int index : IntStream.range(0, signature.size()).toArray()) {
+			function.getReplaceMap().put(signature.get(index).Ident().getText(), callParam.get(index).getText());
+		}
+		replaceMode = true;
+		Object ret = body.accept(this);
+		replaceMode = false;
+		currentFunction = null;
+		return ret;
 	}
 
 	@Override
