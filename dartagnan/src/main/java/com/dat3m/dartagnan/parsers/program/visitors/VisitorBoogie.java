@@ -37,6 +37,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_or_typeContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.boogie.Function;
+import com.dat3m.dartagnan.parsers.boogie.FunctionCall;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -63,6 +64,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     private Map<String, Function> functions = new HashMap<>();
     private boolean replaceMode = false;
     private String currentFunction = null;
+	private FunctionCall currentCall = null;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -371,7 +373,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitVar_expr(BoogieParser.Var_exprContext ctx) {
-		String name = replaceMode ? functions.get(currentFunction).getReplaceMap().get(ctx.getText()) : ctx.getText();
+		String name = replaceMode ? currentCall.getMap().get(ctx.getText()) : ctx.getText();
         Register register = programBuilder.getRegister(currentThread, name);
         if(register != null){
             return register;
@@ -392,19 +394,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(function == null) {
 			throw new ParsingException("Function " + currentFunction + " is not defined");
 		}
-		ExprContext body = function.getBody();
-		List<Var_or_typeContext> signature = function.getSignature();
-		List<ExprContext> callParam = ctx.expr();
-		if(!(signature.size() == callParam.size())) {
-			throw new ParsingException("The number of parameters in the function call does not match the function signature");
-		}
-        for(int index : IntStream.range(0, signature.size()).toArray()) {
-			function.getReplaceMap().put(signature.get(index).Ident().getText(), callParam.get(index).getText());
-		}
+		currentCall = new FunctionCall(function, ctx.expr(), currentCall);
 		replaceMode = true;
-		Object ret = body.accept(this);
+		Object ret = function.getBody().accept(this);
 		replaceMode = false;
 		currentFunction = null;
+		currentCall = null;
 		return ret;
 	}
 
