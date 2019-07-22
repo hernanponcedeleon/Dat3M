@@ -3,11 +3,14 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
@@ -72,17 +75,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	for(Var_declContext varDecContext : ctx.var_decl()) {
     		visitVar_decl(varDecContext);
     	}
-    	for(Proc_declContext procDecContext : ctx.proc_decl()) {
-    		visitProc_decl(procDecContext);
-        	if(endLabel) {
-            	String labelName = "END_OF_" + currentThread;
-    			Label label = programBuilder.getOrCreateLabel(labelName);
-        		programBuilder.addChild(currentThread, label);
-        		endLabel = false;
-        	}
-    	}
-    	for(Impl_declContext implDecContext : ctx.impl_decl()) {
-    		visitImpl_decl(implDecContext);
+    	List<RuleContext> procImpl_decContext = new ArrayList<>();
+    	procImpl_decContext.addAll(ctx.proc_decl());
+    	procImpl_decContext.addAll(ctx.impl_decl());
+    	for(RuleContext rule : procImpl_decContext) {
+    		if(rule instanceof Proc_declContext) {
+    			visitProc_decl((Proc_declContext) rule);	
+    		} else if (rule instanceof Impl_declContext){
+        		visitImpl_decl((Impl_declContext) rule);
+    		}
         	if(endLabel) {
             	String labelName = "END_OF_" + currentThread;
     			Label label = programBuilder.getOrCreateLabel(labelName);
