@@ -36,13 +36,12 @@ public class FunctionCall {
 			String input = signature.get(index).Ident().getText();
 			String call = callParams.get(index).getText();
 			FunctionCall caller = getParent();
-			while(caller != null) {
+			while(caller != null && caller.getMap().keySet().contains(call)) {
 				call = caller.getMap().get(call);
 				caller = caller.getParent();
 			}
 			map.put(input, call);
 		}
-
 		return map;
     }
 }

@@ -62,8 +62,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     private Map<Label, Label> pairLabels = new HashMap<>();
     
     private Map<String, Function> functions = new HashMap<>();
-    private boolean replaceMode = false;
-    private String currentFunction = null;
 	private FunctionCall currentCall = null;
 
 	public VisitorBoogie(ProgramBuilder pb) {
@@ -373,7 +371,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitVar_expr(BoogieParser.Var_exprContext ctx) {
-		String name = replaceMode ? currentCall.getMap().get(ctx.getText()) : ctx.getText();
+		String name = currentCall != null ? currentCall.getMap().get(ctx.getText()) : ctx.getText();
         Register register = programBuilder.getRegister(currentThread, name);
         if(register != null){
             return register;
@@ -389,17 +387,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFun_expr(BoogieParser.Fun_exprContext ctx) {
-		currentFunction = ctx.Ident().getText();
-		Function function = functions.get(currentFunction);
+		Function function = functions.get(ctx.Ident().getText());
 		if(function == null) {
-			throw new ParsingException("Function " + currentFunction + " is not defined");
+			throw new ParsingException("Function " + ctx.Ident().getText() + " is not defined");
 		}
+		// push currentCall to the call stack
 		currentCall = new FunctionCall(function, ctx.expr(), currentCall);
-		replaceMode = true;
 		Object ret = function.getBody().accept(this);
-		replaceMode = false;
-		currentFunction = null;
-		currentCall = null;
+		// pop currentCall from the call stack
+		currentCall = currentCall.getParent();
 		return ret;
 	}
 
