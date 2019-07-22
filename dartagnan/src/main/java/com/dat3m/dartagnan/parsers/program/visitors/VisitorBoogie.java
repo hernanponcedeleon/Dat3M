@@ -29,6 +29,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
@@ -79,11 +80,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	procImpl_decContext.addAll(ctx.proc_decl());
     	procImpl_decContext.addAll(ctx.impl_decl());
     	for(RuleContext rule : procImpl_decContext) {
-    		if(rule instanceof Proc_declContext) {
-    			visitProc_decl((Proc_declContext) rule);	
-    		} else if (rule instanceof Impl_declContext){
-        		visitImpl_decl((Impl_declContext) rule);
-    		}
+   			visitProcImpl_decl( rule);	
         	if(endLabel) {
             	String labelName = "END_OF_" + currentThread;
     			Label label = programBuilder.getOrCreateLabel(labelName);
@@ -129,39 +126,27 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 	return null;
    	 }
 
-    @Override
-    public Object visitProc_decl(BoogieParser.Proc_declContext ctx) {
-    	if(ctx.impl_body() == null) {
+    public Object visitProcImpl_decl(RuleContext ctx) {
+    	
+    	Impl_bodyContext body = null;
+    	if(ctx instanceof Proc_declContext) {
+    		body = ((Proc_declContext)ctx).impl_body();
+    	}
+    	if(ctx instanceof Impl_declContext) {
+    		body = ((Impl_declContext)ctx).impl_body();
+    	}
+    	if(body == null) {
     		return null;
     	}
     	
     	currentThread ++;
         programBuilder.initThread(currentThread);
         
-        for(Local_varsContext localVarContext : ctx.impl_body().local_vars()) {
+        for(Local_varsContext localVarContext : body.local_vars()) {
         	visitLocal_vars(localVarContext, currentThread);
         }
 
-        for(ParseTree stmt : ctx.impl_body().stmt_list().children) {
-        	stmt.accept(this);
-        }
-
-        return null;
-    }
-    
-    @Override public Object visitImpl_decl(BoogieParser.Impl_declContext ctx) { 
-    	if(ctx.impl_body() == null) {
-    		return null;
-    	}
-    	
-    	currentThread ++;
-        programBuilder.initThread(currentThread);
-        
-        for(Local_varsContext localVarContext : ctx.impl_body().local_vars()) {
-        	visitLocal_vars(localVarContext, currentThread);
-        }
-        
-        for(ParseTree stmt : ctx.impl_body().stmt_list().children) {
+        for(ParseTree stmt : body.stmt_list().children) {
         	stmt.accept(this);
         }
 
