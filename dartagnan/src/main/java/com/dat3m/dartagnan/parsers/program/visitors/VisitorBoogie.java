@@ -382,7 +382,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             return register;
         }
         throw new ParsingException("Variable " + name + " is not defined");
-        //return programBuilder.getOrCreateRegister(currentThread, name);
 	}
 
 	@Override
