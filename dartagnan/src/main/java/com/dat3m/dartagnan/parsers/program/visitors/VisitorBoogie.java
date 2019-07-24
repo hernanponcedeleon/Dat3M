@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
+import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,12 +27,15 @@ import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
+import com.dat3m.dartagnan.parsers.CatParser.ExprUnionContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.boogie.Function;
 import com.dat3m.dartagnan.parsers.boogie.FunctionCall;
@@ -60,6 +64,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     private Map<String, Function> functions = new HashMap<>();
 	private FunctionCall currentCall = null;
+	
+	private List<String> constants = new ArrayList<>();
+	private Map<String, ExprInterface> constantsMap = new HashMap<>();
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -69,6 +76,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     public Object visitMain(BoogieParser.MainContext ctx) {
     	for(Func_declContext funDecContext : ctx.func_decl()) {
     		visitFunc_decl(funDecContext);
+    	}
+    	for(Const_declContext constDecContext : ctx.const_decl()) {
+    		visitConst_decl(constDecContext);
+    	}
+    	for(Axiom_declContext axiomDecContext : ctx.axiom_decl()) {
+    		visitAxiom_decl(axiomDecContext);
     	}
     	for(Var_declContext varDecContext : ctx.var_decl()) {
     		visitVar_decl(varDecContext);
@@ -87,6 +100,26 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
     	return programBuilder.build();
     }
+
+	@Override
+	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
+		ExprInterface exp = (ExprInterface) ctx.proposition().accept(this);
+		if(!(exp instanceof Atom && ((Atom)exp).getOp().equals(EQ) && ((Atom)exp).getLHS() instanceof Register)) {
+			throw new ParsingException("Axioms shall define equality expressions for constants");
+		}
+		String name = ((Register)((Atom)exp).getLHS()).getName();
+		ExprInterface def = ((Atom)exp).getRHS();
+		constantsMap.put(name, def);
+		return null;
+	}
+
+	@Override
+	public Object visitConst_decl(BoogieParser.Const_declContext ctx) {
+		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
+			constants.add(ident.getText());
+		}
+		return null;
+	}
 
 	@Override
 	public Object visitFunc_decl(BoogieParser.Func_declContext ctx) {
@@ -368,6 +401,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitVar_expr(BoogieParser.Var_exprContext ctx) {
 		String name = ctx.getText();
+		if(constantsMap.containsKey(name)) {
+			return constantsMap.get(name);
+		}
+		if(constants.contains(name)) {
+			// Dummy register needed to parse axioms
+			return new Register(name, -1);
+		}
 		if(currentCall != null ) {
 			return currentCall.replaceVarsByExprs(ctx);
 		}

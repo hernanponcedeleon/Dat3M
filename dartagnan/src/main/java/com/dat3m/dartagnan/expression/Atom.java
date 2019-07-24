@@ -44,9 +44,21 @@ public class Atom extends BExpr implements ExprInterface {
     public String toString() {
         return lhs + " " + op + " " + rhs;
     }
-
-	@Override
+    
+    @Override
 	public boolean getBoolValue(Event e, Context ctx, Model model){
 		return op.combine(lhs.getIntValue(e, ctx, model), rhs.getIntValue(e, ctx, model));
 	}
+    
+    public COpBin getOp() {
+    	return op;
+    }
+    
+    public ExprInterface getLHS() {
+    	return lhs;
+    }
+    
+    public ExprInterface getRHS() {
+    	return rhs;
+    }
 }
