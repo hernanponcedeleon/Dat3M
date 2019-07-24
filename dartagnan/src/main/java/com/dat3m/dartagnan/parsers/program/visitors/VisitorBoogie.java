@@ -3,13 +3,12 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import com.dat3m.dartagnan.expression.Atom;
@@ -27,14 +26,12 @@ import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Var_or_typeContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.boogie.Function;
 import com.dat3m.dartagnan.parsers.boogie.FunctionCall;
@@ -191,7 +188,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAssign_cmd(BoogieParser.Assign_cmdContext ctx) {
-		//TODO handle complex lhs ... e.g lala(expr)
+		//TODO handle complex lhs ... e.g foo(expr)
 
 		// To be sure we get the exprs after the define
 		int index = ctx.exprs().size() == 1? 0 : 1;
@@ -370,7 +367,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitVar_expr(BoogieParser.Var_exprContext ctx) {
-		String name = currentCall != null ? currentCall.getMap().get(ctx.getText()) : ctx.getText();
+		String name = ctx.getText();
+		if(currentCall != null ) {
+			return currentCall.replaceVarsByExprs(ctx);
+		}
         Register register = programBuilder.getRegister(currentThread, name);
         if(register != null){
             return register;
@@ -381,7 +381,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
             return register;
         }
-        return programBuilder.getOrCreateRegister(currentThread, name);
+        throw new ParsingException("Variable " + name + " is not defined");
+        //return programBuilder.getOrCreateRegister(currentThread, name);
 	}
 
 	@Override
@@ -391,7 +392,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Function " + ctx.Ident().getText() + " is not defined");
 		}
 		// push currentCall to the call stack
-		currentCall = new FunctionCall(function, ctx.expr(), currentCall);
+		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
+		currentCall = new FunctionCall(function, callParams, currentCall);
 		Object ret = function.getBody().accept(this);
 		// pop currentCall from the call stack
 		currentCall = currentCall.getParent();
