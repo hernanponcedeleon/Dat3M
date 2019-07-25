@@ -35,7 +35,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
-import com.dat3m.dartagnan.parsers.CatParser.ExprUnionContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.boogie.Function;
 import com.dat3m.dartagnan.parsers.boogie.FunctionCall;
@@ -103,14 +102,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
-		ExprInterface exp = (ExprInterface) ctx.proposition().accept(this);
+		// TODO how to deal with b == b or b == a /\ a == b?
+		ExprInterface exp = (ExprInterface)ctx.proposition().accept(this);
 		if(!(exp instanceof Atom && ((Atom)exp).getOp().equals(EQ))) {
 			throw new ParsingException("Axioms shall define equality expressions for constants:\n" + ctx.getText());
 		}
-		if(!(((Atom)exp).getLHS() instanceof Register)) {
-			throw new ParsingException("Left-hand-side of " + ctx.getText() + " shall be a free constant but it evaluates to " + ((Atom)exp).getLHS());
+		ExprInterface lhs = ((Atom)exp).getLHS();
+		if(!(lhs instanceof Register)) {
+			throw new ParsingException("Left-hand-side of " + ctx.getText() + " shall be a free constant but it evaluates to " + lhs);
 		}
-		String name = ((Register)((Atom)exp).getLHS()).getName();
+		String name = ((Register)lhs).getName();
 		ExprInterface def = ((Atom)exp).getRHS();
 		constantsMap.put(name, def);
 		return null;
@@ -126,7 +127,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFunc_decl(BoogieParser.Func_declContext ctx) {
-		functions.put(ctx.Ident().getText(), new Function(ctx.Ident().getText(), ctx.var_or_type(), ctx.expr()));
+		String name = ctx.Ident().getText();
+		functions.put(name, new Function(name, ctx.var_or_type(), ctx.expr()));
 		return null;
 	}
 
@@ -149,6 +151,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				throw new ParsingException("Bitvectors are not yet supported");		
 			}
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+				if(constants.contains((ident.getText()))) {
+	                throw new ParsingException("Variable " + ident.getText() + " is already defined as a constant");
+				}
 				if(programBuilder.getLocation(ident.getText()) != null) {
 	                throw new ParsingException("Variable " + ident.getText() + " is already defined globally");
 				}
@@ -178,9 +183,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         	visitLocal_vars(localVarContext, currentThread);
         }
 
-        for(ParseTree stmt : body.stmt_list().children) {
-        	stmt.accept(this);
-        }
+        visitChildren(body.stmt_list());
 
         return null;
     }
@@ -412,7 +415,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return constantsMap.get(name);
 		}
 		if(constants.contains(name)) {
-			// TODO how to deal with b == b or b == a /\ a == b?
 			// Dummy register needed to parse axioms
 			return new Register(name, -1);
 		}
