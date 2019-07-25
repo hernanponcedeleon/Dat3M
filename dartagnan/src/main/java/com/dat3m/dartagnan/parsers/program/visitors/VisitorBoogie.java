@@ -29,6 +29,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
@@ -229,18 +230,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAssign_cmd(BoogieParser.Assign_cmdContext ctx) {
 		//TODO handle complex lhs ... e.g foo(expr)
 
-		// To be sure we get the exprs after the define
-		int index = ctx.exprs().size() == 1? 0 : 1;
-        ExprInterface value = (ExprInterface)ctx.exprs(index).expr(0).accept(this);
+        ExprsContext exprs = ctx.def_body().exprs();
+		// We get the first value and then iterate
+        ExprInterface value = (ExprInterface)exprs.expr(0).accept(this);
 		
         for(int i : IntStream.range(0, ctx.Ident().size()).toArray()) {
-        	if(ctx.exprs(index).expr().size() != 1 && ctx.exprs(index).expr().size() != ctx.Ident().size()) {
+        	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
                 throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
         	}
         	// No need to recompute value in the first iteration
-			if(ctx.exprs(index).expr().size() != 1 && i != 0) {
+			if(exprs.expr().size() != 1 && i != 0) {
 				// if there is more than one expression, there should be exactly one per variable, thus we use 'i'
-				value = (ExprInterface)ctx.exprs(index).expr(i).accept(this);
+				value = (ExprInterface)exprs.expr(i).accept(this);
 			}
 			String name = ctx.Ident(i).getText();
 			if(constants.contains(name)) {
