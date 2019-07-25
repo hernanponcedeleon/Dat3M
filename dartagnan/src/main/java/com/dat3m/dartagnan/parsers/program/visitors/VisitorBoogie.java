@@ -104,8 +104,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
 		ExprInterface exp = (ExprInterface) ctx.proposition().accept(this);
-		if(!(exp instanceof Atom && ((Atom)exp).getOp().equals(EQ) && ((Atom)exp).getLHS() instanceof Register)) {
-			throw new ParsingException("Axioms shall define equality expressions for constants");
+		if(!(exp instanceof Atom && ((Atom)exp).getOp().equals(EQ))) {
+			throw new ParsingException("Axioms shall define equality expressions for constants:\n" + ctx.getText());
+		}
+		if(!(((Atom)exp).getLHS() instanceof Register)) {
+			throw new ParsingException("Left-hand-side of " + ctx.getText() + " shall be a free constant but it evaluates to " + ((Atom)exp).getLHS());
 		}
 		String name = ((Register)((Atom)exp).getLHS()).getName();
 		ExprInterface def = ((Atom)exp).getRHS();
@@ -405,6 +408,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return constantsMap.get(name);
 		}
 		if(constants.contains(name)) {
+			// TODO how to deal with b == b or b == a /\ a == b?
 			// Dummy register needed to parse axioms
 			return new Register(name, -1);
 		}
