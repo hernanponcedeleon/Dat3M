@@ -264,27 +264,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAssume_cmd(BoogieParser.Assume_cmdContext ctx) {
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
-			Label current = null;
 			Label pairingLabel = null;
-			if(!processingLabels.isEmpty()) {
-				// We process the current label
-				current = processingLabels.get(0);
-				// If it has a pairing label, this will be the next jump,
-				// if not the next jump will be the end of the program
-				if(pairLabels.get(current) != null) {
-					pairingLabel = pairLabels.get(current);								
-				} else {
-		        	String labelName = "END_OF_" + currentThread;
-		        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
-					// We set the flag to create the end label
-					endLabel = true;
-				}
-			} else {
-				// If there nothing to be processed, we jump to the end of the program
-	        	String labelName = "END_OF_" + currentThread;
+			if(processingLabels.isEmpty() || pairLabels.get(processingLabels.get(0)) == null) {
+				// If there nothing to be processed or the current processing label 
+				// doesn't have a pairing label, we jump to the end of the program
+				String labelName = "END_OF_" + currentThread;
 	        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
 				// We set the flag to create the end label
 				endLabel = true;
+			} else {
+				pairingLabel = pairLabels.get(processingLabels.get(0));								
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 	        programBuilder.addChild(currentThread, new CondJump(new BExprUn(NOT, c), pairingLabel));
