@@ -190,34 +190,34 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
 	@Override
 	public Object visitWhile_cmd(BoogieParser.While_cmdContext ctx) {
-        ExprInterface expr = (ExprInterface) ctx.guard().expr().accept(this);
+        ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
         Skip exitEvent = new Skip();
         While whileEvent = new While(expr, exitEvent);
         programBuilder.addChild(currentThread, whileEvent);
 
-        ctx.stmt_list().accept(this);
+        visitChildren(ctx.stmt_list());
         return programBuilder.addChild(currentThread, exitEvent);
 	}
 
 	@Override
 	public Object visitIf_cmd(BoogieParser.If_cmdContext ctx) {
-        ExprInterface expr = (ExprInterface) ctx.guard().expr().accept(this);
+        ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
         Skip exitMainBranch = new Skip();
         Skip exitElseBranch = new Skip();
         If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
         programBuilder.addChild(currentThread, ifEvent);
         
-        ctx.stmt_list(0).accept(this);
+        visitChildren(ctx.stmt_list(0));
         programBuilder.addChild(currentThread, exitMainBranch);
 
         // case when the else branch is a stmt list
         if(ctx.stmt_list().size() > 1){
-            ctx.stmt_list(1).accept(this);
+            visitChildren(ctx.stmt_list(1));
         }
 
         // case when the else branch is another if        
         if(ctx.if_cmd() != null) {
-        	ctx.if_cmd().accept(this);
+            visitChildren(ctx.if_cmd());
         }
         
         programBuilder.addChild(currentThread, exitElseBranch);
