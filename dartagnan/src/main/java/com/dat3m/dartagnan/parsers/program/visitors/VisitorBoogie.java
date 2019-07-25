@@ -239,11 +239,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				// if there is more than one expression, there should be exactly one per variable, thus we use 'i'
 				value = (ExprInterface)ctx.exprs(index).expr(i).accept(this);
 			}
-			Register register = programBuilder.getRegister(currentThread, ctx.Ident(i).getText());
+			String name = ctx.Ident(i).getText();
+			if(constants.contains(name)) {
+				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
+			}
+			Register register = programBuilder.getRegister(currentThread, name);
 	        if(register != null){
 	            programBuilder.addChild(currentThread, new Local(register, value));
 	        }
-	        Location location = programBuilder.getLocation(ctx.Ident(i).getText());
+	        Location location = programBuilder.getLocation(name);
 	        if(location != null){
 	            programBuilder.addChild(currentThread, new Store(location.getAddress(), value, "NA"));
 	        }
