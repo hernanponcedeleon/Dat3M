@@ -273,7 +273,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				// We set the flag to create the end label
 				endLabel = true;
 			} else {
-				pairingLabel = pairLabels.get(processingLabels.get(0));								
+				pairingLabel = pairLabels.get(processingLabels.get(0));
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 	        programBuilder.addChild(currentThread, new CondJump(new BExprUn(NOT, c), pairingLabel));
@@ -308,7 +308,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				// We know there are 2 labels and a comma in the middle
 		    	labelName = ctx.idents().children.get(index).getText() + "_" + currentThread;
 				Label l2 = programBuilder.getOrCreateLabel(labelName);
-				if(!processingLabels.contains(l1)) {
+				if(!processingLabels.contains(l2)) {
 					processingLabels.add(l2);	
 				}
 				pairLabels.put(l1, l2);				
