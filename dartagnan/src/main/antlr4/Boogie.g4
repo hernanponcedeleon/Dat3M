@@ -111,7 +111,11 @@ assert_cmd
     ;
 
 assign_cmd
-    :   Ident (LBracket exprs? RBracket)* (Comma Ident (LBracket exprs? RBracket )*)* Define exprs Semi
+    :   Ident (LBracket exprs? RBracket)* (Comma Ident (LBracket exprs? RBracket )*)* Define def_body Semi
+    ;
+
+def_body
+    :   exprs
     ;
 
 assume_cmd
