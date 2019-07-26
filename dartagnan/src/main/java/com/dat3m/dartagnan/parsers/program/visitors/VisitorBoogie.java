@@ -190,6 +190,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     }
     
 	@Override
+	public Object visitCall_cmd(BoogieParser.Call_cmdContext ctx) {
+		// Currently we do nothing with procedure calls
+		return null;
+	}
+
+	@Override
 	public Object visitWhile_cmd(BoogieParser.While_cmdContext ctx) {
         ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
         Skip exitEvent = new Skip();
