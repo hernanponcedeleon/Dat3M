@@ -5,10 +5,9 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -71,6 +70,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     private Map<String, Function> functions = new HashMap<>();
 	private FunctionCall currentCall = null;
 	
+	private Map<String, RuleContext> procedures = new HashMap<>();
+	// Used to give names to labels
+	private Stack<String> visitingProcedures = new Stack<String>();
+	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
 	
@@ -99,14 +102,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	procImpl_decContext.addAll(ctx.proc_decl());
     	procImpl_decContext.addAll(ctx.impl_decl());
     	for(RuleContext rule : procImpl_decContext) {
-   			visitProcImpl_decl( rule);	
-        	if(endLabel) {
-            	String labelName = "END_OF_" + currentThread;
-    			Label label = programBuilder.getOrCreateLabel(labelName);
-        		programBuilder.addChild(currentThread, label);
-        		endLabel = false;
-        	}
-    	}	
+    		preProcImpl_decl(rule);
+    	}
+    	if(!procedures.containsKey("main")) {
+    		throw new ParsingException("Program shall have a main procedure");
+    	}
+		visitProcImpl_decl(procedures.get("main"), true);
     	AbstractAssert finalAss = null;
     	if(!assertions.isEmpty()) {
     		finalAss = assertions.remove(0);
@@ -117,6 +118,19 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}    	
     	return programBuilder.build();
     }
+
+	private void preProcImpl_decl(RuleContext ctx) {
+		String name = null;
+    	if(ctx instanceof Proc_declContext) {
+    		Proc_declContext proc = (Proc_declContext) ctx;
+			name = proc.proc_sign().Ident().getText();
+    	}
+    	if(ctx instanceof Impl_declContext) {
+    		Impl_declContext impl = (Impl_declContext)ctx;
+    		name = impl.proc_sign().Ident().getText();
+    	}
+    	procedures.put(name, ctx);
+	}
 
 	@Override
 	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
@@ -181,29 +195,44 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 	return null;
    	 }
 
-    public Object visitProcImpl_decl(RuleContext ctx) {
+    public void visitProcImpl_decl(RuleContext ctx, boolean create) {
     	
+    	String name = null;
     	Impl_bodyContext body = null;
     	if(ctx instanceof Proc_declContext) {
-    		body = ((Proc_declContext)ctx).impl_body();
+    		Proc_declContext proc = (Proc_declContext)ctx;
+    		name = proc.proc_sign().Ident().getText();
+			body = proc.impl_body();
     	}
     	if(ctx instanceof Impl_declContext) {
-    		body = ((Impl_declContext)ctx).impl_body();
+    		Impl_declContext impl = (Impl_declContext)ctx;
+    		name = impl.proc_sign().Ident().getText();
+			body = impl.impl_body();
     	}
     	if(body == null) {
-    		return null;
+    		return;
     	}
     	
-    	currentThread ++;
-        programBuilder.initThread(currentThread);
-        
+    	visitingProcedures.add(name);
+    	
+    	if(create) {
+        	currentThread ++;
+            programBuilder.initThread(currentThread);
+    	}
+    	
         for(Local_varsContext localVarContext : body.local_vars()) {
         	visitLocal_vars(localVarContext, currentThread);
         }
 
         visitChildren(body.stmt_list());
+        visitingProcedures.remove(name);
 
-        return null;
+        if(endLabel) {
+        	String labelName = "END_OF_" + currentThread;
+			Label label = programBuilder.getOrCreateLabel(labelName);
+    		programBuilder.addChild(currentThread, label);
+    		endLabel = false;
+    	}
     }
     
     @Override 
@@ -218,7 +247,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
 	@Override
 	public Object visitCall_cmd(BoogieParser.Call_cmdContext ctx) {
-		// Currently we do nothing with procedure calls
+		String name = ctx.call_params().Ident(0).getText();
+		if(!procedures.containsKey(name)) {
+			throw new ParsingException("Procedure " + name + " is not defined");
+		}
+		RuleContext rule = procedures.get(name);
+		visitProcImpl_decl(rule, false);
 		return null;
 	}
 
@@ -262,7 +296,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAssign_cmd(BoogieParser.Assign_cmdContext ctx) {
 		//TODO handle complex lhs ... e.g foo(expr)
-
+		
         ExprsContext exprs = ctx.def_body().exprs();
 		// We get the first value and then iterate
         ExprInterface value = (ExprInterface)exprs.expr(0).accept(this);
@@ -318,7 +352,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitLabel(BoogieParser.LabelContext ctx) {
-		String labelName = ctx.children.get(0).getText() + "_" + currentThread;
+		// Since we "inline" procedures, label names might clash
+		String labelName = visitingProcedures.pop() + ":" + ctx.children.get(0).getText() + "_" + currentThread;
 		Label label = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(currentThread, label);
         // We remove the first label from the list when we visit a NEW label
@@ -468,6 +503,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
 		currentCall = new FunctionCall(function, callParams, currentCall);
+		// Some functions do not have a body
+		if(function.getBody() == null) {
+			throw new ParsingException("Function " + ctx.Ident().getText() + " does not have an implementation");
+		}
 		Object ret = function.getBody().accept(this);
 		// pop currentCall from the call stack
 		currentCall = currentCall.getParent();
