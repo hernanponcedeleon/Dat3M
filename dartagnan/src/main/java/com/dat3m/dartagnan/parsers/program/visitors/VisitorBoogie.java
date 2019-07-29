@@ -71,7 +71,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private Map<String, RuleContext> procedures = new HashMap<>();
 	
-	private Scope currentScope = new Scope(0, null);
+	private int nextScopeID = 0;
+	private Scope currentScope = new Scope(nextScopeID, currentThread, null);
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
@@ -200,8 +201,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 }
 
     public void visitProcImpl_decl(RuleContext ctx, boolean create) {
-    	
-    	currentScope = new Scope(currentScope.getID()+1, currentScope);
+
+    	if(create) {
+        	currentThread ++;
+            programBuilder.initThread(currentScope.getThreadId());
+    	}
+
+    	currentScope = new Scope(nextScopeID, currentThread, currentScope);
+    	nextScopeID++;
     	
     	Impl_bodyContext body = null;
     	if(ctx instanceof Proc_declContext) {
@@ -216,14 +223,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		currentScope = currentScope.getParent();
     		return;
     	}
-    	
-    	if(create) {
-        	currentThread ++;
-            programBuilder.initThread(currentThread);
-    	}
-    	
+    	    	
         for(Local_varsContext localVarContext : body.local_vars()) {
-        	visitLocal_vars(localVarContext, currentThread);
+        	visitLocal_vars(localVarContext, currentScope.getThreadId());
         }
 
         visitChildren(body.stmt_list());
@@ -231,7 +233,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         if(currentScope.getEndLabel()) {
         	String labelName = "END_OF_" + currentScope.getID();
 			Label label = programBuilder.getOrCreateLabel(labelName);
-    		programBuilder.addChild(currentThread, label);
+    		programBuilder.addChild(currentScope.getThreadId(), label);
     		currentScope.setEndLabel(false);;
     	}
         
@@ -240,10 +242,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     @Override 
     public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
-    	Register ass = programBuilder.getOrCreateRegister(currentThread, "assert_" + assertionIndex);
+    	Register ass = programBuilder.getOrCreateRegister(currentScope.getThreadId(), "assert_" + assertionIndex);
     	assertions.add(new AssertBasic(ass, EQ, new BConst(false)));
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
-    	programBuilder.addChild(currentThread, new Local(ass, expr));
+    	programBuilder.addChild(currentScope.getThreadId(), new Local(ass, expr));
     	assertionIndex ++;
     	return null;
     }
@@ -269,10 +271,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
         Skip exitEvent = new Skip();
         While whileEvent = new While(expr, exitEvent);
-        programBuilder.addChild(currentThread, whileEvent);
+        programBuilder.addChild(currentScope.getThreadId(), whileEvent);
 
         visitChildren(ctx.stmt_list());
-        return programBuilder.addChild(currentThread, exitEvent);
+        return programBuilder.addChild(currentScope.getThreadId(), exitEvent);
 	}
 
 	@Override
@@ -281,10 +283,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         Skip exitMainBranch = new Skip();
         Skip exitElseBranch = new Skip();
         If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
-        programBuilder.addChild(currentThread, ifEvent);
+        programBuilder.addChild(currentScope.getThreadId(), ifEvent);
         
         visitChildren(ctx.stmt_list(0));
-        programBuilder.addChild(currentThread, exitMainBranch);
+        programBuilder.addChild(currentScope.getThreadId(), exitMainBranch);
 
         // case when the else branch is a stmt list
         if(ctx.stmt_list().size() > 1){
@@ -296,7 +298,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             visitChildren(ctx.if_cmd());
         }
         
-        programBuilder.addChild(currentThread, exitElseBranch);
+        programBuilder.addChild(currentScope.getThreadId(), exitElseBranch);
         return null;
 
 	}
@@ -322,14 +324,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(constants.contains(name)) {
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
-			Register register = programBuilder.getRegister(currentThread, currentScope.getID() + ":" + name);
+			Register register = programBuilder.getRegister(currentScope.getThreadId(), currentScope.getID() + ":" + name);
 	        if(register != null){
-	            programBuilder.addChild(currentThread, new Local(register, value));
+	            programBuilder.addChild(currentScope.getThreadId(), new Local(register, value));
 	            return null;
 	        }
 	        Location location = programBuilder.getLocation(name);
 	        if(location != null){
-	            programBuilder.addChild(currentThread, new Store(location.getAddress(), value, "NA"));
+	            programBuilder.addChild(currentScope.getThreadId(), new Store(location.getAddress(), value, "NA"));
 	            return null;
 	        }
 	        throw new ParsingException("Variable " + name + " is not defined");
@@ -353,7 +355,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				pairingLabel = pairLabels.get(processingLabels.get(0));
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
-	        programBuilder.addChild(currentThread, new CondJump(new BExprUn(NOT, c), pairingLabel));
+	        programBuilder.addChild(currentScope.getThreadId(), new CondJump(new BExprUn(NOT, c), pairingLabel));
 		}
         return null;
 	}
@@ -363,7 +365,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// Since we "inline" procedures, label names might clash
 		String labelName = currentScope.getID() + ":" + ctx.children.get(0).getText();
 		Label label = programBuilder.getOrCreateLabel(labelName);
-        programBuilder.addChild(currentThread, label);
+        programBuilder.addChild(currentScope.getThreadId(), label);
         // We remove the first label from the list when we visit a NEW label
 		if(!processingLabels.isEmpty() && !processingLabels.get(0).equals(label)) {
 			processingLabels.remove(0);
@@ -375,7 +377,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitGoto_cmd(BoogieParser.Goto_cmdContext ctx) {
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
 		Label l1 = programBuilder.getOrCreateLabel(labelName);
-        programBuilder.addChild(currentThread, new Jump(l1));
+        programBuilder.addChild(currentScope.getThreadId(), new Jump(l1));
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();
@@ -489,14 +491,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(currentCall != null ) {
 			return currentCall.replaceVarsByExprs(ctx);
 		}
-        Register register = programBuilder.getRegister(currentThread, currentScope.getID() + ":" + name);
+        Register register = programBuilder.getRegister(currentScope.getThreadId(), currentScope.getID() + ":" + name);
         if(register != null){
             return register;
         }
         Location location = programBuilder.getLocation(name);
         if(location != null){
-            register = programBuilder.getOrCreateRegister(currentThread, null);
-            programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
+            register = programBuilder.getOrCreateRegister(currentScope.getThreadId(), null);
+            programBuilder.addChild(currentScope.getThreadId(), new Load(register, location.getAddress(), "NA"));
             return register;
         }
         throw new ParsingException("Variable " + name + " is not defined");
