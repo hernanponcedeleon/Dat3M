@@ -283,14 +283,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Register register = programBuilder.getRegister(currentThread, name);
 	        if(register != null){
 	            programBuilder.addChild(currentThread, new Local(register, value));
+	            return null;
 	        }
 	        Location location = programBuilder.getLocation(name);
 	        if(location != null){
 	            programBuilder.addChild(currentThread, new Store(location.getAddress(), value, "NA"));
+	            return null;
 	        }
+	        throw new ParsingException("Variable " + name + " is not defined");
 		}
-        
-		return null;
+        return null;
 	}
 
 	@Override
