@@ -255,6 +255,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String name = ctx.call_params().Ident(0).getText();
 		boolean create = false;
 		if(name.equals("pthread_create")) {
+			if(currentThread != 1) {
+				throw new ParsingException("Only main procedure can fork new procedures");
+			}
 			name = ctx.call_params().exprs().expr().get(2).getText();
 			create = true;
 		}
