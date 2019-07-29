@@ -5,13 +5,19 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+
+import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.asserts.AssertBasic;
+import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
@@ -67,6 +73,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
+	
+	private int assertionIndex = 0;
+	private List<AbstractAssert> assertions = new ArrayList<AbstractAssert>();
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -97,7 +106,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         		programBuilder.addChild(currentThread, label);
         		endLabel = false;
         	}
-    	}
+    	}	
+    	AbstractAssert finalAss = null;
+    	if(!assertions.isEmpty()) {
+    		finalAss = assertions.remove(0);
+    		for(AbstractAssert ass : assertions) {
+    			finalAss = new AssertCompositeOr(finalAss, ass);
+    		}
+    		programBuilder.setAssert(finalAss);
+    	}    	
     	return programBuilder.build();
     }
 
@@ -187,6 +204,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         visitChildren(body.stmt_list());
 
         return null;
+    }
+    
+    @Override 
+    public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
+    	Register ass = programBuilder.getOrCreateRegister(currentThread, "assert_" + assertionIndex);
+    	assertions.add(new AssertBasic(ass, EQ, new BConst(false)));
+    	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
+    	programBuilder.addChild(currentThread, new Local(ass, expr));
+    	assertionIndex ++;
+    	return null;
     }
     
 	@Override
