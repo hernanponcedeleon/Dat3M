@@ -44,6 +44,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.boogie.Function;
 import com.dat3m.dartagnan.parsers.boogie.FunctionCall;
+import com.dat3m.dartagnan.parsers.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
@@ -71,8 +72,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private FunctionCall currentCall = null;
 	
 	private Map<String, RuleContext> procedures = new HashMap<>();
-	// Used to give names to labels
-	private Stack<String> visitingProcedures = new Stack<String>();
+	
+	private Scope currentScope = new Scope(0, null);
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
@@ -129,6 +130,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		Impl_declContext impl = (Impl_declContext)ctx;
     		name = impl.proc_sign().Ident().getText();
     	}
+    	if(procedures.containsKey(name)) {
+    		throw new ParsingException("Procedure " + name + " is already defined");
+    	}
     	procedures.put(name, ctx);
 	}
 
@@ -183,13 +187,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				throw new ParsingException("Bitvectors are not yet supported");		
 			}
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-				if(constants.contains((ident.getText()))) {
-	                throw new ParsingException("Variable " + ident.getText() + " is already defined as a constant");
+				String name = ident.getText();
+				if(constants.contains(name)) {
+	                throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
-				if(programBuilder.getLocation(ident.getText()) != null) {
-	                throw new ParsingException("Variable " + ident.getText() + " is already defined globally");
+				if(programBuilder.getLocation(name) != null) {
+	                throw new ParsingException("Variable " + name + " is already defined globally");
 				}
-				programBuilder.getOrCreateRegister(scope, ident.getText());
+				programBuilder.getOrCreateRegister(scope, currentScope.getID() + ":" + name);
 			}			
 		}
    	 	return null;
@@ -197,23 +202,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
     public void visitProcImpl_decl(RuleContext ctx, boolean create) {
     	
-    	String name = null;
+    	currentScope = new Scope(currentScope.getID()+1, currentScope);
+    	
     	Impl_bodyContext body = null;
     	if(ctx instanceof Proc_declContext) {
     		Proc_declContext proc = (Proc_declContext)ctx;
-    		name = proc.proc_sign().Ident().getText();
 			body = proc.impl_body();
     	}
     	if(ctx instanceof Impl_declContext) {
     		Impl_declContext impl = (Impl_declContext)ctx;
-    		name = impl.proc_sign().Ident().getText();
 			body = impl.impl_body();
     	}
     	if(body == null) {
+    		currentScope = currentScope.getParent();
     		return;
     	}
-    	
-    	visitingProcedures.add(name);
     	
     	if(create) {
         	currentThread ++;
@@ -225,14 +228,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         }
 
         visitChildren(body.stmt_list());
-        visitingProcedures.remove(name);
 
-        if(endLabel) {
-        	String labelName = "END_OF_" + currentThread;
+        if(currentScope.getEndLabel()) {
+        	String labelName = "END_OF_" + currentScope.getID();
 			Label label = programBuilder.getOrCreateLabel(labelName);
     		programBuilder.addChild(currentThread, label);
-    		endLabel = false;
+    		currentScope.setEndLabel(false);;
     	}
+        
+        currentScope = currentScope.getParent();
     }
     
     @Override 
@@ -314,7 +318,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(constants.contains(name)) {
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
-			Register register = programBuilder.getRegister(currentThread, name);
+			Register register = programBuilder.getRegister(currentThread, currentScope.getID() + ":" + name);
 	        if(register != null){
 	            programBuilder.addChild(currentThread, new Local(register, value));
 	            return null;
@@ -337,10 +341,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(processingLabels.isEmpty() || pairLabels.get(processingLabels.get(0)) == null) {
 				// If there nothing to be processed or the current processing label 
 				// doesn't have a pairing label, we jump to the end of the program
-				String labelName = "END_OF_" + currentThread;
+				String labelName = "END_OF_" + currentScope.getID();
 	        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
 				// We set the flag to create the end label
-				endLabel = true;
+				currentScope.setEndLabel(true);
 			} else {
 				pairingLabel = pairLabels.get(processingLabels.get(0));
 			}
@@ -353,7 +357,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitLabel(BoogieParser.LabelContext ctx) {
 		// Since we "inline" procedures, label names might clash
-		String labelName = visitingProcedures.pop() + ":" + ctx.children.get(0).getText() + "_" + currentThread;
+		String labelName = currentScope.getID() + ":" + ctx.children.get(0).getText();
 		Label label = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(currentThread, label);
         // We remove the first label from the list when we visit a NEW label
@@ -365,18 +369,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitGoto_cmd(BoogieParser.Goto_cmdContext ctx) {
-    	String labelName = ctx.idents().children.get(0).getText() + "_" + currentThread;
+    	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
 		Label l1 = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(currentThread, new Jump(l1));
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
-		    	labelName = ctx.idents().children.get(index - 2).getText() + "_" + currentThread;
+		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();
 				l1 = programBuilder.getOrCreateLabel(labelName);
 				if(!processingLabels.contains(l1)) {
 					processingLabels.add(l1);	
 				}
 				// We know there are 2 labels and a comma in the middle
-		    	labelName = ctx.idents().children.get(index).getText() + "_" + currentThread;
+		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index).getText();
 				Label l2 = programBuilder.getOrCreateLabel(labelName);
 				if(!processingLabels.contains(l2)) {
 					processingLabels.add(l2);	
@@ -481,7 +485,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(currentCall != null ) {
 			return currentCall.replaceVarsByExprs(ctx);
 		}
-        Register register = programBuilder.getRegister(currentThread, name);
+        Register register = programBuilder.getRegister(currentThread, currentScope.getID() + ":" + name);
         if(register != null){
             return register;
         }
