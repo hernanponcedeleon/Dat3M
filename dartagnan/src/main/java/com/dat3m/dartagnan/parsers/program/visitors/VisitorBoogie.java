@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -64,7 +63,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private ProgramBuilder programBuilder;
     private int currentThread = 0;
     
-    private boolean endLabel = false;
     private List<Label> processingLabels = new ArrayList<>();
     private Map<Label, Label> pairLabels = new HashMap<>();
     
@@ -140,12 +138,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
 		// TODO how to deal with b == b or b == a /\ a == b?
 		ExprInterface exp = (ExprInterface)ctx.proposition().accept(this);
+		String axiom = ctx.getText();
 		if(!(exp instanceof Atom && ((Atom)exp).getOp().equals(EQ))) {
-			throw new ParsingException("Axioms shall define equality expressions for constants:\n" + ctx.getText());
+			throw new ParsingException("Axioms shall define equality expressions for constants:\n" + axiom);
 		}
 		ExprInterface lhs = ((Atom)exp).getLHS();
 		if(!(lhs instanceof Register)) {
-			throw new ParsingException("Left-hand-side of " + ctx.getText() + " shall be a free constant but it evaluates to " + lhs);
+			throw new ParsingException("Left-hand-side of " + axiom + " shall be a free constant but it evaluates to " + lhs);
 		}
 		String name = ((Register)lhs).getName();
 		ExprInterface def = ((Atom)exp).getRHS();
@@ -252,11 +251,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitCall_cmd(BoogieParser.Call_cmdContext ctx) {
 		String name = ctx.call_params().Ident(0).getText();
+		boolean create = false;
+		if(name.equals("pthread_create")) {
+			name = ctx.call_params().exprs().expr().get(2).getText();
+			create = true;
+		}
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
 		RuleContext rule = procedures.get(name);
-		visitProcImpl_decl(rule, false);
+		visitProcImpl_decl(rule, create);	
 		return null;
 	}
 
