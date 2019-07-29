@@ -541,7 +541,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitInt_expr(BoogieParser.Int_exprContext ctx) {
-		return new IConst(Integer.parseInt(ctx.getText()));
+		Integer value = null;
+		try {
+			value = Integer.parseInt(ctx.getText());
+		} catch (Exception e) {
+			value = Integer.MAX_VALUE;
+		}
+		return new IConst(value);
 	}
 	
 	@Override
