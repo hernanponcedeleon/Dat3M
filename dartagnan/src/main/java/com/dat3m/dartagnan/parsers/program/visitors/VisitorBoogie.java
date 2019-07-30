@@ -138,6 +138,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
+		if(ctx.getText().contains("forall") || ctx.getText().contains("exists") || ctx.getText().contains("lambda")) {
+			return null;
+		}
 		// TODO how to deal with b == b or b == a /\ a == b?
 		ExprInterface exp = (ExprInterface)ctx.proposition().accept(this);
 		String axiom = ctx.getText();
