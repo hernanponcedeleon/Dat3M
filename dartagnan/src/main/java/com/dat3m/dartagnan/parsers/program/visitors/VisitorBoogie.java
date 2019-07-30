@@ -137,9 +137,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
-		if(ctx.getText().contains("forall") || ctx.getText().contains("exists") || ctx.getText().contains("lambda")) {
-			return null;
-		}
 		// TODO how to deal with b == b or b == a /\ a == b?
 		ExprInterface exp = (ExprInterface)ctx.proposition().accept(this);
 		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Register && ((Atom)exp).getOp().equals(EQ)) {
@@ -359,7 +356,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				pairingLabel = pairLabels.get(processingLabels.get(0));
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
-	        programBuilder.addChild(currentScope.getThreadId(), new CondJump(new BExprUn(NOT, c), pairingLabel));
+			// Some expression might not be parsed, e.g. "forall"
+			if(c != null) {
+				programBuilder.addChild(currentScope.getThreadId(), new CondJump(new BExprUn(NOT, c), pairingLabel));	
+			}
 		}
         return null;
 	}
@@ -403,6 +403,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitLogical_expr(BoogieParser.Logical_exprContext ctx) {
+		if(ctx.getText().contains("forall") || ctx.getText().contains("exists") || ctx.getText().contains("lambda")) {
+			return null;
+		}
 		ExprInterface v1 = (ExprInterface)ctx.rel_expr().accept(this);
 		if(ctx.and_expr() != null) {
 			ExprInterface vAnd = (ExprInterface)ctx.and_expr().accept(this);
