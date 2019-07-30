@@ -31,6 +31,7 @@ import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_wheresContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
@@ -115,7 +116,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     			finalAss = new AssertCompositeOr(finalAss, ass);
     		}
     		programBuilder.setAssert(finalAss);
-    	}    	
+    	}
     	return programBuilder.build();
     }
 
@@ -252,7 +253,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
 	@Override
 	public Object visitCall_cmd(BoogieParser.Call_cmdContext ctx) {
-		String name = ctx.call_params().Ident(0).getText();
+		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
+		
 		boolean create = false;
 		if(name.equals("pthread_create")) {
 			if(currentScope.getThreadId() != 1) {
@@ -265,7 +267,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
 		RuleContext rule = procedures.get(name);
-		visitProcImpl_decl(rule, create);	
+		visitProcImpl_decl(rule, create);
 		return null;
 	}
 
