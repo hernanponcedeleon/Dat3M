@@ -26,6 +26,10 @@ public class FunctionCall {
     	return parent;
     }
 
+	public Function getFunction() {
+    	return function;
+    }
+
 	public List<Object> getCallParam() {
     	return call;
     }

@@ -31,7 +31,6 @@ import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_wheresContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
@@ -143,17 +142,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		// TODO how to deal with b == b or b == a /\ a == b?
 		ExprInterface exp = (ExprInterface)ctx.proposition().accept(this);
-		String axiom = ctx.getText();
-		if(!(exp instanceof Atom && ((Atom)exp).getOp().equals(EQ))) {
-			throw new ParsingException("Axioms shall define equality expressions for constants:\n" + axiom);
+		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Register && ((Atom)exp).getOp().equals(EQ)) {
+			String name = ((Register)((Atom)exp).getLHS()).getName();
+			ExprInterface def = ((Atom)exp).getRHS();
+			constantsMap.put(name, def);
 		}
-		ExprInterface lhs = ((Atom)exp).getLHS();
-		if(!(lhs instanceof Register)) {
-			throw new ParsingException("Left-hand-side of " + axiom + " shall be a free constant but it evaluates to " + lhs);
-		}
-		String name = ((Register)lhs).getName();
-		ExprInterface def = ((Atom)exp).getRHS();
-		constantsMap.put(name, def);
 		return null;
 	}
 
@@ -496,7 +489,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			// Dummy register needed to parse axioms
 			return new Register(name, -1);
 		}
-		if(currentCall != null ) {
+		if(currentCall != null && currentCall.getFunction().getBody() != null) {
 			return currentCall.replaceVarsByExprs(ctx);
 		}
         Register register = programBuilder.getRegister(currentScope.getThreadId(), currentScope.getID() + ":" + name);
@@ -523,7 +516,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		currentCall = new FunctionCall(function, callParams, currentCall);
 		// Some functions do not have a body
 		if(function.getBody() == null) {
-			throw new ParsingException("Function " + ctx.Ident().getText() + " does not have an implementation");
+			return null;
 		}
 		Object ret = function.getBody().accept(this);
 		// pop currentCall from the call stack

@@ -44,7 +44,6 @@ public class DartagnanBoogieTest {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_const_assigned.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_var_not_defined.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_fun_not_defined.bpl", true, Arch.NONE, wmmSc, s1 },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_fun_not_implemented.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_reg_const_already_defined.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_reg_loc_already_defined.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_no_main.bpl", true, Arch.NONE, wmmSc, s1 }
