@@ -61,7 +61,7 @@ import com.dat3m.dartagnan.program.memory.Location;
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
 	private ProgramBuilder programBuilder;
-    private int currentThread = 0;
+    private int threadCount = 0;
     
     private List<Label> processingLabels = new ArrayList<>();
     private Map<Label, Label> pairLabels = new HashMap<>();
@@ -72,7 +72,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private Map<String, RuleContext> procedures = new HashMap<>();
 	
 	private int nextScopeID = 0;
-	private Scope currentScope = new Scope(nextScopeID, currentThread, null);
+	private Scope currentScope = new Scope(nextScopeID, threadCount, null);
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
@@ -203,11 +203,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     public void visitProcImpl_decl(RuleContext ctx, boolean create) {
 
     	if(create) {
-        	currentThread ++;
-            programBuilder.initThread(currentScope.getThreadId());
+        	threadCount ++;
+            programBuilder.initThread(currentScope.getThreadId()+1);
     	}
 
-    	currentScope = new Scope(nextScopeID, currentThread, currentScope);
+    	currentScope = new Scope(nextScopeID, threadCount, currentScope);
     	nextScopeID++;
     	
     	Impl_bodyContext body = null;
@@ -255,7 +255,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String name = ctx.call_params().Ident(0).getText();
 		boolean create = false;
 		if(name.equals("pthread_create")) {
-			if(currentThread != 1) {
+			if(currentScope.getThreadId() != 1) {
 				throw new ParsingException("Only main procedure can fork new procedures");
 			}
 			name = ctx.call_params().exprs().expr().get(2).getText();
