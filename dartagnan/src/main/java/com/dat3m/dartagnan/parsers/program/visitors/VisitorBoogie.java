@@ -252,6 +252,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		
 		boolean create = false;
+		if(name.equals("$alloc")) {
+			return null;
+		}
 		if(name.equals("pthread_create")) {
 			if(currentScope.getThreadId() != 1) {
 				throw new ParsingException("Only main procedure can fork new procedures");
