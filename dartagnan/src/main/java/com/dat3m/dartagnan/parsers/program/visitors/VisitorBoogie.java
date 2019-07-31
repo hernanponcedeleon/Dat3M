@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
@@ -36,7 +35,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Impl_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
@@ -69,7 +67,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     private Map<String, Function> functions = new HashMap<>();
 	private FunctionCall currentCall = null;
 	
-	private Map<String, RuleContext> procedures = new HashMap<>();
+	private Map<String, Proc_declContext> procedures = new HashMap<>();
 	
 	private int nextScopeID = 0;
 	private Scope currentScope = new Scope(nextScopeID, threadCount, null);
@@ -98,16 +96,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	for(Var_declContext varDecContext : ctx.var_decl()) {
     		visitVar_decl(varDecContext);
     	}
-    	List<RuleContext> procImpl_decContext = new ArrayList<>();
-    	procImpl_decContext.addAll(ctx.proc_decl());
-    	procImpl_decContext.addAll(ctx.impl_decl());
-    	for(RuleContext rule : procImpl_decContext) {
-    		preProcImpl_decl(rule);
+    	for(Proc_declContext procDecContext : ctx.proc_decl()) {
+    		preProc_decl(procDecContext);
     	}
     	if(!procedures.containsKey("main")) {
     		throw new ParsingException("Program shall have a main procedure");
     	}
-		visitProcImpl_decl(procedures.get("main"), true);
+		visitProc_decl(procedures.get("main"), true);
     	AbstractAssert finalAss = null;
     	if(!assertions.isEmpty()) {
     		finalAss = assertions.remove(0);
@@ -119,16 +114,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	return programBuilder.build();
     }
 
-	private void preProcImpl_decl(RuleContext ctx) {
-		String name = null;
-    	if(ctx instanceof Proc_declContext) {
-    		Proc_declContext proc = (Proc_declContext) ctx;
-			name = proc.proc_sign().Ident().getText();
-    	}
-    	if(ctx instanceof Impl_declContext) {
-    		Impl_declContext impl = (Impl_declContext)ctx;
-    		name = impl.proc_sign().Ident().getText();
-    	}
+	private void preProc_decl(Proc_declContext ctx) {
+		String name = ctx.proc_sign().Ident().getText();;
     	if(procedures.containsKey(name)) {
     		throw new ParsingException("Procedure " + name + " is already defined");
     	}
@@ -194,7 +181,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 	return null;
    	 }
 
-    public void visitProcImpl_decl(RuleContext ctx, boolean create) {
+    public void visitProc_decl(BoogieParser.Proc_declContext ctx, boolean create) {
 
     	if(create) {
         	threadCount ++;
@@ -204,15 +191,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	currentScope = new Scope(nextScopeID, threadCount, currentScope);
     	nextScopeID++;
     	
-    	Impl_bodyContext body = null;
-    	if(ctx instanceof Proc_declContext) {
-    		Proc_declContext proc = (Proc_declContext)ctx;
-			body = proc.impl_body();
-    	}
-    	if(ctx instanceof Impl_declContext) {
-    		Impl_declContext impl = (Impl_declContext)ctx;
-			body = impl.impl_body();
-    	}
+    	Impl_bodyContext body = ctx.impl_body();;
     	if(body == null) {
     		currentScope = currentScope.getParent();
     		return;
@@ -262,8 +241,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		RuleContext rule = procedures.get(name);
-		visitProcImpl_decl(rule, create);
+		Proc_declContext procDeclContext = procedures.get(name);
+		visitProc_decl(procDeclContext, create);
 		return null;
 	}
 
