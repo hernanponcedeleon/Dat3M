@@ -501,6 +501,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		currentCall = new FunctionCall(function, callParams, currentCall);
 		// Some functions do not have a body
 		if(function.getBody() == null) {
+			currentCall = currentCall.getParent();
 			return null;
 		}
 		Object ret = function.getBody().accept(this);
