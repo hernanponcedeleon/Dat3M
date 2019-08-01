@@ -68,9 +68,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private FunctionCall currentCall = null;
 	
 	private Map<String, Proc_declContext> procedures = new HashMap<>();
+	private List<Proc_declContext> threadsToCreate = new ArrayList<Proc_declContext>();
 	
 	private int nextScopeID = 0;
-	private Scope currentScope = new Scope(nextScopeID, threadCount, null);
+	private Scope currentScope = new Scope(nextScopeID, null);
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
@@ -102,7 +103,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(!procedures.containsKey("main")) {
     		throw new ParsingException("Program shall have a main procedure");
     	}
-		visitProc_decl(procedures.get("main"), true);
+
+    	threadsToCreate.add(procedures.get("main"));
+    	while(!threadsToCreate.isEmpty()) {
+    		Proc_declContext nextThread = threadsToCreate.remove(0);
+    		visitProc_decl(nextThread, true);	
+    	}
     	AbstractAssert finalAss = null;
     	if(!assertions.isEmpty()) {
     		finalAss = assertions.remove(0);
@@ -185,10 +191,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
     	if(create) {
         	threadCount ++;
-            programBuilder.initThread(currentScope.getThreadId()+1);
+            programBuilder.initThread(threadCount);
     	}
 
-    	currentScope = new Scope(nextScopeID, threadCount, currentScope);
+    	currentScope = new Scope(nextScopeID, currentScope);
     	nextScopeID++;
     	
     	Impl_bodyContext body = ctx.impl_body();;
@@ -198,7 +204,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
     	    	
         for(Local_varsContext localVarContext : body.local_vars()) {
-        	visitLocal_vars(localVarContext, currentScope.getThreadId());
+        	visitLocal_vars(localVarContext, threadCount);
         }
 
         visitChildren(body.stmt_list());
@@ -206,7 +212,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         if(currentScope.getEndLabel()) {
         	String labelName = "END_OF_" + currentScope.getID();
 			Label label = programBuilder.getOrCreateLabel(labelName);
-    		programBuilder.addChild(currentScope.getThreadId(), label);
+    		programBuilder.addChild(threadCount, label);
     		currentScope.setEndLabel(false);;
     	}
         
@@ -215,10 +221,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     @Override 
     public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
-    	Register ass = programBuilder.getOrCreateRegister(currentScope.getThreadId(), "assert_" + assertionIndex);
+    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	assertions.add(new AssertBasic(ass, EQ, new BConst(false)));
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
-    	programBuilder.addChild(currentScope.getThreadId(), new Local(ass, expr));
+    	programBuilder.addChild(threadCount, new Local(ass, expr));
     	assertionIndex ++;
     	return null;
     }
@@ -226,23 +232,24 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitCall_cmd(BoogieParser.Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		
-		boolean create = false;
 		if(name.equals("$alloc")) {
 			return null;
 		}
 		if(name.equals("pthread_create")) {
-			if(currentScope.getThreadId() != 1) {
+			if(threadCount != 1) {
 				throw new ParsingException("Only main procedure can fork new procedures");
 			}
 			name = ctx.call_params().exprs().expr().get(2).getText();
-			create = true;
+			if(!procedures.containsKey(name)) {
+				throw new ParsingException("Procedure " + name + " is not defined");
+			}
+			threadsToCreate.add(procedures.get(name));
+			return null;
 		}
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		Proc_declContext procDeclContext = procedures.get(name);
-		visitProc_decl(procDeclContext, create);
+		visitProc_decl(procedures.get(name), false);
 		return null;
 	}
 
@@ -251,10 +258,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
         Skip exitEvent = new Skip();
         While whileEvent = new While(expr, exitEvent);
-        programBuilder.addChild(currentScope.getThreadId(), whileEvent);
+        programBuilder.addChild(threadCount, whileEvent);
 
         visitChildren(ctx.stmt_list());
-        return programBuilder.addChild(currentScope.getThreadId(), exitEvent);
+        return programBuilder.addChild(threadCount, exitEvent);
 	}
 
 	@Override
@@ -263,10 +270,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         Skip exitMainBranch = new Skip();
         Skip exitElseBranch = new Skip();
         If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
-        programBuilder.addChild(currentScope.getThreadId(), ifEvent);
+        programBuilder.addChild(threadCount, ifEvent);
         
         visitChildren(ctx.stmt_list(0));
-        programBuilder.addChild(currentScope.getThreadId(), exitMainBranch);
+        programBuilder.addChild(threadCount, exitMainBranch);
 
         // case when the else branch is a stmt list
         if(ctx.stmt_list().size() > 1){
@@ -278,7 +285,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             visitChildren(ctx.if_cmd());
         }
         
-        programBuilder.addChild(currentScope.getThreadId(), exitElseBranch);
+        programBuilder.addChild(threadCount, exitElseBranch);
         return null;
 
 	}
@@ -304,14 +311,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(constants.contains(name)) {
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
-			Register register = programBuilder.getRegister(currentScope.getThreadId(), currentScope.getID() + ":" + name);
+			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	            programBuilder.addChild(currentScope.getThreadId(), new Local(register, value));
+	            programBuilder.addChild(threadCount, new Local(register, value));
 	            return null;
 	        }
 	        Location location = programBuilder.getLocation(name);
 	        if(location != null){
-	            programBuilder.addChild(currentScope.getThreadId(), new Store(location.getAddress(), value, "NA"));
+	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, "NA"));
 	            return null;
 	        }
 	        throw new ParsingException("Variable " + name + " is not defined");
@@ -337,7 +344,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			// Some expression might not be parsed, e.g. "forall"
 			if(c != null) {
-				programBuilder.addChild(currentScope.getThreadId(), new CondJump(new BExprUn(NOT, c), pairingLabel));	
+				programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), pairingLabel));	
 			}
 		}
         return null;
@@ -348,7 +355,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// Since we "inline" procedures, label names might clash
 		String labelName = currentScope.getID() + ":" + ctx.children.get(0).getText();
 		Label label = programBuilder.getOrCreateLabel(labelName);
-        programBuilder.addChild(currentScope.getThreadId(), label);
+        programBuilder.addChild(threadCount, label);
         // We remove the first label from the list when we visit a NEW label
 		if(!processingLabels.isEmpty() && !processingLabels.get(0).equals(label)) {
 			processingLabels.remove(0);
@@ -360,7 +367,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitGoto_cmd(BoogieParser.Goto_cmdContext ctx) {
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
 		Label l1 = programBuilder.getOrCreateLabel(labelName);
-        programBuilder.addChild(currentScope.getThreadId(), new Jump(l1));
+        programBuilder.addChild(threadCount, new Jump(l1));
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();
@@ -477,14 +484,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(currentCall != null && currentCall.getFunction().getBody() != null) {
 			return currentCall.replaceVarsByExprs(ctx);
 		}
-        Register register = programBuilder.getRegister(currentScope.getThreadId(), currentScope.getID() + ":" + name);
+        Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
         if(register != null){
             return register;
         }
         Location location = programBuilder.getLocation(name);
         if(location != null){
-            register = programBuilder.getOrCreateRegister(currentScope.getThreadId(), null);
-            programBuilder.addChild(currentScope.getThreadId(), new Load(register, location.getAddress(), "NA"));
+            register = programBuilder.getOrCreateRegister(threadCount, null);
+            programBuilder.addChild(threadCount, new Load(register, location.getAddress(), "NA"));
             return register;
         }
         throw new ParsingException("Variable " + name + " is not defined");
