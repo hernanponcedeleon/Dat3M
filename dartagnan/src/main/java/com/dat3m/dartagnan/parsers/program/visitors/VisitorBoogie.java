@@ -73,6 +73,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private int nextScopeID = 0;
 	private Scope currentScope = new Scope(nextScopeID, null);
 	
+	private Register currentReturn = null;
+	private String currentReturnName = null;
+	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
 	
@@ -188,7 +191,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 }
 
     public void visitProc_decl(BoogieParser.Proc_declContext ctx, boolean create) {
-
+    	if(ctx.proc_sign().proc_sign_out() != null) {
+    		for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
+    			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+    				currentReturnName = ident.getText();
+    			}
+    		}    		
+    	}
+		
     	if(create) {
         	threadCount ++;
             programBuilder.initThread(threadCount);
@@ -235,6 +245,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$alloc")) {
 			return null;
 		}
+		if(ctx.call_params().Define() != null) {
+			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
+	        if(register != null){
+	            currentReturn = register;
+	        }
+		}
 		if(name.equals("pthread_create")) {
 			if(threadCount != 1) {
 				throw new ParsingException("Only main procedure can fork new procedures");
@@ -250,6 +266,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
 		visitProc_decl(procedures.get(name), false);
+		currentReturn = null;
 		return null;
 	}
 
@@ -320,6 +337,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        if(location != null){
 	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, "NA"));
 	            return null;
+	        }
+	        if(currentReturnName.equals(name)) {
+	        	if(currentReturn instanceof Register) {
+	        		programBuilder.addChild(threadCount, new Local(currentReturn, value));
+	        	}
+	        	return null;
 	        }
 	        throw new ParsingException("Variable " + name + " is not defined");
 		}

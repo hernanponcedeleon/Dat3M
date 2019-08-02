@@ -51,7 +51,15 @@ var_or_type
     ;
 
 proc_sign
-    :   attr* Ident type_params? LPar attr_typed_idents_wheres? RPar ('returns' LPar attr_typed_idents_wheres? RPar)?
+    :   attr* Ident type_params? LPar proc_sign_in? RPar ('returns' LPar proc_sign_out? RPar)?
+    ;
+
+proc_sign_in
+    :   attr_typed_idents_wheres
+    ;
+
+proc_sign_out
+    :   attr_typed_idents_wheres
     ;
 
 impl_body
