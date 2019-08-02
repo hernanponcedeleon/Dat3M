@@ -327,6 +327,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 
 	@Override
+	public Object visitReturn_cmd(BoogieParser.Return_cmdContext ctx) {
+    	String labelName = "END_OF_" + currentScope.getID();
+		Label label = programBuilder.getOrCreateLabel(labelName);
+		programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
+		currentScope.setEndLabel(true);
+		return null;
+	}
+
+	@Override
 	public Object visitAssume_cmd(BoogieParser.Assume_cmdContext ctx) {
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
