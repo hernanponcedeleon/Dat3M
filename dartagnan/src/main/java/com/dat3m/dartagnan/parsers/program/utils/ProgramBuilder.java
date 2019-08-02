@@ -34,6 +34,7 @@ public class ProgramBuilder {
         Program program = new Program(memory, ImmutableSet.copyOf(locations.values()));
         buildInitThreads();
         for(Thread thread : threads.values()){
+        	thread.initializeRegisters();
             validateLabels(thread);
             program.add(thread);
         }
@@ -156,6 +157,10 @@ public class ProgramBuilder {
             return thread.addRegister(name);
         }
         return register;
+    }
+
+    public Register createRegisterInitializedToTrue(int thread, String name){
+    	return threads.get(thread).addRegisterInitializedToOne(name);
     }
 
     public Register getOrErrorRegister(int thread, String name){

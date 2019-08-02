@@ -221,7 +221,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     @Override 
     public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
-    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
+    	Register ass = programBuilder.createRegisterInitializedToTrue(threadCount, "assert_" + assertionIndex);
     	assertions.add(new AssertBasic(ass, EQ, new BConst(false)));
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
     	programBuilder.addChild(threadCount, new Local(ass, expr));
