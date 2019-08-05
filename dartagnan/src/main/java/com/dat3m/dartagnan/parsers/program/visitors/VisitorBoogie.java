@@ -339,7 +339,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, "NA"));
 	            return null;
 	        }
-	        if(currentReturnName.equals(name)) {
+	        if(currentReturnName != null && currentReturnName.equals(name)) {
 	        	if(currentReturn instanceof Register) {
 	        		programBuilder.addChild(threadCount, new Local(currentReturn, value));
 	        	}
