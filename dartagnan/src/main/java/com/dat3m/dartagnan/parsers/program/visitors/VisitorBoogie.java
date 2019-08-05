@@ -13,8 +13,8 @@ import java.util.stream.IntStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.asserts.AssertBasic;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
+import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
@@ -231,10 +231,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     @Override 
     public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
-    	Register ass = programBuilder.createRegisterInitializedToTrue(threadCount, "assert_" + assertionIndex);
-    	assertions.add(new AssertBasic(ass, EQ, new BConst(false)));
+    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
-    	programBuilder.addChild(threadCount, new Local(ass, expr));
+    	Local event = new Local(ass, expr);
+		programBuilder.addChild(threadCount, event);
+		assertions.add(new AssertInline(event));
     	assertionIndex ++;
     	return null;
     }

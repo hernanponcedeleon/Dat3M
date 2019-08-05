@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -13,11 +11,10 @@ import java.util.*;
 public class Thread {
 
     private final int id;
-    private Event entry;
+    private final Event entry;
     private Event exit;
 
     private Map<String, Register> registers;
-    private Set<Register> initializedRegisters = new HashSet<Register>();
     private ThreadCache cache;
 
     public Thread(int id, Event entry){
@@ -59,20 +56,6 @@ public class Thread {
         return register;
     }
 
-    public Register addRegisterInitializedToOne(String name){
-    	Register register = addRegister(name);
-    	initializedRegisters.add(register);
-        return register;
-    }
-
-    public void initializeRegisters() {
-    	for(Register register : initializedRegisters) {
-    		Event newEntry = new Local(register, new IConst(1)); 
-    		newEntry.setSuccessor(entry);
-    		this.entry = newEntry;
-    	}
-    }
-    
     public Event getEntry(){
         return entry;
     }
