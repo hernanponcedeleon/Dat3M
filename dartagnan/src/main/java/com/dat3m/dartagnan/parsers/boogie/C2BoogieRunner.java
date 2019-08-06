@@ -13,7 +13,7 @@ public class C2BoogieRunner {
 	}
 
 	public String run() {
-		String tool = "/home/ponce/tools/smack/bin/bin/smack";
+		String tool = "smack";
 		String input = filePath;
 		String output = filePath.split(".c", -1)[0] + ".bpl";				
 		String exec = tool +" " + input + " -bpl " + output + " -t";
