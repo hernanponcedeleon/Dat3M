@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.utils.options;
 
+import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+
 import org.apache.commons.cli.*;
 
 public abstract class BaseOptions extends Options {
@@ -50,7 +52,7 @@ public abstract class BaseOptions extends Options {
         parseGraphFilePath(cmd);
 
         String inputFilePath = cmd.getOptionValue("input");
-        if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus") && !inputFilePath.endsWith("bpl")) {
+        if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus") && !inputFilePath.endsWith("bpl") && !inputFilePath.endsWith("c")) {
             throw new RuntimeException("Unrecognized program format");
         }
         programFilePath = cmd.getOptionValue("input");
@@ -61,7 +63,11 @@ public abstract class BaseOptions extends Options {
         }
     }
 
-    public String getProgramFilePath(){
+    public String getProgramFilePath() {
+    	if(programFilePath.endsWith(".c")) {
+			String filePath = new C2BoogieRunner(programFilePath).run();
+			programFilePath = filePath;
+    	}
         return programFilePath;
     }
 
