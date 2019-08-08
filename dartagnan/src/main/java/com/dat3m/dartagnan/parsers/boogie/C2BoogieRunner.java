@@ -23,10 +23,6 @@ public class C2BoogieRunner {
 			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 			try {
 				proc.waitFor();
-				if(proc.exitValue() == 1) {
-					System.out.println("It was not possible to execute the following command: " + exec);
-					System.exit(0);
-				}
 			} catch(InterruptedException e) {
 				System.out.println(e.getMessage());
 				System.exit(0);
@@ -34,6 +30,9 @@ public class C2BoogieRunner {
 			while(read.ready()) {
 				System.out.println(read.readLine());
 			}
+			if(proc.exitValue() == 1) {
+			System.exit(0);
+		}
 		} catch(IOException e) {
 			System.out.println(e.getMessage());
 			System.exit(0);
