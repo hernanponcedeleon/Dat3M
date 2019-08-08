@@ -6,6 +6,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -91,5 +92,10 @@ public class Location implements ExprInterface {
 			return ((MemEvent) e).getMemValue().getBoolValue(e, ctx, model);
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
+	}
+
+	@Override
+	public IConst reduce() {
+		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 }

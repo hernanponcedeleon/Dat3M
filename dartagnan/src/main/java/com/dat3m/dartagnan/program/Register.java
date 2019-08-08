@@ -5,6 +5,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -75,5 +76,10 @@ public class Register extends IExpr implements ExprInterface {
 	@Override
 	public int getIntValue(Event e, Context ctx, Model model){
 		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
+	}
+
+	@Override
+	public IConst reduce() {
+		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 }

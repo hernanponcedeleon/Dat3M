@@ -5,6 +5,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -61,4 +62,25 @@ public class Atom extends BExpr implements ExprInterface {
     public ExprInterface getRHS() {
     	return rhs;
     }
+
+    @Override
+	public IConst reduce() {
+		int v1 = lhs.reduce().getIntValue(null, null, null);
+		int v2 = lhs.reduce().getIntValue(null, null, null);
+        switch(op) {
+        case EQ:
+            return new IConst(v1 == v2 ? 1 : 0);
+        case NEQ:
+            return new IConst(v1 != v2 ? 1 : 0);
+        case LT:
+            return new IConst(v1 < v2 ? 1 : 0);
+        case LTE:
+            return new IConst(v1 <= v2 ? 1 : 0);
+        case GT:
+            return new IConst(v1 > v2 ? 1 : 0);
+        case GTE:
+            return new IConst(v1 >= v2 ? 1 : 0);
+        }
+        throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
 }

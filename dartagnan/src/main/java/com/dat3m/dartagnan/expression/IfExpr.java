@@ -56,4 +56,9 @@ public class IfExpr implements ExprInterface {
     public String toString() {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
     }
+
+	@Override
+	public IConst reduce() {
+		throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
 }

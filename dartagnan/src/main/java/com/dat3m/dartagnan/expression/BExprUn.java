@@ -44,4 +44,10 @@ public class BExprUn extends BExpr {
     public boolean getBoolValue(Event e, Context ctx, Model model){
         return op.combine(b.getBoolValue(e, ctx, model));
     }
+
+	@Override
+	public IConst reduce() {
+		int value = b.reduce().getBoolValue(null, null, null) ? 1 : 0;
+		return new IConst(value);
+	}
 }

@@ -42,4 +42,10 @@ public class IExprUn extends IExpr {
     public String toString() {
         return "(" + op + b + ")";
     }
+
+    @Override
+	public IConst reduce() {
+    	int value = b.reduce().getIntValue(null, null, null);
+		return new IConst(-value);
+	}
 }

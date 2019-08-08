@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public interface ExprInterface {
 
+	IConst reduce();
+	
     IntExpr toZ3Int(Event e, Context ctx);
 
     BoolExpr toZ3Bool(Event e, Context ctx);

@@ -40,4 +40,9 @@ public class BConst extends BExpr implements ExprInterface {
 	public boolean getBoolValue(Event e, Context ctx, Model model){
 		return value;
 	}
+
+	@Override
+	public IConst reduce() {
+		return new IConst(value ? 1 : 0);
+	}
 }

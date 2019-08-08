@@ -50,4 +50,30 @@ public class IExprBin extends IExpr implements ExprInterface {
     public int getIntValue(Event e, Context ctx, Model model){
         return op.combine(lhs.getIntValue(e, ctx, model), rhs.getIntValue(e, ctx, model));
     }
+    
+    @Override
+	public IConst reduce() {
+		int v1 = lhs.reduce().getIntValue(null, null, null);
+		int v2 = rhs.reduce().getIntValue(null, null, null);
+        switch(op){
+        case PLUS:
+            return new IConst(v1 + v2);
+        case MINUS:
+        	return new IConst(v1 - v2);
+        case MULT:
+        	return new IConst(v1 * v2);
+        case DIV:
+        	return new IConst(v1 / v2);
+        case MOD:
+        	return new IConst(v1 % v2);
+        case AND:
+        	return new IConst(v1 == 1 ? v2 : 0);
+        case OR:
+        	return new IConst(v1 == 1 ? 1 : v2);
+        case XOR:
+        	return new IConst(v1 + v2 == 1 ? 1 : 0);
+		default:
+			throw new UnsupportedOperationException("Reduce not supported for " + this);
+        }
+	}
 }

@@ -43,4 +43,9 @@ public class IConst extends IExpr implements ExprInterface {
     public IntExpr toZ3Int(Context ctx) {
         return ctx.mkInt(value);
     }
+
+	@Override
+	public IConst reduce() {
+		return this;
+	}
 }

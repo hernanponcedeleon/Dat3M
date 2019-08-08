@@ -5,6 +5,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -47,4 +48,17 @@ public class BExprBin extends BExpr {
     public boolean getBoolValue(Event e, Context ctx, Model model){
         return op.combine(b1.getBoolValue(e, ctx, model), b2.getBoolValue(e, ctx, model));
     }
+
+    @Override
+	public IConst reduce() {
+		int v1 = b1.reduce().getIntValue(null, null, null);
+		int v2 = b2.reduce().getIntValue(null, null, null);
+        switch(op) {
+        case AND:
+        	return new IConst(v1 == 1 ? v2 : 0);
+        case OR:
+        	return new IConst(v1 == 1 ? 1 : v2);
+        }
+        throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
 }
