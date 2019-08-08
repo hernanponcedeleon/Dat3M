@@ -67,6 +67,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     private Map<String, Function> functions = new HashMap<>();
 	private FunctionCall currentCall = null;
 	
+	private boolean initMode = false;
+	
 	private Map<String, Proc_declContext> procedures = new HashMap<>();
 	private List<Proc_declContext> threadsToCreate = new ArrayList<Proc_declContext>();
 	
@@ -243,6 +245,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitCall_cmd(BoogieParser.Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
+		if(name.equals("$initialize")) {
+			initMode = true;;
+		}
 		if(name.equals("$alloc")) {
 			return null;
 		}
@@ -268,6 +273,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		visitProc_decl(procedures.get(name), false);
 		currentReturn = null;
+		if(name.equals("$initialize")) {
+			initMode = false;
+		}
 		return null;
 	}
 
@@ -328,6 +336,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ctx.Ident(i).getText();
 			if(constants.contains(name)) {
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
+			}
+			if(initMode) {
+				programBuilder.initLocEqConst(name, value.reduce());
+				return null;
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
