@@ -448,7 +448,7 @@ String
 
 fragment
 ESC
-	:	'\\"'
+	:	BSlash
 	|	'\\\\'
 	;
 
@@ -480,21 +480,21 @@ Non_digit
     |	Question
     |	'`'
     |	'\''
-    |	'\\'
+    |	BSlash
     ;
 
 DBar
-    :   '\\'
+    :   BSlash
     ;
 
 Mod
 	:	'mod'
-	|	'%'
+	|	Percent
 	;	
 
 Div
 	:	'div'
-	|	'/'
+	|	Slash
 	;	
 
 Ident
