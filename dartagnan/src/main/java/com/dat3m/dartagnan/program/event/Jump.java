@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -34,38 +33,32 @@ public class Jump extends Event {
     @Override
     public int unroll(int bound, int nextId, Event predecessor) {
         if(label.getOId() < oId){
-        	// Here comes a validate
-    		if(true){
-    			int currentBound = bound;
-
-    			while(currentBound > 1){
-    				Skip entry = new Skip();
-    				entry.oId = oId;
-    				entry.uId = nextId++;
-
-    				predecessor.setSuccessor(entry);
-    				predecessor = copyPath(label.successor, this, entry, bound);
-
-    				nextId = entry.successor.unroll(currentBound, nextId, entry);
-    				currentBound--;
-    			}
-
-    			predecessor.setSuccessor(this.getSuccessor());
-    			if(predecessor.getSuccessor() != null){
-    				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
-    			}
-    			return nextId;
-    		}
-            throw new UnsupportedOperationException("Malformed Jump");
+//    			int currentBound = bound;    			
+//    			while(currentBound > 1){
+//    				Skip entry = new Skip();
+//    				entry.oId = oId;
+//    				entry.uId = nextId++;
+//
+//    				predecessor.setSuccessor(entry);
+//    				predecessor = copyPath(label.successor, this, entry, bound);
+//
+//    				nextId = entry.successor.unroll(currentBound, nextId, entry);
+//    				currentBound--;
+//    			}
+//
+//    			predecessor.setSuccessor(this.getSuccessor());
+//    			if(predecessor.getSuccessor() != null){
+//    				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
+//    			}
+//    			return nextId;
+            throw new UnsupportedOperationException("Unrolling of cycles in Jump is not implemented");
         }
         return super.unroll(bound, nextId, predecessor);
     }
 
     @Override
     public Jump getCopy(int bound){
-    	Label newLabel = new Label(label.getName() + "_" + bound);
-    	return new Jump(newLabel);
-        //throw new UnsupportedOperationException("Cloning is not implemented for Jump event");
+    	throw new UnsupportedOperationException("Cloning is not implemented for Jump event");
     }
 
 
