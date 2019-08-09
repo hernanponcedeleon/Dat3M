@@ -4,7 +4,6 @@ public class Scope {
 
 	private int id;
 	private Scope parent;
-	private boolean endLabel = false;
 	
 	public Scope(int id, Scope parent) {
 		this.id = id;
@@ -17,13 +16,5 @@ public class Scope {
 	
 	public Scope getParent() {
 		return parent;
-	}
-	
-	public void setEndLabel(boolean value) {
-		this.endLabel = value;
-	}
-	
-	public boolean getEndLabel() {
-		return endLabel;
 	}
 }

@@ -221,12 +221,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
         visitChildren(body.stmt_list());
 
-        if(currentScope.getEndLabel()) {
-        	String labelName = "END_OF_" + currentScope.getID();
-			Label label = programBuilder.getOrCreateLabel(labelName);
-    		programBuilder.addChild(threadCount, label);
-    		currentScope.setEndLabel(false);;
-    	}
+       	String labelName = "END_OF_" + currentScope.getID();
+		Label label = programBuilder.getOrCreateLabel(labelName);
+   		programBuilder.addChild(threadCount, label);
         
         currentScope = currentScope.getParent();
     }
@@ -366,8 +363,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitReturn_cmd(BoogieParser.Return_cmdContext ctx) {
     	String labelName = "END_OF_" + currentScope.getID();
 		Label label = programBuilder.getOrCreateLabel(labelName);
-		programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
-		currentScope.setEndLabel(true);
+		programBuilder.addChild(threadCount, new Jump(label));
 		return null;
 	}
 
@@ -380,8 +376,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				// If the current label doesn't have a pairing label, we jump to the end of the program
 				String labelName = "END_OF_" + currentScope.getID();
 	        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
-				// We set the flag to create the end label
-				currentScope.setEndLabel(true);
 			} else {
 				pairingLabel = pairLabels.get(currentLabel);
 			}
