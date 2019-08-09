@@ -61,7 +61,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private ProgramBuilder programBuilder;
     private int threadCount = 0;
     
-    private List<Label> processingLabels = new ArrayList<>();
+    private Label currentLabel = null;
     private Map<Label, Label> pairLabels = new HashMap<>();
     
     private Map<String, Function> functions = new HashMap<>();
@@ -376,15 +376,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
 			Label pairingLabel = null;
-			if(processingLabels.isEmpty() || pairLabels.get(processingLabels.get(0)) == null) {
-				// If there nothing to be processed or the current processing label 
-				// doesn't have a pairing label, we jump to the end of the program
+			if(!pairLabels.keySet().contains(currentLabel)) {
+				// If the current label doesn't have a pairing label, we jump to the end of the program
 				String labelName = "END_OF_" + currentScope.getID();
 	        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
 				// We set the flag to create the end label
 				currentScope.setEndLabel(true);
 			} else {
-				pairingLabel = pairLabels.get(processingLabels.get(0));
+				pairingLabel = pairLabels.get(currentLabel);
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			// Some expression might not be parsed, e.g. "forall"
@@ -401,10 +400,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String labelName = currentScope.getID() + ":" + ctx.children.get(0).getText();
 		Label label = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(threadCount, label);
-        // We remove the first label from the list when we visit a NEW label
-		if(!processingLabels.isEmpty() && !processingLabels.get(0).equals(label)) {
-			processingLabels.remove(0);
-		}
+        currentLabel = label;
         return null;
 	}
 
@@ -417,15 +413,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();
 				l1 = programBuilder.getOrCreateLabel(labelName);
-				if(!processingLabels.contains(l1)) {
-					processingLabels.add(l1);	
-				}
 				// We know there are 2 labels and a comma in the middle
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index).getText();
 				Label l2 = programBuilder.getOrCreateLabel(labelName);
-				if(!processingLabels.contains(l2)) {
-					processingLabels.add(l2);	
-				}
 				pairLabels.put(l1, l2);				
 			}
 		}
