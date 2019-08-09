@@ -24,7 +24,8 @@ public class Label extends Event {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Label getCopy(){
-        throw new UnsupportedOperationException("Cloning is not implemented for Label event");
+    public Label getCopy(int bound){
+    	return new Label(name + "_" + bound);
+        //throw new UnsupportedOperationException("Cloning is not implemented for Label event");
     }
 }

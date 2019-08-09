@@ -24,7 +24,7 @@ public class FenceOpt extends Fence {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public FenceOpt getCopy(){
+    public FenceOpt getCopy(int bound){
         return new FenceOpt(this);
     }
 }

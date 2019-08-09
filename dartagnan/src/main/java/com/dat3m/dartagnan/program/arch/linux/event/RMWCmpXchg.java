@@ -41,7 +41,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RMWCmpXchg getCopy(){
+    public RMWCmpXchg getCopy(int bound){
         return new RMWCmpXchg(this);
     }
 

@@ -103,13 +103,17 @@ public abstract class Event implements Comparable<Event> {
 	    return nextId;
     }
 
-	public Event getCopy(){
+	public Event getCopy(int bound){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-	Event copyPath(Event from, Event until, Event appendTo){
-		while(from != null && !from.equals(until)){
-			Event copy = from.getCopy();
+	Event copyPath(Event from, Event until, Event appendTo, int bound){
+		// The method can be called in the presence of cycles
+		// We add a check to avoid non termination
+		Set<Object> visited = new HashSet<>();
+		while(from != null && !from.equals(until) && !visited.contains(from.oId)){
+			visited.add(from.oId);
+			Event copy = from.getCopy(bound);
 			appendTo.setSuccessor(copy);
 			if(from instanceof If){
 				from = ((If)from).getExitElseBranch();

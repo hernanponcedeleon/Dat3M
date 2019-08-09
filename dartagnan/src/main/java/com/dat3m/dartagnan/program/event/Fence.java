@@ -34,7 +34,7 @@ public class Fence extends Event {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public Fence getCopy(){
+	public Fence getCopy(int bound){
 		return new Fence(this);
 	}
 }

@@ -58,7 +58,7 @@ public class Load extends MemEvent implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Load getCopy(){
+    public Load getCopy(int bound){
         return new Load(this);
     }
 }

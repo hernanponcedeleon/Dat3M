@@ -71,7 +71,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public Local getCopy(){
+	public Local getCopy(int bound){
 		return new Local(this);
 	}
 }
