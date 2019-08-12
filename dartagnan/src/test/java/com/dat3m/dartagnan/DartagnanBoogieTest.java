@@ -30,7 +30,9 @@ public class DartagnanBoogieTest {
     public static Iterable<Object[]> data() throws IOException {
 
         Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
+        Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
 
         return Arrays.asList(new Object[][] {
         		{ BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_child_fork.bpl", false, Arch.NONE, wmmSc, s1 },
@@ -46,7 +48,12 @@ public class DartagnanBoogieTest {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_fun_not_defined.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_reg_const_already_defined.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_reg_loc_already_defined.bpl", true, Arch.NONE, wmmSc, s1 },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_no_main.bpl", true, Arch.NONE, wmmSc, s1 }
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_no_main.bpl", true, Arch.NONE, wmmSc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_U1_while.bpl", false, Arch.NONE, wmmSc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_U2_while.bpl", false, Arch.NONE, wmmSc, s2 }
         });
     }
     
