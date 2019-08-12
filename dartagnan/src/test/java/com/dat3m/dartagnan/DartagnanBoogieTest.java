@@ -53,7 +53,10 @@ public class DartagnanBoogieTest {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s2 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s3 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_U1_while.bpl", false, Arch.NONE, wmmSc, s1 },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_U2_while.bpl", false, Arch.NONE, wmmSc, s2 }
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_U2_while.bpl", false, Arch.NONE, wmmSc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_smack_U1_while.bpl", false, Arch.NONE, wmmSc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_smack_U2_while.bpl", false, Arch.NONE, wmmSc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_smack_U3_while.bpl", false, Arch.NONE, wmmSc, s3 }
         });
     }
     
