@@ -56,14 +56,14 @@ public class While extends Event implements RegReaderData {
 			int currentBound = bound;
 
 			while(currentBound > 0){
-				Skip exitMainBranch = exitEvent.getCopy(bound);
-				Skip exitElseBranch = exitEvent.getCopy(bound);
+				Skip exitMainBranch = exitEvent.getCopy(currentBound);
+				Skip exitElseBranch = exitEvent.getCopy(currentBound);
 				If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
 				ifEvent.oId = oId;
 				ifEvent.uId = nextId++;
 
 				predecessor.setSuccessor(ifEvent);
-				predecessor = copyPath(successor, exitEvent, ifEvent, bound);
+				predecessor = copyPath(successor, exitEvent, ifEvent, currentBound);
 				predecessor.setSuccessor(exitMainBranch);
 				exitMainBranch.setSuccessor(exitElseBranch);
 				predecessor = exitElseBranch;
