@@ -116,8 +116,9 @@ public class Program {
 	}
 
 	public void addAssertions() {
+		List<Event> assertions = new ArrayList<>();
 		for(Thread t : threads){
-			ImmutableList<Event> assertions = t.getCache().getEvents(FilterBasic.get(EType.ASSERTION));
+			assertions.addAll(t.getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
 	    	if(!assertions.isEmpty()) {
 	    		ass = new AssertInline((Assertion)assertions.get(0));
 	    		for(int i : IntStream.range(1, assertions.size()).toArray()) {
