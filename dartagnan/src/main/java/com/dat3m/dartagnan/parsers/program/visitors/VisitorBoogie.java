@@ -12,9 +12,6 @@ import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.asserts.AssertCompositeOr;
-import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
@@ -45,6 +42,7 @@ import com.dat3m.dartagnan.parsers.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Assertion;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.event.Jump;
@@ -82,7 +80,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
 	
 	private int assertionIndex = 0;
-	private List<AbstractAssert> assertions = new ArrayList<AbstractAssert>();
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -113,14 +110,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	while(!threadsToCreate.isEmpty()) {
     		Proc_declContext nextThread = threadsToCreate.remove(0);
     		visitProc_decl(nextThread, true);	
-    	}
-    	AbstractAssert finalAss = null;
-    	if(!assertions.isEmpty()) {
-    		finalAss = assertions.remove(0);
-    		for(AbstractAssert ass : assertions) {
-    			finalAss = new AssertCompositeOr(finalAss, ass);
-    		}
-    		programBuilder.setAssert(finalAss);
     	}
     	return programBuilder.build();
     }
@@ -232,9 +221,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
-    	Local event = new Local(ass, expr);
+    	Assertion event = new Assertion(ass, expr);
 		programBuilder.addChild(threadCount, event);
-		assertions.add(new AssertInline(event));
     	assertionIndex ++;
     	return null;
     }

@@ -2,13 +2,13 @@ package com.dat3m.dartagnan.asserts;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.dat3m.dartagnan.program.event.Local;
+import com.dat3m.dartagnan.program.event.Assertion;
 
 public class AssertInline extends AbstractAssert {
 
-    private final Local e;
+    private final Assertion e;
 
-    public AssertInline(Local e){
+    public AssertInline(Assertion e){
         this.e = e;
     }
 

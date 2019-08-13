@@ -49,10 +49,6 @@ public class Dartagnan {
             return;
         }
         
-        if(p.getAss() == null){
-            throw new RuntimeException("Assert is required for Dartagnan tests");
-        }
-
         Context ctx = new Context();
         Solver s = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
         Settings settings = options.getSettings();
@@ -79,11 +75,15 @@ public class Dartagnan {
 
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
-
+		program.addAssertions();
+        
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
         solver.add(wmm.consistent(program, ctx));
+        if(program.getAss() == null){
+        	throw new RuntimeException("Assert is required for Dartagnan tests");
+        }
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));

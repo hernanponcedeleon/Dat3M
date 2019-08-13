@@ -4,16 +4,21 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.asserts.AssertCompositeOr;
+import com.dat3m.dartagnan.asserts.AssertInline;
+import com.dat3m.dartagnan.program.event.Assertion;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class Program {
 
@@ -110,7 +115,19 @@ public class Program {
 		return events;
 	}
 
+	public void addAssertions() {
+		for(Thread t : threads){
+			ImmutableList<Event> assertions = t.getCache().getEvents(FilterBasic.get(EType.ASSERTION));
+	    	if(!assertions.isEmpty()) {
+	    		ass = new AssertInline((Assertion)assertions.get(0));
+	    		for(int i : IntStream.range(1, assertions.size()).toArray()) {
+	    			ass = new AssertCompositeOr(ass, new AssertInline((Assertion)assertions.get(i)));
+	    		}
+	    	}
+		}
+	}
 
+	
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
