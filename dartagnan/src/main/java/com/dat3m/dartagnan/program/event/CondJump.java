@@ -24,6 +24,12 @@ public class CondJump extends Jump implements RegReaderData {
         addFilters(EType.BRANCH, EType.COND_JUMP, EType.REG_READER);
     }
 
+    protected CondJump(CondJump other, boolean updateLabel) {
+		super(other, updateLabel);
+		this.expr = other.expr;
+		this.dataRegs = other.dataRegs;
+    }
+    
     @Override
     public ImmutableSet<Register> getDataRegs(){
         return dataRegs;
@@ -41,39 +47,41 @@ public class CondJump extends Jump implements RegReaderData {
     @Override
     public int unroll(int bound, int nextId, Event predecessor) {
         if(label.getOId() < oId){
-//    			int currentBound = bound;
-//    			while(currentBound > 0){
-//    				Skip exitMainBranch = new Skip();
-//    				Skip exitElseBranch = new Skip();
-//					If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
-//					ifEvent.oId = oId;
-//					ifEvent.uId = nextId++;
-//	
-//					predecessor.setSuccessor(ifEvent);
-//					predecessor = copyPath(label.successor, this, ifEvent, bound);
-//					predecessor.setSuccessor(exitMainBranch);
-//					exitMainBranch.setSuccessor(exitElseBranch);
-//					predecessor = exitElseBranch;
-//	
-//					nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
-//					currentBound--;
-//				}
-//	
-//				predecessor.setSuccessor(this.getSuccessor());
-//				if(predecessor.getSuccessor() != null){
-//					nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
-//				}
-//				return nextId;
-            throw new UnsupportedOperationException("Unrolling of cycles in CondJump is not implemented");
+    			int currentBound = bound;
+    			while(currentBound > 0){
+    				Skip exitMainBranch = new Skip();
+    				Skip exitElseBranch = new Skip();
+					If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+					ifEvent.oId = oId;
+					ifEvent.uId = nextId++;
+	
+					predecessor.setSuccessor(ifEvent);
+					predecessor = copyPath(label.successor, this, ifEvent);
+					predecessor.setSuccessor(exitMainBranch);
+					exitMainBranch.setSuccessor(exitElseBranch);
+					predecessor = exitElseBranch;
+	
+					nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
+					currentBound--;
+				}
+	
+				predecessor.setSuccessor(this.getSuccessor());
+				if(predecessor.getSuccessor() != null){
+					nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
+				}
+				return nextId;
         }
         return super.unroll(bound, nextId, predecessor);
     }
 
     @Override
-    public CondJump getCopy(int bound){
+    public CondJump getCopy(){
         throw new UnsupportedOperationException("Cloning is not implemented for CondJump event");
     }
 
+    public CondJump getCopy(boolean updateLabel){
+    	return new CondJump(this, updateLabel); 
+    }
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------

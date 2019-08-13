@@ -103,17 +103,44 @@ public abstract class Event implements Comparable<Event> {
 	    return nextId;
     }
 
-	public Event getCopy(int bound){
+	public Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-	Event copyPath(Event from, Event until, Event appendTo, int bound){
+	Event copyPath(Event from, Event until, Event appendTo){
+		while(from != null && !from.equals(until)){
+			Event copy = from.getCopy();
+			appendTo.setSuccessor(copy);
+			if(from instanceof If){
+				from = ((If)from).getExitElseBranch();
+				appendTo = ((If)copy).getExitElseBranch();
+			} else if(from instanceof While){
+				from = ((While)from).getExitEvent();
+				appendTo = ((While)copy).getExitEvent();
+			} else {
+				appendTo = copy;
+			}
+			from = from.successor;
+		}
+		return appendTo;
+	}
+
+	Event copyPastPath(Event from, Event until, Event appendTo){
 		// The method can be called in the presence of cycles
 		// We add a check to avoid non termination
 		Set<Object> visited = new HashSet<>();
 		while(from != null && !from.equals(until) && !visited.contains(from.oId)){
 			visited.add(from.oId);
-			Event copy = from.getCopy(bound);
+			Event copy;
+			if(from instanceof Label) {
+				copy = ((Label)from).getCopy(false);
+			} else if(from instanceof CondJump) {
+				copy = ((CondJump)from).getCopy(false);
+			} else if(from instanceof Jump) {
+				copy = ((Jump)from).getCopy(true);
+			} else {
+				copy = from.getCopy();	
+			}
 			appendTo.setSuccessor(copy);
 			if(from instanceof If){
 				from = ((If)from).getExitElseBranch();

@@ -17,6 +17,11 @@ public class Jump extends Event {
         addFilters(EType.ANY);
     }
 
+    protected Jump(Jump other, boolean UpdateLabel) {
+		super(other);
+		this.label = other.label.getCopy(UpdateLabel);
+    }
+    
     public Label getLabel(){
         return label;
     }
@@ -26,41 +31,42 @@ public class Jump extends Event {
         return "goto " + label;
     }
 
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public int unroll(int bound, int nextId, Event predecessor) {
         if(label.getOId() < oId){
-//    			int currentBound = bound;    			
-//    			while(currentBound > 1){
-//    				Skip entry = new Skip();
-//    				entry.oId = oId;
-//    				entry.uId = nextId++;
-//
-//    				predecessor.setSuccessor(entry);
-//    				predecessor = copyPath(label.successor, this, entry, bound);
-//
-//    				nextId = entry.successor.unroll(currentBound, nextId, entry);
-//    				currentBound--;
-//    			}
-//
-//    			predecessor.setSuccessor(this.getSuccessor());
-//    			if(predecessor.getSuccessor() != null){
-//    				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
-//    			}
-//    			return nextId;
-            throw new UnsupportedOperationException("Unrolling of cycles in Jump is not implemented");
+    			int currentBound = bound;    			
+    			while(currentBound > 1){
+    				Skip entry = new Skip();
+    				entry.oId = oId;
+    				entry.uId = nextId++;
+
+    				predecessor.setSuccessor(entry);
+    				predecessor = copyPastPath(label.successor, this, entry);
+
+    				nextId = entry.successor.unroll(currentBound, nextId, entry);
+    				currentBound--;
+    			}
+
+    			predecessor.setSuccessor(this.getSuccessor());
+    			if(predecessor.getSuccessor() != null){
+    				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
+    			}
+    			return nextId;
         }
         return super.unroll(bound, nextId, predecessor);
     }
 
     @Override
-    public Jump getCopy(int bound){
-    	throw new UnsupportedOperationException("Cloning is not implemented for Jump event");
+    public Jump getCopy(){
+        throw new UnsupportedOperationException("Cloning is not implemented for Jump event");
     }
 
+    public Jump getCopy(boolean updateLabel){
+    	return new Jump(this, updateLabel); 
+    }
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
