@@ -89,15 +89,15 @@ public class If extends Event implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public If getCopy(int bound){
-        Skip copyExitMainBranch = (Skip) exitMainBranch.getCopy(bound);
-        Skip copyExitElseBranch =(Skip) exitElseBranch.getCopy(bound);
+    public If getCopy(){
+        Skip copyExitMainBranch = (Skip) exitMainBranch.getCopy();
+        Skip copyExitElseBranch =(Skip) exitElseBranch.getCopy();
         If copy = new If(expr, copyExitMainBranch, copyExitElseBranch);
         copy.setOId(oId);
 
-        Event ptr = copyPath(successor, exitMainBranch, copy, bound);
+        Event ptr = copyPath(successor, exitMainBranch, copy);
         ptr.successor = copyExitMainBranch;
-        ptr = copyPath(exitMainBranch.successor, exitElseBranch, copyExitMainBranch, bound);
+        ptr = copyPath(exitMainBranch.successor, exitElseBranch, copyExitMainBranch);
         ptr.successor = copyExitElseBranch;
 
         return copy;

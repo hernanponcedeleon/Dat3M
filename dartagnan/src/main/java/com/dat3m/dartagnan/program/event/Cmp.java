@@ -37,7 +37,7 @@ public class Cmp extends Skip {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Cmp getCopy(int bound){
+    public Cmp getCopy(){
         return new Cmp(this);
     }
 }

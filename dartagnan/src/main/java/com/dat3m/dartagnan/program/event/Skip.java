@@ -21,7 +21,7 @@ public class Skip extends Event {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public Skip getCopy(int bound){
+	public Skip getCopy(){
 		return new Skip(this);
 	}
 }

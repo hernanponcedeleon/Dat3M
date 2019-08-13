@@ -56,7 +56,7 @@ public class Store extends MemEvent implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Store getCopy(int bound){
+    public Store getCopy(){
         return new Store(this);
     }
 }

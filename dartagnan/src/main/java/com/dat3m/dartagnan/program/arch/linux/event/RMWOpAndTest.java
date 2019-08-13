@@ -40,7 +40,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RMWOpAndTest getCopy(int bound){
+    public RMWOpAndTest getCopy(){
         return new RMWOpAndTest(this);
     }
 

@@ -51,7 +51,7 @@ public class Write extends MemEvent implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Write getCopy(int bound){
+    public Write getCopy(){
         return new Write(this);
     }
 

@@ -50,7 +50,7 @@ public class Init extends MemEvent {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public Init getCopy(int bound){
+	public Init getCopy(){
 		return new Init(this);
 	}
 }

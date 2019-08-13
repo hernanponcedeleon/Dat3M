@@ -46,7 +46,7 @@ public class Read extends MemEvent implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Read getCopy(int bound){
+    public Read getCopy(){
         return new Read(this);
     }
 

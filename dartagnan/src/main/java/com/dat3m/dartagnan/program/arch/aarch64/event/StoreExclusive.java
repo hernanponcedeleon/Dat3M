@@ -44,7 +44,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public StoreExclusive getCopy(int bound){
+    public StoreExclusive getCopy(){
         return new StoreExclusive(this);
     }
 
