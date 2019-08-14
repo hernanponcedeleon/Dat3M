@@ -47,29 +47,29 @@ public class CondJump extends Jump implements RegReaderData {
     @Override
     public int unroll(int bound, int nextId, Event predecessor) {
         if(label.getOId() < oId){
-    			int currentBound = bound;
-    			while(currentBound > 0){
-    				Skip exitMainBranch = new Skip();
-    				Skip exitElseBranch = new Skip();
-					If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
-					ifEvent.oId = oId;
-					ifEvent.uId = nextId++;
-	
-					predecessor.setSuccessor(ifEvent);
-					predecessor = copyPath(label.successor, this, ifEvent);
-					predecessor.setSuccessor(exitMainBranch);
-					exitMainBranch.setSuccessor(exitElseBranch);
-					predecessor = exitElseBranch;
-	
-					nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
-					currentBound--;
-				}
-	
-				predecessor.setSuccessor(this.getSuccessor());
-				if(predecessor.getSuccessor() != null){
-					nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
-				}
-				return nextId;
+			int currentBound = bound;
+			while(currentBound > 0){
+				Skip exitMainBranch = new Skip();
+				Skip exitElseBranch = new Skip();
+				If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+				ifEvent.oId = oId;
+				ifEvent.uId = nextId++;
+
+				predecessor.setSuccessor(ifEvent);
+				predecessor = copyPath(label.successor, this, ifEvent);
+				predecessor.setSuccessor(exitMainBranch);
+				exitMainBranch.setSuccessor(exitElseBranch);
+				predecessor = exitElseBranch;
+
+				nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
+				currentBound--;
+			}
+
+			predecessor.setSuccessor(this.getSuccessor());
+			if(predecessor.getSuccessor() != null){
+				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
+			}
+			return nextId;
         }
         return super.unroll(bound, nextId, predecessor);
     }

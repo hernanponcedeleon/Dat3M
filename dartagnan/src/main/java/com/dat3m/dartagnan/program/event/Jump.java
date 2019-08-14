@@ -37,24 +37,24 @@ public class Jump extends Event {
     @Override
     public int unroll(int bound, int nextId, Event predecessor) {
         if(label.getOId() < oId){
-    			int currentBound = bound;    			
-    			while(currentBound > 1){
-    				Skip entry = new Skip();
-    				entry.oId = oId;
-    				entry.uId = nextId++;
+        	int currentBound = bound;    			
+        	while(currentBound > 1){
+        		Skip entry = new Skip();
+				entry.oId = oId;
+				entry.uId = nextId++;
 
-    				predecessor.setSuccessor(entry);
-    				predecessor = copyPastPath(label.successor, this, entry);
+				predecessor.setSuccessor(entry);
+				predecessor = copyPastPath(label.successor, this, entry);
 
-    				nextId = entry.successor.unroll(currentBound, nextId, entry);
-    				currentBound--;
-    			}
+				nextId = entry.successor.unroll(currentBound, nextId, entry);
+				currentBound--;
+			}
 
-    			predecessor.setSuccessor(this.getSuccessor());
-    			if(predecessor.getSuccessor() != null){
-    				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
-    			}
-    			return nextId;
+			predecessor.setSuccessor(this.getSuccessor());
+			if(predecessor.getSuccessor() != null){
+				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
+			}
+			return nextId;
         }
         return super.unroll(bound, nextId, predecessor);
     }
