@@ -392,6 +392,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
 		Label l1 = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(threadCount, new Jump(l1));
+        // If there is a loop, we return if the loop is not completely unrolled.
+        // SMACK will take care of another escape if the loop is completely unrolled.
+        if(l1.getOId() != -1) {
+        	labelName = "END_OF_" + currentScope.getID();
+    		Label label = programBuilder.getOrCreateLabel(labelName);
+    		programBuilder.addChild(threadCount, new Jump(label));        	
+        }
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();

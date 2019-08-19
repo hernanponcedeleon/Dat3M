@@ -54,7 +54,9 @@ public class CondJump extends Jump implements RegReaderData {
 
     @Override
     public CondJump getCopy(){
-    	return new CondJump(this);
+    	CondJump copy = new CondJump(this);
+    	label.addReference(copy);
+		return copy;
     }
 
     

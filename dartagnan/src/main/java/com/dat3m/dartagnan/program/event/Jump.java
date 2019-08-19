@@ -10,7 +10,7 @@ import com.microsoft.z3.Context;
 
 public class Jump extends Event {
 
-    protected final Label label;
+    protected Label label;
     
     public Jump(Label label){
         if(label == null){
@@ -34,6 +34,10 @@ public class Jump extends Event {
         return "goto " + label;
     }
 
+    public void updateLabel(Label label) {
+    	this.label = label;
+    }
+    
     
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
@@ -65,7 +69,9 @@ public class Jump extends Event {
 
     @Override
     public Jump getCopy(){
-    	return new Jump(this);
+    	Jump copy = new Jump(this);
+    	label.addReference(copy);
+    	return copy;
     }
 
 	Event copyPathFrom(Event from, Event appendTo){
