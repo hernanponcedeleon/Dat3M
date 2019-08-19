@@ -64,10 +64,6 @@ public class ReachabilityResult implements Dat3mResult {
             Utils.showError("Missing target architecture.");
             return false;
         }
-        if(program.getAss() == null){
-            Utils.showError("Program must include assertion clause.");
-            return false;
-        }
         program.setArch(target);
         return true;
     }
