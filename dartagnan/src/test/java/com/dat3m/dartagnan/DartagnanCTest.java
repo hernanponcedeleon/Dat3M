@@ -32,6 +32,7 @@ public class DartagnanCTest {
     public static Iterable<Object[]> data() throws IOException {
 
         Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
+        Wmm wmmTso = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/tso.cat"));
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
@@ -43,6 +44,16 @@ public class DartagnanCTest {
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", false, Arch.NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", false, Arch.NONE, wmmSc, s2 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", true, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", true, Arch.NONE, wmmTso, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", true, Arch.NONE, wmmTso, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", true, Arch.NONE, wmmTso, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", true, Arch.NONE, wmmTso, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", true, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-2.c", true, Arch.NONE, wmmSc, s1 },
         });
     }
     
