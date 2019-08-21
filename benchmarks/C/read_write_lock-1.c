@@ -14,12 +14,12 @@ extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 int w=0, r=0, x, y;
 
 void __VERIFIER_atomic_take_write_lock() {
-//  __VERIFIER_assume(w==0 && r==0);
+  __VERIFIER_assume(w==0 && r==0);
   w = 1;
 } 
 
 void __VERIFIER_atomic_take_read_lock() {
-//  __VERIFIER_assume(w==0);
+  __VERIFIER_assume(w==0);
   r = r+1;
 }
 

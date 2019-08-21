@@ -236,22 +236,23 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$alloc")) {
 			return null;
 		}
+		if(name.equals("__VERIFIER_assume")) {
+			__VERIFIER_assume(ctx.call_params().exprs());
+			return null;
+		}
+		if(name.equals("pthread_create")) {
+			pthread_create(ctx.call_params().exprs().expr().get(2).getText());
+			return null;
+		}
+		if(name.equals("pthread_join") && ctx.call_params().Define() != null) {
+			pthread_join(ctx.call_params().Ident(0).getText());
+        	return null;
+		}
 		if(ctx.call_params().Define() != null) {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
 	        if(register != null){
 	            currentReturn = register;
 	        }
-		}
-		if(name.equals("pthread_create")) {
-			if(threadCount != 1) {
-				throw new ParsingException("Only main procedure can fork new procedures");
-			}
-			name = ctx.call_params().exprs().expr().get(2).getText();
-			if(!procedures.containsKey(name)) {
-				throw new ParsingException("Procedure " + name + " is not defined");
-			}
-			threadsToCreate.add(procedures.get(name));
-			return null;
 		}
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
@@ -264,6 +265,32 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return null;
 	}
 
+	private void pthread_create(String name) {
+		if(threadCount != 1) {
+			throw new ParsingException("Only main procedure can fork new procedures");
+		}
+		if(!procedures.containsKey(name)) {
+			throw new ParsingException("Procedure " + name + " is not defined");
+		}
+		threadsToCreate.add(procedures.get(name));		
+	}
+
+	private void pthread_join(String registerName) {
+		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
+	    if(register != null){
+	    	programBuilder.addChild(threadCount, new Local(register, new IConst(0)));
+	    }		
+	}
+
+	private void __VERIFIER_assume(ExprsContext exp) {
+		String labelName = "END_OF_" + currentScope.getID();
+       	Label label = programBuilder.getOrCreateLabel(labelName);
+       	Register c = (Register)exp.accept(this);
+		if(c != null) {
+			programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), label));	
+		}
+	}
+	
 	@Override
 	public Object visitWhile_cmd(BoogieParser.While_cmdContext ctx) {
         ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
