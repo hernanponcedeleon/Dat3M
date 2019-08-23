@@ -5,10 +5,12 @@ extern void __VERIFIER_atomic_end();
 
 #include <pthread.h>
 
+//void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error();}; return; }
+
 int i=1, j=1;
 
-#define NUM 5
 #define NULL 0
+#define NUM 11
 
 void *
 t1(void* arg)
@@ -44,12 +46,13 @@ main(int argc, char **argv)
   pthread_create(&id1, NULL, t1, NULL);
   pthread_create(&id2, NULL, t2, NULL);
 
+
   __VERIFIER_atomic_begin();
-  int condI = i > 143;
+  int condI = i >= 46368;
   __VERIFIER_atomic_end();
 
   __VERIFIER_atomic_begin();
-  int condJ = j > 144;
+  int condJ = j >= 46368;
   __VERIFIER_atomic_end();
 
   if (condI || condJ) {

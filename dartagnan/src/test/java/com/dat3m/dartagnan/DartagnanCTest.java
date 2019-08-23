@@ -38,6 +38,12 @@ public class DartagnanCTest {
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
         Settings s4 = new Settings(Mode.KNASTER, Alias.CFIS, 4);
         Settings s5 = new Settings(Mode.KNASTER, Alias.CFIS, 5);
+        Settings s6 = new Settings(Mode.KNASTER, Alias.CFIS, 6);
+        Settings s7 = new Settings(Mode.KNASTER, Alias.CFIS, 7);
+        Settings s8 = new Settings(Mode.KNASTER, Alias.CFIS, 8);
+        Settings s9 = new Settings(Mode.KNASTER, Alias.CFIS, 9);
+        Settings s10 = new Settings(Mode.KNASTER, Alias.CFIS, 10);
+        Settings s11 = new Settings(Mode.KNASTER, Alias.CFIS, 11);
 
         return Arrays.asList(new Object[][] {
     		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s1 },
@@ -61,16 +67,25 @@ public class DartagnanCTest {
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s3 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s4 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s5 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s4 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", true, Arch.NONE, wmmSc, s5 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s2 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s3 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s4 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", true, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", false, Arch.NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", false, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", true, Arch.NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s7 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s8 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s9 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s10 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s11 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s7 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s8 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s9 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s10 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", true, Arch.NONE, wmmSc, s11 },
         });
     }
     
@@ -88,7 +103,8 @@ public class DartagnanCTest {
         this.settings = settings;
     }
 
-    @Test
+    // 5 Minutes timeout
+    @Test(timeout=300000)
     public void test() {
         try {
             Program program = new ProgramParser().parse(new File(programFilePath));
