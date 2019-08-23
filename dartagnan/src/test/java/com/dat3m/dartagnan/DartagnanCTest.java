@@ -36,6 +36,8 @@ public class DartagnanCTest {
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
+        Settings s4 = new Settings(Mode.KNASTER, Alias.CFIS, 4);
+        Settings s5 = new Settings(Mode.KNASTER, Alias.CFIS, 5);
 
         return Arrays.asList(new Object[][] {
     		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s1 },
@@ -54,6 +56,21 @@ public class DartagnanCTest {
     		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", true, Arch.NONE, wmmTso, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", true, Arch.NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-2.c", true, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", false, Arch.NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1_fail_5.c", true, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", true, Arch.NONE, wmmSc, s5 },
         });
     }
     

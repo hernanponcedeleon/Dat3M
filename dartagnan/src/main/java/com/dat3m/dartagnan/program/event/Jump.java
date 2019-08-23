@@ -51,7 +51,6 @@ public class Jump extends Event {
         	Event next = null;
         	while(currentBound > 1){
 				next = copyPathFrom(label.successor, predecessor);
-				nextId = predecessor.successor.unroll(currentBound, nextId, predecessor);
 				currentBound--;
 	        	// worst case, copyPathFrom will return the initial predecessor
 	        	assert(next != null);
