@@ -31,8 +31,12 @@ public class C2BoogieRunner {
 				System.out.println(read.readLine());
 			}
 			if(proc.exitValue() == 1) {
-			System.exit(0);
-		}
+				BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+				while(error.ready()) {
+					System.out.println(error.readLine());
+				}
+				System.exit(0);
+			}
 		} catch(IOException e) {
 			System.out.println(e.getMessage());
 			System.exit(0);
