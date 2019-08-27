@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -240,6 +241,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			__VERIFIER_assume(ctx.call_params().exprs());
 			return null;
 		}
+		if(name.equals("__VERIFIER_nondet_int")) {
+			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText());
+			return null;
+		}
 		if(name.equals("pthread_create")) {
 			pthread_create(ctx.call_params().exprs().expr().get(2).getText());
 			return null;
@@ -282,6 +287,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	    }		
 	}
 
+	private void __VERIFIER_nondet_int(String registerName) {
+		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
+		ExprInterface value = new IConst(new Random().nextInt(Integer.MAX_VALUE));
+		if(register != null) {
+			programBuilder.addChild(threadCount, new Local(register, value));	
+		}
+	}
+	
 	private void __VERIFIER_assume(ExprsContext exp) {
 		String labelName = "END_OF_" + currentScope.getID();
        	Label label = programBuilder.getOrCreateLabel(labelName);
