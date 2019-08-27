@@ -36,22 +36,15 @@ public class DartagnanCTest {
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
-        Settings s4 = new Settings(Mode.KNASTER, Alias.CFIS, 4);
         Settings s5 = new Settings(Mode.KNASTER, Alias.CFIS, 5);
         Settings s6 = new Settings(Mode.KNASTER, Alias.CFIS, 6);
-        Settings s7 = new Settings(Mode.KNASTER, Alias.CFIS, 7);
-        Settings s8 = new Settings(Mode.KNASTER, Alias.CFIS, 8);
-        Settings s9 = new Settings(Mode.KNASTER, Alias.CFIS, 9);
         Settings s10 = new Settings(Mode.KNASTER, Alias.CFIS, 10);
         Settings s11 = new Settings(Mode.KNASTER, Alias.CFIS, 11);
+        Settings s20 = new Settings(Mode.KNASTER, Alias.CFIS, 20);
 
         return Arrays.asList(new Object[][] {
     		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s3 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", true, Arch.NONE, wmmSc, s3 },
     		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", false, Arch.NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", true, Arch.NONE, wmmTso, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", false, Arch.NONE, wmmSc, s1 },
@@ -63,29 +56,55 @@ public class DartagnanCTest {
     		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", true, Arch.NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-2.c", true, Arch.NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s4 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s5 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", false, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "verifier_atomic.c", false, Arch.NONE, wmmSc, s1 },
+    		
+    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s2 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", false, Arch.NONE, wmmSc, s2 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", true, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s3 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", false, Arch.NONE, wmmSc, s3 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s5 },  		
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", true, Arch.NONE, wmmSc, s5 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", false, Arch.NONE, wmmSc, s6 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", false, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", true, Arch.NONE, wmmSc, s5 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", false, Arch.NONE, wmmSc, s6 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", true, Arch.NONE, wmmSc, s6 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s7 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s8 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s9 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s10 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s11 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s6 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s7 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s8 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s9 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s10 },
+    		
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s10 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", true, Arch.NONE, wmmSc, s10 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s11 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", true, Arch.NONE, wmmSc, s11 },
+    		
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s20 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", true, Arch.NONE, wmmSc, s20 },
         });
     }
     

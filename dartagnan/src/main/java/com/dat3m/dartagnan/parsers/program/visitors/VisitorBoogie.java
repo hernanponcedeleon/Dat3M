@@ -335,6 +335,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         ExprsContext exprs = ctx.def_body().exprs();
 		// We get the first value and then iterate
         ExprInterface value = (ExprInterface)exprs.expr(0).accept(this);
+        // Current hack to deal with pthread_join
+        if(value == null) {
+        	return null;
+        }
 		
         for(int i : IntStream.range(0, ctx.Ident().size()).toArray()) {
         	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {

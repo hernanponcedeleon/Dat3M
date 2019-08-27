@@ -50,9 +50,9 @@ int main() {
   pthread_create(&t2, 0, reader, 0);
   pthread_create(&t3, 0, writer, 0);
   pthread_create(&t4, 0, reader, 0);
-//  pthread_join(t1, 0);
-//  pthread_join(t2, 0);
-//  pthread_join(t3, 0);
-//  pthread_join(t4, 0);
+  pthread_join(t1, 0);
+  pthread_join(t2, 0);
+  pthread_join(t3, 0);
+  pthread_join(t4, 0);
   return 0;
 }
