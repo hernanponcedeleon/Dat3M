@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Program {
@@ -127,6 +128,15 @@ public class Program {
 		}
 	}
 
+	public Set<Event> getSlice() {
+		HashSet<Event> slice = new HashSet<Event>();
+		for(Thread t : threads){
+			slice.addAll(t.getSlice());
+		}
+		slice.addAll(ass.getRegs().stream().map(e -> e.getModifiedBy()).flatMap(Collection::stream).collect(Collectors.toSet()));
+		return slice;
+	}
+	
 	
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------

@@ -19,8 +19,9 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	
 	public Local(Register register, ExprInterface expr) {
 		this.register = register;
+		this.register.addModifiedBy(this);
 		this.expr = expr;
-		dataRegs = expr.getRegs();
+		this.dataRegs = expr.getRegs();
 		addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER, EType.REG_READER);
 	}
 

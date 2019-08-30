@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
-import com.microsoft.z3.Status;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -89,7 +89,15 @@ public class Dartagnan {
             solver.add(program.getAssFilter().encode(ctx));
         }
 
-        boolean result = (solver.check() == Status.SATISFIABLE);
+		Printer printer = new Printer();
+		System.out.println(printer.print(program));
+		int slice = program.getSlice().size();
+		int all = program.getEvents().size();
+		System.out.println(slice * 100 / all + " %");
+		System.out.println("====");
+
+        boolean result = false;
+//        boolean result = (solver.check() == Status.SATISFIABLE);
         if(program.getAss().getInvert()){
             result = !result;
         }

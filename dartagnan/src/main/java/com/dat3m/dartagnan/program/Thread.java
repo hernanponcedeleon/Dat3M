@@ -1,12 +1,19 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveStatus;
+import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.utils.RegReaderData;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Thread {
 
@@ -95,7 +102,41 @@ public class Thread {
         return id == ((Thread) obj).id;
     }
 
-
+    public Set<Event> getSlice() {
+		List<Event> processing = new ArrayList<Event>();
+		processing.addAll(getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
+		HashSet<Event> slice = new HashSet<Event>();
+		while(!processing.isEmpty()) {
+			Event next = processing.remove(0);
+			slice.add(next);
+			processing.addAll(condDependsOn(next));
+			// Every RegWriter has one of the following types and thus every case is covered
+			if(next instanceof RegReaderData) {
+				RegReaderData reader = (RegReaderData)next;
+				Set<Event> newEvents = reader.getDataRegs().stream().map(e -> e.getModifiedBy()).flatMap(Collection::stream).filter(e -> !slice.contains(e)).collect(Collectors.toSet());
+				processing.addAll(newEvents);
+			}
+			if(next instanceof Load) {
+				Load load = (Load)next;
+				Set<Event> newEvents = load.getAddress().getModifiedBy().stream().filter(e -> !slice.contains(e)).collect(Collectors.toSet());
+				processing.addAll(newEvents);
+			}
+			if(next instanceof RMWStoreExclusiveStatus) {
+				//TODO
+			}
+		}
+		return slice;
+    }
+    
+    private Set<Event> condDependsOn(Event e) {
+		HashSet<Event> set = new HashSet<Event>();
+		//TODO: normal jumps missing
+		set.addAll(getCache().getEvents(FilterBasic.get(EType.COND_JUMP)).stream().
+				filter(cj -> cj.getUId() < e.getUId() && ((CondJump)cj).getLabel().getUId() > e.getUId()).
+				collect(Collectors.toSet()));
+		return set;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

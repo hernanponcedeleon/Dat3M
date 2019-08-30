@@ -20,6 +20,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     RMWAbstract(IExpr address, Register register, ExprInterface value, String mo) {
         super(address, mo);
         this.resultRegister = register;
+        this.resultRegister.addModifiedBy(this);
         this.value = value;
         this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE,
