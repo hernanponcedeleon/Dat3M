@@ -132,10 +132,10 @@ public class Program {
 		}
 	}
 
-    public Set<Event> getSlice() {
+    public List<Event> getSlice() {
 		List<Event> processing = new ArrayList<Event>();
 		processing.addAll(getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
-		HashSet<Event> slice = new HashSet<Event>();
+		ArrayList<Event> slice = new ArrayList<Event>();
 		while(!processing.isEmpty()) {
 			Event next = processing.remove(0);
 			if(slice.contains(next)) {
