@@ -108,7 +108,7 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
+            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet().filter(program.getSlice()));
         }
 
         Collections.reverse(recursiveGroups);

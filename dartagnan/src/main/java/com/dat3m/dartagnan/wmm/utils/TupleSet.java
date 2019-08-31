@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.utils;
 import com.dat3m.dartagnan.program.event.Event;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TupleSet implements Set<Tuple>{
 
@@ -163,5 +164,11 @@ public class TupleSet implements Set<Tuple>{
             bySecond.get(e.getSecond()).add(e);
         }
         isUpdated = false;
+    }
+    
+    public TupleSet filter(Set<Event> filter) {
+    	TupleSet ts = new TupleSet();
+    	ts.addAll(stream().filter(t -> filter.contains(t.getFirst()) && filter.contains(t.getSecond())).collect(Collectors.toSet()));
+    	return ts;
     }
 }

@@ -2,11 +2,9 @@ package com.dat3m.dartagnan.asserts;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.google.common.collect.ImmutableSet;
 
 public class AssertBasic extends AbstractAssert {
 
@@ -35,9 +33,5 @@ public class AssertBasic extends AbstractAssert {
             return ((Register)value).getThreadId() + ":" + value;
         }
         return value.toString();
-    }
-    
-    public ImmutableSet<Register> getRegs() {
-		return new ImmutableSet.Builder<Register>().addAll(e1.getRegs()).addAll(e2.getRegs()).build();
     }
 }

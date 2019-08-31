@@ -29,6 +29,7 @@ public class Read extends MemEvent implements RegWriter {
     private Read(Read other){
         super(other);
         this.resultRegister = other.resultRegister;
+        this.resultRegister.addModifiedBy(this);
         this.mo = other.mo;
     }
 

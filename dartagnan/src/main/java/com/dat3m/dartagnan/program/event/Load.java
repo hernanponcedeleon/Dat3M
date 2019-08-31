@@ -22,6 +22,7 @@ public class Load extends MemEvent implements RegWriter {
     protected Load(Load other){
         super(other);
         this.resultRegister = other.resultRegister;
+        this.resultRegister.addModifiedBy(this);
     }
 
     @Override

@@ -30,6 +30,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     RMWAbstract(RMWAbstract other){
         super(other);
         this.resultRegister = other.resultRegister;
+        this.resultRegister.addModifiedBy(this);
         this.value = other.value;
         this.dataRegs = other.dataRegs;
     }

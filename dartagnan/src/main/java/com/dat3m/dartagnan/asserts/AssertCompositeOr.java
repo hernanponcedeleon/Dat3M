@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.asserts;
 
-import com.dat3m.dartagnan.program.Register;
-import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -23,9 +21,5 @@ public class AssertCompositeOr extends AbstractAssert {
     @Override
     public String toString() {
         return "(" + a1 + " || " + a2 + ")";
-    }
-    
-    public ImmutableSet<Register> getRegs() {
-		return new ImmutableSet.Builder<Register>().addAll(a1.getRegs()).addAll(a2.getRegs()).build();
     }
 }

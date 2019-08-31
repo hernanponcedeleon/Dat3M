@@ -28,6 +28,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	protected Local(Local other){
 		super(other);
 		this.register = other.register;
+		this.register.addModifiedBy(this);
 		this.expr = other.expr;
 		this.dataRegs = other.dataRegs;
 		this.regResultExpr = other.regResultExpr;

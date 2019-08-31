@@ -19,6 +19,7 @@ public class Init extends MemEvent {
 	private Init(Init other){
 		super(other);
 		this.value = other.value;
+        address.addModifiedBy(this);
 	}
 
 	public IConst getValue(){

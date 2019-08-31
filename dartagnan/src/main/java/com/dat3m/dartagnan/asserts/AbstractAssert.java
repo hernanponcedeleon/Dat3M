@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.asserts;
 
-import com.dat3m.dartagnan.program.Register;
-import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -41,5 +39,4 @@ public abstract class AbstractAssert {
     }
 
     public abstract BoolExpr encode(Context ctx);
-    public abstract ImmutableSet<Register> getRegs();
 }

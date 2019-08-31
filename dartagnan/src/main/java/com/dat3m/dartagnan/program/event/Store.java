@@ -25,6 +25,7 @@ public class Store extends MemEvent implements RegReaderData {
         super(other);
         this.value = other.value;
         dataRegs = other.dataRegs;
+        address.addModifiedBy(this);
     }
 
     @Override

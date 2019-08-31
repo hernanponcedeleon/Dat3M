@@ -17,7 +17,7 @@ public class Jump extends Event {
             throw new IllegalArgumentException("Jump event requires non null label event");
         }
         this.label = label;
-        addFilters(EType.ANY);
+        addFilters(EType.ANY, EType.JUMP);
     }
 
     protected Jump(Jump other) {

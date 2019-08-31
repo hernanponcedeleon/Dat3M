@@ -29,6 +29,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     private StoreExclusive(StoreExclusive other){
         super(other);
         this.register = other.register;
+        this.register.addModifiedBy(this);
     }
 
     @Override

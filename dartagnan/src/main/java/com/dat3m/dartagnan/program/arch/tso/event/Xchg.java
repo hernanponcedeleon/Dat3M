@@ -33,6 +33,8 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     private Xchg(Xchg other){
         super(other);
         this.resultRegister = other.resultRegister;
+        this.resultRegister.addModifiedBy(this);
+        address.addModifiedBy(this);
         this.dataRegs = other.dataRegs;
     }
 
