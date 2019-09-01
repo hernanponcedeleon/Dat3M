@@ -96,7 +96,7 @@ public class Wmm {
         }
 
         for(String relName : baseRelations){
-            relationRepository.getRelation(relName).getMaxTupleSet();
+            relationRepository.getRelation(relName).getMaxTupleSet().filter(new Slice(program).create());
         }
 
         if(settings.getDrawGraph()){
@@ -109,7 +109,7 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet().filter(new Slice(program).create()));
+            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
         }
 
         Collections.reverse(recursiveGroups);
