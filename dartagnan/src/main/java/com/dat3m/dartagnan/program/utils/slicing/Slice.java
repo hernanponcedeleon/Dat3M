@@ -38,8 +38,10 @@ public class Slice {
 				collect(Collectors.toList()));
 		Set<Event> slice = new HashSet<Event>();
 		while(!processing.isEmpty()) {
-			System.out.println(1);
 			Event next = processing.remove(0);
+			if(slice.contains(next)) {
+				continue;
+			}
 			slice.add(next);
 			processing.addAll(condDependsOn(program, next));
 			// Every RegWriter has one of the following types and thus every case is covered
