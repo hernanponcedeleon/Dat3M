@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.asserts;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,9 +36,6 @@ public class AssertCompositeAnd extends AbstractAssert {
 
 	@Override
 	public Set<Address> getAdds() {
-		Set<Address> variables = new HashSet<Address>();
-		variables.addAll(a1.getAdds());
-		variables.addAll(a2.getAdds());
-		return variables;
+		return Stream.concat(a1.getAdds().stream(),a2.getAdds().stream()).collect(Collectors.toSet());
 	}
 }

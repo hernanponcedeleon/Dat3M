@@ -166,7 +166,7 @@ public class TupleSet implements Set<Tuple>{
         isUpdated = false;
     }
     
-    public TupleSet filter(List<Event> filter) {
+    public TupleSet filter(Set<Event> filter) {
     	TupleSet ts = new TupleSet();
     	ts.addAll(stream().filter(t -> filter.contains(t.getFirst()) && filter.contains(t.getSecond())).collect(Collectors.toSet()));
     	return ts;

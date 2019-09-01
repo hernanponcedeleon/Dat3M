@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.asserts;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 import com.dat3m.dartagnan.program.Register;
