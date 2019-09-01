@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.utils.slicing.Slice;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -108,7 +109,7 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet().filter(program.getSlice()));
+            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet().filter(new Slice(program).create()));
         }
 
         Collections.reverse(recursiveGroups);

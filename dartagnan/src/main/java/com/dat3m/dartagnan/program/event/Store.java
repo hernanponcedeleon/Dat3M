@@ -14,7 +14,7 @@ public class Store extends MemEvent implements RegReaderData {
     private final ImmutableSet<Register> dataRegs;
 
     public Store(IExpr address, ExprInterface value, String mo){
-        super(address, mo);
+    	super(address, mo);
         this.value = value;
         dataRegs = value.getRegs();
         address.addModifiedBy(this);

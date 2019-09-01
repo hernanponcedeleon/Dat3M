@@ -21,7 +21,7 @@ public class CondJump extends Jump implements RegReaderData {
         }
         this.expr = expr;
         dataRegs = expr.getRegs();
-        addFilters(EType.ANY, EType.BRANCH, EType.JUMP, EType.COND_JUMP, EType.REG_READER);
+        addFilters(EType.BRANCH, EType.COND_JUMP, EType.REG_READER);
     }
 
     protected CondJump(CondJump other) {
