@@ -8,7 +8,7 @@ public class Assertion extends Local {
 
 	public Assertion(Register register, ExprInterface expr) {
 		super(register, expr);
-		addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER, EType.REG_READER, EType.ASSERTION);
+		addFilters(EType.ASSERTION);
 	}
 	
 	protected Assertion(Assertion other){
