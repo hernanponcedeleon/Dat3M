@@ -44,8 +44,7 @@ public class Jump extends Event {
 
     @Override
     public int unroll(int bound, int nextId, Event predecessor) {
-    	// When the bound is one, we just update the nextId
-        if(label.getOId() < oId && bound > 1){
+        if(label.getOId() < oId){
         	int currentBound = bound;    			
 
         	Event next = null;
