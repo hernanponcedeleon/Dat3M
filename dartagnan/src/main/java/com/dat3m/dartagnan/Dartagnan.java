@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -82,6 +83,9 @@ public class Dartagnan {
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
 		program.addAssertions();
+		
+			Printer printer = new Printer();
+			System.out.println(printer.print(program));
         
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
@@ -30,8 +31,10 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.IdentsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
@@ -111,7 +114,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	threadsToCreate.add(procedures.get("main"));
     	while(!threadsToCreate.isEmpty()) {
     		Proc_declContext nextThread = threadsToCreate.remove(0);
-    		visitProc_decl(nextThread, true);	
+    		visitProc_decl(nextThread, true, new ArrayList<>());	
     	}
     	return programBuilder.build();
     }
@@ -183,7 +186,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 	return null;
    	 }
 
-    public void visitProc_decl(BoogieParser.Proc_declContext ctx, boolean create) {
+    public void visitProc_decl(BoogieParser.Proc_declContext ctx, boolean create, List<ExprContext> callingValues) {
     	if(ctx.proc_sign().proc_sign_out() != null) {
     		for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
     			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
@@ -204,6 +207,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(body == null) {
     		currentScope = currentScope.getParent();
     		return;
+    	}
+    	
+    	if(ctx.proc_sign().proc_sign_in() != null) {
+			int index = 0;
+    		for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+    			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+    				// To deal with references passed to created threads
+    				if(index < callingValues.size()) {
+        				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText());
+        				ExprInterface value = (ExprInterface)callingValues.get(index).accept(this);
+        				programBuilder.addChild(threadCount, new Local(register, value));
+        				index++;    					
+    				}
+    			}
+    		}    		
     	}
     	    	
         for(Local_varsContext localVarContext : body.local_vars()) {
@@ -260,11 +278,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	            currentReturn = register;
 	        }
 		}
+	    List<ExprContext> callingValues = new ArrayList<>();
+		if(ctx.call_params().exprs() != null) {
+			callingValues = ctx.call_params().exprs().expr();	
+			System.out.println(callingValues.stream().map(e -> e.getText()).collect(Collectors.toList()));
+		}
+		
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		visitProc_decl(procedures.get(name), false);
-		currentReturn = null;
+		visitProc_decl(procedures.get(name), false, callingValues);
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
@@ -383,7 +406,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, "NA"));
 	            return null;
 	        }
-	        if(currentReturnName != null && currentReturnName.equals(name)) {
+	        if(currentReturnName.equals(name)) {
 	        	if(currentReturn instanceof Register) {
 	        		programBuilder.addChild(threadCount, new Local(currentReturn, value));
 	        	}
