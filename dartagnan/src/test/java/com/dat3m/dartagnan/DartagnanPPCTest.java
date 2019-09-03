@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -16,7 +17,7 @@ public class DartagnanPPCTest extends AbstractDartagnanTest {
         return buildParameters("litmus/PPC/", "cat/power.cat", Arch.POWER);
     }
 
-    public DartagnanPPCTest(String path, boolean expected, Arch target, Wmm wmm, Settings settings) {
+    public DartagnanPPCTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         super(path, expected, target, wmm, settings);
     }
 }

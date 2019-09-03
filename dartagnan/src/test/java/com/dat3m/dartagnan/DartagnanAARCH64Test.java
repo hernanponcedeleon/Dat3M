@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -16,7 +17,7 @@ public class DartagnanAARCH64Test extends AbstractDartagnanTest {
         return buildParameters("litmus/AARCH64/", "cat/aarch64.cat", Arch.ARM8);
     }
 
-    public DartagnanAARCH64Test(String path, boolean expected, Arch target, Wmm wmm, Settings settings) {
+    public DartagnanAARCH64Test(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         super(path, expected, target, wmm, settings);
     }
 }

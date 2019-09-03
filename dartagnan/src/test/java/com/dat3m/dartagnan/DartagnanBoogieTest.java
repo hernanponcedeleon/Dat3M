@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -18,6 +19,10 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
@@ -49,9 +54,9 @@ public class DartagnanBoogieTest {
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_reg_const_already_defined.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_reg_loc_already_defined.bpl", true, Arch.NONE, wmmSc, s1 },
                 { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/fail_no_main.bpl", true, Arch.NONE, wmmSc, s1 },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s1 },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s2 },
-                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/pass_constant_while.bpl", false, Arch.NONE, wmmSc, s3 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/unknown_constant_while.bpl", false, Arch.NONE, wmmSc, s1 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/unknown_constant_while.bpl", false, Arch.NONE, wmmSc, s2 },
+                { BENCHMARKS_RESOURCE_PATH + "benchmarks/boogie/unknown_constant_while.bpl", false, Arch.NONE, wmmSc, s3 },
         });
     }
     
@@ -76,7 +81,14 @@ public class DartagnanBoogieTest {
             assert(!parseExc);
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            boolean expected = !programFilePath.contains("pass");
+            Result expected;
+            if(programFilePath.contains("pass")) {
+            	expected = PASS;
+            } else if (programFilePath.contains("fail")) {
+            	expected = FAIL;
+            } else {
+            	expected = UNKNOWN;
+            }
             assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, settings));
             ctx.close();
         } catch (ParsingException e) {

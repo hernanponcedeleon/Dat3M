@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -25,6 +26,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
@@ -32,7 +35,7 @@ public class DartagnanBranchTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        ImmutableMap<String, Boolean> expected = readExpectedResults();
+        ImmutableMap<String, Result> expected = readExpectedResults();
         Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
 
         Wmm linuxWmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
@@ -53,14 +56,14 @@ public class DartagnanBranchTest {
         return data;
     }
 
-    private static ImmutableMap<String, Boolean> readExpectedResults() throws IOException {
+    private static ImmutableMap<String, Result> readExpectedResults() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(ResourceHelper.TEST_RESOURCE_PATH + "branch/expected.csv"));
-        ImmutableMap.Builder<String, Boolean> builder = new ImmutableMap.Builder<>();
+        ImmutableMap.Builder<String, Result> builder = new ImmutableMap.Builder<>();
         String str;
         while((str = reader.readLine()) != null){
             String[] line = str.split(",");
             if(line.length == 2){
-                builder.put(line[0], Integer.parseInt(line[1]) == 1);
+                builder.put(line[0], Integer.parseInt(line[1]) == 1 ? FAIL : PASS);
             }
         }
         reader.close();
@@ -70,9 +73,9 @@ public class DartagnanBranchTest {
     private String path;
     private Wmm wmm;
     private Settings settings;
-    private boolean expected;
+    private Result expected;
 
-    public DartagnanBranchTest(String path, boolean expected, Wmm wmm, Settings settings) {
+    public DartagnanBranchTest(String path, Result expected, Wmm wmm, Settings settings) {
         this.path = path;
         this.expected = expected;
         this.wmm = wmm;

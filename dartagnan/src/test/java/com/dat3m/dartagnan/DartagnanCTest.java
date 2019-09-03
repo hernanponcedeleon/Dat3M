@@ -97,13 +97,6 @@ public class DartagnanCTest {
 
        		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", UNKNOWN, Arch.NONE, wmmSc, s10 },
        		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", UNKNOWN, Arch.NONE, wmmSc, s10 },
-
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", UNKNOWN, Arch.NONE, wmmSc, s11 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", UNKNOWN, Arch.NONE, wmmSc, s11 },
-
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", FAIL, Arch.NONE, wmmSc, s20 },
-
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", PASS, Arch.NONE, wmmSc, s21 },
         });
     }
     

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
@@ -28,7 +29,7 @@ public abstract class AbstractDartagnanTest {
 
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
-        Map<String, Boolean> expectationMap = ResourceHelper.getExpectedResults();
+        Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
@@ -50,12 +51,12 @@ public abstract class AbstractDartagnanTest {
     }
 
     private String path;
-    private boolean expected;
+    private Result expected;
     private Arch target;
     private Wmm wmm;
     private Settings settings;
 
-    AbstractDartagnanTest(String path, boolean expected, Arch target, Wmm wmm, Settings settings) {
+    AbstractDartagnanTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         this.path = path;
         this.expected = expected;
         this.target = target;
