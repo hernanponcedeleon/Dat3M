@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.*;
 
 public class RelRfTest {
@@ -44,15 +45,15 @@ public class RelRfTest {
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings) == FAIL);
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings) == FAIL);
         solver.reset();
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, true);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings) == FAIL);
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings) == FAIL);
         ctx.close();
     }
 

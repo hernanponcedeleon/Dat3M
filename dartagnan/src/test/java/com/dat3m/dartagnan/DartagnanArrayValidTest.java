@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -54,7 +55,7 @@ public class DartagnanArrayValidTest {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings));
+            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings) == FAIL);
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

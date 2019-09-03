@@ -1,8 +1,11 @@
 package com.dat3m.ui.result;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.utils.UiOptions;
@@ -38,9 +41,9 @@ public class ReachabilityResult implements Dat3mResult {
         if(validate()){
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
-            boolean result = Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), options.getSettings());
-            buildVerdict(result);
-            if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result)){
+            Result result = Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), options.getSettings());
+            buildVerdict(result == FAIL);
+            if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result == FAIL)){
                 graph = new Graph(solver.getModel(), ctx, program, options.getSettings().getGraphRelations());
             }
             ctx.close();

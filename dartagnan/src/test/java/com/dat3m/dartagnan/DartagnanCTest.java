@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -20,6 +21,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
@@ -36,85 +41,79 @@ public class DartagnanCTest {
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
+        Settings s4 = new Settings(Mode.KNASTER, Alias.CFIS, 4);
         Settings s5 = new Settings(Mode.KNASTER, Alias.CFIS, 5);
         Settings s6 = new Settings(Mode.KNASTER, Alias.CFIS, 6);
+        Settings s7 = new Settings(Mode.KNASTER, Alias.CFIS, 7);
         Settings s10 = new Settings(Mode.KNASTER, Alias.CFIS, 10);
         Settings s11 = new Settings(Mode.KNASTER, Alias.CFIS, 11);
         Settings s20 = new Settings(Mode.KNASTER, Alias.CFIS, 20);
+        Settings s21 = new Settings(Mode.KNASTER, Alias.CFIS, 21);
 
         return Arrays.asList(new Object[][] {
-    		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", true, Arch.NONE, wmmTso, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", true, Arch.NONE, wmmTso, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", true, Arch.NONE, wmmTso, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", true, Arch.NONE, wmmTso, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", true, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-2.c", true, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", false, Arch.NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "verifier_atomic.c", false, Arch.NONE, wmmSc, s1 },
-    		
-    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s2 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", false, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", FAIL, Arch.NONE, wmmTso, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", FAIL, Arch.NONE, wmmTso, s1 },    		
+    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", FAIL, Arch.NONE, wmmTso, s1 },    		
+    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", FAIL, Arch.NONE, wmmTso, s1 },    		
+    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", FAIL, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-2.c", FAIL, Arch.NONE, wmmSc, s1 },
+       		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", UNKNOWN, Arch.NONE, wmmSc, s1 },
+       		{ BENCHMARKS_RESOURCE_PATH + "verifier_atomic.c", PASS, Arch.NONE, wmmSc, s1 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", true, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "while_always_pass.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s3 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", false, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, Arch.NONE, wmmSc, s2 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, Arch.NONE, wmmSc, s2 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", false, Arch.NONE, wmmSc, s5 },  		
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", true, Arch.NONE, wmmSc, s5 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", false, Arch.NONE, wmmSc, s5 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", false, Arch.NONE, wmmSc, s5 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", true, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", PASS, Arch.NONE, wmmSc, s3 },
+    		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", FAIL, Arch.NONE, wmmSc, s3 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", false, Arch.NONE, wmmSc, s6 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", true, Arch.NONE, wmmSc, s6 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", false, Arch.NONE, wmmSc, s6 },
-    		
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", false, Arch.NONE, wmmSc, s10 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", true, Arch.NONE, wmmSc, s10 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", UNKNOWN, Arch.NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", UNKNOWN, Arch.NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", UNKNOWN, Arch.NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", UNKNOWN, Arch.NONE, wmmSc, s4 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", false, Arch.NONE, wmmSc, s11 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", true, Arch.NONE, wmmSc, s11 },
-    		
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", false, Arch.NONE, wmmSc, s20 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", true, Arch.NONE, wmmSc, s20 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", FAIL, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", UNKNOWN, Arch.NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", UNKNOWN, Arch.NONE, wmmSc, s5 },
+       		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", FAIL, Arch.NONE, wmmSc, s5 },
+       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", UNKNOWN, Arch.NONE, wmmSc, s5 },
+       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", UNKNOWN, Arch.NONE, wmmSc, s5 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", PASS, Arch.NONE, wmmSc, s6 },  		
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", PASS, Arch.NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", FAIL, Arch.NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", UNKNOWN, Arch.NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", UNKNOWN, Arch.NONE, wmmSc, s6 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", PASS, Arch.NONE, wmmSc, s7 },
+
+       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", UNKNOWN, Arch.NONE, wmmSc, s10 },
+       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", UNKNOWN, Arch.NONE, wmmSc, s10 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", UNKNOWN, Arch.NONE, wmmSc, s11 },
+    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", UNKNOWN, Arch.NONE, wmmSc, s11 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", FAIL, Arch.NONE, wmmSc, s20 },
+
+    		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", PASS, Arch.NONE, wmmSc, s21 },
         });
     }
     
     private String programFilePath;
-    private boolean expected;
+    private Result expected;
     private Arch target;
     private Wmm wmm;
     private Settings settings;
 
-    public DartagnanCTest(String path, boolean expected, Arch target, Wmm wmm, Settings settings) {
+    public DartagnanCTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         this.programFilePath = new C2BoogieRunner(path).run();
         this.expected = expected;
         this.target = target;

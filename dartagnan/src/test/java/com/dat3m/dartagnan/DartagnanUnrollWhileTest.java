@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
@@ -89,7 +90,7 @@ public class DartagnanUnrollWhileTest {
             Context ctx = new Context();
             Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, bound);
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings));
+            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings) == FAIL);
             ctx.close();
 
             for(Thread thread : program.getThreads()){

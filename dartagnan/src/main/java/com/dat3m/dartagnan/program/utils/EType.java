@@ -17,5 +17,6 @@ public class EType {
     public static final String VISIBLE      = "V";
     public static final String REG_WRITER   = "rW";
     public static final String REG_READER   = "rR";
-    public static final String ASSERTION    = "assertion";
+    public static final String ASSERTION    = "ASS";
+    public static final String BASSERTION    = "BASS";
 }

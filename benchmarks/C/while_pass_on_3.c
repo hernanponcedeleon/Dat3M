@@ -10,7 +10,7 @@ extern void __VERIFIER_error() __attribute__ ((__noreturn__));
 
 int main() {
   int x=0;
-  while(x < 3) {
+  while(x < 2) {
     x++;
   }
   assert(x != 4);

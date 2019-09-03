@@ -1,20 +1,21 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
-import com.microsoft.z3.Status;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.commons.cli.*;
+
+import static com.dat3m.dartagnan.utils.Result.getResult;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -53,17 +54,21 @@ public class Dartagnan {
         Context ctx = new Context();
         Solver s = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
         Settings settings = options.getSettings();
-        System.out.println("Settings: " + options.getSettings());
 
-        boolean result = testProgram(s, ctx, p, mcm, target, settings);
+        Result result = testProgram(s, ctx, p, mcm, target, settings);
 
-        if(p.getAssFilter() != null){
-            System.out.println("Filter " + (p.getAssFilter()));
+        if(options.getProgramFilePath().endsWith(".litmus")) {
+            System.out.println("Settings: " + options.getSettings());
+            if(p.getAssFilter() != null){
+                System.out.println("Filter " + (p.getAssFilter()));
+            }
+            System.out.println("Condition " + p.getAss().toStringWithType());
+            System.out.println(result == Result.FAIL ? "Ok" : "No");        	
+        } else {
+        	System.out.println(result);
         }
-        System.out.println("Condition " + p.getAss().toStringWithType());
-        System.out.println(result ? "Ok" : "No");
 
-        if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result)) {
+        if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result == Result.FAIL)) {
             ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
             drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
             System.out.println("Execution graph is written to " + options.getGraphFilePath());
@@ -72,7 +77,7 @@ public class Dartagnan {
         ctx.close();
     }
 
-    public static boolean testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
+    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
 
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -85,19 +90,15 @@ public class Dartagnan {
         if(program.getAss() == null){
         	throw new RuntimeException("Assert is required for Dartagnan tests");
         }
+        // Used for getting the UNKNOWN
+        // pop() is inside getResult
+        solver.push();
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
 
-//        Printer printer = new Printer();
-//        System.out.println(printer.print(program));
-
-        boolean result = (solver.check() == Status.SATISFIABLE);
-        if(program.getAss().getInvert()){
-            result = !result;
-        }
-        return result;
+        return getResult(solver, program, ctx);
     }
 
     public static boolean canDrawGraph(AbstractAssert ass, boolean result){

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
@@ -65,7 +66,7 @@ public class RelCritTest {
             Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, true, "crit");
 
             // Sanity check, can be skipped
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings));
+            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings) == FAIL);
 
             // Test edges
             EdgeTestHelper helper = new EdgeTestHelper(
