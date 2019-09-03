@@ -63,11 +63,6 @@ public abstract class MemEvent extends Event {
 
     public void setMaxAddressSet(ImmutableSet<Address> maxAddressSet){
         this.maxAddressSet = maxAddressSet;
-        if(this instanceof Store) {
-        	for(Address address : maxAddressSet) {
-        		address.addModifiedBy(this);
-        	}
-        }
     }
 
     public IExpr getAddress(){

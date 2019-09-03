@@ -12,14 +12,12 @@ public class Init extends MemEvent {
 	public Init(Address address, IConst value) {
 		super(address, null);
 		this.value = value;
-        address.addModifiedBy(this);
 		addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.INIT);
 	}
 
 	private Init(Init other){
 		super(other);
 		this.value = other.value;
-        address.addModifiedBy(this);
 	}
 
 	public IConst getValue(){

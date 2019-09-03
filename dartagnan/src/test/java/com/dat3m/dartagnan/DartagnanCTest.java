@@ -46,9 +46,6 @@ public class DartagnanCTest {
         Settings s6 = new Settings(Mode.KNASTER, Alias.CFIS, 6);
         Settings s7 = new Settings(Mode.KNASTER, Alias.CFIS, 7);
         Settings s10 = new Settings(Mode.KNASTER, Alias.CFIS, 10);
-        Settings s11 = new Settings(Mode.KNASTER, Alias.CFIS, 11);
-        Settings s20 = new Settings(Mode.KNASTER, Alias.CFIS, 20);
-        Settings s21 = new Settings(Mode.KNASTER, Alias.CFIS, 21);
 
         return Arrays.asList(new Object[][] {
     		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, Arch.NONE, wmmSc, s1 },

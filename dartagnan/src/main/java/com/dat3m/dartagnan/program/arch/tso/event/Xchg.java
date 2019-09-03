@@ -24,8 +24,6 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     public Xchg(Address address, Register register) {
         super(address, null);
         this.resultRegister = register;
-        this.resultRegister.addModifiedBy(this);
-        address.addModifiedBy(this);
         this.dataRegs = ImmutableSet.of(resultRegister);
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM, EType.REG_WRITER, EType.REG_READER);
     }
@@ -33,8 +31,6 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     private Xchg(Xchg other){
         super(other);
         this.resultRegister = other.resultRegister;
-        this.resultRegister.addModifiedBy(this);
-        address.addModifiedBy(this);
         this.dataRegs = other.dataRegs;
     }
 

@@ -26,7 +26,6 @@ public class Write extends MemEvent implements RegReaderData {
         this.value = value;
         this.mo = mo;
         this.dataRegs = value.getRegs();
-        address.addModifiedBy(this);
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
     }
 
@@ -35,7 +34,6 @@ public class Write extends MemEvent implements RegReaderData {
         this.value = other.value;
         this.mo = other.mo;
         this.dataRegs = other.dataRegs;
-        address.addModifiedBy(this);
     }
 
     @Override

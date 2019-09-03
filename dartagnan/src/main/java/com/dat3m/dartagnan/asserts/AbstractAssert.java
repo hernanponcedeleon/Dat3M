@@ -1,9 +1,5 @@
 package com.dat3m.dartagnan.asserts;
 
-import java.util.Set;
-
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.memory.Address;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -43,6 +39,4 @@ public abstract class AbstractAssert {
     }
 
     public abstract BoolExpr encode(Context ctx);
-    public abstract Set<Register> getRegs();
-    public abstract Set<Address> getAdds();
 }

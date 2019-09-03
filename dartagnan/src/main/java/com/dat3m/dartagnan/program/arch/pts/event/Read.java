@@ -21,7 +21,6 @@ public class Read extends MemEvent implements RegWriter {
     public Read(Register register, IExpr address, String mo) {
         super(address, mo);
         this.resultRegister = register;
-        this.resultRegister.addModifiedBy(this);
         this.mo = mo;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
     }
@@ -29,7 +28,6 @@ public class Read extends MemEvent implements RegWriter {
     private Read(Read other){
         super(other);
         this.resultRegister = other.resultRegister;
-        this.resultRegister.addModifiedBy(this);
         this.mo = other.mo;
     }
 

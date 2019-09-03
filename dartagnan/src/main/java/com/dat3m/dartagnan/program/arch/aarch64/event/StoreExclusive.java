@@ -22,14 +22,12 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     public StoreExclusive(Register register, IExpr address, ExprInterface value, String mo){
         super(address, value, mo);
         this.register = register;
-        this.register.addModifiedBy(this);
         addFilters(EType.EXCL, EType.REG_WRITER);
     }
 
     private StoreExclusive(StoreExclusive other){
         super(other);
         this.register = other.register;
-        this.register.addModifiedBy(this);
     }
 
     @Override
