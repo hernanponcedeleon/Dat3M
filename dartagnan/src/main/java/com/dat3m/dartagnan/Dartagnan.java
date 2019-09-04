@@ -84,8 +84,8 @@ public class Dartagnan {
         program.compile(target, 0);
 		program.addAssertions();
 		
-			Printer printer = new Printer();
-			System.out.println(printer.print(program));
+//		Printer printer = new Printer();
+//		System.out.println(printer.print(program));
         
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));

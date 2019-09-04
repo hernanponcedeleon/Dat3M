@@ -84,6 +84,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
 	
+	private List<ExprInterface> mainCallingValues = new ArrayList<>();
+	
 	private int assertionIndex = 0;
 
 	public VisitorBoogie(ProgramBuilder pb) {
@@ -114,15 +116,22 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	threadsToCreate.add(procedures.get("main"));
     	while(!threadsToCreate.isEmpty()) {
     		Proc_declContext nextThread = threadsToCreate.remove(0);
-    		visitProc_decl(nextThread, true, new ArrayList<>());	
+    		visitProc_decl(nextThread, true, mainCallingValues);	
     	}
     	return programBuilder.build();
     }
 
 	private void preProc_decl(Proc_declContext ctx) {
-		String name = ctx.proc_sign().Ident().getText();;
+		String name = ctx.proc_sign().Ident().getText();
     	if(procedures.containsKey(name)) {
     		throw new ParsingException("Procedure " + name + " is already defined");
+    	}
+    	if(name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
+        	for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+        		for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+            		mainCallingValues.add(programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText()));
+        		}
+        	}
     	}
     	procedures.put(name, ctx);
 	}
@@ -186,7 +195,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 	return null;
    	 }
 
-    public void visitProc_decl(BoogieParser.Proc_declContext ctx, boolean create, List<ExprContext> callingValues) {
+    public void visitProc_decl(BoogieParser.Proc_declContext ctx, boolean create, List<ExprInterface> callingValues) {
     	if(ctx.proc_sign().proc_sign_out() != null) {
     		for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
     			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
@@ -216,7 +225,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     				// To deal with references passed to created threads
     				if(index < callingValues.size()) {
         				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText());
-        				ExprInterface value = (ExprInterface)callingValues.get(index).accept(this);
+        				ExprInterface value = callingValues.get(index);
         				programBuilder.addChild(threadCount, new Local(register, value));
         				index++;    					
     				}
@@ -278,10 +287,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	            currentReturn = register;
 	        }
 		}
-	    List<ExprContext> callingValues = new ArrayList<>();
+	    List<ExprInterface> callingValues = new ArrayList<>();
 		if(ctx.call_params().exprs() != null) {
-			callingValues = ctx.call_params().exprs().expr();	
-			System.out.println(callingValues.stream().map(e -> e.getText()).collect(Collectors.toList()));
+			callingValues = ctx.call_params().exprs().expr().stream().map(c -> (ExprInterface)c.accept(this)).collect(Collectors.toList());
 		}
 		
 		if(!procedures.containsKey(name)) {
