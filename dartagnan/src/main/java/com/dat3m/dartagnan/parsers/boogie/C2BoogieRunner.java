@@ -16,7 +16,7 @@ public class C2BoogieRunner {
 		String tool = "smack";
 		String input = filePath;
 		String output = filePath.split(".c", -1)[0] + ".bpl";				
-		String exec = tool +" " + input + " -bpl " + output + " -t";
+		String exec = tool +" " + input + " -bpl " + output + " -t -q";
 
 		try {
 			Process proc = Runtime.getRuntime().exec(exec);
