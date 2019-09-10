@@ -342,7 +342,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		//https://sv-comp.sosy-lab.org/2019/rules.php
 		String labelName = "END_OF_" + currentScope.getID();
        	Label label = programBuilder.getOrCreateLabel(labelName);
-       	Register c = (Register)exp.accept(this);
+       	ExprInterface c = (ExprInterface)exp.accept(this);
 		if(c != null) {
 			programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), label));	
 		}
