@@ -265,13 +265,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$alloc")) {
 			return null;
 		}
+		if(name.equals("corral_getThreadID")) {
+			return new IConst(threadCount);
+		}
 		if(name.equals("__VERIFIER_assume")) {
 			__VERIFIER_assume(ctx.call_params().exprs());
 			return null;
 		}
 		if(name.equals("__VERIFIER_nondet_int")) {
-			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText());
-			return null;
+	        throw new ParsingException("Non-determinism of values is not yet supported");
 		}
 		if(name.equals("pthread_create")) {
 			pthread_create(ctx.call_params().exprs().expr().get(2).getText());
@@ -319,14 +321,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	    }		
 	}
 
-	private void __VERIFIER_nondet_int(String registerName) {
-		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
-		ExprInterface value = new IConst(new Random().nextInt(Integer.MAX_VALUE));
-		if(register != null) {
-			programBuilder.addChild(threadCount, new Local(register, value));	
-		}
-	}
-	
 	private void __VERIFIER_assume(ExprsContext exp) {
 		//TODO: cross-check with intended behavior:
 		//https://sv-comp.sosy-lab.org/2019/rules.php
@@ -378,7 +372,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAssign_cmd(BoogieParser.Assign_cmdContext ctx) {
 		//TODO handle complex lhs ... e.g foo(expr)
-		
+
         ExprsContext exprs = ctx.def_body().exprs();
 		// We get the first value and then iterate
         ExprInterface value = (ExprInterface)exprs.expr(0).accept(this);
