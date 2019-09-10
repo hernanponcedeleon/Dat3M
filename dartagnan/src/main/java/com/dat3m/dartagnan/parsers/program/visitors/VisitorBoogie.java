@@ -7,22 +7,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
-
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.expression.BExprBin;
 import com.dat3m.dartagnan.expression.BExprUn;
+import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IExprUn;
+import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -31,10 +30,8 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.IdentsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
@@ -273,7 +270,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return null;
 		}
 		if(name.equals("__VERIFIER_nondet_int")) {
-	        throw new ParsingException("Non-determinism of values is not yet supported");
+			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText());
+		}
+		if(name.equals("__VERIFIER_nondet_bool")) {
+			__VERIFIER_nondet_bool(ctx.call_params().Ident(0).getText());
 		}
 		if(name.equals("pthread_create")) {
 			pthread_create(ctx.call_params().exprs().expr().get(2).getText());
@@ -318,6 +318,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
 	    if(register != null){
 	    	programBuilder.addChild(threadCount, new Local(register, new IConst(0)));
+	    }		
+	}
+
+	private void __VERIFIER_nondet_int(String registerName) {
+		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
+	    if(register != null){
+	    	programBuilder.addChild(threadCount, new Local(register, new INonDet()));
+	    }		
+	}
+
+	private void __VERIFIER_nondet_bool(String registerName) {
+		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
+	    if(register != null){
+	    	programBuilder.addChild(threadCount, new Local(register, new BNonDet()));
 	    }		
 	}
 

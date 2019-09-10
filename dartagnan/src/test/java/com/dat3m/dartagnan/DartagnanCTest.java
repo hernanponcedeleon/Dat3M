@@ -72,7 +72,6 @@ public class DartagnanCTest {
 
     		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, NONE, wmmSc, s2 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, NONE, wmmSc, s2 },
-       		{ BENCHMARKS_RESOURCE_PATH + "gcd-2.c", PASS, NONE, wmmSc, s1 },
 
     		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", PASS, NONE, wmmSc, s3 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", FAIL, NONE, wmmSc, s3 },
