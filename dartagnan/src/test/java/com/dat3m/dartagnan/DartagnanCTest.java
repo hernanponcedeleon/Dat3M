@@ -69,6 +69,8 @@ public class DartagnanCTest {
        		{ BENCHMARKS_RESOURCE_PATH + "add_mult_pass.c", PASS, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "add_mult_fail.c", FAIL, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "gcd-2.c", UNKNOWN, NONE, wmmSc, s1 },
+       		{ BENCHMARKS_RESOURCE_PATH + "qrcu-1.c", UNKNOWN, NONE, wmmSc, s1 },
+       		{ BENCHMARKS_RESOURCE_PATH + "qrcu-2.c", FAIL, NONE, wmmSc, s1 },
 
     		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, NONE, wmmSc, s2 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, NONE, wmmSc, s2 },
