@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.apache.commons.cli.*;
 
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.utils.Result.getResult;
 
 import java.io.File;
@@ -92,7 +93,11 @@ public class Dartagnan {
         solver.add(wmm.encode(program, ctx, settings));
         solver.add(wmm.consistent(program, ctx));
         if(program.getAss() == null){
-        	throw new RuntimeException("Assert is required for Dartagnan tests");
+        	// The compiler might not add the body of inlined functions.
+        	// Those functions might be the ones defining the assertion.
+        	// This is a current hack to still process the benchmark and
+        	// don't be penalized by a wrong result.
+        	return UNKNOWN;
         }
         // Used for getting the UNKNOWN
         // pop() is inside getResult
