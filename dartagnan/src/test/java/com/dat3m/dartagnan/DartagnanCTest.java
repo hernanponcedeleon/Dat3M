@@ -48,7 +48,61 @@ public class DartagnanCTest {
         Settings s7 = new Settings(Mode.KNASTER, Alias.CFIS, 7);
         Settings s10 = new Settings(Mode.KNASTER, Alias.CFIS, 10);
 
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][] {      	
+        	{ BENCHMARKS_RESOURCE_PATH + "01_inc.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "02_inc_cas.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "03_incdec.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "04_incdec_cas.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "05_tas.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "06_ticket.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "07_rand.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "08_rand_cas.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "09_fmaxsym.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "10_fmaxsym_cas.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "11_fmaxsymopt.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "12_fmaxsymopt_cas.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "13_unverif.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "14_spin2003.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "15_dekker.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "16_peterson.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "17_szymanski.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "18_read_write_lock.c", PASS, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "19_time_var_mutex.c", PASS, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "20_lamport.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "23_lu-fig2.fixed.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "25_stack.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "25_stack_longer-1.c", FAIL, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "25_stack_longer-2.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "25_stack_longest-1.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "25_stack_longest-2.c", FAIL, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longer-1.c", FAIL, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longer-2.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longest-1.c", FAIL, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longest-2.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "27_Boop_simple_vf.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "28_buggy_simple_loop1_vf.c", FAIL, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "29_conditionals_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "30_Function_Pointer3_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "31_simple_loop5_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "32_pthread5_vs.c", FAIL, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "33_double_lock_p1_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "34_double_lock_p2_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "35_double_lock_p3_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "36_stack_cas_p0_vs_concur.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "37_stack_lock_p0_vs_concur.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "38_rand_cas_vs_concur.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "39_rand_lock_p0_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "40_barrier_vf.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "41_FreeBSD_abd_kbd_sliced.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "42_FreeBSD_rdma_addr_sliced.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "43_NetBSD_sysmon_power_sliced.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "44_Solaris_space_map_sliced.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "45_monabsex1_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "46_monabsex2_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "47_ticket_lock_hc_backoff_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "48_ticket_lock_low_contention_vs.c", UNKNOWN, NONE, wmmSc, s1 },
+        	
     		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", UNKNOWN, NONE, wmmSc, s1 },
@@ -59,7 +113,7 @@ public class DartagnanCTest {
     		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", FAIL, NONE, wmmTso, s1 },    		
     		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", FAIL, NONE, wmmTso, s1 },    		
-    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", FAIL, NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", PASS, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-2.c", FAIL, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", UNKNOWN, NONE, wmmSc, s1 },
@@ -110,7 +164,7 @@ public class DartagnanCTest {
     private Settings settings;
 
     public DartagnanCTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
-        this.programFilePath = new C2BoogieRunner(path).run();
+        this.programFilePath = new C2BoogieRunner(new File(path)).run();
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;

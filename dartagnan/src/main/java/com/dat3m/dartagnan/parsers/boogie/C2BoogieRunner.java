@@ -1,21 +1,24 @@
 package com.dat3m.dartagnan.parsers.boogie;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import com.dat3m.dartagnan.utils.ResourceHelper;
+
 public class C2BoogieRunner {
 
-	String filePath;
+	File file;
 	
-	public C2BoogieRunner(String filePath) {
-		this.filePath = filePath;
+	public C2BoogieRunner(File file) {
+		this.file = file;
 	}
 
 	public String run() {
 		String tool = "smack";
-		String input = filePath;
-		String output = "tmp.bpl";
+		String input = file.getAbsolutePath();
+		String output = ResourceHelper.TMP_RESOURCE_PATH + "/tmp.bpl";
 		String exec = tool +" " + input + " -bpl " + output + " -t -q";
 
 		try {

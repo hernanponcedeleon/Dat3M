@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 
+import java.io.File;
+
 import org.apache.commons.cli.*;
 
 public abstract class BaseOptions extends Options {
@@ -65,8 +67,7 @@ public abstract class BaseOptions extends Options {
 
     public String getProgramFilePath() {
     	if(programFilePath.endsWith(".c")) {
-			String filePath = new C2BoogieRunner(programFilePath).run();
-			programFilePath = filePath;
+			programFilePath = new C2BoogieRunner(new File(programFilePath)).run();
     	}
         return programFilePath;
     }

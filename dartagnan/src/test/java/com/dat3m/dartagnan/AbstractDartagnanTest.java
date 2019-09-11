@@ -3,6 +3,8 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
+import com.dat3m.dartagnan.parsers.boogie.SVCOMPSanitizer;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
@@ -27,8 +29,8 @@ import static org.junit.Assert.fail;
 
 public abstract class AbstractDartagnanTest {
 
-    static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
-        int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
+    static Iterable<Object[]> buildParameters(String benchmarkPath, String cat, Arch target) throws IOException {
+        int n = ResourceHelper.BENCHMARK_RESOURCE_PATH.length();
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
@@ -36,10 +38,10 @@ public abstract class AbstractDartagnanTest {
         Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1);
         Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1);
 
-        return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
+        return Files.walk(Paths.get(ResourceHelper.BENCHMARK_RESOURCE_PATH + benchmarkPath))
                 .filter(Files::isRegularFile)
                 .map(Path::toString)
-                .filter(f -> f.endsWith("litmus"))
+                .filter(f -> f.endsWith("litmus") || f.endsWith("c"))
                 .filter(f -> expectationMap.containsKey(f.substring(n)))
                 .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                 .collect(ArrayList::new,
@@ -66,7 +68,12 @@ public abstract class AbstractDartagnanTest {
 
     @Test
     public void test() {
-        try {
+    	try {
+        	if(path.endsWith(".c")) {
+    			File tmp = new SVCOMPSanitizer(path).run();
+    			String filePath = new C2BoogieRunner(tmp).run();
+    			path = filePath;
+        	}
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 Context ctx = new Context();
