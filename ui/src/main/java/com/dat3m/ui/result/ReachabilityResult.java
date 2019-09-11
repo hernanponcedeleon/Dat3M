@@ -56,8 +56,12 @@ public class ReachabilityResult implements Dat3mResult {
         if(program.getAssFilter() != null){
             sb.append("Filter ").append(program.getAssFilter());
         }
-        sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");
-        sb.append(result ? "OK" : "No").append("\n");
+		if(program.getAss() != null) {
+	        sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");			
+	        sb.append(result ? "OK" : "No").append("\n");
+		} else {
+			sb.append(result ? "FAIL" : "PASS");
+		}
         verdict = sb.toString();
     }
 
