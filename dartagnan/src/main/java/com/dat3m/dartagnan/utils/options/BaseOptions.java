@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
+import com.dat3m.dartagnan.parsers.boogie.SVCOMPSanitizer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -67,7 +68,8 @@ public abstract class BaseOptions extends Options {
 
     public String getProgramFilePath() {
     	if(programFilePath.endsWith(".c")) {
-			programFilePath = new C2BoogieRunner(new File(programFilePath)).run();
+			File tmp = new SVCOMPSanitizer(programFilePath).run();
+			programFilePath = new C2BoogieRunner(tmp).run();
     	}
         return programFilePath;
     }

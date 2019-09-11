@@ -71,8 +71,7 @@ public abstract class AbstractDartagnanTest {
     	try {
         	if(path.endsWith(".c")) {
     			File tmp = new SVCOMPSanitizer(path).run();
-    			String filePath = new C2BoogieRunner(tmp).run();
-    			path = filePath;
+    			path = new C2BoogieRunner(tmp).run();
         	}
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
