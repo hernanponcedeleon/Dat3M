@@ -46,9 +46,6 @@ public class CondJump extends Jump implements RegReaderData {
 
     @Override
     public int unroll(int bound, int nextId, Event predecessor) {
-        if(label.getOId() < oId){
-            throw new UnsupportedOperationException("Unrolling of cycles in CondJump is not implemented");
-        }
         return super.unroll(bound, nextId, predecessor);
     }
 
