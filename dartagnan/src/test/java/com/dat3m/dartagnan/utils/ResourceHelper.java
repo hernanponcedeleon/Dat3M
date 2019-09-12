@@ -15,7 +15,6 @@ public class ResourceHelper {
     public static final String CAT_RESOURCE_PATH = "../";
     public static final String BENCHMARK_RESOURCE_PATH = "../";
     public static final String TEST_RESOURCE_PATH = "src/test/resources/";
-    public static final String TMP_RESOURCE_PATH = "src/test/tmp/";
 
     private static ImmutableMap<String, Result> expectedResults;
 

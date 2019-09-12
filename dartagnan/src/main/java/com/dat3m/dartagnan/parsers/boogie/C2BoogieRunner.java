@@ -5,8 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import com.dat3m.dartagnan.utils.ResourceHelper;
-
 public class C2BoogieRunner {
 
 	File file;
@@ -18,7 +16,7 @@ public class C2BoogieRunner {
 	public String run() {
 		String tool = "smack";
 		String input = file.getAbsolutePath();
-		String output = ResourceHelper.TMP_RESOURCE_PATH + "/tmp.bpl";
+		String output = file.getParent() + "/tmp.bpl";
 		String exec = tool +" " + input + " -bpl " + output + " -t -q";
 
 		try {
@@ -28,6 +26,7 @@ public class C2BoogieRunner {
 				proc.waitFor();
 			} catch(InterruptedException e) {
 				System.out.println(e.getMessage());
+				file.delete();
 				System.exit(0);
 			}
 			while(read.ready()) {
@@ -38,12 +37,15 @@ public class C2BoogieRunner {
 				while(error.ready()) {
 					System.out.println(error.readLine());
 				}
+				file.delete();
 				System.exit(0);
 			}
 		} catch(IOException e) {
 			System.out.println(e.getMessage());
+			file.delete();
 			System.exit(0);
 		}
+		file.delete();
 		return output;
 	}
 }
