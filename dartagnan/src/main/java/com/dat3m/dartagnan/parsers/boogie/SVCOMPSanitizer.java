@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SVCOMPSanitizer {
 
@@ -26,8 +28,7 @@ public class SVCOMPSanitizer {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));
 			for (String line; (line = reader.readLine()) != null;) {
-			    line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }", "");					
-			    line = line.replace("NULL", "0");
+				line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }", "");					
 			    writer.println(line);
 			}
 			reader.close();

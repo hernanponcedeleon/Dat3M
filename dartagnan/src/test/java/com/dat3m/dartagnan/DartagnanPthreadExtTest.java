@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 public class DartagnanPthreadExtTest {
 
     private static final String CAT_RESOURCE_PATH = "../";
-    private static final String BENCHMARKS_RESOURCE_PATH = "../benchmarks/C/";
+    private static final String BENCHMARKS_RESOURCE_PATH = "../benchmarks/C/pthread-ext/";
 
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} {6}")
     public static Iterable<Object[]> data() throws IOException {
