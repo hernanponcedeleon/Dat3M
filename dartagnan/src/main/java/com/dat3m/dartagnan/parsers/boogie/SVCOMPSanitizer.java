@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SVCOMPSanitizer {
 
@@ -25,14 +23,10 @@ public class SVCOMPSanitizer {
 			String path = file.getAbsolutePath();
 			File tmp = new File(path.substring(0, path.lastIndexOf('.')) + "_tmp.c");
 			tmp.createNewFile();
-			List<String> delete = new ArrayList<String>();
-			delete.add("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));
 			for (String line; (line = reader.readLine()) != null;) {
-				for(String ptrn : delete) {
-				    line = line.replace(ptrn, "");					
-				}
+			    line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }", "");					
 			    line = line.replace("NULL", "0");
 			    writer.println(line);
 			}
