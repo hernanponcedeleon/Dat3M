@@ -27,7 +27,6 @@ public class SVCOMPSanitizer {
 			tmp.createNewFile();
 			List<String> delete = new ArrayList<String>();
 			delete.add("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }");
-//			delete.add("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error();}; return; }");
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));
 			for (String line; (line = reader.readLine()) != null;) {
