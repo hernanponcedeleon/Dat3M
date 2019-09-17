@@ -6,8 +6,11 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.google.common.collect.ImmutableSet;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.commons.cli.*;
 
@@ -15,6 +18,7 @@ public abstract class BaseOptions extends Options {
 
     protected String programFilePath;
     protected String targetModelFilePath;
+    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "pts", "bpl", "c", "i")); 
     protected Settings settings;
     protected Arch target;
 
@@ -55,7 +59,7 @@ public abstract class BaseOptions extends Options {
         parseGraphFilePath(cmd);
 
         String inputFilePath = cmd.getOptionValue("input");
-        if(!inputFilePath.endsWith("pts") && !inputFilePath.endsWith("litmus") && !inputFilePath.endsWith("bpl") && !inputFilePath.endsWith("c")) {
+        if(supportedFormats.stream().map(f -> inputFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
         programFilePath = cmd.getOptionValue("input");
@@ -67,7 +71,7 @@ public abstract class BaseOptions extends Options {
     }
 
     public String getProgramFilePath() {
-    	if(programFilePath.endsWith(".c")) {
+    	if(programFilePath.endsWith(".c") || programFilePath.endsWith(".i")) {
 			File tmp = new SVCOMPSanitizer(programFilePath).run();
 			programFilePath = new C2BoogieRunner(tmp).run();
     	}

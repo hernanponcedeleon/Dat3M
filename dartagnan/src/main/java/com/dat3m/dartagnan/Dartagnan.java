@@ -40,8 +40,7 @@ public class Dartagnan {
         }
 
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-        File programFile = new File(options.getProgramFilePath());
-		Program p = new ProgramParser().parse(programFile);
+		Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
 
         Arch target = p.getArch();
         if(target == null){
