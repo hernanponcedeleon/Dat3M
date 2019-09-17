@@ -76,6 +76,10 @@ public class Dartagnan {
         }
 
         ctx.close();
+        if(options.getProgramFilePath().endsWith(".bpl")) {
+        	File file = new File(options.getProgramFilePath()); 
+            file.delete(); 
+        }
     }
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){

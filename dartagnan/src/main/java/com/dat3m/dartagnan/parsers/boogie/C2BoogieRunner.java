@@ -43,6 +43,9 @@ public class C2BoogieRunner {
 			System.out.println(e.getMessage());
 			System.exit(0);
 		}
+		if(file.getAbsolutePath().endsWith("_tmp.i") || file.getAbsolutePath().endsWith("_tmp.c")) {
+			file.delete();
+		}
 		return output;
 	}
 }
