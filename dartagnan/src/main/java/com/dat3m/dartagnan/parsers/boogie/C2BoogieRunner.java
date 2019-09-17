@@ -27,7 +27,6 @@ public class C2BoogieRunner {
 				proc.waitFor();
 			} catch(InterruptedException e) {
 				System.out.println(e.getMessage());
-				file.delete();
 				System.exit(0);
 			}
 			while(read.ready()) {
@@ -38,15 +37,12 @@ public class C2BoogieRunner {
 				while(error.ready()) {
 					System.out.println(error.readLine());
 				}
-				file.delete();
 				System.exit(0);
 			}
 		} catch(IOException e) {
 			System.out.println(e.getMessage());
-			file.delete();
 			System.exit(0);
 		}
-		file.delete();
 		return output;
 	}
 }

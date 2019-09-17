@@ -18,12 +18,9 @@ public class SVCOMPSanitizer {
 	}
 
 	public File run() {
-		File file = new File(filePath);
+		File tmp = new File(filePath.substring(0, filePath.lastIndexOf('.')) + "_tmp.c");
 		try {
-			String path = file.getAbsolutePath();
-			File tmp = new File(path.substring(0, path.lastIndexOf('.')) + "_tmp.c");
-			tmp.createNewFile();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));
 			for (String line; (line = reader.readLine()) != null;) {
 				line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }", "");					
@@ -31,10 +28,10 @@ public class SVCOMPSanitizer {
 			}
 			reader.close();
 			writer.close();
-			return tmp;
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
+            System.exit(0);
 		}
-		return file;
+		return tmp;
 	}
 }

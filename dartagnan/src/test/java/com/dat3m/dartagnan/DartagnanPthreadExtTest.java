@@ -72,6 +72,7 @@ public class DartagnanPthreadExtTest {
         	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longer-2.c", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longest-1.c", FAIL, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longest-2.c", UNKNOWN, NONE, wmmSc, s1 },
+        	// SVCOMP says FALSE for 27
         	{ BENCHMARKS_RESOURCE_PATH + "27_Boop_simple_vf.c", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "28_buggy_simple_loop1_vf.c", FAIL, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "29_conditionals_vs.c", UNKNOWN, NONE, wmmSc, s1 },
@@ -85,7 +86,7 @@ public class DartagnanPthreadExtTest {
         	{ BENCHMARKS_RESOURCE_PATH + "37_stack_lock_p0_vs_concur.c", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "38_rand_cas_vs_concur.c", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "39_rand_lock_p0_vs.c", UNKNOWN, NONE, wmmSc, s1 },
-        	{ BENCHMARKS_RESOURCE_PATH + "40_barrier_vf.c", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "40_barrier_vf.c", FAIL, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "41_FreeBSD_abd_kbd_sliced.c", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "42_FreeBSD_rdma_addr_sliced.c", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "43_NetBSD_sysmon_power_sliced.c", UNKNOWN, NONE, wmmSc, s1 },

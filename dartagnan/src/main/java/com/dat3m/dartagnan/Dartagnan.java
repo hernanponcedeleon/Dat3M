@@ -77,7 +77,6 @@ public class Dartagnan {
         }
 
         ctx.close();
-        programFile.delete();
     }
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
