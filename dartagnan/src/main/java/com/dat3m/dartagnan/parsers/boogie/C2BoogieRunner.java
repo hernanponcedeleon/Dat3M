@@ -16,7 +16,8 @@ public class C2BoogieRunner {
 	public String run() {
 		String tool = "smack";
 		String input = file.getAbsolutePath();
-		String output = file.getParent() + "/tmp.bpl";
+		String output = input.substring(0, input.lastIndexOf('_')) + ".bpl";
+
 		String exec = tool +" " + input + " -bpl " + output + " -t -q";
 
 		try {

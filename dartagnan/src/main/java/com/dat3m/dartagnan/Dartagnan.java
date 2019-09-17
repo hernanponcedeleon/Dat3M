@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -41,7 +40,8 @@ public class Dartagnan {
         }
 
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-        Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
+        File programFile = new File(options.getProgramFilePath());
+		Program p = new ProgramParser().parse(programFile);
 
         Arch target = p.getArch();
         if(target == null){
@@ -77,6 +77,7 @@ public class Dartagnan {
         }
 
         ctx.close();
+        programFile.delete();
     }
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
@@ -85,9 +86,6 @@ public class Dartagnan {
         program.compile(target, 0);
 		program.addAssertions();
 		
-//		Printer printer = new Printer();
-//		System.out.println(printer.print(program));
-        
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
