@@ -38,7 +38,6 @@ public class DartagnanCTest {
     public static Iterable<Object[]> data() throws IOException {
 
         Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
-        Wmm wmmTso = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/tso.cat"));
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
@@ -51,16 +50,6 @@ public class DartagnanCTest {
         return Arrays.asList(new Object[][] {
         	{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "dekker.c", FAIL, NONE, wmmTso, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "lamport.c", FAIL, NONE, wmmTso, s1 },    		
-    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "peterson.c", FAIL, NONE, wmmTso, s1 },    		
-    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "szymanski.c", FAIL, NONE, wmmTso, s1 },    		
-    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-1.c", PASS, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "read_write_lock-2.c", FAIL, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", UNKNOWN, NONE, wmmSc, s1 },
@@ -68,9 +57,6 @@ public class DartagnanCTest {
        		{ BENCHMARKS_RESOURCE_PATH + "verifier_atomic.c", PASS, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "add_mult_pass.c", PASS, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "add_mult_fail.c", FAIL, NONE, wmmSc, s1 },
-       		{ BENCHMARKS_RESOURCE_PATH + "gcd-2.c", UNKNOWN, NONE, wmmSc, s1 },
-       		{ BENCHMARKS_RESOURCE_PATH + "qrcu-1.c", UNKNOWN, NONE, wmmSc, s1 },
-       		{ BENCHMARKS_RESOURCE_PATH + "qrcu-2.c", FAIL, NONE, wmmSc, s1 },
 
     		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, NONE, wmmSc, s2 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, NONE, wmmSc, s2 },

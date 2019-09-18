@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
+import com.dat3m.dartagnan.parsers.boogie.SVCOMPSanitizer;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -105,7 +106,7 @@ public class DartagnanPthreadExtTest {
     private Settings settings;
 
     public DartagnanPthreadExtTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
-        this.programFilePath = new C2BoogieRunner(new File(path)).run();
+		this.programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(path).run()).run();
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;
