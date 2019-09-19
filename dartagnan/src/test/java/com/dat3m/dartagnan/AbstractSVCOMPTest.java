@@ -62,7 +62,9 @@ public abstract class AbstractSVCOMPTest {
     @Test
     public void test() {   	
     	try {
-            Program program = new ProgramParser().parse(new File(path));
+    		File file = new File(path);
+            Program program = new ProgramParser().parse(file);
+            file.delete();
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, settings));

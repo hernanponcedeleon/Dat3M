@@ -80,12 +80,13 @@ public class SVCompPthreadAtomicTest {
     @Test(timeout=300000)
     public void test() {
         try {
-            Program program = new ProgramParser().parse(new File(programFilePath));
+            File file = new File(programFilePath);
+			Program program = new ProgramParser().parse(file);
+			file.delete();
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, settings));
-            ctx.close();
-            Files.deleteIfExists(Paths.get(programFilePath)); 
+            ctx.close(); 
 		} catch (IOException e){
             fail("Missing resource file");
         }
