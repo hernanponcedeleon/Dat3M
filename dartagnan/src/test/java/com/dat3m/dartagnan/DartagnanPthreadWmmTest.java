@@ -10,7 +10,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 
 @RunWith(Parameterized.class)
-public class DartagnanPthreadWmmTest extends AbstractDartagnanTest {
+public class DartagnanPthreadWmmTest extends AbstractSVCOMPTest {
 
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
