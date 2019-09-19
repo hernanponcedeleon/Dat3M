@@ -30,7 +30,7 @@ import static com.dat3m.dartagnan.wmm.utils.Arch.NONE;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
-public class DartagnanPthreadExtTest {
+public class SVCompPthreadExtTest {
 
     private static final String CAT_RESOURCE_PATH = "../";
     private static final String BENCHMARKS_RESOURCE_PATH = "../benchmarks/C/pthread-ext/";
@@ -105,7 +105,7 @@ public class DartagnanPthreadExtTest {
     private Wmm wmm;
     private Settings settings;
 
-    public DartagnanPthreadExtTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
+    public SVCompPthreadExtTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
 		this.programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(path).run()).run();
         this.expected = expected;
         this.target = target;
