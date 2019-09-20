@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import static com.dat3m.dartagnan.expression.op.BOpUn.ID;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 
@@ -44,6 +45,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assertion;
+import com.dat3m.dartagnan.program.event.AssumeAssertion;
 import com.dat3m.dartagnan.program.event.BoundAssertion;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
@@ -340,11 +342,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private void __VERIFIER_assume(ExprsContext exp) {
 		//TODO: cross-check with intended behavior:
 		//https://sv-comp.sosy-lab.org/2019/rules.php
-		String labelName = "END_OF_" + currentScope.getID();
-       	Label label = programBuilder.getOrCreateLabel(labelName);
+		String endLoop = "ESCAPE_OF_" + exp.hashCode();
+       	Label endLoopLabel = programBuilder.getOrCreateLabel(endLoop);
        	ExprInterface c = (ExprInterface)exp.accept(this);
 		if(c != null) {
-			programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), label));	
+			programBuilder.addChild(threadCount, new CondJump(new BExprUn(ID, c), endLoopLabel));
+        	Register ass = programBuilder.getOrCreateRegister(threadCount, "assumeAssert_" + assertionIndex);
+			programBuilder.addChild(threadCount, new AssumeAssertion(ass));
+			programBuilder.addChild(threadCount, endLoopLabel);
 		}
 	}
 	

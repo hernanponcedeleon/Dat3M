@@ -4,18 +4,33 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 public enum BOpUn {
-    NOT;
+    ID, NOT;
 
     @Override
     public String toString() {
-        return "!";
+    	switch(this) {
+    	case NOT:
+        	return "!";
+		default:
+			return "";    	
+    	}
     }
 
     public BoolExpr encode(BoolExpr e, Context ctx) {
-        return ctx.mkNot(e);
+    	switch(this) {
+    	case NOT:
+        	return ctx.mkNot(e);
+		default:
+			return e;    	
+    	}
     }
 
     public boolean combine(boolean a){
-        return !a;
+    	switch(this) {
+    	case NOT:
+        	return !a;
+		default:
+			return a;    	
+    	}
     }
 }

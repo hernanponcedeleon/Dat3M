@@ -10,4 +10,4 @@ public class BoundAssertion extends Local {
 		super(register, new BConst(false));
 		addFilters(EType.BASSERTION);
 	}
-	}
+}

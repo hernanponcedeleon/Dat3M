@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -42,6 +43,9 @@ public class Dartagnan {
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
 		Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
 
+		Printer printer = new Printer();
+		System.out.println(printer.print(p));
+
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();
@@ -57,6 +61,8 @@ public class Dartagnan {
         Settings settings = options.getSettings();
 
         Result result = testProgram(s, ctx, p, mcm, target, settings);
+
+		System.out.println(printer.print(p));
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
