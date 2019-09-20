@@ -45,7 +45,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assertion;
-import com.dat3m.dartagnan.program.event.AssumeAssertion;
+import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.BoundAssertion;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
@@ -349,9 +349,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
        	ExprInterface c = (ExprInterface)exp.accept(this);
 		if(c != null) {
 			programBuilder.addChild(threadCount, new CondJump(new BExprUn(ID, c), endLoopLabel));
-        	Register ass = programBuilder.getOrCreateRegister(threadCount, "assumeAssert_" + assertionIndex);
-        	assertionIndex++;
-			programBuilder.addChild(threadCount, new AssumeAssertion(ass));
+			programBuilder.addChild(threadCount, new Assume());
 			programBuilder.addChild(threadCount, endLoopLabel);
 		}
 	}

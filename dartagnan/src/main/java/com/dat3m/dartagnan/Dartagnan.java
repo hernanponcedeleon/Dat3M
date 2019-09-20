@@ -62,8 +62,6 @@ public class Dartagnan {
 
         Result result = testProgram(s, ctx, p, mcm, target, settings);
 
-		System.out.println(printer.print(p));
-
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
             if(p.getAssFilter() != null){
@@ -96,6 +94,7 @@ public class Dartagnan {
 		
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(program.encodeAssumeAssumtions(ctx));
         solver.add(wmm.encode(program, ctx, settings));
         solver.add(wmm.consistent(program, ctx));
         if(program.getAss() == null){

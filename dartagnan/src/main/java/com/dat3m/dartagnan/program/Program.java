@@ -191,4 +191,12 @@ public class Program {
         }
         return enc;
     }
+    
+    public BoolExpr encodeAssumeAssumtions(Context ctx) {
+        BoolExpr enc = ctx.mkTrue();
+		for(Event e : getCache().getEvents(FilterBasic.get(EType.AASSERTION))) {
+			enc = ctx.mkAnd(enc, ctx.mkNot(e.exec()));
+		}
+		return enc;
+    }
 }

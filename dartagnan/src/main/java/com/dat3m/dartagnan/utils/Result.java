@@ -15,13 +15,7 @@ public enum Result {
 	public static Result getResult(Solver s, Program p, Context ctx) {
 		Result res;
 		if(s.check() == Status.SATISFIABLE) {
-			BoolExpr enc = ctx.mkFalse();
-			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.AASSERTION))) {
-				enc = ctx.mkOr(enc, e.exec());
-			}
-			s.pop();
-			s.add(enc);
-			res = s.check() == Status.SATISFIABLE ? UNKNOWN : FAIL;	
+			res = FAIL;	
 		} else {
 			BoolExpr enc = ctx.mkFalse();
 			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.BASSERTION))) {
