@@ -86,6 +86,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
 	private int assertionIndex = 0;
+	private int escapeIndex = 0;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -202,7 +203,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     			}
     		}    		
     	}
-		
+
     	if(create) {
         	threadCount ++;
             programBuilder.initThread(threadCount);
@@ -216,7 +217,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		currentScope = currentScope.getParent();
     		return;
     	}
-    	
+
     	if(ctx.proc_sign().proc_sign_in() != null) {
 			int index = 0;
     		for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
@@ -231,7 +232,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     			}
     		}    		
     	}
-    	    	
+
         for(Local_varsContext localVarContext : body.local_vars()) {
         	visitLocal_vars(localVarContext, threadCount);
         }
@@ -248,10 +249,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     @Override 
     public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
+    	assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
     	Assertion event = new Assertion(ass, expr);
 		programBuilder.addChild(threadCount, event);
-    	assertionIndex ++;
     	return null;
     }
     
@@ -342,12 +343,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private void __VERIFIER_assume(ExprsContext exp) {
 		//TODO: cross-check with intended behavior:
 		//https://sv-comp.sosy-lab.org/2019/rules.php
-		String endLoop = "ESCAPE_OF_" + exp.hashCode();
+		String endLoop = "ESCAPE_OF_" + escapeIndex;
+		escapeIndex++;
        	Label endLoopLabel = programBuilder.getOrCreateLabel(endLoop);
        	ExprInterface c = (ExprInterface)exp.accept(this);
 		if(c != null) {
 			programBuilder.addChild(threadCount, new CondJump(new BExprUn(ID, c), endLoopLabel));
         	Register ass = programBuilder.getOrCreateRegister(threadCount, "assumeAssert_" + assertionIndex);
+        	assertionIndex++;
 			programBuilder.addChild(threadCount, new AssumeAssertion(ass));
 			programBuilder.addChild(threadCount, endLoopLabel);
 		}
@@ -489,6 +492,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(l1.getOId() != -1) {
         	Register ass = programBuilder.getOrCreateRegister(threadCount, "boudnAssert_" + assertionIndex);
+        	assertionIndex++;
     		programBuilder.addChild(threadCount, new BoundAssertion(ass));
         	labelName = "END_OF_" + currentScope.getID();
     		Label label = programBuilder.getOrCreateLabel(labelName);
