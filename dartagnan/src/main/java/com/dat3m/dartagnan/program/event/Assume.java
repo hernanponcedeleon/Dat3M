@@ -12,4 +12,10 @@ public class Assume extends Event {
 	public String toString() {
 		return "Assume Failed";
 	}
+	
+	@Override
+	public Assume getCopy() {
+		return new Assume();
+		
+	}
 }
