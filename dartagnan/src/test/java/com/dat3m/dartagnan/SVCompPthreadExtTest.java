@@ -38,6 +38,7 @@ public class SVCompPthreadExtTest {
 
         Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
 
         return Arrays.asList(new Object[][] {      	
         	{ BENCHMARKS_RESOURCE_PATH + "01_inc.i", UNKNOWN, NONE, wmmSc, s1 },
@@ -71,8 +72,7 @@ public class SVCompPthreadExtTest {
         	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longer-2.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longest-1.i", FAIL, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "26_stack_cas_longest-2.i", UNKNOWN, NONE, wmmSc, s1 },
-        	// SVCOMP says FALSE for 27
-        	{ BENCHMARKS_RESOURCE_PATH + "27_Boop_simple_vf.i", UNKNOWN, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "27_Boop_simple_vf.i", FAIL, NONE, wmmSc, s2 },
         	{ BENCHMARKS_RESOURCE_PATH + "28_buggy_simple_loop1_vf.i", FAIL, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "29_conditionals_vs.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "30_Function_Pointer3_vs.i", UNKNOWN, NONE, wmmSc, s1 },
