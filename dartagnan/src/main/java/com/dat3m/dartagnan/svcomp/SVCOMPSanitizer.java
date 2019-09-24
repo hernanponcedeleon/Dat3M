@@ -24,6 +24,10 @@ public class SVCOMPSanitizer {
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));
 			for (String line; (line = reader.readLine()) != null;) {
 				line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }", "");					
+				// SMACK does not create procedure for inline functions
+				if(!line.contains("__")) {
+					line = line.replace("inline ", "");	
+				}
 			    writer.println(line);
 			}
 			reader.close();
