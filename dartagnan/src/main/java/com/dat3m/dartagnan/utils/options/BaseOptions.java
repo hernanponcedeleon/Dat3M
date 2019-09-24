@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
-import com.dat3m.dartagnan.parsers.boogie.SVCOMPSanitizer;
+import com.dat3m.dartagnan.svcomp.SVCOMPSanitizer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -45,6 +45,9 @@ public abstract class BaseOptions extends Options {
 
         addOption(new Option("unroll", true,
                 "Unrolling bound <integer>"));
+
+        addOption(new Option("witness", false,
+                "It generates a SVCOMP violation witness if the verification fails"));
 
         addOption(new Option("draw", true,
                 "Path to save the execution graph if the state is reachable"));
@@ -98,6 +101,7 @@ public abstract class BaseOptions extends Options {
         Mode mode = cmd.hasOption("mode") ? Mode.get(cmd.getOptionValue("mode")) : null;
         Alias alias = cmd.hasOption("alias") ? Alias.get(cmd.getOptionValue("alias")) : null;
         boolean draw = cmd.hasOption("draw");
+        boolean witness = cmd.hasOption("witness");
         String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
 
         int bound = 1;
@@ -108,7 +112,7 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal unroll value");
             }
         }
-        settings = new Settings(mode, alias, bound, draw, relations);
+        settings = new Settings(mode, alias, bound, witness, draw, relations);
     }
 
     protected void parseGraphFilePath(CommandLine cmd){

@@ -23,9 +23,11 @@ public class Settings {
     private Alias alias;
     private int bound;
 
+    private boolean witness = false;
+
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
-
+    
     private Map<Integer, Boolean> flags = new HashMap<Integer, Boolean>(){{
             put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, true);
             put(FLAG_USE_SEQ_ENCODING_REL_RF, true);
@@ -58,6 +60,11 @@ public class Settings {
         this(mode, alias, bound, draw, Arrays.asList(relations));
     }
 
+    public Settings(Mode mode, Alias alias, int bound, boolean witness, boolean draw, String... relations){
+        this(mode, alias, bound, draw, Arrays.asList(relations));
+        this.witness = witness;
+    }
+
     public Mode getMode(){
         return mode;
     }
@@ -68,6 +75,10 @@ public class Settings {
 
     public int getBound(){
         return bound;
+    }
+
+    public boolean getGenerateWitness(){
+        return witness;
     }
 
     public boolean getDrawGraph(){

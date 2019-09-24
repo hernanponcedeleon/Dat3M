@@ -1,27 +1,29 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
-import com.dat3m.dartagnan.utils.printer.Printer;
-import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
-import com.microsoft.z3.enumerations.Z3_ast_print_mode;
-import com.dat3m.dartagnan.asserts.AbstractAssert;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Graph;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.wmm.Wmm;
-import org.apache.commons.cli.*;
-
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.utils.Result.getResult;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+
+import org.apache.commons.cli.HelpFormatter;
+
+import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.svcomp.SVCOMPWitness;
+import com.dat3m.dartagnan.utils.Graph;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Solver;
+import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 public class Dartagnan {
 
@@ -42,9 +44,6 @@ public class Dartagnan {
 
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
 		Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
-
-		Printer printer = new Printer();
-		System.out.println(printer.print(p));
 
         Arch target = p.getArch();
         if(target == null){
@@ -73,6 +72,10 @@ public class Dartagnan {
         	System.out.println(result);
         }
 
+        if(settings.getGenerateWitness() && result.equals(FAIL)) {
+            new SVCOMPWitness(p, options).write();;
+        }
+        
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result == Result.FAIL)) {
             ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
             drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
