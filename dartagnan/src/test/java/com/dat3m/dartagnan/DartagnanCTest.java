@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.svcomp.SVCOMPSanitizer;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.Context;
@@ -50,10 +51,10 @@ public class DartagnanCTest {
         return Arrays.asList(new Object[][] {
         	{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", UNKNOWN, NONE, wmmSc, s1 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", UNKNOWN, NONE, wmmSc, s1 },
-       		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", UNKNOWN, NONE, wmmSc, s1 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", UNKNOWN, NONE, wmmSc, s1 },
+       		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench-1.i", UNKNOWN, NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench-2.i", UNKNOWN, NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-1.i", UNKNOWN, NONE, wmmSc, s1 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-2.i", UNKNOWN, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "verifier_atomic.c", PASS, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "add_mult_pass.c", PASS, NONE, wmmSc, s1 },
        		{ BENCHMARKS_RESOURCE_PATH + "add_mult_fail.c", FAIL, NONE, wmmSc, s1 },
@@ -64,28 +65,28 @@ public class DartagnanCTest {
     		{ BENCHMARKS_RESOURCE_PATH + "while_pass_on_3.c", PASS, NONE, wmmSc, s3 },
     		{ BENCHMARKS_RESOURCE_PATH + "while_fail_on_3.c", FAIL, NONE, wmmSc, s3 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", UNKNOWN, NONE, wmmSc, s4 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", UNKNOWN, NONE, wmmSc, s4 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", UNKNOWN, NONE, wmmSc, s4 },
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", UNKNOWN, NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench-1.i", UNKNOWN, NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench-2.i", UNKNOWN, NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-1.i", UNKNOWN, NONE, wmmSc, s4 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-2.i", UNKNOWN, NONE, wmmSc, s4 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-2.c", FAIL, NONE, wmmSc, s5 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", UNKNOWN, NONE, wmmSc, s5 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", UNKNOWN, NONE, wmmSc, s5 },
-       		{ BENCHMARKS_RESOURCE_PATH + "triangular-2.c", FAIL, NONE, wmmSc, s5 },
-       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-1.c", UNKNOWN, NONE, wmmSc, s5 },
-       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longer-2.c", UNKNOWN, NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench-2.i", FAIL, NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench_longer-1.i", UNKNOWN, NONE, wmmSc, s5 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench_longer-2.i", UNKNOWN, NONE, wmmSc, s5 },
+       		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-2.i", FAIL, NONE, wmmSc, s5 },
+       		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-longer-1.i", UNKNOWN, NONE, wmmSc, s5 },
+       		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-longer-2.i", UNKNOWN, NONE, wmmSc, s5 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench-1.c", PASS, NONE, wmmSc, s6 },  		
-    		{ BENCHMARKS_RESOURCE_PATH + "triangular-1.c", PASS, NONE, wmmSc, s6 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-2.c", FAIL, NONE, wmmSc, s6 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-1.c", UNKNOWN, NONE, wmmSc, s6 },
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longest-2.c", UNKNOWN, NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench-1.i", PASS, NONE, wmmSc, s6 },  		
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-1.i", PASS, NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench_longer-2.i", FAIL, NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench_longest-1.i", UNKNOWN, NONE, wmmSc, s6 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench_longest-2.i", UNKNOWN, NONE, wmmSc, s6 },
 
-    		{ BENCHMARKS_RESOURCE_PATH + "fib_bench_longer-1.c", PASS, NONE, wmmSc, s7 },
+    		{ BENCHMARKS_RESOURCE_PATH + "pthread/fib_bench_longer-1.i", PASS, NONE, wmmSc, s7 },
 
-       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-1.c", UNKNOWN, NONE, wmmSc, s10 },
-       		{ BENCHMARKS_RESOURCE_PATH + "triangular-longest-2.c", UNKNOWN, NONE, wmmSc, s10 },
+       		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-longest-1.i", UNKNOWN, NONE, wmmSc, s10 },
+       		{ BENCHMARKS_RESOURCE_PATH + "pthread/triangular-longest-2.i", UNKNOWN, NONE, wmmSc, s10 },
         });
     }
     
@@ -96,7 +97,7 @@ public class DartagnanCTest {
     private Settings settings;
 
     public DartagnanCTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
-        this.programFilePath = new C2BoogieRunner(new File(path)).run();
+		this.programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(path).run()).run();
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;
