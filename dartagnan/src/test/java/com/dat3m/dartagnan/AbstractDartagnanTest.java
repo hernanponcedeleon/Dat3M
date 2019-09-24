@@ -3,10 +3,8 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Mode;
-import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.svcomp.SVCOMPSanitizer;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -69,10 +67,6 @@ public abstract class AbstractDartagnanTest {
     @Test
     public void test() {
     	try {
-        	if(path.endsWith(".c")) {
-    			File tmp = new SVCOMPSanitizer(path).run();
-    			path = new C2BoogieRunner(tmp).run();
-        	}
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 Context ctx = new Context();

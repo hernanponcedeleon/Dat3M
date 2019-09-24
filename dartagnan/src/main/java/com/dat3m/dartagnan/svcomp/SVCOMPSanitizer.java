@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.stream.IntStream;
 
 public class SVCOMPSanitizer {
 
@@ -17,7 +18,7 @@ public class SVCOMPSanitizer {
 		this.filePath = filePath;
 	}
 
-	public File run() {
+	public File run(int bound) {
 		File tmp = new File(filePath.substring(0, filePath.lastIndexOf('.')) + "_tmp.c");
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
@@ -27,6 +28,12 @@ public class SVCOMPSanitizer {
 				// SMACK does not create procedure for inline functions
 				if(!line.contains("__")) {
 					line = line.replace("inline ", "");	
+				}
+				if(line.contains("while(1) { pthread_create(&t, 0, thr1, 0); }")) {
+					line = line.replace("while(1) { pthread_create(&t, 0, thr1, 0); }", "");
+					for(int i : IntStream.range(0, bound).toArray()) {
+						writer.println("pthread_create(&t, 0, thr1, 0);");
+					}
 				}
 			    writer.println(line);
 			}

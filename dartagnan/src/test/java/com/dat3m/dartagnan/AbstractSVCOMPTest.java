@@ -52,7 +52,7 @@ public abstract class AbstractSVCOMPTest {
     private Settings settings;
 
     AbstractSVCOMPTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
-        this.path = new C2BoogieRunner(new SVCOMPSanitizer(path).run()).run();;
+        this.path = new C2BoogieRunner(new SVCOMPSanitizer(path).run(settings.getBound())).run();;
         this.expected = expected;
         this.target = target;
         this.wmm = wmm;

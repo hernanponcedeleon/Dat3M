@@ -1,38 +1,28 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
-import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.svcomp.SVCOMPSanitizer;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.wmm.utils.Arch.NONE;
-import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
-public class SVCompPthreadAtomicTest {
+public class SVCompPthreadAtomicTest extends AbstractSVCOMPTest {
 
-    private static final String CAT_RESOURCE_PATH = "../";
+	private static final String CAT_RESOURCE_PATH = "../";
     private static final String BENCHMARKS_RESOURCE_PATH = "../benchmarks/C/pthread-atomic/";
 
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} {6}")
@@ -61,34 +51,8 @@ public class SVCompPthreadAtomicTest {
         	{ BENCHMARKS_RESOURCE_PATH + "time_var_mutex.i", PASS, NONE, wmmSc, s1 },
         });
     }
-    
-    private String programFilePath;
-    private Result expected;
-    private Arch target;
-    private Wmm wmm;
-    private Settings settings;
 
     public SVCompPthreadAtomicTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
-		this.programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(path).run()).run();
-        this.expected = expected;
-        this.target = target;
-        this.wmm = wmm;
-        this.settings = settings;
-    }
-
-    // 5 Minutes timeout
-    @Test(timeout=300000)
-    public void test() {
-        try {
-            File file = new File(programFilePath);
-			Program program = new ProgramParser().parse(file);
-			file.delete();
-            Context ctx = new Context();
-            Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, settings));
-            ctx.close(); 
-		} catch (IOException e){
-            fail("Missing resource file");
-        }
-   }
+		super(path, expected, target, wmm, settings);
+	}
 }

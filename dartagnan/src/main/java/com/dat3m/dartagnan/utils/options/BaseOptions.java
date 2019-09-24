@@ -75,8 +75,7 @@ public abstract class BaseOptions extends Options {
 
     public String getProgramFilePath() {
     	if(programFilePath.endsWith(".c") || programFilePath.endsWith(".i")) {
-			File tmp = new SVCOMPSanitizer(programFilePath).run();
-			programFilePath = new C2BoogieRunner(tmp).run();
+			programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(programFilePath).run(settings.getBound())).run();
     	}
         return programFilePath;
     }
