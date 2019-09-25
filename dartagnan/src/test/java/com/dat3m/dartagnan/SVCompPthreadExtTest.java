@@ -31,6 +31,7 @@ public class SVCompPthreadExtTest extends AbstractSVCOMPTest {
         Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
+        Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
 
         return Arrays.asList(new Object[][] {      	
         	{ BENCHMARKS_RESOURCE_PATH + "01_inc.i", UNKNOWN, NONE, wmmSc, s1 },
@@ -77,7 +78,7 @@ public class SVCompPthreadExtTest extends AbstractSVCOMPTest {
         	{ BENCHMARKS_RESOURCE_PATH + "37_stack_lock_p0_vs_concur.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "38_rand_cas_vs_concur.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "39_rand_lock_p0_vs.i", UNKNOWN, NONE, wmmSc, s1 },
-        	{ BENCHMARKS_RESOURCE_PATH + "40_barrier_vf.i", FAIL, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "40_barrier_vf.i", FAIL, NONE, wmmSc, s3 },
         	{ BENCHMARKS_RESOURCE_PATH + "41_FreeBSD_abd_kbd_sliced.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "42_FreeBSD_rdma_addr_sliced.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "43_NetBSD_sysmon_power_sliced.i", UNKNOWN, NONE, wmmSc, s1 },

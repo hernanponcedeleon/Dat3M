@@ -59,7 +59,7 @@ public abstract class AbstractSVCOMPTest {
         this.settings = settings;
     }
 
-    @Test
+    @Test(timeout=10000)
     public void test() {   	
     	try {
     		File file = new File(path);
