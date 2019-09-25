@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import static com.dat3m.dartagnan.expression.op.BOpUn.ID;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 
@@ -45,7 +44,6 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assertion;
-import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.BoundAssertion;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
@@ -86,7 +84,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
 	private int assertionIndex = 0;
-	private int escapeIndex = 0;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -205,7 +202,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
 
     	if(create) {
-        	threadCount ++;
+         	threadCount ++;
             programBuilder.initThread(threadCount);
     	}
 
@@ -244,6 +241,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    		programBuilder.addChild(threadCount, label);
         
         currentScope = currentScope.getParent();
+        
+    	if(create) {
+         	labelName = "END_OF_T" + threadCount;
+        	label = programBuilder.getOrCreateLabel(labelName);
+         	programBuilder.addChild(threadCount, label);
+    	}
     }
     
     @Override 
@@ -341,16 +344,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 
 	private void __VERIFIER_assume(ExprsContext exp) {
-		//TODO: cross-check with intended behavior:
-		//https://sv-comp.sosy-lab.org/2019/rules.php
-		String endLoop = "ESCAPE_OF_" + escapeIndex;
-		escapeIndex++;
-       	Label endLoopLabel = programBuilder.getOrCreateLabel(endLoop);
+		String labelName = "END_OF_T" + threadCount;
+       	Label label = programBuilder.getOrCreateLabel(labelName);
        	ExprInterface c = (ExprInterface)exp.accept(this);
 		if(c != null) {
-			programBuilder.addChild(threadCount, new CondJump(new BExprUn(ID, c), endLoopLabel));
-			programBuilder.addChild(threadCount, new Assume());
-			programBuilder.addChild(threadCount, endLoopLabel);
+			programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), label));	
 		}
 	}
 	
