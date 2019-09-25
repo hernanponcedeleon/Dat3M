@@ -105,6 +105,7 @@ public class Dartagnan {
         	// Those functions might be the ones defining the assertion.
         	// This is a current hack to still process the benchmark and
         	// don't be penalized by a wrong result.
+        	// TODO inline tags are now removed by the sanitizer. Not sure if this is still needed
         	return UNKNOWN;
         }
         // Used for getting the UNKNOWN
