@@ -52,7 +52,7 @@ public class SVCompPthreadExtTest extends AbstractSVCOMPTest {
         	{ BENCHMARKS_RESOURCE_PATH + "16_peterson.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "17_szymanski.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "18_read_write_lock.i", PASS, NONE, wmmSc, s1 },
-        	{ BENCHMARKS_RESOURCE_PATH + "19_time_var_mutex.i", PASS, NONE, wmmSc, s1 },
+        	{ BENCHMARKS_RESOURCE_PATH + "19_time_var_mutex.i", PASS, NONE, wmmSc, s2 },
         	{ BENCHMARKS_RESOURCE_PATH + "20_lamport.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "23_lu-fig2.fixed.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "25_stack.i", UNKNOWN, NONE, wmmSc, s1 },
