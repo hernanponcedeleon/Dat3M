@@ -22,6 +22,7 @@ public class ResourceHelper {
     public static final String TEST_RESOURCE_PATH = "src/test/resources/";
 
     private static ImmutableMap<String, Result> expectedResults;
+    private static ImmutableMap<String, Result> expectedSVCOMPResults;
 
     public static ImmutableMap<String, Result> getExpectedResults() throws IOException {
         if(expectedResults == null){
@@ -41,7 +42,7 @@ public class ResourceHelper {
     }
 
 	public static ImmutableMap<String, Result> getSVCOMPResults(String path) throws IOException {
-		if(expectedResults == null){
+		if(expectedSVCOMPResults == null){
 			Set<String> ymlFiles = Files.walk(Paths.get(path))
 	                .filter(Files::isRegularFile)
 	                .map(Path::toString)
@@ -51,8 +52,8 @@ public class ResourceHelper {
 			for(String s : ymlFiles) {
 				data.put(s.substring(0, s.lastIndexOf('.')) + ".i", Files.readAllLines(Paths.get(s)).stream().collect(Collectors.joining()).contains("expected_verdict: true") ? PASS : FAIL);
 			}
-			expectedResults = ImmutableMap.copyOf(data);
+			expectedSVCOMPResults = ImmutableMap.copyOf(data);
 		}
-        return expectedResults;
+        return expectedSVCOMPResults;
 	}
 }

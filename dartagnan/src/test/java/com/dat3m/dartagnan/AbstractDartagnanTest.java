@@ -39,7 +39,7 @@ public abstract class AbstractDartagnanTest {
         return Files.walk(Paths.get(ResourceHelper.BENCHMARK_RESOURCE_PATH + benchmarkPath))
                 .filter(Files::isRegularFile)
                 .map(Path::toString)
-                .filter(f -> f.endsWith("litmus") || f.endsWith("c"))
+                .filter(f -> f.endsWith("litmus"))
                 .filter(f -> expectationMap.containsKey(f.substring(n)))
                 .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
                 .collect(ArrayList::new,
