@@ -8,4 +8,9 @@ public class BoundEvent extends Event {
 		super();
 		addFilters(EType.BASSERTION);
 	}
+	
+	@Override
+	public String toString() {
+		return "boundEvent()";
+	}
 }

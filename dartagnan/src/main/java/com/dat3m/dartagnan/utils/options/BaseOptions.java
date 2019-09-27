@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableSet;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Set;
 
