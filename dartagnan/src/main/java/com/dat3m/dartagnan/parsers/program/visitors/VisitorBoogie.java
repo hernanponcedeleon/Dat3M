@@ -44,7 +44,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assertion;
-import com.dat3m.dartagnan.program.event.BoundAssertion;
+import com.dat3m.dartagnan.program.event.BoundEvent;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.event.Jump;
@@ -54,6 +54,8 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.While;
+import com.dat3m.dartagnan.program.event.rmw.BeginAtomic;
+import com.dat3m.dartagnan.program.event.rmw.EndAtomic;
 import com.dat3m.dartagnan.program.memory.Location;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
@@ -84,6 +86,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
 	private int assertionIndex = 0;
+	
+	private BeginAtomic currentBeginAtomic = null;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -283,6 +287,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			__VERIFIER_nondet_bool(ctx.call_params().Ident(0).getText());
 			return null;
 		}
+		if(name.equals("__VERIFIER_atomic_begin")) {
+			__VERIFIER_atomic_begin();
+			return null;
+		}
+		if(name.equals("__VERIFIER_atomic_end")) {
+			__VERIFIER_atomic_end();
+			return null;
+		}
 		if(name.equals("pthread_create")) {
 			pthread_create(ctx.call_params().exprs().expr().get(2).getText());
 			return null;
@@ -350,6 +362,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(c != null) {
 			programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), label));	
 		}
+	}
+	
+	private void __VERIFIER_atomic_begin() {
+		BeginAtomic ba = new BeginAtomic();
+		currentBeginAtomic = ba;
+		programBuilder.addChild(threadCount, ba);	
+	}
+	
+	private void __VERIFIER_atomic_end() {
+		if(currentBeginAtomic == null) {
+            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+		}
+		EndAtomic ea = new EndAtomic(currentBeginAtomic);
+		currentBeginAtomic = null;
+		programBuilder.addChild(threadCount, ea);	
 	}
 	
 	@Override
@@ -487,9 +514,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(l1.getOId() != -1) {
-        	Register ass = programBuilder.getOrCreateRegister(threadCount, "boudnAssert_" + assertionIndex);
-        	assertionIndex++;
-    		programBuilder.addChild(threadCount, new BoundAssertion(ass));
+    		programBuilder.addChild(threadCount, new BoundEvent());
         	labelName = "END_OF_" + currentScope.getID();
     		Label label = programBuilder.getOrCreateLabel(labelName);
     		programBuilder.addChild(threadCount, new Jump(label));        	

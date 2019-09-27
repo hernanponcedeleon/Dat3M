@@ -14,7 +14,7 @@ public class SVCompPthreadWmmTest extends AbstractSVCOMPTest {
 
     @Parameterized.Parameters(name = "{index}: {0} {4}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildParameters("benchmarks/C/pthread-wmm/", "cat/sc.cat", Arch.NONE);
+        return buildParameters("benchmarks/C/pthread-wmm/", "cat/svcomp.cat", Arch.NONE);
     }
 
     public SVCompPthreadWmmTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {

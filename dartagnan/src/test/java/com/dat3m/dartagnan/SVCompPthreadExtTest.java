@@ -28,7 +28,7 @@ public class SVCompPthreadExtTest extends AbstractSVCOMPTest {
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} {6}")
     public static Iterable<Object[]> data() throws IOException {
 
-        Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
+        Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/svcomp.cat"));
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
@@ -39,7 +39,8 @@ public class SVCompPthreadExtTest extends AbstractSVCOMPTest {
         	{ BENCHMARKS_RESOURCE_PATH + "03_incdec.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "04_incdec_cas.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "05_tas.i", UNKNOWN, NONE, wmmSc, s1 },
-        	{ BENCHMARKS_RESOURCE_PATH + "06_ticket.i", UNKNOWN, NONE, wmmSc, s1 },
+        	// 06: Even if there is a while(1), it seems bound events are never executed
+        	{ BENCHMARKS_RESOURCE_PATH + "06_ticket.i", PASS, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "07_rand.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "08_rand_cas.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "09_fmaxsym.i", UNKNOWN, NONE, wmmSc, s1 },
@@ -74,8 +75,10 @@ public class SVCompPthreadExtTest extends AbstractSVCOMPTest {
         	{ BENCHMARKS_RESOURCE_PATH + "33_double_lock_p1_vs.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "34_double_lock_p2_vs.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "35_double_lock_p3_vs.i", UNKNOWN, NONE, wmmSc, s1 },
-        	{ BENCHMARKS_RESOURCE_PATH + "36_stack_cas_p0_vs_concur.i", UNKNOWN, NONE, wmmSc, s1 },
-        	{ BENCHMARKS_RESOURCE_PATH + "37_stack_lock_p0_vs_concur.i", UNKNOWN, NONE, wmmSc, s1 },
+        	// 36: Even if there is a while(1), it seems bound events are never executed
+        	{ BENCHMARKS_RESOURCE_PATH + "36_stack_cas_p0_vs_concur.i", PASS, NONE, wmmSc, s1 },
+        	// 37: Even if there is a while(1), it seems bound events are never executed
+        	{ BENCHMARKS_RESOURCE_PATH + "37_stack_lock_p0_vs_concur.i", PASS, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "38_rand_cas_vs_concur.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "39_rand_lock_p0_vs.i", UNKNOWN, NONE, wmmSc, s1 },
         	{ BENCHMARKS_RESOURCE_PATH + "40_barrier_vf.i", FAIL, NONE, wmmSc, s3 },

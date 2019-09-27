@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
-import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +22,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
+
+import org.junit.Test;
+
 import static com.dat3m.dartagnan.utils.ResourceHelper.getSVCOMPResults;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

@@ -1,0 +1,12 @@
+SC
+
+(* Define co (and fr) *)
+include "cos.cat"
+
+(* All communication relations *)
+let com = (rf | fr | co)
+
+(* Sequential consistency *)
+acyclic po | com as sc
+
+empty rmw & ( (com & ext) ; (po | com)* ; (com & ext) )

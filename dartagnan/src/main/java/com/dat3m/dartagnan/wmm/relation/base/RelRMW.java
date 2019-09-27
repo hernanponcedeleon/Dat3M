@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.event.rmw.EndAtomic;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
@@ -51,7 +52,21 @@ public class RelRMW extends StaticRelation {
             baseMaxTupleSet = new TupleSet();
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
             for(Event store : program.getCache().getEvents(filter)){
-                baseMaxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));
+            	if(store instanceof RMWStore) {
+                    baseMaxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));            		
+            	}
+            }
+
+            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.ENDATOMIC));
+            for(Event end : program.getCache().getEvents(filter)){
+            	for(Event b : ((EndAtomic)end).getBlock()) {
+            		Event next = b.getSuccessor();
+            		while(next != null && !(next instanceof EndAtomic)) {
+            			baseMaxTupleSet.add(new Tuple(b, next));
+            			next = next.getSuccessor();
+            		}
+            		baseMaxTupleSet.add(new Tuple(b, end));
+            	}
             }
 
             maxTupleSet = new TupleSet();
@@ -66,7 +81,7 @@ public class RelRMW extends StaticRelation {
                     }
                 }
             }
-        }
+        }       	
         return maxTupleSet;
     }
 

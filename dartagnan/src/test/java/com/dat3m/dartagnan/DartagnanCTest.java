@@ -28,7 +28,7 @@ public class DartagnanCTest extends AbstractSVCOMPTest {
     @Parameterized.Parameters(name = "{index}: {0} {2} -> {3} {6}")
     public static Iterable<Object[]> data() throws IOException {
 
-        Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/sc.cat"));
+        Wmm wmmSc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/svcomp.cat"));
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
         Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3);
