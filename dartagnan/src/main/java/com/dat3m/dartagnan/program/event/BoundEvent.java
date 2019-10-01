@@ -13,4 +13,9 @@ public class BoundEvent extends Event {
 	public String toString() {
 		return "boundEvent()";
 	}
+	
+	@Override
+	public BoundEvent getCopy(){
+		return new BoundEvent();
+	}
 }
