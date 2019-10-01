@@ -10,15 +10,15 @@ import java.io.InputStreamReader;
 import java.util.stream.IntStream;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.svcomp.options.SVCOMPOptions;
 
 public class SVCOMPWitness {
 	
 	private Program program;
-	private DartagnanOptions options;
+	private SVCOMPOptions options;
 
-	public SVCOMPWitness(Program p, DartagnanOptions o) {
+	public SVCOMPWitness(Program p, SVCOMPOptions o) {
 		this.program = p;
 		this.options = o;
 	}

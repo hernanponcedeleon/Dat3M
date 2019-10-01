@@ -24,7 +24,8 @@ public class SVCOMPRunner {
 
     public static void main(String[] args) throws IOException {
 		try {
-			CommandLine cmd = new DefaultParser().parse(new SVCOMPOptions(), args);
+			SVCOMPOptions options = new SVCOMPOptions();
+			CommandLine cmd = new DefaultParser().parse(options, args);
 	        String programFilePath = cmd.getOptionValue("input");
 	    	
 			programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(programFilePath).run(1)).run();
@@ -71,7 +72,7 @@ public class SVCOMPRunner {
 			
 	        if(result.equals(FAIL)) {
 	        	Program p = new ProgramParser().parse(new File(programFilePath));
-	            //new SVCOMPWitness(p, options).write();;
+	            new SVCOMPWitness(p, options).write();;
 	        }
 		} catch (ParseException e) {
 			e.printStackTrace();
