@@ -12,12 +12,12 @@ import java.io.IOException;
 @RunWith(Parameterized.class)
 public class SVCompPthreadWmmTest extends AbstractSVCOMPTest {
 
-//    @Parameterized.Parameters(name = "{index}: {0} {4}")
-//    public static Iterable<Object[]> data() throws IOException {
-//        return buildParameters("benchmarks/C/pthread-wmm/", "cat/svcomp.cat", Arch.NONE);
-//    }
-//
-//    public SVCompPthreadWmmTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
-//        super(path, expected, target, wmm, settings);
-//    }
+    @Parameterized.Parameters(name = "{index}: {0} {4}")
+    public static Iterable<Object[]> data() throws IOException {
+        return buildParameters("benchmarks/C/pthread-wmm/", "cat/svcomp.cat", Arch.NONE);
+    }
+
+    public SVCompPthreadWmmTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
+        super(path, expected, target, wmm, settings);
+    }
 }
