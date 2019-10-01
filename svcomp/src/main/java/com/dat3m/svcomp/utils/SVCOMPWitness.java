@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.svcomp;
+package com.dat3m.svcomp.utils;
 
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 

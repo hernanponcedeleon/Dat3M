@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.svcomp;
+package com.dat3m.svcomp.utils;
 
 import java.io.BufferedReader;
 import java.io.File;

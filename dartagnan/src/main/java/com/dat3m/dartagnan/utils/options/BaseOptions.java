@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
-import com.dat3m.dartagnan.svcomp.SVCOMPSanitizer;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -17,7 +15,7 @@ public abstract class BaseOptions extends Options {
 
     protected String programFilePath;
     protected String targetModelFilePath;
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "pts", "bpl", "c", "i")); 
+    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "pts", "bpl")); 
     protected Settings settings;
     protected Arch target;
 
@@ -73,9 +71,6 @@ public abstract class BaseOptions extends Options {
     }
 
     public String getProgramFilePath() {
-    	if(programFilePath.endsWith(".c") || programFilePath.endsWith(".i")) {
-			programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(programFilePath).run(settings.getBound())).run();
-    	}
         return programFilePath;
     }
 

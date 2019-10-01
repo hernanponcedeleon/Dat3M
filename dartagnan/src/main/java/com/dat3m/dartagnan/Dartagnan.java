@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.utils.Result.getResult;
 
@@ -14,7 +13,6 @@ import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.svcomp.SVCOMPWitness;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
@@ -72,10 +70,6 @@ public class Dartagnan {
         	System.out.println(result);
         }
 
-        if(settings.getGenerateWitness() && result.equals(FAIL)) {
-            new SVCOMPWitness(p, options).write();;
-        }
-        
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result == Result.FAIL)) {
             ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
             drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
@@ -83,10 +77,6 @@ public class Dartagnan {
         }
 
         ctx.close();
-        if(options.getProgramFilePath().endsWith(".bpl")) {
-        	File file = new File(options.getProgramFilePath()); 
-            file.delete(); 
-        }
     }
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
