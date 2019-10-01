@@ -8,10 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.ParseException;
-
+import org.apache.commons.cli.HelpFormatter;
 import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -23,60 +20,66 @@ import com.dat3m.svcomp.utils.SVCOMPWitness;
 public class SVCOMPRunner {
 
     public static void main(String[] args) throws IOException {
-		try {
-			SVCOMPOptions options = new SVCOMPOptions();
-			CommandLine cmd = new DefaultParser().parse(options, args);
-	        String programFilePath = cmd.getOptionValue("input");
-	    	
-			programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(programFilePath).run(1)).run();
+    	SVCOMPOptions options = new SVCOMPOptions();
+        try {
+            options.parse(args);
+        }
+        catch (Exception e){
+            if(e instanceof UnsupportedOperationException){
+                System.out.println(e.getMessage());
+            }
+            new HelpFormatter().printHelp("SVCOMP Runner", options);
+            System.exit(1);
+            return;
+        }
 
-	       	File file = new File(programFilePath);
-	       	
-			String tool = "java -Djava.library.path=./lib/ -jar dartagnan/target/dartagnan-2.0.4-jar-with-dependencies.jar";
-			String program = " -i " + file.getAbsolutePath();
-			String cat = " -cat cat/sc.cat";
-			String compile = " -t none ";
-			int bound = 1;
+		String programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(options.getProgramFilePath()).run(1)).run();
 
-			String output = "UNKNOWN";
+       	File file = new File(programFilePath);
+       	
+		String tool = "java -Djava.library.path=./lib/ -jar dartagnan/target/dartagnan-2.0.4-jar-with-dependencies.jar";
+		String program = " -i " + file.getAbsolutePath();
+		String cat = " -cat cat/sc.cat";
+		String compile = " -t none ";
+		int bound = 1;
 
-			while(output.equals("UNKNOWN")) {
+		String output = "UNKNOWN";
+
+		while(output.equals("UNKNOWN")) {
+			try {
+				String exec = tool + program + cat + compile + " -unroll " + bound;
+				Process proc = Runtime.getRuntime().exec(exec);
+				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				try {
-					String exec = tool + program + cat + compile + " -unroll " + bound;
-					Process proc = Runtime.getRuntime().exec(exec);
-					BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-					try {
-						proc.waitFor();
-					} catch(InterruptedException e) {
-						System.out.println(e.getMessage());
-						System.exit(0);
-					}
-					while(read.ready()) {
-						output = read.readLine();
-						bound++;
-					}
-					if(proc.exitValue() == 1) {
-						BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-						while(error.ready()) {
-							System.out.println(error.readLine());
-						}
-						System.exit(0);
-					}
-				} catch(IOException e) {
+					proc.waitFor();
+				} catch(InterruptedException e) {
 					System.out.println(e.getMessage());
 					System.exit(0);
-				}			
-			}
-			Result result = output.equals("FAIL") ? FAIL : PASS;
-			System.out.println(result);
-			
-	        if(result.equals(FAIL)) {
-	        	Program p = new ProgramParser().parse(new File(programFilePath));
-	            new SVCOMPWitness(p, options).write();;
-	        }
-		} catch (ParseException e) {
-			e.printStackTrace();
+				}
+				while(read.ready()) {
+					output = read.readLine();
+					bound++;
+				}
+				if(proc.exitValue() == 1) {
+					BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+					while(error.ready()) {
+						System.out.println(error.readLine());
+					}
+					System.exit(0);
+				}
+			} catch(IOException e) {
+				System.out.println(e.getMessage());
+				System.exit(0);
+			}			
 		}
+		Result result = output.equals("FAIL") ? FAIL : PASS;
+		System.out.println(result);
+		
+        if(result.equals(FAIL)) {
+        	Program p = new ProgramParser().parse(new File(programFilePath));
+            new SVCOMPWitness(p, options).write();;
+        }
+        file.delete();
         return;        	
     }
 }

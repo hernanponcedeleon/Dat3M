@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableSet;
 public class SVCOMPOptions extends Options {
 
     protected String programFilePath;
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "pts", "bpl")); 
+    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
 
     public SVCOMPOptions(){
         super();
