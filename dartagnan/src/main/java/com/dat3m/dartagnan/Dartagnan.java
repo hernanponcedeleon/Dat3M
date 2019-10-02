@@ -32,7 +32,7 @@ public class Dartagnan {
             options.parse(args);
         }
         catch (Exception e){
-            if(e instanceof UnsupportedOperationException){
+            if(e instanceof UnsupportedOperationException || e instanceof RuntimeException){
                 System.out.println(e.getMessage());
             }
             new HelpFormatter().printHelp("DARTAGNAN", options);
