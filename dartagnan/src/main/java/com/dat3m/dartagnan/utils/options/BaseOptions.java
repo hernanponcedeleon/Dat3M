@@ -43,9 +43,6 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("unroll", true,
                 "Unrolling bound <integer>"));
 
-        addOption(new Option("witness", false,
-                "It generates a SVCOMP violation witness if the verification fails"));
-
         addOption(new Option("draw", true,
                 "Path to save the execution graph if the state is reachable"));
 
