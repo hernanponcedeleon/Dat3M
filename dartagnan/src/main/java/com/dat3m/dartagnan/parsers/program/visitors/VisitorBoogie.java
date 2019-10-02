@@ -269,7 +269,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
-		if(name.equals("$alloc")) {
+		if(name.equals("$alloc") || name.equals("$$alloc") || name.equals("calloc") || name.equals("$malloc")) {
 			return null;
 		}
 		if(name.equals("corral_getThreadID")) {
@@ -313,7 +313,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(ctx.call_params().exprs() != null) {
 			callingValues = ctx.call_params().exprs().expr().stream().map(c -> (ExprInterface)c.accept(this)).collect(Collectors.toList());
 		}
-		
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
@@ -419,7 +418,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAssign_cmd(BoogieParser.Assign_cmdContext ctx) {
 		//TODO handle complex lhs ... e.g foo(expr)
-
+		
         ExprsContext exprs = ctx.def_body().exprs();
 		// We get the first value and then iterate
         ExprInterface value = (ExprInterface)exprs.expr(0).accept(this);
