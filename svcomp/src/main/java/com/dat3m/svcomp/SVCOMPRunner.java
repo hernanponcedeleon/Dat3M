@@ -1,7 +1,7 @@
 package com.dat3m.svcomp;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.fromString;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -72,7 +72,7 @@ public class SVCOMPRunner {
 				System.exit(0);
 			}			
 		}
-		Result result = output.equals("FAIL") ? FAIL : PASS;
+		Result result = fromString(output);
 		System.out.println(result);
 		
         if(result.equals(FAIL)) {

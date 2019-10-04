@@ -51,12 +51,14 @@ import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
+import com.dat3m.dartagnan.program.event.Lock;
 import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.event.Unlock;
 import com.dat3m.dartagnan.program.event.While;
+import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.event.rmw.BeginAtomic;
 import com.dat3m.dartagnan.program.event.rmw.EndAtomic;
-import com.dat3m.dartagnan.program.memory.Location;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
@@ -269,11 +271,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
-		if(name.equals("$alloc") || name.equals("$$alloc") || name.equals("calloc") || name.equals("$malloc")) {
+		if(name.equals("$alloc") || name.equals("$$alloc")) {
 			return null;
 		}
+		if(name.equals("calloc") || name.equals("$malloc")) {
+			throw new ParsingException("ERROR");
+		}
 		if(name.equals("pthread_mutex_lock")) {
-			throw new ParsingException("Locks are not yet supported");
+			return new Lock();
+		}
+		if(name.equals("pthread_mutex_unlock")) {
+			return new Unlock();
 		}
 		if(name.equals("corral_getThreadID")) {
 			return new IConst(threadCount);

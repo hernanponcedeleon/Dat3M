@@ -4,18 +4,22 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
 public enum Result {
-	PASS, FAIL, UNKNOWN;
+	PASS, FAIL, UNKNOWN, UFAIL;
 
 	public static Result getResult(Solver s, Program p, Context ctx) {
 		Result res;
 		if(s.check() == Status.SATISFIABLE) {
-			res = FAIL;	
+			res = p.getCache().getEvents(FilterUnion.get(
+	                FilterBasic.get(EType.ATOMIC),
+	                FilterBasic.get(EType.LOCK)
+	        )).isEmpty() ? FAIL : UFAIL;	
 		} else {
 			BoolExpr enc = ctx.mkFalse();
 			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.BASSERTION))) {
@@ -31,12 +35,29 @@ public enum Result {
 		return res;
 	}
 	
+	public static Result fromString(String name) {
+		switch (name) {
+		case "PASS":
+			return PASS;
+		case "FAIL":
+			return FAIL;
+		case "UFAIL":
+			return UFAIL;
+		default:
+			return UNKNOWN;
+		}
+	}
+	
 	public Result invert() {
 		switch (this) {
 		case PASS:
 			return FAIL;
 		case FAIL:
 			return PASS;
+		case UNKNOWN:
+			return UNKNOWN;
+		case UFAIL:
+			return UFAIL;
 		default:
 			return UNKNOWN;
 		}

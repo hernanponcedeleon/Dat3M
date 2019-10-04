@@ -57,7 +57,7 @@ public class RelRMW extends StaticRelation {
             	}
             }
 
-            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.ENDATOMIC));
+            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.ATOMIC));
             for(Event end : program.getCache().getEvents(filter)){
             	for(Event b : ((EndAtomic)end).getBlock()) {
             		Event next = b.getSuccessor();
