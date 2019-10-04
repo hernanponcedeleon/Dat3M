@@ -278,10 +278,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("ERROR");
 		}
 		if(name.equals("pthread_mutex_lock")) {
-			return new Lock();
+			programBuilder.addChild(threadCount, new Lock());
+			return null;
 		}
 		if(name.equals("pthread_mutex_unlock")) {
-			return new Unlock();
+			programBuilder.addChild(threadCount, new Unlock());
+			return null;
 		}
 		if(name.equals("corral_getThreadID")) {
 			return new IConst(threadCount);

@@ -11,15 +11,15 @@ import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
 public enum Result {
-	PASS, FAIL, UNKNOWN, UFAIL;
+	PASS, FAIL, UNKNOWN, ERROR;
 
 	public static Result getResult(Solver s, Program p, Context ctx) {
 		Result res;
+		if(!p.getCache().getEvents(FilterUnion.get(FilterBasic.get(EType.ATOMIC), FilterBasic.get(EType.LOCK))).isEmpty()) {
+			return ERROR;
+		}
 		if(s.check() == Status.SATISFIABLE) {
-			res = p.getCache().getEvents(FilterUnion.get(
-	                FilterBasic.get(EType.ATOMIC),
-	                FilterBasic.get(EType.LOCK)
-	        )).isEmpty() ? FAIL : UFAIL;	
+			res = FAIL;	
 		} else {
 			BoolExpr enc = ctx.mkFalse();
 			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.BASSERTION))) {
@@ -42,7 +42,7 @@ public enum Result {
 		case "FAIL":
 			return FAIL;
 		case "UFAIL":
-			return UFAIL;
+			return ERROR;
 		default:
 			return UNKNOWN;
 		}
@@ -56,8 +56,8 @@ public enum Result {
 			return PASS;
 		case UNKNOWN:
 			return UNKNOWN;
-		case UFAIL:
-			return UFAIL;
+		case ERROR:
+			return ERROR;
 		default:
 			return UNKNOWN;
 		}
