@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Jump;
+import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -124,4 +126,27 @@ public class Thread {
     public BoolExpr encodeCF(Context ctx){
         return entry.encodeCF(ctx, ctx.mkTrue());
     }
+
+	public void reduce() {
+		Event next = entry;
+		while(next != null) {
+			Event nnext = next.getSuccessor();
+			if(nnext == null) {
+				break;
+			}
+			Event nnnext = nnext.getSuccessor();
+			if(nnnext == null) {
+				break;
+			}
+			if(nnext instanceof Jump && nnnext.equals(((Jump)nnext).getLabel())) {
+				// If nobody else refers to the label, we can also remove the label
+				if(((Label)nnnext).getReferences().size() == 1) {
+					next.setSuccessor(nnnext.getSuccessor());
+				} else {
+					next.setSuccessor(nnnext);
+				}
+			}
+			next = next.getSuccessor();
+		}
+	}
 }

@@ -127,6 +127,11 @@ public class Program {
 		}
 	}
 
+	public void reduce() {
+		for(Thread t : getThreads()) {
+			t.reduce();
+		}
+	}
 	
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------

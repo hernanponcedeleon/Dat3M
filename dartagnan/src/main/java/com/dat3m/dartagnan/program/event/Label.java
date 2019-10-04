@@ -33,6 +33,10 @@ public class Label extends Event {
     	references.add(jump);
     }
     
+    public Set<Jump> getReferences() {
+    	return references;
+    }
+    
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
