@@ -272,6 +272,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$alloc") || name.equals("$$alloc") || name.equals("calloc") || name.equals("$malloc")) {
 			return null;
 		}
+		if(name.equals("pthread_mutex_lock")) {
+			throw new ParsingException("Locks are not yet supported");
+		}
 		if(name.equals("corral_getThreadID")) {
 			return new IConst(threadCount);
 		}
