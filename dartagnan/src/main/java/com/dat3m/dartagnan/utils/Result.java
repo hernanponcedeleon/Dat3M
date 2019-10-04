@@ -15,11 +15,11 @@ public enum Result {
 
 	public static Result getResult(Solver s, Program p, Context ctx) {
 		Result res;
-		if(!p.getCache().getEvents(FilterUnion.get(FilterBasic.get(EType.ATOMIC), FilterBasic.get(EType.LOCK))).isEmpty()) {
+		if(!p.getCache().getEvents(FilterBasic.get(EType.LOCK)).isEmpty()) {
 			return ERROR;
 		}
 		if(s.check() == Status.SATISFIABLE) {
-			res = FAIL;	
+			res = p.getCache().getEvents(FilterBasic.get(EType.LOCK)).isEmpty() ? FAIL : ERROR;	
 		} else {
 			BoolExpr enc = ctx.mkFalse();
 			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.BASSERTION))) {
