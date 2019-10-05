@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.INonDet;
@@ -44,6 +45,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assertion;
+import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.BoundEvent;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
@@ -278,11 +280,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("ERROR");
 		}
 		if(name.equals("pthread_mutex_lock")) {
-			programBuilder.addChild(threadCount, new Lock());
+			mutexLock(ctx.call_params().exprs());
 			return null;
 		}
 		if(name.equals("pthread_mutex_unlock")) {
-			programBuilder.addChild(threadCount, new Unlock());
+			mutexUnlock(ctx.call_params().exprs());
 			return null;
 		}
 		if(name.equals("corral_getThreadID")) {
@@ -372,7 +374,25 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
        	Label label = programBuilder.getOrCreateLabel(labelName);
        	ExprInterface c = (ExprInterface)exp.accept(this);
 		if(c != null) {
-			programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), label));	
+			programBuilder.addChild(threadCount, new Assume(c, label));	
+		}
+	}
+	
+	private void mutexLock(ExprsContext exp) {
+		String labelName = "END_OF_T" + threadCount;
+       	Label label = programBuilder.getOrCreateLabel(labelName);
+		IExpr lock = (IExpr)exp.accept(this);
+		if(lock != null) {
+			programBuilder.addChild(threadCount, new Lock(lock, label));	
+		}
+	}
+	
+	private void mutexUnlock(ExprsContext exp) {
+		String labelName = "END_OF_T" + threadCount;
+       	Label label = programBuilder.getOrCreateLabel(labelName);
+		IExpr lock = (IExpr)exp.accept(this);
+		if(lock != null) {
+			programBuilder.addChild(threadCount, new Unlock(lock, label));	
 		}
 	}
 	
