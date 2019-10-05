@@ -36,8 +36,12 @@ public class Lock extends Event {
 
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
-        events.add(new CondJump(new Atom(lock, NEQ, new IConst(0)), label));
-        events.add(new Store(lock, new IConst(1), "NA"));
+		CondJump jump = new CondJump(new Atom(lock, NEQ, new IConst(0)),label);
+		jump.addFilters(EType.LOCK);
+        events.add(jump);
+        Store store = new Store(lock, new IConst(1), "NA");
+		store.addFilters(EType.LOCK);
+        events.add(store);
 		return compileSequence(target, nextId, predecessor, events);
 	}
 }
