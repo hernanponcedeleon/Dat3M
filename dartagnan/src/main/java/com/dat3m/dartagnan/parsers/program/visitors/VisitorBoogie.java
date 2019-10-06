@@ -244,15 +244,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
         visitChildren(body.stmt_list());
 
-       	String labelName = "END_OF_" + currentScope.getID();
-		Label label = programBuilder.getOrCreateLabel(labelName);
+		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
    		programBuilder.addChild(threadCount, label);
         
         currentScope = currentScope.getParent();
         
     	if(create) {
-         	labelName = "END_OF_T" + threadCount;
-        	label = programBuilder.getOrCreateLabel(labelName);
+        	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
     	}
     }
@@ -370,8 +368,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 
 	private void __VERIFIER_assume(ExprsContext exp) {
-		String labelName = "END_OF_T" + threadCount;
-       	Label label = programBuilder.getOrCreateLabel(labelName);
+       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
        	ExprInterface c = (ExprInterface)exp.accept(this);
 		if(c != null) {
 			programBuilder.addChild(threadCount, new Assume(c, label));	
@@ -379,20 +376,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 	
 	private void mutexLock(ExprsContext exp) {
-		String labelName = "END_OF_T" + threadCount;
-       	Label label = programBuilder.getOrCreateLabel(labelName);
-		IExpr lock = (IExpr)exp.accept(this);
-		if(lock != null) {
-			programBuilder.addChild(threadCount, new Lock(lock, label));	
+        Register register = programBuilder.getOrCreateRegister(threadCount, null);
+		IExpr lockAddres = (IExpr)exp.accept(this);
+       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+		if(lockAddres != null) {
+			programBuilder.addChild(threadCount, new Lock(register, lockAddres, label));	
 		}
 	}
 	
 	private void mutexUnlock(ExprsContext exp) {
-		String labelName = "END_OF_T" + threadCount;
-       	Label label = programBuilder.getOrCreateLabel(labelName);
-		IExpr lock = (IExpr)exp.accept(this);
-		if(lock != null) {
-			programBuilder.addChild(threadCount, new Unlock(lock, label));	
+        Register register = programBuilder.getOrCreateRegister(threadCount, null);
+		IExpr lockAddress = (IExpr)exp.accept(this);
+       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+		if(lockAddress != null) {
+			programBuilder.addChild(threadCount, new Unlock(register, lockAddress, label));	
 		}
 	}
 	
@@ -500,8 +497,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitReturn_cmd(BoogieParser.Return_cmdContext ctx) {
-    	String labelName = "END_OF_" + currentScope.getID();
-		Label label = programBuilder.getOrCreateLabel(labelName);
+		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
 		programBuilder.addChild(threadCount, new Jump(label));
 		return null;
 	}
@@ -547,8 +543,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(l1.getOId() != -1) {
     		programBuilder.addChild(threadCount, new BoundEvent());
-        	labelName = "END_OF_" + currentScope.getID();
-    		Label label = programBuilder.getOrCreateLabel(labelName);
+    		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
     		programBuilder.addChild(threadCount, new Jump(label));        	
         }
 		if(ctx.idents().children.size() > 1) {
