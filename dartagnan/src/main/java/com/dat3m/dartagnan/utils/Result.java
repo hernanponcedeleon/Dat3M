@@ -40,7 +40,7 @@ public enum Result {
 			return PASS;
 		case "FAIL":
 			return FAIL;
-		case "UFAIL":
+		case "ERROR":
 			return ERROR;
 		default:
 			return UNKNOWN;
