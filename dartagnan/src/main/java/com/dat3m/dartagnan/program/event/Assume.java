@@ -18,10 +18,24 @@ public class Assume extends Event {
 		this.label = l;
 	}
 
+	protected Assume(Assume other){
+		super(other);
+		this.exp = other.exp;
+		this.label = other.label;
+	}
+
 	@Override
     public String toString() {
         return "assume(" + exp + ")";
     }
+
+	// Unrolling
+	// -----------------------------------------------------------------------------------------------------------------
+
+	@Override
+	public Assume getCopy(){
+		return new Assume(this);
+	}
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
