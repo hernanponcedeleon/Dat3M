@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.base;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.EndAtomic;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
@@ -54,6 +55,17 @@ public class RelRMW extends StaticRelation {
             for(Event store : program.getCache().getEvents(filter)){
             	if(store instanceof RMWStore) {
                     baseMaxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));            		
+            	}
+            }
+
+            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.LOCK));
+            for(Event e : program.getCache().getEvents(filter)){
+            	if(e instanceof Load) {
+            		Event next = e.getSuccessor();
+            		Event nnext = next.getSuccessor();
+            		baseMaxTupleSet.add(new Tuple(e, next));
+            		baseMaxTupleSet.add(new Tuple(e, nnext));
+            		baseMaxTupleSet.add(new Tuple(next, nnext));
             	}
             }
 

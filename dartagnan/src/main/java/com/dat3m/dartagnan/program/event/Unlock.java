@@ -7,17 +7,20 @@ import java.util.LinkedList;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class Unlock extends Event {
 
-	private IExpr lock;
+	private Register reg;
+	private IExpr lockAddress;
 	private Label label;
 
-    public Unlock(IExpr lock, Label label) {
-    	this.lock = lock;
+    public Unlock(Register reg, IExpr lockAddress, Label label) {
+    	this.reg = reg;
+    	this.lockAddress = lockAddress;
     	this.label = label;
         addFilters(EType.LOCK);
     }
@@ -28,7 +31,7 @@ public class Unlock extends Event {
 
     @Override
     public String toString() {
-    	return "unlock(&" + lock + ")";
+    	return "unlock(&" + lockAddress + ")";
     }
     
     // Compilation
@@ -36,12 +39,13 @@ public class Unlock extends Event {
 
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
-		CondJump jump = new CondJump(new Atom(lock, NEQ, new IConst(1)),label);
-		jump.addFilters(EType.LOCK);
-        events.add(jump);
-        Store store = new Store(lock, new IConst(0), "NA");
-		store.addFilters(EType.LOCK);
-        events.add(store);
+        events.add(new Load(reg, lockAddress, "NA"));
+        events.add(new CondJump(new Atom(reg, NEQ, new IConst(1)),label));
+        events.add(new Store(lockAddress, new IConst(0), "NA"));
+        for(Event e : events) {
+        	e.addFilters(EType.LOCK);
+        	e.addFilters(EType.RMW);
+        }
 		return compileSequence(target, nextId, predecessor, events);
 	}
 }
