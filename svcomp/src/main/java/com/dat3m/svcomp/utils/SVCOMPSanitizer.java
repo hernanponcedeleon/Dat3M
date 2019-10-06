@@ -10,6 +10,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.stream.IntStream;
 
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+
 public class SVCOMPSanitizer {
 
 	String filePath;
@@ -26,6 +28,7 @@ public class SVCOMPSanitizer {
 			for (String line; (line = reader.readLine()) != null;) {
 				line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }", "");
 				line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error();}; return; }", "");
+				line = line.replace("void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: __VERIFIER_error(); } }", "");
 				// SMACK does not create procedure for inline functions
 				if(!line.contains("__")) {
 					line = line.replace("inline ", "");	
@@ -37,7 +40,12 @@ public class SVCOMPSanitizer {
 						writer.println("pthread_create(&t, 0, thr1, 0);");
 					}
 				}
-			    writer.println(line);
+				if(line.contains("while") && line.contains("pthread_create")) {
+					reader.close();
+					writer.close();
+			        throw new ParsingException(line + " cannot be parsed");
+				}
+				writer.println(line);
 			}
 			reader.close();
 			writer.close();
