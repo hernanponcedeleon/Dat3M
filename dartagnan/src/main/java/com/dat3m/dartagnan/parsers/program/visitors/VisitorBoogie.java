@@ -292,7 +292,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			__VERIFIER_assume(ctx.call_params().exprs());
 			return null;
 		}
-		if(name.equals("__VERIFIER_nondet_int")) {
+		if(name.equals("__VERIFIER_nondet_int") || name.equals("__VERIFIER_nondet_uint")) {
 			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText());
 			return null;
 		}
