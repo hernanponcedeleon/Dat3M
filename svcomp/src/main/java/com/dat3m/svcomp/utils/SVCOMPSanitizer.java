@@ -29,6 +29,7 @@ public class SVCOMPSanitizer {
 				line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error(); }; return; }", "");
 				line = line.replace("void __VERIFIER_assert(int expression) { if (!expression) { ERROR: __VERIFIER_error();}; return; }", "");
 				line = line.replace("void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: __VERIFIER_error(); } }", "");
+				line = line.replace("void __VERIFIER_assert(int cond) { if (!(cond)) { ERROR: __VERIFIER_error(); } return; }", "");
 				// SMACK does not create procedure for inline functions
 				if(!line.contains("__")) {
 					line = line.replace("inline ", "");	
