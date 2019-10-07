@@ -60,7 +60,7 @@ public class SVCOMPWitness {
 	
 	private String checksum() {
 		String output = null;
-		String input = options.getProgramFilePath().substring(0, options.getProgramFilePath().lastIndexOf('.')) + ".i";
+		String input = options.getProgramFilePath();
 		try {
 			Process proc = Runtime.getRuntime().exec("sha256sum " + input);
 			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
