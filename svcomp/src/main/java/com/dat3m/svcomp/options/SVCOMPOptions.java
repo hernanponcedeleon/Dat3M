@@ -27,11 +27,10 @@ public class SVCOMPOptions extends Options {
     public void parse(String[] args) throws ParseException, RuntimeException {
         CommandLine cmd = new DefaultParser().parse(this, args);
 
-        String inputFilePath = cmd.getOptionValue("input");
-        if(supportedFormats.stream().map(f -> inputFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
+        programFilePath = cmd.getOptionValue("input");
+        if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
-        programFilePath = cmd.getOptionValue("input");
     }
 
     public String getProgramFilePath() {
