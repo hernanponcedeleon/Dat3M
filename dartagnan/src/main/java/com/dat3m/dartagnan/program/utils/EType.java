@@ -19,6 +19,7 @@ public class EType {
     public static final String REG_READER   = "rR";
     public static final String ASSERTION    = "ASS";
     public static final String BASSERTION   = "BASS";
-    public static final String ATOMIC    	= "A";
+    public static final String BATOMIC    	= "BA";
+    public static final String EATOMIC    	= "EA";
     public static final String LOCK    		= "L";
 }

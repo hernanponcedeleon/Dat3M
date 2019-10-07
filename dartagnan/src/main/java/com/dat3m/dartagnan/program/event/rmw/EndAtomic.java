@@ -13,7 +13,7 @@ public class EndAtomic extends Event {
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
         addFilters(EType.RMW);
-        addFilters(EType.ATOMIC);
+        addFilters(EType.EATOMIC);
     	Event next = begin.getSuccessor();
     	while(next != null && next != this) {
     		next.addFilters(EType.RMW);
