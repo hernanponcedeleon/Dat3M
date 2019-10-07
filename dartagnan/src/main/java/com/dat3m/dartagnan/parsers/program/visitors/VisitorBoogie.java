@@ -92,6 +92,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private int assertionIndex = 0;
 	
 	private BeginAtomic currentBeginAtomic = null;
+	private boolean atomicMode = false;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -246,6 +247,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
    		programBuilder.addChild(threadCount, label);
+		if(atomicMode) {
+			programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));
+			atomicMode = false;
+			currentBeginAtomic = null;
+		}
         
         currentScope = currentScope.getParent();
         
@@ -307,6 +313,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("__VERIFIER_atomic_end")) {
 			__VERIFIER_atomic_end();
 			return null;
+		}
+		// The order is important
+		if(name.contains("__VERIFIER_atomic_")) {
+			atomicMode = true;
+			currentBeginAtomic = new BeginAtomic();
+			programBuilder.addChild(threadCount, currentBeginAtomic);
 		}
 		if(name.equals("pthread_create")) {
 			pthread_create(ctx.call_params().exprs().expr().get(2).getText());
