@@ -40,8 +40,6 @@ public enum Result {
 			return PASS;
 		case "FAIL":
 			return FAIL;
-		case "ERROR":
-			return ERROR;
 		default:
 			return UNKNOWN;
 		}
@@ -53,10 +51,6 @@ public enum Result {
 			return FAIL;
 		case FAIL:
 			return PASS;
-		case UNKNOWN:
-			return UNKNOWN;
-		case ERROR:
-			return ERROR;
 		default:
 			return UNKNOWN;
 		}
