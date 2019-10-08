@@ -39,7 +39,7 @@ public class SVCOMPRunner {
        	
 		String tool = "java -Djava.library.path=./lib/ -jar dartagnan/target/dartagnan-2.0.4-jar-with-dependencies.jar";
 		String program = " -i " + file.getAbsolutePath();
-		String cat = " -cat cat/sc.cat";
+		String cat = " -cat cat/svcomp.cat";
 		String compile = " -t none ";
 		int bound = 1;
 

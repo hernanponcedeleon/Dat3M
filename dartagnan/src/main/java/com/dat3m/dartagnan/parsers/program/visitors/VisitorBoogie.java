@@ -2,6 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
+import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
+import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -693,6 +696,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// Some functions do not have a body
 		if(function.getBody() == null) {
 			currentCall = currentCall.getParent();
+			// TODO: improve this
+			if(ctx.Ident().getText().contains("$xor.")) {
+				return new IExprBin((ExprInterface)callParams.get(0), XOR, (ExprInterface)callParams.get(1));
+			}
+			if(ctx.Ident().getText().contains("$or.")) {
+				return new IExprBin((ExprInterface)callParams.get(0), OR, (ExprInterface)callParams.get(1));
+			}
+			if(ctx.Ident().getText().contains("$and.")) {
+				return new IExprBin((ExprInterface)callParams.get(0), AND, (ExprInterface)callParams.get(1));
+			}
 			return null;
 		}
 		Object ret = function.getBody().accept(this);

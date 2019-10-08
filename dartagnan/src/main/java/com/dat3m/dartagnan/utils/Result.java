@@ -18,7 +18,7 @@ public enum Result {
 			return ERROR;
 		}
 		if(s.check() == Status.SATISFIABLE) {
-			res = p.getCache().getEvents(FilterBasic.get(EType.ATOMIC)).isEmpty() ? FAIL : ERROR;	
+			res = FAIL;
 		} else {
 			BoolExpr enc = ctx.mkFalse();
 			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.BASSERTION))) {
