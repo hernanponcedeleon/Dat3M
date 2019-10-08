@@ -76,7 +76,7 @@ public class SVCOMPRunner {
 		Result result = fromString(output);
 		System.out.println(result);
 		
-        if(result.equals(FAIL)) {
+        if(options.getCreateWitness() && result.equals(FAIL)) {
         	Program p = new ProgramParser().parse(new File(programFilePath));
             new SVCOMPWitness(p, options).write();;
         }

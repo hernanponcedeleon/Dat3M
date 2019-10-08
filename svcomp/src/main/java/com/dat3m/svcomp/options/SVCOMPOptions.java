@@ -15,6 +15,7 @@ public class SVCOMPOptions extends Options {
 
     protected String programFilePath;
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
+    protected boolean createWitness = false;
 
     public SVCOMPOptions(){
         super();
@@ -22,7 +23,12 @@ public class SVCOMPOptions extends Options {
                 "Path to the file with input program");
         inputOption.setRequired(true);
         addOption(inputOption);
-    }
+
+        Option witnessOption = new Option("w", "witness", false,
+                "Creates a violation witness");
+        witnessOption.setRequired(false);
+        addOption(witnessOption);
+}
     
     public void parse(String[] args) throws ParseException, RuntimeException {
         CommandLine cmd = new DefaultParser().parse(this, args);
@@ -31,9 +37,14 @@ public class SVCOMPOptions extends Options {
         if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
+        createWitness = cmd.hasOption("witness");
     }
 
     public String getProgramFilePath() {
         return programFilePath;
+    }
+
+    public boolean getCreateWitness() {
+        return createWitness;
     }
 }
