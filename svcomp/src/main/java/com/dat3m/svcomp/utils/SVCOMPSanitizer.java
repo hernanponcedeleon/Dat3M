@@ -23,7 +23,19 @@ public class SVCOMPSanitizer {
 		File tmp = new File(filePath.substring(0, filePath.lastIndexOf('.')) + "_tmp.c");
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
-			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));
+			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));		
+			StringBuilder contents = new StringBuilder();
+			while(reader.ready()) {
+				contents.append(reader.readLine());
+			}
+			reader.close();
+			String stringContents = contents.toString();
+			if(stringContents.matches(".*main\\(.*\\).*for.*\\{.*pthread_create(.*).*\\}")) {
+				reader.close();
+				writer.close();
+		        throw new ParsingException("pthread_create cannot be inside a for loop");
+			}
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
 			for (String line; (line = reader.readLine()) != null;) {
 				// SMACK does not create procedure for inline functions
 				if(!line.contains("__")) {
