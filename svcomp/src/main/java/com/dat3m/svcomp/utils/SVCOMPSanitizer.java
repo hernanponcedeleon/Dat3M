@@ -39,10 +39,7 @@ public class SVCOMPSanitizer {
 						i++;
 					}
 				}
-				if((line.contains("while") && line.contains("pthread_create"))
-						// TODO: remove this
-						|| line.contains("pthread_create(&t, 0, producer, 0);") 
-						|| line.contains("__VERIFIER_assume(n >= 20 && n < 40);")) {
+				if(line.contains("while") && line.contains("pthread_create")) {
 					reader.close();
 					writer.close();
 			        throw new ParsingException(line + " cannot be parsed");
