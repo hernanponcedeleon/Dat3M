@@ -34,7 +34,6 @@ public class SVCOMPRunner {
         }
 
 		String programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(options.getProgramFilePath()).run(1)).run();
-
        	File file = new File(programFilePath);
        	
 		String tool = "java -Djava.library.path=./lib/ -jar dartagnan/target/dartagnan-2.0.4-jar-with-dependencies.jar";
@@ -70,7 +69,9 @@ public class SVCOMPRunner {
 			} catch(IOException e) {
 				System.out.println(e.getMessage());
 				System.exit(0);
-			}			
+			}
+			programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(options.getProgramFilePath()).run(bound)).run();
+	       	file = new File(programFilePath);
 		}
 		Result result = fromString(output);
 		System.out.println(result);
