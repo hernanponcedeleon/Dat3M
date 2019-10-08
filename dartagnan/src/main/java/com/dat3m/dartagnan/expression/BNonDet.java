@@ -35,4 +35,8 @@ public class BNonDet extends BExpr implements ExprInterface {
 		return ImmutableSet.of();
 	}
 
+	@Override
+	public String toString() {
+		return "nondet_Bool()";
+	}
 }
