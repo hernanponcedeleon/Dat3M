@@ -2,12 +2,14 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +36,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
@@ -51,17 +54,17 @@ import com.dat3m.dartagnan.program.event.Assertion;
 import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.BoundEvent;
 import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Lock;
 import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.event.Unlock;
 import com.dat3m.dartagnan.program.event.While;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.event.rmw.BeginAtomic;
 import com.dat3m.dartagnan.program.event.rmw.EndAtomic;
 
@@ -286,6 +289,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("calloc") || name.equals("$malloc")) {
 			throw new ParsingException("ERROR");
 		}
+		if(name.equals("pthread_mutex_init")) {
+			mutexInit(ctx.call_params().exprs().expr(0), ctx.call_params().exprs().expr(1));
+			return null;
+		}
 		if(name.equals("pthread_mutex_lock")) {
 			mutexLock(ctx.call_params().exprs());
 			return null;
@@ -390,12 +397,28 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 	}
 	
+	private void mutexInit(ExprContext lock, ExprContext value) {
+		IExpr lockAddress = (IExpr)lock.accept(this);
+		IExpr val = (IExpr)value.accept(this);
+		if(lockAddress != null) {
+			programBuilder.addChild(threadCount, new Store(lockAddress, val, "NA"));	
+		}
+	}
+	
 	private void mutexLock(ExprsContext exp) {
         Register register = programBuilder.getOrCreateRegister(threadCount, null);
-		IExpr lockAddres = (IExpr)exp.accept(this);
+		IExpr lockAddress = (IExpr)exp.accept(this);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		if(lockAddres != null) {
-			programBuilder.addChild(threadCount, new Lock(register, lockAddres, label));	
+		if(lockAddress != null) {
+	        LinkedList<Event> events = new LinkedList<>();
+	        events.add(new Load(register, lockAddress, "NA"));
+	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0)),label));
+	        events.add(new Store(lockAddress, new IConst(1), "NA"));
+	        for(Event e : events) {
+	        	e.addFilters(EType.LOCK);
+	        	e.addFilters(EType.RMW);
+				programBuilder.addChild(threadCount, e);
+	        }
 		}
 	}
 	
@@ -404,7 +427,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		IExpr lockAddress = (IExpr)exp.accept(this);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		if(lockAddress != null) {
-			programBuilder.addChild(threadCount, new Unlock(register, lockAddress, label));	
+	        LinkedList<Event> events = new LinkedList<>();
+	        events.add(new Load(register, lockAddress, "NA"));
+	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1)),label));
+	        events.add(new Store(lockAddress, new IConst(0), "NA"));
+	        for(Event e : events) {
+	        	e.addFilters(EType.LOCK);
+	        	e.addFilters(EType.RMW);
+				programBuilder.addChild(threadCount, e);
+	        }
 		}
 	}
 	
