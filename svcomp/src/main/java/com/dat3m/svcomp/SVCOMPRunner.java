@@ -79,6 +79,9 @@ public class SVCOMPRunner {
         if(options.getCreateWitness() && result.equals(FAIL)) {
         	Program p = new ProgramParser().parse(new File(programFilePath));
             new SVCOMPWitness(p, options).write();;
+    		String fileName = options.getProgramFilePath();
+    		fileName = fileName.substring(0, fileName.lastIndexOf('.')) + ".graphml";
+			System.out.println("Witness write in " + fileName);
         }
         file.delete();
         return;        	
