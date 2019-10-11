@@ -717,9 +717,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFun_expr(BoogieParser.Fun_exprContext ctx) {
-		Function function = functions.get(ctx.Ident().getText());
+		String name = ctx.Ident().getText();
+		Function function = functions.get(name);
 		if(function == null) {
-			throw new ParsingException("Function " + ctx.Ident().getText() + " is not defined");
+			throw new ParsingException("Function " + name + " is not defined");
 		}
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
@@ -728,13 +729,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(function.getBody() == null) {
 			currentCall = currentCall.getParent();
 			// TODO: improve this
-			if(ctx.Ident().getText().contains("$xor.")) {
+			if(name.contains("$xor.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), XOR, (ExprInterface)callParams.get(1));
 			}
-			if(ctx.Ident().getText().contains("$or.")) {
+			if(name.contains("$or.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), OR, (ExprInterface)callParams.get(1));
 			}
-			if(ctx.Ident().getText().contains("$and.")) {
+			if(name.contains("$and.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), AND, (ExprInterface)callParams.get(1));
 			}
 			return null;
