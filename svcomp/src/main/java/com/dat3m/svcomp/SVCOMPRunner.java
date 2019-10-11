@@ -40,11 +40,12 @@ public class SVCOMPRunner {
 		String program = " -i " + file.getAbsolutePath();
 		String cat = " -cat cat/svcomp.cat";
 		String compile = " -t none ";
-		int bound = 1;
+		int bound = 0;
 
 		String output = "UNKNOWN";
 
 		while(output.equals("UNKNOWN")) {
+			bound++;
 			try {
 				String exec = tool + program + cat + compile + " -unroll " + bound;
 				Process proc = Runtime.getRuntime().exec(exec);
@@ -57,7 +58,6 @@ public class SVCOMPRunner {
 				}
 				while(read.ready()) {
 					output = read.readLine();
-					bound++;
 				}
 				if(proc.exitValue() == 1) {
 					BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
