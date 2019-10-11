@@ -46,6 +46,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.parsers.boogie.Function;
 import com.dat3m.dartagnan.parsers.boogie.FunctionCall;
+import com.dat3m.dartagnan.parsers.boogie.PthreadPool;
 import com.dat3m.dartagnan.parsers.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -82,7 +83,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private boolean initMode = false;
 	
 	private Map<String, Proc_declContext> procedures = new HashMap<>();
-	private List<Proc_declContext> threadsToCreate = new ArrayList<Proc_declContext>();
+	private PthreadPool pool = new PthreadPool();
 	
 	private int nextScopeID = 0;
 	private Scope currentScope = new Scope(nextScopeID, null);
@@ -125,10 +126,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	threadsToCreate.add(procedures.get("main"));
-    	while(!threadsToCreate.isEmpty()) {
-    		Proc_declContext nextThread = threadsToCreate.remove(0);
-    		visitProc_decl(nextThread, true, mainCallingValues);	
+    	pool.add("ptrMain", "main");
+    	while(pool.canCreate()) {
+    		String next = pool.next();
+    		String nextName = pool.getNameFromPtr(next);
+    		pool.addIntPtr(threadCount + 1, next);
+    		visitProc_decl(procedures.get(nextName), true, mainCallingValues);	
     	}
     	return programBuilder.build();
     }
@@ -219,6 +222,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	threadCount ++;
             programBuilder.initThread(threadCount);
+            if(threadCount != 1) {
+        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
+        		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
+               	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+        		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), "NA"));
+        		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(1)), label));
+            }
     	}
 
     	currentScope = new Scope(nextScopeID, currentScope);
@@ -264,6 +274,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
+         	if(threadCount != 1) {
+        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
+        		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(0), "NA"));
+         	}
     	}
     }
     
@@ -331,12 +345,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			programBuilder.addChild(threadCount, currentBeginAtomic);
 		}
 		if(name.equals("pthread_create")) {
-			pthread_create(ctx.call_params().exprs().expr().get(2).getText());
+			String threadPtr = ctx.call_params().exprs().expr().get(0).getText();
+			String threadName = ctx.call_params().exprs().expr().get(2).getText();
+			pthread_create(threadPtr, threadName);
 			return null;
 		}
 		if(name.equals("pthread_join") && ctx.call_params().Define() != null) {
-			pthread_join(ctx.call_params().Ident(0).getText());
-        	return null;
+			String callReg = ctx.call_params().exprs().expr().get(0).getText();
+			String retName = ctx.call_params().Ident(0).getText();
+			pthread_join(retName, pool.getPtrFromReg(callReg));
+			return null;
 		}
 		if(ctx.call_params().Define() != null) {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
@@ -358,21 +376,28 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return null;
 	}
 
-	private void pthread_create(String name) {
+	private void pthread_create(String ptr, String name) {
 		if(threadCount != 1) {
 			throw new ParsingException("Only main procedure can fork new procedures");
 		}
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		threadsToCreate.add(procedures.get(name));		
+		pool.add(ptr, name);
+		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
+		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(1), "NA"));
 	}
 
-	private void pthread_join(String registerName) {
-		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
-	    if(register != null){
-	    	programBuilder.addChild(threadCount, new Local(register, new IConst(0)));
+	private void pthread_join(String retName, String ptr) {
+		Register retRegister = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + retName);
+	    if(retRegister != null){
+	    	programBuilder.addChild(threadCount, new Local(retRegister, new IConst(0)));
 	    }		
+		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
+		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
+       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), "NA"));
+		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(0)), label));
 	}
 
 	private void __VERIFIER_nondet_int(String registerName) {
@@ -493,12 +518,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAssign_cmd(BoogieParser.Assign_cmdContext ctx) {
-		//TODO handle complex lhs ... e.g foo(expr)
-		
+		// TODO: find a nicer way of dealing with this
+		if(ctx.getText().contains("$load.i64")) {
+			String reg = ctx.Ident(0).getText();
+			String tmp = ctx.def_body().exprs().expr(0).getText();
+			tmp = tmp.substring(0, tmp.lastIndexOf(')'));
+			String ptr = tmp.substring(tmp.lastIndexOf(',')+1);
+			pool.addRegPtr(reg, ptr);
+		}
         ExprsContext exprs = ctx.def_body().exprs();
 		// We get the first value and then iterate
         ExprInterface value = (ExprInterface)exprs.expr(0).accept(this);
-        // Current hack to deal with pthread_join
         if(value == null) {
         	return null;
         }

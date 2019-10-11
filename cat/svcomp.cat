@@ -10,3 +10,4 @@ let com = (rf | fr | co)
 acyclic po | com as sc
 
 empty rmw & ( (com & ext) ; (po | com)* ; (com & ext) )
+empty rmw & (fre;coe)
