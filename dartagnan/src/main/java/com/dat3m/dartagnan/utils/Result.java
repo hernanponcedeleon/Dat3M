@@ -10,13 +10,10 @@ import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
 public enum Result {
-	PASS, FAIL, UNKNOWN, ERROR;
+	PASS, FAIL, UNKNOWN;
 
 	public static Result getResult(Solver s, Program p, Context ctx) {
 		Result res;
-		if(!p.getCache().getEvents(FilterBasic.get(EType.LOCK)).isEmpty()) {
-			return ERROR;
-		}
 		if(s.check() == Status.SATISFIABLE) {
 			res = FAIL;
 		} else {

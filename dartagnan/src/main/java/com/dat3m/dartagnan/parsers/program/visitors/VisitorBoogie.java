@@ -272,12 +272,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         currentScope = currentScope.getParent();
         
     	if(create) {
-        	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-         	programBuilder.addChild(threadCount, label);
          	if(threadCount != 1) {
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
         		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(0), "NA"));
          	}
+        	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+         	programBuilder.addChild(threadCount, label);
     	}
     }
     
