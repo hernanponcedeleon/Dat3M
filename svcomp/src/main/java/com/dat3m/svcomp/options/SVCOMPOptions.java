@@ -21,18 +21,28 @@ public class SVCOMPOptions extends Options {
         super();
         Option inputOption = new Option("i", "input", true,
                 "Path to the file with input program");
-        inputOption.setRequired(true);
+        inputOption.setRequired(false);
         addOption(inputOption);
 
         Option witnessOption = new Option("w", "witness", false,
                 "Creates a violation witness");
         witnessOption.setRequired(false);
         addOption(witnessOption);
+
+        Option versionOption = new Option("v", "version", false,
+                "Prints version number of Dartagnan");
+        versionOption.setRequired(false);
+        addOption(versionOption);
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
         CommandLine cmd = new DefaultParser().parse(this, args);
 
+    	if(cmd.hasOption("version")) {
+        	System.out.println("2.0.4");
+        	System.exit(1);
+        }
+        
         programFilePath = cmd.getOptionValue("input");
         if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
