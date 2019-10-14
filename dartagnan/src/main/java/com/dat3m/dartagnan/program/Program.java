@@ -196,4 +196,12 @@ public class Program {
         }
         return enc;
     }
+    
+    public BoolExpr encodeNoBoundEventExec(Context ctx){
+    	BoolExpr enc = ctx.mkTrue();
+        for(Event e : getCache().getEvents(FilterBasic.get(EType.BASSERTION))){
+        	enc = ctx.mkAnd(enc, ctx.mkNot(e.exec()));
+        }
+        return enc;
+    }
 }
