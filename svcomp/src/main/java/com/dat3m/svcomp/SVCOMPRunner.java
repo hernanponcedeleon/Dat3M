@@ -36,7 +36,7 @@ public class SVCOMPRunner {
 		String programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(options.getProgramFilePath()).run(1)).run();
        	File file = new File(programFilePath);
        	
-		String tool = "java -Djava.library.path=./lib/ -jar dartagnan/target/dartagnan-2.0.4-jar-with-dependencies.jar";
+		String tool = "java -jar dartagnan/target/dartagnan-2.0.4-jar-with-dependencies.jar";
 		String program = " -i " + file.getAbsolutePath();
 		String cat = " -cat cat/svcomp.cat";
 		String compile = " -t none ";
