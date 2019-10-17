@@ -1,4 +1,4 @@
-JARPATH=$(PWD)/ui/target/ui-2.0.4-jar-with-dependencies.jar
+JARPATH=$(PWD)/ui/target/ui-2.0.5-jar-with-dependencies.jar
 ICONPATH=$(PWD)/ui/src/main/resources/dat3m.png
 
 .PHONY: all install linux

@@ -48,17 +48,17 @@ Usage
 * **Linux:** You can start the tool by double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
 * **MacOS:** To run the tool, from the Dat3M/ directory run
 ```
-java -jar ui/target/ui-2.0.4-jar-with-dependencies.jar
+java -jar ui/target/ui-2.0.5-jar-with-dependencies.jar
 ```
 Additionally, you can run DARTAGNAN and PORTHOS from the console.
 
 For checking reachability:
 ```
-java -jar dartagnan/target/dartagnan-2.0.4-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
+java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
 ```
 For checking state inclusion:
 ```
-java -jar porthos/target/porthos-2.0.4-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
+java -jar porthos/target/porthos-2.0.5-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
 DARTAGNAN supports programs written in the .litmus or .pts formats (see below). For PORTHOS, programs shall be written in the .pts format since they need to be compiled to two different architectures.
 
