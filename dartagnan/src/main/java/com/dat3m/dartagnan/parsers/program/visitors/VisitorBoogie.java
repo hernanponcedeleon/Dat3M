@@ -13,7 +13,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 import com.dat3m.dartagnan.expression.Atom;
@@ -97,6 +96,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
 	private int assertionIndex = 0;
+	
+	private List<IExpr> lockAddresses = new ArrayList<>();
 	
 	private BeginAtomic currentBeginAtomic = null;
 	private boolean atomicMode = false;
@@ -433,6 +434,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private void mutexLock(ExprsContext exp) {
         Register register = programBuilder.getOrCreateRegister(threadCount, null);
 		IExpr lockAddress = (IExpr)exp.accept(this);
+		lockAddresses.add(lockAddress);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		if(lockAddress != null) {
 	        LinkedList<Event> events = new LinkedList<>();
@@ -452,7 +454,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		IExpr lockAddress = (IExpr)exp.accept(this);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		if(lockAddress != null) {
-	        LinkedList<Event> events = new LinkedList<>();
+			if(!lockAddress.equals(lockAddresses.remove(lockAddresses.size() - 1))) {
+	            throw new ParsingException("The lock address of mutexUnlock does not match the one of mutexLock");
+			}
+			LinkedList<Event> events = new LinkedList<>();
 	        events.add(new Load(register, lockAddress, "NA"));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1)),label));
 	        events.add(new Store(lockAddress, new IConst(0), "NA"));
@@ -533,42 +538,34 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         	return null;
         }
 		
-        for(int i : IntStream.range(0, ctx.Ident().size()).toArray()) {
-        	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
-                throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
-        	}
-        	// No need to recompute value in the first iteration
-			if(exprs.expr().size() != 1 && i != 0) {
-				// if there is more than one expression, there should be exactly one per variable, thus we use 'i'
-				value = (ExprInterface)exprs.expr(i).accept(this);
-			}
-			String name = ctx.Ident(i).getText();
-			if(constants.contains(name)) {
-				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
-			}
-			if(initMode) {
-				programBuilder.initLocEqConst(name, value.reduce());
-				return null;
-			}
-			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
-	        if(register != null){
-	            programBuilder.addChild(threadCount, new Local(register, value));
-	            return null;
-	        }
-	        Location location = programBuilder.getLocation(name);
-	        if(location != null){
-	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, "NA"));
-	            return null;
-	        }
-	        if(currentReturnName.equals(name)) {
-	        	if(currentReturn instanceof Register) {
-	        		programBuilder.addChild(threadCount, new Local(currentReturn, value));
-	        	}
-	        	return null;
-	        }
-	        throw new ParsingException("Variable " + name + " is not defined");
+    	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
+            throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
+    	}
+		String name = ctx.Ident(0).getText();
+		if(constants.contains(name)) {
+			throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 		}
-        return null;
+		if(initMode) {
+			programBuilder.initLocEqConst(name, value.reduce());
+			return null;
+		}
+		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
+        if(register != null){
+            programBuilder.addChild(threadCount, new Local(register, value));
+            return null;
+        }
+        Location location = programBuilder.getLocation(name);
+        if(location != null){
+            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, "NA"));
+            return null;
+        }
+        if(currentReturnName.equals(name)) {
+        	if(currentReturn instanceof Register) {
+        		programBuilder.addChild(threadCount, new Local(currentReturn, value));
+        	}
+        	return null;
+        }
+        throw new ParsingException("Variable " + name + " is not defined");
 	}
 
 	@Override
@@ -668,7 +665,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAnd_expr(BoogieParser.And_exprContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.rel_expr(0).accept(this);
 		ExprInterface v2 = null;
-		for(int i : IntStream.range(0, ctx.rel_expr().size()-1).toArray()) {
+		for(int i = 0; i < ctx.rel_expr().size()-1; i++) {
 			v2 = (ExprInterface)ctx.rel_expr(i+1).accept(this);
 			v1 = new BExprBin(v1, ctx.and_op(i).op, v2);
 		}
@@ -679,7 +676,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitOr_expr(BoogieParser.Or_exprContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.rel_expr(0).accept(this);
 		ExprInterface v2 = null;
-		for(int i : IntStream.range(0, ctx.rel_expr().size()-1).toArray()) {
+		for(int i = 0; i < ctx.rel_expr().size()-1; i++) {
 			v2 = (ExprInterface)ctx.rel_expr(i+1).accept(this);
 			v1 = new BExprBin(v1, ctx.or_op(i).op, v2);
 		}
@@ -690,7 +687,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitRel_expr(BoogieParser.Rel_exprContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.bv_term(0).accept(this);
 		ExprInterface v2 = null;
-		for(int i : IntStream.range(0, ctx.bv_term().size()-1).toArray()) {
+		for(int i = 0; i < ctx.bv_term().size()-1; i++) {
 			v2 = (ExprInterface)ctx.bv_term(i+1).accept(this);
 			v1 = new Atom(v1, ctx.rel_op(i).op, v2);
 		}
@@ -701,7 +698,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitTerm(BoogieParser.TermContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.factor(0).accept(this);
 		ExprInterface v2 = null;
-		for(int i : IntStream.range(0, ctx.factor().size()-1).toArray()) {
+		for(int i = 0; i < ctx.factor().size()-1; i++) {
 			v2 = (ExprInterface)ctx.factor(i+1).accept(this);
 			v1 = new IExprBin(v1, ctx.add_op(i).op, v2);
 		}
@@ -712,7 +709,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitFactor(BoogieParser.FactorContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.power(0).accept(this);
 		ExprInterface v2 = null;
-		for(int i : IntStream.range(0, ctx.power().size()-1).toArray()) {
+		for(int i = 0; i < ctx.power().size()-1; i++) {
 			v2 = (ExprInterface)ctx.power(i+1).accept(this);
 			v1 = new IExprBin(v1, ctx.mul_op(i).op, v2);
 		}

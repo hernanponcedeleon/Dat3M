@@ -43,7 +43,7 @@ public class ProgramParser {
             return new ParserPorthos();
         } else if(format.equals("bpl")){
             return new ParserBoogie();
-        }else if(format.equals("litmus")){
+        } else if(format.equals("litmus")){
             return getConcreteLitmusParser(readFirstLine(file).toUpperCase());
         }
         throw new ParsingException("Unknown input file type");

@@ -41,13 +41,25 @@ public class SVCOMPSanitizer {
 				if(!line.contains("__")) {
 					line = line.replace("inline ", "");	
 				}
-				if(line.contains("while(1) { pthread_create(&t, 0, thr1, 0); }") || line.contains("while(1) pthread_create(&t, 0, thr1, 0);")) {
+				if(line.contains("while(1) { pthread_create(&t, 0, thr1, 0); }")
+						|| line.contains("while(1) pthread_create(&t, 0, thr1, 0);")
+						|| line.contains("while(__VERIFIER_nondet_int()) pthread_create(&t, 0, thr1, 0);")) {
 					// While with empty body to force the creation of boundEvents
 					line = line.replace("while(1) { pthread_create(&t, 0, thr1, 0); }", "while(1) {}");					
 					line = line.replace("while(1) pthread_create(&t, 0, thr1, 0);", "while(1) {}");
+					line = line.replace("while(__VERIFIER_nondet_int()) pthread_create(&t, 0, thr1, 0);", "while(1) {}");
 					int i = 0;
 					while(i < bound) {
 						writer.println("pthread_create(&t, 0, thr1, 0);");
+						i++;
+					}
+				}
+				if(line.contains("while(1) { pthread_create(&t, 0, thr2, 0); }")) {
+					// While with empty body to force the creation of boundEvents
+					line = line.replace("while(1) { pthread_create(&t, 0, thr2, 0); }", "while(1) {}");					
+					int i = 0;
+					while(i < bound) {
+						writer.println("pthread_create(&t, 0, thr2, 0);");
 						i++;
 					}
 				}

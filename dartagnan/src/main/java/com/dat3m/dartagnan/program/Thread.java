@@ -97,6 +97,30 @@ public class Thread {
         return id == ((Thread) obj).id;
     }
 
+    // TODO: it currently breaks pthread-lit/qw2004-2.yml
+	public void reduce() {
+		Event next = entry;
+		while(next != null) {
+			Event nnext = next.getSuccessor();
+			if(nnext == null) {
+				break;
+			}
+			Event nnnext = nnext.getSuccessor();
+			if(nnnext == null) {
+				break;
+			}
+			if(nnext instanceof Jump && nnnext.equals(((Jump)nnext).getLabel())) {
+				// If nobody else refers to the label, we can also remove the label
+				if(((Label)nnnext).getReferences().size() == 1) {
+					next.setSuccessor(nnnext.getSuccessor());
+				} else {
+					next.setSuccessor(nnnext);
+				}
+			}
+			next = next.getSuccessor();
+		}
+		cache = null;
+	}
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
@@ -126,27 +150,4 @@ public class Thread {
     public BoolExpr encodeCF(Context ctx){
         return entry.encodeCF(ctx, ctx.mkTrue());
     }
-
-	public void reduce() {
-		Event next = entry;
-		while(next != null) {
-			Event nnext = next.getSuccessor();
-			if(nnext == null) {
-				break;
-			}
-			Event nnnext = nnext.getSuccessor();
-			if(nnnext == null) {
-				break;
-			}
-			if(nnext instanceof Jump && nnnext.equals(((Jump)nnext).getLabel())) {
-				// If nobody else refers to the label, we can also remove the label
-				if(((Label)nnnext).getReferences().size() == 1) {
-					next.setSuccessor(nnnext.getSuccessor());
-				} else {
-					next.setSuccessor(nnnext);
-				}
-			}
-			next = next.getSuccessor();
-		}
-	}
 }

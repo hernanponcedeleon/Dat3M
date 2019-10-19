@@ -131,6 +131,7 @@ public class Program {
 		for(Thread t : getThreads()) {
 			t.reduce();
 		}
+		cache = null;
 	}
 	
     // Unrolling
