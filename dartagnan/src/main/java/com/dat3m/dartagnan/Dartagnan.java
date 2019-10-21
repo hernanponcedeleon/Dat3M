@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan;
 
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.getResult;
 
 import java.io.File;
@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -32,7 +33,7 @@ public class Dartagnan {
             options.parse(args);
         }
         catch (Exception e){
-            if(e instanceof UnsupportedOperationException || e instanceof RuntimeException){
+            if(e instanceof UnsupportedOperationException){
                 System.out.println(e.getMessage());
             }
             new HelpFormatter().printHelp("DARTAGNAN", options);
@@ -42,7 +43,7 @@ public class Dartagnan {
 
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
 		Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
-
+		
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();
@@ -53,6 +54,10 @@ public class Dartagnan {
             return;
         }
         
+        if(p.getAss() == null){
+            throw new RuntimeException("Assert is required for Dartagnan tests");
+        }
+
         Context ctx = new Context();
         Solver s = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
         Settings settings = options.getSettings();
@@ -70,7 +75,7 @@ public class Dartagnan {
         	System.out.println(result);
         }
 
-        if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result == Result.FAIL)) {
+        if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
             ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
             drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
             System.out.println("Execution graph is written to " + options.getGraphFilePath());
@@ -83,20 +88,15 @@ public class Dartagnan {
 
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
-		program.addAssertions();
+        
+        Printer printer = new Printer();
+        System.out.println(printer.print(program));
 		
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
         solver.add(wmm.consistent(program, ctx));
-        if(program.getAss() == null){
-        	// The compiler might not add the body of inlined functions.
-        	// Those functions might be the ones defining the assertion.
-        	// This is a current hack to still process the benchmark and
-        	// don't be penalized by a wrong result.
-        	// TODO inline tags are now removed by the sanitizer. Not sure if this is still needed
-        	return UNKNOWN;
-        }
+        
         // Used for getting the UNKNOWN
         // pop() is inside getResult
         solver.push();

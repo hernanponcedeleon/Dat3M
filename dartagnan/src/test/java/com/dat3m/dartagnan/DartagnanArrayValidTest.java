@@ -55,7 +55,7 @@ public class DartagnanArrayValidTest {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings) == FAIL);
+            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings).equals(FAIL));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

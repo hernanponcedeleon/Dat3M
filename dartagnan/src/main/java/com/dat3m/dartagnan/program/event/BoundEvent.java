@@ -6,7 +6,7 @@ public class BoundEvent extends Event {
 
 	public BoundEvent() {
 		super();
-		addFilters(EType.BASSERTION);
+		addFilters(EType.BOUND);
 	}
 	
 	@Override

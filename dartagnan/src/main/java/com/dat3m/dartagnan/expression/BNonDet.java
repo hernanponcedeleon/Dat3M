@@ -22,7 +22,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public IntExpr getLastValueExpr(Context ctx) {
-		throw new UnsupportedOperationException("Reduce not supported for " + this);
+		throw new UnsupportedOperationException("getLastValueExpr not supported for " + this);
 	}
 
 	@Override

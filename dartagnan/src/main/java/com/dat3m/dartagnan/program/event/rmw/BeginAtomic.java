@@ -7,7 +7,6 @@ public class BeginAtomic extends Event {
 
     public BeginAtomic() {
         addFilters(EType.RMW);
-        addFilters(EType.BATOMIC);
     }
 
     protected BeginAtomic(BeginAtomic other){

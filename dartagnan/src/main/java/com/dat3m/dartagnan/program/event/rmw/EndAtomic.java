@@ -12,8 +12,7 @@ public class EndAtomic extends Event {
 
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
-        addFilters(EType.RMW);
-        addFilters(EType.EATOMIC);
+        addFilters(EType.RMW, EType.ATOMIC);
     	Event next = begin.getSuccessor();
     	while(next != null && next != this) {
     		next.addFilters(EType.RMW);
@@ -31,13 +30,13 @@ public class EndAtomic extends Event {
     }
     
     public List<Event> getBlock(){
-    	List<Event> lst = new ArrayList<Event>();
+    	List<Event> block = new ArrayList<Event>();
     	Event next = begin;
     	while(next != null && next != this) {
-    		lst.add(next);
+    		block.add(next);
     		next = next.getSuccessor();	
     	}
-        return lst;
+        return block;
     }
 
     @Override

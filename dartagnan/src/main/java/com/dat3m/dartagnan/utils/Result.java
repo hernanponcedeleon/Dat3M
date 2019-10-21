@@ -18,7 +18,7 @@ public enum Result {
 			res = FAIL;
 		} else {
 			BoolExpr enc = ctx.mkFalse();
-			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.BASSERTION))) {
+			for(Event e : p.getCache().getEvents(FilterBasic.get(EType.BOUND))) {
 				enc = ctx.mkOr(enc, e.exec());
 			}
 			s.pop();

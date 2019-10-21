@@ -37,6 +37,9 @@ public class ProgramBuilder {
             validateLabels(thread);
             program.add(thread);
         }
+        if(ass == null) {
+        	ass = program.createAssertion();
+        }
         program.setAss(ass);
         program.setAssFilter(assFilter);
         return program;

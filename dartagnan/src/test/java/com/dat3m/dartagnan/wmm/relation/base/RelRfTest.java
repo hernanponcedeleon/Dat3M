@@ -45,15 +45,15 @@ public class RelRfTest {
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings) == FAIL);
+        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings) == FAIL);
+        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
         solver.reset();
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, true);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings) == FAIL);
+        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings) == FAIL);
+        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
         ctx.close();
     }
 

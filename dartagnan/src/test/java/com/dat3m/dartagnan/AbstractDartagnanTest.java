@@ -27,8 +27,8 @@ import static org.junit.Assert.fail;
 
 public abstract class AbstractDartagnanTest {
 
-    static Iterable<Object[]> buildParameters(String benchmarkPath, String cat, Arch target) throws IOException {
-        int n = ResourceHelper.BENCHMARK_RESOURCE_PATH.length();
+    static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
+        int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
@@ -36,7 +36,7 @@ public abstract class AbstractDartagnanTest {
         Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1);
         Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1);
 
-        return Files.walk(Paths.get(ResourceHelper.BENCHMARK_RESOURCE_PATH + benchmarkPath))
+        return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)
                 .map(Path::toString)
                 .filter(f -> f.endsWith("litmus"))

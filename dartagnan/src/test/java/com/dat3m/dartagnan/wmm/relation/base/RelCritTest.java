@@ -66,7 +66,7 @@ public class RelCritTest {
             Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, true, "crit");
 
             // Sanity check, can be skipped
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings) == FAIL);
+            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings).equals(FAIL));
 
             // Test edges
             EdgeTestHelper helper = new EdgeTestHelper(

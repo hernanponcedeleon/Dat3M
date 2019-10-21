@@ -50,7 +50,6 @@ import com.dat3m.dartagnan.parsers.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Assertion;
 import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.BoundEvent;
 import com.dat3m.dartagnan.program.event.CondJump;
@@ -284,10 +283,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
     @Override 
     public Object visitAssert_cmd(BoogieParser.Assert_cmdContext ctx) {
+    	// In boogie transformation, assertions result in "assert false".
+    	// The control flow checks the corresponding expression, thus
+    	// we can not just add the expression to the AbstractAssertion.
+    	// We need to create an event carrying the value of the expression 
+    	// and see if this event can be executed.
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
-    	Assertion event = new Assertion(ass, expr);
+    	Local event = new Local(ass, expr);
+		event.addFilters(EType.ASSERTION);
 		programBuilder.addChild(threadCount, event);
     	return null;
     }

@@ -10,14 +10,13 @@ import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
-import com.dat3m.dartagnan.program.event.Assertion;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
 import java.util.*;
-import java.util.stream.IntStream;
 
 public class Program {
 
@@ -114,17 +113,19 @@ public class Program {
 		return events;
 	}
 
-	public void addAssertions() {
+	public AbstractAssert createAssertion() {
+		AbstractAssert ass = null;
 		List<Event> assertions = new ArrayList<>();
 		for(Thread t : threads){
 			assertions.addAll(t.getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
-	    	if(!assertions.isEmpty()) {
-	    		ass = new AssertInline((Assertion)assertions.get(0));
-	    		for(int i : IntStream.range(1, assertions.size()).toArray()) {
-	    			ass = new AssertCompositeOr(ass, new AssertInline((Assertion)assertions.get(i)));
-	    		}
-	    	}
 		}
+    	if(!assertions.isEmpty()) {
+    		ass = new AssertInline((Local)assertions.get(0));
+    		for(int i = 1; i < assertions.size(); i++) {
+    			ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
+    		}
+    	}
+		return ass;
 	}
 
 	public void reduce() {
@@ -200,7 +201,7 @@ public class Program {
     
     public BoolExpr encodeNoBoundEventExec(Context ctx){
     	BoolExpr enc = ctx.mkTrue();
-        for(Event e : getCache().getEvents(FilterBasic.get(EType.BASSERTION))){
+        for(Event e : getCache().getEvents(FilterBasic.get(EType.BOUND))){
         	enc = ctx.mkAnd(enc, ctx.mkNot(e.exec()));
         }
         return enc;
