@@ -89,9 +89,6 @@ public class Dartagnan {
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         
-        Printer printer = new Printer();
-        System.out.println(printer.print(program));
-		
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
