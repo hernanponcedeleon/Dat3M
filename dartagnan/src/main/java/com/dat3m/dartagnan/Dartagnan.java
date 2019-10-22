@@ -92,7 +92,7 @@ public class Dartagnan {
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
         solver.add(wmm.consistent(program, ctx));
-        
+
         // Used for getting the UNKNOWN
         // pop() is inside getResult
         solver.push();

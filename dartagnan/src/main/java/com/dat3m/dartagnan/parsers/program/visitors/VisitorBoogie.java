@@ -78,6 +78,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     private Map<String, Function> functions = new HashMap<>();
 	private FunctionCall currentCall = null;
 	
+	// Improves performance by initializing Locations rather than creating new write events
 	private boolean initMode = false;
 	
 	private Map<String, Proc_declContext> procedures = new HashMap<>();
@@ -86,7 +87,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private int nextScopeID = 0;
 	private Scope currentScope = new Scope(nextScopeID, null);
 	
-	private Register currentReturn = null;
+	private Register returnRegister = null;
 	private String currentReturnName = null;
 	
 	private List<String> constants = new ArrayList<>();
@@ -153,7 +154,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAxiom_decl(BoogieParser.Axiom_declContext ctx) {
-		// TODO how to deal with b == b or b == a /\ a == b?
 		ExprInterface exp = (ExprInterface)ctx.proposition().accept(this);
 		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Register && ((Atom)exp).getOp().equals(EQ)) {
 			String name = ((Register)((Atom)exp).getLHS()).getName();
@@ -264,9 +264,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
    		programBuilder.addChild(threadCount, label);
 		if(atomicMode) {
-			programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));
+			__VERIFIER_atomic_end();
 			atomicMode = false;
-			currentBeginAtomic = null;
 		}
         
         currentScope = currentScope.getParent();
@@ -347,8 +346,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// The order is important
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = true;
-			currentBeginAtomic = new BeginAtomic();
-			programBuilder.addChild(threadCount, currentBeginAtomic);
+			__VERIFIER_atomic_begin();
+			// No return, the body still needs to be parsed.
 		}
 		if(name.equals("pthread_create")) {
 			String threadPtr = ctx.call_params().exprs().expr().get(0).getText();
@@ -365,7 +364,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(ctx.call_params().Define() != null) {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
 	        if(register != null){
-	            currentReturn = register;
+	            returnRegister = register;
 	        }
 		}
 	    List<ExprInterface> callingValues = new ArrayList<>();
@@ -475,18 +474,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 	
 	private void __VERIFIER_atomic_begin() {
-		BeginAtomic ba = new BeginAtomic();
-		currentBeginAtomic = ba;
-		programBuilder.addChild(threadCount, ba);	
+		currentBeginAtomic = new BeginAtomic();
+		programBuilder.addChild(threadCount, currentBeginAtomic);	
 	}
 	
 	private void __VERIFIER_atomic_end() {
 		if(currentBeginAtomic == null) {
             throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
 		}
-		EndAtomic ea = new EndAtomic(currentBeginAtomic);
+		programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));	
 		currentBeginAtomic = null;
-		programBuilder.addChild(threadCount, ea);	
 	}
 	
 	@Override
@@ -565,8 +562,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             return null;
         }
         if(currentReturnName.equals(name)) {
-        	if(currentReturn instanceof Register) {
-        		programBuilder.addChild(threadCount, new Local(currentReturn, value));
+        	if(returnRegister != null) {
+        		programBuilder.addChild(threadCount, new Local(returnRegister, value));
         	}
         	return null;
         }
@@ -587,13 +584,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Label pairingLabel = null;
 			if(!pairLabels.keySet().contains(currentLabel)) {
 				// If the current label doesn't have a pairing label, we jump to the end of the program
-				String labelName = "END_OF_" + currentScope.getID();
-	        	pairingLabel = programBuilder.getOrCreateLabel(labelName);
+	        	pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
 			} else {
 				pairingLabel = pairLabels.get(currentLabel);
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
-			// Some expression might not be parsed, e.g. "forall"
 			if(c != null) {
 				programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), pairingLabel));	
 			}
@@ -619,11 +614,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         programBuilder.addChild(threadCount, new Jump(l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
-        if(l1.getOId() != -1) {
-    		programBuilder.addChild(threadCount, new BoundEvent());
-    		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-    		programBuilder.addChild(threadCount, new Jump(label));        	
-        }
+   		programBuilder.addChild(threadCount, new BoundEvent());
+   		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+   		programBuilder.addChild(threadCount, new Jump(label));        	
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();
@@ -644,12 +637,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		ExprInterface v1 = (ExprInterface)ctx.rel_expr().accept(this);
 		if(ctx.and_expr() != null) {
-			ExprInterface vAnd = (ExprInterface)ctx.and_expr().accept(this);
-			v1 = new BExprBin(v1, ctx.and_op().op, vAnd);
+			ExprInterface v2 = (ExprInterface)ctx.and_expr().accept(this);
+			v1 = new BExprBin(v1, ctx.and_op().op, v2);
 		}
 		if(ctx.or_expr() != null) {
-			ExprInterface vAnd = (ExprInterface)ctx.or_expr().accept(this);
-			v1 = new BExprBin(v1, ctx.or_op().op, vAnd);
+			ExprInterface v2 = (ExprInterface)ctx.or_expr().accept(this);
+			v1 = new BExprBin(v1, ctx.or_op().op, v2);
 		}
 		return v1;
 	}
@@ -809,5 +802,4 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitDec(BoogieParser.DecContext ctx) {
         throw new ParsingException("Floats are not yet supported");
 	}
-
 }
