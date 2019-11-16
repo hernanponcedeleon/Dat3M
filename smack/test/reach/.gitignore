@@ -1,6 +1,0 @@
-*.ll
-*.bc
-*.o
-*.bpl
-corral_out_trace.txt
-corraldebug.out
