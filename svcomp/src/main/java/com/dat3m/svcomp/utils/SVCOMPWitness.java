@@ -24,9 +24,9 @@ public class SVCOMPWitness {
 	}
 	
 	public void write() {
-		String programFilePath = options.getProgramFilePath();
-		programFilePath = programFilePath.substring(0, programFilePath.lastIndexOf('.')) + ".c";
-        File newTextFile = new File(programFilePath.substring(0, programFilePath.lastIndexOf('.')) + ".graphml");        
+		String programFilePath = options.getProgramFilePath().substring(0, options.getProgramFilePath().lastIndexOf('.')) + ".c";
+		String programName = programFilePath.substring(programFilePath.lastIndexOf('/'), programFilePath.lastIndexOf('.'));
+        File newTextFile = new File("./output/" + programName + ".graphml");        
         FileWriter fw;
 		try {
 			fw = new FileWriter(newTextFile);

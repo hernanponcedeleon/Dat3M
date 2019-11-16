@@ -20,7 +20,8 @@ public class SVCOMPSanitizer {
 	}
 
 	public File run(int bound) {
-		File tmp = new File(filePath.substring(0, filePath.lastIndexOf('.')) + "_tmp.c");
+		String fileName = filePath.substring(filePath.lastIndexOf('/'), filePath.lastIndexOf('.')) + "_tmp.c";
+		File tmp = new File("./output/" + fileName);
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));		
