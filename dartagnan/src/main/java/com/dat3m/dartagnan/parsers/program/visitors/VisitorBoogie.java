@@ -742,6 +742,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFun_expr(BoogieParser.Fun_exprContext ctx) {
+		//TODO: handle pointers. E.g. when name contains store.i32
 		String name = ctx.Ident().getText();
 		Function function = functions.get(name);
 		if(function == null) {
