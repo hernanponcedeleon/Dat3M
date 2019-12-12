@@ -9,7 +9,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import org.apache.commons.cli.HelpFormatter;
-import com.dat3m.dartagnan.parsers.boogie.C2BoogieRunner;
+
+import com.dat3m.dartagnan.boogie.C2BoogieRunner;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;

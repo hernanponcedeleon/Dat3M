@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.boogie;
+package com.dat3m.dartagnan.boogie;
 
 public class Scope {
 

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.boogie;
+package com.dat3m.dartagnan.boogie;
 
 import java.util.List;
 import java.util.stream.IntStream;

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.boogie;
+package com.dat3m.dartagnan.boogie;
 
 import java.io.BufferedReader;
 import java.io.File;
