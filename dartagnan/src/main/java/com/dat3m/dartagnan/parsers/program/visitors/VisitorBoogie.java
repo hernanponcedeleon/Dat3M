@@ -5,6 +5,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
+import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.BoundEvent;
+//import com.dat3m.dartagnan.program.event.Comment;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
@@ -87,7 +89,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private int nextScopeID = 0;
 	private Scope currentScope = new Scope(nextScopeID, null);
 	
-	private Register returnRegister = null;
+	private List<Register> returnRegister = new ArrayList<>();
 	private String currentReturnName = null;
 	
 	private List<String> constants = new ArrayList<>();
@@ -101,6 +103,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private BeginAtomic currentBeginAtomic = null;
 	private boolean atomicMode = false;
+	
+	private boolean handlePointer = false;
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -361,10 +365,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			pthread_join(retName, pool.getPtrFromReg(callReg));
 			return null;
 		}
-		if(ctx.call_params().Define() != null) {
+		// Some procedures might have an empty implementation.
+		// There will be no return for them.
+		if(ctx.call_params().Define() != null && procedures.get(name).impl_body() != null) {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
 	        if(register != null){
-	            returnRegister = register;
+	            returnRegister.add(register);
 	        }
 		}
 	    List<ExprInterface> callingValues = new ArrayList<>();
@@ -374,7 +380,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
+//		if(!name.contains("boogie_si_record") && !name.contains("printf.ref")) {
+//			programBuilder.addChild(threadCount, new Comment(" Start of " + name + " "));	
+//		}
 		visitProc_decl(procedures.get(name), false, callingValues);
+//		if(!name.contains("boogie_si_record") && !name.contains("printf.ref")) {
+//			programBuilder.addChild(threadCount, new Comment(" End of " + name + " "));
+//		}
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
@@ -562,8 +574,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             return null;
         }
         if(currentReturnName.equals(name)) {
-        	if(returnRegister != null) {
-        		programBuilder.addChild(threadCount, new Local(returnRegister, value));
+        	if(!returnRegister.isEmpty()) {
+        		Register ret = returnRegister.remove(returnRegister.size() - 1);
+				programBuilder.addChild(threadCount, new Local(ret, value));
         	}
         	return null;
         }
@@ -733,6 +746,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         }
         Location location = programBuilder.getLocation(name);
         if(location != null){
+        	if(handlePointer) {
+        		return location;
+        	}
             register = programBuilder.getOrCreateRegister(threadCount, null);
             programBuilder.addChild(threadCount, new Load(register, location.getAddress(), "NA"));
             return register;
@@ -747,6 +763,24 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		Function function = functions.get(name);
 		if(function == null) {
 			throw new ParsingException("Function " + name + " is not defined");
+		}
+		if(name.contains("$load")) {
+			handlePointer = true;
+			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
+			IExpr plus = (IExpr)ctx.expr(1).accept(this);
+			IExpr address = new IExprBin(init, PLUS, plus);
+			handlePointer = false;
+			return address;
+		}
+		if(name.contains("$store")) {
+			handlePointer = true;
+			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
+			IExpr plus = (IExpr)ctx.expr(1).accept(this);
+			IExpr address = new IExprBin(init, PLUS, plus);
+			IExpr value = (IExpr)ctx.expr(2).accept(this);
+            programBuilder.addChild(threadCount, new Store(address, value, "NA"));
+			handlePointer = false;
+			return null;
 		}
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
