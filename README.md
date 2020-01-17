@@ -113,7 +113,7 @@ Examples are provided in the **benchmarks/** folder.
 
 Authors and Contact
 ======
-Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org), [Florian Furbach](mailto:f.furbach@tu-braunschweig.de) and [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi). Please feel free to contact us in case of questions or to send feedback.
+Dat3M is developed and maintained by [Hernán Ponce de León](mailto:hernan.ponce@unibw.de), [Florian Furbach](mailto:f.furbach@tu-braunschweig.de) and [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi). Please feel free to contact us in case of questions or to send feedback.
 
 References
 ======
