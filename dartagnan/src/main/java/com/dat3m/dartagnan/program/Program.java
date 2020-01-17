@@ -10,6 +10,8 @@ import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -205,5 +207,19 @@ public class Program {
         	enc = ctx.mkAnd(enc, ctx.mkNot(e.exec()));
         }
         return enc;
+    }
+    
+    public BoolExpr encodeUINonDet(Context ctx) {
+    	BoolExpr enc = ctx.mkTrue();
+        for(Event e : getCache().getEvents(FilterBasic.get(EType.LOCAL))){
+        	if(!(e instanceof Local)) {
+        		continue;
+        	}
+        	ExprInterface expr = ((Local)e).getExpr();
+			if(expr instanceof INonDet && !((INonDet)expr).isSigned()) {
+	        	enc = ctx.mkAnd(enc, ctx.mkGe(((INonDet)expr).toZ3Int(e, ctx), ctx.mkInt(0)));				
+			}
+        }
+        return enc;  	
     }
 }

@@ -71,6 +71,12 @@ public class RelRMW extends StaticRelation {
 
             filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.ATOMIC));
             for(Event end : program.getCache().getEvents(filter)){
+            	// TODO: why some non EndAtomic events match the ATOMIC filter?
+            	// The check below should not be necessary, but better to have 
+            	// in case some other event might get ATOMIC tag in the future
+            	if(!(end instanceof EndAtomic)) {
+            		continue;
+            	}
             	for(Event b : ((EndAtomic)end).getBlock()) {
             		Event next = b.getSuccessor();
             		while(next != null && !(next instanceof EndAtomic)) {
