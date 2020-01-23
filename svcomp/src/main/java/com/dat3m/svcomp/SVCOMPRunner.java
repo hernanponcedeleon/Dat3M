@@ -43,6 +43,9 @@ public class SVCOMPRunner {
 
 		while(output.equals("UNKNOWN")) {
 	        compile(file);
+	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
+	        // (it not the original C file) and we already created the Boogie file
+	        file.delete();
 			bound++;
 			try {
 				Process proc = Runtime.getRuntime().exec("java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar -i ./output/input.bpl -cat cat/svcomp.cat -t none -unroll " + bound);
@@ -76,7 +79,6 @@ public class SVCOMPRunner {
         	Program p = new ProgramParser().parse(file);
             new SVCOMPWitness(p, options).write();;
         }
-        file.delete();
         return;        	
     }
 
