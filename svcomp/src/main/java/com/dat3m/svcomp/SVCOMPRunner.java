@@ -7,10 +7,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.cli.HelpFormatter;
 
-import com.dat3m.dartagnan.boogie.C2BoogieRunner;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -34,22 +35,17 @@ public class SVCOMPRunner {
             return;
         }
 
-		String programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(options.getProgramFilePath()).run(1)).run();
-       	File file = new File(programFilePath);
-       	
-		String tool = "java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar";
-		String program = " -i " + file.getAbsolutePath();
-		String cat = " -cat cat/svcomp.cat";
-		String compile = " -t none ";
+        File file = new SVCOMPSanitizer(options.getProgramFilePath()).run(1);
+        
 		int bound = 0;
 
 		String output = "UNKNOWN";
 
 		while(output.equals("UNKNOWN")) {
+	        compile(file);
 			bound++;
 			try {
-				String exec = tool + program + cat + compile + " -unroll " + bound;
-				Process proc = Runtime.getRuntime().exec(exec);
+				Process proc = Runtime.getRuntime().exec("java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar -i ./output/input.bpl -cat cat/svcomp.cat -t none -unroll " + bound);
 				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				try {
 					proc.waitFor();
@@ -71,17 +67,40 @@ public class SVCOMPRunner {
 				System.out.println(e.getMessage());
 				System.exit(0);
 			}
-			programFilePath = new C2BoogieRunner(new SVCOMPSanitizer(options.getProgramFilePath()).run(bound)).run();
-	       	file = new File(programFilePath);
+	        file = new SVCOMPSanitizer(options.getProgramFilePath()).run(bound);
 		}
 		Result result = fromString(output);
 		System.out.println(result);
 		
         if(options.getCreateWitness() && result.equals(FAIL)) {
-        	Program p = new ProgramParser().parse(new File(programFilePath));
+        	Program p = new ProgramParser().parse(file);
             new SVCOMPWitness(p, options).write();;
         }
         file.delete();
         return;        	
     }
+
+	private static void compile(File file) throws IOException {
+		List<String> cmds = new ArrayList<String>();
+	    // Compile all files
+        cmds.add("clang -c -Wall -Wno-everything -emit-llvm -O0 -g -Xclang -disable-O0-optnone " + file.getAbsolutePath() + " -o ./output/input.bc");
+        cmds.add("clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/smack.c -o ./output/smack.bc");
+        cmds.add("clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/stdlib.c -o ./output/std.bc");
+        cmds.add("clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/errno.c -o ./output/error.bc");
+        // Link them into one
+        cmds.add("llvm-link -o ./output/all.bc ./output/input.bc ./output/smack.bc ./output/std.bc ./output/error.bc");
+        cmds.add("rm ./output/input.bc ./output/smack.bc ./output/std.bc ./output/error.bc");
+        // Convert to BOOGIE
+        cmds.add("llvm2bpl ./output/all.bc -bpl ./output/input.bpl -warn-type silent -colored-warnings -source-loc-syms -entry-points main -mem-mod-impls");
+        cmds.add("rm ./output/all.bc");
+        for(String cmd : cmds) {
+        	Process proc = Runtime.getRuntime().exec(cmd);
+			try {
+				proc.waitFor();
+			} catch(InterruptedException e) {
+				System.out.println(e.getMessage());
+				System.exit(0);
+			}
+        }
+	}
 }

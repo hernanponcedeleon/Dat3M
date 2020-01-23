@@ -88,6 +88,7 @@ public class Dartagnan {
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         
+        solver.add(program.encodeUINonDet(ctx));
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));

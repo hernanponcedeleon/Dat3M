@@ -8,6 +8,12 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 
 public class INonDet extends IExpr implements ExprInterface {
+	
+	private boolean signed = true;
+	
+	public INonDet(boolean signed) {
+		this.signed = signed;
+	}
 
 	@Override
 	public IConst reduce() {
@@ -37,5 +43,9 @@ public class INonDet extends IExpr implements ExprInterface {
 	@Override
 	public String toString() {
 		return "nondet_Int()";
+	}
+	
+	public boolean isSigned() {
+		return signed;
 	}
 }
