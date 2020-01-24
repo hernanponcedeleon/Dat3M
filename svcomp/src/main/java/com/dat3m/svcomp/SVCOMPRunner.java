@@ -43,6 +43,7 @@ public class SVCOMPRunner {
 
 		while(output.equals("UNKNOWN")) {
 	        compile(file);
+	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
 	        // (it not the original C file) and we already created the Boogie file
 	        file.delete();
@@ -79,6 +80,7 @@ public class SVCOMPRunner {
         	Program p = new ProgramParser().parse(file);
             new SVCOMPWitness(p, options).write();;
         }
+        file.delete();
         return;        	
     }
 
