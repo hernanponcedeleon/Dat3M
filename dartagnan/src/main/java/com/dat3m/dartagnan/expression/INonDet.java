@@ -42,7 +42,7 @@ public class INonDet extends IExpr implements ExprInterface {
 	
 	@Override
 	public String toString() {
-		return "nondet_Int()";
+		return signed? "nondet_int()" : "nondet_uint()";
 	}
 	
 	public boolean isSigned() {

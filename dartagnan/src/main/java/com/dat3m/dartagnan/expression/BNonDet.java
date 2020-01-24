@@ -37,6 +37,6 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return "nondet_Bool()";
+		return "nondet_bool()";
 	}
 }
