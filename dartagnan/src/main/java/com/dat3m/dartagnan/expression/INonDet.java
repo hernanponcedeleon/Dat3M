@@ -22,12 +22,12 @@ public class INonDet extends IExpr implements ExprInterface {
 
 	@Override
 	public IntExpr toZ3Int(Event e, Context ctx) {
-		return ctx.mkIntConst(this.toString());
+		return ctx.mkIntConst(Integer.toString(hashCode()));
 	}
 
 	@Override
 	public IntExpr getLastValueExpr(Context ctx) {
-		return ctx.mkIntConst(this.toString());
+		return ctx.mkIntConst(Integer.toString(hashCode()));
 	}
 
 	@Override

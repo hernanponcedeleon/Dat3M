@@ -17,7 +17,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return ctx.mkBoolConst(this.toString());
+		return ctx.mkBoolConst(Integer.toString(hashCode()));
 	}
 
 	@Override
