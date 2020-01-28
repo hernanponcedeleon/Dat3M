@@ -26,7 +26,7 @@ public class Compilation {
         cmds.add("llvm-link -o ./output/all.bc " + bcFiles.stream().collect(Collectors.joining(" ")));
         // Convert to BOOGIE
         cmds.add("llvm2bpl ./output/all.bc -bpl ./output/input.bpl -warn-type silent -colored-warnings -source-loc-syms -entry-points main -mem-mod-impls");
-        cmds.add("rm " + bcFiles.stream().collect(Collectors.joining(" ")));
+        cmds.add("rm ./output/all.bc " + bcFiles.stream().collect(Collectors.joining(" ")));
         for(String cmd : cmds) {
         	Process proc = Runtime.getRuntime().exec(cmd);
 			try {
