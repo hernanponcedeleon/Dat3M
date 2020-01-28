@@ -5,14 +5,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dat3m.dartagnan.program.Register;
+
 public class PthreadPool {
 
-	private List<String> threads = new ArrayList<>();
-	private Map<String, List<String>> mapPtrName = new HashMap<>();
-	private Map<Integer, String> mapIntPtr = new HashMap<>();
-	private Map<String, String> mapRegPtr = new HashMap<>();
+	private List<Register> threads = new ArrayList<>();
+	private Map<Register, List<String>> mapPtrName = new HashMap<>();
+	private Map<Integer, Register> mapIntPtr = new HashMap<>();
+	private Map<Register, Register> mapRegPtr = new HashMap<>();
 	
-	public void add(String ptr, String name) {
+	public void add(Register ptr, String name) {
 		threads.add(ptr);
 		if(!mapPtrName.containsKey(ptr)) {
 			mapPtrName.put(ptr, new ArrayList<>());
@@ -20,23 +22,23 @@ public class PthreadPool {
 		mapPtrName.get(ptr).add(name);
 	}
 	
-	public String getNameFromPtr(String ptr) {
+	public String getNameFromPtr(Register ptr) {
 		return mapPtrName.get(ptr).remove(0);
 	}
 
-	public void addIntPtr(Integer i, String ptr) {
+	public void addIntPtr(Integer i, Register ptr) {
 		mapIntPtr.put(i, ptr);
 	}
 	
-	public String getPtrFromInt(Integer i) {
+	public Register getPtrFromInt(Integer i) {
 		return mapIntPtr.get(i);
 	}
 
-	public void addRegPtr(String reg, String ptr) {
+	public void addRegPtr(Register reg, Register ptr) {
 		mapRegPtr.put(reg, ptr);
 	}
 	
-	public String getPtrFromReg(String reg) {
+	public Register getPtrFromReg(Register reg) {
 		return mapRegPtr.get(reg);
 	}
 	
@@ -44,7 +46,7 @@ public class PthreadPool {
 		return !threads.isEmpty();
 	}
 	
-	public String next() {
+	public Register next() {
 		return threads.remove(0);
 	}
 }

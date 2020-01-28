@@ -156,9 +156,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	pool.add("ptrMain", "main");
+    	Register next = programBuilder.getOrCreateRegister(threadCount, "ptrMain");
+    	pool.add(next, "main");
     	while(pool.canCreate()) {
-    		String next = pool.next();
+    		next = pool.next();
     		String nextName = pool.getNameFromPtr(next);
     		pool.addIntPtr(threadCount + 1, next);
     		visitProc_decl(procedures.get(nextName), true, mainCallingValues);	
@@ -309,7 +310,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     public Object visitAssert_cmd(Assert_cmdContext ctx) {
     	// In boogie transformation, assertions result in "assert false".
     	// The control flow checks the corresponding expression, thus
-    	// we can not just add the expression to the AbstractAssertion.
+    	// we cannot just add the expression to the AbstractAssertion.
     	// We need to create an event carrying the value of the expression 
     	// and see if this event can be executed.
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
@@ -352,6 +353,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			abort();
 			return null;
 		}
+		// TODO seems to be obsolete in SVCOMP 2021
 		if(name.equals("__VERIFIER_assume")) {
 			__VERIFIER_assume(ctx.call_params().exprs());
 			return null;
@@ -381,18 +383,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			atomicMode = ctx;
 			__VERIFIER_atomic_begin();
 			// No return, the body still needs to be parsed.
-		}
+		}	
 		if(name.equals("pthread_create")) {
-			String threadPtr = ctx.call_params().exprs().expr().get(0).getText();
+			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
+			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, namePtr);
 			String threadName = ctx.call_params().exprs().expr().get(2).getText();
 			pthread_create(threadPtr, threadName);
 			return null;
 		}
 		// Sometimes the compiler convert it to __pthread_join
 		if(name.contains("pthread_join") && ctx.call_params().Define() != null) {
-			String callReg = ctx.call_params().exprs().expr().get(0).getText();
+			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
+			Register callReg = programBuilder.getOrCreateRegister(threadCount, namePtr);
 			String retName = ctx.call_params().Ident(0).getText();
-			pthread_join(retName, pool.getPtrFromReg(callReg));
+			Register retReg = programBuilder.getOrCreateRegister(threadCount, retName);
+			pthread_join(retReg, pool.getPtrFromReg(callReg));
 			return null;
 		}
 		// Some procedures might have an empty implementation.
@@ -428,10 +433,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return null;
 	}
 
-	private void pthread_create(String ptr, String name) {
-		if(threadCount != 1) {
-			throw new ParsingException("Only main procedure can fork new procedures");
-		}
+	private void pthread_create(Register ptr, String name) {
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
@@ -440,8 +442,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(1), "NA"));
 	}
 
-	private void pthread_join(String retName, String ptr) {
-		Register retRegister = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + retName);
+	private void pthread_join(Register retRegister, Register ptr) {
 	    if(retRegister != null){
 	    	programBuilder.addChild(threadCount, new Local(retRegister, new IConst(0)));
 	    }		
@@ -579,11 +580,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
 		// TODO: find a nicer way of dealing with this
-		if(ctx.getText().contains("$load.i64") || ctx.getText().contains("$load.ref")) {
-			String reg = ctx.Ident(0).getText();
+		if(ctx.getText().contains("$load.")) {
+			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText());
 			String tmp = ctx.def_body().exprs().expr(0).getText();
 			tmp = tmp.substring(0, tmp.lastIndexOf(')'));
-			String ptr = tmp.substring(tmp.lastIndexOf(',')+1);
+			tmp = tmp.substring(tmp.lastIndexOf(',')+1);
+			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp);
 			pool.addRegPtr(reg, ptr);
 		}
         ExprsContext exprs = ctx.def_body().exprs();
