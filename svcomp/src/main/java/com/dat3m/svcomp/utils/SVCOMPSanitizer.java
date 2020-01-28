@@ -19,7 +19,7 @@ public class SVCOMPSanitizer {
 		this.filePath = filePath;
 	}
 
-	public File run(int bound) {
+	public File run(int bound) throws ParsingException {
 		String fileName = filePath.substring(filePath.lastIndexOf('/'), filePath.lastIndexOf('.')) + "_tmp.c";
 		File tmp = new File("./output/" + fileName);
 		try {
@@ -34,6 +34,7 @@ public class SVCOMPSanitizer {
 			if(stringContents.matches(".*main\\(.*\\).*for.*\\{.*pthread_create(.*).*\\}")) {
 				reader.close();
 				writer.close();
+				tmp.delete();
 		        throw new ParsingException("pthread_create cannot be inside a for loop");
 			}
 			reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
@@ -67,6 +68,7 @@ public class SVCOMPSanitizer {
 				if(line.contains("while") && line.contains("pthread_create")) {
 					reader.close();
 					writer.close();
+					tmp.delete();
 			        throw new ParsingException(line + " cannot be parsed");
 				}
 				writer.println(line);

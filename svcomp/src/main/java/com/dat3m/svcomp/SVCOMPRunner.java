@@ -1,5 +1,6 @@
 package com.dat3m.svcomp;
 
+import static com.dat3m.dartagnan.utils.Compilation.compile;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.fromString;
 
@@ -7,9 +8,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.cli.HelpFormatter;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -21,7 +19,7 @@ import com.dat3m.svcomp.utils.SVCOMPWitness;
 
 public class SVCOMPRunner {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
     	SVCOMPOptions options = new SVCOMPOptions();
         try {
             options.parse(args);
@@ -35,14 +33,22 @@ public class SVCOMPRunner {
             return;
         }
 
-        File file = new SVCOMPSanitizer(options.getProgramFilePath()).run(1);
+        File file = new File(options.getProgramFilePath());
+        try {
+        	file = new SVCOMPSanitizer(options.getProgramFilePath()).run(1);
+        } catch(Exception e) {
+			System.out.println(e.getMessage());
+			System.exit(0);
+        }
         
 		int bound = 0;
-
 		String output = "UNKNOWN";
-
 		while(output.equals("UNKNOWN")) {
-	        compile(file);
+			try {
+				compile(file);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
 	        // (it not the original C file) and we already created the Boogie file
@@ -77,34 +83,14 @@ public class SVCOMPRunner {
 		System.out.println(result);
 		
         if(options.getCreateWitness() && result.equals(FAIL)) {
-        	Program p = new ProgramParser().parse(file);
-            new SVCOMPWitness(p, options).write();;
+			try {
+				Program p = new ProgramParser().parse(file);
+	            new SVCOMPWitness(p, options).write();;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
         }
         file.delete();
         return;        	
     }
-
-	private static void compile(File file) throws IOException {
-		List<String> cmds = new ArrayList<String>();
-	    // Compile all files
-        cmds.add("clang -c -Wall -Wno-everything -emit-llvm -O0 -g -Xclang -disable-O0-optnone " + file.getAbsolutePath() + " -o ./output/input.bc");
-        cmds.add("clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/smack.c -o ./output/smack.bc");
-        cmds.add("clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/stdlib.c -o ./output/std.bc");
-        cmds.add("clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/errno.c -o ./output/error.bc");
-        // Link them into one
-        cmds.add("llvm-link -o ./output/all.bc ./output/input.bc ./output/smack.bc ./output/std.bc ./output/error.bc");
-        cmds.add("rm ./output/input.bc ./output/smack.bc ./output/std.bc ./output/error.bc");
-        // Convert to BOOGIE
-        cmds.add("llvm2bpl ./output/all.bc -bpl ./output/input.bpl -warn-type silent -colored-warnings -source-loc-syms -entry-points main -mem-mod-impls");
-        cmds.add("rm ./output/all.bc");
-        for(String cmd : cmds) {
-        	Process proc = Runtime.getRuntime().exec(cmd);
-			try {
-				proc.waitFor();
-			} catch(InterruptedException e) {
-				System.out.println(e.getMessage());
-				System.exit(0);
-			}
-        }
-	}
 }
