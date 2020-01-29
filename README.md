@@ -12,7 +12,6 @@ This tool suite is currently composed of two tools.
 Requirements
 ======
 * [LLVM and Clang](http://releases.llvm.org/download.html) version 8.0.1 or higher
-
 * [Maven](https://maven.apache.org/)
 
 Installation
@@ -78,11 +77,11 @@ Other optional arguments include:
 
 Authors and Contact
 ======
-Maintainer:
+**Maintainer:**
 
 * [Hernán Ponce de León](mailto:ponce@fortiss.org)
 
-Former Developers:
+**Former Developers:**
 
 * [Florian Furbach](mailto:f.furbach@tu-braunschweig.de)
 * [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi)
