@@ -136,7 +136,7 @@ public class PorthosTest {
         this.settings = settings;
     }
 
-    @Test
+//    @Test
     public void test() {
         try {
             ProgramParser programParser = new ProgramParser();
