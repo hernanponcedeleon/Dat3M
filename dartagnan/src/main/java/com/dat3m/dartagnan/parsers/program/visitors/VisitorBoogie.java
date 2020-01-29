@@ -378,6 +378,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			__VERIFIER_nondet_bool(ctx.call_params().Ident(0).getText());
 			return null;
 		}
+		if(name.contains("__VERIFIER_nondet_") && name.contains("char")) {
+			throw new ParsingException(name + " is not supported");
+		}
 		if(name.equals("__VERIFIER_atomic_begin")) {
 			__VERIFIER_atomic_begin();
 			return null;
