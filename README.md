@@ -11,12 +11,9 @@ This tool suite is currently composed of two tools.
 
 Requirements
 ======
-[Maven](https://maven.apache.org/) - Dependency Management
+* [LLVM and Clang](http://releases.llvm.org/download.html) version 8.0.1 or higher
 
-If you have a recent Debian or Ubuntu distribution, then install the package maven with 
-```
-apt-get install maven
-```
+* [Maven](https://maven.apache.org/)
 
 Installation
 ======
@@ -60,11 +57,11 @@ For checking state inclusion:
 ```
 java -jar porthos/target/porthos-2.0.5-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-DARTAGNAN supports programs written in the .litmus or .pts formats (see below). For PORTHOS, programs shall be written in the .pts format since they need to be compiled to two different architectures.
+DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .bpl format.
 
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
-For programs written in the .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
+For programs written in the .bpl format, \<source> and \<target> specify the architectures to which the program will be compiled. 
 They must be one of the following: 
 - none
 - tso
@@ -72,48 +69,25 @@ They must be one of the following:
 - arm
 - arm8
 
-**Note:** Option target is mandatory in DARTAGNAN when using the .pts format.
+**Note:** Option target is mandatory in DARTAGNAN when using the .bpl format.
 
 Other optional arguments include:
 - -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [3]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
 - -a, --alias {none, andersen, cfs}: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - -unroll: unrolling bound for the BMC.
 
-The .pts format
-======
-
-Examples are provided in the **benchmarks/** folder.
-```
-  program ::= {⟨loc⟩*} ⟨thrd⟩*
-
-  ⟨thrd⟩ ::= thread String {⟨inst⟩}
-
-  ⟨inst⟩ ::= ⟨com⟩ | ⟨inst⟩; ⟨inst⟩ | while ⟨pred⟩ {⟨inst⟩} | if ⟨pred⟩ {⟨inst⟩} else {⟨inst⟩}
-
-  ⟨com⟩ ::= ⟨reg⟩ <- ⟨expr⟩ | ⟨reg⟩ = ⟨loc⟩.load(⟨atomic⟩) | ⟨loc⟩.store(⟨atomic⟩,⟨reg⟩)
-  
-  ⟨atomic⟩ ::= "_sc" | "_rx" | "_acq" | "_rel" | "_con"
-  
-  ⟨pred⟩ ::= Bool | ⟨pred⟩ and ⟨pred⟩ | ⟨pred⟩ or ⟨pred⟩ | not ⟨pred⟩ 
-  
-          | ⟨expr⟩ == ⟨expr⟩ | ⟨expr⟩ != ⟨expr⟩
-          
-          | ⟨expr⟩ < ⟨expr⟩ | ⟨expr⟩ <= ⟨expr⟩
-          
-          | ⟨expr⟩ > ⟨expr⟩ | ⟨expr⟩ >= ⟨expr⟩
-  
-  ⟨expr⟩ ::= Int | ⟨reg⟩
-  
-          | ⟨expr⟩ + ⟨expr⟩ | ⟨expr⟩ - ⟨expr⟩
-  
-          | ⟨expr⟩ * ⟨expr⟩ | ⟨expr⟩ / ⟨expr⟩
-          
-          | ⟨expr⟩ % ⟨expr⟩ 
-  ```
-
 Authors and Contact
 ======
-Dat3M is developed and maintained by [Hernán Ponce de León](mailto:ponce@fortiss.org), [Florian Furbach](mailto:f.furbach@tu-braunschweig.de) and [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi). Please feel free to contact us in case of questions or to send feedback.
+Maintainer:
+
+* [Hernán Ponce de León](mailto:ponce@fortiss.org)
+
+Former Developers:
+
+* [Florian Furbach](mailto:f.furbach@tu-braunschweig.de)
+* [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi)
+
+Please feel free to contact us in case of questions or to send feedback.
 
 References
 ======
