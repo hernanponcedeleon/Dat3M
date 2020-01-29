@@ -85,7 +85,10 @@ public class Dartagnan {
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
         // Thus we need to set the assertion after compilation
-        program.setAss(program.createAssertion());
+        if(program.getAss() == null){
+        	program.setAss(program.createAssertion());
+        }
+        // The above might still create no assertion
         if(program.getAss() == null){
             throw new RuntimeException("Assert is required for Dartagnan tests");
         }
