@@ -53,10 +53,6 @@ public class Dartagnan {
             return;
         }
         
-        if(p.getAss() == null){
-            throw new RuntimeException("Assert is required for Dartagnan tests");
-        }
-
         Context ctx = new Context();
         Solver s = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
         Settings settings = options.getSettings();
@@ -87,7 +83,13 @@ public class Dartagnan {
 
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
-        
+        // AssertionInline depends on compiled events (copies)
+        // Thus we need to set the assertion after compilation
+        program.setAss(program.createAssertion());
+        if(program.getAss() == null){
+            throw new RuntimeException("Assert is required for Dartagnan tests");
+        }
+
         solver.add(program.encodeUINonDet(ctx));
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));

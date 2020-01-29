@@ -10,6 +10,7 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -131,6 +132,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private boolean handlePointer = false;
 	
+	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", 
+																"printf.ref", 
+																"$alloc", 
+																"$$alloc");
+
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
 	}
@@ -253,6 +259,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
          	threadCount ++;
             programBuilder.initThread(threadCount);
             if(threadCount != 1) {
+            	// Used to allow execution of threads after they have been created (pthread_create)
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
@@ -298,6 +305,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         
     	if(create) {
          	if(threadCount != 1) {
+         		// Used to mark the end of the execution of a thread (used by pthread_join)
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
         		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(0), "NA"));
          	}
@@ -325,11 +333,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitCall_cmd(Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
+		if(dummyProcedures.stream().anyMatch(e -> name.contains(e))) {
+			return null;
+		}
 		if(name.equals("$initialize")) {
 			initMode = true;;
-		}
-		if(name.equals("$alloc") || name.equals("$$alloc")) {
-			return null;
 		}
 		if(name.equals("calloc") || name.equals("$malloc")) {
 			throw new ParsingException("ERROR");
@@ -416,7 +424,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
 		// Nice to have for debugging
-		if(!name.contains("boogie_si_record") && !name.contains("printf.ref")) {
+		if(dummyProcedures.stream().noneMatch(e -> name.contains(e))) {
 			programBuilder.addChild(threadCount, new Comment(" Start of " + name + " "));	
 		}
 		visitProc_decl(procedures.get(name), false, callingValues);
@@ -424,7 +432,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			__VERIFIER_atomic_end();
 			atomicMode = null;
 		}
-		if(!name.contains("boogie_si_record") && !name.contains("printf.ref")) {
+		// Nice to have for debugging
+		if(dummyProcedures.stream().noneMatch(e -> name.contains(e))) {			
 			programBuilder.addChild(threadCount, new Comment(" End of " + name + " "));
 		}
 		if(name.equals("$initialize")) {
@@ -802,7 +811,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFun_expr(Fun_exprContext ctx) {
-		//TODO: handle pointers. E.g. when name contains store.i32
 		String name = ctx.Ident().getText();
 		Function function = functions.get(name);
 		if(function == null) {

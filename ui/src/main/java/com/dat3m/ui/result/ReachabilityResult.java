@@ -42,7 +42,7 @@ public class ReachabilityResult implements Dat3mResult {
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             Result result = Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), options.getSettings());
-            buildVerdict(result == FAIL);
+            buildVerdict(result);
             if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result == FAIL)){
                 graph = new Graph(solver.getModel(), ctx, program, options.getSettings().getGraphRelations());
             }
@@ -50,18 +50,14 @@ public class ReachabilityResult implements Dat3mResult {
         }
     }
 
-    private void buildVerdict(boolean result){
+    private void buildVerdict(Result result){
         StringBuilder sb = new StringBuilder();
         sb.append("Settings: ").append(options.getSettings()).append("\n");
         if(program.getAssFilter() != null){
             sb.append("Filter ").append(program.getAssFilter());
         }
-		if(program.getAss() != null) {
-	        sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");			
-	        sb.append(result ? "OK" : "No").append("\n");
-		} else {
-			sb.append(result ? "FAIL" : "PASS");
-		}
+        sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");			
+        sb.append(result).append("\n");
         verdict = sb.toString();
     }
 

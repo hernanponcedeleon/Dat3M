@@ -33,13 +33,7 @@ public class SVCOMPRunner {
             return;
         }
 
-        File file = new File(options.getProgramFilePath());
-        try {
-        	file = new SVCOMPSanitizer(options.getProgramFilePath()).run(1);
-        } catch(Exception e) {
-			System.out.println(e.getMessage());
-			System.exit(0);
-        }
+        File file = new SVCOMPSanitizer(options.getProgramFilePath()).run(1);
         
 		int bound = 0;
 		String output = "UNKNOWN";
