@@ -16,7 +16,19 @@ Requirements
 
 Installation
 ======
-To build the tools, from the Dat3M/ directory run
+Set the path and shared libraries variables:
+* **Linux:**
+```
+export PATH=<path_to_Dat3M>/:$PATH
+export LD_LIBRARY_PATH=<path_to_Dat3M>/lib/:LD_LIBRARY_PATH
+```
+* **MacOS:**
+```
+export PATH=<path_to_Dat3M>/:$PATH
+export DYLD_LIBRARY_PATH=<path_to_Dat3M>/lib/:$DYLD_LIBRARY_PATH
+```
+
+To build the tools, from the Dat3M's root directory run
 * **Linux:**
 ```
 make
@@ -25,7 +37,6 @@ make
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
-export DYLD_LIBRARY_PATH=./lib/
 ```
 
 Unit Tests
@@ -57,6 +68,11 @@ For checking state inclusion:
 java -jar porthos/target/porthos-2.0.5-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
 DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .bpl format.
+
+C programs can be converted to Boogie using the following script:
+```
+c2bpl.sh <C file> <Boogie file>
+```
 
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
