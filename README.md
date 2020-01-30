@@ -18,8 +18,8 @@ Installation
 ======
 Set the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**):
 ```
-export PATH=<path_to_Dat3M>/:$PATH
-export LD_LIBRARY_PATH=<path_to_Dat3M>/lib/:$LD_LIBRARY_PATH
+export PATH=<Dat3M's root>/:$PATH
+export LD_LIBRARY_PATH=<Dat3M's root>/lib/:$LD_LIBRARY_PATH
 ```
 
 To build the tools, from the Dat3M's root directory run
