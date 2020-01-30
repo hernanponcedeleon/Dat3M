@@ -47,7 +47,7 @@ The precompiled jars can be found in the "[release](https://github.com/hernanpon
 Usage
 ======
 * **Linux:** You can start the tool by double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
-* **MacOS:** To run the tool, from the Dat3M/ directory run
+* **MacOS:** To run the tool, from Dat3M's root directory run
 ```
 java -jar ui/target/ui-2.0.5-jar-with-dependencies.jar
 ```
