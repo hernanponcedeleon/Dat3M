@@ -366,20 +366,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			__VERIFIER_assume(ctx.call_params().exprs());
 			return null;
 		}
+		if(name.equals("__VERIFIER_assert")) {
+			__VERIFIER_assert(ctx.call_params().exprs());
+			return null;
+		}
 		if(name.equals("__VERIFIER_nondet_int")) {
 			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText(), true);
 			return null;
 		}
-		if(name.equals("__VERIFIER_nondet_uint")) {
+		if(name.equals("__VERIFIER_nondet_uint") || name.equals("__VERIFIER_nondet_unsigned_int")) {
 			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText(), false);
 			return null;
 		}
 		if(name.equals("__VERIFIER_nondet_bool")) {
 			__VERIFIER_nondet_bool(ctx.call_params().Ident(0).getText());
 			return null;
-		}
-		if(name.contains("__VERIFIER_nondet_") && name.contains("char")) {
-			throw new ParsingException(name + " is not supported");
 		}
 		if(name.equals("__VERIFIER_atomic_begin")) {
 			__VERIFIER_atomic_begin();
@@ -394,7 +395,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			atomicMode = ctx;
 			__VERIFIER_atomic_begin();
 			// No return, the body still needs to be parsed.
-		}	
+		}
+		// The rest of the nondet types are not supported
+		if(name.contains("__VERIFIER_nondet_")) {
+			throw new ParsingException(name + " is not supported");
+		}
 		if(name.equals("pthread_create")) {
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, namePtr);
@@ -491,6 +496,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(c != null) {
 			programBuilder.addChild(threadCount, new Assume(c, label));	
 		}
+	}
+	
+	private void __VERIFIER_assert(ExprsContext exp) {
+    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
+    	assertionIndex++;
+    	ExprInterface expr = (ExprInterface)exp.accept(this);
+    	Local event = new Local(ass, expr);
+		event.addFilters(EType.ASSERTION);
+		programBuilder.addChild(threadCount, event);
 	}
 	
 	private void mutexInit(ExprContext lock, ExprContext value) {
@@ -856,7 +870,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(name.contains("$and.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), AND, (ExprInterface)callParams.get(1));
 			}
-			return null;
+			throw new ParsingException("Function " + name + " has no implementation");
 		}
 		Object ret = function.getBody().accept(this);
 		// pop currentCall from the call stack
