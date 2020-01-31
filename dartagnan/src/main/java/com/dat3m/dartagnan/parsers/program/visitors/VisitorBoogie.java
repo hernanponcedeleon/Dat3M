@@ -8,6 +8,7 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -858,8 +859,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(function.getBody() == null) {
 			currentCall = currentCall.getParent();
 			// TODO: improve this
-			if(name.contains("$urem.") || name.contains("$srem.")) {
+			if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), MOD, (ExprInterface)callParams.get(1));
+			}
+			if(name.contains("$sdiv.") || name.contains("$udiv.")) {
+				return new IExprBin((ExprInterface)callParams.get(0), DIV, (ExprInterface)callParams.get(1));
 			}
 			if(name.contains("$xor.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), XOR, (ExprInterface)callParams.get(1));
@@ -867,8 +871,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(name.contains("$or.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), OR, (ExprInterface)callParams.get(1));
 			}
-			if(name.contains("$and.")) {
+			if(name.contains("$and.") || name.contains("$nand.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), AND, (ExprInterface)callParams.get(1));
+			}
+			if(name.contains("$not.")) {
+				return new BExprUn(NOT, (ExprInterface)callParams.get(0));
 			}
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
