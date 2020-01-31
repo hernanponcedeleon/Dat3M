@@ -858,7 +858,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(function.getBody() == null) {
 			currentCall = currentCall.getParent();
 			// TODO: improve this
-			if(name.contains("$urem.")) {
+			if(name.contains("$urem.") || name.contains("$srem.")) {
 				return new IExprBin((ExprInterface)callParams.get(0), MOD, (ExprInterface)callParams.get(1));
 			}
 			if(name.contains("$xor.")) {
