@@ -36,3 +36,8 @@ dartagnan/target/
 porthos/target/
 ui/target/
 svcomp/target/
+
+##########
+# Boogie #
+##########
+output/
