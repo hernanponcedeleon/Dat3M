@@ -11,7 +11,7 @@ if [ $# -eq 1 ]; then
 fi
 
 # Compile all files
-clang -c -Wall -Wno-everything -emit-llvm -O2 -g -Xclang -disable-O0-optnone $1 -o ./output/input.bc
+clang -c -Wall -Wno-everything -emit-llvm -O0 -g -Xclang -disable-O0-optnone $1 -o ./output/input.bc
 clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/smack.c -o ./output/smack.bc
 clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/stdlib.c -o ./output/std.bc
 clang -c -Wall -emit-llvm -O0 -g -Xclang -disable-O0-optnone -I ./include/ ./lib/errno.c -o ./output/error.bc
