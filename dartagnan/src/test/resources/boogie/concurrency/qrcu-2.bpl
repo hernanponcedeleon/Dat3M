@@ -35,19 +35,18 @@ const $GLOBALS_BOTTOM: ref;
 const $EXTERNS_BOTTOM: ref;
 const $MALLOC_TOP: ref;
 
-// Memory maps (9 regions)
+// Memory maps (8 regions)
 var $M.0: i32;
 var $M.1: i32;
 var $M.2: i32;
 var $M.3: i32;
 var $M.4: i32;
-var $M.5: i8;
-var $M.6: i8;
-var $M.7: ref;
-var $M.8: i32;
+var $M.5: [ref] i8;
+var $M.6: ref;
+var $M.7: i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 56723));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 66081));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1374,379 +1373,1034 @@ function {:inline} $store.float(M: [ref] float, p: ref, f: float) returns ([ref]
 function {:inline} $load.unsafe.float(M: [ref] i8, p: ref) returns (float) { $bitcast.i8.float(M[p]) }
 function {:inline} $store.unsafe.float(M: [ref] i8, p: ref, f: float) returns ([ref] i8) { M[p := $bitcast.float.i8(f)] }
 function $extractvalue.float(p: ref, i: int) returns (float);
-const __unbuffered_cnt: ref;
-axiom (__unbuffered_cnt == $sub.ref(0, 1028));
-const __unbuffered_p0_EAX: ref;
-axiom (__unbuffered_p0_EAX == $sub.ref(0, 2056));
-const __unbuffered_p1_EAX: ref;
-axiom (__unbuffered_p1_EAX == $sub.ref(0, 3084));
-const x: ref;
-axiom (x == $sub.ref(0, 4112));
-const y: ref;
-axiom (y == $sub.ref(0, 5140));
-const main$tmp_guard0: ref;
-axiom (main$tmp_guard0 == $sub.ref(0, 6165));
-const main$tmp_guard1: ref;
-axiom (main$tmp_guard1 == $sub.ref(0, 7190));
+const idx: ref;
+axiom (idx == $sub.ref(0, 1028));
+const ctr1: ref;
+axiom (ctr1 == $sub.ref(0, 2056));
+const ctr2: ref;
+axiom (ctr2 == $sub.ref(0, 3084));
+const readerprogress1: ref;
+axiom (readerprogress1 == $sub.ref(0, 4112));
+const readerprogress2: ref;
+axiom (readerprogress2 == $sub.ref(0, 5140));
+const mutex: ref;
+axiom (mutex == $sub.ref(0, 6228));
 const env_value_str: ref;
-axiom (env_value_str == $sub.ref(0, 8222));
-const {:count 3} .str.1.3: ref;
-axiom (.str.1.3 == $sub.ref(0, 9249));
+axiom (env_value_str == $sub.ref(0, 7260));
+const {:count 3} .str.1.5: ref;
+axiom (.str.1.5 == $sub.ref(0, 8287));
 const {:count 14} .str.14: ref;
-axiom (.str.14 == $sub.ref(0, 10287));
+axiom (.str.14 == $sub.ref(0, 9325));
 const errno_global: ref;
-axiom (errno_global == $sub.ref(0, 11315));
+axiom (errno_global == $sub.ref(0, 10353));
 const assume_abort_if_not: ref;
-axiom (assume_abort_if_not == $sub.ref(0, 12347));
+axiom (assume_abort_if_not == $sub.ref(0, 11385));
 procedure assume_abort_if_not($i0: i32)
 {
   var $i1: i1;
 $bb0:
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 3, 7} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 3, 7} true;
   assume {:verifier.code 0} true;
   call {:cexpr "assume_abort_if_not:arg:cond"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 3, 7} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 3, 7} true;
   assume {:verifier.code 0} true;
   $i1 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 3, 6} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 3, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i1} true;
   goto $bb1, $bb2;
 $bb1:
   assume ($i1 == 1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 4, 1} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 4, 1} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
 $bb2:
   assume !(($i1 == 1));
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 3, 14} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 3, 14} true;
   assume {:verifier.code 0} true;
   call abort();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 3, 14} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 3, 14} true;
   assume {:verifier.code 0} true;
   assume false;
 }
 const llvm.dbg.declare: ref;
-axiom (llvm.dbg.declare == $sub.ref(0, 13379));
+axiom (llvm.dbg.declare == $sub.ref(0, 12417));
 procedure llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
 const abort: ref;
-axiom (abort == $sub.ref(0, 14411));
+axiom (abort == $sub.ref(0, 13449));
 procedure abort();
-const __VERIFIER_assert: ref;
-axiom (__VERIFIER_assert == $sub.ref(0, 15443));
-procedure __VERIFIER_assert($i0: i32)
+const __VERIFIER_atomic_use1: ref;
+axiom (__VERIFIER_atomic_use1 == $sub.ref(0, 14481));
+procedure __VERIFIER_atomic_use1($i0: i32)
 {
   var $i1: i1;
+  var $i3: i32;
+  var $i4: i1;
+  var $i2: i1;
+  var $i5: i32;
+  var $i6: i32;
+  var $i7: i32;
 $bb0:
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 7, 47} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 29} true;
   assume {:verifier.code 0} true;
-  call {:cexpr "__VERIFIER_assert:arg:expression"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 7, 47} true;
+  call {:cexpr "__VERIFIER_atomic_use1:arg:myidx"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 29} true;
   assume {:verifier.code 0} true;
-  $i1 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 7, 46} true;
+  $i1 := $sle.i32($i0, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 34} true;
+  assume {:verifier.code 0} true;
+  $i2 := 0;
+  assume {:branchcond $i1} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i1 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 37} true;
+  assume {:verifier.code 0} true;
+  $i3 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 41} true;
+  assume {:verifier.code 0} true;
+  $i4 := $sgt.i32($i3, 0);
+  assume {:verifier.code 0} true;
+  $i2 := $i4;
+  goto $bb3;
+$bb2:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 34} true;
+  assume {:verifier.code 0} true;
+  assume !(($i1 == 1));
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 34} true;
+  assume {:verifier.code 0} true;
+  $i5 := $zext.i1.i32($i2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 40, 3} true;
+  assume {:verifier.code 0} true;
+  call assume_abort_if_not($i5);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 41, 7} true;
+  assume {:verifier.code 0} true;
+  $i6 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 41, 7} true;
+  assume {:verifier.code 0} true;
+  $i7 := $add.i32($i6, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 41, 7} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $i7;
+  call {:cexpr "ctr1"} boogie_si_record_i32($i7);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 42, 1} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const __VERIFIER_atomic_use2: ref;
+axiom (__VERIFIER_atomic_use2 == $sub.ref(0, 15513));
+procedure __VERIFIER_atomic_use2($i0: i32)
+{
+  var $i1: i1;
+  var $i3: i32;
+  var $i4: i1;
+  var $i2: i1;
+  var $i5: i32;
+  var $i6: i32;
+  var $i7: i32;
+$bb0:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 29} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "__VERIFIER_atomic_use2:arg:myidx"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 29} true;
+  assume {:verifier.code 0} true;
+  $i1 := $sge.i32($i0, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 34} true;
+  assume {:verifier.code 0} true;
+  $i2 := 0;
+  assume {:branchcond $i1} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i1 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 37} true;
+  assume {:verifier.code 0} true;
+  $i3 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 41} true;
+  assume {:verifier.code 0} true;
+  $i4 := $sgt.i32($i3, 0);
+  assume {:verifier.code 0} true;
+  $i2 := $i4;
+  goto $bb3;
+$bb2:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 34} true;
+  assume {:verifier.code 0} true;
+  assume !(($i1 == 1));
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 34} true;
+  assume {:verifier.code 0} true;
+  $i5 := $zext.i1.i32($i2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 45, 3} true;
+  assume {:verifier.code 0} true;
+  call assume_abort_if_not($i5);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 46, 7} true;
+  assume {:verifier.code 0} true;
+  $i6 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 46, 7} true;
+  assume {:verifier.code 0} true;
+  $i7 := $add.i32($i6, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 46, 7} true;
+  assume {:verifier.code 0} true;
+  $M.1 := $i7;
+  call {:cexpr "ctr2"} boogie_si_record_i32($i7);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 47, 1} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const __VERIFIER_atomic_use_done: ref;
+axiom (__VERIFIER_atomic_use_done == $sub.ref(0, 16545));
+procedure __VERIFIER_atomic_use_done($i0: i32)
+{
+  var $i1: i1;
+  var $i2: i32;
+  var $i3: i32;
+  var $i4: i32;
+  var $i5: i32;
+$bb0:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 50, 13} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "__VERIFIER_atomic_use_done:arg:myidx"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 50, 13} true;
+  assume {:verifier.code 0} true;
+  $i1 := $sle.i32($i0, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 50, 7} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i1} true;
   goto $bb1, $bb2;
 $bb1:
   assume ($i1 == 1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 7, 91} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 50, 25} true;
   assume {:verifier.code 0} true;
-  $exn := false;
-  return;
+  $i2 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 50, 25} true;
+  assume {:verifier.code 0} true;
+  $i3 := $add.i32($i2, $sub.i32(0, 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 50, 25} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $i3;
+  call {:cexpr "ctr1"} boogie_si_record_i32($i3);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 50, 29} true;
+  assume {:verifier.code 0} true;
+  goto $bb3;
 $bb2:
   assume !(($i1 == 1));
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 7, 59} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 51, 14} true;
+  assume {:verifier.code 0} true;
+  $i4 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 51, 14} true;
+  assume {:verifier.code 0} true;
+  $i5 := $add.i32($i4, $sub.i32(0, 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 51, 14} true;
+  assume {:verifier.code 0} true;
+  $M.1 := $i5;
+  call {:cexpr "ctr2"} boogie_si_record_i32($i5);
   assume {:verifier.code 0} true;
   goto $bb3;
 $bb3:
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 7, 68} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 52, 1} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const __VERIFIER_atomic_take_snapshot: ref;
+axiom (__VERIFIER_atomic_take_snapshot == $sub.ref(0, 17577));
+procedure __VERIFIER_atomic_take_snapshot($i0: i32, $i1: i32)
+{
+$bb0:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 58, 1} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "__VERIFIER_atomic_take_snapshot:arg:readerstart1"} boogie_si_record_i32($i0);
+  call {:cexpr "__VERIFIER_atomic_take_snapshot:arg:readerstart2"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 58, 1} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const __VERIFIER_atomic_check_progress1: ref;
+axiom (__VERIFIER_atomic_check_progress1 == $sub.ref(0, 18609));
+procedure __VERIFIER_atomic_check_progress1($i0: i32)
+{
+  var $i1: i32;
+  var $i2: i1;
+  var $i3: i1;
+  var $i5: i32;
+  var $i6: i1;
+  var $i4: i1;
+  var $i7: i32;
+$bb0:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 62, 7} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "__VERIFIER_atomic_check_progress1:arg:readerstart1"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 62, 7} true;
+  assume {:verifier.code 0} true;
+  call $i1 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 62, 7} true;
+  assume {:verifier.code 0} true;
+  $i2 := $ne.i32($i1, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 62, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i2} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i2 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 63, 38} true;
+  assume {:verifier.code 0} true;
+  $i3 := $eq.i32($i0, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 63, 43} true;
+  assume {:verifier.code 0} true;
+  $i4 := 0;
+  assume {:branchcond $i3} true;
+  goto $bb3, $bb4;
+$bb2:
+  assume !(($i2 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 66, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+$bb3:
+  assume ($i3 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 63, 46} true;
+  assume {:verifier.code 0} true;
+  $i5 := $M.2;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 63, 62} true;
+  assume {:verifier.code 0} true;
+  $i6 := $eq.i32($i5, 1);
+  assume {:verifier.code 0} true;
+  $i4 := $i6;
+  goto $bb5;
+$bb4:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 63, 43} true;
+  assume {:verifier.code 0} true;
+  assume !(($i3 == 1));
+  goto $bb5;
+$bb5:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 63, 43} true;
+  assume {:verifier.code 0} true;
+  $i7 := $zext.i1.i32($i4);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 63, 5} true;
+  assume {:verifier.code 0} true;
+  call assume_abort_if_not($i7);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 64, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb6:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 64, 5} true;
   assume {:verifier.code 0} true;
   call __VERIFIER_error();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 7, 68} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 64, 5} true;
   assume {:verifier.code 0} true;
   assume false;
 }
-const P0: ref;
-axiom (P0 == $sub.ref(0, 16475));
-procedure P0($p0: ref)
+const __VERIFIER_atomic_check_progress2: ref;
+axiom (__VERIFIER_atomic_check_progress2 == $sub.ref(0, 19641));
+procedure __VERIFIER_atomic_check_progress2($i0: i32)
+{
+  var $i1: i32;
+  var $i2: i1;
+  var $i3: i1;
+  var $i5: i32;
+  var $i6: i1;
+  var $i4: i1;
+  var $i7: i32;
+$bb0:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 70, 7} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "__VERIFIER_atomic_check_progress2:arg:readerstart2"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 70, 7} true;
+  assume {:verifier.code 0} true;
+  call $i1 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 70, 7} true;
+  assume {:verifier.code 0} true;
+  $i2 := $ne.i32($i1, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 70, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i2} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i2 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 71, 38} true;
+  assume {:verifier.code 0} true;
+  $i3 := $eq.i32($i0, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 71, 43} true;
+  assume {:verifier.code 0} true;
+  $i4 := 0;
+  assume {:branchcond $i3} true;
+  goto $bb3, $bb4;
+$bb2:
+  assume !(($i2 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 74, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+$bb3:
+  assume ($i3 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 71, 46} true;
+  assume {:verifier.code 0} true;
+  $i5 := $M.3;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 71, 62} true;
+  assume {:verifier.code 0} true;
+  $i6 := $eq.i32($i5, 1);
+  assume {:verifier.code 0} true;
+  $i4 := $i6;
+  goto $bb5;
+$bb4:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 71, 43} true;
+  assume {:verifier.code 0} true;
+  assume !(($i3 == 1));
+  goto $bb5;
+$bb5:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 71, 43} true;
+  assume {:verifier.code 0} true;
+  $i7 := $zext.i1.i32($i4);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 71, 5} true;
+  assume {:verifier.code 0} true;
+  call assume_abort_if_not($i7);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 72, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb6:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 72, 5} true;
+  assume {:verifier.code 0} true;
+  call __VERIFIER_error();
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 72, 5} true;
+  assume {:verifier.code 0} true;
+  assume false;
+}
+const qrcu_reader1: ref;
+axiom (qrcu_reader1 == $sub.ref(0, 20673));
+procedure qrcu_reader1($p0: ref)
   returns ($r: ref)
 {
   var $i1: i32;
   var $i2: i32;
-  var $i3: i32;
+  var $i3: i1;
+  var $i4: i32;
+  var $i5: i1;
 $bb0:
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 90, 3} true;
-  assume {:verifier.code 1} true;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 90, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 91, 25} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 80, 3} true;
   assume {:verifier.code 0} true;
-  $i1 := $M.0;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 91, 23} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 80, 3} true;
   assume {:verifier.code 0} true;
-  $M.1 := $i1;
-  call {:cexpr "__unbuffered_p0_EAX"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 92, 3} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 81, 13} true;
   assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 93, 3} true;
+  $i1 := $M.4;
+  call {:cexpr "myidx"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 82, 9} true;
+  assume {:verifier.code 0} true;
+  call $i2 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 82, 9} true;
+  assume {:verifier.code 0} true;
+  $i3 := $ne.i32($i2, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 82, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i3} true;
+  goto $bb2, $bb3;
+$bb2:
+  assume ($i3 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 83, 7} true;
   assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 94, 5} true;
+  call __VERIFIER_atomic_use1($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 84, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb4;
+$bb3:
+  assume !(($i3 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 86, 11} true;
+  assume {:verifier.code 0} true;
+  call $i4 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i4);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 86, 11} true;
+  assume {:verifier.code 0} true;
+  $i5 := $ne.i32($i4, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 86, 11} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i5} true;
+  goto $bb5, $bb6;
+$bb4:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 92, 19} true;
   assume {:verifier.code 0} true;
   $M.2 := 1;
-  call {:cexpr "x"} boogie_si_record_i32(1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 95, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 96, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 97, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 98, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 99, 22} true;
+  call {:cexpr "readerprogress1"} boogie_si_record_i32(1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 93, 19} true;
   assume {:verifier.code 0} true;
-  $i2 := $M.3;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 99, 39} true;
-  assume {:verifier.code 0} true;
-  $i3 := $add.i32($i2, 1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 99, 20} true;
-  assume {:verifier.code 0} true;
-  $M.3 := $i3;
-  call {:cexpr "__unbuffered_cnt"} boogie_si_record_i32($i3);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 100, 3} true;
+  $M.2 := 2;
+  call {:cexpr "readerprogress1"} boogie_si_record_i32(2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 95, 3} true;
   assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 101, 3} true;
+  call __VERIFIER_atomic_use_done($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 96, 3} true;
   assume {:verifier.code 0} true;
   $r := $0.ref;
   $exn := false;
   return;
+$bb5:
+  assume ($i5 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 87, 2} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_use2($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 88, 2} true;
+  assume {:verifier.code 0} true;
+  goto $bb4;
+$bb6:
+  assume !(($i5 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb7;
+$bb7:
+  assume {:verifier.code 0} true;
+  goto $bb8;
+$bb8:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 80, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
 }
-const __VERIFIER_atomic_begin: ref;
-axiom (__VERIFIER_atomic_begin == $sub.ref(0, 17507));
-procedure __VERIFIER_atomic_begin();
-const __VERIFIER_atomic_end: ref;
-axiom (__VERIFIER_atomic_end == $sub.ref(0, 18539));
-procedure __VERIFIER_atomic_end();
-const P1: ref;
-axiom (P1 == $sub.ref(0, 19571));
-procedure P1($p0: ref)
+const qrcu_reader2: ref;
+axiom (qrcu_reader2 == $sub.ref(0, 21705));
+procedure qrcu_reader2($p0: ref)
+  returns ($r: ref)
+{
+  var $i1: i32;
+  var $i2: i32;
+  var $i3: i1;
+  var $i4: i32;
+  var $i5: i1;
+$bb0:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 102, 3} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 102, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 103, 13} true;
+  assume {:verifier.code 1} true;
+  $i1 := $M.4;
+  call {:cexpr "myidx"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 104, 9} true;
+  assume {:verifier.code 0} true;
+  call $i2 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 104, 9} true;
+  assume {:verifier.code 0} true;
+  $i3 := $ne.i32($i2, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 104, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i3} true;
+  goto $bb2, $bb3;
+$bb2:
+  assume ($i3 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 105, 7} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_use1($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 106, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb4;
+$bb3:
+  assume !(($i3 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 108, 11} true;
+  assume {:verifier.code 0} true;
+  call $i4 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i4);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 108, 11} true;
+  assume {:verifier.code 0} true;
+  $i5 := $ne.i32($i4, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 108, 11} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i5} true;
+  goto $bb5, $bb6;
+$bb4:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 114, 19} true;
+  assume {:verifier.code 0} true;
+  $M.3 := 1;
+  call {:cexpr "readerprogress2"} boogie_si_record_i32(1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 115, 19} true;
+  assume {:verifier.code 0} true;
+  $M.3 := 2;
+  call {:cexpr "readerprogress2"} boogie_si_record_i32(2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 117, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_use_done($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 118, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $0.ref;
+  $exn := false;
+  return;
+$bb5:
+  assume ($i5 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 109, 2} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_use2($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 110, 2} true;
+  assume {:verifier.code 0} true;
+  goto $bb4;
+$bb6:
+  assume !(($i5 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb7;
+$bb7:
+  assume {:verifier.code 0} true;
+  goto $bb8;
+$bb8:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 102, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+}
+const qrcu_updater: ref;
+axiom (qrcu_updater == $sub.ref(0, 22737));
+procedure qrcu_updater($p0: ref)
   returns ($r: ref)
 {
   var $i1: i32;
   var $i2: i32;
   var $i3: i32;
+  var $i4: i1;
+  var $i5: i32;
+  var $i6: i32;
+  var $i7: i32;
+  var $i9: i32;
+  var $i10: i32;
+  var $i11: i32;
+  var $i8: i32;
+  var $i12: i1;
+  var $i13: i32;
+  var $i14: i1;
+  var $i15: i32;
+  var $i16: i32;
+  var $i17: i32;
+  var $i19: i32;
+  var $i20: i32;
+  var $i21: i32;
+  var $i18: i32;
+  var $i22: i32;
+  var $i23: i1;
+  var $i24: i32;
+  var $i25: i32;
+  var $i26: i1;
+  var $i27: i32;
+  var $i28: i32;
+  var $i29: i32;
+  var $i30: i32;
+  var $i31: i32;
+  var $i32: i32;
+  var $i33: i32;
+  var $i34: i32;
+  var $i35: i32;
+  var $i36: i1;
+  var $i37: i32;
+  var $i38: i1;
+  var $i39: i32;
+  var $i40: i1;
+  var $i41: i32;
 $bb0:
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 108, 3} true;
-  assume {:verifier.code 1} true;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 108, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 109, 25} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 123, 20} true;
   assume {:verifier.code 0} true;
-  $i1 := $M.2;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 109, 23} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 123, 20} true;
   assume {:verifier.code 0} true;
-  $M.4 := $i1;
-  call {:cexpr "__unbuffered_p1_EAX"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 110, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 111, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 112, 5} true;
+  call $i1 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i1);
+  call {:cexpr "readerstart1"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 123, 58} true;
   assume {:verifier.code 0} true;
-  $M.0 := 1;
-  call {:cexpr "y"} boogie_si_record_i32(1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 113, 3} true;
+  call $i2 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i2);
+  call {:cexpr "readerstart2"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 125, 3} true;
   assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 114, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 115, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 116, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 117, 22} true;
+  call __VERIFIER_atomic_take_snapshot($i1, $i2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
   assume {:verifier.code 0} true;
-  $i2 := $M.3;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 117, 39} true;
+  call $i3 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i3);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
   assume {:verifier.code 0} true;
-  $i3 := $add.i32($i2, 1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 117, 20} true;
+  $i4 := $ne.i32($i3, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
   assume {:verifier.code 0} true;
-  $M.3 := $i3;
-  call {:cexpr "__unbuffered_cnt"} boogie_si_record_i32($i3);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 118, 3} true;
+  assume {:branchcond $i4} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i4 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
+  assume {:verifier.code 0} true;
+  $i5 := $M.0;
+  call {:cexpr "sum"} boogie_si_record_i32($i5);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
+  assume {:verifier.code 0} true;
+  $i6 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
+  assume {:verifier.code 0} true;
+  $i7 := $add.i32($i5, $i6);
+  call {:cexpr "sum"} boogie_si_record_i32($i7);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
+  assume {:verifier.code 0} true;
+  $i8 := $i7;
+  goto $bb3;
+$bb2:
+  assume !(($i4 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
+  assume {:verifier.code 0} true;
+  $i9 := $M.1;
+  call {:cexpr "sum"} boogie_si_record_i32($i9);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
+  assume {:verifier.code 0} true;
+  $i10 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 126, 3} true;
+  assume {:verifier.code 0} true;
+  $i11 := $add.i32($i9, $i10);
+  call {:cexpr "sum"} boogie_si_record_i32($i11);
+  assume {:verifier.code 0} true;
+  $i8 := $i11;
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 11} true;
+  assume {:verifier.code 0} true;
+  $i12 := $sle.i32($i8, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i12} true;
+  goto $bb4, $bb5;
+$bb4:
+  assume ($i12 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  call $i13 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i13);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i14 := $ne.i32($i13, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i14} true;
+  goto $bb6, $bb7;
+$bb5:
+  assume !(($i12 == 1));
+  assume {:verifier.code 0} true;
+  $i22 := $i8;
+  goto $bb9;
+$bb6:
+  assume ($i14 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i15 := $M.0;
+  call {:cexpr "sum"} boogie_si_record_i32($i15);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i16 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i17 := $add.i32($i15, $i16);
+  call {:cexpr "sum"} boogie_si_record_i32($i17);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i18 := $i17;
+  goto $bb8;
+$bb7:
+  assume !(($i14 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i19 := $M.1;
+  call {:cexpr "sum"} boogie_si_record_i32($i19);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i20 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 19} true;
+  assume {:verifier.code 0} true;
+  $i21 := $add.i32($i19, $i20);
+  call {:cexpr "sum"} boogie_si_record_i32($i21);
+  assume {:verifier.code 0} true;
+  $i18 := $i21;
+  goto $bb8;
+$bb8:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 127, 34} true;
+  assume {:verifier.code 0} true;
+  $i22 := $i18;
+  goto $bb9;
+$bb9:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 129, 11} true;
+  assume {:verifier.code 0} true;
+  $i23 := $sgt.i32($i22, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 129, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i23} true;
+  goto $bb10, $bb11;
+$bb10:
+  assume ($i23 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 130, 5} true;
+  assume {:verifier.code 0} true;
+  call $i24 := pthread_mutex_lock(mutex);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 9} true;
+  assume {:verifier.code 0} true;
+  $i25 := $M.4;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 13} true;
+  assume {:verifier.code 0} true;
+  $i26 := $sle.i32($i25, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i26} true;
+  goto $bb12, $bb13;
+$bb11:
+  assume !(($i23 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb24;
+$bb12:
+  assume ($i26 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 25} true;
+  assume {:verifier.code 0} true;
+  $i27 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 25} true;
+  assume {:verifier.code 0} true;
+  $i28 := $add.i32($i27, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 25} true;
+  assume {:verifier.code 0} true;
+  $M.1 := $i28;
+  call {:cexpr "ctr2"} boogie_si_record_i32($i28);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 33} true;
+  assume {:verifier.code 0} true;
+  $M.4 := 1;
+  call {:cexpr "idx"} boogie_si_record_i32(1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 42} true;
+  assume {:verifier.code 0} true;
+  $i29 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 42} true;
+  assume {:verifier.code 0} true;
+  $i30 := $add.i32($i29, $sub.i32(0, 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 42} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $i30;
+  call {:cexpr "ctr1"} boogie_si_record_i32($i30);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 131, 46} true;
+  assume {:verifier.code 0} true;
+  goto $bb14;
+$bb13:
+  assume !(($i26 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 132, 16} true;
+  assume {:verifier.code 0} true;
+  $i31 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 132, 16} true;
+  assume {:verifier.code 0} true;
+  $i32 := $add.i32($i31, 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 132, 16} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $i32;
+  call {:cexpr "ctr1"} boogie_si_record_i32($i32);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 132, 24} true;
+  assume {:verifier.code 0} true;
+  $M.4 := 0;
+  call {:cexpr "idx"} boogie_si_record_i32(0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 132, 33} true;
+  assume {:verifier.code 0} true;
+  $i33 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 132, 33} true;
+  assume {:verifier.code 0} true;
+  $i34 := $add.i32($i33, $sub.i32(0, 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 132, 33} true;
+  assume {:verifier.code 0} true;
+  $M.1 := $i34;
+  call {:cexpr "ctr2"} boogie_si_record_i32($i34);
+  assume {:verifier.code 0} true;
+  goto $bb14;
+$bb14:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 9} true;
+  assume {:verifier.code 0} true;
+  $i35 := $M.4;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 13} true;
+  assume {:verifier.code 0} true;
+  $i36 := $sle.i32($i35, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i36} true;
+  goto $bb15, $bb16;
+$bb15:
+  assume ($i36 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 21} true;
+  assume {:verifier.code 0} true;
+  goto $bb17;
+$bb16:
+  assume !(($i36 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 134, 12} true;
+  assume {:verifier.code 0} true;
+  goto $bb21;
+$bb17:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 28} true;
+  assume {:verifier.code 0} true;
+  $i37 := $M.0;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 33} true;
+  assume {:verifier.code 0} true;
+  $i38 := $sgt.i32($i37, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 21} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i38} true;
+  goto $bb18, $bb19;
+$bb18:
+  assume ($i38 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 21} true;
+  assume {:verifier.code 0} true;
+  goto $bb17;
+$bb19:
+  assume !(($i38 == 1));
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 133, 39} true;
+  assume {:verifier.code 0} true;
+  goto $bb20;
+$bb20:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 135, 5} true;
+  assume {:verifier.code 0} true;
+  call $i41 := pthread_mutex_unlock(mutex);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 136, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb24;
+$bb21:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 134, 19} true;
+  assume {:verifier.code 0} true;
+  $i39 := $M.1;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 134, 24} true;
+  assume {:verifier.code 0} true;
+  $i40 := $sgt.i32($i39, 0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 134, 12} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i40} true;
+  goto $bb22, $bb23;
+$bb22:
+  assume ($i40 == 1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 134, 12} true;
+  assume {:verifier.code 0} true;
+  goto $bb21;
+$bb23:
+  assume !(($i40 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb20;
+$bb24:
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 137, 3} true;
   assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 119, 3} true;
+  call __VERIFIER_atomic_check_progress1($i1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 138, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_check_progress2($i2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 139, 3} true;
   assume {:verifier.code 0} true;
   $r := $0.ref;
   $exn := false;
   return;
 }
+const pthread_mutex_lock: ref;
+axiom (pthread_mutex_lock == $sub.ref(0, 23769));
+procedure pthread_mutex_lock($p0: ref)
+  returns ($r: i32);
+const pthread_mutex_unlock: ref;
+axiom (pthread_mutex_unlock == $sub.ref(0, 24801));
+procedure pthread_mutex_unlock($p0: ref)
+  returns ($r: i32);
 const main: ref;
-axiom (main == $sub.ref(0, 20603));
+axiom (main == $sub.ref(0, 25833));
 procedure main()
   returns ($r: i32)
 {
   var $p0: ref;
   var $p1: ref;
-  var $i2: i32;
+  var $p2: ref;
   var $i3: i32;
   var $i4: i32;
-  var $i5: i1;
-  var $i6: i8;
-  var $i7: i8;
-  var $i8: i1;
-  var $i9: i32;
+  var $i5: i32;
+  var $i6: i32;
+  var $p7: ref;
+  var $i8: i32;
+  var $p9: ref;
   var $i10: i32;
-  var $i11: i1;
+  var $p11: ref;
+  var $i12: i32;
   var $i13: i32;
-  var $i14: i1;
-  var $i12: i1;
-  var $i15: i1;
-  var $i16: i8;
-  var $i17: i8;
-  var $i18: i1;
-  var $i19: i32;
 $bb0:
   call $initialize();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 148, 3} true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 144, 3} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
   assume {:verifier.code 0} true;
   call $p0 := $alloc($mul.ref(8, $zext.i32.i64(1)));
   assume {:verifier.code 0} true;
   call $p1 := $alloc($mul.ref(8, $zext.i32.i64(1)));
+  assume {:verifier.code 0} true;
+  call $p2 := $alloc($mul.ref(8, $zext.i32.i64(1)));
   assume true;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 148, 3} true;
-  assume {:verifier.code 0} true;
-  call $i2 := pthread_create($p0, $0.ref, P0, $0.ref);
   assume true;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 150, 3} true;
+  assume true;
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 144, 3} true;
   assume {:verifier.code 0} true;
-  call $i3 := pthread_create($p1, $0.ref, P1, $0.ref);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 151, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 152, 21} true;
+  call $i3 := pthread_mutex_init(mutex, $0.ref);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 145, 3} true;
   assume {:verifier.code 0} true;
-  $i4 := $M.3;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 152, 38} true;
+  call $i4 := pthread_create($p0, $0.ref, qrcu_reader1, $0.ref);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 146, 3} true;
   assume {:verifier.code 0} true;
-  $i5 := $eq.i32($i4, 2);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 152, 19} true;
+  call $i5 := pthread_create($p1, $0.ref, qrcu_reader2, $0.ref);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 147, 3} true;
   assume {:verifier.code 0} true;
-  $i6 := $zext.i1.i8($i5);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 152, 19} true;
+  call $i6 := pthread_create($p2, $0.ref, qrcu_updater, $0.ref);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 148, 16} true;
   assume {:verifier.code 0} true;
-  $M.5 := $i6;
-  call {:cexpr "main$tmp_guard0"} boogie_si_record_i8($i6);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 153, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 154, 23} true;
+  $p7 := $load.ref($M.5, $p0);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 148, 3} true;
   assume {:verifier.code 0} true;
-  $i7 := $M.5;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 154, 23} true;
+  call $i8 := __pthread_join($p7, $0.ref);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 149, 16} true;
   assume {:verifier.code 0} true;
-  $i8 := $trunc.i8.i1($i7);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 154, 23} true;
+  $p9 := $load.ref($M.5, $p1);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 149, 3} true;
   assume {:verifier.code 0} true;
-  $i9 := $zext.i1.i32($i8);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 154, 3} true;
+  call $i10 := __pthread_join($p9, $0.ref);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 150, 16} true;
   assume {:verifier.code 0} true;
-  call assume_abort_if_not($i9);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 155, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 156, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 157, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_begin();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 23} true;
+  $p11 := $load.ref($M.5, $p2);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 150, 3} true;
   assume {:verifier.code 0} true;
-  $i10 := $M.1;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 43} true;
+  call $i12 := __pthread_join($p11, $0.ref);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 151, 3} true;
   assume {:verifier.code 0} true;
-  $i11 := $eq.i32($i10, 1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 48} true;
-  assume {:verifier.code 0} true;
-  $i12 := 0;
-  assume {:branchcond $i11} true;
-  goto $bb1, $bb2;
-$bb1:
-  assume ($i11 == 1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 51} true;
-  assume {:verifier.code 0} true;
-  $i13 := $M.4;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 71} true;
-  assume {:verifier.code 0} true;
-  $i14 := $eq.i32($i13, 1);
-  assume {:verifier.code 0} true;
-  $i12 := $i14;
-  goto $bb3;
-$bb2:
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 48} true;
-  assume {:verifier.code 0} true;
-  assume !(($i11 == 1));
-  goto $bb3;
-$bb3:
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 0, 0} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 21} true;
-  assume {:verifier.code 0} true;
-  $i15 := $xor.i1($i12, 1);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 19} true;
-  assume {:verifier.code 0} true;
-  $i16 := $zext.i1.i8($i15);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 160, 19} true;
-  assume {:verifier.code 0} true;
-  $M.6 := $i16;
-  call {:cexpr "main$tmp_guard1"} boogie_si_record_i8($i16);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 161, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_atomic_end();
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 164, 21} true;
-  assume {:verifier.code 1} true;
-  $i17 := $M.6;
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 164, 21} true;
-  assume {:verifier.code 1} true;
-  $i18 := $trunc.i8.i1($i17);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 164, 21} true;
-  assume {:verifier.code 1} true;
-  $i19 := $zext.i1.i32($i18);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 164, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_assert($i19);
-  assume {:sourceloc "./output/thin000_pso.oepc_tmp.c", 165, 3} true;
+  call $i13 := pthread_mutex_destroy(mutex);
+  assume {:sourceloc "./output/qrcu-2_tmp.c", 152, 3} true;
   assume {:verifier.code 0} true;
   $r := 0;
   $exn := false;
   return;
 }
+const pthread_mutex_init: ref;
+axiom (pthread_mutex_init == $sub.ref(0, 26865));
+procedure pthread_mutex_init($p0: ref, $p1: ref)
+  returns ($r: i32);
 const pthread_create: ref;
-axiom (pthread_create == $sub.ref(0, 21635));
+axiom (pthread_create == $sub.ref(0, 27897));
 procedure pthread_create($p0: ref, $p1: ref, $p2: ref, $p3: ref)
   returns ($r: i32);
+const __pthread_join: ref;
+axiom (__pthread_join == $sub.ref(0, 28929));
+procedure __pthread_join($p0: ref, $p1: ref)
+  returns ($r: i32);
+const pthread_mutex_destroy: ref;
+axiom (pthread_mutex_destroy == $sub.ref(0, 29961));
+procedure pthread_mutex_destroy($p0: ref)
+  returns ($r: i32);
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 22667));
+axiom (__VERIFIER_assume == $sub.ref(0, 30993));
 procedure __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1765,11 +2419,11 @@ $bb0:
   return;
 }
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 23699));
+axiom (__SMACK_code == $sub.ref(0, 32025));
 procedure __SMACK_code.ref.i32($p0: ref, p.1: i32);
 procedure __SMACK_code.ref($p0: ref);
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 24731));
+axiom (__SMACK_dummy == $sub.ref(0, 33057));
 procedure __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -1785,7 +2439,7 @@ $bb0:
   return;
 }
 const __VERIFIER_error: ref;
-axiom (__VERIFIER_error == $sub.ref(0, 25763));
+axiom (__VERIFIER_error == $sub.ref(0, 34089));
 procedure __VERIFIER_error()
 {
 $bb0:
@@ -1800,7 +2454,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 26795));
+axiom (__SMACK_check_overflow == $sub.ref(0, 35121));
 procedure __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -1819,103 +2473,157 @@ $bb0:
   return;
 }
 const __SMACK_nondet_char: ref;
-axiom (__SMACK_nondet_char == $sub.ref(0, 27827));
+axiom (__SMACK_nondet_char == $sub.ref(0, 36153));
 procedure __SMACK_nondet_char()
   returns ($r: i8);
 const __SMACK_nondet_signed_char: ref;
-axiom (__SMACK_nondet_signed_char == $sub.ref(0, 28859));
+axiom (__SMACK_nondet_signed_char == $sub.ref(0, 37185));
 procedure __SMACK_nondet_signed_char()
   returns ($r: i8);
 const __SMACK_nondet_unsigned_char: ref;
-axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 29891));
+axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 38217));
 procedure __SMACK_nondet_unsigned_char()
   returns ($r: i8);
 const __SMACK_nondet_short: ref;
-axiom (__SMACK_nondet_short == $sub.ref(0, 30923));
+axiom (__SMACK_nondet_short == $sub.ref(0, 39249));
 procedure __SMACK_nondet_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short: ref;
-axiom (__SMACK_nondet_signed_short == $sub.ref(0, 31955));
+axiom (__SMACK_nondet_signed_short == $sub.ref(0, 40281));
 procedure __SMACK_nondet_signed_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short_int: ref;
-axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 32987));
+axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 41313));
 procedure __SMACK_nondet_signed_short_int()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short: ref;
-axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 34019));
+axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 42345));
 procedure __SMACK_nondet_unsigned_short()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short_int: ref;
-axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 35051));
+axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 43377));
 procedure __SMACK_nondet_unsigned_short_int()
   returns ($r: i16);
+const __VERIFIER_nondet_int: ref;
+axiom (__VERIFIER_nondet_int == $sub.ref(0, 44409));
+procedure __VERIFIER_nondet_int()
+  returns ($r: i32)
+{
+  var $i0: i32;
+  var $i1: i1;
+  var $i3: i1;
+  var $i2: i1;
+  var $i4: i32;
+$bb0:
+  assume {:sourceloc "./lib/smack.c", 115, 11} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 115, 11} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __SMACK_nondet_int();
+  call {:cexpr "smack:ext:__SMACK_nondet_int"} boogie_si_record_i32($i0);
+  call {:cexpr "x"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./lib/smack.c", 116, 23} true;
+  assume {:verifier.code 0} true;
+  $i1 := $sge.i32($i0, $sub.i32(0, 2147483648));
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 0} true;
+  $i2 := 0;
+  assume {:branchcond $i1} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i1 == 1);
+  assume {:sourceloc "./lib/smack.c", 116, 39} true;
+  assume {:verifier.code 1} true;
+  $i3 := $sle.i32($i0, 2147483647);
+  assume {:verifier.code 0} true;
+  $i2 := $i3;
+  goto $bb3;
+$bb2:
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 0} true;
+  assume !(($i1 == 1));
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./lib/smack.c", 0, 0} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 1} true;
+  $i4 := $zext.i1.i32($i2);
+  assume {:sourceloc "./lib/smack.c", 116, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_assume($i4);
+  assume {:sourceloc "./lib/smack.c", 117, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i0;
+  $exn := false;
+  return;
+}
 const __SMACK_nondet_int: ref;
-axiom (__SMACK_nondet_int == $sub.ref(0, 36083));
+axiom (__SMACK_nondet_int == $sub.ref(0, 45441));
 procedure __SMACK_nondet_int()
   returns ($r: i32);
 const __SMACK_nondet_signed_int: ref;
-axiom (__SMACK_nondet_signed_int == $sub.ref(0, 37115));
+axiom (__SMACK_nondet_signed_int == $sub.ref(0, 46473));
 procedure __SMACK_nondet_signed_int()
   returns ($r: i32);
 const __SMACK_nondet_unsigned: ref;
-axiom (__SMACK_nondet_unsigned == $sub.ref(0, 38147));
+axiom (__SMACK_nondet_unsigned == $sub.ref(0, 47505));
 procedure __SMACK_nondet_unsigned()
   returns ($r: i32);
 const __SMACK_nondet_unsigned_int: ref;
-axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 39179));
+axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 48537));
 procedure __SMACK_nondet_unsigned_int()
   returns ($r: i32);
 const __SMACK_nondet_long: ref;
-axiom (__SMACK_nondet_long == $sub.ref(0, 40211));
+axiom (__SMACK_nondet_long == $sub.ref(0, 49569));
 procedure __SMACK_nondet_long()
   returns ($r: i64);
 const __SMACK_nondet_long_int: ref;
-axiom (__SMACK_nondet_long_int == $sub.ref(0, 41243));
+axiom (__SMACK_nondet_long_int == $sub.ref(0, 50601));
 procedure __SMACK_nondet_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long: ref;
-axiom (__SMACK_nondet_signed_long == $sub.ref(0, 42275));
+axiom (__SMACK_nondet_signed_long == $sub.ref(0, 51633));
 procedure __SMACK_nondet_signed_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_int: ref;
-axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 43307));
+axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 52665));
 procedure __SMACK_nondet_signed_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long: ref;
-axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 44339));
+axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 53697));
 procedure __SMACK_nondet_unsigned_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 45371));
+axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 54729));
 procedure __SMACK_nondet_unsigned_long_int()
   returns ($r: i64);
 const __SMACK_nondet_long_long: ref;
-axiom (__SMACK_nondet_long_long == $sub.ref(0, 46403));
+axiom (__SMACK_nondet_long_long == $sub.ref(0, 55761));
 procedure __SMACK_nondet_long_long()
   returns ($r: i64);
 const __SMACK_nondet_long_long_int: ref;
-axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 47435));
+axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 56793));
 procedure __SMACK_nondet_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long: ref;
-axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 48467));
+axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 57825));
 procedure __SMACK_nondet_signed_long_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long_int: ref;
-axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 49499));
+axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 58857));
 procedure __SMACK_nondet_signed_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long: ref;
-axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 50531));
+axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 59889));
 procedure __SMACK_nondet_unsigned_long_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 51563));
+axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 60921));
 procedure __SMACK_nondet_unsigned_long_long_int()
   returns ($r: i64);
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 52595));
+axiom (__SMACK_decls == $sub.ref(0, 61953));
 type $mop;
 procedure boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -1943,10 +2651,10 @@ ensures $eq.ref.bool(n, $0.ref) ==> old($CurrAddr) == $CurrAddr && p == $0.ref;
 procedure $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 53627));
+axiom (__SMACK_top_decl == $sub.ref(0, 62985));
 procedure __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 54659));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 64017));
 procedure __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -1958,35 +2666,87 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 55691));
+axiom (llvm.dbg.value == $sub.ref(0, 65049));
 procedure llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 56723));
+axiom (__SMACK_static_init == $sub.ref(0, 66081));
 procedure __SMACK_static_init()
 {
 $bb0:
-  $M.3 := 0;
-  call {:cexpr "__unbuffered_cnt"} boogie_si_record_i32(0);
-  $M.1 := 0;
-  call {:cexpr "__unbuffered_p0_EAX"} boogie_si_record_i32(0);
   $M.4 := 0;
-  call {:cexpr "__unbuffered_p1_EAX"} boogie_si_record_i32(0);
+  call {:cexpr "idx"} boogie_si_record_i32(0);
+  $M.0 := 1;
+  call {:cexpr "ctr1"} boogie_si_record_i32(1);
+  $M.1 := 0;
+  call {:cexpr "ctr2"} boogie_si_record_i32(0);
   $M.2 := 0;
-  call {:cexpr "x"} boogie_si_record_i32(0);
-  $M.0 := 0;
-  call {:cexpr "y"} boogie_si_record_i32(0);
-  $M.5 := 0;
-  call {:cexpr "main$tmp_guard0"} boogie_si_record_i8(0);
-  $M.6 := 0;
-  call {:cexpr "main$tmp_guard1"} boogie_si_record_i8(0);
-  $M.7 := .str.1.3;
-  $M.8 := 0;
+  call {:cexpr "readerprogress1"} boogie_si_record_i32(0);
+  $M.3 := 0;
+  call {:cexpr "readerprogress2"} boogie_si_record_i32(0);
+  $M.5 := $store.i64($M.5, mutex, 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(0, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(1, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(2, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(3, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(4, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(5, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(6, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(7, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(8, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(9, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(10, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(11, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(12, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(13, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(14, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(15, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(16, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(17, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(18, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(19, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(20, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(21, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(22, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(23, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(24, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(25, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(26, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(27, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(28, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(29, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(30, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(31, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(32, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(33, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(34, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(35, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(36, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(37, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(38, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(39, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(40, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(41, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(42, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(43, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(44, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(45, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(46, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(47, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(48, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(49, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(50, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(51, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(52, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(53, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(54, 1)), 0);
+  $M.5 := $store.i8($M.5, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(55, 1)), 0);
+  $M.6 := .str.1.5;
+  $M.7 := 0;
   call {:cexpr "errno_global"} boogie_si_record_i32(0);
   $exn := false;
   return;
 }
 procedure boogie_si_record_i32(x: i32);
-procedure boogie_si_record_i8(x: i8);
 procedure boogie_si_record_ref(x: ref);
 procedure $initialize()
 {

@@ -37,12 +37,12 @@ const $MALLOC_TOP: ref;
 
 // Memory maps (4 regions)
 var $M.0: i32;
-var $M.1: [ref] i8;
+var $M.1: i32;
 var $M.2: ref;
 var $M.3: i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 55777));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 49525));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1369,307 +1369,294 @@ function {:inline} $store.float(M: [ref] float, p: ref, f: float) returns ([ref]
 function {:inline} $load.unsafe.float(M: [ref] i8, p: ref) returns (float) { $bitcast.i8.float(M[p]) }
 function {:inline} $store.unsafe.float(M: [ref] i8, p: ref, f: float) returns ([ref] i8) { M[p := $bitcast.float.i8(f)] }
 function $extractvalue.float(p: ref, i: int) returns (float);
-const mutex: ref;
-axiom (mutex == $sub.ref(0, 1088));
-const pdev: ref;
-axiom (pdev == $sub.ref(0, 2116));
-const t1: ref;
-axiom (t1 == $sub.ref(0, 3148));
+const i: ref;
+axiom (i == $sub.ref(0, 1028));
+const j: ref;
+axiom (j == $sub.ref(0, 2056));
 const env_value_str: ref;
-axiom (env_value_str == $sub.ref(0, 4180));
-const {:count 3} .str.1.5: ref;
-axiom (.str.1.5 == $sub.ref(0, 5207));
+axiom (env_value_str == $sub.ref(0, 3088));
+const {:count 3} .str.1.3: ref;
+axiom (.str.1.3 == $sub.ref(0, 4115));
 const {:count 14} .str.14: ref;
-axiom (.str.14 == $sub.ref(0, 6245));
+axiom (.str.14 == $sub.ref(0, 5153));
 const errno_global: ref;
-axiom (errno_global == $sub.ref(0, 7273));
-const ldv_assert: ref;
-axiom (ldv_assert == $sub.ref(0, 8305));
-procedure ldv_assert($i0: i32)
-{
-  var $i1: i1;
-$bb0:
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 8, 40} true;
-  assume {:verifier.code 0} true;
-  call {:cexpr "ldv_assert:arg:expression"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 8, 40} true;
-  assume {:verifier.code 0} true;
-  $i1 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 8, 39} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i1} true;
-  goto $bb1, $bb2;
-$bb1:
-  assume ($i1 == 1);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 8, 83} true;
-  assume {:verifier.code 0} true;
-  $exn := false;
-  return;
-$bb2:
-  assume !(($i1 == 1));
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 8, 52} true;
-  assume {:verifier.code 0} true;
-  goto $bb3;
-$bb3:
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 8, 61} true;
-  assume {:verifier.code 0} true;
-  call __VERIFIER_error();
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 8, 61} true;
-  assume {:verifier.code 0} true;
-  assume false;
-}
-const llvm.dbg.declare: ref;
-axiom (llvm.dbg.declare == $sub.ref(0, 9337));
-procedure llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
-const thread1: ref;
-axiom (thread1 == $sub.ref(0, 10369));
-procedure thread1($p0: ref)
+axiom (errno_global == $sub.ref(0, 6181));
+const t1: ref;
+axiom (t1 == $sub.ref(0, 7213));
+procedure t1($p0: ref)
   returns ($r: ref)
 {
-  var $i1: i32;
-  var $i2: i32;
-  var $i3: i1;
-  var $i4: i32;
-  var $i5: i32;
-$bb0:
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 15, 4} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 15, 4} true;
-  assume {:verifier.code 0} true;
-  call $i1 := pthread_mutex_lock(mutex);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 16, 9} true;
-  assume {:verifier.code 0} true;
-  $M.0 := 6;
-  call {:cexpr "pdev"} boogie_si_record_i32(6);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 17, 15} true;
-  assume {:verifier.code 0} true;
-  $i2 := $M.0;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 17, 19} true;
-  assume {:verifier.code 0} true;
-  $i3 := $eq.i32($i2, 6);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 17, 19} true;
-  assume {:verifier.code 0} true;
-  $i4 := $zext.i1.i32($i3);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 17, 4} true;
-  assume {:verifier.code 0} true;
-  call ldv_assert($i4);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 18, 4} true;
-  assume {:verifier.code 0} true;
-  call $i5 := pthread_mutex_unlock(mutex);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 19, 4} true;
-  assume {:verifier.code 0} true;
-  $r := $0.ref;
-  $exn := false;
-  return;
-}
-const pthread_mutex_lock: ref;
-axiom (pthread_mutex_lock == $sub.ref(0, 11401));
-procedure pthread_mutex_lock($p0: ref)
-  returns ($r: i32);
-const pthread_mutex_unlock: ref;
-axiom (pthread_mutex_unlock == $sub.ref(0, 12433));
-procedure pthread_mutex_unlock($p0: ref)
-  returns ($r: i32);
-const module_init: ref;
-axiom (module_init == $sub.ref(0, 13465));
-procedure module_init()
-  returns ($r: i32)
-{
-  var $i0: i32;
   var $i1: i32;
   var $i2: i1;
   var $i3: i32;
   var $i4: i32;
-  var $i5: i1;
-  var $i6: i32;
-  var $i8: i32;
-  var $i9: i1;
-  var $i10: i32;
-  var $i11: i32;
-  var $i7: i32;
+  var $i5: i32;
 $bb0:
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 23, 4} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 14, 8} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 23, 4} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 14, 8} true;
   assume {:verifier.code 0} true;
-  call $i0 := pthread_mutex_init(mutex, $0.ref);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 25, 9} true;
-  assume {:verifier.code 0} true;
-  $M.0 := 1;
-  call {:cexpr "pdev"} boogie_si_record_i32(1);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 26, 15} true;
-  assume {:verifier.code 0} true;
-  $i1 := $M.0;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 26, 19} true;
-  assume {:verifier.code 0} true;
-  $i2 := $eq.i32($i1, 1);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 26, 19} true;
-  assume {:verifier.code 0} true;
-  $i3 := $zext.i1.i32($i2);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 26, 4} true;
-  assume {:verifier.code 0} true;
-  call ldv_assert($i3);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 27, 7} true;
-  assume {:verifier.code 1} true;
-  call $i4 := __VERIFIER_nondet_int();
-  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i4);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 27, 7} true;
-  assume {:verifier.code 0} true;
-  $i5 := $ne.i32($i4, 0);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 27, 7} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i5} true;
-  goto $bb1, $bb2;
+  $i1 := 0;
+  goto $bb1;
 $bb1:
-  assume ($i5 == 1);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 29, 7} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  call $i6 := pthread_create(t1, $0.ref, thread1, $0.ref);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 33, 7} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 14, 21} true;
   assume {:verifier.code 0} true;
-  $i7 := 0;
-  goto $bb3;
+  $i2 := $slt.i32($i1, 10);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 14, 3} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i2} true;
+  goto $bb2, $bb3;
 $bb2:
-  assume !(($i5 == 1));
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 36, 9} true;
+  assume ($i2 == 1);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 15, 5} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_begin();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 16, 9} true;
   assume {:verifier.code 0} true;
-  $M.0 := 3;
-  call {:cexpr "pdev"} boogie_si_record_i32(3);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 37, 15} true;
+  $i3 := $M.0;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 16, 11} true;
   assume {:verifier.code 0} true;
-  $i8 := $M.0;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 37, 19} true;
+  $i4 := $add.i32($i3, 1);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 16, 7} true;
   assume {:verifier.code 0} true;
-  $i9 := $eq.i32($i8, 3);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 37, 19} true;
+  $M.1 := $i4;
+  call {:cexpr "i"} boogie_si_record_i32($i4);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 17, 5} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_end();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 18, 3} true;
   assume {:verifier.code 0} true;
-  $i10 := $zext.i1.i32($i9);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 37, 4} true;
-  assume {:verifier.code 0} true;
-  call ldv_assert($i10);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 38, 4} true;
-  assume {:verifier.code 0} true;
-  call $i11 := pthread_mutex_destroy(mutex);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 39, 4} true;
-  assume {:verifier.code 0} true;
-  $i7 := $sub.i32(0, 1);
-  goto $bb3;
+  goto $bb4;
 $bb3:
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 0, 0} true;
+  assume !(($i2 == 1));
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 19, 3} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 40, 1} true;
+  call pthread_exit($0.ref);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 19, 3} true;
   assume {:verifier.code 0} true;
-  $r := $i7;
+  assume false;
+$bb4:
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 14, 29} true;
+  assume {:verifier.code 0} true;
+  $i5 := $add.i32($i1, 1);
+  call {:cexpr "k"} boogie_si_record_i32($i5);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 14, 3} true;
+  assume {:verifier.code 0} true;
+  $i1 := $i5;
+  goto $bb1;
+$bb5:
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 20, 1} true;
+  assume {:verifier.code 0} true;
+  $r := $u0;
   $exn := false;
   return;
 }
-const pthread_mutex_init: ref;
-axiom (pthread_mutex_init == $sub.ref(0, 14497));
-procedure pthread_mutex_init($p0: ref, $p1: ref)
-  returns ($r: i32);
-const pthread_create: ref;
-axiom (pthread_create == $sub.ref(0, 15529));
-procedure pthread_create($p0: ref, $p1: ref, $p2: ref, $p3: ref)
-  returns ($r: i32);
-const pthread_mutex_destroy: ref;
-axiom (pthread_mutex_destroy == $sub.ref(0, 16561));
-procedure pthread_mutex_destroy($p0: ref)
-  returns ($r: i32);
-const module_exit: ref;
-axiom (module_exit == $sub.ref(0, 17593));
-procedure module_exit()
+const llvm.dbg.declare: ref;
+axiom (llvm.dbg.declare == $sub.ref(0, 8245));
+procedure llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
+const __VERIFIER_atomic_begin: ref;
+axiom (__VERIFIER_atomic_begin == $sub.ref(0, 9277));
+procedure __VERIFIER_atomic_begin();
+const __VERIFIER_atomic_end: ref;
+axiom (__VERIFIER_atomic_end == $sub.ref(0, 10309));
+procedure __VERIFIER_atomic_end();
+const pthread_exit: ref;
+axiom (pthread_exit == $sub.ref(0, 11341));
+procedure pthread_exit($p0: ref);
+const t2: ref;
+axiom (t2 == $sub.ref(0, 12373));
+procedure t2($p0: ref)
+  returns ($r: ref)
 {
-  var $p0: ref;
-  var $p1: ref;
-  var $i2: i32;
+  var $i1: i32;
+  var $i2: i1;
   var $i3: i32;
   var $i4: i32;
-  var $i5: i1;
-  var $i6: i32;
+  var $i5: i32;
 $bb0:
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 47, 17} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 23, 8} true;
   assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 23, 8} true;
   assume {:verifier.code 0} true;
-  call $p0 := $alloc($mul.ref(8, $zext.i32.i64(1)));
-  assume true;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 47, 17} true;
+  $i1 := 0;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $p1 := $load.ref($M.1, t1);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 47, 4} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 23, 21} true;
   assume {:verifier.code 0} true;
-  call $i2 := __pthread_join($p1, $p0);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 48, 4} true;
+  $i2 := $slt.i32($i1, 10);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 23, 3} true;
   assume {:verifier.code 0} true;
-  call $i3 := pthread_mutex_destroy(mutex);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 50, 9} true;
+  assume {:branchcond $i2} true;
+  goto $bb2, $bb3;
+$bb2:
+  assume ($i2 == 1);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 24, 5} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_begin();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 25, 9} true;
   assume {:verifier.code 0} true;
-  $M.0 := 5;
-  call {:cexpr "pdev"} boogie_si_record_i32(5);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 51, 15} true;
+  $i3 := $M.1;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 25, 11} true;
   assume {:verifier.code 0} true;
-  $i4 := $M.0;
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 51, 19} true;
+  $i4 := $add.i32($i3, 1);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 25, 7} true;
   assume {:verifier.code 0} true;
-  $i5 := $eq.i32($i4, 5);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 51, 19} true;
+  $M.0 := $i4;
+  call {:cexpr "j"} boogie_si_record_i32($i4);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 26, 5} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_end();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 27, 3} true;
   assume {:verifier.code 0} true;
-  $i6 := $zext.i1.i32($i5);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 51, 4} true;
+  goto $bb4;
+$bb3:
+  assume !(($i2 == 1));
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 28, 3} true;
   assume {:verifier.code 0} true;
-  call ldv_assert($i6);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 52, 1} true;
+  call pthread_exit($0.ref);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 28, 3} true;
   assume {:verifier.code 0} true;
+  assume false;
+$bb4:
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 23, 29} true;
+  assume {:verifier.code 0} true;
+  $i5 := $add.i32($i1, 1);
+  call {:cexpr "k"} boogie_si_record_i32($i5);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 23, 3} true;
+  assume {:verifier.code 0} true;
+  $i1 := $i5;
+  goto $bb1;
+$bb5:
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 29, 1} true;
+  assume {:verifier.code 0} true;
+  $r := $u0;
   $exn := false;
   return;
 }
-const __pthread_join: ref;
-axiom (__pthread_join == $sub.ref(0, 18625));
-procedure __pthread_join($p0: ref, $p1: ref)
-  returns ($r: i32);
 const main: ref;
-axiom (main == $sub.ref(0, 19657));
-procedure main()
+axiom (main == $sub.ref(0, 13405));
+procedure main($i0: i32, $p1: ref)
   returns ($r: i32)
 {
-  var $i0: i32;
-  var $i1: i1;
+  var $p2: ref;
+  var $p3: ref;
+  var $i4: i32;
+  var $i5: i32;
+  var $i6: i32;
+  var $i7: i1;
+  var $i8: i32;
+  var $i9: i32;
+  var $i10: i1;
+  var $i11: i32;
+  var $i12: i1;
+  var $i13: i1;
 $bb0:
   call $initialize();
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 55, 8} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 34, 3} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 55, 8} true;
+  call {:cexpr "smack:arg:main:$i0"} boogie_si_record_i32($i0);
+  call {:cexpr "smack:arg:main:$p1"} boogie_si_record_ref($p1);
   assume {:verifier.code 0} true;
-  call $i0 := module_init();
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 55, 21} true;
+  call $p2 := $alloc($mul.ref(8, $zext.i32.i64(1)));
   assume {:verifier.code 0} true;
-  $i1 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 55, 8} true;
+  call $p3 := $alloc($mul.ref(8, $zext.i32.i64(1)));
+  call {:cexpr "main:arg:argc"} boogie_si_record_i32($i0);
+  assume true;
+  assume true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 34, 3} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i1} true;
-  goto $bb1, $bb2;
+  call $i4 := pthread_create($p2, $0.ref, t1, $0.ref);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 35, 3} true;
+  assume {:verifier.code 0} true;
+  call $i5 := pthread_create($p3, $0.ref, t2, $0.ref);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 37, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_begin();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 38, 15} true;
+  assume {:verifier.code 0} true;
+  $i6 := $M.1;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 38, 17} true;
+  assume {:verifier.code 0} true;
+  $i7 := $sge.i32($i6, 26);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 38, 17} true;
+  assume {:verifier.code 0} true;
+  $i8 := $zext.i1.i32($i7);
+  call {:cexpr "condI"} boogie_si_record_i32($i8);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 39, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_end();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 41, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_begin();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 42, 15} true;
+  assume {:verifier.code 0} true;
+  $i9 := $M.0;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 42, 17} true;
+  assume {:verifier.code 0} true;
+  $i10 := $sge.i32($i9, 26);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 42, 17} true;
+  assume {:verifier.code 0} true;
+  $i11 := $zext.i1.i32($i10);
+  call {:cexpr "condJ"} boogie_si_record_i32($i11);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 43, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_atomic_end();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 45, 7} true;
+  assume {:verifier.code 0} true;
+  $i12 := $ne.i32($i8, 0);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 45, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i12} true;
+  goto $bb1, $bb3;
 $bb1:
-  assume ($i1 == 1);
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 55, 26} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 45, 13} true;
   assume {:verifier.code 0} true;
-  goto $bb3;
+  assume ($i12 == 1);
+  goto $bb2;
 $bb2:
-  assume !(($i1 == 1));
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 56, 5} true;
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 45, 23} true;
   assume {:verifier.code 0} true;
-  call module_exit();
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 56, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb3;
+  goto $bb6;
 $bb3:
-  assume {:sourceloc "./output/race-1_1-join_tmp.c", 58, 5} true;
+  assume !(($i12 == 1));
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 45, 16} true;
+  assume {:verifier.code 0} true;
+  $i13 := $ne.i32($i11, 0);
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 45, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i13} true;
+  goto $bb4, $bb5;
+$bb4:
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 45, 7} true;
+  assume {:verifier.code 0} true;
+  assume ($i13 == 1);
+  goto $bb2;
+$bb5:
+  assume !(($i13 == 1));
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 49, 3} true;
   assume {:verifier.code 0} true;
   $r := 0;
   $exn := false;
   return;
+$bb6:
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 46, 12} true;
+  assume {:verifier.code 0} true;
+  call __VERIFIER_error();
+  assume {:sourceloc "./output/triangular-longer-2_tmp.c", 46, 12} true;
+  assume {:verifier.code 0} true;
+  assume false;
 }
+const pthread_create: ref;
+axiom (pthread_create == $sub.ref(0, 14437));
+procedure pthread_create($p0: ref, $p1: ref, $p2: ref, $p3: ref)
+  returns ($r: i32);
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 20689));
+axiom (__VERIFIER_assume == $sub.ref(0, 15469));
 procedure __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1688,11 +1675,11 @@ $bb0:
   return;
 }
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 21721));
+axiom (__SMACK_code == $sub.ref(0, 16501));
 procedure __SMACK_code.ref.i32($p0: ref, p.1: i32);
 procedure __SMACK_code.ref($p0: ref);
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 22753));
+axiom (__SMACK_dummy == $sub.ref(0, 17533));
 procedure __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -1708,7 +1695,7 @@ $bb0:
   return;
 }
 const __VERIFIER_error: ref;
-axiom (__VERIFIER_error == $sub.ref(0, 23785));
+axiom (__VERIFIER_error == $sub.ref(0, 18565));
 procedure __VERIFIER_error()
 {
 $bb0:
@@ -1723,7 +1710,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 24817));
+axiom (__SMACK_check_overflow == $sub.ref(0, 19597));
 procedure __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -1742,157 +1729,103 @@ $bb0:
   return;
 }
 const __SMACK_nondet_char: ref;
-axiom (__SMACK_nondet_char == $sub.ref(0, 25849));
+axiom (__SMACK_nondet_char == $sub.ref(0, 20629));
 procedure __SMACK_nondet_char()
   returns ($r: i8);
 const __SMACK_nondet_signed_char: ref;
-axiom (__SMACK_nondet_signed_char == $sub.ref(0, 26881));
+axiom (__SMACK_nondet_signed_char == $sub.ref(0, 21661));
 procedure __SMACK_nondet_signed_char()
   returns ($r: i8);
 const __SMACK_nondet_unsigned_char: ref;
-axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 27913));
+axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 22693));
 procedure __SMACK_nondet_unsigned_char()
   returns ($r: i8);
 const __SMACK_nondet_short: ref;
-axiom (__SMACK_nondet_short == $sub.ref(0, 28945));
+axiom (__SMACK_nondet_short == $sub.ref(0, 23725));
 procedure __SMACK_nondet_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short: ref;
-axiom (__SMACK_nondet_signed_short == $sub.ref(0, 29977));
+axiom (__SMACK_nondet_signed_short == $sub.ref(0, 24757));
 procedure __SMACK_nondet_signed_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short_int: ref;
-axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 31009));
+axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 25789));
 procedure __SMACK_nondet_signed_short_int()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short: ref;
-axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 32041));
+axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 26821));
 procedure __SMACK_nondet_unsigned_short()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short_int: ref;
-axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 33073));
+axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 27853));
 procedure __SMACK_nondet_unsigned_short_int()
   returns ($r: i16);
-const __VERIFIER_nondet_int: ref;
-axiom (__VERIFIER_nondet_int == $sub.ref(0, 34105));
-procedure __VERIFIER_nondet_int()
-  returns ($r: i32)
-{
-  var $i0: i32;
-  var $i1: i1;
-  var $i3: i1;
-  var $i2: i1;
-  var $i4: i32;
-$bb0:
-  assume {:sourceloc "./lib/smack.c", 115, 11} true;
-  assume {:verifier.code 1} true;
-  assume {:sourceloc "./lib/smack.c", 115, 11} true;
-  assume {:verifier.code 1} true;
-  call $i0 := __SMACK_nondet_int();
-  call {:cexpr "smack:ext:__SMACK_nondet_int"} boogie_si_record_i32($i0);
-  call {:cexpr "x"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./lib/smack.c", 116, 23} true;
-  assume {:verifier.code 0} true;
-  $i1 := $sge.i32($i0, $sub.i32(0, 2147483648));
-  assume {:sourceloc "./lib/smack.c", 116, 34} true;
-  assume {:verifier.code 0} true;
-  $i2 := 0;
-  assume {:branchcond $i1} true;
-  goto $bb1, $bb2;
-$bb1:
-  assume ($i1 == 1);
-  assume {:sourceloc "./lib/smack.c", 116, 39} true;
-  assume {:verifier.code 1} true;
-  $i3 := $sle.i32($i0, 2147483647);
-  assume {:verifier.code 0} true;
-  $i2 := $i3;
-  goto $bb3;
-$bb2:
-  assume {:sourceloc "./lib/smack.c", 116, 34} true;
-  assume {:verifier.code 0} true;
-  assume !(($i1 == 1));
-  goto $bb3;
-$bb3:
-  assume {:sourceloc "./lib/smack.c", 0, 0} true;
-  assume {:verifier.code 1} true;
-  assume {:sourceloc "./lib/smack.c", 116, 34} true;
-  assume {:verifier.code 1} true;
-  $i4 := $zext.i1.i32($i2);
-  assume {:sourceloc "./lib/smack.c", 116, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_assume($i4);
-  assume {:sourceloc "./lib/smack.c", 117, 3} true;
-  assume {:verifier.code 0} true;
-  $r := $i0;
-  $exn := false;
-  return;
-}
 const __SMACK_nondet_int: ref;
-axiom (__SMACK_nondet_int == $sub.ref(0, 35137));
+axiom (__SMACK_nondet_int == $sub.ref(0, 28885));
 procedure __SMACK_nondet_int()
   returns ($r: i32);
 const __SMACK_nondet_signed_int: ref;
-axiom (__SMACK_nondet_signed_int == $sub.ref(0, 36169));
+axiom (__SMACK_nondet_signed_int == $sub.ref(0, 29917));
 procedure __SMACK_nondet_signed_int()
   returns ($r: i32);
 const __SMACK_nondet_unsigned: ref;
-axiom (__SMACK_nondet_unsigned == $sub.ref(0, 37201));
+axiom (__SMACK_nondet_unsigned == $sub.ref(0, 30949));
 procedure __SMACK_nondet_unsigned()
   returns ($r: i32);
 const __SMACK_nondet_unsigned_int: ref;
-axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 38233));
+axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 31981));
 procedure __SMACK_nondet_unsigned_int()
   returns ($r: i32);
 const __SMACK_nondet_long: ref;
-axiom (__SMACK_nondet_long == $sub.ref(0, 39265));
+axiom (__SMACK_nondet_long == $sub.ref(0, 33013));
 procedure __SMACK_nondet_long()
   returns ($r: i64);
 const __SMACK_nondet_long_int: ref;
-axiom (__SMACK_nondet_long_int == $sub.ref(0, 40297));
+axiom (__SMACK_nondet_long_int == $sub.ref(0, 34045));
 procedure __SMACK_nondet_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long: ref;
-axiom (__SMACK_nondet_signed_long == $sub.ref(0, 41329));
+axiom (__SMACK_nondet_signed_long == $sub.ref(0, 35077));
 procedure __SMACK_nondet_signed_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_int: ref;
-axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 42361));
+axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 36109));
 procedure __SMACK_nondet_signed_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long: ref;
-axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 43393));
+axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 37141));
 procedure __SMACK_nondet_unsigned_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 44425));
+axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 38173));
 procedure __SMACK_nondet_unsigned_long_int()
   returns ($r: i64);
 const __SMACK_nondet_long_long: ref;
-axiom (__SMACK_nondet_long_long == $sub.ref(0, 45457));
+axiom (__SMACK_nondet_long_long == $sub.ref(0, 39205));
 procedure __SMACK_nondet_long_long()
   returns ($r: i64);
 const __SMACK_nondet_long_long_int: ref;
-axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 46489));
+axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 40237));
 procedure __SMACK_nondet_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long: ref;
-axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 47521));
+axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 41269));
 procedure __SMACK_nondet_signed_long_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long_int: ref;
-axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 48553));
+axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 42301));
 procedure __SMACK_nondet_signed_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long: ref;
-axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 49585));
+axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 43333));
 procedure __SMACK_nondet_unsigned_long_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 50617));
+axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 44365));
 procedure __SMACK_nondet_unsigned_long_long_int()
   returns ($r: i64);
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 51649));
+axiom (__SMACK_decls == $sub.ref(0, 45397));
 type $mop;
 procedure boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -1920,10 +1853,10 @@ ensures $eq.ref.bool(n, $0.ref) ==> old($CurrAddr) == $CurrAddr && p == $0.ref;
 procedure $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 52681));
+axiom (__SMACK_top_decl == $sub.ref(0, 46429));
 procedure __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 53713));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 47461));
 procedure __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -1935,79 +1868,24 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 54745));
+axiom (llvm.dbg.value == $sub.ref(0, 48493));
 procedure llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 55777));
+axiom (__SMACK_static_init == $sub.ref(0, 49525));
 procedure __SMACK_static_init()
 {
 $bb0:
-  $M.1 := $store.i64($M.1, mutex, 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(0, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(1, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(2, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(3, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(4, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(5, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(6, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(7, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(8, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(9, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(10, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(11, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(12, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(13, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(14, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(15, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(16, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(17, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(18, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(19, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(20, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(21, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(22, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(23, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(24, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(25, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(26, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(27, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(28, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(29, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(30, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(31, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(32, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(33, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(34, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(35, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(36, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(37, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(38, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(39, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(40, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(41, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(42, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(43, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(44, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(45, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(46, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(47, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(48, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(49, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(50, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(51, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(52, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(53, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(54, 1)), 0);
-  $M.1 := $store.i8($M.1, $add.ref($add.ref($add.ref(mutex, $mul.ref(0, 64)), $mul.ref(8, 1)), $mul.ref(55, 1)), 0);
-  $M.0 := 0;
-  call {:cexpr "pdev"} boogie_si_record_i32(0);
-  $M.1 := $store.ref($M.1, t1, $0.ref);
-  $M.2 := .str.1.5;
+  $M.1 := 3;
+  call {:cexpr "i"} boogie_si_record_i32(3);
+  $M.0 := 6;
+  call {:cexpr "j"} boogie_si_record_i32(6);
+  $M.2 := .str.1.3;
   $M.3 := 0;
   call {:cexpr "errno_global"} boogie_si_record_i32(0);
   $exn := false;
   return;
 }
+const $u0: ref;
 procedure boogie_si_record_i32(x: i32);
 procedure boogie_si_record_ref(x: ref);
 procedure $initialize()
