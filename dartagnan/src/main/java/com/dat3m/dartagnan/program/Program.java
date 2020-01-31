@@ -216,8 +216,9 @@ public class Program {
         		continue;
         	}
         	ExprInterface expr = ((Local)e).getExpr();
-			if(expr instanceof INonDet && !((INonDet)expr).isSigned()) {
-	        	enc = ctx.mkAnd(enc, ctx.mkGe(((INonDet)expr).toZ3Int(e, ctx), ctx.mkInt(0)));				
+			if(expr instanceof INonDet) {
+	        	enc = ctx.mkAnd(enc, ctx.mkGe(((INonDet)expr).toZ3Int(e, ctx), ctx.mkInt(((INonDet)expr).getMin())));
+	        	enc = ctx.mkAnd(enc, ctx.mkLe(((INonDet)expr).toZ3Int(e, ctx), ctx.mkInt(((INonDet)expr).getMax())));
 			}
         }
         return enc;  	

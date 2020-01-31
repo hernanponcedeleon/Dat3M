@@ -31,6 +31,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -363,31 +364,44 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return null;
 		}
 		// TODO seems to be obsolete in SVCOMP 2021
-		if(name.equals("__VERIFIER_assume")) {
+		if(name.contains("__VERIFIER_assume")) {
 			__VERIFIER_assume(ctx.call_params().exprs());
 			return null;
 		}
-		if(name.equals("__VERIFIER_assert")) {
+		// The method can be called "__VERIFIER_assert" or "__VERIFIER_assert.i32" 
+		if(name.contains("__VERIFIER_assert")) {
 			__VERIFIER_assert(ctx.call_params().exprs());
 			return null;
 		}
-		if(name.equals("__VERIFIER_nondet_int")) {
-			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText(), true);
+		if(name.contains("__VERIFIER_nondet_")) {
+			if(name.equals("__VERIFIER_nondet_bool")) {
+				__VERIFIER_nondet_bool(ctx.call_params().Ident(0).getText());
+				return null;
+			}
+			INonDetTypes type = null;
+			if(name.equals("__VERIFIER_nondet_int")) {
+				type = INonDetTypes.INT;
+			} else if (name.equals("__VERIFIER_nondet_uint") || name.equals("__VERIFIER_nondet_unsigned_int")) {
+				type = INonDetTypes.UINT;
+			} else if (name.equals("__VERIFIER_nondet_short")) {
+				type = INonDetTypes.SHORT;
+			} else if (name.equals("__VERIFIER_nondet_ushort")) {
+				type = INonDetTypes.USHORT;
+			} else if (name.equals("__VERIFIER_nondet_long")) {
+				type = INonDetTypes.LONG;
+			} else if (name.equals("__VERIFIER_nondet_ulong")) {
+				type = INonDetTypes.ULONG;
+			} else {
+				throw new ParsingException(name + " is not supported");
+			}
+			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText(), type);
 			return null;
 		}
-		if(name.equals("__VERIFIER_nondet_uint") || name.equals("__VERIFIER_nondet_unsigned_int")) {
-			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText(), false);
-			return null;
-		}
-		if(name.equals("__VERIFIER_nondet_bool")) {
-			__VERIFIER_nondet_bool(ctx.call_params().Ident(0).getText());
-			return null;
-		}
-		if(name.equals("__VERIFIER_atomic_begin")) {
+		if(name.contains("__VERIFIER_atomic_begin")) {
 			__VERIFIER_atomic_begin();
 			return null;
 		}
-		if(name.equals("__VERIFIER_atomic_end")) {
+		if(name.contains("__VERIFIER_atomic_end")) {
 			__VERIFIER_atomic_end();
 			return null;
 		}
@@ -396,10 +410,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			atomicMode = ctx;
 			__VERIFIER_atomic_begin();
 			// No return, the body still needs to be parsed.
-		}
-		// The rest of the nondet types are not supported
-		if(name.contains("__VERIFIER_nondet_")) {
-			throw new ParsingException(name + " is not supported");
 		}
 		if(name.equals("pthread_create")) {
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
@@ -471,10 +481,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(0)), label));
 	}
 
-	private void __VERIFIER_nondet_int(String registerName, boolean signed) {
+	private void __VERIFIER_nondet_int(String registerName, INonDetTypes type) {
 		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
 	    if(register != null){
-	    	programBuilder.addChild(threadCount, new Local(register, new INonDet(signed)));
+	    	programBuilder.addChild(threadCount, new Local(register, new INonDet(type)));
 	    }		
 	}
 
