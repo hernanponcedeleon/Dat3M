@@ -1,7 +1,7 @@
 format_version: '1.0'
 
-# old file name: simple_true-unreach-call3_true-termination.c
-input_files: 'simple_3-2.c'
+# old file name: NetBSD_loop_true-unreach-call_true-termination.i
+input_files: 'NetBSD_loop.i'
 
 properties:
   - property_file: ../properties/termination.prp

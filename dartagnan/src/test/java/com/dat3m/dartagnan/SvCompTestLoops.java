@@ -32,8 +32,10 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/insertion_sort-2.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/matrix-1.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/matrix-2.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/n.c40.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nec11.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nec20.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nec40.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum01-1.bpl", wmm, 11});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum01_bug02.bpl", wmm, 7});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum01_bug02_sum01_bug02_base.case.bpl", wmm, 5});
@@ -46,7 +48,6 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/terminator_03-1.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/trex01-1.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/trex02-2.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/trex03-1.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/veris.c_NetBSD-libc_loop.bpl", wmm, 3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/verisec_NetBSD-libc_loop.bpl", wmm, 9});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/verisec_OpenSER_cases1_stripFullBoth_arr.bpl", wmm, 1});
@@ -54,7 +55,7 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/phases_2-1.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/phases_2-2.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_2-2.bpl", wmm, 1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_3-2.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_3-1.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/underapprox_1-1.bpl", wmm, 7});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/underapprox_1-2.bpl", wmm, 7});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/underapprox_2-1.bpl", wmm, 7});
@@ -63,11 +64,20 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_array_index_value_4.i.v+lhb-reducer.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_array_index_value_4.i.v+nlh-reducer.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_array_index_value_4.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/NetBSD_loop.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/SpamAssassin-loop.i.v+cfa-reducer.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/SpamAssassin-loop.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/apache-escape-absolute.i.v+cfa-reducer.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/apache-get-tag.i.v+lhb-reducer.bpl", wmm, 2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/apache-get-tag.i.v+nlh-reducer.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/	-get-tag.i.v+nlh-reducer.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/apache-get-tag.bpl", wmm, 3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/id_build.i.v+lhb-reducer.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/id_trans.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/large_const.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sendmail-close-angle.bpl", wmm, 3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/cggmp2005.bpl", wmm, 5});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/gcnr2008.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/gauss_sum.bpl", wmm, 2});        
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mod3.c.v+cfa-reducer.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mod3.c.v+lhb-reducer.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mod3.bpl", wmm, 2});
@@ -84,19 +94,9 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/vnew2.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/deep-nested.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/bresenham.bpl", wmm, 2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/dijkstra.bpl", wmm, 2});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/divbin.bpl", wmm, 1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/divbin2.bpl", wmm, 1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/cohendiv.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd2.bpl", wmm, 2});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/fermat1.bpl", wmm, 1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/fermat2.bpl", wmm, 1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/knuth.bpl", wmm, 1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/lcm1.bpl", wmm, 1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/lcm2.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/prod4br.bpl", wmm, 2});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/prodbin.bpl", wmm, 1});
-        
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/prod4br.bpl", wmm, 2});        
         return data;
     }
 
