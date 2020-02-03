@@ -1,7 +1,7 @@
 format_version: '1.0'
 
-# old file name: safe000_pso.oepc_true-unreach-call.i
-input_files: 'safe000_pso.oepc.i'
+# old file name: safe015_pso.opt_true-unreach-call.i
+input_files: 'safe015_pso.opt.i'
 
 properties:
   - property_file: ../properties/unreach-call.prp
