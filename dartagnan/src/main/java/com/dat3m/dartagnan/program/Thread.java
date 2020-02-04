@@ -99,25 +99,25 @@ public class Thread {
 
     // TODO: it currently breaks pthread-lit/qw2004-2.yml
 	public void reduce() {
-		Event next = entry;
-		while(next != null) {
+		Event current = entry;
+		while(current != null) {
+			Event next = current.getSuccessor();
+			if(next == null) {
+				break;
+			}
 			Event nnext = next.getSuccessor();
 			if(nnext == null) {
 				break;
 			}
-			Event nnnext = nnext.getSuccessor();
-			if(nnnext == null) {
-				break;
-			}
-			if(nnext instanceof Jump && nnnext.equals(((Jump)nnext).getLabel())) {
+			if(next instanceof Jump && nnext.equals(((Jump)next).getLabel())) {
 				// If nobody else refers to the label, we can also remove the label
-				if(((Label)nnnext).getReferences().size() == 1) {
-					next.setSuccessor(nnnext.getSuccessor());
+				if(((Label)nnext).getReferences().size() == 1) {
+					current.setSuccessor(nnext.getSuccessor());
 				} else {
-					next.setSuccessor(nnnext);
+					current.setSuccessor(nnext);
 				}
 			}
-			next = next.getSuccessor();
+			current = current.getSuccessor();
 		}
 		cache = null;
 	}

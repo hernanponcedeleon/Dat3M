@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 public class SVCOMPOptions extends Options {
 
     protected String programFilePath;
+    protected String targetModelFilePath;
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
     protected boolean createWitness = false;
 
@@ -21,8 +22,13 @@ public class SVCOMPOptions extends Options {
         super();
         Option inputOption = new Option("i", "input", true,
                 "Path to the file with input program");
-        inputOption.setRequired(false);
+        inputOption.setRequired(true);
         addOption(inputOption);
+
+        Option catOption = new Option("cat", true,
+                "Path to the CAT file");
+        catOption.setRequired(true);
+        addOption(catOption);
 
         Option witnessOption = new Option("w", "witness", false,
                 "Creates a violation witness");
@@ -38,11 +44,16 @@ public class SVCOMPOptions extends Options {
         if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
+       	targetModelFilePath = cmd.getOptionValue("cat");
         createWitness = cmd.hasOption("witness");
     }
 
     public String getProgramFilePath() {
         return programFilePath;
+    }
+
+    public String getTargetModelFilePath(){
+        return targetModelFilePath;
     }
 
     public boolean getCreateWitness() {
