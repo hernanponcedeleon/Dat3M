@@ -1,7 +1,7 @@
 The .pts format
 ======
 
-Examples are provided in the **benchmarks/** folder.
+Examples are provided in [here](src/test/resources/pts/).
 ```
   program ::= {⟨loc⟩*} ⟨thrd⟩*
 
