@@ -61,7 +61,7 @@ For checking state inclusion:
 ```
 java -jar porthos/target/porthos-2.0.5-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .bpl format.
+DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .pts format which is explained [here](pts.md).
 
 C programs can be converted to Boogie using the following script:
 ```
