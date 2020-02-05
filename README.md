@@ -42,7 +42,7 @@ mvn test
 
 Binaries
 ======
-The precompiled jars can be found in the "[release](https://github.com/hernanponcedeleon/Dat3M/releases)" section.
+The precompiled jars can be found in the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section.
 
 Usage
 ======
@@ -61,7 +61,7 @@ For checking state inclusion:
 ```
 java -jar porthos/target/porthos-2.0.5-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .pts format which is explained [here](pts.md).
+DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
 
 C programs can be converted to Boogie using the following script:
 ```
@@ -81,7 +81,7 @@ They must be one of the following:
 **Note:** Option target is mandatory in DARTAGNAN when using the .bpl format.
 
 Other optional arguments include:
-- -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [3]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
+- -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
 - -a, --alias {none, andersen, cfs}: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - -unroll: unrolling bound for the BMC.
 
@@ -100,9 +100,9 @@ Please feel free to contact us in case of questions or to send feedback.
 
 References
 ======
-[1] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**. CAV 2019.
+[1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**. SAS 2017.
 
 [2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC with Memory Models as Modules**. FMCAD 2018.
 
-[3] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**. SAS 2017.
+[3] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**. CAV 2019.
 
