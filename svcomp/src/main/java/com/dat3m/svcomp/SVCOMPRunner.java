@@ -52,7 +52,7 @@ public class SVCOMPRunner {
 	        file.delete();
 			bound++;
 			try {
-				Process proc = Runtime.getRuntime().exec("java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar -i ./output/" + name + ".bpl -cat " + catPath + " -t none -unroll " + bound);
+				Process proc = Runtime.getRuntime().exec("java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar -i ./output/" + name + ".bpl -cat " + catPath + " -unroll " + bound);
 				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				try {
 					proc.waitFor();

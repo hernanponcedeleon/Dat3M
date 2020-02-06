@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorBoogie;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+
 import org.antlr.v4.runtime.*;
 
 class ParserBoogie implements ParserInterface{
@@ -21,6 +23,8 @@ class ParserBoogie implements ParserInterface{
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorBoogie visitor = new VisitorBoogie(pb);
 
-        return (Program) parserEntryPoint.accept(visitor);
+        Program program = (Program) parserEntryPoint.accept(visitor);
+        program.setArch(Arch.NONE);
+        return program;
     }
 }
