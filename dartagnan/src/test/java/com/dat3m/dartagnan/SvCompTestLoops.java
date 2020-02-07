@@ -97,6 +97,7 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/deep-nested.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/bresenham.bpl", wmm, 3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/cohendiv.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/dijkstra.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd2.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/prod4br.bpl", wmm, 2});        
         return data;
