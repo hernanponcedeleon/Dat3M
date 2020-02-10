@@ -26,9 +26,8 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-1.bpl", wmm, 7});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-2.bpl", wmm, 7});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/lazy01.bpl", wmm, 1});
-        // Probably related to alloc()
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1.bpl", wmm, 2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-2.bpl", wmm,2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1.bpl", wmm, 3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-2.bpl", wmm,3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-1.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-1.bpl", wmm, 6});
