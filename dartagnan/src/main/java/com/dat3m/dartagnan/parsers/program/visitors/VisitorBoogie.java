@@ -12,6 +12,7 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -132,12 +133,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private BeginAtomic currentBeginAtomic = null;
 	private Call_cmdContext atomicMode = null;
 	
-	private boolean handlePointer = false;
-	
-	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", 
-																"printf.ref", 
-																"$alloc", 
-																"$$alloc");
+	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -338,6 +334,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(dummyProcedures.stream().anyMatch(e -> name.contains(e))) {
 			return null;
 		}
+		if(name.equals("$alloc")) {
+			alloc(ctx);
+			return null;
+		}
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
@@ -366,6 +366,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// TODO seems to be obsolete in SVCOMP 2021
 		if(name.contains("__VERIFIER_assume")) {
 			__VERIFIER_assume(ctx.call_params().exprs());
+			return null;
+		}
+		if(name.contains("__VERIFIER_error")) {
+			__VERIFIER_error();
 			return null;
 		}
 		// The method can be called "__VERIFIER_assert" or "__VERIFIER_assert.i32" 
@@ -461,6 +465,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return null;
 	}
 
+	private void alloc(Call_cmdContext ctx) {
+		String tmp = ctx.call_params().getText();
+		tmp = tmp.substring(0, tmp.indexOf(','));
+		tmp = tmp.substring(tmp.lastIndexOf('(')+1);
+		int size = Integer.parseInt(tmp);		
+		List<IConst> values = Collections.nCopies(size, new IConst(0));
+		String ptr = ctx.call_params().Ident(0).getText();
+		programBuilder.addDeclarationArray(ptr, values);
+	}
+
 	private void pthread_create(Register ptr, String name) {
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
@@ -507,6 +521,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(c != null) {
 			programBuilder.addChild(threadCount, new Assume(c, label));	
 		}
+	}
+	
+	private void __VERIFIER_error() {
+    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
+    	assertionIndex++;
+    	Local event = new Local(ass, new BConst(false));
+		event.addFilters(EType.ASSERTION);
+		programBuilder.addChild(threadCount, event);
 	}
 	
 	private void __VERIFIER_assert(ExprsContext exp) {
@@ -644,7 +666,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	            programBuilder.addChild(threadCount, new Local(register, value));
+	        	if(ctx.getText().contains("$load.")) {
+	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, "NA"));
+	        	}
+	        	if(value instanceof Location) {
+	                programBuilder.addChild(threadCount, new Load(register, ((Location)value).getAddress(), "NA"));
+	        	} else {
+		            programBuilder.addChild(threadCount, new Local(register, value));	        		
+	        	}
 	            continue;
 	        }
 	        Location location = programBuilder.getLocation(name);
@@ -827,12 +856,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         }
         Location location = programBuilder.getLocation(name);
         if(location != null){
-        	if(handlePointer) {
-        		return location;
-        	}
-            register = programBuilder.getOrCreateRegister(threadCount, null);
-            programBuilder.addChild(threadCount, new Load(register, location.getAddress(), "NA"));
-            return register;
+       		return location;
         }
         throw new ParsingException("Variable " + name + " is not defined");
 	}
@@ -844,23 +868,23 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(function == null) {
 			throw new ParsingException("Function " + name + " is not defined");
 		}
-		if(name.contains("$load")) {
-			handlePointer = true;
+		// TODO both should throw and exception, but many loads are related 
+		// to pthread_join and those works. 
+		if(name.contains("$load.")) {
 			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
 			IExpr plus = (IExpr)ctx.expr(1).accept(this);
 			IExpr address = new IExprBin(init, PLUS, plus);
-			handlePointer = false;
 			return address;
 		}
-		if(name.contains("$store")) {
-			handlePointer = true;
-			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
-			IExpr plus = (IExpr)ctx.expr(1).accept(this);
-			IExpr address = new IExprBin(init, PLUS, plus);
-			IExpr value = (IExpr)ctx.expr(2).accept(this);
-            programBuilder.addChild(threadCount, new Store(address, value, "NA"));
-			handlePointer = false;
-			return null;
+		// TODO this blows up when we have big arrays
+		if(name.contains("$store.")) {
+//			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
+//			IExpr plus = (IExpr)ctx.expr(1).accept(this);
+//			IExpr address = new IExprBin(init, PLUS, plus);
+//			IExpr value = (IExpr)ctx.expr(2).accept(this);
+//			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
+//			return null;
+			throw new ParsingException("Pointer arithmetic is not yet supported");
 		}
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
