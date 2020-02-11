@@ -76,6 +76,7 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mod3.c.v+lhb-reducer.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mod3.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/iftelse.bpl", wmm, 2});
+        // Problem with srem.i32 definition
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/loopv1.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sumt2.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sumt3.bpl", wmm, 2});

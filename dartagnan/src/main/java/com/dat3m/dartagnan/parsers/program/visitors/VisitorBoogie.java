@@ -889,28 +889,34 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
 		currentCall = new FunctionCall(function, callParams, currentCall);
+		// TODO: improve this
+		if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
+			currentCall = currentCall.getParent();
+			return new IExprBin((ExprInterface)callParams.get(0), MOD, (ExprInterface)callParams.get(1));
+		}
+		if(name.contains("$sdiv.") || name.contains("$udiv.")) {
+			currentCall = currentCall.getParent();
+			return new IExprBin((ExprInterface)callParams.get(0), DIV, (ExprInterface)callParams.get(1));
+		}
+		if(name.contains("$xor.")) {
+			currentCall = currentCall.getParent();
+			return new IExprBin((ExprInterface)callParams.get(0), XOR, (ExprInterface)callParams.get(1));
+		}
+		if(name.contains("$or.")) {
+			currentCall = currentCall.getParent();
+			return new IExprBin((ExprInterface)callParams.get(0), OR, (ExprInterface)callParams.get(1));
+		}
+		if(name.contains("$and.") || name.contains("$nand.")) {
+			currentCall = currentCall.getParent();
+			return new IExprBin((ExprInterface)callParams.get(0), AND, (ExprInterface)callParams.get(1));
+		}
+		if(name.contains("$not.")) {
+			currentCall = currentCall.getParent();
+			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
+		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
 			currentCall = currentCall.getParent();
-			// TODO: improve this
-			if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
-				return new IExprBin((ExprInterface)callParams.get(0), MOD, (ExprInterface)callParams.get(1));
-			}
-			if(name.contains("$sdiv.") || name.contains("$udiv.")) {
-				return new IExprBin((ExprInterface)callParams.get(0), DIV, (ExprInterface)callParams.get(1));
-			}
-			if(name.contains("$xor.")) {
-				return new IExprBin((ExprInterface)callParams.get(0), XOR, (ExprInterface)callParams.get(1));
-			}
-			if(name.contains("$or.")) {
-				return new IExprBin((ExprInterface)callParams.get(0), OR, (ExprInterface)callParams.get(1));
-			}
-			if(name.contains("$and.") || name.contains("$nand.")) {
-				return new IExprBin((ExprInterface)callParams.get(0), AND, (ExprInterface)callParams.get(1));
-			}
-			if(name.contains("$not.")) {
-				return new BExprUn(NOT, (ExprInterface)callParams.get(0));
-			}
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
 		Object ret = function.getBody().accept(this);
