@@ -1,18 +1,15 @@
 package com.dat3m.svcomp;
 
 import static com.dat3m.dartagnan.utils.Compilation.compile;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.fromString;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Iterator;
 import org.apache.commons.cli.HelpFormatter;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.svcomp.options.SVCOMPOptions;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
 import com.dat3m.svcomp.utils.SVCOMPWitness;
@@ -38,9 +35,10 @@ public class SVCOMPRunner {
 		// File name contains "_tmp.c"
 		String name = path.substring(path.lastIndexOf('/'), path.lastIndexOf('_'));
 		String catPath = options.getTargetModelFilePath();
-		int bound = 0;
+		Iterator<Integer> bounds = options.getBounds().iterator();
+		int bound = bounds.next();
 		String output = "UNKNOWN";
-		while(output.equals("UNKNOWN")) {
+		while(output.equals("UNKNOWN") && bounds.hasNext()) {
 			try {
 				compile(file);
 			} catch (IOException e1) {
@@ -50,7 +48,7 @@ public class SVCOMPRunner {
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
 	        // (it not the original C file) and we already created the Boogie file
 	        file.delete();
-			bound++;
+			bound = bounds.next();
 			try {
 				Process proc = Runtime.getRuntime().exec("java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar -i ./output/" + name + ".bpl -cat " + catPath + " -unroll " + bound);
 				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
@@ -76,10 +74,10 @@ public class SVCOMPRunner {
 			}
 	        file = new SVCOMPSanitizer(options.getProgramFilePath()).run(bound);
 		}
-		Result result = fromString(output);
-		System.out.println(result);
+		output = output.equals("UNKNOWN") ? "PASS" : output;
+		System.out.println(output);
 		
-        if(options.getCreateWitness() && result.equals(FAIL)) {
+        if(options.getCreateWitness() && output.equals("FAIL")) {
 			try {
 				Program p = new ProgramParser().parse(file);
 	            new SVCOMPWitness(p, options).write();;

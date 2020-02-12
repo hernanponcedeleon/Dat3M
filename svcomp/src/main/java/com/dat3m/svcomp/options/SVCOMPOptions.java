@@ -1,7 +1,9 @@
 package com.dat3m.svcomp.options;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -17,6 +19,7 @@ public class SVCOMPOptions extends Options {
     protected String targetModelFilePath;
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
     protected boolean createWitness = false;
+    protected List<Integer> bounds = Arrays.asList(1);
 
     public SVCOMPOptions(){
         super();
@@ -34,6 +37,12 @@ public class SVCOMPOptions extends Options {
                 "Creates a violation witness");
         witnessOption.setRequired(false);
         addOption(witnessOption);
+        
+        Option boudnsOption = new Option("b", "bounds", false,
+                "List of bounds used for the verification");
+        boudnsOption.setArgs(Option.UNLIMITED_VALUES);
+        boudnsOption.setValueSeparator(',');
+        addOption(boudnsOption);
 
 }
     
@@ -46,6 +55,7 @@ public class SVCOMPOptions extends Options {
         }
        	targetModelFilePath = cmd.getOptionValue("cat");
         createWitness = cmd.hasOption("witness");
+        bounds = Arrays.asList(cmd.getOptionValues("b")).stream().map(s -> Integer.parseInt(s)).collect(Collectors.toList());
     }
 
     public String getProgramFilePath() {
@@ -58,5 +68,9 @@ public class SVCOMPOptions extends Options {
 
     public boolean getCreateWitness() {
         return createWitness;
+    }
+
+    public List<Integer> getBounds() {
+        return bounds;
     }
 }
