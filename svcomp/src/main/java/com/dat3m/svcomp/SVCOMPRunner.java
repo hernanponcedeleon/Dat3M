@@ -36,7 +36,7 @@ public class SVCOMPRunner {
 		String name = path.substring(path.lastIndexOf('/'), path.lastIndexOf('_'));
 		String catPath = options.getTargetModelFilePath();
 		Iterator<Integer> bounds = options.getBounds().iterator();
-		int bound = bounds.next();
+		int bound;
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN") && bounds.hasNext()) {
 			try {
