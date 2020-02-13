@@ -61,4 +61,8 @@ public class IfExpr implements ExprInterface {
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
+	
+	public BExpr getGuard() {
+		return guard;
+	}
 }
