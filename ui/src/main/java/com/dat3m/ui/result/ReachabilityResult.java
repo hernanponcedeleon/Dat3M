@@ -52,10 +52,6 @@ public class ReachabilityResult implements Dat3mResult {
 
     private void buildVerdict(Result result){
         StringBuilder sb = new StringBuilder();
-        sb.append("Settings: ").append(options.getSettings()).append("\n");
-        if(program.getAssFilter() != null){
-            sb.append("Filter ").append(program.getAssFilter());
-        }
         sb.append("Condition ").append(program.getAss().toStringWithType()).append("\n");			
         sb.append(result).append("\n");
         verdict = sb.toString();
