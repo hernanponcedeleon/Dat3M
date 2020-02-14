@@ -1,5 +1,7 @@
 package com.dat3m.svcomp.options;
 
+import static java.util.stream.IntStream.rangeClosed;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -19,7 +21,7 @@ public class SVCOMPOptions extends Options {
     protected String targetModelFilePath;
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
     protected boolean createWitness = false;
-    protected List<Integer> bounds = Arrays.asList(1);
+    protected List<Integer> bounds = rangeClosed(1, 10000).boxed().collect(Collectors.toList());
 
     public SVCOMPOptions(){
         super();
@@ -42,6 +44,7 @@ public class SVCOMPOptions extends Options {
                 "List of bounds used for the verification");
         boudnsOption.setArgs(Option.UNLIMITED_VALUES);
         boudnsOption.setValueSeparator(',');
+        boudnsOption.setRequired(false);
         addOption(boudnsOption);
 
 }
@@ -55,7 +58,9 @@ public class SVCOMPOptions extends Options {
         }
        	targetModelFilePath = cmd.getOptionValue("cat");
         createWitness = cmd.hasOption("witness");
-        bounds = Arrays.asList(cmd.getOptionValues("b")).stream().map(s -> Integer.parseInt(s)).collect(Collectors.toList());
+        if(cmd.hasOption("bounds")) {
+        	bounds = Arrays.asList(cmd.getOptionValues("b")).stream().map(s -> Integer.parseInt(s)).collect(Collectors.toList());
+        }
     }
 
     public String getProgramFilePath() {
