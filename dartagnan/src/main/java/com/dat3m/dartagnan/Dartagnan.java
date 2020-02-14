@@ -54,7 +54,7 @@ public class Dartagnan {
         }
         
         Context ctx = new Context();
-        Solver s = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
+        Solver s = ctx.mkSolver();
         Settings settings = options.getSettings();
 
         Result result = testProgram(s, ctx, p, mcm, target, settings);
