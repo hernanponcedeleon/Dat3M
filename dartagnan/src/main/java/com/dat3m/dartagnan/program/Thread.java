@@ -44,6 +44,10 @@ public class Thread {
         return cache;
     }
 
+    public void clearCache(){
+        cache = null;
+    }
+
     public Register getRegister(String name){
         return registers.get(name);
     }

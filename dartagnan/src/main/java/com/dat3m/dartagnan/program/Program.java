@@ -99,6 +99,12 @@ public class Program {
         return cache;
     }
 
+    public void clearCache(){
+    	for(Thread t : threads){
+    		t.clearCache();
+    	}
+    }
+
     public List<Thread> getThreads() {
         return threads;
     }
