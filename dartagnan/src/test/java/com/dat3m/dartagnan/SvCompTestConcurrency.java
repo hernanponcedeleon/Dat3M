@@ -25,23 +25,23 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-2.bpl", wmm, 6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-1.bpl", wmm, 7});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-2.bpl", wmm, 7});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/lazy01.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1.bpl", wmm, 3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-2.bpl", wmm,3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-1.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/lazy01.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1.bpl", wmm, 3});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-2.bpl", wmm,3});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-1.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-1.bpl", wmm, 6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-2.bpl", wmm, 6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-longer-1.bpl", wmm, 11});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-longer-2.bpl", wmm, 11});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/gcd-2.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qrcu-2.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qrcu-2.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-1.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-2.bpl", wmm, 2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/scull.bpl", wmm, 2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/time_var_mutex.bpl", wmm, 2});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/scull.bpl", wmm, 2});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/time_var_mutex.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/18_read_write_lock.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/19_time_var_mutex.bpl", wmm, 2});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/19_time_var_mutex.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/safe000_pso.opt.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/safe000_tso.opt.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/safe001_tso.opt.bpl", wmm, 2});
@@ -142,10 +142,10 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/thin002_pso.opt.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/thin002_tso.opt.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qw2004-2.bpl", wmm, 2});    
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_1-join.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_2-join.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_3-join.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_2-container_of-global.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_1-join.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_2-join.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_3-join.bpl", wmm, 1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_2-container_of-global.bpl", wmm, 1});
         
         return data;
     }
