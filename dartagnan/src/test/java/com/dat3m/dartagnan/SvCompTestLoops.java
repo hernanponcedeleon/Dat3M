@@ -50,8 +50,8 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/verisec_NetBSD-libc_loop.bpl", wmm, 9});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/verisec_OpenSER_cases1_stripFullBoth_arr.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/multivar_1-2.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/phases_2-1.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/phases_2-2.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/phases_2-1.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/phases_2-2.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_2-2.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_3-1.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/underapprox_1-1.bpl", wmm, 7});
@@ -86,11 +86,8 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sumt7.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sumt8.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sumt9.bpl", wmm, 2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/vnew2.bpl", wmm, 1});
         // Wrong result due to llvm2bpl transformation.
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/deep-nested.bpl", wmm, 1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/bresenham.bpl", wmm, 3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/cohendiv.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/deep-nested.bpl", wmm, 1});	
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd2.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/prod4br.bpl", wmm, 2});        
         return data;
