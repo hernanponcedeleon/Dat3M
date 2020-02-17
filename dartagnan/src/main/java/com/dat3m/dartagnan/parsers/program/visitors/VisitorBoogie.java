@@ -368,7 +368,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			__VERIFIER_assume(ctx.call_params().exprs());
 			return null;
 		}
-		if(name.contains("__VERIFIER_error")) {
+		if(name.contains("reach_error") || name.contains("__VERIFIER_error")) {
 			__VERIFIER_error();
 			return null;
 		}
@@ -522,7 +522,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			programBuilder.addChild(threadCount, new Assume(c, label));	
 		}
 	}
-	
+
+	//TODO: seems to be obsolete after SVCOMP 2020
 	private void __VERIFIER_error() {
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	assertionIndex++;
