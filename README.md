@@ -6,13 +6,14 @@
 
 This tool suite is currently composed of two tools.
 
-* **DARTAGNAN:** a tool to check state reachability under weak memory models.
-* **PORTHOS:** a tool to check state inclusion under weak memory models.
+* **Dartagnan:** a tool to check state reachability under weak memory models.
+* **Porthos:** a tool to check state inclusion under weak memory models.
 
 Requirements
 ======
 * [LLVM and Clang](http://releases.llvm.org/download.html) version 8.0.1 or higher
 * [Maven](https://maven.apache.org/)
+* [SMACK](https://github.com/smackers/smack)
 
 Installation
 ======
