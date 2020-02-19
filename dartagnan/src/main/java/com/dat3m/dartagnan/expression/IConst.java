@@ -48,4 +48,8 @@ public class IConst extends IExpr implements ExprInterface {
 	public IConst reduce() {
 		return this;
 	}
+	
+	public int getValue() {
+		return value;
+	}
 }

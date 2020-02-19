@@ -81,16 +81,12 @@ public class Dartagnan {
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
 
-        program.unroll(settings.getBound(), 0);
+    	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
         // Thus we need to set the assertion after compilation
         if(program.getAss() == null){
         	program.setAss(program.createAssertion());
-        }
-        // The above might still create no assertion
-        if(program.getAss() == null){
-            throw new RuntimeException("Assert is required for Dartagnan tests");
         }
 
         solver.add(program.encodeUINonDet(ctx));
@@ -103,7 +99,7 @@ public class Dartagnan {
         // pop() is inside getResult
         solver.push();
         solver.add(program.encodeNoBoundEventExec(ctx));
-        solver.add(program.getAss().encode(ctx));
+       	solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }

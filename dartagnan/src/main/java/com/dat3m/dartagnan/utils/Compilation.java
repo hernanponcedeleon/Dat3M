@@ -11,14 +11,14 @@ public class Compilation {
 	
 	static List<String> libraries = Arrays.asList("smack.c", "stdlib.c", "errno.c");
 
-	public static void compile(File file) throws IOException {
+	public static void compile(File file, String flag) throws IOException {
 		List<String> cmds = new ArrayList<String>();
 		List<String> bcFiles = new ArrayList<String>();
 		String path = file.getAbsolutePath();
 		String name = path.contains("_tmp") ? path.substring(path.lastIndexOf('/'), path.lastIndexOf('_')) : path.substring(path.lastIndexOf('/'), path.lastIndexOf('.'));
 
 	    // Compile all files
-        cmds.add("clang -c -Wall -Wno-everything -emit-llvm -O0 -g -Xclang -disable-O0-optnone " + file.getAbsolutePath() + " -o ./output/" + name + ".bc");
+        cmds.add("clang -c -Wall -Wno-everything -emit-llvm -" + flag + " -g -Xclang -disable-O0-optnone " + file.getAbsolutePath() + " -o ./output/" + name + ".bc");
         bcFiles.add("./output/" + name + ".bc");
         for(String library : libraries) {
         	String bfFile = library.substring(0, library.lastIndexOf('.')) + ".bc";

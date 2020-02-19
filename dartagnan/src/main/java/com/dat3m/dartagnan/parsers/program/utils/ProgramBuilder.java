@@ -171,6 +171,10 @@ public class ProgramBuilder {
         throw new ParsingException("Register " + thread + ":" + name + " is not initialised");
     }
 
+    public boolean hasLabel(String name) {
+    	return labels.containsKey(name);
+    }
+    
     public Label getOrCreateLabel(String name){
         labels.putIfAbsent(name, new Label(name));
         return labels.get(name);

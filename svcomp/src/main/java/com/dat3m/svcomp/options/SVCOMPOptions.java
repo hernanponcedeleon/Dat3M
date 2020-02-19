@@ -22,7 +22,8 @@ public class SVCOMPOptions extends Options {
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
     protected boolean createWitness = false;
     protected List<Integer> bounds = rangeClosed(1, 10000).boxed().collect(Collectors.toList());
-
+    protected String optFlag = "O0";
+    
     public SVCOMPOptions(){
         super();
         Option inputOption = new Option("i", "input", true,
@@ -47,6 +48,10 @@ public class SVCOMPOptions extends Options {
         boudnsOption.setRequired(false);
         addOption(boudnsOption);
 
+        Option optOption = new Option("o", "optFlag", true,
+                "Optimization flag for LLVM compiler");
+        optOption.setRequired(false);
+        addOption(optOption);
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -61,6 +66,9 @@ public class SVCOMPOptions extends Options {
         if(cmd.hasOption("bounds")) {
         	bounds = Arrays.asList(cmd.getOptionValues("b")).stream().map(s -> Integer.parseInt(s)).collect(Collectors.toList());
         }
+        if(cmd.hasOption("optFlag")) {
+        	optFlag = cmd.getOptionValue("optFlag");
+        }
     }
 
     public String getProgramFilePath() {
@@ -69,6 +77,10 @@ public class SVCOMPOptions extends Options {
 
     public String getTargetModelFilePath(){
         return targetModelFilePath;
+    }
+
+    public String getOptFlag(){
+        return optFlag;
     }
 
     public boolean getCreateWitness() {

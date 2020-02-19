@@ -734,13 +734,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitGoto_cmd(Goto_cmdContext ctx) {
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
-		Label l1 = programBuilder.getOrCreateLabel(labelName);
+    	Label l1 = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(threadCount, new Jump(l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
-   		programBuilder.addChild(threadCount, new BoundEvent());
-   		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-   		programBuilder.addChild(threadCount, new Jump(label));        	
+        programBuilder.addChild(threadCount, new BoundEvent());
+        Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+        programBuilder.addChild(threadCount, new Jump(label));
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();
@@ -885,7 +885,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 //			IExpr value = (IExpr)ctx.expr(2).accept(this);
 //			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
 //			return null;
-			throw new ParsingException("Pointer arithmetic is not yet supported");
+			throw new ParsingException("Pointer arithmetic is not yet supported");	
 		}
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
@@ -917,7 +917,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
-			currentCall = currentCall.getParent();
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
 		Object ret = function.getBody().accept(this);

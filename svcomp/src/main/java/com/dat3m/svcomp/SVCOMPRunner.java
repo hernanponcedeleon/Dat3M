@@ -40,7 +40,7 @@ public class SVCOMPRunner {
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN") && bounds.hasNext()) {
 			try {
-				compile(file);
+				compile(file, options.getOptFlag());
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}

@@ -10,6 +10,7 @@ import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
+import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.Event;
@@ -122,7 +123,7 @@ public class Program {
 	}
 
 	public AbstractAssert createAssertion() {
-		AbstractAssert ass = null;
+		AbstractAssert ass = new AssertTrue();
 		List<Event> assertions = new ArrayList<>();
 		for(Thread t : threads){
 			assertions.addAll(t.getCache().getEvents(FilterBasic.get(EType.ASSERTION)));

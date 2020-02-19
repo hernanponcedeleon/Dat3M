@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.program.event.BoundEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
@@ -101,7 +102,6 @@ public class Thread {
         return id == ((Thread) obj).id;
     }
 
-    // TODO: it currently breaks pthread-lit/qw2004-2.yml
 	public void reduce() {
 		Event current = entry;
 		while(current != null) {
@@ -109,16 +109,26 @@ public class Thread {
 			if(next == null) {
 				break;
 			}
-			Event nnext = next.getSuccessor();
-			if(nnext == null) {
+			Event next2 = next.getSuccessor();
+			if(next2 == null) {
 				break;
 			}
-			if(next instanceof Jump && nnext.equals(((Jump)next).getLabel())) {
+			Event next3 = next2.getSuccessor();
+
+			// If the loop is empty, we remove it and the next two events which we added just to handle loop unrolling (which does not exists anymore)
+			if(current instanceof Label && next instanceof Jump && ((Jump)next).getLabel().equals(current)) {
+				if(next2 instanceof BoundEvent && next3 instanceof Jump) {
+					current.setSuccessor(next3.getSuccessor());
+				}
+			}
+			
+			// We remove trivial jumps
+			if(next instanceof Jump && next2.equals(((Jump)next).getLabel())) {
 				// If nobody else refers to the label, we can also remove the label
-				if(((Label)nnext).getReferences().size() == 1) {
-					current.setSuccessor(nnext.getSuccessor());
+				if(((Label)next2).getReferences().size() == 1) {
+					current.setSuccessor(next2.getSuccessor());
 				} else {
-					current.setSuccessor(nnext);
+					current.setSuccessor(next2);
 				}
 			}
 			current = current.getSuccessor();
