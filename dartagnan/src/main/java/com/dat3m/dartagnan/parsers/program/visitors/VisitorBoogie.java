@@ -95,6 +95,7 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.While;
+import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.event.rmw.BeginAtomic;
@@ -539,6 +540,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	assertionIndex++;
     	ExprInterface expr = (ExprInterface)exp.accept(this);
+    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
+    		return;
+    	}
     	Local event = new Local(ass, expr);
 		event.addFilters(EType.ASSERTION);
 		programBuilder.addChild(threadCount, event);
@@ -548,6 +552,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		IExpr lockAddress = (IExpr)lock.accept(this);
 		IExpr val = (IExpr)value.accept(this);
 		if(lockAddress != null) {
+			// TODO pointer arithmetic not yet supported
+			if(!(lockAddress instanceof Address || lockAddress instanceof Register)) {
+				throw new ParsingException("Pointer arithmetic is not yet supported");	
+			}
 			programBuilder.addChild(threadCount, new Store(lockAddress, val, "NA"));	
 		}
 	}
@@ -558,6 +566,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		lockAddresses.add(lockAddress);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		if(lockAddress != null) {
+			// TODO pointer arithmetic not yet supported
+			if(!(lockAddress instanceof Address || lockAddress instanceof Register)) {
+				throw new ParsingException("Pointer arithmetic is not yet supported");	
+			}
 	        LinkedList<Event> events = new LinkedList<>();
 	        events.add(new Load(register, lockAddress, "NA"));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0)),label));
@@ -577,6 +589,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(lockAddress != null) {
 			if(!lockAddress.equals(lockAddresses.remove(lockAddresses.size() - 1))) {
 	            throw new ParsingException("The lock address of mutexUnlock does not match the one of mutexLock");
+			}
+			// TODO pointer arithmetic not yet supported
+			if(!(lockAddress instanceof Address || lockAddress instanceof Register)) {
+				throw new ParsingException("Pointer arithmetic is not yet supported");	
 			}
 			LinkedList<Event> events = new LinkedList<>();
 	        events.add(new Load(register, lockAddress, "NA"));
@@ -671,6 +687,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.")) {
+	    			// TODO pointer arithmetic not yet supported
+	    			if(!(value instanceof Address || value instanceof Register)) {
+	    				throw new ParsingException("Pointer arithmetic is not yet supported");	
+	    			}
 	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, "NA"));
 	        	}
 	        	if(value instanceof Location) {
@@ -737,13 +757,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitGoto_cmd(Goto_cmdContext ctx) {
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
+    	boolean loop = programBuilder.hasLabel(labelName);
     	Label l1 = programBuilder.getOrCreateLabel(labelName);
         programBuilder.addChild(threadCount, new Jump(l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
-        programBuilder.addChild(threadCount, new BoundEvent());
-        Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-        programBuilder.addChild(threadCount, new Jump(label));
+        if(loop) {
+            programBuilder.addChild(threadCount, new BoundEvent());
+            Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+            programBuilder.addChild(threadCount, new Jump(label));        	
+        }
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
 		    	labelName = currentScope.getID() + ":" + ctx.idents().children.get(index - 2).getText();
@@ -882,13 +905,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		// TODO this blows up when we have big arrays
 		if(name.contains("$store.")) {
-//			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
-//			IExpr plus = (IExpr)ctx.expr(1).accept(this);
-//			IExpr address = new IExprBin(init, PLUS, plus);
-//			IExpr value = (IExpr)ctx.expr(2).accept(this);
-//			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
-//			return null;
-			throw new ParsingException("Pointer arithmetic is not yet supported");	
+			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
+			IExpr plus = (IExpr)ctx.expr(1).accept(this);
+			IExpr address = new IExprBin(init, PLUS, plus);
+			IExpr value = (IExpr)ctx.expr(2).accept(this);
+			// TODO pointer arithmetic not yet supported
+			if(!(address instanceof Address || address instanceof Register)) {
+				throw new ParsingException("Pointer arithmetic is not yet supported");	
+			}
+			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
+			return null;				
 		}
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());

@@ -81,6 +81,7 @@ public class Dartagnan {
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
 
+    	program.reduce();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
