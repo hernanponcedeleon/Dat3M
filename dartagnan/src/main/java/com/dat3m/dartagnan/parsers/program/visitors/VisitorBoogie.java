@@ -345,6 +345,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
+		//TODO this is probable obsolete
 		if(name.equals("calloc") || name.equals("$malloc")) {
 			throw new ParsingException("ERROR");
 		}
@@ -399,6 +400,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				type = INonDetTypes.LONG;
 			} else if (name.equals("__VERIFIER_nondet_ulong")) {
 				type = INonDetTypes.ULONG;
+			} else if (name.equals("__VERIFIER_nondet_char")) {
+				type = INonDetTypes.CHAR;
+			} else if (name.equals("__VERIFIER_nondet_uchar")) {
+				type = INonDetTypes.UCHAR;
 			} else {
 				throw new ParsingException(name + " is not supported");
 			}
