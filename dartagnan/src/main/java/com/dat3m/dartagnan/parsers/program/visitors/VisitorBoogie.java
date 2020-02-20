@@ -9,7 +9,8 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
 import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
-
+import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
+import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser.And_exprContext;
@@ -133,6 +135,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private BeginAtomic currentBeginAtomic = null;
 	private Call_cmdContext atomicMode = null;
 	
+	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$xor.", "$or.", "$and.", "$nand.");
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref");
 
 	public VisitorBoogie(ProgramBuilder pb) {
@@ -890,26 +893,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
 		currentCall = new FunctionCall(function, callParams, currentCall);
-		// TODO: improve this
-		if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
+		if(llvmFunctions.stream().anyMatch(f -> name.contains(f))) {
 			currentCall = currentCall.getParent();
-			return new IExprBin((ExprInterface)callParams.get(0), MOD, (ExprInterface)callParams.get(1));
-		}
-		if(name.contains("$sdiv.") || name.contains("$udiv.")) {
-			currentCall = currentCall.getParent();
-			return new IExprBin((ExprInterface)callParams.get(0), DIV, (ExprInterface)callParams.get(1));
-		}
-		if(name.contains("$xor.")) {
-			currentCall = currentCall.getParent();
-			return new IExprBin((ExprInterface)callParams.get(0), XOR, (ExprInterface)callParams.get(1));
-		}
-		if(name.contains("$or.")) {
-			currentCall = currentCall.getParent();
-			return new IExprBin((ExprInterface)callParams.get(0), OR, (ExprInterface)callParams.get(1));
-		}
-		if(name.contains("$and.") || name.contains("$nand.")) {
-			currentCall = currentCall.getParent();
-			return new IExprBin((ExprInterface)callParams.get(0), AND, (ExprInterface)callParams.get(1));
+			return llvmFunction(name, callParams);
 		}
 		if(name.contains("$not.")) {
 			currentCall = currentCall.getParent();
@@ -955,5 +941,35 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitDec(DecContext ctx) {
         throw new ParsingException("Floats are not yet supported");
+	}
+	
+	private Object llvmFunction(String name, List<Object> callParams) {
+		IOpBin op = null; 
+		if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
+			op = MOD;
+		}
+		if(name.contains("$sdiv.") || name.contains("$udiv.")) {
+			op = DIV;
+		}
+		if(name.contains("$shl.")) {
+			op = L_SHIFT;
+		}
+		if(name.contains("$lshr.")) {
+			op = R_SHIFT;
+		}
+		if(name.contains("$xor.")) {
+			op = XOR;
+		}
+		if(name.contains("$or.")) {
+			op = OR;
+		}
+		if(name.contains("$and.") || name.contains("$nand.")) {
+			op = AND;
+		}
+		if(op == null) {
+			throw new ParsingException("Function " + name + " has no implementation");
+		}
+		op.setPrecision(Integer.parseInt(name.substring(name.lastIndexOf('i')+1)));
+		return new IExprBin((ExprInterface)callParams.get(0), op, (ExprInterface)callParams.get(1));
 	}
 }
