@@ -116,7 +116,8 @@ public class Thread {
 			Event next3 = next2.getSuccessor();
 
 			// If the loop is empty, we remove it and the next two events which we added just to handle loop unrolling (which does not exists anymore)
-			if(current instanceof Label && next instanceof Jump && ((Jump)next).getLabel().equals(current)) {
+			// We don't apply this to main since the empty loop might be related to pthread_create inside a loop and we need the BoundEvent
+			if(current instanceof Label && next instanceof Jump && ((Jump)next).getLabel().equals(current) && id != 1) {
 				if(next2 instanceof BoundEvent && next3 instanceof Jump) {
 					current.setSuccessor(next3.getSuccessor());
 				}
