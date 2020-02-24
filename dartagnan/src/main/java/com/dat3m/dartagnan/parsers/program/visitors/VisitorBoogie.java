@@ -694,7 +694,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        	if(ctx.getText().contains("$load.")) {
 	    			// TODO pointer arithmetic not yet supported
 	    			if(!(value instanceof Address || value instanceof Register)) {
-	    				throw new ParsingException("Pointer arithmetic is not yet supported");	
+//	    				throw new ParsingException("Pointer arithmetic is not yet supported");	
 	    			}
 	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, "NA"));
 	        	}
