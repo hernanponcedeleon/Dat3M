@@ -37,8 +37,8 @@ public class SVCOMPRunner {
 		String catPath = options.getTargetModelFilePath();
 		Iterator<Integer> bounds = options.getBounds().iterator();
 		int bound;
-		String output = "UNKNOWN";
-		while(output.equals("UNKNOWN") && bounds.hasNext()) {
+		String output = "BPASS";
+		while((output.equals("BPASS") || output.equals("BFAIL")) && bounds.hasNext()) {
 			try {
 				compile(file, options.getOptFlag());
 			} catch (IOException e1) {
@@ -74,10 +74,10 @@ public class SVCOMPRunner {
 			}
 	        file = new SVCOMPSanitizer(options.getProgramFilePath()).run(bound);
 		}
-		output = output.equals("UNKNOWN") ? "PASS" : output;
+		output = output.contains("PASS") ? "PASS" : "FAIL";
 		System.out.println(output);
 		
-        if(options.getCreateWitness() && output.equals("FAIL")) {
+        if(options.getCreateWitness() && output.contains("FAIL")) {
 			try {
 				Program p = new ProgramParser().parse(file);
 	            new SVCOMPWitness(p, options).write();;

@@ -99,7 +99,6 @@ public class Dartagnan {
         // Used for getting the UNKNOWN
         // pop() is inside getResult
         solver.push();
-        solver.add(program.encodeNoBoundEventExec(ctx));
        	solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
