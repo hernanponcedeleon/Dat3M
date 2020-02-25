@@ -49,14 +49,14 @@ var $M.9: ref;
 var $M.10: i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 50529));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 52599));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
-function $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
+function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
 
 // SMT bit-vector/integer conversion
 function {:builtin "(_ int2bv 64)"} $int2bv.64(i: i64) returns (bv64);
-function {:builtin "bv2int"} $bv2int.64(i: bv64) returns (i64);
+function {:builtin "bv2nat"} $bv2int.64(i: bv64) returns (i64);
 
 // Integer arithmetic operations
 function {:inline} $add.i1(i1: i1, i2: i1) returns (i1) { (i1 + i2) }
@@ -144,23 +144,6 @@ function {:builtin "mod"} $smod.i96(i1: i96, i2: i96) returns (i96);
 function {:builtin "mod"} $smod.i128(i1: i128, i2: i128) returns (i128);
 function {:builtin "mod"} $smod.i160(i1: i160, i2: i160) returns (i160);
 function {:builtin "mod"} $smod.i256(i1: i256, i2: i256) returns (i256);
-function {:builtin "rem"} $srem.i1(i1: i1, i2: i1) returns (i1);
-function {:builtin "rem"} $srem.i5(i1: i5, i2: i5) returns (i5);
-function {:builtin "rem"} $srem.i6(i1: i6, i2: i6) returns (i6);
-function {:builtin "rem"} $srem.i8(i1: i8, i2: i8) returns (i8);
-function {:builtin "rem"} $srem.i16(i1: i16, i2: i16) returns (i16);
-function {:builtin "rem"} $srem.i24(i1: i24, i2: i24) returns (i24);
-function {:builtin "rem"} $srem.i32(i1: i32, i2: i32) returns (i32);
-function {:builtin "rem"} $srem.i40(i1: i40, i2: i40) returns (i40);
-function {:builtin "rem"} $srem.i48(i1: i48, i2: i48) returns (i48);
-function {:builtin "rem"} $srem.i56(i1: i56, i2: i56) returns (i56);
-function {:builtin "rem"} $srem.i64(i1: i64, i2: i64) returns (i64);
-function {:builtin "rem"} $srem.i80(i1: i80, i2: i80) returns (i80);
-function {:builtin "rem"} $srem.i88(i1: i88, i2: i88) returns (i88);
-function {:builtin "rem"} $srem.i96(i1: i96, i2: i96) returns (i96);
-function {:builtin "rem"} $srem.i128(i1: i128, i2: i128) returns (i128);
-function {:builtin "rem"} $srem.i160(i1: i160, i2: i160) returns (i160);
-function {:builtin "rem"} $srem.i256(i1: i256, i2: i256) returns (i256);
 function {:builtin "div"} $udiv.i1(i1: i1, i2: i1) returns (i1);
 function {:builtin "div"} $udiv.i5(i1: i5, i2: i5) returns (i5);
 function {:builtin "div"} $udiv.i6(i1: i6, i2: i6) returns (i6);
@@ -178,23 +161,40 @@ function {:builtin "div"} $udiv.i96(i1: i96, i2: i96) returns (i96);
 function {:builtin "div"} $udiv.i128(i1: i128, i2: i128) returns (i128);
 function {:builtin "div"} $udiv.i160(i1: i160, i2: i160) returns (i160);
 function {:builtin "div"} $udiv.i256(i1: i256, i2: i256) returns (i256);
-function {:builtin "rem"} $urem.i1(i1: i1, i2: i1) returns (i1);
-function {:builtin "rem"} $urem.i5(i1: i5, i2: i5) returns (i5);
-function {:builtin "rem"} $urem.i6(i1: i6, i2: i6) returns (i6);
-function {:builtin "rem"} $urem.i8(i1: i8, i2: i8) returns (i8);
-function {:builtin "rem"} $urem.i16(i1: i16, i2: i16) returns (i16);
-function {:builtin "rem"} $urem.i24(i1: i24, i2: i24) returns (i24);
-function {:builtin "rem"} $urem.i32(i1: i32, i2: i32) returns (i32);
-function {:builtin "rem"} $urem.i40(i1: i40, i2: i40) returns (i40);
-function {:builtin "rem"} $urem.i48(i1: i48, i2: i48) returns (i48);
-function {:builtin "rem"} $urem.i56(i1: i56, i2: i56) returns (i56);
-function {:builtin "rem"} $urem.i64(i1: i64, i2: i64) returns (i64);
-function {:builtin "rem"} $urem.i80(i1: i80, i2: i80) returns (i80);
-function {:builtin "rem"} $urem.i88(i1: i88, i2: i88) returns (i88);
-function {:builtin "rem"} $urem.i96(i1: i96, i2: i96) returns (i96);
-function {:builtin "rem"} $urem.i128(i1: i128, i2: i128) returns (i128);
-function {:builtin "rem"} $urem.i160(i1: i160, i2: i160) returns (i160);
-function {:builtin "rem"} $urem.i256(i1: i256, i2: i256) returns (i256);
+function {:inline} $srem.i1(i1: i1, i2: i1) returns (i1) { (if ($ne.i1.bool($smod.i1(i1, i2), 0) && $slt.i1.bool(i1, 0)) then $sub.i1($smod.i1(i1, i2), $smax.i1(i2, $sub.i1(0, i2))) else $smod.i1(i1, i2)) }
+function {:inline} $srem.i5(i1: i5, i2: i5) returns (i5) { (if ($ne.i5.bool($smod.i5(i1, i2), 0) && $slt.i5.bool(i1, 0)) then $sub.i5($smod.i5(i1, i2), $smax.i5(i2, $sub.i5(0, i2))) else $smod.i5(i1, i2)) }
+function {:inline} $srem.i6(i1: i6, i2: i6) returns (i6) { (if ($ne.i6.bool($smod.i6(i1, i2), 0) && $slt.i6.bool(i1, 0)) then $sub.i6($smod.i6(i1, i2), $smax.i6(i2, $sub.i6(0, i2))) else $smod.i6(i1, i2)) }
+function {:inline} $srem.i8(i1: i8, i2: i8) returns (i8) { (if ($ne.i8.bool($smod.i8(i1, i2), 0) && $slt.i8.bool(i1, 0)) then $sub.i8($smod.i8(i1, i2), $smax.i8(i2, $sub.i8(0, i2))) else $smod.i8(i1, i2)) }
+function {:inline} $srem.i16(i1: i16, i2: i16) returns (i16) { (if ($ne.i16.bool($smod.i16(i1, i2), 0) && $slt.i16.bool(i1, 0)) then $sub.i16($smod.i16(i1, i2), $smax.i16(i2, $sub.i16(0, i2))) else $smod.i16(i1, i2)) }
+function {:inline} $srem.i24(i1: i24, i2: i24) returns (i24) { (if ($ne.i24.bool($smod.i24(i1, i2), 0) && $slt.i24.bool(i1, 0)) then $sub.i24($smod.i24(i1, i2), $smax.i24(i2, $sub.i24(0, i2))) else $smod.i24(i1, i2)) }
+function {:inline} $srem.i32(i1: i32, i2: i32) returns (i32) { (if ($ne.i32.bool($smod.i32(i1, i2), 0) && $slt.i32.bool(i1, 0)) then $sub.i32($smod.i32(i1, i2), $smax.i32(i2, $sub.i32(0, i2))) else $smod.i32(i1, i2)) }
+function {:inline} $srem.i40(i1: i40, i2: i40) returns (i40) { (if ($ne.i40.bool($smod.i40(i1, i2), 0) && $slt.i40.bool(i1, 0)) then $sub.i40($smod.i40(i1, i2), $smax.i40(i2, $sub.i40(0, i2))) else $smod.i40(i1, i2)) }
+function {:inline} $srem.i48(i1: i48, i2: i48) returns (i48) { (if ($ne.i48.bool($smod.i48(i1, i2), 0) && $slt.i48.bool(i1, 0)) then $sub.i48($smod.i48(i1, i2), $smax.i48(i2, $sub.i48(0, i2))) else $smod.i48(i1, i2)) }
+function {:inline} $srem.i56(i1: i56, i2: i56) returns (i56) { (if ($ne.i56.bool($smod.i56(i1, i2), 0) && $slt.i56.bool(i1, 0)) then $sub.i56($smod.i56(i1, i2), $smax.i56(i2, $sub.i56(0, i2))) else $smod.i56(i1, i2)) }
+function {:inline} $srem.i64(i1: i64, i2: i64) returns (i64) { (if ($ne.i64.bool($smod.i64(i1, i2), 0) && $slt.i64.bool(i1, 0)) then $sub.i64($smod.i64(i1, i2), $smax.i64(i2, $sub.i64(0, i2))) else $smod.i64(i1, i2)) }
+function {:inline} $srem.i80(i1: i80, i2: i80) returns (i80) { (if ($ne.i80.bool($smod.i80(i1, i2), 0) && $slt.i80.bool(i1, 0)) then $sub.i80($smod.i80(i1, i2), $smax.i80(i2, $sub.i80(0, i2))) else $smod.i80(i1, i2)) }
+function {:inline} $srem.i88(i1: i88, i2: i88) returns (i88) { (if ($ne.i88.bool($smod.i88(i1, i2), 0) && $slt.i88.bool(i1, 0)) then $sub.i88($smod.i88(i1, i2), $smax.i88(i2, $sub.i88(0, i2))) else $smod.i88(i1, i2)) }
+function {:inline} $srem.i96(i1: i96, i2: i96) returns (i96) { (if ($ne.i96.bool($smod.i96(i1, i2), 0) && $slt.i96.bool(i1, 0)) then $sub.i96($smod.i96(i1, i2), $smax.i96(i2, $sub.i96(0, i2))) else $smod.i96(i1, i2)) }
+function {:inline} $srem.i128(i1: i128, i2: i128) returns (i128) { (if ($ne.i128.bool($smod.i128(i1, i2), 0) && $slt.i128.bool(i1, 0)) then $sub.i128($smod.i128(i1, i2), $smax.i128(i2, $sub.i128(0, i2))) else $smod.i128(i1, i2)) }
+function {:inline} $srem.i160(i1: i160, i2: i160) returns (i160) { (if ($ne.i160.bool($smod.i160(i1, i2), 0) && $slt.i160.bool(i1, 0)) then $sub.i160($smod.i160(i1, i2), $smax.i160(i2, $sub.i160(0, i2))) else $smod.i160(i1, i2)) }
+function {:inline} $srem.i256(i1: i256, i2: i256) returns (i256) { (if ($ne.i256.bool($smod.i256(i1, i2), 0) && $slt.i256.bool(i1, 0)) then $sub.i256($smod.i256(i1, i2), $smax.i256(i2, $sub.i256(0, i2))) else $smod.i256(i1, i2)) }
+function {:inline} $urem.i1(i1: i1, i2: i1) returns (i1) { $smod.i1(i1, i2) }
+function {:inline} $urem.i5(i1: i5, i2: i5) returns (i5) { $smod.i5(i1, i2) }
+function {:inline} $urem.i6(i1: i6, i2: i6) returns (i6) { $smod.i6(i1, i2) }
+function {:inline} $urem.i8(i1: i8, i2: i8) returns (i8) { $smod.i8(i1, i2) }
+function {:inline} $urem.i16(i1: i16, i2: i16) returns (i16) { $smod.i16(i1, i2) }
+function {:inline} $urem.i24(i1: i24, i2: i24) returns (i24) { $smod.i24(i1, i2) }
+function {:inline} $urem.i32(i1: i32, i2: i32) returns (i32) { $smod.i32(i1, i2) }
+function {:inline} $urem.i40(i1: i40, i2: i40) returns (i40) { $smod.i40(i1, i2) }
+function {:inline} $urem.i48(i1: i48, i2: i48) returns (i48) { $smod.i48(i1, i2) }
+function {:inline} $urem.i56(i1: i56, i2: i56) returns (i56) { $smod.i56(i1, i2) }
+function {:inline} $urem.i64(i1: i64, i2: i64) returns (i64) { $smod.i64(i1, i2) }
+function {:inline} $urem.i80(i1: i80, i2: i80) returns (i80) { $smod.i80(i1, i2) }
+function {:inline} $urem.i88(i1: i88, i2: i88) returns (i88) { $smod.i88(i1, i2) }
+function {:inline} $urem.i96(i1: i96, i2: i96) returns (i96) { $smod.i96(i1, i2) }
+function {:inline} $urem.i128(i1: i128, i2: i128) returns (i128) { $smod.i128(i1, i2) }
+function {:inline} $urem.i160(i1: i160, i2: i160) returns (i160) { $smod.i160(i1, i2) }
+function {:inline} $urem.i256(i1: i256, i2: i256) returns (i256) { $smod.i256(i1, i2) }
 function $shl.i1(i1: i1, i2: i1) returns (i1);
 function $shl.i5(i1: i5, i2: i5) returns (i5);
 function $shl.i6(i1: i6, i2: i6) returns (i6);
@@ -331,74 +331,74 @@ function $not.i96(i: i96) returns (i96);
 function $not.i128(i: i128) returns (i128);
 function $not.i160(i: i160) returns (i160);
 function $not.i256(i: i256) returns (i256);
-function {:inline} $smin.i1(i1: i1, i2: i1) returns (i1) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i5(i1: i5, i2: i5) returns (i5) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i6(i1: i6, i2: i6) returns (i6) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i8(i1: i8, i2: i8) returns (i8) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i16(i1: i16, i2: i16) returns (i16) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i24(i1: i24, i2: i24) returns (i24) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i32(i1: i32, i2: i32) returns (i32) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i40(i1: i40, i2: i40) returns (i40) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i48(i1: i48, i2: i48) returns (i48) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i56(i1: i56, i2: i56) returns (i56) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i64(i1: i64, i2: i64) returns (i64) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i80(i1: i80, i2: i80) returns (i80) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i88(i1: i88, i2: i88) returns (i88) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i96(i1: i96, i2: i96) returns (i96) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i128(i1: i128, i2: i128) returns (i128) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i160(i1: i160, i2: i160) returns (i160) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smin.i256(i1: i256, i2: i256) returns (i256) { if (i1 < i2) then i1 else i2 }
-function {:inline} $smax.i1(i1: i1, i2: i1) returns (i1) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i5(i1: i5, i2: i5) returns (i5) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i6(i1: i6, i2: i6) returns (i6) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i8(i1: i8, i2: i8) returns (i8) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i16(i1: i16, i2: i16) returns (i16) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i24(i1: i24, i2: i24) returns (i24) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i32(i1: i32, i2: i32) returns (i32) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i40(i1: i40, i2: i40) returns (i40) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i48(i1: i48, i2: i48) returns (i48) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i56(i1: i56, i2: i56) returns (i56) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i64(i1: i64, i2: i64) returns (i64) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i80(i1: i80, i2: i80) returns (i80) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i88(i1: i88, i2: i88) returns (i88) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i96(i1: i96, i2: i96) returns (i96) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i128(i1: i128, i2: i128) returns (i128) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i160(i1: i160, i2: i160) returns (i160) { if (i2 < i1) then i1 else i2 }
-function {:inline} $smax.i256(i1: i256, i2: i256) returns (i256) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umin.i1(i1: i1, i2: i1) returns (i1) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i5(i1: i5, i2: i5) returns (i5) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i6(i1: i6, i2: i6) returns (i6) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i8(i1: i8, i2: i8) returns (i8) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i16(i1: i16, i2: i16) returns (i16) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i24(i1: i24, i2: i24) returns (i24) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i32(i1: i32, i2: i32) returns (i32) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i40(i1: i40, i2: i40) returns (i40) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i48(i1: i48, i2: i48) returns (i48) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i56(i1: i56, i2: i56) returns (i56) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i64(i1: i64, i2: i64) returns (i64) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i80(i1: i80, i2: i80) returns (i80) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i88(i1: i88, i2: i88) returns (i88) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i96(i1: i96, i2: i96) returns (i96) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i128(i1: i128, i2: i128) returns (i128) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i160(i1: i160, i2: i160) returns (i160) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umin.i256(i1: i256, i2: i256) returns (i256) { if (i1 < i2) then i1 else i2 }
-function {:inline} $umax.i1(i1: i1, i2: i1) returns (i1) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i5(i1: i5, i2: i5) returns (i5) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i6(i1: i6, i2: i6) returns (i6) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i8(i1: i8, i2: i8) returns (i8) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i16(i1: i16, i2: i16) returns (i16) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i24(i1: i24, i2: i24) returns (i24) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i32(i1: i32, i2: i32) returns (i32) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i40(i1: i40, i2: i40) returns (i40) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i48(i1: i48, i2: i48) returns (i48) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i56(i1: i56, i2: i56) returns (i56) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i64(i1: i64, i2: i64) returns (i64) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i80(i1: i80, i2: i80) returns (i80) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i88(i1: i88, i2: i88) returns (i88) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i96(i1: i96, i2: i96) returns (i96) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i128(i1: i128, i2: i128) returns (i128) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i160(i1: i160, i2: i160) returns (i160) { if (i2 < i1) then i1 else i2 }
-function {:inline} $umax.i256(i1: i256, i2: i256) returns (i256) { if (i2 < i1) then i1 else i2 }
+function {:inline} $smin.i1(i1: i1, i2: i1) returns (i1) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i5(i1: i5, i2: i5) returns (i5) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i6(i1: i6, i2: i6) returns (i6) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i8(i1: i8, i2: i8) returns (i8) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i16(i1: i16, i2: i16) returns (i16) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i24(i1: i24, i2: i24) returns (i24) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i32(i1: i32, i2: i32) returns (i32) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i40(i1: i40, i2: i40) returns (i40) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i48(i1: i48, i2: i48) returns (i48) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i56(i1: i56, i2: i56) returns (i56) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i64(i1: i64, i2: i64) returns (i64) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i80(i1: i80, i2: i80) returns (i80) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i88(i1: i88, i2: i88) returns (i88) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i96(i1: i96, i2: i96) returns (i96) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i128(i1: i128, i2: i128) returns (i128) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i160(i1: i160, i2: i160) returns (i160) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smin.i256(i1: i256, i2: i256) returns (i256) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $smax.i1(i1: i1, i2: i1) returns (i1) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i5(i1: i5, i2: i5) returns (i5) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i6(i1: i6, i2: i6) returns (i6) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i8(i1: i8, i2: i8) returns (i8) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i16(i1: i16, i2: i16) returns (i16) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i24(i1: i24, i2: i24) returns (i24) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i32(i1: i32, i2: i32) returns (i32) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i40(i1: i40, i2: i40) returns (i40) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i48(i1: i48, i2: i48) returns (i48) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i56(i1: i56, i2: i56) returns (i56) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i64(i1: i64, i2: i64) returns (i64) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i80(i1: i80, i2: i80) returns (i80) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i88(i1: i88, i2: i88) returns (i88) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i96(i1: i96, i2: i96) returns (i96) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i128(i1: i128, i2: i128) returns (i128) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i160(i1: i160, i2: i160) returns (i160) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $smax.i256(i1: i256, i2: i256) returns (i256) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umin.i1(i1: i1, i2: i1) returns (i1) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i5(i1: i5, i2: i5) returns (i5) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i6(i1: i6, i2: i6) returns (i6) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i8(i1: i8, i2: i8) returns (i8) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i16(i1: i16, i2: i16) returns (i16) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i24(i1: i24, i2: i24) returns (i24) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i32(i1: i32, i2: i32) returns (i32) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i40(i1: i40, i2: i40) returns (i40) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i48(i1: i48, i2: i48) returns (i48) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i56(i1: i56, i2: i56) returns (i56) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i64(i1: i64, i2: i64) returns (i64) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i80(i1: i80, i2: i80) returns (i80) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i88(i1: i88, i2: i88) returns (i88) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i96(i1: i96, i2: i96) returns (i96) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i128(i1: i128, i2: i128) returns (i128) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i160(i1: i160, i2: i160) returns (i160) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umin.i256(i1: i256, i2: i256) returns (i256) { (if (i1 < i2) then i1 else i2) }
+function {:inline} $umax.i1(i1: i1, i2: i1) returns (i1) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i5(i1: i5, i2: i5) returns (i5) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i6(i1: i6, i2: i6) returns (i6) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i8(i1: i8, i2: i8) returns (i8) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i16(i1: i16, i2: i16) returns (i16) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i24(i1: i24, i2: i24) returns (i24) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i32(i1: i32, i2: i32) returns (i32) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i40(i1: i40, i2: i40) returns (i40) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i48(i1: i48, i2: i48) returns (i48) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i56(i1: i56, i2: i56) returns (i56) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i64(i1: i64, i2: i64) returns (i64) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i80(i1: i80, i2: i80) returns (i80) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i88(i1: i88, i2: i88) returns (i88) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i96(i1: i96, i2: i96) returns (i96) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i128(i1: i128, i2: i128) returns (i128) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i160(i1: i160, i2: i160) returns (i160) { (if (i2 < i1) then i1 else i2) }
+function {:inline} $umax.i256(i1: i256, i2: i256) returns (i256) { (if (i2 < i1) then i1 else i2) }
 axiom ($and.i1(0, 0) == 0);
 axiom ($or.i1(0, 0) == 0);
 axiom ($xor.i1(0, 0) == 0);
@@ -414,345 +414,345 @@ axiom ($xor.i1(1, 1) == 0);
 axiom ($and.i32(32, 16) == 0);
 // Integer predicates
 function {:inline} $ule.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i1(i1: i1, i2: i1) returns (i1) { if $ule.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i1(i1: i1, i2: i1) returns (i1) { (if $ule.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i5(i1: i5, i2: i5) returns (i1) { if $ule.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i5(i1: i5, i2: i5) returns (i1) { (if $ule.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i6(i1: i6, i2: i6) returns (i1) { if $ule.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i6(i1: i6, i2: i6) returns (i1) { (if $ule.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i8(i1: i8, i2: i8) returns (i1) { if $ule.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i8(i1: i8, i2: i8) returns (i1) { (if $ule.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i16(i1: i16, i2: i16) returns (i1) { if $ule.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i16(i1: i16, i2: i16) returns (i1) { (if $ule.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i24(i1: i24, i2: i24) returns (i1) { if $ule.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i24(i1: i24, i2: i24) returns (i1) { (if $ule.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i32(i1: i32, i2: i32) returns (i1) { if $ule.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i32(i1: i32, i2: i32) returns (i1) { (if $ule.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i40(i1: i40, i2: i40) returns (i1) { if $ule.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i40(i1: i40, i2: i40) returns (i1) { (if $ule.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i48(i1: i48, i2: i48) returns (i1) { if $ule.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i48(i1: i48, i2: i48) returns (i1) { (if $ule.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i56(i1: i56, i2: i56) returns (i1) { if $ule.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i56(i1: i56, i2: i56) returns (i1) { (if $ule.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i64(i1: i64, i2: i64) returns (i1) { if $ule.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i64(i1: i64, i2: i64) returns (i1) { (if $ule.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i80(i1: i80, i2: i80) returns (i1) { if $ule.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i80(i1: i80, i2: i80) returns (i1) { (if $ule.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i88(i1: i88, i2: i88) returns (i1) { if $ule.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i88(i1: i88, i2: i88) returns (i1) { (if $ule.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i96(i1: i96, i2: i96) returns (i1) { if $ule.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i96(i1: i96, i2: i96) returns (i1) { (if $ule.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i128(i1: i128, i2: i128) returns (i1) { if $ule.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i128(i1: i128, i2: i128) returns (i1) { (if $ule.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i160(i1: i160, i2: i160) returns (i1) { if $ule.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i160(i1: i160, i2: i160) returns (i1) { (if $ule.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $ule.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 <= i2) }
-function {:inline} $ule.i256(i1: i256, i2: i256) returns (i1) { if $ule.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $ule.i256(i1: i256, i2: i256) returns (i1) { (if $ule.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i1(i1: i1, i2: i1) returns (i1) { if $ult.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i1(i1: i1, i2: i1) returns (i1) { (if $ult.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i5(i1: i5, i2: i5) returns (i1) { if $ult.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i5(i1: i5, i2: i5) returns (i1) { (if $ult.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i6(i1: i6, i2: i6) returns (i1) { if $ult.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i6(i1: i6, i2: i6) returns (i1) { (if $ult.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i8(i1: i8, i2: i8) returns (i1) { if $ult.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i8(i1: i8, i2: i8) returns (i1) { (if $ult.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i16(i1: i16, i2: i16) returns (i1) { if $ult.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i16(i1: i16, i2: i16) returns (i1) { (if $ult.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i24(i1: i24, i2: i24) returns (i1) { if $ult.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i24(i1: i24, i2: i24) returns (i1) { (if $ult.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i32(i1: i32, i2: i32) returns (i1) { if $ult.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i32(i1: i32, i2: i32) returns (i1) { (if $ult.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i40(i1: i40, i2: i40) returns (i1) { if $ult.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i40(i1: i40, i2: i40) returns (i1) { (if $ult.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i48(i1: i48, i2: i48) returns (i1) { if $ult.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i48(i1: i48, i2: i48) returns (i1) { (if $ult.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i56(i1: i56, i2: i56) returns (i1) { if $ult.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i56(i1: i56, i2: i56) returns (i1) { (if $ult.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i64(i1: i64, i2: i64) returns (i1) { if $ult.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i64(i1: i64, i2: i64) returns (i1) { (if $ult.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i80(i1: i80, i2: i80) returns (i1) { if $ult.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i80(i1: i80, i2: i80) returns (i1) { (if $ult.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i88(i1: i88, i2: i88) returns (i1) { if $ult.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i88(i1: i88, i2: i88) returns (i1) { (if $ult.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i96(i1: i96, i2: i96) returns (i1) { if $ult.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i96(i1: i96, i2: i96) returns (i1) { (if $ult.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i128(i1: i128, i2: i128) returns (i1) { if $ult.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i128(i1: i128, i2: i128) returns (i1) { (if $ult.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i160(i1: i160, i2: i160) returns (i1) { if $ult.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i160(i1: i160, i2: i160) returns (i1) { (if $ult.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $ult.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 < i2) }
-function {:inline} $ult.i256(i1: i256, i2: i256) returns (i1) { if $ult.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $ult.i256(i1: i256, i2: i256) returns (i1) { (if $ult.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i1(i1: i1, i2: i1) returns (i1) { if $uge.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i1(i1: i1, i2: i1) returns (i1) { (if $uge.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i5(i1: i5, i2: i5) returns (i1) { if $uge.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i5(i1: i5, i2: i5) returns (i1) { (if $uge.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i6(i1: i6, i2: i6) returns (i1) { if $uge.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i6(i1: i6, i2: i6) returns (i1) { (if $uge.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i8(i1: i8, i2: i8) returns (i1) { if $uge.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i8(i1: i8, i2: i8) returns (i1) { (if $uge.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i16(i1: i16, i2: i16) returns (i1) { if $uge.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i16(i1: i16, i2: i16) returns (i1) { (if $uge.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i24(i1: i24, i2: i24) returns (i1) { if $uge.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i24(i1: i24, i2: i24) returns (i1) { (if $uge.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i32(i1: i32, i2: i32) returns (i1) { if $uge.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i32(i1: i32, i2: i32) returns (i1) { (if $uge.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i40(i1: i40, i2: i40) returns (i1) { if $uge.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i40(i1: i40, i2: i40) returns (i1) { (if $uge.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i48(i1: i48, i2: i48) returns (i1) { if $uge.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i48(i1: i48, i2: i48) returns (i1) { (if $uge.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i56(i1: i56, i2: i56) returns (i1) { if $uge.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i56(i1: i56, i2: i56) returns (i1) { (if $uge.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i64(i1: i64, i2: i64) returns (i1) { if $uge.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i64(i1: i64, i2: i64) returns (i1) { (if $uge.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i80(i1: i80, i2: i80) returns (i1) { if $uge.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i80(i1: i80, i2: i80) returns (i1) { (if $uge.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i88(i1: i88, i2: i88) returns (i1) { if $uge.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i88(i1: i88, i2: i88) returns (i1) { (if $uge.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i96(i1: i96, i2: i96) returns (i1) { if $uge.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i96(i1: i96, i2: i96) returns (i1) { (if $uge.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i128(i1: i128, i2: i128) returns (i1) { if $uge.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i128(i1: i128, i2: i128) returns (i1) { (if $uge.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i160(i1: i160, i2: i160) returns (i1) { if $uge.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i160(i1: i160, i2: i160) returns (i1) { (if $uge.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $uge.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 >= i2) }
-function {:inline} $uge.i256(i1: i256, i2: i256) returns (i1) { if $uge.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $uge.i256(i1: i256, i2: i256) returns (i1) { (if $uge.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i1(i1: i1, i2: i1) returns (i1) { if $ugt.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i1(i1: i1, i2: i1) returns (i1) { (if $ugt.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i5(i1: i5, i2: i5) returns (i1) { if $ugt.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i5(i1: i5, i2: i5) returns (i1) { (if $ugt.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i6(i1: i6, i2: i6) returns (i1) { if $ugt.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i6(i1: i6, i2: i6) returns (i1) { (if $ugt.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i8(i1: i8, i2: i8) returns (i1) { if $ugt.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i8(i1: i8, i2: i8) returns (i1) { (if $ugt.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i16(i1: i16, i2: i16) returns (i1) { if $ugt.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i16(i1: i16, i2: i16) returns (i1) { (if $ugt.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i24(i1: i24, i2: i24) returns (i1) { if $ugt.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i24(i1: i24, i2: i24) returns (i1) { (if $ugt.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i32(i1: i32, i2: i32) returns (i1) { if $ugt.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i32(i1: i32, i2: i32) returns (i1) { (if $ugt.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i40(i1: i40, i2: i40) returns (i1) { if $ugt.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i40(i1: i40, i2: i40) returns (i1) { (if $ugt.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i48(i1: i48, i2: i48) returns (i1) { if $ugt.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i48(i1: i48, i2: i48) returns (i1) { (if $ugt.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i56(i1: i56, i2: i56) returns (i1) { if $ugt.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i56(i1: i56, i2: i56) returns (i1) { (if $ugt.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i64(i1: i64, i2: i64) returns (i1) { if $ugt.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i64(i1: i64, i2: i64) returns (i1) { (if $ugt.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i80(i1: i80, i2: i80) returns (i1) { if $ugt.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i80(i1: i80, i2: i80) returns (i1) { (if $ugt.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i88(i1: i88, i2: i88) returns (i1) { if $ugt.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i88(i1: i88, i2: i88) returns (i1) { (if $ugt.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i96(i1: i96, i2: i96) returns (i1) { if $ugt.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i96(i1: i96, i2: i96) returns (i1) { (if $ugt.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i128(i1: i128, i2: i128) returns (i1) { if $ugt.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i128(i1: i128, i2: i128) returns (i1) { (if $ugt.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i160(i1: i160, i2: i160) returns (i1) { if $ugt.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i160(i1: i160, i2: i160) returns (i1) { (if $ugt.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $ugt.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 > i2) }
-function {:inline} $ugt.i256(i1: i256, i2: i256) returns (i1) { if $ugt.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $ugt.i256(i1: i256, i2: i256) returns (i1) { (if $ugt.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i1(i1: i1, i2: i1) returns (i1) { if $sle.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i1(i1: i1, i2: i1) returns (i1) { (if $sle.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i5(i1: i5, i2: i5) returns (i1) { if $sle.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i5(i1: i5, i2: i5) returns (i1) { (if $sle.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i6(i1: i6, i2: i6) returns (i1) { if $sle.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i6(i1: i6, i2: i6) returns (i1) { (if $sle.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i8(i1: i8, i2: i8) returns (i1) { if $sle.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i8(i1: i8, i2: i8) returns (i1) { (if $sle.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i16(i1: i16, i2: i16) returns (i1) { if $sle.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i16(i1: i16, i2: i16) returns (i1) { (if $sle.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i24(i1: i24, i2: i24) returns (i1) { if $sle.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i24(i1: i24, i2: i24) returns (i1) { (if $sle.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i32(i1: i32, i2: i32) returns (i1) { if $sle.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i32(i1: i32, i2: i32) returns (i1) { (if $sle.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i40(i1: i40, i2: i40) returns (i1) { if $sle.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i40(i1: i40, i2: i40) returns (i1) { (if $sle.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i48(i1: i48, i2: i48) returns (i1) { if $sle.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i48(i1: i48, i2: i48) returns (i1) { (if $sle.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i56(i1: i56, i2: i56) returns (i1) { if $sle.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i56(i1: i56, i2: i56) returns (i1) { (if $sle.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i64(i1: i64, i2: i64) returns (i1) { if $sle.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i64(i1: i64, i2: i64) returns (i1) { (if $sle.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i80(i1: i80, i2: i80) returns (i1) { if $sle.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i80(i1: i80, i2: i80) returns (i1) { (if $sle.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i88(i1: i88, i2: i88) returns (i1) { if $sle.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i88(i1: i88, i2: i88) returns (i1) { (if $sle.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i96(i1: i96, i2: i96) returns (i1) { if $sle.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i96(i1: i96, i2: i96) returns (i1) { (if $sle.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i128(i1: i128, i2: i128) returns (i1) { if $sle.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i128(i1: i128, i2: i128) returns (i1) { (if $sle.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i160(i1: i160, i2: i160) returns (i1) { if $sle.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i160(i1: i160, i2: i160) returns (i1) { (if $sle.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $sle.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 <= i2) }
-function {:inline} $sle.i256(i1: i256, i2: i256) returns (i1) { if $sle.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $sle.i256(i1: i256, i2: i256) returns (i1) { (if $sle.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i1(i1: i1, i2: i1) returns (i1) { if $slt.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i1(i1: i1, i2: i1) returns (i1) { (if $slt.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i5(i1: i5, i2: i5) returns (i1) { if $slt.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i5(i1: i5, i2: i5) returns (i1) { (if $slt.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i6(i1: i6, i2: i6) returns (i1) { if $slt.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i6(i1: i6, i2: i6) returns (i1) { (if $slt.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i8(i1: i8, i2: i8) returns (i1) { if $slt.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i8(i1: i8, i2: i8) returns (i1) { (if $slt.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i16(i1: i16, i2: i16) returns (i1) { if $slt.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i16(i1: i16, i2: i16) returns (i1) { (if $slt.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i24(i1: i24, i2: i24) returns (i1) { if $slt.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i24(i1: i24, i2: i24) returns (i1) { (if $slt.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i32(i1: i32, i2: i32) returns (i1) { if $slt.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i32(i1: i32, i2: i32) returns (i1) { (if $slt.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i40(i1: i40, i2: i40) returns (i1) { if $slt.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i40(i1: i40, i2: i40) returns (i1) { (if $slt.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i48(i1: i48, i2: i48) returns (i1) { if $slt.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i48(i1: i48, i2: i48) returns (i1) { (if $slt.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i56(i1: i56, i2: i56) returns (i1) { if $slt.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i56(i1: i56, i2: i56) returns (i1) { (if $slt.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i64(i1: i64, i2: i64) returns (i1) { if $slt.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i64(i1: i64, i2: i64) returns (i1) { (if $slt.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i80(i1: i80, i2: i80) returns (i1) { if $slt.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i80(i1: i80, i2: i80) returns (i1) { (if $slt.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i88(i1: i88, i2: i88) returns (i1) { if $slt.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i88(i1: i88, i2: i88) returns (i1) { (if $slt.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i96(i1: i96, i2: i96) returns (i1) { if $slt.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i96(i1: i96, i2: i96) returns (i1) { (if $slt.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i128(i1: i128, i2: i128) returns (i1) { if $slt.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i128(i1: i128, i2: i128) returns (i1) { (if $slt.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i160(i1: i160, i2: i160) returns (i1) { if $slt.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i160(i1: i160, i2: i160) returns (i1) { (if $slt.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $slt.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 < i2) }
-function {:inline} $slt.i256(i1: i256, i2: i256) returns (i1) { if $slt.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $slt.i256(i1: i256, i2: i256) returns (i1) { (if $slt.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i1(i1: i1, i2: i1) returns (i1) { if $sge.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i1(i1: i1, i2: i1) returns (i1) { (if $sge.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i5(i1: i5, i2: i5) returns (i1) { if $sge.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i5(i1: i5, i2: i5) returns (i1) { (if $sge.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i6(i1: i6, i2: i6) returns (i1) { if $sge.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i6(i1: i6, i2: i6) returns (i1) { (if $sge.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i8(i1: i8, i2: i8) returns (i1) { if $sge.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i8(i1: i8, i2: i8) returns (i1) { (if $sge.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i16(i1: i16, i2: i16) returns (i1) { if $sge.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i16(i1: i16, i2: i16) returns (i1) { (if $sge.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i24(i1: i24, i2: i24) returns (i1) { if $sge.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i24(i1: i24, i2: i24) returns (i1) { (if $sge.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i32(i1: i32, i2: i32) returns (i1) { if $sge.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i32(i1: i32, i2: i32) returns (i1) { (if $sge.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i40(i1: i40, i2: i40) returns (i1) { if $sge.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i40(i1: i40, i2: i40) returns (i1) { (if $sge.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i48(i1: i48, i2: i48) returns (i1) { if $sge.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i48(i1: i48, i2: i48) returns (i1) { (if $sge.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i56(i1: i56, i2: i56) returns (i1) { if $sge.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i56(i1: i56, i2: i56) returns (i1) { (if $sge.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i64(i1: i64, i2: i64) returns (i1) { if $sge.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i64(i1: i64, i2: i64) returns (i1) { (if $sge.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i80(i1: i80, i2: i80) returns (i1) { if $sge.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i80(i1: i80, i2: i80) returns (i1) { (if $sge.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i88(i1: i88, i2: i88) returns (i1) { if $sge.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i88(i1: i88, i2: i88) returns (i1) { (if $sge.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i96(i1: i96, i2: i96) returns (i1) { if $sge.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i96(i1: i96, i2: i96) returns (i1) { (if $sge.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i128(i1: i128, i2: i128) returns (i1) { if $sge.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i128(i1: i128, i2: i128) returns (i1) { (if $sge.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i160(i1: i160, i2: i160) returns (i1) { if $sge.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i160(i1: i160, i2: i160) returns (i1) { (if $sge.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $sge.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 >= i2) }
-function {:inline} $sge.i256(i1: i256, i2: i256) returns (i1) { if $sge.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $sge.i256(i1: i256, i2: i256) returns (i1) { (if $sge.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i1(i1: i1, i2: i1) returns (i1) { if $sgt.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i1(i1: i1, i2: i1) returns (i1) { (if $sgt.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i5(i1: i5, i2: i5) returns (i1) { if $sgt.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i5(i1: i5, i2: i5) returns (i1) { (if $sgt.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i6(i1: i6, i2: i6) returns (i1) { if $sgt.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i6(i1: i6, i2: i6) returns (i1) { (if $sgt.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i8(i1: i8, i2: i8) returns (i1) { if $sgt.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i8(i1: i8, i2: i8) returns (i1) { (if $sgt.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i16(i1: i16, i2: i16) returns (i1) { if $sgt.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i16(i1: i16, i2: i16) returns (i1) { (if $sgt.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i24(i1: i24, i2: i24) returns (i1) { if $sgt.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i24(i1: i24, i2: i24) returns (i1) { (if $sgt.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i32(i1: i32, i2: i32) returns (i1) { if $sgt.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i32(i1: i32, i2: i32) returns (i1) { (if $sgt.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i40(i1: i40, i2: i40) returns (i1) { if $sgt.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i40(i1: i40, i2: i40) returns (i1) { (if $sgt.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i48(i1: i48, i2: i48) returns (i1) { if $sgt.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i48(i1: i48, i2: i48) returns (i1) { (if $sgt.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i56(i1: i56, i2: i56) returns (i1) { if $sgt.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i56(i1: i56, i2: i56) returns (i1) { (if $sgt.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i64(i1: i64, i2: i64) returns (i1) { if $sgt.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i64(i1: i64, i2: i64) returns (i1) { (if $sgt.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i80(i1: i80, i2: i80) returns (i1) { if $sgt.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i80(i1: i80, i2: i80) returns (i1) { (if $sgt.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i88(i1: i88, i2: i88) returns (i1) { if $sgt.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i88(i1: i88, i2: i88) returns (i1) { (if $sgt.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i96(i1: i96, i2: i96) returns (i1) { if $sgt.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i96(i1: i96, i2: i96) returns (i1) { (if $sgt.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i128(i1: i128, i2: i128) returns (i1) { if $sgt.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i128(i1: i128, i2: i128) returns (i1) { (if $sgt.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i160(i1: i160, i2: i160) returns (i1) { if $sgt.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i160(i1: i160, i2: i160) returns (i1) { (if $sgt.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $sgt.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 > i2) }
-function {:inline} $sgt.i256(i1: i256, i2: i256) returns (i1) { if $sgt.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $sgt.i256(i1: i256, i2: i256) returns (i1) { (if $sgt.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i1(i1: i1, i2: i1) returns (i1) { if $eq.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i1(i1: i1, i2: i1) returns (i1) { (if $eq.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i5(i1: i5, i2: i5) returns (i1) { if $eq.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i5(i1: i5, i2: i5) returns (i1) { (if $eq.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i6(i1: i6, i2: i6) returns (i1) { if $eq.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i6(i1: i6, i2: i6) returns (i1) { (if $eq.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i8(i1: i8, i2: i8) returns (i1) { if $eq.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i8(i1: i8, i2: i8) returns (i1) { (if $eq.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i16(i1: i16, i2: i16) returns (i1) { if $eq.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i16(i1: i16, i2: i16) returns (i1) { (if $eq.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i24(i1: i24, i2: i24) returns (i1) { if $eq.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i24(i1: i24, i2: i24) returns (i1) { (if $eq.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i32(i1: i32, i2: i32) returns (i1) { if $eq.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i32(i1: i32, i2: i32) returns (i1) { (if $eq.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i40(i1: i40, i2: i40) returns (i1) { if $eq.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i40(i1: i40, i2: i40) returns (i1) { (if $eq.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i48(i1: i48, i2: i48) returns (i1) { if $eq.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i48(i1: i48, i2: i48) returns (i1) { (if $eq.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i56(i1: i56, i2: i56) returns (i1) { if $eq.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i56(i1: i56, i2: i56) returns (i1) { (if $eq.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i64(i1: i64, i2: i64) returns (i1) { if $eq.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i64(i1: i64, i2: i64) returns (i1) { (if $eq.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i80(i1: i80, i2: i80) returns (i1) { if $eq.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i80(i1: i80, i2: i80) returns (i1) { (if $eq.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i88(i1: i88, i2: i88) returns (i1) { if $eq.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i88(i1: i88, i2: i88) returns (i1) { (if $eq.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i96(i1: i96, i2: i96) returns (i1) { if $eq.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i96(i1: i96, i2: i96) returns (i1) { (if $eq.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i128(i1: i128, i2: i128) returns (i1) { if $eq.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i128(i1: i128, i2: i128) returns (i1) { (if $eq.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i160(i1: i160, i2: i160) returns (i1) { if $eq.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i160(i1: i160, i2: i160) returns (i1) { (if $eq.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $eq.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 == i2) }
-function {:inline} $eq.i256(i1: i256, i2: i256) returns (i1) { if $eq.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $eq.i256(i1: i256, i2: i256) returns (i1) { (if $eq.i256.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i1.bool(i1: i1, i2: i1) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i1(i1: i1, i2: i1) returns (i1) { if $ne.i1.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i1(i1: i1, i2: i1) returns (i1) { (if $ne.i1.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i5.bool(i1: i5, i2: i5) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i5(i1: i5, i2: i5) returns (i1) { if $ne.i5.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i5(i1: i5, i2: i5) returns (i1) { (if $ne.i5.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i6.bool(i1: i6, i2: i6) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i6(i1: i6, i2: i6) returns (i1) { if $ne.i6.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i6(i1: i6, i2: i6) returns (i1) { (if $ne.i6.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i8.bool(i1: i8, i2: i8) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i8(i1: i8, i2: i8) returns (i1) { if $ne.i8.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i8(i1: i8, i2: i8) returns (i1) { (if $ne.i8.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i16.bool(i1: i16, i2: i16) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i16(i1: i16, i2: i16) returns (i1) { if $ne.i16.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i16(i1: i16, i2: i16) returns (i1) { (if $ne.i16.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i24.bool(i1: i24, i2: i24) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i24(i1: i24, i2: i24) returns (i1) { if $ne.i24.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i24(i1: i24, i2: i24) returns (i1) { (if $ne.i24.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i32.bool(i1: i32, i2: i32) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i32(i1: i32, i2: i32) returns (i1) { if $ne.i32.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i32(i1: i32, i2: i32) returns (i1) { (if $ne.i32.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i40.bool(i1: i40, i2: i40) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i40(i1: i40, i2: i40) returns (i1) { if $ne.i40.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i40(i1: i40, i2: i40) returns (i1) { (if $ne.i40.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i48.bool(i1: i48, i2: i48) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i48(i1: i48, i2: i48) returns (i1) { if $ne.i48.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i48(i1: i48, i2: i48) returns (i1) { (if $ne.i48.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i56.bool(i1: i56, i2: i56) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i56(i1: i56, i2: i56) returns (i1) { if $ne.i56.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i56(i1: i56, i2: i56) returns (i1) { (if $ne.i56.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i64.bool(i1: i64, i2: i64) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i64(i1: i64, i2: i64) returns (i1) { if $ne.i64.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i64(i1: i64, i2: i64) returns (i1) { (if $ne.i64.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i80.bool(i1: i80, i2: i80) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i80(i1: i80, i2: i80) returns (i1) { if $ne.i80.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i80(i1: i80, i2: i80) returns (i1) { (if $ne.i80.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i88.bool(i1: i88, i2: i88) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i88(i1: i88, i2: i88) returns (i1) { if $ne.i88.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i88(i1: i88, i2: i88) returns (i1) { (if $ne.i88.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i96.bool(i1: i96, i2: i96) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i96(i1: i96, i2: i96) returns (i1) { if $ne.i96.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i96(i1: i96, i2: i96) returns (i1) { (if $ne.i96.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i128.bool(i1: i128, i2: i128) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i128(i1: i128, i2: i128) returns (i1) { if $ne.i128.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i128(i1: i128, i2: i128) returns (i1) { (if $ne.i128.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i160.bool(i1: i160, i2: i160) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i160(i1: i160, i2: i160) returns (i1) { if $ne.i160.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i160(i1: i160, i2: i160) returns (i1) { (if $ne.i160.bool(i1, i2) then 1 else 0) }
 function {:inline} $ne.i256.bool(i1: i256, i2: i256) returns (bool) { (i1 != i2) }
-function {:inline} $ne.i256(i1: i256, i2: i256) returns (i1) { if $ne.i256.bool(i1, i2) then 1 else 0 }
+function {:inline} $ne.i256(i1: i256, i2: i256) returns (i1) { (if $ne.i256.bool(i1, i2) then 1 else 0) }
 // Integer load/store operations
 function {:inline} $load.i1(M: [ref] i1, p: ref) returns (i1) { M[p] }
 function {:inline} $store.i1(M: [ref] i1, p: ref, i: i1) returns ([ref] i1) { M[p := i] }
@@ -1390,20 +1390,34 @@ const __tmp_91_0: ref;
 axiom (__tmp_91_0 == $sub.ref(0, 6168));
 const __tmp_91_1: ref;
 axiom (__tmp_91_1 == $sub.ref(0, 7196));
-const __return_main: ref;
-axiom (__return_main == $sub.ref(0, 8224));
 const __return_121: ref;
-axiom (__return_121 == $sub.ref(0, 9252));
+axiom (__return_121 == $sub.ref(0, 8224));
+const __return_main: ref;
+axiom (__return_main == $sub.ref(0, 9252));
+const {:count 14} .str.1: ref;
+axiom (.str.1 == $sub.ref(0, 10290));
 const env_value_str: ref;
-axiom (env_value_str == $sub.ref(0, 10284));
-const {:count 3} .str.1.5: ref;
-axiom (.str.1.5 == $sub.ref(0, 11311));
+axiom (env_value_str == $sub.ref(0, 11322));
+const {:count 3} .str.1.3: ref;
+axiom (.str.1.3 == $sub.ref(0, 12349));
 const {:count 14} .str.14: ref;
-axiom (.str.14 == $sub.ref(0, 12349));
+axiom (.str.14 == $sub.ref(0, 13387));
 const errno_global: ref;
-axiom (errno_global == $sub.ref(0, 13377));
+axiom (errno_global == $sub.ref(0, 14415));
+const reach_error: ref;
+axiom (reach_error == $sub.ref(0, 15447));
+procedure reach_error()
+{
+$bb0:
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 3, 44} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 3, 44} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
 const main: ref;
-axiom (main == $sub.ref(0, 14409));
+axiom (main == $sub.ref(0, 16479));
 procedure main()
   returns ($r: i32)
 {
@@ -1441,390 +1455,391 @@ procedure main()
   var $i31: i32;
   var $i33: i32;
   var $i34: i32;
-  var $i35: i32;
-  var $i36: i1;
+  var $i35: i1;
+  var $i36: i32;
   var $i37: i32;
-  var $i38: i32;
-  var $i39: i1;
+  var $i38: i1;
+  var $i39: i32;
   var $i40: i32;
   var $i41: i32;
-  var $i42: i32;
   var $i32: i32;
 $bb0:
   call $initialize();
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 17, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 18, 2} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 17, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 18, 2} true;
   assume {:verifier.code 0} true;
   $i0 := $u0;
   goto $bb1;
 $bb1:
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 20, 29} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 21, 29} true;
   assume {:verifier.code 0} true;
   call $i1 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i1);
   call {:cexpr "main____CPAchecker_TMP_0"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 21, 33} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 22, 33} true;
   assume {:verifier.code 0} true;
   $i2 := $eq.i32($i1, 0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 21, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 22, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i2} true;
   goto $bb2, $bb3;
 $bb2:
   assume ($i2 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 147, 9} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 148, 9} true;
   assume {:verifier.code 0} true;
-  $i42 := $M.7;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 147, 2} true;
+  $i41 := $M.8;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 148, 2} true;
   assume {:verifier.code 0} true;
-  $i32 := $i42;
+  $i32 := $i41;
   goto $bb24;
 $bb3:
   assume !(($i2 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 23, 15} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 24, 15} true;
   assume {:verifier.code 0} true;
   $i3 := $urem.i32($i0, 3);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 23, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 24, 20} true;
   assume {:verifier.code 0} true;
   $i4 := $eq.i32($i3, 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 23, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 24, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i4} true;
   goto $bb4, $bb5;
 $bb4:
   assume ($i4 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 25, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 26, 20} true;
   assume {:verifier.code 0} true;
   $i5 := $add.i32($i0, 2);
   call {:cexpr "main__x"} boogie_si_record_i32($i5);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 27, 14} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 28, 14} true;
   assume {:verifier.code 0} true;
   $M.0 := $i1;
   call {:cexpr "__tmp_112_0"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 27, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 28, 2} true;
   assume {:verifier.code 0} true;
   $i6 := $i5;
   goto $bb6;
 $bb5:
   assume !(($i4 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 115, 15} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 116, 15} true;
   assume {:verifier.code 0} true;
-  $i35 := $urem.i32($i0, 3);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 115, 20} true;
+  $i34 := $urem.i32($i0, 3);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 116, 20} true;
   assume {:verifier.code 0} true;
-  $i36 := $eq.i32($i35, 2);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 115, 6} true;
+  $i35 := $eq.i32($i34, 2);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 116, 6} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i36} true;
+  assume {:branchcond $i35} true;
   goto $bb25, $bb26;
 $bb6:
   assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 29, 29} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 30, 29} true;
   assume {:verifier.code 0} true;
   $i7 := $M.0;
   call {:cexpr "main____CPAchecker_TMP_0"} boogie_si_record_i32($i7);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 30, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 31, 13} true;
   assume {:verifier.code 0} true;
   $M.1 := $i7;
   call {:cexpr "__tmp_94_0"} boogie_si_record_i32($i7);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 30, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 31, 2} true;
   assume {:verifier.code 0} true;
   $i8 := $i6;
   goto $bb7;
 $bb7:
   assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 34, 29} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 35, 29} true;
   assume {:verifier.code 0} true;
   call $i9 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i9);
   call {:cexpr "main____CPAchecker_TMP_0"} boogie_si_record_i32($i9);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 35, 33} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 36, 33} true;
   assume {:verifier.code 0} true;
   $i10 := $eq.i32($i9, 0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 35, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 36, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i10} true;
   goto $bb8, $bb9;
 $bb8:
   assume ($i10 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 88, 14} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 89, 14} true;
   assume {:verifier.code 0} true;
   $i26 := $eq.i32(0, 0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 88, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 89, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i26} true;
   goto $bb20, $bb21;
 $bb9:
   assume !(($i10 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 37, 15} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 38, 15} true;
   assume {:verifier.code 0} true;
   $i11 := $urem.i32($i8, 3);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 37, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 38, 20} true;
   assume {:verifier.code 0} true;
   $i12 := $eq.i32($i11, 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 37, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 38, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i12} true;
   goto $bb10, $bb11;
 $bb10:
   assume ($i12 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 39, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 40, 20} true;
   assume {:verifier.code 0} true;
   $i13 := $add.i32($i8, 2);
   call {:cexpr "main__x"} boogie_si_record_i32($i13);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 41, 14} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 42, 14} true;
   assume {:verifier.code 0} true;
   $M.0 := $i9;
   call {:cexpr "__tmp_112_0"} boogie_si_record_i32($i9);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 42, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 43, 2} true;
   assume {:verifier.code 0} true;
   $i6 := $i13;
   goto $bb6;
 $bb11:
   assume !(($i12 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 46, 15} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 47, 15} true;
   assume {:verifier.code 0} true;
   $i14 := $urem.i32($i8, 3);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 46, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 47, 20} true;
   assume {:verifier.code 0} true;
   $i15 := $eq.i32($i14, 2);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 46, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 47, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i15} true;
   goto $bb12, $bb13;
 $bb12:
   assume ($i15 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 48, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 49, 20} true;
   assume {:verifier.code 0} true;
   $i16 := $add.i32($i8, 1);
   call {:cexpr "main__x"} boogie_si_record_i32($i16);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 50, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 51, 13} true;
   assume {:verifier.code 0} true;
   $M.2 := $i9;
   call {:cexpr "__tmp_93_0"} boogie_si_record_i32($i9);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 50, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 51, 2} true;
   assume {:verifier.code 0} true;
   $i17 := $i16;
   goto $bb14;
 $bb13:
   assume !(($i15 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 59, 29} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 60, 29} true;
   assume {:verifier.code 0} true;
   call $i19 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i19);
   call {:cexpr "main____CPAchecker_TMP_1"} boogie_si_record_i32($i19);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 60, 33} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 61, 33} true;
   assume {:verifier.code 0} true;
   $i20 := $eq.i32($i19, 0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 60, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 61, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i20} true;
   goto $bb15, $bb16;
 $bb14:
   assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 52, 29} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 53, 29} true;
   assume {:verifier.code 0} true;
   $i18 := $M.2;
   call {:cexpr "main____CPAchecker_TMP_0"} boogie_si_record_i32($i18);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 53, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 54, 13} true;
   assume {:verifier.code 0} true;
   $M.1 := $i18;
   call {:cexpr "__tmp_94_0"} boogie_si_record_i32($i18);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 54, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 55, 2} true;
   assume {:verifier.code 0} true;
   $i8 := $i17;
   goto $bb7;
 $bb15:
   assume ($i20 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 74, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 75, 20} true;
   assume {:verifier.code 0} true;
   $i24 := $add.i32($i8, 5);
   call {:cexpr "main__x"} boogie_si_record_i32($i24);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 76, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 77, 13} true;
   assume {:verifier.code 0} true;
   $M.5 := $i9;
   call {:cexpr "__tmp_91_0"} boogie_si_record_i32($i9);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 77, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 78, 13} true;
   assume {:verifier.code 0} true;
   $M.6 := $i19;
   call {:cexpr "__tmp_91_1"} boogie_si_record_i32($i19);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 77, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 78, 2} true;
   assume {:verifier.code 0} true;
   $i25 := $i24;
   goto $bb19;
 $bb16:
   assume !(($i20 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 62, 20} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 63, 20} true;
   assume {:verifier.code 0} true;
   $i21 := $add.i32($i8, 4);
   call {:cexpr "main__x"} boogie_si_record_i32($i21);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 64, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 65, 13} true;
   assume {:verifier.code 0} true;
   $M.3 := $i9;
   call {:cexpr "__tmp_88_0"} boogie_si_record_i32($i9);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 65, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 66, 13} true;
   assume {:verifier.code 0} true;
   $M.4 := $i19;
   call {:cexpr "__tmp_88_1"} boogie_si_record_i32($i19);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 65, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 66, 2} true;
   assume {:verifier.code 0} true;
   $i22 := $i21;
   goto $bb17;
 $bb17:
   assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 68, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 69, 2} true;
   assume {:verifier.code 0} true;
   $i23 := $i22;
   goto $bb18;
 $bb18:
   assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 70, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 71, 2} true;
   assume {:verifier.code 0} true;
   $i0 := $i23;
   goto $bb1;
 $bb19:
   assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 81, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 82, 2} true;
   assume {:verifier.code 0} true;
   $i23 := $i25;
   goto $bb18;
 $bb20:
   assume ($i26 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 92, 21} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 93, 21} true;
   assume {:verifier.code 0} true;
   $i27 := $urem.i32($i8, 3);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 92, 26} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 93, 26} true;
   assume {:verifier.code 0} true;
   $i28 := $eq.i32($i27, 0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 92, 26} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 93, 26} true;
   assume {:verifier.code 0} true;
   $i29 := $zext.i1.i32($i28);
   call {:cexpr "__tmp_1"} boogie_si_record_i32($i29);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 95, 30} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 96, 30} true;
   assume {:verifier.code 0} true;
   $i30 := $eq.i32($i29, 0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 95, 6} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 96, 6} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i30} true;
   goto $bb22, $bb23;
 $bb21:
   assume !(($i26 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 109, 9} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 110, 9} true;
   assume {:verifier.code 0} true;
-  $i34 := $M.7;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 109, 2} true;
+  $i33 := $M.8;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 110, 2} true;
   assume {:verifier.code 0} true;
-  $i32 := $i34;
+  $i32 := $i33;
   goto $bb24;
 $bb22:
   assume ($i30 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 97, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 98, 3} true;
   assume {:verifier.code 0} true;
-  call __VERIFIER_error();
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 98, 9} true;
+  call reach_error();
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 98, 17} true;
   assume {:verifier.code 0} true;
-  $i31 := $M.7;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 98, 2} true;
+  call abort();
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 98, 17} true;
   assume {:verifier.code 0} true;
-  $i32 := $i31;
-  goto $bb24;
+  assume false;
 $bb23:
   assume !(($i30 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 102, 16} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 103, 16} true;
   assume {:verifier.code 0} true;
-  $M.8 := 0;
+  $M.7 := 0;
   call {:cexpr "__return_121"} boogie_si_record_i32(0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 103, 9} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 104, 9} true;
   assume {:verifier.code 0} true;
-  $i33 := $M.8;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 103, 2} true;
+  $i31 := $M.7;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 104, 2} true;
   assume {:verifier.code 0} true;
-  $i32 := $i33;
+  $i32 := $i31;
   goto $bb24;
 $bb24:
   assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 149, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 150, 2} true;
   assume {:verifier.code 0} true;
   $r := $i32;
   $exn := false;
   return;
 $bb25:
-  assume ($i36 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 117, 20} true;
+  assume ($i35 == 1);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 118, 20} true;
   assume {:verifier.code 0} true;
-  $i37 := $add.i32($i0, 1);
-  call {:cexpr "main__x"} boogie_si_record_i32($i37);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 119, 13} true;
+  $i36 := $add.i32($i0, 1);
+  call {:cexpr "main__x"} boogie_si_record_i32($i36);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 120, 13} true;
   assume {:verifier.code 0} true;
   $M.2 := $i1;
   call {:cexpr "__tmp_93_0"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 120, 2} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 121, 2} true;
   assume {:verifier.code 0} true;
-  $i17 := $i37;
+  $i17 := $i36;
   goto $bb14;
 $bb26:
-  assume !(($i36 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 125, 29} true;
+  assume !(($i35 == 1));
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 126, 29} true;
   assume {:verifier.code 0} true;
-  call $i38 := __VERIFIER_nondet_int();
-  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i38);
-  call {:cexpr "main____CPAchecker_TMP_1"} boogie_si_record_i32($i38);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 126, 33} true;
+  call $i37 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i37);
+  call {:cexpr "main____CPAchecker_TMP_1"} boogie_si_record_i32($i37);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 127, 33} true;
   assume {:verifier.code 0} true;
-  $i39 := $eq.i32($i38, 0);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 126, 6} true;
+  $i38 := $eq.i32($i37, 0);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 127, 6} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i39} true;
+  assume {:branchcond $i38} true;
   goto $bb27, $bb28;
 $bb27:
-  assume ($i39 == 1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 136, 20} true;
+  assume ($i38 == 1);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 137, 20} true;
   assume {:verifier.code 0} true;
-  $i41 := $add.i32($i0, 5);
-  call {:cexpr "main__x"} boogie_si_record_i32($i41);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 138, 13} true;
+  $i40 := $add.i32($i0, 5);
+  call {:cexpr "main__x"} boogie_si_record_i32($i40);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 139, 13} true;
   assume {:verifier.code 0} true;
   $M.5 := $i1;
   call {:cexpr "__tmp_91_0"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 139, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 140, 13} true;
   assume {:verifier.code 0} true;
-  $M.6 := $i38;
-  call {:cexpr "__tmp_91_1"} boogie_si_record_i32($i38);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 140, 2} true;
+  $M.6 := $i37;
+  call {:cexpr "__tmp_91_1"} boogie_si_record_i32($i37);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 141, 2} true;
   assume {:verifier.code 0} true;
-  $i25 := $i41;
+  $i25 := $i40;
   goto $bb19;
 $bb28:
-  assume !(($i39 == 1));
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 128, 20} true;
+  assume !(($i38 == 1));
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 129, 20} true;
   assume {:verifier.code 0} true;
-  $i40 := $add.i32($i0, 4);
-  call {:cexpr "main__x"} boogie_si_record_i32($i40);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 130, 13} true;
+  $i39 := $add.i32($i0, 4);
+  call {:cexpr "main__x"} boogie_si_record_i32($i39);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 131, 13} true;
   assume {:verifier.code 0} true;
   $M.3 := $i1;
   call {:cexpr "__tmp_88_0"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 131, 13} true;
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 132, 13} true;
   assume {:verifier.code 0} true;
-  $M.4 := $i38;
-  call {:cexpr "__tmp_88_1"} boogie_si_record_i32($i38);
-  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 132, 2} true;
+  $M.4 := $i37;
+  call {:cexpr "__tmp_88_1"} boogie_si_record_i32($i37);
+  assume {:sourceloc "./output/mod3.c.v+lhb-reducer_tmp.c", 133, 2} true;
   assume {:verifier.code 0} true;
-  $i22 := $i40;
+  $i22 := $i39;
   goto $bb17;
 }
+const abort: ref;
+axiom (abort == $sub.ref(0, 17511));
+procedure abort();
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 15441));
+axiom (__VERIFIER_assume == $sub.ref(0, 18543));
 procedure __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1843,11 +1858,11 @@ $bb0:
   return;
 }
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 16473));
+axiom (__SMACK_code == $sub.ref(0, 19575));
 procedure __SMACK_code.ref.i32($p0: ref, p.1: i32);
 procedure __SMACK_code.ref($p0: ref);
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 17505));
+axiom (__SMACK_dummy == $sub.ref(0, 20607));
 procedure __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -1862,23 +1877,8 @@ $bb0:
   $exn := false;
   return;
 }
-const __VERIFIER_error: ref;
-axiom (__VERIFIER_error == $sub.ref(0, 18537));
-procedure __VERIFIER_error()
-{
-$bb0:
-  assume {:sourceloc "./lib/smack.c", 52, 3} true;
-  assume {:verifier.code 1} true;
-  assume {:sourceloc "./lib/smack.c", 52, 3} true;
-  assume {:verifier.code 1} true;
-  assert false;
-  assume {:sourceloc "./lib/smack.c", 59, 1} true;
-  assume {:verifier.code 0} true;
-  $exn := false;
-  return;
-}
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 19569));
+axiom (__SMACK_check_overflow == $sub.ref(0, 21639));
 procedure __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -1897,39 +1897,39 @@ $bb0:
   return;
 }
 const __SMACK_nondet_char: ref;
-axiom (__SMACK_nondet_char == $sub.ref(0, 20601));
+axiom (__SMACK_nondet_char == $sub.ref(0, 22671));
 procedure __SMACK_nondet_char()
   returns ($r: i8);
 const __SMACK_nondet_signed_char: ref;
-axiom (__SMACK_nondet_signed_char == $sub.ref(0, 21633));
+axiom (__SMACK_nondet_signed_char == $sub.ref(0, 23703));
 procedure __SMACK_nondet_signed_char()
   returns ($r: i8);
 const __SMACK_nondet_unsigned_char: ref;
-axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 22665));
+axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 24735));
 procedure __SMACK_nondet_unsigned_char()
   returns ($r: i8);
 const __SMACK_nondet_short: ref;
-axiom (__SMACK_nondet_short == $sub.ref(0, 23697));
+axiom (__SMACK_nondet_short == $sub.ref(0, 25767));
 procedure __SMACK_nondet_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short: ref;
-axiom (__SMACK_nondet_signed_short == $sub.ref(0, 24729));
+axiom (__SMACK_nondet_signed_short == $sub.ref(0, 26799));
 procedure __SMACK_nondet_signed_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short_int: ref;
-axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 25761));
+axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 27831));
 procedure __SMACK_nondet_signed_short_int()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short: ref;
-axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 26793));
+axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 28863));
 procedure __SMACK_nondet_unsigned_short()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short_int: ref;
-axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 27825));
+axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 29895));
 procedure __SMACK_nondet_unsigned_short_int()
   returns ($r: i16);
 const __VERIFIER_nondet_int: ref;
-axiom (__VERIFIER_nondet_int == $sub.ref(0, 28857));
+axiom (__VERIFIER_nondet_int == $sub.ref(0, 30927));
 procedure __VERIFIER_nondet_int()
   returns ($r: i32)
 {
@@ -1983,71 +1983,71 @@ $bb3:
   return;
 }
 const __SMACK_nondet_int: ref;
-axiom (__SMACK_nondet_int == $sub.ref(0, 29889));
+axiom (__SMACK_nondet_int == $sub.ref(0, 31959));
 procedure __SMACK_nondet_int()
   returns ($r: i32);
 const __SMACK_nondet_signed_int: ref;
-axiom (__SMACK_nondet_signed_int == $sub.ref(0, 30921));
+axiom (__SMACK_nondet_signed_int == $sub.ref(0, 32991));
 procedure __SMACK_nondet_signed_int()
   returns ($r: i32);
 const __SMACK_nondet_unsigned: ref;
-axiom (__SMACK_nondet_unsigned == $sub.ref(0, 31953));
+axiom (__SMACK_nondet_unsigned == $sub.ref(0, 34023));
 procedure __SMACK_nondet_unsigned()
   returns ($r: i32);
 const __SMACK_nondet_unsigned_int: ref;
-axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 32985));
+axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 35055));
 procedure __SMACK_nondet_unsigned_int()
   returns ($r: i32);
 const __SMACK_nondet_long: ref;
-axiom (__SMACK_nondet_long == $sub.ref(0, 34017));
+axiom (__SMACK_nondet_long == $sub.ref(0, 36087));
 procedure __SMACK_nondet_long()
   returns ($r: i64);
 const __SMACK_nondet_long_int: ref;
-axiom (__SMACK_nondet_long_int == $sub.ref(0, 35049));
+axiom (__SMACK_nondet_long_int == $sub.ref(0, 37119));
 procedure __SMACK_nondet_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long: ref;
-axiom (__SMACK_nondet_signed_long == $sub.ref(0, 36081));
+axiom (__SMACK_nondet_signed_long == $sub.ref(0, 38151));
 procedure __SMACK_nondet_signed_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_int: ref;
-axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 37113));
+axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 39183));
 procedure __SMACK_nondet_signed_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long: ref;
-axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 38145));
+axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 40215));
 procedure __SMACK_nondet_unsigned_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 39177));
+axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 41247));
 procedure __SMACK_nondet_unsigned_long_int()
   returns ($r: i64);
 const __SMACK_nondet_long_long: ref;
-axiom (__SMACK_nondet_long_long == $sub.ref(0, 40209));
+axiom (__SMACK_nondet_long_long == $sub.ref(0, 42279));
 procedure __SMACK_nondet_long_long()
   returns ($r: i64);
 const __SMACK_nondet_long_long_int: ref;
-axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 41241));
+axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 43311));
 procedure __SMACK_nondet_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long: ref;
-axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 42273));
+axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 44343));
 procedure __SMACK_nondet_signed_long_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long_int: ref;
-axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 43305));
+axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 45375));
 procedure __SMACK_nondet_signed_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long: ref;
-axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 44337));
+axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 46407));
 procedure __SMACK_nondet_unsigned_long_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 45369));
+axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 47439));
 procedure __SMACK_nondet_unsigned_long_long_int()
   returns ($r: i64);
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 46401));
+axiom (__SMACK_decls == $sub.ref(0, 48471));
 type $mop;
 procedure boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -2075,10 +2075,10 @@ ensures $eq.ref.bool(n, $0.ref) ==> old($CurrAddr) == $CurrAddr && p == $0.ref;
 procedure $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 47433));
+axiom (__SMACK_top_decl == $sub.ref(0, 49503));
 procedure __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 48465));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 50535));
 procedure __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -2090,10 +2090,10 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 49497));
+axiom (llvm.dbg.value == $sub.ref(0, 51567));
 procedure llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 50529));
+axiom (__SMACK_static_init == $sub.ref(0, 52599));
 procedure __SMACK_static_init()
 {
 $bb0:
@@ -2112,10 +2112,10 @@ $bb0:
   $M.6 := 0;
   call {:cexpr "__tmp_91_1"} boogie_si_record_i32(0);
   $M.7 := 0;
-  call {:cexpr "__return_main"} boogie_si_record_i32(0);
-  $M.8 := 0;
   call {:cexpr "__return_121"} boogie_si_record_i32(0);
-  $M.9 := .str.1.5;
+  $M.8 := 0;
+  call {:cexpr "__return_main"} boogie_si_record_i32(0);
+  $M.9 := .str.1.3;
   $M.10 := 0;
   call {:cexpr "errno_global"} boogie_si_record_i32(0);
   $exn := false;
