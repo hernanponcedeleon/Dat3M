@@ -89,7 +89,7 @@ Authors and Contact
 ======
 **Maintainer:**
 
-* [Hernán Ponce de León](mailto:ponce@fortiss.org)
+* [Hernán Ponce de León](mailto:hernan.ponce@unibw.de)
 
 **Former Developers:**
 
