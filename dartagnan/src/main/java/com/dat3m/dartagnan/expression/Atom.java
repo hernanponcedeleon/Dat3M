@@ -65,8 +65,8 @@ public class Atom extends BExpr implements ExprInterface {
 
     @Override
 	public IConst reduce() {
-		int v1 = lhs.reduce().getIntValue(null, null, null);
-		int v2 = lhs.reduce().getIntValue(null, null, null);
+		int v1 = lhs.reduce().getValue();
+		int v2 = lhs.reduce().getValue();
         switch(op) {
         case EQ:
             return new IConst(v1 == v2 ? 1 : 0);

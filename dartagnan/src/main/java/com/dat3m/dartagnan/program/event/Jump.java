@@ -37,8 +37,7 @@ public class Jump extends Event {
     public void updateLabel(Label label) {
     	this.label = label;
     }
-    
-    
+        
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

@@ -53,8 +53,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     
     @Override
 	public IConst reduce() {
-		int v1 = lhs.reduce().getIntValue(null, null, null);
-		int v2 = rhs.reduce().getIntValue(null, null, null);
+		int v1 = lhs.reduce().getValue();
+		int v2 = rhs.reduce().getValue();
         switch(op){
         case PLUS:
             return new IConst(v1 + v2);

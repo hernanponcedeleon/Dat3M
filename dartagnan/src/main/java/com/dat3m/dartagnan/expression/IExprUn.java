@@ -45,10 +45,9 @@ public class IExprUn extends IExpr {
 
     @Override
 	public IConst reduce() {
-    	int value = b.reduce().getIntValue(null, null, null);
         switch(op){
 		case MINUS:
-			return new IConst(-value);
+			return new IConst(-b.reduce().getValue());
 		default:
 			throw new UnsupportedOperationException("Reduce not supported for " + this);
         }

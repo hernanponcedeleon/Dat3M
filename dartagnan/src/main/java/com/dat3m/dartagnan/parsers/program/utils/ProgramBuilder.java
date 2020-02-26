@@ -37,9 +37,6 @@ public class ProgramBuilder {
             validateLabels(thread);
             program.add(thread);
         }
-        // Assertion can still be null here
-        // We need to create the assertion after unrolling the programs
-        // This is needed for C programs
         program.setAss(ass);
         program.setAssFilter(assFilter);
         return program;
