@@ -11,7 +11,6 @@ This tool suite is currently composed of two tools.
 
 Requirements
 ======
-* [LLVM and Clang](http://releases.llvm.org/download.html) version 8.0.1 or higher
 * [Maven](https://maven.apache.org/)
 * [SMACK](https://github.com/smackers/smack)
 
@@ -50,28 +49,28 @@ Usage
 * **Linux:** You can start the tool by double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
 * **MacOS:** To run the tool, from Dat3M's root directory run
 ```
-java -jar ui/target/ui-2.0.5-jar-with-dependencies.jar
+java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
 ```
+DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
+
+If SMACK was correctly installed, C programs can be converted to Boogie using the following script:
+```
+c2bpl.sh <C file> <new Boogie file>
+```
+
 Additionally, you can run DARTAGNAN and PORTHOS from the console.
 
 For checking reachability:
 ```
-java -jar dartagnan/target/dartagnan-2.0.5-jar-with-dependencies.jar -cat <CAT file> -i <program file> [-t <target>] [options]
+java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -cat <CAT file> -i <program file> [options]
 ```
 For checking state inclusion:
 ```
-java -jar porthos/target/porthos-2.0.5-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
+java -jar porthos/target/porthos-2.0.6-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
-
-C programs can be converted to Boogie using the following script:
-```
-c2bpl.sh <C file> <Boogie file>
-```
-
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
-For programs written in the .bpl format, \<source> and \<target> specify the architectures to which the program will be compiled. 
+For programs written in the .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
 They must be one of the following: 
 - none
 - tso
@@ -79,12 +78,12 @@ They must be one of the following:
 - arm
 - arm8
 
-**Note:** Option target is mandatory in DARTAGNAN when using the .bpl format.
-
 Other optional arguments include:
 - -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
 - -a, --alias {none, andersen, cfs}: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - -unroll: unrolling bound for the BMC.
+
+Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands "__VERIFIER_nondet_X", "__VERIFIER_assume" and "__VERIFIER_assert".
 
 Authors and Contact
 ======
@@ -107,3 +106,4 @@ References
 
 [3] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**. CAV 2019.
 
+[4] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Dartagnan: Bounded Model Checking for Weak Memory Models (Competition Contribution)**. TACAS 2017.
