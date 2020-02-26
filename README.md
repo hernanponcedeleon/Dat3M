@@ -34,7 +34,7 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
-**Note:** running the tests can take more than 3 hs.
+**Note:** there are almost 40K tests, running them takes more than 3 hs.
 
 Binaries
 ======
