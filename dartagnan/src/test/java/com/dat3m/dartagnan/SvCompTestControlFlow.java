@@ -21,7 +21,12 @@ public class SvCompTestControlFlow extends AbstractSvCompTest {
 
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_1b.cil.bpl", wmm, 2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_clnt_3.cil-2.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_11.cil.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_12.cil.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_1a.cil.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_1b.cil.bpl", wmm, 1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/s3_srvr_6.cil-1.bpl", wmm, 1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_5.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_6.bpl", wmm, 2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/cf/test_locks_7.bpl", wmm, 2});
