@@ -46,8 +46,11 @@ The precompiled jars can be found in the [release](https://github.com/hernanponc
 
 Usage
 ======
-* **Linux:** You can start the tool by double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
-* **MacOS:** To run the tool, from Dat3M's root directory run
+Dat3M comes with a user interface where it is easy the select the tool to use (Dartagnan or Porthos), import/export both the program and the memory model and select the options for the verification engine (see below).
+You can start the UI by:
+
+* **Linux:** double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
+* **MacOS:** running
 ```
 java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
 ```
@@ -106,4 +109,4 @@ References
 
 [3] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**. CAV 2019.
 
-[4] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Dartagnan: Bounded Model Checking for Weak Memory Models (Competition Contribution)**. TACAS 2017.
+[4] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Dartagnan: Bounded Model Checking for Weak Memory Models (Competition Contribution)**. TACAS 2020.
