@@ -42,7 +42,7 @@ The precompiled jars can be found in the [release](https://github.com/hernanponc
 
 Usage
 ======
-Dat3M comes with a user interface (UI) where it is easy the select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+Dat3M comes with a user interface (UI) where it is easy to select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the UI by running
 ```
 java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
