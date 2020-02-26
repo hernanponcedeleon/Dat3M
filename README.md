@@ -51,20 +51,20 @@ java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
 <img src="ui/src/main/resources/ui.jpg">
 </p>
 
-DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
+Dartagnan supports programs written in the .litmus or .bpl (Boogie) formats. For Porthos, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
 
 If SMACK was correctly installed, C programs can be converted to Boogie using the following script:
 ```
 c2bpl.sh <C file> <new Boogie file>
 ```
 
-Additionally, you can run DARTAGNAN and PORTHOS from the console.
+Additionally, you can run Dartagnan and Porthos from the console.
 
-For checking reachability:
+For checking reachability (Dartagnan):
 ```
 java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -cat <CAT file> -i <program file> [options]
 ```
-For checking state inclusion:
+For checking state inclusion (Porthos):
 ```
 java -jar porthos/target/porthos-2.0.6-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
