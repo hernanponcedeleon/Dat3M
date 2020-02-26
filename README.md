@@ -4,9 +4,9 @@
 <img src="ui/src/main/resources/dat3m.png">
 </p>
 
-This tool suite is currently composed of two tools.
+This tool suite is currently composed of two tools
 
-* **Dartagnan:** a tool to check state reachability under weak memory models.
+* **Dartagnan:** a tool to check state reachability under weak memory models, and
 * **Porthos:** a tool to check state inclusion under weak memory models.
 
 Requirements
@@ -16,18 +16,13 @@ Requirements
 
 Installation
 ======
-Set the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**):
+Set the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
 ```
 export PATH=<Dat3M's root>/:$PATH
 export LD_LIBRARY_PATH=<Dat3M's root>/lib/:$LD_LIBRARY_PATH
 ```
 
 To build the tools, from the Dat3M's root directory run
-* **Linux:**
-```
-make
-```
-* **MacOS:**
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
@@ -39,6 +34,7 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
+**Note:** running the tests can take more than 3 hs.
 
 Binaries
 ======
@@ -47,10 +43,7 @@ The precompiled jars can be found in the [release](https://github.com/hernanponc
 Usage
 ======
 Dat3M comes with a user interface (UI) where it is easy the select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
-You can start the UI by:
-
-* **Linux:** double-clicking the <img src="ui/src/main/resources/dat3m.png" width="30" height="30"> launcher
-* **MacOS:** running
+You can start the UI by running
 ```
 java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
 ```
