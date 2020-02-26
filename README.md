@@ -55,7 +55,7 @@ You can start the UI by:
 java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
 ```
 <p align="center"> 
-<img src="ui/src/main/resources/ui.png">
+<img src="ui/src/main/resources/ui.jpg">
 </p>
 
 DARTAGNAN supports programs written in the .litmus or .bpl (Boogie) formats. For PORTHOS, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
