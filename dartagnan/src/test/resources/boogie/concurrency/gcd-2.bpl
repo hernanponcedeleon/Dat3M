@@ -1389,9 +1389,9 @@ axiom (reach_error == $sub.ref(0, 8251));
 procedure reach_error()
 {
 $bb0:
-  assume {:sourceloc "./output/gcd-2_tmp.c", 2, 20} true;
+  assume {:sourceloc "./output/gcd-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/gcd-2_tmp.c", 2, 20} true;
+  assume {:sourceloc "./output/gcd-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;

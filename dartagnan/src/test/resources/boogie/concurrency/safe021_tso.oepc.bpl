@@ -1443,9 +1443,9 @@ axiom (reach_error == $sub.ref(0, 17509));
 procedure reach_error()
 {
 $bb0:
-  assume {:sourceloc "./output/safe021_tso.oepc_tmp.c", 7, 20} true;
+  assume {:sourceloc "./output/safe021_tso.oepc_tmp.c", 7, 44} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/safe021_tso.oepc_tmp.c", 7, 20} true;
+  assume {:sourceloc "./output/safe021_tso.oepc_tmp.c", 7, 44} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
