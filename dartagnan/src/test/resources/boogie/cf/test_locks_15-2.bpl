@@ -1382,9 +1382,9 @@ axiom (reach_error == $sub.ref(0, 6195));
 procedure reach_error()
 {
 $bb0:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
@@ -1407,40 +1407,40 @@ procedure main()
   var $i10: i32;
   var $i11: i32;
   var $i12: i32;
-  var $i13: i1;
-  var $i14: i1;
+  var $i13: i32;
+  var $i14: i32;
   var $i15: i32;
   var $i16: i1;
-  var $i17: i32;
-  var $i18: i1;
-  var $i19: i32;
-  var $i20: i1;
-  var $i21: i32;
-  var $i22: i1;
-  var $i23: i32;
-  var $i24: i1;
-  var $i25: i32;
-  var $i26: i1;
-  var $i27: i32;
-  var $i28: i1;
-  var $i29: i32;
-  var $i30: i1;
-  var $i31: i32;
-  var $i32: i1;
-  var $i33: i32;
-  var $i34: i1;
-  var $i35: i32;
-  var $i36: i1;
-  var $i37: i32;
-  var $i38: i1;
+  var $i17: i1;
+  var $i18: i32;
+  var $i19: i1;
+  var $i20: i32;
+  var $i21: i1;
+  var $i22: i32;
+  var $i23: i1;
+  var $i24: i32;
+  var $i25: i1;
+  var $i26: i32;
+  var $i27: i1;
+  var $i28: i32;
+  var $i29: i1;
+  var $i30: i32;
+  var $i31: i1;
+  var $i32: i32;
+  var $i33: i1;
+  var $i34: i32;
+  var $i35: i1;
+  var $i36: i32;
+  var $i37: i1;
+  var $i38: i32;
   var $i39: i1;
-  var $i40: i1;
+  var $i40: i32;
   var $i41: i1;
-  var $i42: i1;
+  var $i42: i32;
   var $i43: i1;
-  var $i44: i1;
+  var $i44: i32;
   var $i45: i1;
-  var $i46: i1;
+  var $i46: i32;
   var $i47: i1;
   var $i48: i1;
   var $i49: i1;
@@ -1456,738 +1456,924 @@ procedure main()
   var $i59: i1;
   var $i60: i1;
   var $i61: i1;
+  var $i62: i1;
+  var $i63: i1;
+  var $i64: i1;
+  var $i65: i1;
+  var $i66: i1;
+  var $i67: i1;
+  var $i68: i1;
+  var $i69: i1;
+  var $i70: i1;
+  var $i71: i1;
+  var $i72: i1;
+  var $i73: i1;
+  var $i74: i1;
+  var $i75: i1;
+  var $i76: i1;
 $bb0:
   call $initialize();
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 7, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 7, 14} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 7, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 7, 14} true;
   assume {:verifier.code 0} true;
   call $i0 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i0);
   call {:cexpr "p1"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 10, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 10, 14} true;
   assume {:verifier.code 0} true;
   call $i1 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i1);
   call {:cexpr "p2"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 13, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 13, 14} true;
   assume {:verifier.code 0} true;
   call $i2 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i2);
   call {:cexpr "p3"} boogie_si_record_i32($i2);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 16, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 16, 14} true;
   assume {:verifier.code 0} true;
   call $i3 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i3);
   call {:cexpr "p4"} boogie_si_record_i32($i3);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 19, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 19, 14} true;
   assume {:verifier.code 0} true;
   call $i4 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i4);
   call {:cexpr "p5"} boogie_si_record_i32($i4);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 22, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 22, 14} true;
   assume {:verifier.code 0} true;
   call $i5 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i5);
   call {:cexpr "p6"} boogie_si_record_i32($i5);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 25, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 25, 14} true;
   assume {:verifier.code 0} true;
   call $i6 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i6);
   call {:cexpr "p7"} boogie_si_record_i32($i6);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 28, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 28, 14} true;
   assume {:verifier.code 0} true;
   call $i7 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i7);
   call {:cexpr "p8"} boogie_si_record_i32($i7);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 31, 14} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 31, 14} true;
   assume {:verifier.code 0} true;
   call $i8 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i8);
   call {:cexpr "p9"} boogie_si_record_i32($i8);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 34, 15} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 34, 15} true;
   assume {:verifier.code 0} true;
   call $i9 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i9);
   call {:cexpr "p10"} boogie_si_record_i32($i9);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 37, 15} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 37, 15} true;
   assume {:verifier.code 0} true;
   call $i10 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i10);
   call {:cexpr "p11"} boogie_si_record_i32($i10);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 40, 15} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 40, 15} true;
   assume {:verifier.code 0} true;
   call $i11 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i11);
   call {:cexpr "p12"} boogie_si_record_i32($i11);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 46, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb1;
-$bb1:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 47, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 43, 15} true;
   assume {:verifier.code 0} true;
   call $i12 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i12);
-  call {:cexpr "cond"} boogie_si_record_i32($i12);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 48, 18} true;
+  call {:cexpr "p13"} boogie_si_record_i32($i12);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 46, 15} true;
   assume {:verifier.code 0} true;
-  $i13 := $eq.i32($i12, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 48, 13} true;
+  call $i13 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i13);
+  call {:cexpr "p14"} boogie_si_record_i32($i13);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 49, 15} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i13} true;
+  call $i14 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i14);
+  call {:cexpr "p15"} boogie_si_record_i32($i14);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 55, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 56, 16} true;
+  assume {:verifier.code 0} true;
+  call $i15 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i15);
+  call {:cexpr "cond"} boogie_si_record_i32($i15);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 57, 18} true;
+  assume {:verifier.code 0} true;
+  $i16 := $eq.i32($i15, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 57, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i16} true;
   goto $bb2, $bb3;
 $bb2:
-  assume ($i13 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 49, 13} true;
+  assume ($i16 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 58, 13} true;
   assume {:verifier.code 0} true;
   goto $bb4;
 $bb3:
-  assume !(($i13 == 1));
+  assume !(($i16 == 1));
   assume {:verifier.code 0} true;
   goto $bb5;
 $bb4:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 189, 5} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 231, 5} true;
   assume {:verifier.code 0} true;
   $r := 0;
   $exn := false;
   return;
 $bb5:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 77, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 92, 16} true;
   assume {:verifier.code 0} true;
-  $i14 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 77, 13} true;
+  $i17 := $ne.i32($i0, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 92, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i14} true;
+  assume {:branchcond $i17} true;
   goto $bb6, $bb7;
 $bb6:
-  assume ($i14 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 79, 9} true;
+  assume ($i17 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 94, 9} true;
   assume {:verifier.code 0} true;
-  $i15 := 1;
+  $i18 := 1;
   goto $bb8;
 $bb7:
-  assume !(($i14 == 1));
+  assume !(($i17 == 1));
   assume {:verifier.code 0} true;
-  $i15 := 0;
+  $i18 := 0;
   goto $bb8;
 $bb8:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 81, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 96, 16} true;
   assume {:verifier.code 0} true;
-  $i16 := $ne.i32($i1, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 81, 13} true;
+  $i19 := $ne.i32($i1, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 96, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i16} true;
+  assume {:branchcond $i19} true;
   goto $bb9, $bb10;
 $bb9:
-  assume ($i16 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 83, 9} true;
+  assume ($i19 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 98, 9} true;
   assume {:verifier.code 0} true;
-  $i17 := 1;
+  $i20 := 1;
   goto $bb11;
 $bb10:
-  assume !(($i16 == 1));
+  assume !(($i19 == 1));
   assume {:verifier.code 0} true;
-  $i17 := 0;
+  $i20 := 0;
   goto $bb11;
 $bb11:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 85, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 100, 16} true;
   assume {:verifier.code 0} true;
-  $i18 := $ne.i32($i2, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 85, 13} true;
+  $i21 := $ne.i32($i2, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 100, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i18} true;
+  assume {:branchcond $i21} true;
   goto $bb12, $bb13;
 $bb12:
-  assume ($i18 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 87, 9} true;
+  assume ($i21 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 102, 9} true;
   assume {:verifier.code 0} true;
-  $i19 := 1;
+  $i22 := 1;
   goto $bb14;
 $bb13:
-  assume !(($i18 == 1));
+  assume !(($i21 == 1));
   assume {:verifier.code 0} true;
-  $i19 := 0;
+  $i22 := 0;
   goto $bb14;
 $bb14:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 89, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 104, 16} true;
   assume {:verifier.code 0} true;
-  $i20 := $ne.i32($i3, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 89, 13} true;
+  $i23 := $ne.i32($i3, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 104, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i20} true;
+  assume {:branchcond $i23} true;
   goto $bb15, $bb16;
 $bb15:
-  assume ($i20 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 91, 9} true;
+  assume ($i23 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 106, 9} true;
   assume {:verifier.code 0} true;
-  $i21 := 1;
+  $i24 := 1;
   goto $bb17;
 $bb16:
-  assume !(($i20 == 1));
+  assume !(($i23 == 1));
   assume {:verifier.code 0} true;
-  $i21 := 0;
+  $i24 := 0;
   goto $bb17;
 $bb17:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 93, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 108, 16} true;
   assume {:verifier.code 0} true;
-  $i22 := $ne.i32($i4, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 93, 13} true;
+  $i25 := $ne.i32($i4, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 108, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i22} true;
+  assume {:branchcond $i25} true;
   goto $bb18, $bb19;
 $bb18:
-  assume ($i22 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 95, 9} true;
+  assume ($i25 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 110, 9} true;
   assume {:verifier.code 0} true;
-  $i23 := 1;
+  $i26 := 1;
   goto $bb20;
 $bb19:
-  assume !(($i22 == 1));
+  assume !(($i25 == 1));
   assume {:verifier.code 0} true;
-  $i23 := 0;
+  $i26 := 0;
   goto $bb20;
 $bb20:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 97, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 112, 16} true;
   assume {:verifier.code 0} true;
-  $i24 := $ne.i32($i5, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 97, 13} true;
+  $i27 := $ne.i32($i5, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 112, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i24} true;
+  assume {:branchcond $i27} true;
   goto $bb21, $bb22;
 $bb21:
-  assume ($i24 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 99, 9} true;
+  assume ($i27 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 114, 9} true;
   assume {:verifier.code 0} true;
-  $i25 := 1;
+  $i28 := 1;
   goto $bb23;
 $bb22:
-  assume !(($i24 == 1));
+  assume !(($i27 == 1));
   assume {:verifier.code 0} true;
-  $i25 := 0;
+  $i28 := 0;
   goto $bb23;
 $bb23:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 101, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 116, 16} true;
   assume {:verifier.code 0} true;
-  $i26 := $ne.i32($i6, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 101, 13} true;
+  $i29 := $ne.i32($i6, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 116, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i26} true;
+  assume {:branchcond $i29} true;
   goto $bb24, $bb25;
 $bb24:
-  assume ($i26 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 103, 9} true;
+  assume ($i29 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 118, 9} true;
   assume {:verifier.code 0} true;
-  $i27 := 1;
+  $i30 := 1;
   goto $bb26;
 $bb25:
-  assume !(($i26 == 1));
+  assume !(($i29 == 1));
   assume {:verifier.code 0} true;
-  $i27 := 0;
+  $i30 := 0;
   goto $bb26;
 $bb26:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 105, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 120, 16} true;
   assume {:verifier.code 0} true;
-  $i28 := $ne.i32($i7, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 105, 13} true;
+  $i31 := $ne.i32($i7, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 120, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i28} true;
+  assume {:branchcond $i31} true;
   goto $bb27, $bb28;
 $bb27:
-  assume ($i28 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 107, 9} true;
+  assume ($i31 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 122, 9} true;
   assume {:verifier.code 0} true;
-  $i29 := 1;
+  $i32 := 1;
   goto $bb29;
 $bb28:
-  assume !(($i28 == 1));
+  assume !(($i31 == 1));
   assume {:verifier.code 0} true;
-  $i29 := 0;
+  $i32 := 0;
   goto $bb29;
 $bb29:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 109, 16} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 124, 16} true;
   assume {:verifier.code 0} true;
-  $i30 := $ne.i32($i8, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 109, 13} true;
+  $i33 := $ne.i32($i8, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 124, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i30} true;
+  assume {:branchcond $i33} true;
   goto $bb30, $bb31;
 $bb30:
-  assume ($i30 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 111, 9} true;
+  assume ($i33 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 126, 9} true;
   assume {:verifier.code 0} true;
-  $i31 := 1;
+  $i34 := 1;
   goto $bb32;
 $bb31:
-  assume !(($i30 == 1));
+  assume !(($i33 == 1));
   assume {:verifier.code 0} true;
-  $i31 := 0;
+  $i34 := 0;
   goto $bb32;
 $bb32:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 113, 17} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 128, 17} true;
   assume {:verifier.code 0} true;
-  $i32 := $ne.i32($i9, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 113, 13} true;
+  $i35 := $ne.i32($i9, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 128, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i32} true;
+  assume {:branchcond $i35} true;
   goto $bb33, $bb34;
 $bb33:
-  assume ($i32 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 115, 9} true;
+  assume ($i35 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 130, 9} true;
   assume {:verifier.code 0} true;
-  $i33 := 1;
+  $i36 := 1;
   goto $bb35;
 $bb34:
-  assume !(($i32 == 1));
+  assume !(($i35 == 1));
   assume {:verifier.code 0} true;
-  $i33 := 0;
+  $i36 := 0;
   goto $bb35;
 $bb35:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 117, 17} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 132, 17} true;
   assume {:verifier.code 0} true;
-  $i34 := $ne.i32($i10, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 117, 13} true;
+  $i37 := $ne.i32($i10, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 132, 13} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i34} true;
+  assume {:branchcond $i37} true;
   goto $bb36, $bb37;
 $bb36:
-  assume ($i34 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 119, 9} true;
+  assume ($i37 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 134, 9} true;
   assume {:verifier.code 0} true;
-  $i35 := 1;
+  $i38 := 1;
   goto $bb38;
 $bb37:
-  assume !(($i34 == 1));
+  assume !(($i37 == 1));
   assume {:verifier.code 0} true;
-  $i35 := 0;
+  $i38 := 0;
   goto $bb38;
 $bb38:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 121, 17} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 136, 17} true;
   assume {:verifier.code 0} true;
-  $i36 := $ne.i32($i11, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 121, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i36} true;
-  goto $bb39, $bb40;
-$bb39:
-  assume ($i36 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 123, 9} true;
-  assume {:verifier.code 0} true;
-  $i37 := 1;
-  goto $bb41;
-$bb40:
-  assume !(($i36 == 1));
-  assume {:verifier.code 0} true;
-  $i37 := 0;
-  goto $bb41;
-$bb41:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 127, 16} true;
-  assume {:verifier.code 0} true;
-  $i38 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 127, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i38} true;
-  goto $bb42, $bb43;
-$bb42:
-  assume ($i38 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 128, 21} true;
-  assume {:verifier.code 0} true;
-  $i39 := $ne.i32($i15, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 128, 17} true;
+  $i39 := $ne.i32($i11, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 136, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i39} true;
-  goto $bb44, $bb45;
-$bb43:
-  assume !(($i38 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb47;
-$bb44:
+  goto $bb39, $bb40;
+$bb39:
   assume ($i39 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 128, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 138, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb45:
+  $i40 := 1;
+  goto $bb41;
+$bb40:
   assume !(($i39 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 130, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb47;
-$bb46:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 190, 11} true;
+  $i40 := 0;
+  goto $bb41;
+$bb41:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  call reach_error();
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 190, 25} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 140, 17} true;
   assume {:verifier.code 0} true;
-  call abort();
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 190, 25} true;
-  assume {:verifier.code 0} true;
-  assume false;
-$bb47:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 132, 16} true;
-  assume {:verifier.code 0} true;
-  $i40 := $ne.i32($i1, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 132, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i40} true;
-  goto $bb48, $bb49;
-$bb48:
-  assume ($i40 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 133, 21} true;
-  assume {:verifier.code 0} true;
-  $i41 := $ne.i32($i17, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 133, 17} true;
+  $i41 := $ne.i32($i12, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 140, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i41} true;
-  goto $bb50, $bb51;
-$bb49:
-  assume !(($i40 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb52;
-$bb50:
+  goto $bb42, $bb43;
+$bb42:
   assume ($i41 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 133, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 142, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb51:
+  $i42 := 1;
+  goto $bb44;
+$bb43:
   assume !(($i41 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 135, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb52;
-$bb52:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 137, 16} true;
+  $i42 := 0;
+  goto $bb44;
+$bb44:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i42 := $ne.i32($i2, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 137, 13} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 144, 17} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i42} true;
-  goto $bb53, $bb54;
-$bb53:
-  assume ($i42 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 138, 21} true;
-  assume {:verifier.code 0} true;
-  $i43 := $ne.i32($i19, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 138, 17} true;
+  $i43 := $ne.i32($i13, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 144, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i43} true;
-  goto $bb55, $bb56;
-$bb54:
-  assume !(($i42 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb57;
-$bb55:
+  goto $bb45, $bb46;
+$bb45:
   assume ($i43 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 138, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 146, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb56:
+  $i44 := 1;
+  goto $bb47;
+$bb46:
   assume !(($i43 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 140, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb57;
-$bb57:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 142, 16} true;
+  $i44 := 0;
+  goto $bb47;
+$bb47:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i44 := $ne.i32($i3, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 142, 13} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 148, 17} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i44} true;
-  goto $bb58, $bb59;
-$bb58:
-  assume ($i44 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 143, 21} true;
-  assume {:verifier.code 0} true;
-  $i45 := $ne.i32($i21, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 143, 17} true;
+  $i45 := $ne.i32($i14, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 148, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i45} true;
-  goto $bb60, $bb61;
-$bb59:
-  assume !(($i44 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb62;
-$bb60:
+  goto $bb48, $bb49;
+$bb48:
   assume ($i45 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 143, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 150, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb61:
+  $i46 := 1;
+  goto $bb50;
+$bb49:
   assume !(($i45 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 145, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb62;
-$bb62:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 147, 16} true;
+  $i46 := 0;
+  goto $bb50;
+$bb50:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i46 := $ne.i32($i4, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 147, 13} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 154, 16} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i46} true;
-  goto $bb63, $bb64;
-$bb63:
-  assume ($i46 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 148, 21} true;
-  assume {:verifier.code 0} true;
-  $i47 := $ne.i32($i23, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 148, 17} true;
+  $i47 := $ne.i32($i0, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 154, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i47} true;
-  goto $bb65, $bb66;
-$bb64:
-  assume !(($i46 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb67;
-$bb65:
+  goto $bb51, $bb52;
+$bb51:
   assume ($i47 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 148, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 155, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb66:
-  assume !(($i47 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 150, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb67;
-$bb67:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 152, 16} true;
-  assume {:verifier.code 0} true;
-  $i48 := $ne.i32($i5, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 152, 13} true;
+  $i48 := $ne.i32($i18, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 155, 17} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i48} true;
-  goto $bb68, $bb69;
-$bb68:
-  assume ($i48 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 153, 21} true;
+  goto $bb53, $bb54;
+$bb52:
+  assume !(($i47 == 1));
   assume {:verifier.code 0} true;
-  $i49 := $ne.i32($i25, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 153, 17} true;
+  goto $bb56;
+$bb53:
+  assume ($i48 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 155, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb54:
+  assume !(($i48 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 157, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb56;
+$bb55:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 232, 11} true;
+  assume {:verifier.code 0} true;
+  call reach_error();
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 232, 25} true;
+  assume {:verifier.code 0} true;
+  call abort();
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 232, 25} true;
+  assume {:verifier.code 0} true;
+  assume false;
+$bb56:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 159, 16} true;
+  assume {:verifier.code 0} true;
+  $i49 := $ne.i32($i1, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 159, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i49} true;
-  goto $bb70, $bb71;
-$bb69:
-  assume !(($i48 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb72;
-$bb70:
+  goto $bb57, $bb58;
+$bb57:
   assume ($i49 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 153, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 160, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb71:
-  assume !(($i49 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 155, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb72;
-$bb72:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 157, 16} true;
-  assume {:verifier.code 0} true;
-  $i50 := $ne.i32($i6, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 157, 13} true;
+  $i50 := $ne.i32($i20, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 160, 17} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i50} true;
-  goto $bb73, $bb74;
-$bb73:
-  assume ($i50 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 158, 21} true;
+  goto $bb59, $bb60;
+$bb58:
+  assume !(($i49 == 1));
   assume {:verifier.code 0} true;
-  $i51 := $ne.i32($i27, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 158, 17} true;
+  goto $bb61;
+$bb59:
+  assume ($i50 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 160, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb60:
+  assume !(($i50 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 162, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb61;
+$bb61:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 164, 16} true;
+  assume {:verifier.code 0} true;
+  $i51 := $ne.i32($i2, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 164, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i51} true;
-  goto $bb75, $bb76;
-$bb74:
-  assume !(($i50 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb77;
-$bb75:
+  goto $bb62, $bb63;
+$bb62:
   assume ($i51 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 158, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 165, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb76:
-  assume !(($i51 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 160, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb77;
-$bb77:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 162, 16} true;
-  assume {:verifier.code 0} true;
-  $i52 := $ne.i32($i7, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 162, 13} true;
+  $i52 := $ne.i32($i22, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 165, 17} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i52} true;
-  goto $bb78, $bb79;
-$bb78:
-  assume ($i52 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 163, 21} true;
+  goto $bb64, $bb65;
+$bb63:
+  assume !(($i51 == 1));
   assume {:verifier.code 0} true;
-  $i53 := $ne.i32($i29, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 163, 17} true;
+  goto $bb66;
+$bb64:
+  assume ($i52 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 165, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb65:
+  assume !(($i52 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 167, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb66;
+$bb66:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 169, 16} true;
+  assume {:verifier.code 0} true;
+  $i53 := $ne.i32($i3, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 169, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i53} true;
-  goto $bb80, $bb81;
-$bb79:
-  assume !(($i52 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb82;
-$bb80:
+  goto $bb67, $bb68;
+$bb67:
   assume ($i53 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 163, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 170, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb81:
-  assume !(($i53 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 165, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb82;
-$bb82:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 167, 16} true;
-  assume {:verifier.code 0} true;
-  $i54 := $ne.i32($i8, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 167, 13} true;
+  $i54 := $ne.i32($i24, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 170, 17} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i54} true;
-  goto $bb83, $bb84;
-$bb83:
-  assume ($i54 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 168, 21} true;
+  goto $bb69, $bb70;
+$bb68:
+  assume !(($i53 == 1));
   assume {:verifier.code 0} true;
-  $i55 := $ne.i32($i31, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 168, 17} true;
+  goto $bb71;
+$bb69:
+  assume ($i54 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 170, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb70:
+  assume !(($i54 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 172, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb71;
+$bb71:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 174, 16} true;
+  assume {:verifier.code 0} true;
+  $i55 := $ne.i32($i4, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 174, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i55} true;
-  goto $bb85, $bb86;
-$bb84:
-  assume !(($i54 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb87;
-$bb85:
+  goto $bb72, $bb73;
+$bb72:
   assume ($i55 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 168, 27} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 175, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb86:
-  assume !(($i55 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 170, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb87;
-$bb87:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 172, 17} true;
-  assume {:verifier.code 0} true;
-  $i56 := $ne.i32($i9, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 172, 13} true;
+  $i56 := $ne.i32($i26, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 175, 17} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i56} true;
-  goto $bb88, $bb89;
-$bb88:
-  assume ($i56 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 173, 22} true;
+  goto $bb74, $bb75;
+$bb73:
+  assume !(($i55 == 1));
   assume {:verifier.code 0} true;
-  $i57 := $ne.i32($i33, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 173, 17} true;
+  goto $bb76;
+$bb74:
+  assume ($i56 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 175, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb75:
+  assume !(($i56 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 177, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb76;
+$bb76:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 179, 16} true;
+  assume {:verifier.code 0} true;
+  $i57 := $ne.i32($i5, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 179, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i57} true;
-  goto $bb90, $bb91;
-$bb89:
-  assume !(($i56 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb92;
-$bb90:
+  goto $bb77, $bb78;
+$bb77:
   assume ($i57 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 173, 28} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 180, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb91:
-  assume !(($i57 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 175, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb92;
-$bb92:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 177, 17} true;
-  assume {:verifier.code 0} true;
-  $i58 := $ne.i32($i10, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 177, 13} true;
+  $i58 := $ne.i32($i28, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 180, 17} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i58} true;
-  goto $bb93, $bb94;
-$bb93:
-  assume ($i58 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 178, 22} true;
+  goto $bb79, $bb80;
+$bb78:
+  assume !(($i57 == 1));
   assume {:verifier.code 0} true;
-  $i59 := $ne.i32($i35, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 178, 17} true;
+  goto $bb81;
+$bb79:
+  assume ($i58 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 180, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb80:
+  assume !(($i58 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 182, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb81;
+$bb81:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 184, 16} true;
+  assume {:verifier.code 0} true;
+  $i59 := $ne.i32($i6, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 184, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i59} true;
-  goto $bb95, $bb96;
-$bb94:
-  assume !(($i58 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb97;
-$bb95:
+  goto $bb82, $bb83;
+$bb82:
   assume ($i59 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 178, 28} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 185, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb96:
-  assume !(($i59 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 180, 9} true;
-  assume {:verifier.code 0} true;
-  goto $bb97;
-$bb97:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 182, 17} true;
-  assume {:verifier.code 0} true;
-  $i60 := $ne.i32($i11, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 182, 13} true;
+  $i60 := $ne.i32($i30, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 185, 17} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i60} true;
-  goto $bb98, $bb99;
-$bb98:
-  assume ($i60 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 183, 22} true;
+  goto $bb84, $bb85;
+$bb83:
+  assume !(($i59 == 1));
   assume {:verifier.code 0} true;
-  $i61 := $ne.i32($i37, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 183, 17} true;
+  goto $bb86;
+$bb84:
+  assume ($i60 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 185, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb85:
+  assume !(($i60 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 187, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb86;
+$bb86:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 189, 16} true;
+  assume {:verifier.code 0} true;
+  $i61 := $ne.i32($i7, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 189, 13} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i61} true;
-  goto $bb100, $bb101;
-$bb99:
-  assume !(($i60 == 1));
-  assume {:verifier.code 0} true;
-  goto $bb102;
-$bb100:
+  goto $bb87, $bb88;
+$bb87:
   assume ($i61 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 183, 28} true;
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 190, 21} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
-$bb101:
+  $i62 := $ne.i32($i32, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 190, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i62} true;
+  goto $bb89, $bb90;
+$bb88:
   assume !(($i61 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 185, 9} true;
   assume {:verifier.code 0} true;
-  goto $bb102;
+  goto $bb91;
+$bb89:
+  assume ($i62 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 190, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb90:
+  assume !(($i62 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 192, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb91;
+$bb91:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 194, 16} true;
+  assume {:verifier.code 0} true;
+  $i63 := $ne.i32($i8, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 194, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i63} true;
+  goto $bb92, $bb93;
+$bb92:
+  assume ($i63 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 195, 21} true;
+  assume {:verifier.code 0} true;
+  $i64 := $ne.i32($i34, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 195, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i64} true;
+  goto $bb94, $bb95;
+$bb93:
+  assume !(($i63 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb96;
+$bb94:
+  assume ($i64 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 195, 27} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb95:
+  assume !(($i64 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 197, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb96;
+$bb96:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 199, 17} true;
+  assume {:verifier.code 0} true;
+  $i65 := $ne.i32($i9, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 199, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i65} true;
+  goto $bb97, $bb98;
+$bb97:
+  assume ($i65 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 200, 22} true;
+  assume {:verifier.code 0} true;
+  $i66 := $ne.i32($i36, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 200, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i66} true;
+  goto $bb99, $bb100;
+$bb98:
+  assume !(($i65 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb101;
+$bb99:
+  assume ($i66 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 200, 28} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb100:
+  assume !(($i66 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 202, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb101;
+$bb101:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 204, 17} true;
+  assume {:verifier.code 0} true;
+  $i67 := $ne.i32($i10, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 204, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i67} true;
+  goto $bb102, $bb103;
 $bb102:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 46, 5} true;
+  assume ($i67 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 205, 22} true;
+  assume {:verifier.code 0} true;
+  $i68 := $ne.i32($i38, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 205, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i68} true;
+  goto $bb104, $bb105;
+$bb103:
+  assume !(($i67 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb106;
+$bb104:
+  assume ($i68 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 205, 28} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb105:
+  assume !(($i68 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 207, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb106;
+$bb106:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 209, 17} true;
+  assume {:verifier.code 0} true;
+  $i69 := $ne.i32($i11, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 209, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i69} true;
+  goto $bb107, $bb108;
+$bb107:
+  assume ($i69 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 210, 22} true;
+  assume {:verifier.code 0} true;
+  $i70 := $ne.i32($i40, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 210, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i70} true;
+  goto $bb109, $bb110;
+$bb108:
+  assume !(($i69 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb111;
+$bb109:
+  assume ($i70 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 210, 28} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb110:
+  assume !(($i70 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 212, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb111;
+$bb111:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 214, 17} true;
+  assume {:verifier.code 0} true;
+  $i71 := $ne.i32($i12, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 214, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i71} true;
+  goto $bb112, $bb113;
+$bb112:
+  assume ($i71 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 215, 22} true;
+  assume {:verifier.code 0} true;
+  $i72 := $ne.i32($i42, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 215, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i72} true;
+  goto $bb114, $bb115;
+$bb113:
+  assume !(($i71 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb116;
+$bb114:
+  assume ($i72 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 215, 28} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb115:
+  assume !(($i72 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 217, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb116;
+$bb116:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 219, 17} true;
+  assume {:verifier.code 0} true;
+  $i73 := $ne.i32($i13, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 219, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i73} true;
+  goto $bb117, $bb118;
+$bb117:
+  assume ($i73 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 220, 22} true;
+  assume {:verifier.code 0} true;
+  $i74 := $ne.i32($i44, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 220, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i74} true;
+  goto $bb119, $bb120;
+$bb118:
+  assume !(($i73 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb121;
+$bb119:
+  assume ($i74 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 220, 28} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb120:
+  assume !(($i74 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 222, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb121;
+$bb121:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 224, 17} true;
+  assume {:verifier.code 0} true;
+  $i75 := $ne.i32($i14, 0);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 224, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i75} true;
+  goto $bb122, $bb123;
+$bb122:
+  assume ($i75 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 225, 22} true;
+  assume {:verifier.code 0} true;
+  $i76 := $ne.i32($i46, 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 225, 17} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i76} true;
+  goto $bb124, $bb125;
+$bb123:
+  assume !(($i75 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb126;
+$bb124:
+  assume ($i76 == 1);
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 225, 28} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb125:
+  assume !(($i76 == 1));
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 227, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb126;
+$bb126:
+  assume {:sourceloc "./output/test_locks_15-2_tmp.c", 55, 5} true;
   assume {:verifier.code 0} true;
   goto $bb1;
 }

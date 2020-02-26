@@ -40,7 +40,7 @@ var $M.0: ref;
 var $M.1: i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 43347));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 47475));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1371,8 +1371,8 @@ const {:count 14} .str.1: ref;
 axiom (.str.1 == $sub.ref(0, 1038));
 const env_value_str: ref;
 axiom (env_value_str == $sub.ref(0, 2070));
-const {:count 3} .str.1.3: ref;
-axiom (.str.1.3 == $sub.ref(0, 3097));
+const {:count 3} .str.1.7: ref;
+axiom (.str.1.7 == $sub.ref(0, 3097));
 const {:count 14} .str.14: ref;
 axiom (.str.14 == $sub.ref(0, 4135));
 const errno_global: ref;
@@ -1382,19 +1382,18 @@ axiom (reach_error == $sub.ref(0, 6195));
 procedure reach_error()
 {
 $bb0:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
 }
-const main: ref;
-axiom (main == $sub.ref(0, 7227));
-procedure main()
+const ssl3_connect: ref;
+axiom (ssl3_connect == $sub.ref(0, 7227));
+procedure ssl3_connect($i0: i32)
   returns ($r: i32)
 {
-  var $i0: i32;
   var $i1: i32;
   var $i2: i32;
   var $i3: i32;
@@ -1407,795 +1406,2357 @@ procedure main()
   var $i10: i32;
   var $i11: i32;
   var $i12: i32;
-  var $i13: i1;
-  var $i14: i1;
+  var $i13: i32;
+  var $i14: i32;
   var $i15: i32;
-  var $i16: i1;
+  var $i16: i32;
   var $i17: i32;
-  var $i18: i1;
+  var $i18: i32;
   var $i19: i32;
-  var $i20: i1;
+  var $i20: i32;
   var $i21: i32;
-  var $i22: i1;
+  var $i22: i32;
   var $i23: i32;
-  var $i24: i1;
+  var $i24: i32;
   var $i25: i32;
-  var $i26: i1;
+  var $i26: i32;
   var $i27: i32;
-  var $i28: i1;
+  var $i28: i32;
   var $i29: i32;
-  var $i30: i1;
-  var $i31: i32;
-  var $i32: i1;
-  var $i33: i32;
-  var $i34: i1;
-  var $i35: i32;
-  var $i36: i1;
-  var $i37: i32;
-  var $i38: i1;
-  var $i39: i1;
+  var $i30: i32;
+  var $i31: i64;
+  var $i32: i64;
+  var $i33: i64;
+  var $i34: i32;
+  var $i35: i1;
+  var $i37: i1;
+  var $i38: i32;
+  var $i36: i32;
+  var $i39: i32;
   var $i40: i1;
-  var $i41: i1;
+  var $i41: i32;
   var $i42: i1;
-  var $i43: i1;
-  var $i44: i1;
-  var $i45: i1;
-  var $i46: i1;
-  var $i47: i1;
-  var $i48: i1;
-  var $i49: i1;
-  var $i50: i1;
+  var $i43: i32;
+  var $i44: i32;
+  var $i45: i32;
+  var $i46: i32;
+  var $i47: i32;
+  var $i48: i32;
+  var $i49: i32;
+  var $i50: i32;
   var $i51: i1;
   var $i52: i1;
-  var $i53: i1;
   var $i54: i1;
-  var $i55: i1;
   var $i56: i1;
-  var $i57: i1;
   var $i58: i1;
-  var $i59: i1;
   var $i60: i1;
   var $i61: i1;
+  var $i62: i1;
+  var $i63: i1;
+  var $i64: i1;
+  var $i65: i1;
+  var $i66: i1;
+  var $i67: i1;
+  var $i68: i1;
+  var $i69: i1;
+  var $i70: i1;
+  var $i71: i1;
+  var $i72: i1;
+  var $i73: i1;
+  var $i74: i1;
+  var $i75: i1;
+  var $i76: i1;
+  var $i77: i1;
+  var $i78: i1;
+  var $i79: i1;
+  var $i80: i1;
+  var $i81: i1;
+  var $i82: i1;
+  var $i83: i1;
+  var $i84: i1;
+  var $i85: i1;
+  var $i86: i1;
+  var $i87: i1;
+  var $i88: i32;
+  var $i53: i32;
+  var $i55: i32;
+  var $i57: i32;
+  var $i59: i32;
+  var $i89: i1;
+  var $i90: i32;
+  var $i91: i1;
+  var $i93: i64;
+  var $i94: i64;
+  var $i95: i1;
+  var $i97: i32;
+  var $i98: i64;
+  var $i99: i64;
+  var $i100: i1;
+  var $i101: i1;
+  var $i96: i32;
+  var $i102: i1;
+  var $i103: i1;
+  var $i104: i32;
+  var $i114: i32;
+  var $i115: i1;
+  var $i116: i32;
+  var $i117: i1;
+  var $i118: i64;
+  var $i119: i64;
+  var $i120: i1;
+  var $i121: i32;
+  var $i122: i1;
+  var $i124: i1;
+  var $i125: i32;
+  var $i123: i32;
+  var $i126: i1;
+  var $i127: i1;
+  var $i128: i32;
+  var $i129: i64;
+  var $i130: i64;
+  var $i131: i1;
+  var $i134: i32;
+  var $i135: i1;
+  var $i136: i32;
+  var $i137: i1;
+  var $i132: i32;
+  var $i133: i32;
+  var $i138: i32;
+  var $i139: i1;
+  var $i140: i32;
+  var $i141: i1;
+  var $i142: i1;
+  var $i143: i32;
+  var $i144: i1;
+  var $i145: i1;
+  var $i146: i32;
+  var $i147: i1;
+  var $i148: i1;
+  var $i149: i32;
+  var $i150: i32;
+  var $i151: i1;
+  var $i152: i32;
+  var $i153: i1;
+  var $i154: i1;
+  var $i155: i32;
+  var $i156: i32;
+  var $i157: i1;
+  var $i158: i32;
+  var $i159: i1;
+  var $i160: i1;
+  var $i161: i1;
+  var $i162: i1;
+  var $i163: i32;
+  var $i164: i1;
+  var $i165: i64;
+  var $i166: i64;
+  var $i167: i32;
+  var $i168: i1;
+  var $i169: i64;
+  var $i170: i64;
+  var $i171: i1;
+  var $i174: i64;
+  var $i175: i64;
+  var $i176: i32;
+  var $i172: i32;
+  var $i173: i32;
+  var $i177: i32;
+  var $i178: i32;
+  var $i179: i32;
+  var $i180: i32;
+  var $i181: i1;
+  var $i182: i1;
+  var $i183: i32;
+  var $i184: i64;
+  var $i185: i1;
+  var $i187: i64;
+  var $i188: i32;
+  var $i189: i64;
+  var $i190: i1;
+  var $i186: i32;
+  var $i191: i1;
+  var $i192: i64;
+  var $i193: i64;
+  var $i194: i1;
+  var $i195: i1;
+  var $i196: i1;
+  var $i105: i32;
+  var $i106: i32;
+  var $i107: i32;
+  var $i108: i32;
+  var $i109: i32;
+  var $i110: i32;
+  var $i111: i32;
+  var $i112: i32;
+  var $i113: i32;
+  var $i197: i1;
+  var $i198: i1;
+  var $i199: i1;
+  var $i200: i32;
+  var $i201: i1;
+  var $i202: i1;
+  var $i203: i1;
+  var $i92: i32;
+  var $i204: i1;
 $bb0:
-  call $initialize();
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 7, 14} true;
-  assume {:verifier.code 0} true;
-  call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 7, 14} true;
-  assume {:verifier.code 0} true;
-  call $i0 := __VERIFIER_nondet_int();
-  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i0);
-  call {:cexpr "p1"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 10, 14} true;
-  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 13, 26} true;
+  assume {:verifier.code 1} true;
+  call {:cexpr "ssl3_connect:arg:initial_state"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 13, 26} true;
+  assume {:verifier.code 1} true;
   call $i1 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i1);
-  call {:cexpr "p2"} boogie_si_record_i32($i1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 13, 14} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__info_callback"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 14, 25} true;
+  assume {:verifier.code 1} true;
   call $i2 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i2);
-  call {:cexpr "p3"} boogie_si_record_i32($i2);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 16, 14} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__in_handshake"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 18, 20} true;
+  assume {:verifier.code 1} true;
   call $i3 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i3);
-  call {:cexpr "p4"} boogie_si_record_i32($i3);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 19, 14} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__version"} boogie_si_record_i32($i3);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 21, 17} true;
+  assume {:verifier.code 1} true;
   call $i4 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i4);
-  call {:cexpr "p5"} boogie_si_record_i32($i4);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 22, 14} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__bbio"} boogie_si_record_i32($i4);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 22, 17} true;
+  assume {:verifier.code 1} true;
   call $i5 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i5);
-  call {:cexpr "p6"} boogie_si_record_i32($i5);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 25, 14} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__wbio"} boogie_si_record_i32($i5);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 23, 16} true;
+  assume {:verifier.code 1} true;
   call $i6 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i6);
-  call {:cexpr "p7"} boogie_si_record_i32($i6);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 28, 14} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__hit"} boogie_si_record_i32($i6);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 25, 25} true;
+  assume {:verifier.code 1} true;
   call $i7 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i7);
-  call {:cexpr "p8"} boogie_si_record_i32($i7);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 31, 14} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__init_buf___0"} boogie_si_record_i32($i7);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 26, 18} true;
+  assume {:verifier.code 1} true;
   call $i8 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i8);
-  call {:cexpr "p9"} boogie_si_record_i32($i8);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 34, 15} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__debug"} boogie_si_record_i32($i8);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 28, 31} true;
+  assume {:verifier.code 1} true;
   call $i9 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i9);
-  call {:cexpr "p10"} boogie_si_record_i32($i9);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 37, 15} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__ctx__info_callback"} boogie_si_record_i32($i9);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 29, 49} true;
+  assume {:verifier.code 1} true;
   call $i10 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i10);
-  call {:cexpr "p11"} boogie_si_record_i32($i10);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 40, 15} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__ctx__stats__sess_connect_renegotiate"} boogie_si_record_i32($i10);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 30, 37} true;
+  assume {:verifier.code 1} true;
   call $i11 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i11);
-  call {:cexpr "p12"} boogie_si_record_i32($i11);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 46, 5} true;
-  assume {:verifier.code 0} true;
-  goto $bb1;
-$bb1:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 47, 16} true;
-  assume {:verifier.code 0} true;
+  call {:cexpr "s__ctx__stats__sess_connect"} boogie_si_record_i32($i11);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 31, 33} true;
+  assume {:verifier.code 1} true;
   call $i12 := __VERIFIER_nondet_int();
   call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i12);
-  call {:cexpr "cond"} boogie_si_record_i32($i12);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 48, 18} true;
+  call {:cexpr "s__ctx__stats__sess_hit"} boogie_si_record_i32($i12);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 32, 42} true;
+  assume {:verifier.code 1} true;
+  call $i13 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i13);
+  call {:cexpr "s__ctx__stats__sess_connect_good"} boogie_si_record_i32($i13);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 34, 22} true;
+  assume {:verifier.code 1} true;
+  call $i14 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i14);
+  call {:cexpr "s__s3__flags"} boogie_si_record_i32($i14);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 36, 30} true;
+  assume {:verifier.code 1} true;
+  call $i15 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i15);
+  call {:cexpr "s__s3__tmp__cert_req"} boogie_si_record_i32($i15);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 37, 37} true;
+  assume {:verifier.code 1} true;
+  call $i16 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i16);
+  call {:cexpr "s__s3__tmp__new_compression"} boogie_si_record_i32($i16);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 38, 35} true;
+  assume {:verifier.code 1} true;
+  call $i17 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i17);
+  call {:cexpr "s__s3__tmp__reuse_message"} boogie_si_record_i32($i17);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 39, 32} true;
+  assume {:verifier.code 1} true;
+  call $i18 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i18);
+  call {:cexpr "s__s3__tmp__new_cipher"} boogie_si_record_i32($i18);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 40, 44} true;
+  assume {:verifier.code 1} true;
+  call $i19 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i19);
+  call {:cexpr "s__s3__tmp__new_cipher__algorithms"} boogie_si_record_i32($i19);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 42, 41} true;
+  assume {:verifier.code 1} true;
+  call $i20 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i20);
+  call {:cexpr "s__s3__tmp__new_compression__id"} boogie_si_record_i32($i20);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 48, 14} true;
+  assume {:verifier.code 1} true;
+  call $i21 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i21);
+  call {:cexpr "num1"} boogie_si_record_i32($i21);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 55, 17} true;
+  assume {:verifier.code 1} true;
+  call $i22 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i22);
+  call {:cexpr "tmp___1"} boogie_si_record_i32($i22);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 56, 17} true;
+  assume {:verifier.code 1} true;
+  call $i23 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i23);
+  call {:cexpr "tmp___2"} boogie_si_record_i32($i23);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 57, 17} true;
+  assume {:verifier.code 1} true;
+  call $i24 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i24);
+  call {:cexpr "tmp___3"} boogie_si_record_i32($i24);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 58, 17} true;
+  assume {:verifier.code 1} true;
+  call $i25 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i25);
+  call {:cexpr "tmp___4"} boogie_si_record_i32($i25);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 59, 17} true;
+  assume {:verifier.code 1} true;
+  call $i26 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i26);
+  call {:cexpr "tmp___5"} boogie_si_record_i32($i26);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 60, 17} true;
+  assume {:verifier.code 1} true;
+  call $i27 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i27);
+  call {:cexpr "tmp___6"} boogie_si_record_i32($i27);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 61, 17} true;
+  assume {:verifier.code 1} true;
+  call $i28 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i28);
+  call {:cexpr "tmp___7"} boogie_si_record_i32($i28);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 62, 17} true;
+  assume {:verifier.code 1} true;
+  call $i29 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i29);
+  call {:cexpr "tmp___8"} boogie_si_record_i32($i29);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 63, 17} true;
+  assume {:verifier.code 1} true;
+  call $i30 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i30);
+  call {:cexpr "tmp___9"} boogie_si_record_i32($i30);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 68, 31} true;
+  assume {:verifier.code 1} true;
+  call $i31 := __VERIFIER_nondet_ulong();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_ulong"} boogie_si_record_i64($i31);
+  call {:cexpr "__cil_tmp58"} boogie_si_record_i64($i31);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 75, 22} true;
+  assume {:verifier.code 1} true;
+  call $i32 := __VERIFIER_nondet_long();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_long"} boogie_si_record_i64($i32);
+  call {:cexpr "__cil_tmp65"} boogie_si_record_i64($i32);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 80, 22} true;
+  assume {:verifier.code 1} true;
+  call $i33 := __VERIFIER_nondet_long();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_long"} boogie_si_record_i64($i33);
+  call {:cexpr "__cil_tmp70"} boogie_si_record_i64($i33);
+  call {:cexpr "ssl3_connect:arg:s__state"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 90, 9} true;
+  assume {:verifier.code 1} true;
+  call $i34 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i34);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 95, 24} true;
   assume {:verifier.code 0} true;
-  $i13 := $eq.i32($i12, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 48, 13} true;
+  $i35 := $ne.i32($i1, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 95, 7} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i13} true;
-  goto $bb2, $bb3;
+  assume {:branchcond $i35} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i35 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 97, 3} true;
+  assume {:verifier.code 0} true;
+  $i36 := $i1;
+  goto $bb3;
 $bb2:
-  assume ($i13 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 49, 13} true;
+  assume !(($i35 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 98, 31} true;
   assume {:verifier.code 0} true;
-  goto $bb4;
+  $i37 := $ne.i32($i9, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 98, 9} true;
+  assume {:verifier.code 0} true;
+  $i38 := 0;
+  assume {:branchcond $i37} true;
+  goto $bb4, $bb5;
 $bb3:
-  assume !(($i13 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  goto $bb5;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 103, 15} true;
+  assume {:verifier.code 0} true;
+  $i39 := $add.i32($i22, 12288);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 103, 15} true;
+  assume {:verifier.code 0} true;
+  $i40 := $ne.i32($i39, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 103, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i40} true;
+  goto $bb7, $bb8;
 $bb4:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 189, 5} true;
+  assume ($i37 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 100, 5} true;
   assume {:verifier.code 0} true;
-  $r := 0;
-  $exn := false;
-  return;
+  $i38 := $i9;
+  goto $bb6;
 $bb5:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 77, 16} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 98, 9} true;
   assume {:verifier.code 0} true;
-  $i14 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 77, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i14} true;
-  goto $bb6, $bb7;
+  assume !(($i37 == 1));
+  goto $bb6;
 $bb6:
-  assume ($i14 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 79, 9} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i15 := 1;
-  goto $bb8;
+  assume {:verifier.code 0} true;
+  $i36 := $i38;
+  goto $bb3;
 $bb7:
-  assume !(($i14 == 1));
+  assume ($i40 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 104, 17} true;
   assume {:verifier.code 0} true;
-  $i15 := 0;
-  goto $bb8;
+  $i41 := $add.i32($i23, 16384);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 104, 17} true;
+  assume {:verifier.code 0} true;
+  $i42 := $ne.i32($i41, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 104, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i42} true;
+  goto $bb10, $bb11;
 $bb8:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 103, 7} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 81, 16} true;
-  assume {:verifier.code 0} true;
-  $i16 := $ne.i32($i1, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 81, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i16} true;
-  goto $bb9, $bb10;
+  assume !(($i40 == 1));
+  goto $bb9;
 $bb9:
-  assume ($i16 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 83, 9} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 109, 3} true;
   assume {:verifier.code 0} true;
-  $i17 := 1;
-  goto $bb11;
+  $i43, $i44, $i45, $i46, $i47, $i48, $i49, $i50 := $i11, $i10, $i14, $u0, $i7, $i21, 0, $i0;
+  goto $bb13;
 $bb10:
-  assume !(($i16 == 1));
+  assume ($i42 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 106, 5} true;
   assume {:verifier.code 0} true;
-  $i17 := 0;
-  goto $bb11;
+  goto $bb12;
 $bb11:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 104, 9} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 85, 16} true;
-  assume {:verifier.code 0} true;
-  $i18 := $ne.i32($i2, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 85, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i18} true;
-  goto $bb12, $bb13;
+  assume !(($i42 == 1));
+  goto $bb12;
 $bb12:
-  assume ($i18 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 87, 9} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 107, 3} true;
   assume {:verifier.code 0} true;
-  $i19 := 1;
-  goto $bb14;
+  goto $bb9;
 $bb13:
-  assume !(($i18 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i19 := 0;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 34, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 48, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 89, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 109, 13} true;
+  assume {:verifier.code 0} true;
   goto $bb14;
 $bb14:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 112, 18} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 89, 16} true;
+  $i51 := $eq.i32($i50, 12292);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 112, 9} true;
   assume {:verifier.code 0} true;
-  $i20 := $ne.i32($i3, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 89, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i20} true;
+  assume {:branchcond $i51} true;
   goto $bb15, $bb16;
 $bb15:
-  assume ($i20 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 91, 9} true;
+  assume ($i51 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 113, 7} true;
   assume {:verifier.code 0} true;
-  $i21 := 1;
   goto $bb17;
 $bb16:
-  assume !(($i20 == 1));
+  assume !(($i51 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 115, 20} true;
   assume {:verifier.code 0} true;
-  $i21 := 0;
-  goto $bb17;
-$bb17:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i52 := $eq.i32($i50, 16384);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 115, 11} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 93, 16} true;
-  assume {:verifier.code 0} true;
-  $i22 := $ne.i32($i4, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 93, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i22} true;
+  assume {:branchcond $i52} true;
   goto $bb18, $bb19;
-$bb18:
-  assume ($i22 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 95, 9} true;
+$bb17:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 216, 113} true;
   assume {:verifier.code 0} true;
-  $i23 := 1;
+  $i88 := $add.i32($i44, 1);
+  call {:cexpr "s__ctx__stats__sess_connect_renegotiate"} boogie_si_record_i32($i88);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 216, 73} true;
+  assume {:verifier.code 0} true;
+  $i53 := $i88;
+  goto $bb20;
+$bb18:
+  assume ($i52 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 116, 9} true;
+  assume {:verifier.code 0} true;
+  $i53 := $i44;
   goto $bb20;
 $bb19:
-  assume !(($i22 == 1));
+  assume !(($i52 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 118, 22} true;
   assume {:verifier.code 0} true;
-  $i23 := 0;
-  goto $bb20;
-$bb20:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i54 := $eq.i32($i50, 4096);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 118, 13} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 97, 16} true;
-  assume {:verifier.code 0} true;
-  $i24 := $ne.i32($i5, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 97, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i24} true;
+  assume {:branchcond $i54} true;
   goto $bb21, $bb22;
-$bb21:
-  assume ($i24 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 99, 9} true;
+$bb20:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i25 := 1;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 216, 73} true;
+  assume {:verifier.code 0} true;
+  $i55 := $i53;
+  goto $bb23;
+$bb21:
+  assume ($i54 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 119, 11} true;
+  assume {:verifier.code 0} true;
+  $i55 := $i44;
   goto $bb23;
 $bb22:
-  assume !(($i24 == 1));
+  assume !(($i54 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 121, 24} true;
   assume {:verifier.code 0} true;
-  $i25 := 0;
-  goto $bb23;
-$bb23:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i56 := $eq.i32($i50, 20480);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 121, 15} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 101, 16} true;
-  assume {:verifier.code 0} true;
-  $i26 := $ne.i32($i6, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 101, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i26} true;
+  assume {:branchcond $i56} true;
   goto $bb24, $bb25;
-$bb24:
-  assume ($i26 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 103, 9} true;
+$bb23:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i27 := 1;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 216, 73} true;
+  assume {:verifier.code 0} true;
+  $i57 := $i55;
+  goto $bb26;
+$bb24:
+  assume ($i56 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 122, 13} true;
+  assume {:verifier.code 0} true;
+  $i57 := $i44;
   goto $bb26;
 $bb25:
-  assume !(($i26 == 1));
+  assume !(($i56 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 124, 26} true;
   assume {:verifier.code 0} true;
-  $i27 := 0;
-  goto $bb26;
-$bb26:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i58 := $eq.i32($i50, 4099);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 124, 17} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 105, 16} true;
-  assume {:verifier.code 0} true;
-  $i28 := $ne.i32($i7, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 105, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i28} true;
+  assume {:branchcond $i58} true;
   goto $bb27, $bb28;
-$bb27:
-  assume ($i28 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 107, 9} true;
+$bb26:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i29 := 1;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 216, 73} true;
+  assume {:verifier.code 0} true;
+  $i59 := $i57;
+  goto $bb29;
+$bb27:
+  assume ($i58 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 125, 15} true;
+  assume {:verifier.code 0} true;
+  $i59 := $i44;
   goto $bb29;
 $bb28:
-  assume !(($i28 == 1));
+  assume !(($i58 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 127, 28} true;
   assume {:verifier.code 0} true;
-  $i29 := 0;
-  goto $bb29;
-$bb29:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i60 := $eq.i32($i50, 4368);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 127, 19} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 109, 16} true;
-  assume {:verifier.code 0} true;
-  $i30 := $ne.i32($i8, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 109, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i30} true;
+  assume {:branchcond $i60} true;
   goto $bb30, $bb31;
-$bb30:
-  assume ($i30 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 111, 9} true;
+$bb29:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  $i31 := 1;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 222, 80} true;
+  assume {:verifier.code 0} true;
+  $i89 := $ne.i32($i36, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 222, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i89} true;
+  goto $bb118, $bb119;
+$bb30:
+  assume ($i60 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 128, 17} true;
+  assume {:verifier.code 0} true;
   goto $bb32;
 $bb31:
-  assume !(($i30 == 1));
+  assume !(($i60 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 130, 30} true;
   assume {:verifier.code 0} true;
-  $i31 := 0;
-  goto $bb32;
-$bb32:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i61 := $eq.i32($i50, 4369);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 130, 21} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 113, 17} true;
-  assume {:verifier.code 0} true;
-  $i32 := $ne.i32($i9, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 113, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i32} true;
+  assume {:branchcond $i61} true;
   goto $bb33, $bb34;
-$bb33:
-  assume ($i32 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 115, 9} true;
+$bb32:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 266, 73} true;
   assume {:verifier.code 0} true;
-  $i33 := 1;
+  goto $bb35;
+$bb33:
+  assume ($i61 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 131, 19} true;
+  assume {:verifier.code 0} true;
   goto $bb35;
 $bb34:
-  assume !(($i32 == 1));
+  assume !(($i61 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 133, 32} true;
   assume {:verifier.code 0} true;
-  $i33 := 0;
-  goto $bb35;
-$bb35:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i62 := $eq.i32($i50, 4384);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 133, 23} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 117, 17} true;
-  assume {:verifier.code 0} true;
-  $i34 := $ne.i32($i10, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 117, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i34} true;
+  assume {:branchcond $i62} true;
   goto $bb36, $bb37;
-$bb36:
-  assume ($i34 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 119, 9} true;
+$bb35:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 270, 79} true;
+  assume {:verifier.code 1} true;
+  call $i114 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i114);
+  call {:cexpr "ret"} boogie_si_record_i32($i114);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 271, 87} true;
   assume {:verifier.code 0} true;
-  $i35 := 1;
+  $i115 := $eq.i32($i49, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 271, 77} true;
+  assume {:verifier.code 0} true;
+  $i116 := $i49;
+  assume {:branchcond $i115} true;
+  goto $bb136, $bb137;
+$bb36:
+  assume ($i62 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 134, 21} true;
+  assume {:verifier.code 0} true;
   goto $bb38;
 $bb37:
-  assume !(($i34 == 1));
+  assume !(($i62 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 136, 34} true;
   assume {:verifier.code 0} true;
-  $i35 := 0;
-  goto $bb38;
-$bb38:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i63 := $eq.i32($i50, 4385);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 136, 25} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 121, 17} true;
-  assume {:verifier.code 0} true;
-  $i36 := $ne.i32($i11, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 121, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i36} true;
+  assume {:branchcond $i63} true;
   goto $bb39, $bb40;
-$bb39:
-  assume ($i36 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 123, 9} true;
+$bb38:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 286, 73} true;
   assume {:verifier.code 0} true;
-  $i37 := 1;
+  goto $bb41;
+$bb39:
+  assume ($i63 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 137, 23} true;
+  assume {:verifier.code 0} true;
   goto $bb41;
 $bb40:
-  assume !(($i36 == 1));
+  assume !(($i63 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 139, 36} true;
   assume {:verifier.code 0} true;
-  $i37 := 0;
-  goto $bb41;
-$bb41:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 0, 0} true;
+  $i64 := $eq.i32($i50, 4400);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 139, 27} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 127, 16} true;
-  assume {:verifier.code 0} true;
-  $i38 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 127, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i38} true;
+  assume {:branchcond $i64} true;
   goto $bb42, $bb43;
+$bb41:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 289, 79} true;
+  assume {:verifier.code 1} true;
+  call $i121 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i121);
+  call {:cexpr "ret"} boogie_si_record_i32($i121);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 290, 87} true;
+  assume {:verifier.code 0} true;
+  $i122 := $eq.i32($i49, 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 290, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i122} true;
+  goto $bb144, $bb145;
 $bb42:
-  assume ($i38 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 128, 21} true;
+  assume ($i64 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 140, 25} true;
   assume {:verifier.code 0} true;
-  $i39 := $ne.i32($i15, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 128, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i39} true;
-  goto $bb44, $bb45;
+  goto $bb44;
 $bb43:
-  assume !(($i38 == 1));
+  assume !(($i64 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 142, 38} true;
+  assume {:verifier.code 0} true;
+  $i65 := $eq.i32($i50, 4401);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 142, 29} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i65} true;
+  goto $bb45, $bb46;
+$bb44:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 306, 73} true;
   assume {:verifier.code 0} true;
   goto $bb47;
-$bb44:
-  assume ($i39 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 128, 27} true;
-  assume {:verifier.code 0} true;
-  goto $bb46;
 $bb45:
-  assume !(($i39 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 130, 9} true;
+  assume ($i65 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 143, 27} true;
   assume {:verifier.code 0} true;
   goto $bb47;
 $bb46:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 190, 11} true;
+  assume !(($i65 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 145, 40} true;
   assume {:verifier.code 0} true;
-  call reach_error();
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 190, 25} true;
+  $i66 := $eq.i32($i50, 4416);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 145, 31} true;
   assume {:verifier.code 0} true;
-  call abort();
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 190, 25} true;
-  assume {:verifier.code 0} true;
-  assume false;
-$bb47:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 132, 16} true;
-  assume {:verifier.code 0} true;
-  $i40 := $ne.i32($i1, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 132, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i40} true;
+  assume {:branchcond $i66} true;
   goto $bb48, $bb49;
+$bb47:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 310, 87} true;
+  assume {:verifier.code 0} true;
+  $i129 := $sext.i32.i64($i19);
+  call {:cexpr "__cil_tmp64"} boogie_si_record_i64($i129);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 311, 89} true;
+  assume {:verifier.code 0} true;
+  $i130 := $add.i64($i129, 256);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 311, 89} true;
+  assume {:verifier.code 0} true;
+  $i131 := $ne.i64($i130, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 311, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i131} true;
+  goto $bb155, $bb156;
 $bb48:
-  assume ($i40 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 133, 21} true;
+  assume ($i66 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 146, 29} true;
   assume {:verifier.code 0} true;
-  $i41 := $ne.i32($i17, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 133, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i41} true;
-  goto $bb50, $bb51;
+  goto $bb50;
 $bb49:
-  assume !(($i40 == 1));
+  assume !(($i66 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 148, 42} true;
   assume {:verifier.code 0} true;
-  goto $bb52;
+  $i67 := $eq.i32($i50, 4417);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 148, 33} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i67} true;
+  goto $bb51, $bb52;
 $bb50:
-  assume ($i41 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 133, 27} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 325, 73} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  goto $bb53;
 $bb51:
-  assume !(($i41 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 135, 9} true;
+  assume ($i67 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 149, 31} true;
   assume {:verifier.code 0} true;
-  goto $bb52;
+  goto $bb53;
 $bb52:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 137, 16} true;
+  assume !(($i67 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 151, 44} true;
   assume {:verifier.code 0} true;
-  $i42 := $ne.i32($i2, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 137, 13} true;
+  $i68 := $eq.i32($i50, 4432);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 151, 35} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i42} true;
-  goto $bb53, $bb54;
+  assume {:branchcond $i68} true;
+  goto $bb54, $bb55;
 $bb53:
-  assume ($i42 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 138, 21} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 328, 79} true;
+  assume {:verifier.code 1} true;
+  call $i138 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i138);
+  call {:cexpr "ret"} boogie_si_record_i32($i138);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 329, 87} true;
   assume {:verifier.code 0} true;
-  $i43 := $ne.i32($i19, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 138, 17} true;
+  $i139 := $eq.i32($i49, 3);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 329, 77} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i43} true;
-  goto $bb55, $bb56;
+  $i140 := $i49;
+  assume {:branchcond $i139} true;
+  goto $bb163, $bb164;
 $bb54:
-  assume !(($i42 == 1));
+  assume ($i68 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 152, 33} true;
   assume {:verifier.code 0} true;
-  goto $bb57;
+  goto $bb56;
 $bb55:
-  assume ($i43 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 138, 27} true;
+  assume !(($i68 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 154, 46} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  $i69 := $eq.i32($i50, 4433);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 154, 37} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i69} true;
+  goto $bb57, $bb58;
 $bb56:
-  assume !(($i43 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 140, 9} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 341, 73} true;
   assume {:verifier.code 0} true;
-  goto $bb57;
+  goto $bb59;
 $bb57:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 142, 16} true;
+  assume ($i69 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 155, 35} true;
   assume {:verifier.code 0} true;
-  $i44 := $ne.i32($i3, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 142, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i44} true;
-  goto $bb58, $bb59;
+  goto $bb59;
 $bb58:
-  assume ($i44 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 143, 21} true;
+  assume !(($i69 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 157, 48} true;
   assume {:verifier.code 0} true;
-  $i45 := $ne.i32($i21, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 143, 17} true;
+  $i70 := $eq.i32($i50, 4448);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 157, 39} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i45} true;
+  assume {:branchcond $i70} true;
   goto $bb60, $bb61;
 $bb59:
-  assume !(($i44 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 344, 79} true;
+  assume {:verifier.code 1} true;
+  call $i143 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i143);
+  call {:cexpr "ret"} boogie_si_record_i32($i143);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 345, 87} true;
   assume {:verifier.code 0} true;
-  goto $bb62;
+  $i144 := $eq.i32($i49, 4);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 345, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i144} true;
+  goto $bb170, $bb171;
 $bb60:
-  assume ($i45 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 143, 27} true;
-  assume {:verifier.code 0} true;
-  goto $bb46;
-$bb61:
-  assume !(($i45 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 145, 9} true;
+  assume ($i70 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 158, 37} true;
   assume {:verifier.code 0} true;
   goto $bb62;
-$bb62:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 147, 16} true;
+$bb61:
+  assume !(($i70 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 160, 50} true;
   assume {:verifier.code 0} true;
-  $i46 := $ne.i32($i4, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 147, 13} true;
+  $i71 := $eq.i32($i50, 4449);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 160, 41} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i46} true;
+  assume {:branchcond $i71} true;
   goto $bb63, $bb64;
+$bb62:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 353, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb65;
 $bb63:
-  assume ($i46 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 148, 21} true;
+  assume ($i71 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 161, 39} true;
   assume {:verifier.code 0} true;
-  $i47 := $ne.i32($i23, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 148, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i47} true;
-  goto $bb65, $bb66;
+  goto $bb65;
 $bb64:
-  assume !(($i46 == 1));
+  assume !(($i71 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 163, 52} true;
   assume {:verifier.code 0} true;
-  goto $bb67;
+  $i72 := $eq.i32($i50, 4464);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 163, 43} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i72} true;
+  goto $bb66, $bb67;
 $bb65:
-  assume ($i47 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 148, 27} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 356, 79} true;
+  assume {:verifier.code 1} true;
+  call $i146 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i146);
+  call {:cexpr "ret"} boogie_si_record_i32($i146);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 357, 81} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  $i147 := $sle.i32($i146, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 357, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i147} true;
+  goto $bb175, $bb176;
 $bb66:
-  assume !(($i47 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 150, 9} true;
+  assume ($i72 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 164, 41} true;
   assume {:verifier.code 0} true;
-  goto $bb67;
+  goto $bb68;
 $bb67:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 152, 16} true;
+  assume !(($i72 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 166, 54} true;
   assume {:verifier.code 0} true;
-  $i48 := $ne.i32($i5, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 152, 13} true;
+  $i73 := $eq.i32($i50, 4465);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 166, 45} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i48} true;
-  goto $bb68, $bb69;
+  assume {:branchcond $i73} true;
+  goto $bb69, $bb70;
 $bb68:
-  assume ($i48 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 153, 21} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 366, 73} true;
   assume {:verifier.code 0} true;
-  $i49 := $ne.i32($i25, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 153, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i49} true;
-  goto $bb70, $bb71;
+  goto $bb71;
 $bb69:
-  assume !(($i48 == 1));
+  assume ($i73 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 167, 43} true;
   assume {:verifier.code 0} true;
-  goto $bb72;
+  goto $bb71;
 $bb70:
-  assume ($i49 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 153, 27} true;
+  assume !(($i73 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 169, 56} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  $i74 := $eq.i32($i50, 4466);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 169, 47} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i74} true;
+  goto $bb72, $bb73;
 $bb71:
-  assume !(($i49 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 155, 9} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 366, 73} true;
   assume {:verifier.code 0} true;
-  goto $bb72;
+  goto $bb74;
 $bb72:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 157, 16} true;
+  assume ($i74 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 170, 45} true;
   assume {:verifier.code 0} true;
-  $i50 := $ne.i32($i6, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 157, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i50} true;
-  goto $bb73, $bb74;
+  goto $bb74;
 $bb73:
-  assume ($i50 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 158, 21} true;
+  assume !(($i74 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 172, 58} true;
   assume {:verifier.code 0} true;
-  $i51 := $ne.i32($i27, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 158, 17} true;
+  $i75 := $eq.i32($i50, 4467);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 172, 49} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i51} true;
+  assume {:branchcond $i75} true;
   goto $bb75, $bb76;
 $bb74:
-  assume !(($i50 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 366, 73} true;
   assume {:verifier.code 0} true;
   goto $bb77;
 $bb75:
-  assume ($i51 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 158, 27} true;
-  assume {:verifier.code 0} true;
-  goto $bb46;
-$bb76:
-  assume !(($i51 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 160, 9} true;
+  assume ($i75 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 173, 47} true;
   assume {:verifier.code 0} true;
   goto $bb77;
-$bb77:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 162, 16} true;
+$bb76:
+  assume !(($i75 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 175, 60} true;
   assume {:verifier.code 0} true;
-  $i52 := $ne.i32($i7, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 162, 13} true;
+  $i76 := $eq.i32($i50, 4480);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 175, 51} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i52} true;
+  assume {:branchcond $i76} true;
   goto $bb78, $bb79;
+$bb77:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 371, 79} true;
+  assume {:verifier.code 1} true;
+  call $i150 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i150);
+  call {:cexpr "ret"} boogie_si_record_i32($i150);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 372, 81} true;
+  assume {:verifier.code 0} true;
+  $i151 := $sle.i32($i150, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 372, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i151} true;
+  goto $bb180, $bb181;
 $bb78:
-  assume ($i52 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 163, 21} true;
+  assume ($i76 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 176, 49} true;
   assume {:verifier.code 0} true;
-  $i53 := $ne.i32($i29, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 163, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i53} true;
-  goto $bb80, $bb81;
+  goto $bb80;
 $bb79:
-  assume !(($i52 == 1));
+  assume !(($i76 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 178, 62} true;
   assume {:verifier.code 0} true;
-  goto $bb82;
+  $i77 := $eq.i32($i50, 4481);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 178, 53} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i77} true;
+  goto $bb81, $bb82;
 $bb80:
-  assume ($i53 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 163, 27} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 377, 73} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  goto $bb83;
 $bb81:
-  assume !(($i53 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 165, 9} true;
+  assume ($i77 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 179, 51} true;
   assume {:verifier.code 0} true;
-  goto $bb82;
+  goto $bb83;
 $bb82:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 167, 16} true;
+  assume !(($i77 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 181, 64} true;
   assume {:verifier.code 0} true;
-  $i54 := $ne.i32($i8, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 167, 13} true;
+  $i78 := $eq.i32($i50, 4496);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 181, 55} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i54} true;
-  goto $bb83, $bb84;
+  assume {:branchcond $i78} true;
+  goto $bb84, $bb85;
 $bb83:
-  assume ($i54 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 168, 21} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 380, 79} true;
+  assume {:verifier.code 1} true;
+  call $i152 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i152);
+  call {:cexpr "ret"} boogie_si_record_i32($i152);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 381, 81} true;
   assume {:verifier.code 0} true;
-  $i55 := $ne.i32($i31, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 168, 17} true;
+  $i153 := $sle.i32($i152, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 381, 77} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i55} true;
-  goto $bb85, $bb86;
+  assume {:branchcond $i153} true;
+  goto $bb182, $bb183;
 $bb84:
-  assume !(($i54 == 1));
+  assume ($i78 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 182, 53} true;
   assume {:verifier.code 0} true;
-  goto $bb87;
+  goto $bb86;
 $bb85:
-  assume ($i55 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 168, 27} true;
+  assume !(($i78 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 184, 66} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  $i79 := $eq.i32($i50, 4497);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 184, 57} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i79} true;
+  goto $bb87, $bb88;
 $bb86:
-  assume !(($i55 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 170, 9} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 392, 73} true;
   assume {:verifier.code 0} true;
-  goto $bb87;
+  goto $bb89;
 $bb87:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 172, 17} true;
+  assume ($i79 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 185, 55} true;
   assume {:verifier.code 0} true;
-  $i56 := $ne.i32($i9, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 172, 13} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i56} true;
-  goto $bb88, $bb89;
+  goto $bb89;
 $bb88:
-  assume ($i56 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 173, 22} true;
+  assume !(($i79 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 187, 68} true;
   assume {:verifier.code 0} true;
-  $i57 := $ne.i32($i33, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 173, 17} true;
+  $i80 := $eq.i32($i50, 4512);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 187, 59} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i57} true;
+  assume {:branchcond $i80} true;
   goto $bb90, $bb91;
 $bb89:
-  assume !(($i56 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 395, 79} true;
+  assume {:verifier.code 1} true;
+  call $i156 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i156);
+  call {:cexpr "ret"} boogie_si_record_i32($i156);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 396, 81} true;
   assume {:verifier.code 0} true;
-  goto $bb92;
+  $i157 := $sle.i32($i156, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 396, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i157} true;
+  goto $bb187, $bb188;
 $bb90:
-  assume ($i57 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 173, 28} true;
-  assume {:verifier.code 0} true;
-  goto $bb46;
-$bb91:
-  assume !(($i57 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 175, 9} true;
+  assume ($i80 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 188, 57} true;
   assume {:verifier.code 0} true;
   goto $bb92;
-$bb92:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 177, 17} true;
+$bb91:
+  assume !(($i80 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 190, 70} true;
   assume {:verifier.code 0} true;
-  $i58 := $ne.i32($i10, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 177, 13} true;
+  $i81 := $eq.i32($i50, 4513);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 190, 61} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i58} true;
+  assume {:branchcond $i81} true;
   goto $bb93, $bb94;
+$bb92:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 402, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb95;
 $bb93:
-  assume ($i58 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 178, 22} true;
+  assume ($i81 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 191, 59} true;
   assume {:verifier.code 0} true;
-  $i59 := $ne.i32($i35, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 178, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i59} true;
-  goto $bb95, $bb96;
+  goto $bb95;
 $bb94:
-  assume !(($i58 == 1));
+  assume !(($i81 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 193, 72} true;
   assume {:verifier.code 0} true;
-  goto $bb97;
+  $i82 := $eq.i32($i50, 4528);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 193, 63} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i82} true;
+  goto $bb96, $bb97;
 $bb95:
-  assume ($i59 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 178, 28} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 405, 79} true;
+  assume {:verifier.code 1} true;
+  call $i158 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i158);
+  call {:cexpr "ret"} boogie_si_record_i32($i158);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 406, 81} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  $i159 := $sle.i32($i158, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 406, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i159} true;
+  goto $bb189, $bb190;
 $bb96:
-  assume !(($i59 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 180, 9} true;
+  assume ($i82 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 194, 61} true;
   assume {:verifier.code 0} true;
-  goto $bb97;
+  goto $bb98;
 $bb97:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 182, 17} true;
+  assume !(($i82 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 196, 74} true;
   assume {:verifier.code 0} true;
-  $i60 := $ne.i32($i11, 0);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 182, 13} true;
+  $i83 := $eq.i32($i50, 4529);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 196, 65} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i60} true;
-  goto $bb98, $bb99;
+  assume {:branchcond $i83} true;
+  goto $bb99, $bb100;
 $bb98:
-  assume ($i60 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 183, 22} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 425, 73} true;
   assume {:verifier.code 0} true;
-  $i61 := $ne.i32($i37, 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 183, 17} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i61} true;
-  goto $bb100, $bb101;
+  goto $bb101;
 $bb99:
-  assume !(($i60 == 1));
+  assume ($i83 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 197, 63} true;
   assume {:verifier.code 0} true;
-  goto $bb102;
+  goto $bb101;
 $bb100:
-  assume ($i61 == 1);
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 183, 28} true;
+  assume !(($i83 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 199, 76} true;
   assume {:verifier.code 0} true;
-  goto $bb46;
+  $i84 := $eq.i32($i50, 4560);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 199, 67} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i84} true;
+  goto $bb102, $bb103;
 $bb101:
-  assume !(($i61 == 1));
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 185, 9} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 428, 79} true;
+  assume {:verifier.code 1} true;
+  call $i163 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i163);
+  call {:cexpr "ret"} boogie_si_record_i32($i163);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 429, 81} true;
   assume {:verifier.code 0} true;
-  goto $bb102;
+  $i164 := $sle.i32($i163, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 429, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i164} true;
+  goto $bb198, $bb199;
 $bb102:
-  assume {:sourceloc "./output/test_locks_12_tmp.c", 46, 5} true;
+  assume ($i84 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 200, 65} true;
   assume {:verifier.code 0} true;
-  goto $bb1;
+  goto $bb104;
+$bb103:
+  assume !(($i84 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 202, 78} true;
+  assume {:verifier.code 0} true;
+  $i85 := $eq.i32($i50, 4561);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 202, 69} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i85} true;
+  goto $bb105, $bb106;
+$bb104:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 452, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb107;
+$bb105:
+  assume ($i85 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 203, 67} true;
+  assume {:verifier.code 0} true;
+  goto $bb107;
+$bb106:
+  assume !(($i85 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 205, 80} true;
+  assume {:verifier.code 0} true;
+  $i86 := $eq.i32($i50, 4352);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 205, 71} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i86} true;
+  goto $bb108, $bb109;
+$bb107:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 455, 79} true;
+  assume {:verifier.code 1} true;
+  call $i180 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i180);
+  call {:cexpr "ret"} boogie_si_record_i32($i180);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 456, 81} true;
+  assume {:verifier.code 0} true;
+  $i181 := $sle.i32($i180, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 456, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i181} true;
+  goto $bb206, $bb207;
+$bb108:
+  assume ($i86 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 206, 69} true;
+  assume {:verifier.code 0} true;
+  goto $bb110;
+$bb109:
+  assume !(($i86 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 208, 82} true;
+  assume {:verifier.code 0} true;
+  $i87 := $eq.i32($i50, 3);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 208, 73} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i87} true;
+  goto $bb111, $bb112;
+$bb110:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 468, 87} true;
+  assume {:verifier.code 0} true;
+  $i184 := $sext.i32.i64($i48);
+  call {:cexpr "__cil_tmp70"} boogie_si_record_i64($i184);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 469, 89} true;
+  assume {:verifier.code 0} true;
+  $i185 := $sgt.i64($i184, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 469, 77} true;
+  assume {:verifier.code 0} true;
+  $i186 := $i48;
+  assume {:branchcond $i185} true;
+  goto $bb211, $bb212;
+$bb111:
+  assume ($i87 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 209, 71} true;
+  assume {:verifier.code 0} true;
+  goto $bb113;
+$bb112:
+  assume !(($i87 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 211, 71} true;
+  assume {:verifier.code 0} true;
+  goto $bb114;
+$bb113:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 486, 93} true;
+  assume {:verifier.code 0} true;
+  $i191 := $ne.i32($i47, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 486, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i191} true;
+  goto $bb216, $bb217;
+$bb114:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 509, 73} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb115:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 212, 75} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond 0} true;
+  goto $bb116, $bb117;
+$bb116:
+  assume (0 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 212, 78} true;
+  assume {:verifier.code 0} true;
+  goto $bb17;
+$bb117:
+  assume !((0 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 510, 78} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $u0, $u0, $u0, $u0, $u0, $u0, $u0, $u0, $u0;
+  goto $bb135;
+$bb118:
+  assume ($i89 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 224, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb120;
+$bb119:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 222, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i89 == 1));
+  goto $bb120;
+$bb120:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 226, 98} true;
+  assume {:verifier.code 0} true;
+  $i90 := $add.i32($i3, 65280);
+  call {:cexpr "__cil_tmp55"} boogie_si_record_i32($i90);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 227, 89} true;
+  assume {:verifier.code 0} true;
+  $i91 := $ne.i32($i90, 768);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 227, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i91} true;
+  goto $bb121, $bb122;
+$bb121:
+  assume ($i91 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 229, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb122:
+  assume !(($i91 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 235, 87} true;
+  assume {:verifier.code 0} true;
+  $i93 := $p2i.ref.i64($0.ref);
+  call {:cexpr "__cil_tmp57"} boogie_si_record_i64($i93);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 236, 87} true;
+  assume {:verifier.code 0} true;
+  $i94 := $sext.i32.i64($i47);
+  call {:cexpr "__cil_tmp58"} boogie_si_record_i64($i94);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 237, 89} true;
+  assume {:verifier.code 0} true;
+  $i95 := $eq.i64($i94, $i93);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 237, 77} true;
+  assume {:verifier.code 0} true;
+  $i96 := $i47;
+  assume {:branchcond $i95} true;
+  goto $bb124, $bb125;
+$bb123:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 570, 10} true;
+  assume {:verifier.code 0} true;
+  $i204 := $ne.i32($i36, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 570, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i204} true;
+  goto $bb280, $bb281;
+$bb124:
+  assume ($i95 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 238, 81} true;
+  assume {:verifier.code 1} true;
+  call $i97 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i97);
+  call {:cexpr "buf"} boogie_si_record_i32($i97);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 241, 89} true;
+  assume {:verifier.code 0} true;
+  $i98 := $p2i.ref.i64($0.ref);
+  call {:cexpr "__cil_tmp60"} boogie_si_record_i64($i98);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 242, 89} true;
+  assume {:verifier.code 0} true;
+  $i99 := $sext.i32.i64($i97);
+  call {:cexpr "__cil_tmp61"} boogie_si_record_i64($i99);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 243, 91} true;
+  assume {:verifier.code 0} true;
+  $i100 := $eq.i64($i99, $i98);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 243, 79} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i100} true;
+  goto $bb127, $bb128;
+$bb125:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 237, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i95 == 1));
+  goto $bb126;
+$bb126:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 255, 79} true;
+  assume {:verifier.code 0} true;
+  $i102 := $ne.i32($i25, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 255, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i102} true;
+  goto $bb131, $bb132;
+$bb127:
+  assume ($i100 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 245, 77} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb128:
+  assume !(($i100 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 248, 81} true;
+  assume {:verifier.code 0} true;
+  $i101 := $ne.i32($i24, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 248, 79} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i101} true;
+  goto $bb129, $bb130;
+$bb129:
+  assume ($i101 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 253, 73} true;
+  assume {:verifier.code 0} true;
+  $i96 := $i97;
+  goto $bb126;
+$bb130:
+  assume !(($i101 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 250, 77} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb131:
+  assume ($i102 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 259, 79} true;
+  assume {:verifier.code 0} true;
+  $i103 := $ne.i32($i26, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 259, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i103} true;
+  goto $bb133, $bb134;
+$bb132:
+  assume !(($i102 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 257, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb133:
+  assume ($i103 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 264, 101} true;
+  assume {:verifier.code 0} true;
+  $i104 := $add.i32($i43, 1);
+  call {:cexpr "s__ctx__stats__sess_connect"} boogie_si_record_i32($i104);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 266, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i104, $i59, $i45, $i46, $i96, $i48, 0, $i49, 4368;
+  goto $bb135;
+$bb134:
+  assume !(($i103 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 261, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb135:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:verifier.code 0} true;
+  goto $bb228;
+$bb136:
+  assume ($i115 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 273, 73} true;
+  assume {:verifier.code 0} true;
+  $i116 := 1;
+  goto $bb138;
+$bb137:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 271, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i115 == 1));
+  goto $bb138;
+$bb138:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 274, 81} true;
+  assume {:verifier.code 0} true;
+  $i117 := $sle.i32($i114, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 274, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i117} true;
+  goto $bb139, $bb140;
+$bb139:
+  assume ($i117 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 275, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i114;
+  goto $bb123;
+$bb140:
+  assume !(($i117 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 280, 87} true;
+  assume {:verifier.code 0} true;
+  $i118 := $sext.i32.i64($i5);
+  call {:cexpr "__cil_tmp62"} boogie_si_record_i64($i118);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 281, 87} true;
+  assume {:verifier.code 0} true;
+  $i119 := $sext.i32.i64($i4);
+  call {:cexpr "__cil_tmp63"} boogie_si_record_i64($i119);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 282, 89} true;
+  assume {:verifier.code 0} true;
+  $i120 := $ne.i64($i119, $i118);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 282, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i120} true;
+  goto $bb141, $bb142;
+$bb141:
+  assume ($i120 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 284, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb143;
+$bb142:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 282, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i120 == 1));
+  goto $bb143;
+$bb143:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 286, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i116, 4384;
+  goto $bb135;
+$bb144:
+  assume ($i122 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 292, 73} true;
+  assume {:verifier.code 0} true;
+  $i123 := 2;
+  goto $bb146;
+$bb145:
+  assume !(($i122 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 293, 89} true;
+  assume {:verifier.code 0} true;
+  $i124 := $eq.i32($i49, 4);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 293, 79} true;
+  assume {:verifier.code 0} true;
+  $i125 := $i49;
+  assume {:branchcond $i124} true;
+  goto $bb147, $bb148;
+$bb146:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 297, 81} true;
+  assume {:verifier.code 0} true;
+  $i126 := $sle.i32($i121, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 297, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i126} true;
+  goto $bb150, $bb151;
+$bb147:
+  assume ($i124 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 295, 75} true;
+  assume {:verifier.code 0} true;
+  $i125 := 5;
+  goto $bb149;
+$bb148:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 293, 79} true;
+  assume {:verifier.code 0} true;
+  assume !(($i124 == 1));
+  goto $bb149;
+$bb149:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:verifier.code 0} true;
+  $i123 := $i125;
+  goto $bb146;
+$bb150:
+  assume ($i126 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 298, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i121;
+  goto $bb123;
+$bb151:
+  assume !(($i126 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 300, 77} true;
+  assume {:verifier.code 0} true;
+  $i127 := $ne.i32($i6, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 300, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i127} true;
+  goto $bb152, $bb153;
+$bb152:
+  assume ($i127 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 302, 73} true;
+  assume {:verifier.code 0} true;
+  $i128 := 4560;
+  goto $bb154;
+$bb153:
+  assume !(($i127 == 1));
+  assume {:verifier.code 0} true;
+  $i128 := 4400;
+  goto $bb154;
+$bb154:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 306, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i123, $i128;
+  goto $bb135;
+$bb155:
+  assume ($i131 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 313, 73} true;
+  assume {:verifier.code 0} true;
+  $i132, $i133 := 1, $i49;
+  goto $bb157;
+$bb156:
+  assume !(($i131 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 314, 81} true;
+  assume {:verifier.code 1} true;
+  call $i134 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i134);
+  call {:cexpr "ret"} boogie_si_record_i32($i134);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 315, 89} true;
+  assume {:verifier.code 0} true;
+  $i135 := $eq.i32($i49, 2);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 315, 79} true;
+  assume {:verifier.code 0} true;
+  $i136 := $i49;
+  assume {:branchcond $i135} true;
+  goto $bb158, $bb159;
+$bb157:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 325, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, $i132, $i133, 4416;
+  goto $bb135;
+$bb158:
+  assume ($i135 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 317, 75} true;
+  assume {:verifier.code 0} true;
+  $i136 := 3;
+  goto $bb160;
+$bb159:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 315, 79} true;
+  assume {:verifier.code 0} true;
+  assume !(($i135 == 1));
+  goto $bb160;
+$bb160:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 318, 83} true;
+  assume {:verifier.code 0} true;
+  $i137 := $sle.i32($i134, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 318, 79} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i137} true;
+  goto $bb161, $bb162;
+$bb161:
+  assume ($i137 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 319, 77} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i134;
+  goto $bb123;
+$bb162:
+  assume !(($i137 == 1));
+  assume {:verifier.code 0} true;
+  $i132, $i133 := 0, $i136;
+  goto $bb157;
+$bb163:
+  assume ($i139 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 331, 73} true;
+  assume {:verifier.code 0} true;
+  $i140 := 4;
+  goto $bb165;
+$bb164:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 329, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i139 == 1));
+  goto $bb165;
+$bb165:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 332, 81} true;
+  assume {:verifier.code 0} true;
+  $i141 := $sle.i32($i138, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 332, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i141} true;
+  goto $bb166, $bb167;
+$bb166:
+  assume ($i141 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 333, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i138;
+  goto $bb123;
+$bb167:
+  assume !(($i141 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 337, 79} true;
+  assume {:verifier.code 0} true;
+  $i142 := $ne.i32($i27, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 337, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i142} true;
+  goto $bb168, $bb169;
+$bb168:
+  assume ($i142 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 341, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i140, 4432;
+  goto $bb135;
+$bb169:
+  assume !(($i142 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 339, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb170:
+  assume ($i144 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 346, 75} true;
+  assume {:verifier.code 0} true;
+  goto $bb172;
+$bb171:
+  assume !(($i144 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 348, 81} true;
+  assume {:verifier.code 0} true;
+  $i145 := $sle.i32($i143, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 348, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i145} true;
+  goto $bb173, $bb174;
+$bb172:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 574, 11} true;
+  assume {:verifier.code 0} true;
+  call reach_error();
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 574, 25} true;
+  assume {:verifier.code 0} true;
+  call abort();
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 574, 25} true;
+  assume {:verifier.code 0} true;
+  assume false;
+$bb173:
+  assume ($i145 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 349, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i143;
+  goto $bb123;
+$bb174:
+  assume !(($i145 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 353, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i49, 4448;
+  goto $bb135;
+$bb175:
+  assume ($i147 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 358, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i146;
+  goto $bb123;
+$bb176:
+  assume !(($i147 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 360, 77} true;
+  assume {:verifier.code 0} true;
+  $i148 := $ne.i32($i15, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 360, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i148} true;
+  goto $bb177, $bb178;
+$bb177:
+  assume ($i148 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 362, 73} true;
+  assume {:verifier.code 0} true;
+  $i149 := 4464;
+  goto $bb179;
+$bb178:
+  assume !(($i148 == 1));
+  assume {:verifier.code 0} true;
+  $i149 := 4480;
+  goto $bb179;
+$bb179:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 366, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i49, $i149;
+  goto $bb135;
+$bb180:
+  assume ($i151 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 373, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i150;
+  goto $bb123;
+$bb181:
+  assume !(($i151 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 377, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i49, 4480;
+  goto $bb135;
+$bb182:
+  assume ($i153 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 382, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i152;
+  goto $bb123;
+$bb183:
+  assume !(($i153 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 385, 98} true;
+  assume {:verifier.code 0} true;
+  $i154 := $eq.i32($i15, 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 385, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i154} true;
+  goto $bb184, $bb185;
+$bb184:
+  assume ($i154 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 387, 73} true;
+  assume {:verifier.code 0} true;
+  $i155 := 4496;
+  goto $bb186;
+$bb185:
+  assume !(($i154 == 1));
+  assume {:verifier.code 0} true;
+  $i155 := 4512;
+  goto $bb186;
+$bb186:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 392, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i49, $i155;
+  goto $bb135;
+$bb187:
+  assume ($i157 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 397, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i156;
+  goto $bb123;
+$bb188:
+  assume !(($i157 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 402, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i49, 4512;
+  goto $bb135;
+$bb189:
+  assume ($i159 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 407, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i158;
+  goto $bb123;
+$bb190:
+  assume !(($i159 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 412, 105} true;
+  assume {:verifier.code 0} true;
+  $i160 := $eq.i32($i16, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 412, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i160} true;
+  goto $bb191, $bb192;
+$bb191:
+  assume ($i160 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 414, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb193;
+$bb192:
+  assume !(($i160 == 1));
+  assume {:verifier.code 0} true;
+  goto $bb193;
+$bb193:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 417, 79} true;
+  assume {:verifier.code 0} true;
+  $i161 := $ne.i32($i28, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 417, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i161} true;
+  goto $bb194, $bb195;
+$bb194:
+  assume ($i161 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 421, 79} true;
+  assume {:verifier.code 0} true;
+  $i162 := $ne.i32($i29, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 421, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i162} true;
+  goto $bb196, $bb197;
+$bb195:
+  assume !(($i161 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 419, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb196:
+  assume ($i162 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 425, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i49, 4528;
+  goto $bb135;
+$bb197:
+  assume !(($i162 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 423, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb198:
+  assume ($i164 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 430, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i163;
+  goto $bb123;
+$bb199:
+  assume !(($i164 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 433, 87} true;
+  assume {:verifier.code 0} true;
+  $i165 := $sext.i32.i64($i45);
+  call {:cexpr "__cil_tmp65"} boogie_si_record_i64($i165);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 434, 99} true;
+  assume {:verifier.code 0} true;
+  $i166 := $sub.i64($i165, 5);
+  call {:cexpr "__cil_tmp66"} boogie_si_record_i64($i166);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 435, 88} true;
+  assume {:verifier.code 0} true;
+  $i167 := $trunc.i64.i32($i166);
+  call {:cexpr "s__s3__flags"} boogie_si_record_i32($i167);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 436, 77} true;
+  assume {:verifier.code 0} true;
+  $i168 := $ne.i32($i6, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 436, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i168} true;
+  goto $bb200, $bb201;
+$bb200:
+  assume ($i168 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 439, 89} true;
+  assume {:verifier.code 0} true;
+  $i169 := $sext.i32.i64($i167);
+  call {:cexpr "__cil_tmp67"} boogie_si_record_i64($i169);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 440, 91} true;
+  assume {:verifier.code 0} true;
+  $i170 := $add.i64($i169, 2);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 440, 91} true;
+  assume {:verifier.code 0} true;
+  $i171 := $ne.i64($i170, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 440, 79} true;
+  assume {:verifier.code 0} true;
+  $i172, $i173 := $i167, 4352;
+  assume {:branchcond $i171} true;
+  goto $bb202, $bb203;
+$bb201:
+  assume !(($i168 == 1));
+  assume {:verifier.code 0} true;
+  $i177, $i178, $i179 := $i167, 4560, 4352;
+  goto $bb205;
+$bb202:
+  assume ($i171 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 442, 91} true;
+  assume {:verifier.code 0} true;
+  $i174 := $sext.i32.i64($i167);
+  call {:cexpr "__cil_tmp68"} boogie_si_record_i64($i174);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 443, 103} true;
+  assume {:verifier.code 0} true;
+  $i175 := $mul.i64($i174, 4);
+  call {:cexpr "__cil_tmp69"} boogie_si_record_i64($i175);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 444, 92} true;
+  assume {:verifier.code 0} true;
+  $i176 := $trunc.i64.i32($i175);
+  call {:cexpr "s__s3__flags"} boogie_si_record_i32($i176);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 446, 75} true;
+  assume {:verifier.code 0} true;
+  $i172, $i173 := $i176, 3;
+  goto $bb204;
+$bb203:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 440, 79} true;
+  assume {:verifier.code 0} true;
+  assume !(($i171 == 1));
+  goto $bb204;
+$bb204:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 448, 73} true;
+  assume {:verifier.code 0} true;
+  $i177, $i178, $i179 := $i172, 3, $i173;
+  goto $bb205;
+$bb205:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 452, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i177, $i178, $i47, $i48, 0, $i49, $i179;
+  goto $bb135;
+$bb206:
+  assume ($i181 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 457, 75} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i180;
+  goto $bb123;
+$bb207:
+  assume !(($i181 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 459, 77} true;
+  assume {:verifier.code 0} true;
+  $i182 := $ne.i32($i6, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 459, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i182} true;
+  goto $bb208, $bb209;
+$bb208:
+  assume ($i182 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 461, 73} true;
+  assume {:verifier.code 0} true;
+  $i183 := 4512;
+  goto $bb210;
+$bb209:
+  assume !(($i182 == 1));
+  assume {:verifier.code 0} true;
+  $i183 := 3;
+  goto $bb210;
+$bb210:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 465, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i48, 0, $i49, $i183;
+  goto $bb135;
+$bb211:
+  assume ($i185 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 471, 89} true;
+  assume {:verifier.code 0} true;
+  $i187 := $sext.i32.i64($i30);
+  call {:cexpr "__cil_tmp71"} boogie_si_record_i64($i187);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 472, 82} true;
+  assume {:verifier.code 0} true;
+  $i188 := $trunc.i64.i32($i187);
+  call {:cexpr "num1"} boogie_si_record_i32($i188);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 474, 89} true;
+  assume {:verifier.code 0} true;
+  $i189 := $sext.i32.i64($i188);
+  call {:cexpr "__cil_tmp72"} boogie_si_record_i64($i189);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 475, 91} true;
+  assume {:verifier.code 0} true;
+  $i190 := $sle.i64($i189, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 475, 79} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i190} true;
+  goto $bb214, $bb215;
+$bb212:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 469, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i185 == 1));
+  goto $bb213;
+$bb213:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 484, 73} true;
+  assume {:verifier.code 0} true;
+  $i105, $i106, $i107, $i108, $i109, $i110, $i111, $i112, $i113 := $i43, $i44, $i45, $i46, $i47, $i186, 0, $i49, $i46;
+  goto $bb135;
+$bb214:
+  assume ($i190 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 477, 77} true;
+  assume {:verifier.code 0} true;
+  $i92 := $sub.i32(0, 1);
+  goto $bb123;
+$bb215:
+  assume !(($i190 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 481, 73} true;
+  assume {:verifier.code 0} true;
+  $i186 := $i188;
+  goto $bb213;
+$bb216:
+  assume ($i191 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 488, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb218;
+$bb217:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 486, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i191 == 1));
+  goto $bb218;
+$bb218:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 490, 87} true;
+  assume {:verifier.code 0} true;
+  $i192 := $sext.i32.i64($i45);
+  call {:cexpr "__cil_tmp73"} boogie_si_record_i64($i192);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 491, 99} true;
+  assume {:verifier.code 0} true;
+  $i193 := $add.i64($i192, 4);
+  call {:cexpr "__cil_tmp74"} boogie_si_record_i64($i193);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 492, 79} true;
+  assume {:verifier.code 0} true;
+  $i194 := $ne.i64($i193, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 492, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i194} true;
+  goto $bb219, $bb221;
+$bb219:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 492, 77} true;
+  assume {:verifier.code 0} true;
+  assume ($i194 == 1);
+  goto $bb220;
+$bb220:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 498, 77} true;
+  assume {:verifier.code 0} true;
+  $i195 := $ne.i32($i6, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 498, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i195} true;
+  goto $bb222, $bb223;
+$bb221:
+  assume !(($i194 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 494, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb220;
+$bb222:
+  assume ($i195 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 500, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb224;
+$bb223:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 498, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i195 == 1));
+  goto $bb224;
+$bb224:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 503, 80} true;
+  assume {:verifier.code 0} true;
+  $i196 := $ne.i32($i36, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 503, 77} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i196} true;
+  goto $bb225, $bb226;
+$bb225:
+  assume ($i196 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 505, 73} true;
+  assume {:verifier.code 0} true;
+  goto $bb227;
+$bb226:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 503, 77} true;
+  assume {:verifier.code 0} true;
+  assume !(($i196 == 1));
+  goto $bb227;
+$bb227:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 506, 73} true;
+  assume {:verifier.code 0} true;
+  $i92 := 1;
+  goto $bb123;
+$bb228:
+  assume {:verifier.code 0} true;
+  goto $bb229;
+$bb229:
+  assume {:verifier.code 0} true;
+  goto $bb230;
+$bb230:
+  assume {:verifier.code 0} true;
+  goto $bb231;
+$bb231:
+  assume {:verifier.code 0} true;
+  goto $bb232;
+$bb232:
+  assume {:verifier.code 0} true;
+  goto $bb233;
+$bb233:
+  assume {:verifier.code 0} true;
+  goto $bb234;
+$bb234:
+  assume {:verifier.code 0} true;
+  goto $bb235;
+$bb235:
+  assume {:verifier.code 0} true;
+  goto $bb236;
+$bb236:
+  assume {:verifier.code 0} true;
+  goto $bb237;
+$bb237:
+  assume {:verifier.code 0} true;
+  goto $bb238;
+$bb238:
+  assume {:verifier.code 0} true;
+  goto $bb239;
+$bb239:
+  assume {:verifier.code 0} true;
+  goto $bb240;
+$bb240:
+  assume {:verifier.code 0} true;
+  goto $bb241;
+$bb241:
+  assume {:verifier.code 0} true;
+  goto $bb242;
+$bb242:
+  assume {:verifier.code 0} true;
+  goto $bb243;
+$bb243:
+  assume {:verifier.code 0} true;
+  goto $bb244;
+$bb244:
+  assume {:verifier.code 0} true;
+  goto $bb245;
+$bb245:
+  assume {:verifier.code 0} true;
+  goto $bb246;
+$bb246:
+  assume {:verifier.code 0} true;
+  goto $bb247;
+$bb247:
+  assume {:verifier.code 0} true;
+  goto $bb248;
+$bb248:
+  assume {:verifier.code 0} true;
+  goto $bb249;
+$bb249:
+  assume {:verifier.code 0} true;
+  goto $bb250;
+$bb250:
+  assume {:verifier.code 0} true;
+  goto $bb251;
+$bb251:
+  assume {:verifier.code 0} true;
+  goto $bb252;
+$bb252:
+  assume {:verifier.code 0} true;
+  goto $bb253;
+$bb253:
+  assume {:verifier.code 0} true;
+  goto $bb254;
+$bb254:
+  assume {:verifier.code 0} true;
+  goto $bb255;
+$bb255:
+  assume {:verifier.code 0} true;
+  goto $bb256;
+$bb256:
+  assume {:verifier.code 0} true;
+  goto $bb257;
+$bb257:
+  assume {:verifier.code 0} true;
+  goto $bb258;
+$bb258:
+  assume {:verifier.code 0} true;
+  goto $bb259;
+$bb259:
+  assume {:verifier.code 0} true;
+  goto $bb260;
+$bb260:
+  assume {:verifier.code 0} true;
+  goto $bb261;
+$bb261:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 546, 11} true;
+  assume {:verifier.code 0} true;
+  $i197 := $ne.i32($i17, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 546, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i197} true;
+  goto $bb262, $bb264;
+$bb262:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 546, 9} true;
+  assume {:verifier.code 0} true;
+  assume ($i197 == 1);
+  goto $bb263;
+$bb263:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 109, 3} true;
+  assume {:verifier.code 0} true;
+  $i43, $i44, $i45, $i46, $i47, $i48, $i49, $i50 := $i105, $i106, $i107, $i108, $i109, $i110, $i112, $i113;
+  goto $bb13;
+$bb264:
+  assume !(($i197 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 547, 13} true;
+  assume {:verifier.code 0} true;
+  $i198 := $ne.i32($i111, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 547, 11} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i198} true;
+  goto $bb265, $bb267;
+$bb265:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 547, 11} true;
+  assume {:verifier.code 0} true;
+  assume ($i198 == 1);
+  goto $bb266;
+$bb266:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 562, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb263;
+$bb267:
+  assume !(($i198 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 548, 13} true;
+  assume {:verifier.code 0} true;
+  $i199 := $ne.i32($i8, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 548, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i199} true;
+  goto $bb268, $bb269;
+$bb268:
+  assume ($i199 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 549, 17} true;
+  assume {:verifier.code 1} true;
+  call $i200 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i200);
+  call {:cexpr "ret"} boogie_si_record_i32($i200);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 550, 19} true;
+  assume {:verifier.code 0} true;
+  $i201 := $sle.i32($i200, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 550, 15} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i201} true;
+  goto $bb271, $bb272;
+$bb269:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 548, 13} true;
+  assume {:verifier.code 0} true;
+  assume !(($i199 == 1));
+  goto $bb270;
+$bb270:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 554, 16} true;
+  assume {:verifier.code 0} true;
+  $i202 := $ne.i32($i36, 0);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 554, 13} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i202} true;
+  goto $bb273, $bb274;
+$bb271:
+  assume ($i201 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 551, 13} true;
+  assume {:verifier.code 0} true;
+  $i92 := $i200;
+  goto $bb123;
+$bb272:
+  assume !(($i201 == 1));
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 553, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb270;
+$bb273:
+  assume ($i202 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 555, 24} true;
+  assume {:verifier.code 0} true;
+  $i203 := $ne.i32($i113, $i50);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 555, 15} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i203} true;
+  goto $bb276, $bb277;
+$bb274:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 554, 13} true;
+  assume {:verifier.code 0} true;
+  assume !(($i202 == 1));
+  goto $bb275;
+$bb275:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 561, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb266;
+$bb276:
+  assume ($i203 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 559, 11} true;
+  assume {:verifier.code 0} true;
+  goto $bb278;
+$bb277:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 555, 15} true;
+  assume {:verifier.code 0} true;
+  assume !(($i203 == 1));
+  goto $bb278;
+$bb278:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 560, 9} true;
+  assume {:verifier.code 0} true;
+  goto $bb275;
+$bb279:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 566, 3} true;
+  assume {:verifier.code 0} true;
+  $i92 := $u0;
+  goto $bb123;
+$bb280:
+  assume ($i204 == 1);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 572, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb282;
+$bb281:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 570, 7} true;
+  assume {:verifier.code 0} true;
+  assume !(($i204 == 1));
+  goto $bb282;
+$bb282:
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 573, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i92;
+  $exn := false;
+  return;
 }
 const abort: ref;
 axiom (abort == $sub.ref(0, 8259));
 procedure abort();
+const main: ref;
+axiom (main == $sub.ref(0, 9291));
+procedure main()
+  returns ($r: i32)
+{
+  var $i0: i32;
+$bb0:
+  call $initialize();
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 584, 3} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 584, 3} true;
+  assume {:verifier.code 0} true;
+  call $i0 := ssl3_connect(12292);
+  assume {:sourceloc "./output/s3_clnt_3.cil-2_tmp.c", 586, 3} true;
+  assume {:verifier.code 0} true;
+  $r := 0;
+  $exn := false;
+  return;
+}
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 9291));
+axiom (__VERIFIER_assume == $sub.ref(0, 10323));
 procedure __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -2214,11 +3775,11 @@ $bb0:
   return;
 }
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 10323));
+axiom (__SMACK_code == $sub.ref(0, 11355));
 procedure __SMACK_code.ref.i32($p0: ref, p.1: i32);
 procedure __SMACK_code.ref($p0: ref);
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 11355));
+axiom (__SMACK_dummy == $sub.ref(0, 12387));
 procedure __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -2234,7 +3795,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 12387));
+axiom (__SMACK_check_overflow == $sub.ref(0, 13419));
 procedure __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -2253,39 +3814,39 @@ $bb0:
   return;
 }
 const __SMACK_nondet_char: ref;
-axiom (__SMACK_nondet_char == $sub.ref(0, 13419));
+axiom (__SMACK_nondet_char == $sub.ref(0, 14451));
 procedure __SMACK_nondet_char()
   returns ($r: i8);
 const __SMACK_nondet_signed_char: ref;
-axiom (__SMACK_nondet_signed_char == $sub.ref(0, 14451));
+axiom (__SMACK_nondet_signed_char == $sub.ref(0, 15483));
 procedure __SMACK_nondet_signed_char()
   returns ($r: i8);
 const __SMACK_nondet_unsigned_char: ref;
-axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 15483));
+axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 16515));
 procedure __SMACK_nondet_unsigned_char()
   returns ($r: i8);
 const __SMACK_nondet_short: ref;
-axiom (__SMACK_nondet_short == $sub.ref(0, 16515));
+axiom (__SMACK_nondet_short == $sub.ref(0, 17547));
 procedure __SMACK_nondet_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short: ref;
-axiom (__SMACK_nondet_signed_short == $sub.ref(0, 17547));
+axiom (__SMACK_nondet_signed_short == $sub.ref(0, 18579));
 procedure __SMACK_nondet_signed_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short_int: ref;
-axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 18579));
+axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 19611));
 procedure __SMACK_nondet_signed_short_int()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short: ref;
-axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 19611));
+axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 20643));
 procedure __SMACK_nondet_unsigned_short()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short_int: ref;
-axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 20643));
+axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 21675));
 procedure __SMACK_nondet_unsigned_short_int()
   returns ($r: i16);
 const __VERIFIER_nondet_int: ref;
-axiom (__VERIFIER_nondet_int == $sub.ref(0, 21675));
+axiom (__VERIFIER_nondet_int == $sub.ref(0, 22707));
 procedure __VERIFIER_nondet_int()
   returns ($r: i32)
 {
@@ -2339,71 +3900,261 @@ $bb3:
   return;
 }
 const __SMACK_nondet_int: ref;
-axiom (__SMACK_nondet_int == $sub.ref(0, 22707));
+axiom (__SMACK_nondet_int == $sub.ref(0, 23739));
 procedure __SMACK_nondet_int()
   returns ($r: i32);
 const __SMACK_nondet_signed_int: ref;
-axiom (__SMACK_nondet_signed_int == $sub.ref(0, 23739));
+axiom (__SMACK_nondet_signed_int == $sub.ref(0, 24771));
 procedure __SMACK_nondet_signed_int()
   returns ($r: i32);
 const __SMACK_nondet_unsigned: ref;
-axiom (__SMACK_nondet_unsigned == $sub.ref(0, 24771));
+axiom (__SMACK_nondet_unsigned == $sub.ref(0, 25803));
 procedure __SMACK_nondet_unsigned()
   returns ($r: i32);
 const __SMACK_nondet_unsigned_int: ref;
-axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 25803));
+axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 26835));
 procedure __SMACK_nondet_unsigned_int()
   returns ($r: i32);
+const __VERIFIER_nondet_long: ref;
+axiom (__VERIFIER_nondet_long == $sub.ref(0, 27867));
+procedure __VERIFIER_nondet_long()
+  returns ($r: i64)
+{
+  var $i0: i64;
+  var $i1: i1;
+  var $i3: i1;
+  var $i2: i1;
+  var $i4: i32;
+$bb0:
+  assume {:sourceloc "./lib/smack.c", 145, 12} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 145, 12} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __SMACK_nondet_long();
+  call {:cexpr "smack:ext:__SMACK_nondet_long"} boogie_si_record_i64($i0);
+  call {:cexpr "x"} boogie_si_record_i64($i0);
+  assume {:sourceloc "./lib/smack.c", 146, 23} true;
+  assume {:verifier.code 0} true;
+  $i1 := $sge.i64($i0, $sub.i64(0, 9223372036854775808));
+  assume {:sourceloc "./lib/smack.c", 146, 35} true;
+  assume {:verifier.code 0} true;
+  $i2 := 0;
+  assume {:branchcond $i1} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i1 == 1);
+  assume {:sourceloc "./lib/smack.c", 146, 40} true;
+  assume {:verifier.code 1} true;
+  $i3 := $sle.i64($i0, 9223372036854775807);
+  assume {:verifier.code 0} true;
+  $i2 := $i3;
+  goto $bb3;
+$bb2:
+  assume {:sourceloc "./lib/smack.c", 146, 35} true;
+  assume {:verifier.code 0} true;
+  assume !(($i1 == 1));
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./lib/smack.c", 0, 0} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 146, 35} true;
+  assume {:verifier.code 1} true;
+  $i4 := $zext.i1.i32($i2);
+  assume {:sourceloc "./lib/smack.c", 146, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_assume($i4);
+  assume {:sourceloc "./lib/smack.c", 147, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i0;
+  $exn := false;
+  return;
+}
 const __SMACK_nondet_long: ref;
-axiom (__SMACK_nondet_long == $sub.ref(0, 26835));
+axiom (__SMACK_nondet_long == $sub.ref(0, 28899));
 procedure __SMACK_nondet_long()
   returns ($r: i64);
 const __SMACK_nondet_long_int: ref;
-axiom (__SMACK_nondet_long_int == $sub.ref(0, 27867));
+axiom (__SMACK_nondet_long_int == $sub.ref(0, 29931));
 procedure __SMACK_nondet_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long: ref;
-axiom (__SMACK_nondet_signed_long == $sub.ref(0, 28899));
+axiom (__SMACK_nondet_signed_long == $sub.ref(0, 30963));
 procedure __SMACK_nondet_signed_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_int: ref;
-axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 29931));
+axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 31995));
 procedure __SMACK_nondet_signed_long_int()
   returns ($r: i64);
+const __VERIFIER_nondet_unsigned_long: ref;
+axiom (__VERIFIER_nondet_unsigned_long == $sub.ref(0, 33027));
+procedure __VERIFIER_nondet_unsigned_long()
+  returns ($r: i64)
+{
+  var $i0: i64;
+  var $i1: i64;
+  var $i2: i64;
+  var $i3: i1;
+  var $i5: i1;
+  var $i6: i1;
+  var $i4: i1;
+  var $i7: i32;
+  var $i8: i1;
+  var $i10: i1;
+  var $i9: i1;
+  var $i11: i32;
+$bb0:
+  assume {:sourceloc "./lib/smack.c", 169, 21} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 169, 21} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __SMACK_nondet_unsigned_long();
+  call {:cexpr "smack:ext:__SMACK_nondet_unsigned_long"} boogie_si_record_i64($i0);
+  call {:cexpr "x"} boogie_si_record_i64($i0);
+  assume {:sourceloc "./lib/smack.c", 170, 23} true;
+  assume {:verifier.code 1} true;
+  call $i1 := __SMACK_nondet_unsigned_long();
+  call {:cexpr "smack:ext:__SMACK_nondet_unsigned_long"} boogie_si_record_i64($i1);
+  call {:cexpr "min"} boogie_si_record_i64($i1);
+  assume {:sourceloc "./lib/smack.c", 171, 23} true;
+  assume {:verifier.code 1} true;
+  call $i2 := __SMACK_nondet_unsigned_long();
+  call {:cexpr "smack:ext:__SMACK_nondet_unsigned_long"} boogie_si_record_i64($i2);
+  call {:cexpr "max"} boogie_si_record_i64($i2);
+  assume {:sourceloc "./lib/smack.c", 172, 25} true;
+  assume {:verifier.code 0} true;
+  $i3 := $eq.i64($i1, 0);
+  assume {:sourceloc "./lib/smack.c", 172, 30} true;
+  assume {:verifier.code 0} true;
+  $i4 := 0;
+  assume {:branchcond $i3} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i3 == 1);
+  assume {:sourceloc "./lib/smack.c", 172, 37} true;
+  assume {:verifier.code 0} true;
+  $i5 := $uge.i64($i2, 18446744073709551615);
+  assume {:sourceloc "./lib/smack.c", 172, 50} true;
+  assume {:verifier.code 0} true;
+  $i4 := 0;
+  assume {:branchcond $i5} true;
+  goto $bb4, $bb5;
+$bb2:
+  assume {:sourceloc "./lib/smack.c", 172, 30} true;
+  assume {:verifier.code 0} true;
+  assume !(($i3 == 1));
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./lib/smack.c", 0, 0} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 172, 50} true;
+  assume {:verifier.code 1} true;
+  $i7 := $zext.i1.i32($i4);
+  assume {:sourceloc "./lib/smack.c", 172, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_assume($i7);
+  assume {:sourceloc "./lib/smack.c", 173, 23} true;
+  assume {:verifier.code 0} true;
+  $i8 := $uge.i64($i0, $i1);
+  assume {:sourceloc "./lib/smack.c", 173, 30} true;
+  assume {:verifier.code 0} true;
+  $i9 := 0;
+  assume {:branchcond $i8} true;
+  goto $bb6, $bb7;
+$bb4:
+  assume ($i5 == 1);
+  assume {:sourceloc "./lib/smack.c", 172, 57} true;
+  assume {:verifier.code 1} true;
+  $i6 := $ule.i64($i2, 18446744073709551615);
+  assume {:verifier.code 0} true;
+  $i4 := $i6;
+  goto $bb3;
+$bb5:
+  assume {:sourceloc "./lib/smack.c", 172, 50} true;
+  assume {:verifier.code 0} true;
+  assume !(($i5 == 1));
+  goto $bb3;
+$bb6:
+  assume ($i8 == 1);
+  assume {:sourceloc "./lib/smack.c", 173, 35} true;
+  assume {:verifier.code 1} true;
+  $i10 := $ule.i64($i0, $i2);
+  assume {:verifier.code 0} true;
+  $i9 := $i10;
+  goto $bb8;
+$bb7:
+  assume {:sourceloc "./lib/smack.c", 173, 30} true;
+  assume {:verifier.code 0} true;
+  assume !(($i8 == 1));
+  goto $bb8;
+$bb8:
+  assume {:sourceloc "./lib/smack.c", 0, 0} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 173, 30} true;
+  assume {:verifier.code 1} true;
+  $i11 := $zext.i1.i32($i9);
+  assume {:sourceloc "./lib/smack.c", 173, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_assume($i11);
+  assume {:sourceloc "./lib/smack.c", 174, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i0;
+  $exn := false;
+  return;
+}
 const __SMACK_nondet_unsigned_long: ref;
-axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 30963));
+axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 34059));
 procedure __SMACK_nondet_unsigned_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 31995));
+axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 35091));
 procedure __SMACK_nondet_unsigned_long_int()
   returns ($r: i64);
 const __SMACK_nondet_long_long: ref;
-axiom (__SMACK_nondet_long_long == $sub.ref(0, 33027));
+axiom (__SMACK_nondet_long_long == $sub.ref(0, 36123));
 procedure __SMACK_nondet_long_long()
   returns ($r: i64);
 const __SMACK_nondet_long_long_int: ref;
-axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 34059));
+axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 37155));
 procedure __SMACK_nondet_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long: ref;
-axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 35091));
+axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 38187));
 procedure __SMACK_nondet_signed_long_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long_int: ref;
-axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 36123));
+axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 39219));
 procedure __SMACK_nondet_signed_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long: ref;
-axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 37155));
+axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 40251));
 procedure __SMACK_nondet_unsigned_long_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 38187));
+axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 41283));
 procedure __SMACK_nondet_unsigned_long_long_int()
   returns ($r: i64);
+const __VERIFIER_nondet_ulong: ref;
+axiom (__VERIFIER_nondet_ulong == $sub.ref(0, 42315));
+procedure __VERIFIER_nondet_ulong()
+  returns ($r: i64)
+{
+  var $i0: i64;
+$bb0:
+  assume {:sourceloc "./lib/smack.c", 252, 21} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 252, 21} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __VERIFIER_nondet_unsigned_long();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_unsigned_long"} boogie_si_record_i64($i0);
+  call {:cexpr "x"} boogie_si_record_i64($i0);
+  assume {:sourceloc "./lib/smack.c", 253, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i0;
+  $exn := false;
+  return;
+}
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 39219));
+axiom (__SMACK_decls == $sub.ref(0, 43347));
 type $mop;
 procedure boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -2431,10 +4182,10 @@ ensures $eq.ref.bool(n, $0.ref) ==> old($CurrAddr) == $CurrAddr && p == $0.ref;
 procedure $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 40251));
+axiom (__SMACK_top_decl == $sub.ref(0, 44379));
 procedure __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 41283));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 45411));
 procedure __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -2446,20 +4197,22 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 42315));
+axiom (llvm.dbg.value == $sub.ref(0, 46443));
 procedure llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 43347));
+axiom (__SMACK_static_init == $sub.ref(0, 47475));
 procedure __SMACK_static_init()
 {
 $bb0:
-  $M.0 := .str.1.3;
+  $M.0 := .str.1.7;
   $M.1 := 0;
   call {:cexpr "errno_global"} boogie_si_record_i32(0);
   $exn := false;
   return;
 }
+const $u0: i32;
 procedure boogie_si_record_i32(x: i32);
+procedure boogie_si_record_i64(x: i64);
 procedure boogie_si_record_ref(x: ref);
 procedure $initialize()
 {
