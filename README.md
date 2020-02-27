@@ -22,7 +22,7 @@ export PATH=<Dat3M's root>/:$PATH
 export LD_LIBRARY_PATH=<Dat3M's root>/lib/:$LD_LIBRARY_PATH
 ```
 
-To build the tools, from Dat3M's root directory run
+To build the tools run
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
