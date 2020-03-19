@@ -478,10 +478,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String tmp = ctx.call_params().getText();
 		tmp = tmp.substring(0, tmp.indexOf(','));
 		tmp = tmp.substring(tmp.lastIndexOf('(')+1);
-		int size = Integer.parseInt(tmp);		
+		int size = Integer.parseInt(tmp);
 		List<IConst> values = Collections.nCopies(size, new IConst(0));
 		String ptr = ctx.call_params().Ident(0).getText();
 		programBuilder.addDeclarationArray(ptr, values);
+		Register start = programBuilder.getOrCreateRegister(threadCount, ptr);
+		Address adds = programBuilder.getPointer(ptr);
+		Local child = new Local(start, adds);
+		programBuilder.addChild(threadCount, child);
 	}
 
 	private void pthread_create(Register ptr, String name) {
@@ -557,10 +561,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		IExpr lockAddress = (IExpr)lock.accept(this);
 		IExpr val = (IExpr)value.accept(this);
 		if(lockAddress != null) {
-			// TODO pointer arithmetic not yet supported
-			if(!(lockAddress instanceof Address || lockAddress instanceof Register)) {
-				throw new ParsingException("Pointer arithmetic is not yet supported");	
-			}
 			programBuilder.addChild(threadCount, new Store(lockAddress, val, "NA"));	
 		}
 	}
@@ -571,10 +571,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		lockAddresses.add(lockAddress);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		if(lockAddress != null) {
-			// TODO pointer arithmetic not yet supported
-			if(!(lockAddress instanceof Address || lockAddress instanceof Register)) {
-				throw new ParsingException("Pointer arithmetic is not yet supported");	
-			}
 	        LinkedList<Event> events = new LinkedList<>();
 	        events.add(new Load(register, lockAddress, "NA"));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0)),label));
@@ -594,10 +590,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(lockAddress != null) {
 			if(!lockAddress.equals(lockAddresses.remove(lockAddresses.size() - 1))) {
 	            throw new ParsingException("The lock address of mutexUnlock does not match the one of mutexLock");
-			}
-			// TODO pointer arithmetic not yet supported
-			if(!(lockAddress instanceof Address || lockAddress instanceof Register)) {
-				throw new ParsingException("Pointer arithmetic is not yet supported");	
 			}
 			LinkedList<Event> events = new LinkedList<>();
 	        events.add(new Load(register, lockAddress, "NA"));
@@ -692,11 +684,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.")) {
-	    			// TODO pointer arithmetic not yet supported
-	    			if(!(value instanceof Address || value instanceof Register)) {
-//	    				throw new ParsingException("Pointer arithmetic is not yet supported");	
-	    			}
 	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, "NA"));
+		            continue;
 	        	}
 	        	if(value instanceof Location) {
 	                programBuilder.addChild(threadCount, new Load(register, ((Location)value).getAddress(), "NA"));
@@ -914,10 +903,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			IExpr plus = (IExpr)ctx.expr(1).accept(this);
 			IExpr address = new IExprBin(init, PLUS, plus);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
-			// TODO pointer arithmetic not yet supported
-			if(!(address instanceof Address || address instanceof Register)) {
-				throw new ParsingException("Pointer arithmetic is not yet supported");	
-			}
 			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
 			return null;				
 		}
