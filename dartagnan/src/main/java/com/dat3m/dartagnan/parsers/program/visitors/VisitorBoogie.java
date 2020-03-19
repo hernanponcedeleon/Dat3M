@@ -137,7 +137,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private Call_cmdContext atomicMode = null;
 	
 	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$xor.", "$or.", "$and.", "$nand.");
-	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref");
+	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "memcpy.i8");
+	private static List<String> unhandledProcedures = Arrays.asList("__strcpy_chk", "strcpy");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -338,16 +339,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(dummyProcedures.stream().anyMatch(e -> name.contains(e))) {
 			return null;
 		}
-		if(name.equals("$alloc")) {
+		if(unhandledProcedures.stream().anyMatch(e -> name.contains(e))) {
+			throw new ParsingException(name + " cannot be handled");
+		}
+		if(name.equals("$alloc") || name.equals("calloc") || name.equals("malloc") || name.equals("$malloc")) {
 			alloc(ctx);
 			return null;
 		}
 		if(name.equals("$initialize")) {
 			initMode = true;;
-		}
-		//TODO this is probable obsolete
-		if(name.equals("calloc") || name.equals("$malloc")) {
-			throw new ParsingException("ERROR");
 		}
 		if(name.equals("pthread_mutex_init")) {
 			mutexInit(ctx.call_params().exprs().expr(0), ctx.call_params().exprs().expr(1));
@@ -475,15 +475,22 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	}
 
 	private void alloc(Call_cmdContext ctx) {
-		String tmp = ctx.call_params().getText();
-		tmp = tmp.substring(0, tmp.indexOf(','));
-		tmp = tmp.substring(tmp.lastIndexOf('(')+1);
-		int size = Integer.parseInt(tmp);
+		int size;
+		try {
+			size = ((ExprInterface)ctx.call_params().exprs().expr(0).accept(this)).reduce().getValue();			
+		} catch (Exception e) {
+			String tmp = ctx.call_params().getText();
+			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
+			tmp = tmp.substring(tmp.lastIndexOf('(')+1);						
+			size = Integer.parseInt(tmp);			
+		}
 		List<IConst> values = Collections.nCopies(size, new IConst(0));
 		String ptr = ctx.call_params().Ident(0).getText();
-		programBuilder.addDeclarationArray(ptr, values);
 		Register start = programBuilder.getOrCreateRegister(threadCount, ptr);
-		Address adds = programBuilder.getPointer(ptr);
+		// Several threads can use the same pointer name but when using addDeclarationArray, 
+		// the name should be unique, thus we add the process identifier.
+		programBuilder.addDeclarationArray(currentScope.getID() + ":" + ptr, values);
+		Address adds = programBuilder.getPointer(currentScope.getID() + ":" + ptr);
 		Local child = new Local(start, adds);
 		programBuilder.addChild(threadCount, child);
 	}

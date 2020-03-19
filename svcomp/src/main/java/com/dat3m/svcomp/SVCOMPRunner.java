@@ -41,8 +41,9 @@ public class SVCOMPRunner {
 		while((output.equals("BPASS") || output.equals("BFAIL")) && bounds.hasNext()) {
 			try {
 				compile(file, options.getOptFlag());
-			} catch (IOException e1) {
-				e1.printStackTrace();
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+				System.exit(0);
 			}
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
