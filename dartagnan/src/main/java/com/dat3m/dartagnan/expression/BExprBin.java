@@ -61,4 +61,9 @@ public class BExprBin extends BExpr {
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
+
+	@Override
+	public IExpr getBaseAddress() {
+		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
+	}
 }

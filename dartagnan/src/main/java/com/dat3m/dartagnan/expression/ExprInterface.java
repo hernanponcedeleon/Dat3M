@@ -23,4 +23,6 @@ public interface ExprInterface {
     boolean getBoolValue(Event e, Context ctx, Model model);
 
     ImmutableSet<Register> getRegs();
+    
+    IExpr getBaseAddress();
 }

@@ -7,6 +7,7 @@ import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -73,4 +74,9 @@ public class Address extends IConst implements ExprInterface {
     public int getIntValue(Event e, Context ctx, Model model){
         return Integer.parseInt(model.getConstInterp(toZ3Int(ctx)).toString());
     }
+
+	@Override
+	public IExpr getBaseAddress() {
+		return this;
+	}
 }

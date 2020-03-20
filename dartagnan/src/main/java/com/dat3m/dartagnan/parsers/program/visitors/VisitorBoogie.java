@@ -138,7 +138,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$xor.", "$or.", "$and.", "$nand.");
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "memcpy.i8");
-	private static List<String> unhandledProcedures = Arrays.asList("__strcpy_chk", "strcpy");
+	private static List<String> unhandledProcedures = Arrays.asList("__strcpy_chk", "strcpy", "free");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -165,7 +165,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	Register next = programBuilder.getOrCreateRegister(threadCount, "ptrMain");
+    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain");
     	pool.add(next, "main");
     	while(pool.canCreate()) {
     		next = pool.next();
@@ -426,7 +426,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.equals("pthread_create")) {
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
-			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, namePtr);
+			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + namePtr);
 			String threadName = ctx.call_params().exprs().expr().get(2).getText();
 			ExprInterface callingValie = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(this);
 			mainCallingValues.clear();
@@ -437,9 +437,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// Sometimes the compiler convert it to __pthread_join
 		if(name.contains("pthread_join") && ctx.call_params().Define() != null) {
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
-			Register callReg = programBuilder.getOrCreateRegister(threadCount, namePtr);
+			Register callReg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + namePtr);
 			String retName = ctx.call_params().Ident(0).getText();
-			Register retReg = programBuilder.getOrCreateRegister(threadCount, retName);
+			Register retReg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + retName);
 			pthread_join(retReg, pool.getPtrFromReg(callReg));
 			return null;
 		}
@@ -489,7 +489,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		List<IConst> values = Collections.nCopies(size, new IConst(0));
 		String ptr = ctx.call_params().Ident(0).getText();
-		Register start = programBuilder.getOrCreateRegister(threadCount, ptr);
+		Register start = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ptr);
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
 		// the name should be unique, thus we add the process identifier.
 		programBuilder.addDeclarationArray(currentScope.getID() + ":" + ptr, values);
@@ -501,6 +501,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private void pthread_create(Register ptr, String name) {
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
+		}
+		if(threadCount != 1) {
+			throw new ParsingException("Only main procedure can fork new procedures");
 		}
 		pool.add(ptr, name);
 		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
@@ -667,11 +670,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
 		// TODO: find a nicer way of dealing with this
 		if(ctx.getText().contains("$load.")) {
-			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText());
+			Register reg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ctx.Ident(0).getText());
 			String tmp = ctx.def_body().exprs().expr(0).getText();
 			tmp = tmp.substring(0, tmp.lastIndexOf(')'));
 			tmp = tmp.substring(tmp.lastIndexOf(',')+1);
-			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp);
+			Register ptr = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + tmp);
 			pool.addRegPtr(reg, ptr);
 		}
         ExprsContext exprs = ctx.def_body().exprs();
@@ -899,8 +902,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(function == null) {
 			throw new ParsingException("Function " + name + " is not defined");
 		}
-		// TODO both should throw and exception, but many loads are related 
-		// to pthread_join and those works. 
 		if(name.contains("$load.")) {
 			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
 			IExpr plus = (IExpr)ctx.expr(1).accept(this);
@@ -913,6 +914,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			IExpr plus = (IExpr)ctx.expr(1).accept(this);
 			IExpr address = new IExprBin(init, PLUS, plus);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
+			// This improves the blow-up
+			if(initMode && value instanceof IConst && ((IConst)value).getValue() == 0) {
+				return null;
+			}
 			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
 			return null;				
 		}

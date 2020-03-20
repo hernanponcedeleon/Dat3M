@@ -9,6 +9,7 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.memory.Address;
 
 public class Atom extends BExpr implements ExprInterface {
 	
@@ -82,5 +83,10 @@ public class Atom extends BExpr implements ExprInterface {
             return new IConst(v1 >= v2 ? 1 : 0);
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
+	@Override
+	public Address getBaseAddress() {
+		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
 	}
 }

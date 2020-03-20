@@ -52,4 +52,9 @@ public class IExprUn extends IExpr {
 			throw new UnsupportedOperationException("Reduce not supported for " + this);
         }
 	}
+
+	@Override
+	public IExpr getBaseAddress() {
+		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
+	}
 }

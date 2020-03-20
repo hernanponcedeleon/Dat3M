@@ -49,4 +49,9 @@ public class BConst extends BExpr implements ExprInterface {
 	public boolean getValue() {
 		return value;
 	}
+	
+	@Override
+	public IExpr getBaseAddress() {
+		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
+	}
 }
