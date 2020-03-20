@@ -428,6 +428,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, namePtr);
 			String threadName = ctx.call_params().exprs().expr().get(2).getText();
+			ExprInterface callingValie = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(this);
+			mainCallingValues.clear();
+			mainCallingValues.add(callingValie);
 			pthread_create(threadPtr, threadName);
 			return null;
 		}
