@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
-import com.dat3m.dartagnan.expression.DummyExpr;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -86,6 +85,6 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public IExpr getBaseAddress() {
-		return new DummyExpr();
+		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
 	}
 }
