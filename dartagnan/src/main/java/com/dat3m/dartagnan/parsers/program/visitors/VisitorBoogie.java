@@ -7,6 +7,7 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
+import static com.dat3m.dartagnan.expression.op.IOpBin.AR_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
 import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
 import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
@@ -131,14 +132,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private int assertionIndex = 0;
 	
-	private List<IExpr> lockAddresses = new ArrayList<>();
-	
 	private BeginAtomic currentBeginAtomic = null;
 	private Call_cmdContext atomicMode = null;
 	
-	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$xor.", "$or.", "$and.", "$nand.");
+	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$ashr.", "$xor.", "$or.", "$and.", "$nand.");
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "memcpy.i8");
-	private static List<String> unhandledProcedures = Arrays.asList("__strcpy_chk", "strcpy", "free");
+	private static List<String> unhandledProcedures = Arrays.asList("__strcpy_chk", "strcpy", "free", "free_");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -339,7 +338,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(dummyProcedures.stream().anyMatch(e -> name.contains(e))) {
 			return null;
 		}
-		if(unhandledProcedures.stream().anyMatch(e -> name.contains(e))) {
+		if(unhandledProcedures.stream().anyMatch(e -> name.equals(e))) {
 			throw new ParsingException(name + " cannot be handled");
 		}
 		if(name.equals("$alloc") || name.equals("calloc") || name.equals("malloc") || name.equals("$malloc")) {
@@ -581,7 +580,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private void mutexLock(ExprsContext exp) {
         Register register = programBuilder.getOrCreateRegister(threadCount, null);
 		IExpr lockAddress = (IExpr)exp.accept(this);
-		lockAddresses.add(lockAddress);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		if(lockAddress != null) {
 	        LinkedList<Event> events = new LinkedList<>();
@@ -601,9 +599,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		IExpr lockAddress = (IExpr)exp.accept(this);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		if(lockAddress != null) {
-			if(!lockAddress.equals(lockAddresses.remove(lockAddresses.size() - 1))) {
-	            throw new ParsingException("The lock address of mutexUnlock does not match the one of mutexLock");
-			}
 			LinkedList<Event> events = new LinkedList<>();
 	        events.add(new Load(register, lockAddress, "NA"));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1)),label));
@@ -987,6 +982,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.contains("$lshr.")) {
 			op = R_SHIFT;
+		}
+		if(name.contains("$ashr.")) {
+			op = AR_SHIFT;
 		}
 		if(name.contains("$xor.")) {
 			op = XOR;

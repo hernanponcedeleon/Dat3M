@@ -74,6 +74,8 @@ public enum IOpBin {
             	return ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
             case R_SHIFT:
             	return ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
+            case AR_SHIFT:
+            	return ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
             default:
                 throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
         }
