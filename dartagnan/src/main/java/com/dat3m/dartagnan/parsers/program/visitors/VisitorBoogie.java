@@ -493,7 +493,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// the name should be unique, thus we add the process identifier.
 		programBuilder.addDeclarationArray(currentScope.getID() + ":" + ptr, values);
 		Address adds = programBuilder.getPointer(currentScope.getID() + ":" + ptr);
-		Local child = new Local(start, adds);
+		Load child = new Load(start, adds, "NA");
 		programBuilder.addChild(threadCount, child);
 	}
 
