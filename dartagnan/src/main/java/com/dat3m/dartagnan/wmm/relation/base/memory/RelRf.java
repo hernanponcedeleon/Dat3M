@@ -36,8 +36,7 @@ public class RelRf extends Relation {
 
             for(Event e1 : eventsInit){
                 for(Event e2 : eventsLoad){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2) && 
-                    		MemEvent.haveSameAddressBase((MemEvent) e1, (MemEvent) e2)){
+                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2)){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
@@ -45,8 +44,7 @@ public class RelRf extends Relation {
 
             for(Event e1 : eventsStore){
                 for(Event e2 : eventsLoad){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2) && 
-                    		MemEvent.haveSameAddressBase((MemEvent) e1, (MemEvent) e2)){
+                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2)){
                     	maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }

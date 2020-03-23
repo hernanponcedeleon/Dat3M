@@ -49,9 +49,4 @@ public class BExprUn extends BExpr {
 	public IConst reduce() {
 		return new IConst(b.reduce().getValue());
 	}
-
-	@Override
-	public IExpr getBaseAddress() {
-		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
-	}
 }

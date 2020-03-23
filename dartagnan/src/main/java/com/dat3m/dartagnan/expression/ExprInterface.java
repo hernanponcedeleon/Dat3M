@@ -24,5 +24,4 @@ public interface ExprInterface {
 
     ImmutableSet<Register> getRegs();
     
-    IExpr getBaseAddress();
 }

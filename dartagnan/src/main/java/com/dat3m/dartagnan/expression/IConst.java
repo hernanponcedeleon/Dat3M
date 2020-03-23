@@ -52,9 +52,4 @@ public class IConst extends IExpr implements ExprInterface {
 	public int getValue() {
 		return value;
 	}
-
-	@Override
-	public IExpr getBaseAddress() {
-		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
-	}
 }

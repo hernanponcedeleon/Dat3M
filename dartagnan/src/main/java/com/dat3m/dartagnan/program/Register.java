@@ -82,9 +82,4 @@ public class Register extends IExpr implements ExprInterface {
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
-
-	@Override
-	public IExpr getBaseAddress() {
-		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
-	}
 }

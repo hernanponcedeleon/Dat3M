@@ -39,9 +39,4 @@ public class BNonDet extends BExpr implements ExprInterface {
 	public String toString() {
 		return "nondet_bool()";
 	}
-
-	@Override
-	public IExpr getBaseAddress() {
-		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
-	}
 }

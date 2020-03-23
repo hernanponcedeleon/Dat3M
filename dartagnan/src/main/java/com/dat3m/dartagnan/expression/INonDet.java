@@ -108,9 +108,4 @@ public class INonDet extends IExpr implements ExprInterface {
         }
         throw new UnsupportedOperationException("getMin() not supported for " + this);
 	}
-
-	@Override
-	public IExpr getBaseAddress() {
-		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
-	}
 }

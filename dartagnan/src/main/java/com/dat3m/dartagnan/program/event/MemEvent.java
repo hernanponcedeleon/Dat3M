@@ -6,7 +6,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;
 
 public abstract class MemEvent extends Event {
@@ -76,15 +75,5 @@ public abstract class MemEvent extends Event {
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
         return !Sets.intersection(e1.getMaxAddressSet(), e2.getMaxAddressSet()).isEmpty();
-    }
-
-    public static boolean haveSameAddressBase(MemEvent e1, MemEvent e2) {
-        IExpr add1 = e1.getAddress();
-        IExpr add2 = e2.getAddress();
-        // Registers can carry any value, so we always return true
-        if(add1 instanceof Register || add2 instanceof Register) {
-        	return true;
-        }
-        return add1.getBaseAddress().equals(add2.getBaseAddress());
     }
 }

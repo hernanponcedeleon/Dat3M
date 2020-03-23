@@ -76,17 +76,4 @@ public class IExprBin extends IExpr implements ExprInterface {
 			throw new UnsupportedOperationException("Reduce not supported for " + this);
         }
 	}
-
-	@Override
-	public IExpr getBaseAddress() {
-        switch(op){
-        case PLUS:
-        case MINUS:
-        	if(lhs instanceof IExpr) {
-        		return (IExpr)lhs;
-        	}
-		default:
-			throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
-        }
-	}
 }

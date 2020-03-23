@@ -65,9 +65,4 @@ public class IfExpr implements ExprInterface {
 	public BExpr getGuard() {
 		return guard;
 	}
-
-	@Override
-	public IExpr getBaseAddress() {
-		throw new UnsupportedOperationException("getBaseAddress not supported for " + this);
-	}
 }
