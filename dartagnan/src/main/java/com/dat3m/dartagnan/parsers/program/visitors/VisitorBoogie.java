@@ -136,7 +136,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$ashr.", "$xor.", "$or.", "$and.", "$nand.");
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "memcpy.i8");
-	private static List<String> unhandledProcedures = Arrays.asList("__strcpy_chk", "strcpy", "free", "free_");
+	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "free", "free_", "pthread_key_create", "pthread_getspecific", "pthread_setspecific");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -426,9 +426,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + namePtr);
 			String threadName = ctx.call_params().exprs().expr().get(2).getText();
-			ExprInterface callingValie = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(this);
+			ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(this);
 			mainCallingValues.clear();
-			mainCallingValues.add(callingValie);
+			mainCallingValues.add(callingValue);
 			pthread_create(threadPtr, threadName);
 			return null;
 		}
@@ -438,7 +438,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Register callReg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + namePtr);
 			String retName = ctx.call_params().Ident(0).getText();
 			Register retReg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + retName);
-			pthread_join(retReg, pool.getPtrFromReg(callReg));
+			programBuilder.addChild(threadCount, new Local(retReg, pthread_join(pool.getPtrFromReg(callReg))));
 			return null;
 		}
 		// Some procedures might have an empty implementation.
@@ -500,23 +500,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		if(threadCount != 1) {
-			throw new ParsingException("Only main procedure can fork new procedures");
-		}
 		pool.add(ptr, name);
 		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
 		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(1), "NA"));
 	}
 
-	private void pthread_join(Register retRegister, Register ptr) {
-	    if(retRegister != null){
-	    	programBuilder.addChild(threadCount, new Local(retRegister, new IConst(0)));
-	    }		
+	private IConst pthread_join(Register ptr) {
 		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
 		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), "NA"));
 		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(0)), label));
+		return new IConst(0);
 	}
 
 	private void __VERIFIER_nondet_int(String registerName, INonDetTypes type) {
