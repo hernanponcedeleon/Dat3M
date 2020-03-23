@@ -5,7 +5,6 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AR_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
@@ -493,7 +492,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// the name should be unique, thus we add the process identifier.
 		programBuilder.addDeclarationArray(currentScope.getID() + ":" + ptr, values);
 		Address adds = programBuilder.getPointer(currentScope.getID() + ":" + ptr);
-		Load child = new Load(start, adds, "NA");
+		Local child = new Local(start, adds);
 		programBuilder.addChild(threadCount, child);
 	}
 
@@ -898,16 +897,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Function " + name + " is not defined");
 		}
 		if(name.contains("$load.")) {
-			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
-			IExpr plus = (IExpr)ctx.expr(1).accept(this);
-			IExpr address = new IExprBin(init, PLUS, plus);
-			return address;
+			return (IExpr)ctx.expr(1).accept(this);
 		}
 		// TODO this blows up when we have big arrays
 		if(name.contains("$store.")) {
-			IExpr init = ((Location)ctx.expr(0).accept(this)).getAddress();
-			IExpr plus = (IExpr)ctx.expr(1).accept(this);
-			IExpr address = new IExprBin(init, PLUS, plus);
+			IExpr address = (IExpr)ctx.expr(1).accept(this);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
 			if(initMode && value instanceof IConst && ((IConst)value).getValue() == 0) {
