@@ -135,8 +135,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private Call_cmdContext atomicMode = null;
 	
 	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$ashr.", "$xor.", "$or.", "$and.", "$nand.");
-	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "memcpy.i8");
-	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "free", "free_", "pthread_key_create", "pthread_getspecific", "pthread_setspecific");
+	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "printk.", "memcpy.i8");
+	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "free", "free_", "nvram_read_byte", 
+				"pthread_key_create", "pthread_getspecific", "pthread_setspecific");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -359,9 +360,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			mutexUnlock(ctx.call_params().exprs());
 			return null;
 		}
-		if(name.equals("corral_getThreadID")) {
-			return new IConst(threadCount);
-		}
 		if(name.equals("abort")) {
 			abort();
 			return null;
@@ -405,7 +403,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			} else {
 				throw new ParsingException(name + " is not supported");
 			}
-			__VERIFIER_nondet_int(ctx.call_params().Ident(0).getText(), type);
+			__VERIFIER_nondet(ctx.call_params().Ident(0).getText(), type);
 			return null;
 		}
 		if(name.contains("__VERIFIER_atomic_begin")) {
@@ -492,8 +490,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// the name should be unique, thus we add the process identifier.
 		programBuilder.addDeclarationArray(currentScope.getID() + ":" + ptr, values);
 		Address adds = programBuilder.getPointer(currentScope.getID() + ":" + ptr);
-		Local child = new Local(start, adds);
-		programBuilder.addChild(threadCount, child);
+		programBuilder.addChild(threadCount, new Local(start, adds));
 	}
 
 	private void pthread_create(Register ptr, String name) {
@@ -514,7 +511,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return new IConst(0);
 	}
 
-	private void __VERIFIER_nondet_int(String registerName, INonDetTypes type) {
+	private void __VERIFIER_nondet(String registerName, INonDetTypes type) {
 		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
 	    if(register != null){
 	    	programBuilder.addChild(threadCount, new Local(register, new INonDet(type)));
