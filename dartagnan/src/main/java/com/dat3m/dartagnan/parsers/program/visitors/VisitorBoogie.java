@@ -422,7 +422,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.equals("pthread_create")) {
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
-			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + namePtr);
+			// This names are global so we don't use currentScope.getID(), but per thread.
+			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, namePtr);
 			String threadName = ctx.call_params().exprs().expr().get(2).getText();
 			ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(this);
 			mainCallingValues.clear();
@@ -433,10 +434,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// Sometimes the compiler convert it to __pthread_join
 		if(name.contains("pthread_join") && ctx.call_params().Define() != null) {
 			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
-			Register callReg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + namePtr);
+			// This names are global so we don't use currentScope.getID(), but per thread.
+			Register callReg = programBuilder.getOrCreateRegister(threadCount, namePtr);
 			String retName = ctx.call_params().Ident(0).getText();
 			Register retReg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + retName);
-			programBuilder.addChild(threadCount, new Local(retReg, pthread_join(pool.getPtrFromReg(callReg))));
+			pthread_join(retReg, pool.getPtrFromReg(callReg));
 			return null;
 		}
 		// Some procedures might have an empty implementation.
@@ -502,13 +504,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(1), "NA"));
 	}
 
-	private IConst pthread_join(Register ptr) {
+	private void pthread_join(Register retRegister, Register ptr) {
 		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
 		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
        	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), "NA"));
 		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(0)), label));
-		return new IConst(0);
 	}
 
 	private void __VERIFIER_nondet(String registerName, INonDetTypes type) {
@@ -656,11 +657,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
 		// TODO: find a nicer way of dealing with this
 		if(ctx.getText().contains("$load.")) {
-			Register reg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ctx.Ident(0).getText());
+			// This names are global so we don't use currentScope.getID(), but per thread.
+			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText());
 			String tmp = ctx.def_body().exprs().expr(0).getText();
 			tmp = tmp.substring(0, tmp.lastIndexOf(')'));
 			tmp = tmp.substring(tmp.lastIndexOf(',')+1);
-			Register ptr = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + tmp);
+			// This names are global so we don't use currentScope.getID(), but per thread.
+			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp);
 			pool.addRegPtr(reg, ptr);
 		}
         ExprsContext exprs = ctx.def_body().exprs();
@@ -682,7 +685,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	        	if(ctx.getText().contains("$load.")) {
+	        	// TODO improve this
+	        	// when some e.g. locks are defined globally, something like
+	        	// load.i8($M.1, &(0-1081)) is generated and makes the whole 
+	        	// formula UNSAT, even if we add a trival assert(0).
+	        	if(ctx.getText().contains("$load.") && value instanceof Register) {
 	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, "NA"));
 		            continue;
 	        	}
@@ -900,7 +907,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				return null;
 			}
 			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
-			return null;				
+			return null;
 		}
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
