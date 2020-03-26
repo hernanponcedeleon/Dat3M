@@ -126,6 +126,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
+	private Map<String, Address> constantMemoryMap = new HashMap<>();
 	
 	private List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
@@ -204,7 +205,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitConst_decl(Const_declContext ctx) {
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
-			constants.add(ident.getText());
+			String name = ident.getText();
+			constants.add(name);
+			if(name.contains("ref;")) {
+				programBuilder.addDeclarationArray(name, Arrays.asList(new IConst(0)));
+				constantMemoryMap.put(name, programBuilder.getPointer(name));
+			}
 		}
 		return null;
 	}
@@ -685,11 +691,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	        	// TODO improve this
-	        	// when some e.g. locks are defined globally, something like
-	        	// load.i8($M.1, &(0-1081)) is generated and makes the whole 
-	        	// formula UNSAT, even if we add a trival assert(0).
-	        	if(ctx.getText().contains("$load.") && value instanceof Register) {
+	        	if(ctx.getText().contains("$load.")) {
 	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, "NA"));
 		            continue;
 	        	}
@@ -869,6 +871,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String name = ctx.getText();
 		if(currentCall != null && currentCall.getFunction().getBody() != null) {
 			return currentCall.replaceVarsByExprs(ctx);
+		}
+		if(constantMemoryMap.containsKey(name)) {
+			return constantMemoryMap.get(name);
 		}
 		if(constantsMap.containsKey(name)) {
 			return constantsMap.get(name);
