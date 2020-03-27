@@ -46,13 +46,9 @@ public class Jump extends Event {
         if(label.getOId() < oId){
         	int currentBound = bound;    			
 
-        	Event next = null;
         	while(currentBound > 1){
-				next = copyPathFrom(label.successor, predecessor);
+        		predecessor = copyPathFrom(label.successor, predecessor);
 				currentBound--;
-	        	// worst case, copyPathFrom will return the initial predecessor
-	        	assert(next != null);
-	        	predecessor = next;
 			}
         	
 			predecessor.setSuccessor(this.getSuccessor());
