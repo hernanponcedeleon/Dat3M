@@ -8,10 +8,11 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class EndAtomic extends Event {
 
-	protected final BeginAtomic begin;
+	protected BeginAtomic begin;
 
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
+    	begin.addReference(this);
         addFilters(EType.RMW, EType.ATOMIC);
     	Event next = begin.getSuccessor();
     	while(next != null && next != this) {
@@ -44,7 +45,14 @@ public class EndAtomic extends Event {
     	return "end_atomic()";
     }
     
-	@Override
+    public void updateLabel(BeginAtomic begin) {
+    	this.begin = begin;
+    }
+        
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
 	public EndAtomic getCopy(){
 		return new EndAtomic(this);
 	}
