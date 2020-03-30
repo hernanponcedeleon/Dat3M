@@ -8,6 +8,11 @@ public class Comment extends Event {
 		this.comment = comment;
 	}
 	
+	protected Comment(Comment other){
+		super(other);
+		this.comment = other.comment;
+	}
+
     @Override
     public String toString(){
         return "===" + comment + "===";
@@ -18,6 +23,6 @@ public class Comment extends Event {
 
 	@Override
 	public Comment getCopy(){
-		return new Comment(comment);
+		return new Comment(this);
 	}
 }

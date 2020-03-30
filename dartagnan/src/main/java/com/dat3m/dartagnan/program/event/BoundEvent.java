@@ -9,6 +9,10 @@ public class BoundEvent extends Event {
 		addFilters(EType.BOUND);
 	}
 	
+	protected BoundEvent(BoundEvent other){
+		super(other);
+	}
+
 	@Override
 	public String toString() {
 		return "boundEvent()";
@@ -16,6 +20,6 @@ public class BoundEvent extends Event {
 	
 	@Override
 	public BoundEvent getCopy(){
-		return new BoundEvent();
+		return new BoundEvent(this);
 	}
 }
