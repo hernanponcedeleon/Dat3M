@@ -91,14 +91,19 @@ public abstract class Event implements Comparable<Event> {
 		return result;
 	}
 
-
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     public int unroll(int bound, int nextId, Event predecessor) {
 		uId = nextId++;
+		// If this is the thread entry, we do not copy it.
+		// With bound 1 we return the original event.
+		Event copy = (predecessor == null || bound == 1) ? this : getCopy(); 
+		if(predecessor != null){
+			predecessor.setSuccessor(copy);							
+		}
 		if(successor != null){
-			nextId = successor.unroll(bound, nextId, this);
+			nextId = successor.unroll(bound, nextId, copy);
 		}
 	    return nextId;
     }

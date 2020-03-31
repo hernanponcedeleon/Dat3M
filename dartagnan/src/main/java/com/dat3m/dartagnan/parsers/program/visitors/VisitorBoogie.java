@@ -137,8 +137,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$ashr.", "$xor.", "$or.", "$and.", "$nand.");
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "printk.", "memcpy.i8");
-	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "free", "free_", "nvram_read_byte", 
-				"pthread_key_create", "pthread_getspecific", "pthread_setspecific");
+	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "nvram_read_byte", "memset", 
+			"pthread_key_create", "pthread_getspecific", "pthread_setspecific");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -207,7 +207,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
 			String name = ident.getText();
 			constants.add(name);
-			if(name.contains("ref;")) {
+			if(ctx.getText().contains("ref;")) {
 				programBuilder.addDeclarationArray(name, Arrays.asList(new IConst(0)));
 				constantMemoryMap.put(name, programBuilder.getPointer(name));
 			}
@@ -344,7 +344,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(dummyProcedures.stream().anyMatch(e -> name.contains(e))) {
 			return null;
 		}
-		if(unhandledProcedures.stream().anyMatch(e -> name.equals(e))) {
+		if(unhandledProcedures.stream().anyMatch(e -> name.contains(e))) {
 			throw new ParsingException(name + " cannot be handled");
 		}
 		if(name.equals("$alloc") || name.equals("calloc") || name.equals("malloc") || name.equals("$malloc")) {

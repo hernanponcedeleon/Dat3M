@@ -49,13 +49,11 @@ public class Jump extends Event {
         	while(currentBound > 1){
         		predecessor = copyPathFrom(label.successor, predecessor);
 				currentBound--;
-			}
-        	
-			predecessor.setSuccessor(this.getSuccessor());
-			if(predecessor.getSuccessor() != null){
-				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
-			}
-			return nextId;
+			}        	
+    		if(successor != null){
+    			nextId = successor.unroll(bound, nextId, predecessor);
+    		}
+    	    return nextId;
         }
         return super.unroll(bound, nextId, predecessor);
     }
