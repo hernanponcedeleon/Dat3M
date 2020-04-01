@@ -114,6 +114,12 @@ public abstract class Event implements Comparable<Event> {
 
 	static Event copyPath(Event from, Event until, Event appendTo){
 		while(from != null && !from.equals(until)){
+			// This mimics the unrolling
+			if(from instanceof Jump && ((Jump)from).getLabel().getOId() < from.getOId()) {
+				// Thus we don't copy the back jumps
+				from = from.successor;
+				continue;
+			}
 			Event copy = from.getCopy();
 			appendTo.setSuccessor(copy);
 			if(from instanceof If){

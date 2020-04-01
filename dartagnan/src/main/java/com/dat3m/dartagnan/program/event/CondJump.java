@@ -45,11 +45,6 @@ public class CondJump extends Jump implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public int unroll(int bound, int nextId, Event predecessor) {
-        return super.unroll(bound, nextId, predecessor);
-    }
-
-    @Override
     public CondJump getCopy(){
     	CondJump copy = new CondJump(this);
     	label.addReference(copy);
