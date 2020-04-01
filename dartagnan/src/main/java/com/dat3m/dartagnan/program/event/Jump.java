@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -47,7 +44,7 @@ public class Jump extends Event {
         	int currentBound = bound;    			
 
         	while(currentBound > 1){
-        		predecessor = copyPathFrom(label.successor, predecessor);
+        		predecessor = copyPath(label.successor, this, predecessor);
 				currentBound--;
 			}        	
     		if(successor != null){
@@ -64,28 +61,6 @@ public class Jump extends Event {
     	label.addReference(copy);
     	return copy;
     }
-
-	Event copyPathFrom(Event from, Event appendTo){
-		// The method can be called in the presence of cycles
-		// We add a check to avoid non termination
-		Set<Object> visited = new HashSet<>();
-		while(from != null && !from.equals(this) && !visited.contains(from.uId)){
-			visited.add(from.uId);
-			Event copy = from.getCopy();
-			appendTo.setSuccessor(copy);
-			if(from instanceof If){
-				from = ((If)from).getExitElseBranch();
-				appendTo = ((If)copy).getExitElseBranch();
-			} else if(from instanceof While){
-				from = ((While)from).getExitEvent();
-				appendTo = ((While)copy).getExitEvent();
-			} else {
-				appendTo = copy;
-			}
-			from = from.successor;
-		}
-		return appendTo;
-	}
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------

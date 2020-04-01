@@ -112,7 +112,7 @@ public abstract class Event implements Comparable<Event> {
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-	Event copyPath(Event from, Event until, Event appendTo){
+	static Event copyPath(Event from, Event until, Event appendTo){
 		while(from != null && !from.equals(until)){
 			Event copy = from.getCopy();
 			appendTo.setSuccessor(copy);
