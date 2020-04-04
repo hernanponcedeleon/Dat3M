@@ -1479,13 +1479,13 @@ $bb3:
   assume {:sourceloc "./output/sum04-2_tmp.c", 17, 23} true;
   assume {:verifier.code 0} true;
   $i5 := $eq.i32($i1, 16);
-  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 32} true;
+  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 31} true;
   assume {:verifier.code 0} true;
   $i6 := 1;
   assume {:branchcond $i5} true;
   goto $bb5, $bb7;
 $bb4:
-  assume {:sourceloc "./output/sum04-2_tmp.c", 14, 22} true;
+  assume {:sourceloc "./output/sum04-2_tmp.c", 14, 19} true;
   assume {:verifier.code 0} true;
   $i4 := $add.i32($i0, 1);
   call {:cexpr "i"} boogie_si_record_i32($i4);
@@ -1494,13 +1494,13 @@ $bb4:
   $i0, $i1 := $i4, $i3;
   goto $bb1;
 $bb5:
-  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 32} true;
+  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 31} true;
   assume {:verifier.code 0} true;
   assume ($i5 == 1);
   goto $bb6;
 $bb6:
   assume {:verifier.code 1} true;
-  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 32} true;
+  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 31} true;
   assume {:verifier.code 1} true;
   $i8 := $zext.i1.i32($i6);
   assume {:sourceloc "./output/sum04-2_tmp.c", 17, 3} true;
@@ -1513,10 +1513,10 @@ $bb6:
   return;
 $bb7:
   assume !(($i5 == 1));
-  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 38} true;
+  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 37} true;
   assume {:verifier.code 1} true;
   $i7 := $eq.i32($i1, 0);
-  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 32} true;
+  assume {:sourceloc "./output/sum04-2_tmp.c", 17, 31} true;
   assume {:verifier.code 0} true;
   $i6 := $i7;
   goto $bb6;

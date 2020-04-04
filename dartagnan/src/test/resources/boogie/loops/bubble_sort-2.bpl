@@ -35,12 +35,13 @@ const $GLOBALS_BOTTOM: ref;
 const $EXTERNS_BOTTOM: ref;
 const $MALLOC_TOP: ref;
 
-// Memory maps (2 regions)
-var $M.0: ref;
-var $M.1: i32;
+// Memory maps (3 regions)
+var $M.0: [ref] i8;
+var $M.1: ref;
+var $M.2: i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 43347));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 58835));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1367,186 +1368,2193 @@ function {:inline} $store.float(M: [ref] float, p: ref, f: float) returns ([ref]
 function {:inline} $load.unsafe.float(M: [ref] i8, p: ref) returns (float) { $bitcast.i8.float(M[p]) }
 function {:inline} $store.unsafe.float(M: [ref] i8, p: ref, f: float) returns ([ref] i8) { M[p := $bitcast.float.i8(f)] }
 function $extractvalue.float(p: ref, i: int) returns (float);
+const gl_list: ref;
+axiom (gl_list == $sub.ref(0, 1040));
 const {:count 14} .str.1: ref;
-axiom (.str.1 == $sub.ref(0, 1038));
+axiom (.str.1 == $sub.ref(0, 2078));
 const env_value_str: ref;
-axiom (env_value_str == $sub.ref(0, 2070));
-const {:count 3} .str.1.1: ref;
-axiom (.str.1.1 == $sub.ref(0, 3097));
+axiom (env_value_str == $sub.ref(0, 3110));
+const {:count 3} .str.1.3: ref;
+axiom (.str.1.3 == $sub.ref(0, 4137));
 const {:count 14} .str.14: ref;
-axiom (.str.14 == $sub.ref(0, 4135));
+axiom (.str.14 == $sub.ref(0, 5175));
 const errno_global: ref;
-axiom (errno_global == $sub.ref(0, 5163));
+axiom (errno_global == $sub.ref(0, 6203));
 const reach_error: ref;
-axiom (reach_error == $sub.ref(0, 6195));
+axiom (reach_error == $sub.ref(0, 7235));
 procedure reach_error()
 {
 $bb0:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
 }
-const __VERIFIER_assert: ref;
-axiom (__VERIFIER_assert == $sub.ref(0, 7227));
-procedure __VERIFIER_assert($i0: i32)
-{
-  var $i1: i1;
-$bb0:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 8} true;
-  assume {:verifier.code 0} true;
-  call {:cexpr "__VERIFIER_assert:arg:cond"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 8} true;
-  assume {:verifier.code 0} true;
-  $i1 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 7} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i1} true;
-  goto $bb1, $bb2;
-$bb1:
-  assume ($i1 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 8, 3} true;
-  assume {:verifier.code 0} true;
-  $exn := false;
-  return;
-$bb2:
-  assume !(($i1 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 16} true;
-  assume {:verifier.code 0} true;
-  goto $bb3;
-$bb3:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 13} true;
-  assume {:verifier.code 0} true;
-  call reach_error();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 27} true;
-  assume {:verifier.code 0} true;
-  call abort();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 27} true;
-  assume {:verifier.code 0} true;
-  assume false;
-}
-const abort: ref;
-axiom (abort == $sub.ref(0, 8259));
-procedure abort();
 const main: ref;
-axiom (main == $sub.ref(0, 9291));
+axiom (main == $sub.ref(0, 8267));
 procedure main()
   returns ($r: i32)
 {
-  var $i0: i32;
-  var $i1: i32;
-  var $i2: i1;
-  var $i3: i1;
-  var $i5: i32;
-  var $i4: i32;
-  var $i6: i32;
-  var $i7: i1;
-  var $i9: i1;
-  var $i8: i1;
-  var $i10: i32;
 $bb0:
   call $initialize();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 7} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 829, 3} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 7} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 829, 3} true;
   assume {:verifier.code 0} true;
-  $i0, $i1 := 1, 0;
-  goto $bb1;
-$bb1:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
+  call gl_read();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 831, 3} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
+  call inspect(gl_list);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 832, 3} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 13} true;
+  call gl_sort();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 834, 3} true;
   assume {:verifier.code 0} true;
-  $i2 := $sle.i32($i0, 8);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 3} true;
+  call inspect(gl_list);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 835, 3} true;
   assume {:verifier.code 0} true;
-  assume {:branchcond $i2} true;
-  goto $bb2, $bb3;
-$bb2:
-  assume ($i2 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 10} true;
-  assume {:verifier.code 0} true;
-  $i3 := $slt.i32($i0, 4);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 9} true;
-  assume {:verifier.code 0} true;
-  $i4 := $i1;
-  assume {:branchcond $i3} true;
-  goto $bb4, $bb5;
-$bb3:
-  assume !(($i2 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 23} true;
-  assume {:verifier.code 0} true;
-  $i7 := $eq.i32($i1, 16);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 0} true;
-  $i8 := 1;
-  assume {:branchcond $i7} true;
-  goto $bb8, $bb10;
-$bb4:
-  assume ($i3 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 16, 13} true;
-  assume {:verifier.code 0} true;
-  $i5 := $add.i32($i1, 2);
-  call {:cexpr "sn"} boogie_si_record_i32($i5);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 16, 5} true;
-  assume {:verifier.code 0} true;
-  $i4 := $i5;
-  goto $bb6;
-$bb5:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 9} true;
-  assume {:verifier.code 0} true;
-  assume !(($i3 == 1));
-  goto $bb6;
-$bb6:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 17, 3} true;
-  assume {:verifier.code 0} true;
-  goto $bb7;
-$bb7:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 19} true;
-  assume {:verifier.code 0} true;
-  $i6 := $add.i32($i0, 1);
-  call {:cexpr "i"} boogie_si_record_i32($i6);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 3} true;
-  assume {:verifier.code 0} true;
-  $i0, $i1 := $i6, $i4;
-  goto $bb1;
-$bb8:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 0} true;
-  assume ($i7 == 1);
-  goto $bb9;
-$bb9:
-  assume {:verifier.code 1} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 1} true;
-  $i10 := $zext.i1.i32($i8);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 3} true;
-  assume {:verifier.code 1} true;
-  call __VERIFIER_assert($i10);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 19, 1} true;
+  call gl_destroy();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 837, 3} true;
   assume {:verifier.code 0} true;
   $r := 0;
   $exn := false;
   return;
-$bb10:
-  assume !(($i7 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 37} true;
-  assume {:verifier.code 1} true;
-  $i9 := $eq.i32($i1, 0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
+}
+const gl_read: ref;
+axiom (gl_read == $sub.ref(0, 9299));
+procedure gl_read()
+{
+  var $i0: i32;
+  var $i1: i32;
+  var $i2: i1;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 670, 3} true;
   assume {:verifier.code 0} true;
-  $i8 := $i9;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 670, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 670, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb2;
+$bb2:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 673, 11} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i0);
+  call {:cexpr "tmp"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 674, 5} true;
+  assume {:verifier.code 0} true;
+  call gl_insert($i0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 675, 15} true;
+  assume {:verifier.code 1} true;
+  call $i1 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i1);
+  call {:cexpr "tmp___0"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 677, 9} true;
+  assume {:verifier.code 0} true;
+  $i2 := $ne.i32($i1, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 677, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i2} true;
+  goto $bb3, $bb4;
+$bb3:
+  assume ($i2 == 1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 678, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb5;
+$bb4:
+  assume !(($i2 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 679, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb5:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 670, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb6:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 684, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const inspect: ref;
+axiom (inspect == $sub.ref(0, 10331));
+procedure inspect($p0: ref)
+{
+  var $i1: i1;
+  var $i2: i32;
+  var $p3: ref;
+  var $p4: ref;
+  var $i5: i32;
+  var $i6: i1;
+  var $i7: i32;
+  var $i8: i1;
+  var $i9: i32;
+  var $i10: i32;
+  var $i11: i32;
+  var $i12: i64;
+  var $p13: ref;
+  var $p14: ref;
+  var $i15: i32;
+  var $i16: i1;
+  var $i17: i32;
+  var $i18: i1;
+  var $i19: i32;
+  var $i20: i32;
+  var $i21: i64;
+  var $p22: ref;
+  var $p23: ref;
+  var $i24: i1;
+  var $i25: i32;
+  var $p26: ref;
+  var $p27: ref;
+  var $i28: i32;
+  var $i29: i1;
+  var $i30: i32;
+  var $i31: i1;
+  var $i32: i32;
+  var $i33: i32;
+  var $i34: i32;
+  var $i35: i64;
+  var $p36: ref;
+  var $p37: ref;
+  var $i38: i32;
+  var $i39: i1;
+  var $i40: i32;
+  var $i41: i1;
+  var $i42: i32;
+  var $i43: i32;
+  var $i44: i64;
+  var $p45: ref;
+  var $i46: i64;
+  var $p47: ref;
+  var $i48: i64;
+  var $p49: ref;
+  var $p50: ref;
+  var $i51: i1;
+  var $i52: i32;
+  var $i53: i32;
+  var $i54: i64;
+  var $p55: ref;
+  var $i56: i32;
+  var $i57: i32;
+  var $i58: i32;
+  var $i59: i64;
+  var $p60: ref;
+  var $p61: ref;
+  var $i62: i32;
+  var $i63: i1;
+  var $i64: i32;
+  var $i65: i1;
+  var $i66: i32;
+  var $i67: i32;
+  var $i68: i64;
+  var $p69: ref;
+  var $i70: i32;
+  var $i71: i32;
+  var $i72: i32;
+  var $i73: i64;
+  var $p74: ref;
+  var $p75: ref;
+  var $i76: i32;
+  var $i77: i1;
+  var $i78: i32;
+  var $i79: i1;
+  var $i80: i32;
+  var $i81: i32;
+  var $i82: i64;
+  var $p83: ref;
+  var $i84: i32;
+  var $i85: i32;
+  var $i86: i32;
+  var $i87: i64;
+  var $p88: ref;
+  var $p89: ref;
+  var $i90: i32;
+  var $i91: i1;
+  var $i92: i32;
+  var $i93: i1;
+  var $i94: i32;
+  var $i95: i32;
+  var $i96: i64;
+  var $p97: ref;
+  var $i98: i32;
+  var $i99: i32;
+  var $i100: i32;
+  var $i101: i64;
+  var $p102: ref;
+  var $p103: ref;
+  var $i104: i32;
+  var $i105: i1;
+  var $i106: i32;
+  var $i107: i1;
+  var $p108: ref;
+  var $i109: i32;
+  var $i110: i32;
+  var $i111: i1;
+  var $i112: i32;
+  var $i113: i1;
+  var $i114: i32;
+  var $i115: i32;
+  var $i116: i64;
+  var $p117: ref;
+  var $p118: ref;
+  var $i119: i32;
+  var $i120: i32;
+  var $i121: i1;
+  var $i122: i32;
+  var $i123: i1;
+  var $p124: ref;
+  var $p125: ref;
+  var $i126: i32;
+  var $i127: i32;
+  var $i128: i1;
+  var $i129: i32;
+  var $i130: i1;
+  var $i131: i32;
+  var $i132: i32;
+  var $i133: i64;
+  var $p134: ref;
+  var $p135: ref;
+  var $i136: i32;
+  var $i137: i32;
+  var $i138: i64;
+  var $p139: ref;
+  var $p140: ref;
+  var $i141: i32;
+  var $i142: i32;
+  var $i143: i1;
+  var $i144: i32;
+  var $i145: i1;
+  var $i146: i32;
+  var $i147: i32;
+  var $i148: i64;
+  var $p149: ref;
+  var $p150: ref;
+  var $p151: ref;
+  var $p152: ref;
+  var $i153: i32;
+  var $i154: i32;
+  var $i155: i1;
+  var $i156: i32;
+  var $i157: i1;
+  var $p158: ref;
+  var $p159: ref;
+  var $p160: ref;
+  var $i161: i32;
+  var $i162: i32;
+  var $i163: i32;
+  var $i164: i64;
+  var $p165: ref;
+  var $i166: i32;
+  var $i167: i1;
+  var $p168: ref;
+  var $p169: ref;
+  var $i170: i32;
+  var $i171: i32;
+  var $i172: i32;
+  var $i173: i64;
+  var $p174: ref;
+  var $i175: i64;
+  var $p176: ref;
+  var $i177: i64;
+  var $p178: ref;
+  var $p179: ref;
+  var $i180: i32;
+  var $i181: i1;
+  var $i182: i32;
+  var $i183: i1;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 169, 3} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 169, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 169, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb2;
+$bb2:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 171, 11} true;
+  assume {:verifier.code 0} true;
+  $i1 := $ne.ref($p0, $0.ref);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 171, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i1} true;
+  goto $bb3, $bb4;
+$bb3:
+  assume ($i1 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb5;
+$bb4:
+  assume !(($i1 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 173, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 175, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb5;
+$bb5:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 177, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb6:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 182, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb7;
+$bb7:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 182, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb8;
+$bb8:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 185, 18} true;
+  assume {:verifier.code 0} true;
+  $i2 := $p2i.ref.i32($p0);
+  call {:cexpr "__cil_tmp3"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 186, 18} true;
+  assume {:verifier.code 0} true;
+  $p3 := $bitcast.ref.ref($p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 186, 18} true;
+  assume {:verifier.code 0} true;
+  $p4 := $load.ref($M.0, $p3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 187, 18} true;
+  assume {:verifier.code 0} true;
+  $i5 := $p2i.ref.i32($p4);
+  call {:cexpr "__cil_tmp5"} boogie_si_record_i32($i5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 188, 29} true;
+  assume {:verifier.code 0} true;
+  $i6 := $ne.i32($i5, $i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 188, 29} true;
+  assume {:verifier.code 0} true;
+  $i7 := $zext.i1.i32($i6);
+  call {:cexpr "__cil_tmp6"} boogie_si_record_i32($i7);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 189, 11} true;
+  assume {:verifier.code 0} true;
+  $i8 := $ne.i32($i7, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 189, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i8} true;
+  goto $bb9, $bb10;
+$bb9:
+  assume ($i8 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb11;
+$bb10:
+  assume !(($i8 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 191, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 193, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb11;
+$bb11:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 196, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb12;
+$bb12:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 201, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb13;
+$bb13:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 201, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb14;
+$bb14:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 204, 18} true;
+  assume {:verifier.code 0} true;
+  $i9 := $p2i.ref.i32($p0);
+  call {:cexpr "__cil_tmp7"} boogie_si_record_i32($i9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 205, 18} true;
+  assume {:verifier.code 0} true;
+  $i10 := $p2i.ref.i32($p0);
+  call {:cexpr "__cil_tmp8"} boogie_si_record_i32($i10);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 206, 29} true;
+  assume {:verifier.code 0} true;
+  $i11 := $add.i32($i10, 4);
+  call {:cexpr "__cil_tmp9"} boogie_si_record_i32($i11);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 207, 21} true;
+  assume {:verifier.code 0} true;
+  $i12 := $zext.i32.i64($i11);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 207, 21} true;
+  assume {:verifier.code 0} true;
+  $p13 := $i2p.i64.ref($i12);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 207, 19} true;
+  assume {:verifier.code 0} true;
+  $p14 := $load.ref($M.0, $p13);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 208, 19} true;
+  assume {:verifier.code 0} true;
+  $i15 := $p2i.ref.i32($p14);
+  call {:cexpr "__cil_tmp11"} boogie_si_record_i32($i15);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 209, 31} true;
+  assume {:verifier.code 0} true;
+  $i16 := $ne.i32($i15, $i9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 209, 31} true;
+  assume {:verifier.code 0} true;
+  $i17 := $zext.i1.i32($i16);
+  call {:cexpr "__cil_tmp12"} boogie_si_record_i32($i17);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 210, 11} true;
+  assume {:verifier.code 0} true;
+  $i18 := $ne.i32($i17, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 210, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i18} true;
+  goto $bb15, $bb16;
+$bb15:
+  assume ($i18 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb17;
+$bb16:
+  assume !(($i18 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 212, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 214, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb17;
+$bb17:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 217, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb18;
+$bb18:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 221, 17} true;
+  assume {:verifier.code 0} true;
+  $i19 := $p2i.ref.i32($p0);
+  call {:cexpr "__cil_tmp13"} boogie_si_record_i32($i19);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 222, 29} true;
+  assume {:verifier.code 0} true;
+  $i20 := $add.i32($i19, 4);
+  call {:cexpr "__cil_tmp14"} boogie_si_record_i32($i20);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 223, 19} true;
+  assume {:verifier.code 0} true;
+  $i21 := $zext.i32.i64($i20);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 223, 19} true;
+  assume {:verifier.code 0} true;
+  $p22 := $i2p.i64.ref($i21);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 223, 17} true;
+  assume {:verifier.code 0} true;
+  $p23 := $load.ref($M.0, $p22);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 226, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb19;
+$bb19:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 226, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb20;
+$bb20:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 228, 11} true;
+  assume {:verifier.code 0} true;
+  $i24 := $ne.ref($p23, $0.ref);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 228, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i24} true;
+  goto $bb21, $bb22;
+$bb21:
+  assume ($i24 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb23;
+$bb22:
+  assume !(($i24 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 230, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 232, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb23;
+$bb23:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 234, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb24;
+$bb24:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 239, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb25;
+$bb25:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 239, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb26;
+$bb26:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 242, 19} true;
+  assume {:verifier.code 0} true;
+  $i25 := $p2i.ref.i32($p23);
+  call {:cexpr "__cil_tmp16"} boogie_si_record_i32($i25);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 243, 19} true;
+  assume {:verifier.code 0} true;
+  $p26 := $bitcast.ref.ref($p23);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 243, 19} true;
+  assume {:verifier.code 0} true;
+  $p27 := $load.ref($M.0, $p26);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 244, 19} true;
+  assume {:verifier.code 0} true;
+  $i28 := $p2i.ref.i32($p27);
+  call {:cexpr "__cil_tmp18"} boogie_si_record_i32($i28);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 245, 31} true;
+  assume {:verifier.code 0} true;
+  $i29 := $ne.i32($i28, $i25);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 245, 31} true;
+  assume {:verifier.code 0} true;
+  $i30 := $zext.i1.i32($i29);
+  call {:cexpr "__cil_tmp19"} boogie_si_record_i32($i30);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 246, 11} true;
+  assume {:verifier.code 0} true;
+  $i31 := $ne.i32($i30, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 246, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i31} true;
+  goto $bb27, $bb28;
+$bb27:
+  assume ($i31 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb29;
+$bb28:
+  assume !(($i31 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 248, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 250, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb29;
+$bb29:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 253, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb30;
+$bb30:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 258, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb31;
+$bb31:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 258, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb32;
+$bb32:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 261, 19} true;
+  assume {:verifier.code 0} true;
+  $i32 := $p2i.ref.i32($p23);
+  call {:cexpr "__cil_tmp20"} boogie_si_record_i32($i32);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 262, 19} true;
+  assume {:verifier.code 0} true;
+  $i33 := $p2i.ref.i32($p23);
+  call {:cexpr "__cil_tmp21"} boogie_si_record_i32($i33);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 263, 31} true;
+  assume {:verifier.code 0} true;
+  $i34 := $add.i32($i33, 4);
+  call {:cexpr "__cil_tmp22"} boogie_si_record_i32($i34);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 264, 21} true;
+  assume {:verifier.code 0} true;
+  $i35 := $zext.i32.i64($i34);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 264, 21} true;
+  assume {:verifier.code 0} true;
+  $p36 := $i2p.i64.ref($i35);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 264, 19} true;
+  assume {:verifier.code 0} true;
+  $p37 := $load.ref($M.0, $p36);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 265, 19} true;
+  assume {:verifier.code 0} true;
+  $i38 := $p2i.ref.i32($p37);
+  call {:cexpr "__cil_tmp24"} boogie_si_record_i32($i38);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 266, 31} true;
+  assume {:verifier.code 0} true;
+  $i39 := $ne.i32($i38, $i32);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 266, 31} true;
+  assume {:verifier.code 0} true;
+  $i40 := $zext.i1.i32($i39);
+  call {:cexpr "__cil_tmp25"} boogie_si_record_i32($i40);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 267, 11} true;
+  assume {:verifier.code 0} true;
+  $i41 := $ne.i32($i40, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 267, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i41} true;
+  goto $bb33, $bb34;
+$bb33:
+  assume ($i41 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb35;
+$bb34:
+  assume !(($i41 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 269, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 271, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb35;
+$bb35:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 274, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb36;
+$bb36:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 279, 17} true;
+  assume {:verifier.code 0} true;
+  $i42 := $p2i.ref.i32($0.ref);
+  call {:cexpr "__cil_tmp27"} boogie_si_record_i32($i42);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 280, 29} true;
+  assume {:verifier.code 0} true;
+  $i43 := $add.i32($i42, 4);
+  call {:cexpr "__cil_tmp28"} boogie_si_record_i32($i43);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 281, 17} true;
+  assume {:verifier.code 0} true;
+  $i44 := $zext.i32.i64($i43);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 281, 17} true;
+  assume {:verifier.code 0} true;
+  $p45 := $i2p.i64.ref($i44);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 282, 17} true;
+  assume {:verifier.code 0} true;
+  $i46 := $p2i.ref.i64($p45);
+  call {:cexpr "__cil_tmp30"} boogie_si_record_i64($i46);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 283, 17} true;
+  assume {:verifier.code 0} true;
+  $p47 := $bitcast.ref.ref($p23);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 284, 29} true;
+  assume {:verifier.code 0} true;
+  $i48 := $sub.i64(0, $i46);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 284, 29} true;
+  assume {:verifier.code 0} true;
+  $p49 := $add.ref($p47, $mul.ref($i48, 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 285, 17} true;
+  assume {:verifier.code 0} true;
+  $p50 := $bitcast.ref.ref($p49);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 288, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb37;
+$bb37:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 288, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb38;
+$bb38:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 290, 11} true;
+  assume {:verifier.code 0} true;
+  $i51 := $ne.ref($p50, $0.ref);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 290, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i51} true;
+  goto $bb39, $bb40;
+$bb39:
+  assume ($i51 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb41;
+$bb40:
+  assume !(($i51 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 292, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 294, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb41;
+$bb41:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 296, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb42;
+$bb42:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 301, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb43;
+$bb43:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 301, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb44;
+$bb44:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 304, 19} true;
+  assume {:verifier.code 0} true;
+  $i52 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp34"} boogie_si_record_i32($i52);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 305, 31} true;
+  assume {:verifier.code 0} true;
+  $i53 := $add.i32($i52, 12);
+  call {:cexpr "__cil_tmp35"} boogie_si_record_i32($i53);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 306, 19} true;
+  assume {:verifier.code 0} true;
+  $i54 := $zext.i32.i64($i53);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 306, 19} true;
+  assume {:verifier.code 0} true;
+  $p55 := $i2p.i64.ref($i54);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 307, 19} true;
+  assume {:verifier.code 0} true;
+  $i56 := $p2i.ref.i32($p55);
+  call {:cexpr "__cil_tmp37"} boogie_si_record_i32($i56);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 308, 19} true;
+  assume {:verifier.code 0} true;
+  $i57 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp38"} boogie_si_record_i32($i57);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 309, 31} true;
+  assume {:verifier.code 0} true;
+  $i58 := $add.i32($i57, 12);
+  call {:cexpr "__cil_tmp39"} boogie_si_record_i32($i58);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 310, 21} true;
+  assume {:verifier.code 0} true;
+  $i59 := $zext.i32.i64($i58);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 310, 21} true;
+  assume {:verifier.code 0} true;
+  $p60 := $i2p.i64.ref($i59);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 310, 19} true;
+  assume {:verifier.code 0} true;
+  $p61 := $load.ref($M.0, $p60);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 311, 19} true;
+  assume {:verifier.code 0} true;
+  $i62 := $p2i.ref.i32($p61);
+  call {:cexpr "__cil_tmp41"} boogie_si_record_i32($i62);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 312, 31} true;
+  assume {:verifier.code 0} true;
+  $i63 := $eq.i32($i62, $i56);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 312, 31} true;
+  assume {:verifier.code 0} true;
+  $i64 := $zext.i1.i32($i63);
+  call {:cexpr "__cil_tmp42"} boogie_si_record_i32($i64);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 313, 11} true;
+  assume {:verifier.code 0} true;
+  $i65 := $ne.i32($i64, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 313, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i65} true;
+  goto $bb45, $bb46;
+$bb45:
+  assume ($i65 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb47;
+$bb46:
+  assume !(($i65 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 315, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 317, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb47;
+$bb47:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 320, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb48;
+$bb48:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 325, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb49;
+$bb49:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 325, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb50;
+$bb50:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 328, 19} true;
+  assume {:verifier.code 0} true;
+  $i66 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp43"} boogie_si_record_i32($i66);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 329, 31} true;
+  assume {:verifier.code 0} true;
+  $i67 := $add.i32($i66, 12);
+  call {:cexpr "__cil_tmp44"} boogie_si_record_i32($i67);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 330, 19} true;
+  assume {:verifier.code 0} true;
+  $i68 := $zext.i32.i64($i67);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 330, 19} true;
+  assume {:verifier.code 0} true;
+  $p69 := $i2p.i64.ref($i68);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 331, 19} true;
+  assume {:verifier.code 0} true;
+  $i70 := $p2i.ref.i32($p69);
+  call {:cexpr "__cil_tmp46"} boogie_si_record_i32($i70);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 333, 19} true;
+  assume {:verifier.code 0} true;
+  $i71 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp48"} boogie_si_record_i32($i71);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 334, 31} true;
+  assume {:verifier.code 0} true;
+  $i72 := $add.i32($i71, 16);
+  call {:cexpr "__cil_tmp49"} boogie_si_record_i32($i72);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 335, 21} true;
+  assume {:verifier.code 0} true;
+  $i73 := $zext.i32.i64($i72);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 335, 21} true;
+  assume {:verifier.code 0} true;
+  $p74 := $i2p.i64.ref($i73);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 335, 19} true;
+  assume {:verifier.code 0} true;
+  $p75 := $load.ref($M.0, $p74);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 336, 19} true;
+  assume {:verifier.code 0} true;
+  $i76 := $p2i.ref.i32($p75);
+  call {:cexpr "__cil_tmp51"} boogie_si_record_i32($i76);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 337, 31} true;
+  assume {:verifier.code 0} true;
+  $i77 := $eq.i32($i76, $i70);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 337, 31} true;
+  assume {:verifier.code 0} true;
+  $i78 := $zext.i1.i32($i77);
+  call {:cexpr "__cil_tmp52"} boogie_si_record_i32($i78);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 338, 11} true;
+  assume {:verifier.code 0} true;
+  $i79 := $ne.i32($i78, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 338, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i79} true;
+  goto $bb51, $bb52;
+$bb51:
+  assume ($i79 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb53;
+$bb52:
+  assume !(($i79 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 340, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 342, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb53;
+$bb53:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 345, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb54;
+$bb54:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 350, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb55;
+$bb55:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 350, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb56;
+$bb56:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 353, 19} true;
+  assume {:verifier.code 0} true;
+  $i80 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp53"} boogie_si_record_i32($i80);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 354, 31} true;
+  assume {:verifier.code 0} true;
+  $i81 := $add.i32($i80, 4);
+  call {:cexpr "__cil_tmp54"} boogie_si_record_i32($i81);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 355, 19} true;
+  assume {:verifier.code 0} true;
+  $i82 := $zext.i32.i64($i81);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 355, 19} true;
+  assume {:verifier.code 0} true;
+  $p83 := $i2p.i64.ref($i82);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 356, 19} true;
+  assume {:verifier.code 0} true;
+  $i84 := $p2i.ref.i32($p83);
+  call {:cexpr "__cil_tmp56"} boogie_si_record_i32($i84);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 357, 19} true;
+  assume {:verifier.code 0} true;
+  $i85 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp57"} boogie_si_record_i32($i85);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 358, 31} true;
+  assume {:verifier.code 0} true;
+  $i86 := $add.i32($i85, 12);
+  call {:cexpr "__cil_tmp58"} boogie_si_record_i32($i86);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 359, 21} true;
+  assume {:verifier.code 0} true;
+  $i87 := $zext.i32.i64($i86);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 359, 21} true;
+  assume {:verifier.code 0} true;
+  $p88 := $i2p.i64.ref($i87);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 359, 19} true;
+  assume {:verifier.code 0} true;
+  $p89 := $load.ref($M.0, $p88);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 360, 19} true;
+  assume {:verifier.code 0} true;
+  $i90 := $p2i.ref.i32($p89);
+  call {:cexpr "__cil_tmp60"} boogie_si_record_i32($i90);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 361, 31} true;
+  assume {:verifier.code 0} true;
+  $i91 := $ne.i32($i90, $i84);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 361, 31} true;
+  assume {:verifier.code 0} true;
+  $i92 := $zext.i1.i32($i91);
+  call {:cexpr "__cil_tmp61"} boogie_si_record_i32($i92);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 362, 11} true;
+  assume {:verifier.code 0} true;
+  $i93 := $ne.i32($i92, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 362, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i93} true;
+  goto $bb57, $bb58;
+$bb57:
+  assume ($i93 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb59;
+$bb58:
+  assume !(($i93 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 364, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 366, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb59;
+$bb59:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 369, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb60;
+$bb60:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 374, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb61;
+$bb61:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 374, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb62;
+$bb62:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 377, 19} true;
+  assume {:verifier.code 0} true;
+  $i94 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp62"} boogie_si_record_i32($i94);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 378, 31} true;
+  assume {:verifier.code 0} true;
+  $i95 := $add.i32($i94, 4);
+  call {:cexpr "__cil_tmp63"} boogie_si_record_i32($i95);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 379, 19} true;
+  assume {:verifier.code 0} true;
+  $i96 := $zext.i32.i64($i95);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 379, 19} true;
+  assume {:verifier.code 0} true;
+  $p97 := $i2p.i64.ref($i96);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 380, 19} true;
+  assume {:verifier.code 0} true;
+  $i98 := $p2i.ref.i32($p97);
+  call {:cexpr "__cil_tmp65"} boogie_si_record_i32($i98);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 382, 19} true;
+  assume {:verifier.code 0} true;
+  $i99 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp67"} boogie_si_record_i32($i99);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 383, 31} true;
+  assume {:verifier.code 0} true;
+  $i100 := $add.i32($i99, 16);
+  call {:cexpr "__cil_tmp68"} boogie_si_record_i32($i100);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 384, 21} true;
+  assume {:verifier.code 0} true;
+  $i101 := $zext.i32.i64($i100);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 384, 21} true;
+  assume {:verifier.code 0} true;
+  $p102 := $i2p.i64.ref($i101);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 384, 19} true;
+  assume {:verifier.code 0} true;
+  $p103 := $load.ref($M.0, $p102);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 385, 19} true;
+  assume {:verifier.code 0} true;
+  $i104 := $p2i.ref.i32($p103);
+  call {:cexpr "__cil_tmp70"} boogie_si_record_i32($i104);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 386, 31} true;
+  assume {:verifier.code 0} true;
+  $i105 := $ne.i32($i104, $i98);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 386, 31} true;
+  assume {:verifier.code 0} true;
+  $i106 := $zext.i1.i32($i105);
+  call {:cexpr "__cil_tmp71"} boogie_si_record_i32($i106);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 387, 11} true;
+  assume {:verifier.code 0} true;
+  $i107 := $ne.i32($i106, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 387, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i107} true;
+  goto $bb63, $bb64;
+$bb63:
+  assume ($i107 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb65;
+$bb64:
+  assume !(($i107 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 389, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 391, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb65;
+$bb65:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 394, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb66;
+$bb66:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 399, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb67;
+$bb67:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 399, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb68;
+$bb68:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 402, 19} true;
+  assume {:verifier.code 0} true;
+  $p108 := $bitcast.ref.ref($p23);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 403, 19} true;
+  assume {:verifier.code 0} true;
+  $i109 := $p2i.ref.i32($p108);
+  call {:cexpr "__cil_tmp73"} boogie_si_record_i32($i109);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 404, 19} true;
+  assume {:verifier.code 0} true;
+  $i110 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp74"} boogie_si_record_i32($i110);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 405, 31} true;
+  assume {:verifier.code 0} true;
+  $i111 := $ne.i32($i110, $i109);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 405, 31} true;
+  assume {:verifier.code 0} true;
+  $i112 := $zext.i1.i32($i111);
+  call {:cexpr "__cil_tmp75"} boogie_si_record_i32($i112);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 406, 11} true;
+  assume {:verifier.code 0} true;
+  $i113 := $ne.i32($i112, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 406, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i113} true;
+  goto $bb69, $bb70;
+$bb69:
+  assume ($i113 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb71;
+$bb70:
+  assume !(($i113 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 408, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 410, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb71;
+$bb71:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 413, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb72;
+$bb72:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 418, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb73;
+$bb73:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 418, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb74;
+$bb74:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 421, 19} true;
+  assume {:verifier.code 0} true;
+  $i114 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp76"} boogie_si_record_i32($i114);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 422, 31} true;
+  assume {:verifier.code 0} true;
+  $i115 := $add.i32($i114, 4);
+  call {:cexpr "__cil_tmp77"} boogie_si_record_i32($i115);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 423, 19} true;
+  assume {:verifier.code 0} true;
+  $i116 := $zext.i32.i64($i115);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 423, 19} true;
+  assume {:verifier.code 0} true;
+  $p117 := $i2p.i64.ref($i116);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 424, 19} true;
+  assume {:verifier.code 0} true;
+  $p118 := $bitcast.ref.ref($p117);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 425, 19} true;
+  assume {:verifier.code 0} true;
+  $i119 := $p2i.ref.i32($p118);
+  call {:cexpr "__cil_tmp80"} boogie_si_record_i32($i119);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 426, 19} true;
+  assume {:verifier.code 0} true;
+  $i120 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp81"} boogie_si_record_i32($i120);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 427, 31} true;
+  assume {:verifier.code 0} true;
+  $i121 := $ne.i32($i120, $i119);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 427, 31} true;
+  assume {:verifier.code 0} true;
+  $i122 := $zext.i1.i32($i121);
+  call {:cexpr "__cil_tmp82"} boogie_si_record_i32($i122);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 428, 11} true;
+  assume {:verifier.code 0} true;
+  $i123 := $ne.i32($i122, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 428, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i123} true;
+  goto $bb75, $bb76;
+$bb75:
+  assume ($i123 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb77;
+$bb76:
+  assume !(($i123 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 430, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 432, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb77;
+$bb77:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 435, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb78;
+$bb78:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 440, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb79;
+$bb79:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 440, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb80;
+$bb80:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 443, 19} true;
+  assume {:verifier.code 0} true;
+  $p124 := $bitcast.ref.ref($p50);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 444, 19} true;
+  assume {:verifier.code 0} true;
+  $p125 := $bitcast.ref.ref($p124);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 445, 19} true;
+  assume {:verifier.code 0} true;
+  $i126 := $p2i.ref.i32($p125);
+  call {:cexpr "__cil_tmp85"} boogie_si_record_i32($i126);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 446, 19} true;
+  assume {:verifier.code 0} true;
+  $i127 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp86"} boogie_si_record_i32($i127);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 447, 31} true;
+  assume {:verifier.code 0} true;
+  $i128 := $eq.i32($i127, $i126);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 447, 31} true;
+  assume {:verifier.code 0} true;
+  $i129 := $zext.i1.i32($i128);
+  call {:cexpr "__cil_tmp87"} boogie_si_record_i32($i129);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 448, 11} true;
+  assume {:verifier.code 0} true;
+  $i130 := $ne.i32($i129, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 448, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i130} true;
+  goto $bb81, $bb82;
+$bb81:
+  assume ($i130 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb83;
+$bb82:
+  assume !(($i130 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 450, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 452, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb83;
+$bb83:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 455, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb84;
+$bb84:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 460, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb85;
+$bb85:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 460, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb86;
+$bb86:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 463, 19} true;
+  assume {:verifier.code 0} true;
+  $i131 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp88"} boogie_si_record_i32($i131);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 464, 31} true;
+  assume {:verifier.code 0} true;
+  $i132 := $add.i32($i131, 4);
+  call {:cexpr "__cil_tmp89"} boogie_si_record_i32($i132);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 465, 21} true;
+  assume {:verifier.code 0} true;
+  $i133 := $zext.i32.i64($i132);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 465, 21} true;
+  assume {:verifier.code 0} true;
+  $p134 := $i2p.i64.ref($i133);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 465, 19} true;
+  assume {:verifier.code 0} true;
+  $p135 := $load.ref($M.0, $p134);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 466, 19} true;
+  assume {:verifier.code 0} true;
+  $i136 := $p2i.ref.i32($p135);
+  call {:cexpr "__cil_tmp91"} boogie_si_record_i32($i136);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 467, 31} true;
+  assume {:verifier.code 0} true;
+  $i137 := $add.i32($i136, 4);
+  call {:cexpr "__cil_tmp92"} boogie_si_record_i32($i137);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 468, 21} true;
+  assume {:verifier.code 0} true;
+  $i138 := $zext.i32.i64($i137);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 468, 21} true;
+  assume {:verifier.code 0} true;
+  $p139 := $i2p.i64.ref($i138);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 468, 19} true;
+  assume {:verifier.code 0} true;
+  $p140 := $load.ref($M.0, $p139);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 469, 19} true;
+  assume {:verifier.code 0} true;
+  $i141 := $p2i.ref.i32($p140);
+  call {:cexpr "__cil_tmp94"} boogie_si_record_i32($i141);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 470, 19} true;
+  assume {:verifier.code 0} true;
+  $i142 := $p2i.ref.i32($p23);
+  call {:cexpr "__cil_tmp95"} boogie_si_record_i32($i142);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 471, 31} true;
+  assume {:verifier.code 0} true;
+  $i143 := $eq.i32($i142, $i141);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 471, 31} true;
+  assume {:verifier.code 0} true;
+  $i144 := $zext.i1.i32($i143);
+  call {:cexpr "__cil_tmp96"} boogie_si_record_i32($i144);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 472, 11} true;
+  assume {:verifier.code 0} true;
+  $i145 := $ne.i32($i144, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 472, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i145} true;
+  goto $bb87, $bb88;
+$bb87:
+  assume ($i145 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb89;
+$bb88:
+  assume !(($i145 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 474, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 476, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb89;
+$bb89:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 479, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb90;
+$bb90:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 484, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb91;
+$bb91:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 484, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb92;
+$bb92:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 488, 19} true;
+  assume {:verifier.code 0} true;
+  $i146 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp98"} boogie_si_record_i32($i146);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 489, 31} true;
+  assume {:verifier.code 0} true;
+  $i147 := $add.i32($i146, 8);
+  call {:cexpr "__cil_tmp99"} boogie_si_record_i32($i147);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 490, 22} true;
+  assume {:verifier.code 0} true;
+  $i148 := $zext.i32.i64($i147);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 490, 22} true;
+  assume {:verifier.code 0} true;
+  $p149 := $i2p.i64.ref($i148);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 490, 20} true;
+  assume {:verifier.code 0} true;
+  $p150 := $load.ref($M.0, $p149);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 491, 20} true;
+  assume {:verifier.code 0} true;
+  $p151 := $bitcast.ref.ref($p150);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 491, 20} true;
+  assume {:verifier.code 0} true;
+  $p152 := $load.ref($M.0, $p151);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 492, 20} true;
+  assume {:verifier.code 0} true;
+  $i153 := $p2i.ref.i32($p152);
+  call {:cexpr "__cil_tmp102"} boogie_si_record_i32($i153);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 493, 20} true;
+  assume {:verifier.code 0} true;
+  $i154 := $p2i.ref.i32($p23);
+  call {:cexpr "__cil_tmp103"} boogie_si_record_i32($i154);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 494, 33} true;
+  assume {:verifier.code 0} true;
+  $i155 := $eq.i32($i154, $i153);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 494, 33} true;
+  assume {:verifier.code 0} true;
+  $i156 := $zext.i1.i32($i155);
+  call {:cexpr "__cil_tmp104"} boogie_si_record_i32($i156);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 495, 11} true;
+  assume {:verifier.code 0} true;
+  $i157 := $ne.i32($i156, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 495, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i157} true;
+  goto $bb93, $bb94;
+$bb93:
+  assume ($i157 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb95;
+$bb94:
+  assume !(($i157 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 497, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 499, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb95;
+$bb95:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 502, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb96;
+$bb96:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 506, 18} true;
+  assume {:verifier.code 0} true;
+  $p158 := $bitcast.ref.ref($p23);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 506, 18} true;
+  assume {:verifier.code 0} true;
+  $p159 := $load.ref($M.0, $p158);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 509, 3} true;
+  assume {:verifier.code 0} true;
+  $p160 := $p159;
+  goto $bb97;
+$bb97:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 509, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb98;
+$bb98:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 512, 20} true;
+  assume {:verifier.code 0} true;
+  $i161 := $p2i.ref.i32($p160);
+  call {:cexpr "__cil_tmp106"} boogie_si_record_i32($i161);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 513, 20} true;
+  assume {:verifier.code 0} true;
+  $i162 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp107"} boogie_si_record_i32($i162);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 514, 33} true;
+  assume {:verifier.code 0} true;
+  $i163 := $add.i32($i162, 4);
+  call {:cexpr "__cil_tmp108"} boogie_si_record_i32($i163);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 515, 20} true;
+  assume {:verifier.code 0} true;
+  $i164 := $zext.i32.i64($i163);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 515, 20} true;
+  assume {:verifier.code 0} true;
+  $p165 := $i2p.i64.ref($i164);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 516, 20} true;
+  assume {:verifier.code 0} true;
+  $i166 := $p2i.ref.i32($p165);
+  call {:cexpr "__cil_tmp110"} boogie_si_record_i32($i166);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 517, 22} true;
+  assume {:verifier.code 0} true;
+  $i167 := $ne.i32($i166, $i161);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 517, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i167} true;
+  goto $bb99, $bb100;
+$bb99:
+  assume ($i167 == 1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 518, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb101;
+$bb100:
+  assume !(($i167 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 519, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb102;
+$bb101:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 522, 20} true;
+  assume {:verifier.code 0} true;
+  $p168 := $bitcast.ref.ref($p160);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 522, 20} true;
+  assume {:verifier.code 0} true;
+  $p169 := $load.ref($M.0, $p168);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 509, 3} true;
+  assume {:verifier.code 0} true;
+  $p160 := $p169;
+  goto $bb97;
+$bb102:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 528, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb103;
+$bb103:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 528, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb104;
+$bb104:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 531, 20} true;
+  assume {:verifier.code 0} true;
+  $i170 := $p2i.ref.i32($p50);
+  call {:cexpr "__cil_tmp112"} boogie_si_record_i32($i170);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 533, 20} true;
+  assume {:verifier.code 0} true;
+  $i171 := $p2i.ref.i32($0.ref);
+  call {:cexpr "__cil_tmp114"} boogie_si_record_i32($i171);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 534, 33} true;
+  assume {:verifier.code 0} true;
+  $i172 := $add.i32($i171, 4);
+  call {:cexpr "__cil_tmp115"} boogie_si_record_i32($i172);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 535, 20} true;
+  assume {:verifier.code 0} true;
+  $i173 := $zext.i32.i64($i172);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 535, 20} true;
+  assume {:verifier.code 0} true;
+  $p174 := $i2p.i64.ref($i173);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 536, 20} true;
+  assume {:verifier.code 0} true;
+  $i175 := $p2i.ref.i64($p174);
+  call {:cexpr "__cil_tmp117"} boogie_si_record_i64($i175);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 537, 20} true;
+  assume {:verifier.code 0} true;
+  $p176 := $bitcast.ref.ref($p160);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 538, 33} true;
+  assume {:verifier.code 0} true;
+  $i177 := $sub.i64(0, $i175);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 538, 33} true;
+  assume {:verifier.code 0} true;
+  $p178 := $add.ref($p176, $mul.ref($i177, 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 539, 20} true;
+  assume {:verifier.code 0} true;
+  $p179 := $bitcast.ref.ref($p178);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 540, 20} true;
+  assume {:verifier.code 0} true;
+  $i180 := $p2i.ref.i32($p179);
+  call {:cexpr "__cil_tmp121"} boogie_si_record_i32($i180);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 541, 33} true;
+  assume {:verifier.code 0} true;
+  $i181 := $eq.i32($i180, $i170);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 541, 33} true;
+  assume {:verifier.code 0} true;
+  $i182 := $zext.i1.i32($i181);
+  call {:cexpr "__cil_tmp122"} boogie_si_record_i32($i182);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 542, 11} true;
+  assume {:verifier.code 0} true;
+  $i183 := $ne.i32($i182, 0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 542, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i183} true;
+  goto $bb105, $bb106;
+$bb105:
+  assume ($i183 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb107;
+$bb106:
+  assume !(($i183 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 544, 7} true;
+  assume {:verifier.code 0} true;
+  call fail();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 546, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb107;
+$bb107:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 549, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb108;
+$bb108:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 553, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const gl_sort: ref;
+axiom (gl_sort == $sub.ref(0, 11363));
+procedure gl_sort()
+{
+  var $i0: i1;
+  var $i1: i8;
+  var $i2: i1;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 809, 3} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 809, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 809, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb2;
+$bb2:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 812, 11} true;
+  assume {:verifier.code 0} true;
+  call $i0 := gl_sort_pass();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 812, 9} true;
+  assume {:verifier.code 0} true;
+  $i1 := $zext.i1.i8($i0);
+  call {:cexpr "tmp"} boogie_si_record_i8($i1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 814, 9} true;
+  assume {:verifier.code 0} true;
+  $i2 := $trunc.i8.i1($i1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 814, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i2} true;
+  goto $bb3, $bb4;
+$bb3:
+  assume ($i2 == 1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 815, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb5;
+$bb4:
+  assume !(($i2 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 816, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb5:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 809, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb6:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 821, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const gl_destroy: ref;
+axiom (gl_destroy == $sub.ref(0, 12395));
+procedure gl_destroy()
+{
+  var $p0: ref;
+  var $p1: ref;
+  var $i2: i32;
+  var $i3: i1;
+  var $p4: ref;
+  var $p5: ref;
+  var $p6: ref;
+  var $i7: i32;
+  var $i8: i32;
+  var $i9: i64;
+  var $p10: ref;
+  var $i11: i64;
+  var $p12: ref;
+  var $i13: i64;
+  var $p14: ref;
+  var $p15: ref;
+  var $p16: ref;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 704, 3} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 704, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 704, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb2;
+$bb2:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 707, 12} true;
+  assume {:verifier.code 0} true;
+  $p0 := $bitcast.ref.ref(gl_list);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 707, 12} true;
+  assume {:verifier.code 0} true;
+  $p1 := $load.ref($M.0, $p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 709, 18} true;
+  assume {:verifier.code 0} true;
+  $i2 := $p2i.ref.i32($p1);
+  call {:cexpr "__cil_tmp3"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 711, 20} true;
+  assume {:verifier.code 0} true;
+  $i3 := $ne.i32($p2i.ref.i32(gl_list), $i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 711, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i3} true;
+  goto $bb3, $bb4;
+$bb3:
+  assume ($i3 == 1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 712, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb5;
+$bb4:
+  assume !(($i3 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 713, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb5:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 718, 42} true;
+  assume {:verifier.code 0} true;
+  $p4 := $bitcast.ref.ref($p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 718, 42} true;
+  assume {:verifier.code 0} true;
+  $p5 := $load.ref($M.0, $p4);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 718, 5} true;
+  assume {:verifier.code 0} true;
+  $p6 := $bitcast.ref.ref(gl_list);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 718, 40} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p6, $p5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 720, 18} true;
+  assume {:verifier.code 0} true;
+  $i7 := $p2i.ref.i32($0.ref);
+  call {:cexpr "__cil_tmp7"} boogie_si_record_i32($i7);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 721, 29} true;
+  assume {:verifier.code 0} true;
+  $i8 := $add.i32($i7, 4);
+  call {:cexpr "__cil_tmp8"} boogie_si_record_i32($i8);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 722, 18} true;
+  assume {:verifier.code 0} true;
+  $i9 := $zext.i32.i64($i8);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 722, 18} true;
+  assume {:verifier.code 0} true;
+  $p10 := $i2p.i64.ref($i9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 723, 19} true;
+  assume {:verifier.code 0} true;
+  $i11 := $p2i.ref.i64($p10);
+  call {:cexpr "__cil_tmp10"} boogie_si_record_i64($i11);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 724, 19} true;
+  assume {:verifier.code 0} true;
+  $p12 := $bitcast.ref.ref($p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 725, 31} true;
+  assume {:verifier.code 0} true;
+  $i13 := $sub.i64(0, $i11);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 725, 31} true;
+  assume {:verifier.code 0} true;
+  $p14 := $add.ref($p12, $mul.ref($i13, 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 726, 19} true;
+  assume {:verifier.code 0} true;
+  $p15 := $bitcast.ref.ref($p14);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 727, 19} true;
+  assume {:verifier.code 0} true;
+  $p16 := $bitcast.ref.ref($p15);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 728, 5} true;
+  assume {:verifier.code 0} true;
+  call free_($p16);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 704, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb6:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 733, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const free_: ref;
+axiom (free_ == $sub.ref(0, 13427));
+procedure free_($p0: ref)
+{
+  call $free($p0);
+}
+const gl_sort_pass: ref;
+axiom (gl_sort_pass == $sub.ref(0, 14459));
+procedure gl_sort_pass()
+  returns ($r: i1)
+{
+  var $p0: ref;
+  var $p1: ref;
+  var $p2: ref;
+  var $i3: i8;
+  var $p4: ref;
+  var $p5: ref;
+  var $p6: ref;
+  var $i7: i32;
+  var $i8: i1;
+  var $i9: i32;
+  var $i10: i32;
+  var $i11: i1;
+  var $i12: i1;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 771, 10} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 771, 10} true;
+  assume {:verifier.code 0} true;
+  $p0 := $bitcast.ref.ref(gl_list);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 771, 10} true;
+  assume {:verifier.code 0} true;
+  $p1 := $load.ref($M.0, $p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 773, 3} true;
+  assume {:verifier.code 0} true;
+  $p2, $i3 := $p1, 0;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 771, 8} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 773, 13} true;
+  assume {:verifier.code 0} true;
+  $p4 := $p2;
+  goto $bb2;
+$bb2:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 775, 12} true;
+  assume {:verifier.code 0} true;
+  $p5 := $bitcast.ref.ref($p4);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 775, 12} true;
+  assume {:verifier.code 0} true;
+  $p6 := $load.ref($M.0, $p5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 777, 18} true;
+  assume {:verifier.code 0} true;
+  $i7 := $p2i.ref.i32($p6);
+  call {:cexpr "__cil_tmp9"} boogie_si_record_i32($i7);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 779, 21} true;
+  assume {:verifier.code 0} true;
+  $i8 := $ne.i32($p2i.ref.i32(gl_list), $i7);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 779, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i8} true;
+  goto $bb3, $bb4;
+$bb3:
+  assume ($i8 == 1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 780, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb5;
+$bb4:
+  assume !(($i8 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 781, 7} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb5:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 785, 11} true;
+  assume {:verifier.code 0} true;
+  call $i9 := val_from_node($p4);
+  call {:cexpr "tmp"} boogie_si_record_i32($i9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 787, 15} true;
+  assume {:verifier.code 0} true;
+  call $i10 := val_from_node($p6);
+  call {:cexpr "tmp___0"} boogie_si_record_i32($i10);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 790, 14} true;
+  assume {:verifier.code 0} true;
+  $i11 := $sle.i32($i9, $i10);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 790, 9} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i11} true;
+  goto $bb7, $bb8;
+$bb6:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 802, 11} true;
+  assume {:verifier.code 0} true;
+  $i12 := $trunc.i8.i1($i3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 802, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i12;
+  $exn := false;
+  return;
+$bb7:
+  assume ($i11 == 1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 792, 7} true;
+  assume {:verifier.code 0} true;
+  $p4 := $p6;
+  goto $bb2;
+$bb8:
+  assume !(($i11 == 1));
+  assume {:verifier.code 0} true;
   goto $bb9;
+$bb9:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 797, 5} true;
+  assume {:verifier.code 0} true;
+  call list_move($p4, $p6);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 773, 3} true;
+  assume {:verifier.code 0} true;
+  $p2, $i3 := $p4, 1;
+  goto $bb1;
+}
+const val_from_node: ref;
+axiom (val_from_node == $sub.ref(0, 15491));
+procedure val_from_node($p0: ref)
+  returns ($r: i32)
+{
+  var $i1: i32;
+  var $i2: i32;
+  var $i3: i64;
+  var $p4: ref;
+  var $i5: i64;
+  var $p6: ref;
+  var $i7: i64;
+  var $p8: ref;
+  var $p9: ref;
+  var $p10: ref;
+  var $i11: i32;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 747, 16} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 747, 16} true;
+  assume {:verifier.code 0} true;
+  $i1 := $p2i.ref.i32($0.ref);
+  call {:cexpr "__cil_tmp4"} boogie_si_record_i32($i1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 748, 27} true;
+  assume {:verifier.code 0} true;
+  $i2 := $add.i32($i1, 4);
+  call {:cexpr "__cil_tmp5"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 749, 16} true;
+  assume {:verifier.code 0} true;
+  $i3 := $zext.i32.i64($i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 749, 16} true;
+  assume {:verifier.code 0} true;
+  $p4 := $i2p.i64.ref($i3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 750, 16} true;
+  assume {:verifier.code 0} true;
+  $i5 := $p2i.ref.i64($p4);
+  call {:cexpr "__cil_tmp7"} boogie_si_record_i64($i5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 751, 16} true;
+  assume {:verifier.code 0} true;
+  $p6 := $bitcast.ref.ref($p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 752, 27} true;
+  assume {:verifier.code 0} true;
+  $i7 := $sub.i64(0, $i5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 752, 27} true;
+  assume {:verifier.code 0} true;
+  $p8 := $add.ref($p6, $mul.ref($i7, 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 753, 11} true;
+  assume {:verifier.code 0} true;
+  $p9 := $bitcast.ref.ref($p8);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 754, 11} true;
+  assume {:verifier.code 0} true;
+  $p10 := $bitcast.ref.ref($p9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 754, 11} true;
+  assume {:verifier.code 0} true;
+  $i11 := $load.i32($M.0, $p10);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 754, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i11;
+  $exn := false;
+  return;
+}
+const list_move: ref;
+axiom (list_move == $sub.ref(0, 16523));
+procedure list_move($p0: ref, $p1: ref)
+{
+  var $i2: i32;
+  var $i3: i32;
+  var $i4: i64;
+  var $p5: ref;
+  var $p6: ref;
+  var $p7: ref;
+  var $p8: ref;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 601, 16} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 601, 16} true;
+  assume {:verifier.code 0} true;
+  $i2 := $p2i.ref.i32($p0);
+  call {:cexpr "__cil_tmp3"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 602, 27} true;
+  assume {:verifier.code 0} true;
+  $i3 := $add.i32($i2, 4);
+  call {:cexpr "__cil_tmp4"} boogie_si_record_i32($i3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 603, 18} true;
+  assume {:verifier.code 0} true;
+  $i4 := $zext.i32.i64($i3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 603, 18} true;
+  assume {:verifier.code 0} true;
+  $p5 := $i2p.i64.ref($i4);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 603, 16} true;
+  assume {:verifier.code 0} true;
+  $p6 := $load.ref($M.0, $p5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 604, 16} true;
+  assume {:verifier.code 0} true;
+  $p7 := $bitcast.ref.ref($p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 604, 16} true;
+  assume {:verifier.code 0} true;
+  $p8 := $load.ref($M.0, $p7);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 605, 3} true;
+  assume {:verifier.code 0} true;
+  call __list_del($p6, $p8);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 606, 3} true;
+  assume {:verifier.code 0} true;
+  call list_add($p0, $p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 608, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const __list_del: ref;
+axiom (__list_del == $sub.ref(0, 17555));
+procedure __list_del($p0: ref, $p1: ref)
+{
+  var $i2: i32;
+  var $i3: i32;
+  var $i4: i64;
+  var $p5: ref;
+  var $p6: ref;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 577, 16} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 577, 16} true;
+  assume {:verifier.code 0} true;
+  $i2 := $p2i.ref.i32($p1);
+  call {:cexpr "__cil_tmp3"} boogie_si_record_i32($i2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 578, 27} true;
+  assume {:verifier.code 0} true;
+  $i3 := $add.i32($i2, 4);
+  call {:cexpr "__cil_tmp4"} boogie_si_record_i32($i3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 579, 5} true;
+  assume {:verifier.code 0} true;
+  $i4 := $zext.i32.i64($i3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 579, 5} true;
+  assume {:verifier.code 0} true;
+  $p5 := $i2p.i64.ref($i4);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 579, 38} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p5, $p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 580, 3} true;
+  assume {:verifier.code 0} true;
+  $p6 := $bitcast.ref.ref($p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 580, 32} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p6, $p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 581, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const list_add: ref;
+axiom (list_add == $sub.ref(0, 18587));
+procedure list_add($p0: ref, $p1: ref)
+{
+  var $p2: ref;
+  var $p3: ref;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 588, 16} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 588, 16} true;
+  assume {:verifier.code 0} true;
+  $p2 := $bitcast.ref.ref($p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 588, 16} true;
+  assume {:verifier.code 0} true;
+  $p3 := $load.ref($M.0, $p2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 589, 3} true;
+  assume {:verifier.code 0} true;
+  call __list_add($p0, $p1, $p3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 591, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const __list_add: ref;
+axiom (__list_add == $sub.ref(0, 19619));
+procedure __list_add($p0: ref, $p1: ref, $p2: ref)
+{
+  var $i3: i32;
+  var $i4: i32;
+  var $i5: i64;
+  var $p6: ref;
+  var $p7: ref;
+  var $i8: i32;
+  var $i9: i32;
+  var $i10: i64;
+  var $p11: ref;
+  var $p12: ref;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 562, 16} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 562, 16} true;
+  assume {:verifier.code 0} true;
+  $i3 := $p2i.ref.i32($p2);
+  call {:cexpr "__cil_tmp4"} boogie_si_record_i32($i3);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 563, 27} true;
+  assume {:verifier.code 0} true;
+  $i4 := $add.i32($i3, 4);
+  call {:cexpr "__cil_tmp5"} boogie_si_record_i32($i4);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 564, 5} true;
+  assume {:verifier.code 0} true;
+  $i5 := $zext.i32.i64($i4);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 564, 5} true;
+  assume {:verifier.code 0} true;
+  $p6 := $i2p.i64.ref($i5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 564, 38} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p6, $p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 565, 3} true;
+  assume {:verifier.code 0} true;
+  $p7 := $bitcast.ref.ref($p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 565, 31} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p7, $p2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 566, 16} true;
+  assume {:verifier.code 0} true;
+  $i8 := $p2i.ref.i32($p0);
+  call {:cexpr "__cil_tmp6"} boogie_si_record_i32($i8);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 567, 27} true;
+  assume {:verifier.code 0} true;
+  $i9 := $add.i32($i8, 4);
+  call {:cexpr "__cil_tmp7"} boogie_si_record_i32($i9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 568, 5} true;
+  assume {:verifier.code 0} true;
+  $i10 := $zext.i32.i64($i9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 568, 5} true;
+  assume {:verifier.code 0} true;
+  $p11 := $i2p.i64.ref($i10);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 568, 38} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p11, $p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 569, 3} true;
+  assume {:verifier.code 0} true;
+  $p12 := $bitcast.ref.ref($p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 569, 32} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p12, $p0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 570, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const fail: ref;
+axiom (fail == $sub.ref(0, 20651));
+procedure fail()
+{
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 35, 3} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 35, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb1;
+$bb1:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 36, 11} true;
+  assume {:verifier.code 0} true;
+  call reach_error();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 36, 25} true;
+  assume {:verifier.code 0} true;
+  call abort();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 36, 25} true;
+  assume {:verifier.code 0} true;
+  assume false;
+$bb2:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 39, 1} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const abort: ref;
+axiom (abort == $sub.ref(0, 21683));
+procedure abort();
+const gl_insert: ref;
+axiom (gl_insert == $sub.ref(0, 22715));
+procedure gl_insert($i0: i32)
+{
+  var $p1: ref;
+  var $p2: ref;
+  var $i3: i1;
+  var $p4: ref;
+  var $i5: i32;
+  var $i6: i32;
+  var $i7: i64;
+  var $p8: ref;
+  var $i9: i32;
+  var $i10: i32;
+  var $i11: i32;
+  var $i12: i32;
+  var $i13: i64;
+  var $p14: ref;
+  var $i15: i64;
+  var $p16: ref;
+  var $i17: i32;
+  var $i18: i32;
+  var $i19: i32;
+  var $i20: i32;
+  var $i21: i64;
+  var $p22: ref;
+  var $i23: i64;
+  var $p24: ref;
+$bb0:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 629, 9} true;
+  assume {:verifier.code 0} true;
+  call {:cexpr "gl_insert:arg:value"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 629, 9} true;
+  assume {:verifier.code 0} true;
+  call $p1 := malloc(20);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 630, 10} true;
+  assume {:verifier.code 0} true;
+  $p2 := $bitcast.ref.ref($p1);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 632, 9} true;
+  assume {:verifier.code 0} true;
+  $i3 := $ne.ref($p2, $0.ref);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 632, 7} true;
+  assume {:verifier.code 0} true;
+  assume {:branchcond $i3} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i3 == 1);
+  assume {:verifier.code 0} true;
+  goto $bb3;
+$bb2:
+  assume !(($i3 == 1));
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 634, 5} true;
+  assume {:verifier.code 0} true;
+  call abort();
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 634, 5} true;
+  assume {:verifier.code 0} true;
+  assume false;
+$bb3:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 639, 3} true;
+  assume {:verifier.code 0} true;
+  $p4 := $bitcast.ref.ref($p2);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 639, 18} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.i32($M.0, $p4, $i0);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 640, 16} true;
+  assume {:verifier.code 0} true;
+  $i5 := $p2i.ref.i32($p2);
+  call {:cexpr "__cil_tmp5"} boogie_si_record_i32($i5);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 641, 27} true;
+  assume {:verifier.code 0} true;
+  $i6 := $add.i32($i5, 4);
+  call {:cexpr "__cil_tmp6"} boogie_si_record_i32($i6);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 642, 16} true;
+  assume {:verifier.code 0} true;
+  $i7 := $zext.i32.i64($i6);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 642, 16} true;
+  assume {:verifier.code 0} true;
+  $p8 := $i2p.i64.ref($i7);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 643, 3} true;
+  assume {:verifier.code 0} true;
+  call list_add($p8, gl_list);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 646, 3} true;
+  assume {:verifier.code 0} true;
+  goto $bb4;
+$bb4:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 646, 13} true;
+  assume {:verifier.code 0} true;
+  goto $bb5;
+$bb5:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 648, 18} true;
+  assume {:verifier.code 0} true;
+  $i9 := $p2i.ref.i32($p2);
+  call {:cexpr "__cil_tmp8"} boogie_si_record_i32($i9);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 649, 29} true;
+  assume {:verifier.code 0} true;
+  $i10 := $add.i32($i9, 12);
+  call {:cexpr "__cil_tmp9"} boogie_si_record_i32($i10);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 650, 19} true;
+  assume {:verifier.code 0} true;
+  $i11 := $p2i.ref.i32($p2);
+  call {:cexpr "__cil_tmp10"} boogie_si_record_i32($i11);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 651, 31} true;
+  assume {:verifier.code 0} true;
+  $i12 := $add.i32($i11, 12);
+  call {:cexpr "__cil_tmp11"} boogie_si_record_i32($i12);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 652, 42} true;
+  assume {:verifier.code 0} true;
+  $i13 := $zext.i32.i64($i12);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 652, 42} true;
+  assume {:verifier.code 0} true;
+  $p14 := $i2p.i64.ref($i13);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 652, 7} true;
+  assume {:verifier.code 0} true;
+  $i15 := $zext.i32.i64($i10);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 652, 7} true;
+  assume {:verifier.code 0} true;
+  $p16 := $i2p.i64.ref($i15);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 652, 40} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p16, $p14);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 653, 19} true;
+  assume {:verifier.code 0} true;
+  $i17 := $p2i.ref.i32($p2);
+  call {:cexpr "__cil_tmp12"} boogie_si_record_i32($i17);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 654, 31} true;
+  assume {:verifier.code 0} true;
+  $i18 := $add.i32($i17, 12);
+  call {:cexpr "__cil_tmp13"} boogie_si_record_i32($i18);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 655, 19} true;
+  assume {:verifier.code 0} true;
+  $i19 := $p2i.ref.i32($p2);
+  call {:cexpr "__cil_tmp14"} boogie_si_record_i32($i19);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 656, 31} true;
+  assume {:verifier.code 0} true;
+  $i20 := $add.i32($i19, 12);
+  call {:cexpr "__cil_tmp15"} boogie_si_record_i32($i20);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 657, 43} true;
+  assume {:verifier.code 0} true;
+  $i21 := $zext.i32.i64($i20);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 657, 43} true;
+  assume {:verifier.code 0} true;
+  $p22 := $i2p.i64.ref($i21);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 657, 7} true;
+  assume {:verifier.code 0} true;
+  $i23 := $zext.i32.i64($i18);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 657, 7} true;
+  assume {:verifier.code 0} true;
+  $p24 := $i2p.i64.ref($i23);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 657, 41} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.ref($M.0, $p24, $p22);
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 658, 5} true;
+  assume {:verifier.code 0} true;
+  goto $bb6;
+$bb6:
+  assume {:sourceloc "./output/bubble_sort-2_tmp.c", 662, 3} true;
+  assume {:verifier.code 0} true;
+  $exn := false;
+  return;
+}
+const malloc: ref;
+axiom (malloc == $sub.ref(0, 23747));
+procedure malloc($i0: i32)
+  returns ($r: ref)
+{
+  call $r := $malloc($zext.i32.i64($i0));
 }
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 10323));
+axiom (__VERIFIER_assume == $sub.ref(0, 24779));
 procedure __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1565,11 +3573,11 @@ $bb0:
   return;
 }
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 11355));
+axiom (__SMACK_code == $sub.ref(0, 25811));
 procedure __SMACK_code.ref.i32($p0: ref, p.1: i32);
 procedure __SMACK_code.ref($p0: ref);
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 12387));
+axiom (__SMACK_dummy == $sub.ref(0, 26843));
 procedure __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -1585,7 +3593,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 13419));
+axiom (__SMACK_check_overflow == $sub.ref(0, 27875));
 procedure __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -1604,103 +3612,157 @@ $bb0:
   return;
 }
 const __SMACK_nondet_char: ref;
-axiom (__SMACK_nondet_char == $sub.ref(0, 14451));
+axiom (__SMACK_nondet_char == $sub.ref(0, 28907));
 procedure __SMACK_nondet_char()
   returns ($r: i8);
 const __SMACK_nondet_signed_char: ref;
-axiom (__SMACK_nondet_signed_char == $sub.ref(0, 15483));
+axiom (__SMACK_nondet_signed_char == $sub.ref(0, 29939));
 procedure __SMACK_nondet_signed_char()
   returns ($r: i8);
 const __SMACK_nondet_unsigned_char: ref;
-axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 16515));
+axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 30971));
 procedure __SMACK_nondet_unsigned_char()
   returns ($r: i8);
 const __SMACK_nondet_short: ref;
-axiom (__SMACK_nondet_short == $sub.ref(0, 17547));
+axiom (__SMACK_nondet_short == $sub.ref(0, 32003));
 procedure __SMACK_nondet_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short: ref;
-axiom (__SMACK_nondet_signed_short == $sub.ref(0, 18579));
+axiom (__SMACK_nondet_signed_short == $sub.ref(0, 33035));
 procedure __SMACK_nondet_signed_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short_int: ref;
-axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 19611));
+axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 34067));
 procedure __SMACK_nondet_signed_short_int()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short: ref;
-axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 20643));
+axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 35099));
 procedure __SMACK_nondet_unsigned_short()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short_int: ref;
-axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 21675));
+axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 36131));
 procedure __SMACK_nondet_unsigned_short_int()
   returns ($r: i16);
+const __VERIFIER_nondet_int: ref;
+axiom (__VERIFIER_nondet_int == $sub.ref(0, 37163));
+procedure __VERIFIER_nondet_int()
+  returns ($r: i32)
+{
+  var $i0: i32;
+  var $i1: i1;
+  var $i3: i1;
+  var $i2: i1;
+  var $i4: i32;
+$bb0:
+  assume {:sourceloc "./lib/smack.c", 115, 11} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 115, 11} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __SMACK_nondet_int();
+  call {:cexpr "smack:ext:__SMACK_nondet_int"} boogie_si_record_i32($i0);
+  call {:cexpr "x"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./lib/smack.c", 116, 23} true;
+  assume {:verifier.code 0} true;
+  $i1 := $sge.i32($i0, $sub.i32(0, 2147483648));
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 0} true;
+  $i2 := 0;
+  assume {:branchcond $i1} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i1 == 1);
+  assume {:sourceloc "./lib/smack.c", 116, 39} true;
+  assume {:verifier.code 1} true;
+  $i3 := $sle.i32($i0, 2147483647);
+  assume {:verifier.code 0} true;
+  $i2 := $i3;
+  goto $bb3;
+$bb2:
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 0} true;
+  assume !(($i1 == 1));
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./lib/smack.c", 0, 0} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 1} true;
+  $i4 := $zext.i1.i32($i2);
+  assume {:sourceloc "./lib/smack.c", 116, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_assume($i4);
+  assume {:sourceloc "./lib/smack.c", 117, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i0;
+  $exn := false;
+  return;
+}
 const __SMACK_nondet_int: ref;
-axiom (__SMACK_nondet_int == $sub.ref(0, 22707));
+axiom (__SMACK_nondet_int == $sub.ref(0, 38195));
 procedure __SMACK_nondet_int()
   returns ($r: i32);
 const __SMACK_nondet_signed_int: ref;
-axiom (__SMACK_nondet_signed_int == $sub.ref(0, 23739));
+axiom (__SMACK_nondet_signed_int == $sub.ref(0, 39227));
 procedure __SMACK_nondet_signed_int()
   returns ($r: i32);
 const __SMACK_nondet_unsigned: ref;
-axiom (__SMACK_nondet_unsigned == $sub.ref(0, 24771));
+axiom (__SMACK_nondet_unsigned == $sub.ref(0, 40259));
 procedure __SMACK_nondet_unsigned()
   returns ($r: i32);
 const __SMACK_nondet_unsigned_int: ref;
-axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 25803));
+axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 41291));
 procedure __SMACK_nondet_unsigned_int()
   returns ($r: i32);
 const __SMACK_nondet_long: ref;
-axiom (__SMACK_nondet_long == $sub.ref(0, 26835));
+axiom (__SMACK_nondet_long == $sub.ref(0, 42323));
 procedure __SMACK_nondet_long()
   returns ($r: i64);
 const __SMACK_nondet_long_int: ref;
-axiom (__SMACK_nondet_long_int == $sub.ref(0, 27867));
+axiom (__SMACK_nondet_long_int == $sub.ref(0, 43355));
 procedure __SMACK_nondet_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long: ref;
-axiom (__SMACK_nondet_signed_long == $sub.ref(0, 28899));
+axiom (__SMACK_nondet_signed_long == $sub.ref(0, 44387));
 procedure __SMACK_nondet_signed_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_int: ref;
-axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 29931));
+axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 45419));
 procedure __SMACK_nondet_signed_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long: ref;
-axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 30963));
+axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 46451));
 procedure __SMACK_nondet_unsigned_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 31995));
+axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 47483));
 procedure __SMACK_nondet_unsigned_long_int()
   returns ($r: i64);
 const __SMACK_nondet_long_long: ref;
-axiom (__SMACK_nondet_long_long == $sub.ref(0, 33027));
+axiom (__SMACK_nondet_long_long == $sub.ref(0, 48515));
 procedure __SMACK_nondet_long_long()
   returns ($r: i64);
 const __SMACK_nondet_long_long_int: ref;
-axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 34059));
+axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 49547));
 procedure __SMACK_nondet_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long: ref;
-axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 35091));
+axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 50579));
 procedure __SMACK_nondet_signed_long_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long_int: ref;
-axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 36123));
+axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 51611));
 procedure __SMACK_nondet_signed_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long: ref;
-axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 37155));
+axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 52643));
 procedure __SMACK_nondet_unsigned_long_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 38187));
+axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 53675));
 procedure __SMACK_nondet_unsigned_long_long_int()
   returns ($r: i64);
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 39219));
+axiom (__SMACK_decls == $sub.ref(0, 54707));
 type $mop;
 procedure boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -1728,10 +3790,10 @@ ensures $eq.ref.bool(n, $0.ref) ==> old($CurrAddr) == $CurrAddr && p == $0.ref;
 procedure $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 40251));
+axiom (__SMACK_top_decl == $sub.ref(0, 55739));
 procedure __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 41283));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 56771));
 procedure __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -1743,20 +3805,24 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 42315));
+axiom (llvm.dbg.value == $sub.ref(0, 57803));
 procedure llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 43347));
+axiom (__SMACK_static_init == $sub.ref(0, 58835));
 procedure __SMACK_static_init()
 {
 $bb0:
-  $M.0 := .str.1.1;
-  $M.1 := 0;
+  $M.0 := $store.ref($M.0, gl_list, gl_list);
+  $M.0 := $store.ref($M.0, $add.ref($add.ref(gl_list, $mul.ref(0, 16)), $mul.ref(8, 1)), gl_list);
+  $M.1 := .str.1.3;
+  $M.2 := 0;
   call {:cexpr "errno_global"} boogie_si_record_i32(0);
   $exn := false;
   return;
 }
 procedure boogie_si_record_i32(x: i32);
+procedure boogie_si_record_i64(x: i64);
+procedure boogie_si_record_i8(x: i8);
 procedure boogie_si_record_ref(x: ref);
 procedure $initialize()
 {

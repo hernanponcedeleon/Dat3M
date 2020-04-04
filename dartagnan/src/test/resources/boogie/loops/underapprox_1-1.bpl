@@ -1382,9 +1382,9 @@ axiom (reach_error == $sub.ref(0, 6195));
 procedure reach_error()
 {
 $bb0:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
@@ -1395,35 +1395,35 @@ procedure __VERIFIER_assert($i0: i32)
 {
   var $i1: i1;
 $bb0:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 8} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 5, 8} true;
   assume {:verifier.code 0} true;
   call {:cexpr "__VERIFIER_assert:arg:cond"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 8} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 5, 8} true;
   assume {:verifier.code 0} true;
   $i1 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 7} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 5, 7} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i1} true;
   goto $bb1, $bb2;
 $bb1:
   assume ($i1 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 8, 3} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 8, 3} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
 $bb2:
   assume !(($i1 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 16} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 5, 16} true;
   assume {:verifier.code 0} true;
   goto $bb3;
 $bb3:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 13} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 6, 13} true;
   assume {:verifier.code 0} true;
   call reach_error();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 27} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 6, 27} true;
   assume {:verifier.code 0} true;
   call abort();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 27} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 6, 27} true;
   assume {:verifier.code 0} true;
   assume false;
 }
@@ -1438,112 +1438,61 @@ procedure main()
   var $i0: i32;
   var $i1: i32;
   var $i2: i1;
-  var $i3: i1;
-  var $i5: i32;
+  var $i3: i32;
   var $i4: i32;
+  var $i5: i1;
   var $i6: i32;
-  var $i7: i1;
-  var $i9: i1;
-  var $i8: i1;
-  var $i10: i32;
 $bb0:
   call $initialize();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 7} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 15, 3} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 7} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 15, 3} true;
   assume {:verifier.code 0} true;
-  $i0, $i1 := 1, 0;
+  $i0, $i1 := 0, 1;
   goto $bb1;
 $bb1:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 13} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 15, 12} true;
   assume {:verifier.code 0} true;
-  $i2 := $sle.i32($i0, 8);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 3} true;
+  $i2 := $ult.i32($i0, 6);
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 15, 3} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i2} true;
   goto $bb2, $bb3;
 $bb2:
   assume ($i2 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 10} true;
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 16, 6} true;
   assume {:verifier.code 0} true;
-  $i3 := $slt.i32($i0, 4);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 9} true;
+  $i3 := $add.i32($i0, 1);
+  call {:cexpr "x"} boogie_si_record_i32($i3);
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 17, 7} true;
   assume {:verifier.code 0} true;
-  $i4 := $i1;
-  assume {:branchcond $i3} true;
-  goto $bb4, $bb5;
+  $i4 := $mul.i32($i1, 2);
+  call {:cexpr "y"} boogie_si_record_i32($i4);
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 15, 3} true;
+  assume {:verifier.code 0} true;
+  $i0, $i1 := $i3, $i4;
+  goto $bb1;
 $bb3:
   assume !(($i2 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 23} true;
-  assume {:verifier.code 0} true;
-  $i7 := $eq.i32($i1, 16);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 0} true;
-  $i8 := 1;
-  assume {:branchcond $i7} true;
-  goto $bb8, $bb10;
-$bb4:
-  assume ($i3 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 16, 13} true;
-  assume {:verifier.code 0} true;
-  $i5 := $add.i32($i1, 2);
-  call {:cexpr "sn"} boogie_si_record_i32($i5);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 16, 5} true;
-  assume {:verifier.code 0} true;
-  $i4 := $i5;
-  goto $bb6;
-$bb5:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 9} true;
-  assume {:verifier.code 0} true;
-  assume !(($i3 == 1));
-  goto $bb6;
-$bb6:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 17, 3} true;
-  assume {:verifier.code 0} true;
-  goto $bb7;
-$bb7:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 19} true;
-  assume {:verifier.code 0} true;
-  $i6 := $add.i32($i0, 1);
-  call {:cexpr "i"} boogie_si_record_i32($i6);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 3} true;
-  assume {:verifier.code 0} true;
-  $i0, $i1 := $i6, $i4;
-  goto $bb1;
-$bb8:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 0} true;
-  assume ($i7 == 1);
-  goto $bb9;
-$bb9:
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 20, 23} true;
   assume {:verifier.code 1} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
+  $i5 := $ne.i32($i1, 64);
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 20, 23} true;
   assume {:verifier.code 1} true;
-  $i10 := $zext.i1.i32($i8);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 3} true;
+  $i6 := $zext.i1.i32($i5);
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 20, 3} true;
   assume {:verifier.code 1} true;
-  call __VERIFIER_assert($i10);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 19, 1} true;
+  call __VERIFIER_assert($i6);
+  assume {:sourceloc "./output/underapprox_1-1_tmp.c", 21, 1} true;
   assume {:verifier.code 0} true;
   $r := 0;
   $exn := false;
   return;
-$bb10:
-  assume !(($i7 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 37} true;
-  assume {:verifier.code 1} true;
-  $i9 := $eq.i32($i1, 0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 0} true;
-  $i8 := $i9;
-  goto $bb9;
 }
 const __VERIFIER_assume: ref;
 axiom (__VERIFIER_assume == $sub.ref(0, 10323));

@@ -1496,7 +1496,7 @@ $bb3:
   assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 23} true;
   assume {:verifier.code 0} true;
   $i11 := $eq.i32($i3, $i10);
-  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 29} true;
+  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 31} true;
   assume {:verifier.code 0} true;
   $i12 := 1;
   assume {:branchcond $i11} true;
@@ -1536,13 +1536,13 @@ $bb7:
   $i1, $i2, $i3 := $i8, $i9, $i6;
   goto $bb1;
 $bb8:
-  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 29} true;
+  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 31} true;
   assume {:verifier.code 0} true;
   assume ($i11 == 1);
   goto $bb9;
 $bb9:
   assume {:verifier.code 1} true;
-  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 29} true;
+  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 31} true;
   assume {:verifier.code 1} true;
   $i14 := $zext.i1.i32($i12);
   assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 3} true;
@@ -1555,10 +1555,10 @@ $bb9:
   return;
 $bb10:
   assume !(($i11 == 1));
-  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 35} true;
+  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 37} true;
   assume {:verifier.code 1} true;
   $i13 := $eq.i32($i3, 0);
-  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 29} true;
+  assume {:sourceloc "./output/sum01_bug02_tmp.c", 19, 31} true;
   assume {:verifier.code 0} true;
   $i12 := $i13;
   goto $bb9;

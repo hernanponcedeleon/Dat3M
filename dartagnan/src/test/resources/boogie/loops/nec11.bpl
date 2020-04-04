@@ -35,12 +35,13 @@ const $GLOBALS_BOTTOM: ref;
 const $EXTERNS_BOTTOM: ref;
 const $MALLOC_TOP: ref;
 
-// Memory maps (2 regions)
-var $M.0: ref;
-var $M.1: i32;
+// Memory maps (3 regions)
+var $M.0: [ref] i32;
+var $M.1: ref;
+var $M.2: i32;
 
 // Memory address bounds
-axiom ($GLOBALS_BOTTOM == $sub.ref(0, 43347));
+axiom ($GLOBALS_BOTTOM == $sub.ref(0, 46443));
 axiom ($EXTERNS_BOTTOM == $add.ref($GLOBALS_BOTTOM, $sub.ref(0, 32768)));
 axiom ($MALLOC_TOP == 9223372036854775807);
 function {:inline} $isExternal(p: ref) returns (bool) { $slt.ref.bool(p, $EXTERNS_BOTTOM) }
@@ -1371,8 +1372,8 @@ const {:count 14} .str.1: ref;
 axiom (.str.1 == $sub.ref(0, 1038));
 const env_value_str: ref;
 axiom (env_value_str == $sub.ref(0, 2070));
-const {:count 3} .str.1.1: ref;
-axiom (.str.1.1 == $sub.ref(0, 3097));
+const {:count 3} .str.1.3: ref;
+axiom (.str.1.3 == $sub.ref(0, 3097));
 const {:count 14} .str.14: ref;
 axiom (.str.14 == $sub.ref(0, 4135));
 const errno_global: ref;
@@ -1382,9 +1383,9 @@ axiom (reach_error == $sub.ref(0, 6195));
 procedure reach_error()
 {
 $bb0:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 2, 44} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 2, 44} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
@@ -1395,158 +1396,151 @@ procedure __VERIFIER_assert($i0: i32)
 {
   var $i1: i1;
 $bb0:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 8} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 5, 8} true;
   assume {:verifier.code 0} true;
   call {:cexpr "__VERIFIER_assert:arg:cond"} boogie_si_record_i32($i0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 8} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 5, 8} true;
   assume {:verifier.code 0} true;
   $i1 := $ne.i32($i0, 0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 7} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 5, 7} true;
   assume {:verifier.code 0} true;
   assume {:branchcond $i1} true;
   goto $bb1, $bb2;
 $bb1:
   assume ($i1 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 8, 3} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 8, 3} true;
   assume {:verifier.code 0} true;
   $exn := false;
   return;
 $bb2:
   assume !(($i1 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 5, 16} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 5, 16} true;
   assume {:verifier.code 0} true;
   goto $bb3;
 $bb3:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 13} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 6, 13} true;
   assume {:verifier.code 0} true;
   call reach_error();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 27} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 6, 27} true;
   assume {:verifier.code 0} true;
   call abort();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 6, 27} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 6, 27} true;
   assume {:verifier.code 0} true;
   assume false;
 }
+const llvm.dbg.declare: ref;
+axiom (llvm.dbg.declare == $sub.ref(0, 8259));
+procedure llvm.dbg.declare($p0: ref, $p1: ref, $p2: ref);
 const abort: ref;
-axiom (abort == $sub.ref(0, 8259));
+axiom (abort == $sub.ref(0, 9291));
 procedure abort();
 const main: ref;
-axiom (main == $sub.ref(0, 9291));
+axiom (main == $sub.ref(0, 10323));
 procedure main()
   returns ($r: i32)
 {
-  var $i0: i32;
-  var $i1: i32;
-  var $i2: i1;
-  var $i3: i1;
-  var $i5: i32;
-  var $i4: i32;
+  var $p0: ref;
+  var $i1: i1;
+  var $i2: i8;
+  var $i3: i32;
+  var $i4: i1;
+  var $i5: i1;
   var $i6: i32;
-  var $i7: i1;
-  var $i9: i1;
-  var $i8: i1;
-  var $i10: i32;
+  var $i7: i64;
+  var $p8: ref;
+  var $i9: i32;
+  var $i10: i1;
+  var $i11: i32;
 $bb0:
   call $initialize();
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 7} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 16, 12} true;
   assume {:verifier.code 0} true;
   call {:cexpr "smack:entry:main"} boogie_si_record_ref(main);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 7} true;
   assume {:verifier.code 0} true;
-  $i0, $i1 := 1, 0;
+  call $p0 := $alloc($mul.ref(20, $zext.i32.i64(1)));
+  assume true;
+  assume {:sourceloc "./output/nec11_tmp.c", 16, 12} true;
+  assume {:verifier.code 0} true;
+  call $i1 := __VERIFIER_nondet_bool();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_bool"} boogie_si_record_i1($i1);
+  assume {:sourceloc "./output/nec11_tmp.c", 16, 10} true;
+  assume {:verifier.code 0} true;
+  $i2 := $zext.i1.i8($i1);
+  call {:cexpr "c"} boogie_si_record_i8($i2);
+  assume {:sourceloc "./output/nec11_tmp.c", 20, 4} true;
+  assume {:verifier.code 0} true;
+  $i3 := 0;
   goto $bb1;
 $bb1:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 0, 0} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 20, 10} true;
   assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 13} true;
+  $i4 := $trunc.i8.i1($i2);
+  assume {:sourceloc "./output/nec11_tmp.c", 20, 4} true;
   assume {:verifier.code 0} true;
-  $i2 := $sle.i32($i0, 8);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 3} true;
-  assume {:verifier.code 0} true;
-  assume {:branchcond $i2} true;
+  assume {:branchcond $i4} true;
   goto $bb2, $bb3;
 $bb2:
-  assume ($i2 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 10} true;
+  assume ($i4 == 1);
+  assume {:sourceloc "./output/nec11_tmp.c", 22, 14} true;
   assume {:verifier.code 0} true;
-  $i3 := $slt.i32($i0, 4);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 9} true;
+  $i5 := $eq.i32($i3, 4);
+  assume {:sourceloc "./output/nec11_tmp.c", 22, 11} true;
   assume {:verifier.code 0} true;
-  $i4 := $i1;
-  assume {:branchcond $i3} true;
+  $i6 := $i3;
+  assume {:branchcond $i5} true;
   goto $bb4, $bb5;
 $bb3:
-  assume !(($i2 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 23} true;
-  assume {:verifier.code 0} true;
-  $i7 := $eq.i32($i1, 16);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 0} true;
-  $i8 := 1;
-  assume {:branchcond $i7} true;
-  goto $bb8, $bb10;
-$bb4:
-  assume ($i3 == 1);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 16, 13} true;
-  assume {:verifier.code 0} true;
-  $i5 := $add.i32($i1, 2);
-  call {:cexpr "sn"} boogie_si_record_i32($i5);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 16, 5} true;
-  assume {:verifier.code 0} true;
-  $i4 := $i5;
-  goto $bb6;
-$bb5:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 15, 9} true;
-  assume {:verifier.code 0} true;
-  assume !(($i3 == 1));
-  goto $bb6;
-$bb6:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 0, 0} true;
-  assume {:verifier.code 0} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 17, 3} true;
-  assume {:verifier.code 0} true;
-  goto $bb7;
-$bb7:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 19} true;
-  assume {:verifier.code 0} true;
-  $i6 := $add.i32($i0, 1);
-  call {:cexpr "i"} boogie_si_record_i32($i6);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 14, 3} true;
-  assume {:verifier.code 0} true;
-  $i0, $i1 := $i6, $i4;
-  goto $bb1;
-$bb8:
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
-  assume {:verifier.code 0} true;
-  assume ($i7 == 1);
-  goto $bb9;
-$bb9:
+  assume !(($i4 == 1));
+  assume {:sourceloc "./output/nec11_tmp.c", 29, 25} true;
   assume {:verifier.code 1} true;
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
+  $i10 := $eq.i32($i3, 5);
+  assume {:sourceloc "./output/nec11_tmp.c", 29, 25} true;
   assume {:verifier.code 1} true;
-  $i10 := $zext.i1.i32($i8);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 3} true;
+  $i11 := $zext.i1.i32($i10);
+  assume {:sourceloc "./output/nec11_tmp.c", 29, 4} true;
   assume {:verifier.code 1} true;
-  call __VERIFIER_assert($i10);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 19, 1} true;
+  call __VERIFIER_assert($i11);
+  assume {:sourceloc "./output/nec11_tmp.c", 30, 4} true;
   assume {:verifier.code 0} true;
-  $r := 0;
+  $r := 1;
   $exn := false;
   return;
-$bb10:
-  assume !(($i7 == 1));
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 37} true;
-  assume {:verifier.code 1} true;
-  $i9 := $eq.i32($i1, 0);
-  assume {:sourceloc "./output/sum04-1_tmp.c", 18, 31} true;
+$bb4:
+  assume ($i5 == 1);
+  assume {:sourceloc "./output/nec11_tmp.c", 23, 10} true;
   assume {:verifier.code 0} true;
-  $i8 := $i9;
-  goto $bb9;
+  $i6 := 0;
+  goto $bb6;
+$bb5:
+  assume {:sourceloc "./output/nec11_tmp.c", 22, 11} true;
+  assume {:verifier.code 0} true;
+  assume !(($i5 == 1));
+  goto $bb6;
+$bb6:
+  assume {:sourceloc "./output/nec11_tmp.c", 0, 0} true;
+  assume {:verifier.code 0} true;
+  assume {:sourceloc "./output/nec11_tmp.c", 25, 7} true;
+  assume {:verifier.code 0} true;
+  $i7 := $sext.i32.i64($i6);
+  assume {:sourceloc "./output/nec11_tmp.c", 25, 7} true;
+  assume {:verifier.code 0} true;
+  $p8 := $add.ref($add.ref($p0, $mul.ref(0, 20)), $mul.ref($i7, 4));
+  assume {:sourceloc "./output/nec11_tmp.c", 25, 13} true;
+  assume {:verifier.code 0} true;
+  $M.0 := $store.i32($M.0, $p8, 0);
+  assume {:sourceloc "./output/nec11_tmp.c", 27, 10} true;
+  assume {:verifier.code 0} true;
+  $i9 := $add.i32($i6, 1);
+  call {:cexpr "len"} boogie_si_record_i32($i9);
+  assume {:sourceloc "./output/nec11_tmp.c", 20, 4} true;
+  assume {:verifier.code 0} true;
+  $i3 := $i9;
+  goto $bb1;
 }
 const __VERIFIER_assume: ref;
-axiom (__VERIFIER_assume == $sub.ref(0, 10323));
+axiom (__VERIFIER_assume == $sub.ref(0, 11355));
 procedure __VERIFIER_assume($i0: i32)
 {
 $bb0:
@@ -1565,11 +1559,11 @@ $bb0:
   return;
 }
 const __SMACK_code: ref;
-axiom (__SMACK_code == $sub.ref(0, 11355));
+axiom (__SMACK_code == $sub.ref(0, 12387));
 procedure __SMACK_code.ref.i32($p0: ref, p.1: i32);
 procedure __SMACK_code.ref($p0: ref);
 const __SMACK_dummy: ref;
-axiom (__SMACK_dummy == $sub.ref(0, 12387));
+axiom (__SMACK_dummy == $sub.ref(0, 13419));
 procedure __SMACK_dummy($i0: i32)
 {
 $bb0:
@@ -1585,7 +1579,7 @@ $bb0:
   return;
 }
 const __SMACK_check_overflow: ref;
-axiom (__SMACK_check_overflow == $sub.ref(0, 13419));
+axiom (__SMACK_check_overflow == $sub.ref(0, 14451));
 procedure __SMACK_check_overflow($i0: i32)
 {
 $bb0:
@@ -1604,103 +1598,239 @@ $bb0:
   return;
 }
 const __SMACK_nondet_char: ref;
-axiom (__SMACK_nondet_char == $sub.ref(0, 14451));
+axiom (__SMACK_nondet_char == $sub.ref(0, 15483));
 procedure __SMACK_nondet_char()
   returns ($r: i8);
 const __SMACK_nondet_signed_char: ref;
-axiom (__SMACK_nondet_signed_char == $sub.ref(0, 15483));
+axiom (__SMACK_nondet_signed_char == $sub.ref(0, 16515));
 procedure __SMACK_nondet_signed_char()
   returns ($r: i8);
 const __SMACK_nondet_unsigned_char: ref;
-axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 16515));
+axiom (__SMACK_nondet_unsigned_char == $sub.ref(0, 17547));
 procedure __SMACK_nondet_unsigned_char()
   returns ($r: i8);
 const __SMACK_nondet_short: ref;
-axiom (__SMACK_nondet_short == $sub.ref(0, 17547));
+axiom (__SMACK_nondet_short == $sub.ref(0, 18579));
 procedure __SMACK_nondet_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short: ref;
-axiom (__SMACK_nondet_signed_short == $sub.ref(0, 18579));
+axiom (__SMACK_nondet_signed_short == $sub.ref(0, 19611));
 procedure __SMACK_nondet_signed_short()
   returns ($r: i16);
 const __SMACK_nondet_signed_short_int: ref;
-axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 19611));
+axiom (__SMACK_nondet_signed_short_int == $sub.ref(0, 20643));
 procedure __SMACK_nondet_signed_short_int()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short: ref;
-axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 20643));
+axiom (__SMACK_nondet_unsigned_short == $sub.ref(0, 21675));
 procedure __SMACK_nondet_unsigned_short()
   returns ($r: i16);
 const __SMACK_nondet_unsigned_short_int: ref;
-axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 21675));
+axiom (__SMACK_nondet_unsigned_short_int == $sub.ref(0, 22707));
 procedure __SMACK_nondet_unsigned_short_int()
   returns ($r: i16);
+const __VERIFIER_nondet_int: ref;
+axiom (__VERIFIER_nondet_int == $sub.ref(0, 23739));
+procedure __VERIFIER_nondet_int()
+  returns ($r: i32)
+{
+  var $i0: i32;
+  var $i1: i1;
+  var $i3: i1;
+  var $i2: i1;
+  var $i4: i32;
+$bb0:
+  assume {:sourceloc "./lib/smack.c", 115, 11} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 115, 11} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __SMACK_nondet_int();
+  call {:cexpr "smack:ext:__SMACK_nondet_int"} boogie_si_record_i32($i0);
+  call {:cexpr "x"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./lib/smack.c", 116, 23} true;
+  assume {:verifier.code 0} true;
+  $i1 := $sge.i32($i0, $sub.i32(0, 2147483648));
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 0} true;
+  $i2 := 0;
+  assume {:branchcond $i1} true;
+  goto $bb1, $bb2;
+$bb1:
+  assume ($i1 == 1);
+  assume {:sourceloc "./lib/smack.c", 116, 39} true;
+  assume {:verifier.code 1} true;
+  $i3 := $sle.i32($i0, 2147483647);
+  assume {:verifier.code 0} true;
+  $i2 := $i3;
+  goto $bb3;
+$bb2:
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 0} true;
+  assume !(($i1 == 1));
+  goto $bb3;
+$bb3:
+  assume {:sourceloc "./lib/smack.c", 0, 0} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 116, 34} true;
+  assume {:verifier.code 1} true;
+  $i4 := $zext.i1.i32($i2);
+  assume {:sourceloc "./lib/smack.c", 116, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_assume($i4);
+  assume {:sourceloc "./lib/smack.c", 117, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i0;
+  $exn := false;
+  return;
+}
 const __SMACK_nondet_int: ref;
-axiom (__SMACK_nondet_int == $sub.ref(0, 22707));
+axiom (__SMACK_nondet_int == $sub.ref(0, 24771));
 procedure __SMACK_nondet_int()
   returns ($r: i32);
 const __SMACK_nondet_signed_int: ref;
-axiom (__SMACK_nondet_signed_int == $sub.ref(0, 23739));
+axiom (__SMACK_nondet_signed_int == $sub.ref(0, 25803));
 procedure __SMACK_nondet_signed_int()
   returns ($r: i32);
 const __SMACK_nondet_unsigned: ref;
-axiom (__SMACK_nondet_unsigned == $sub.ref(0, 24771));
+axiom (__SMACK_nondet_unsigned == $sub.ref(0, 26835));
 procedure __SMACK_nondet_unsigned()
   returns ($r: i32);
 const __SMACK_nondet_unsigned_int: ref;
-axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 25803));
+axiom (__SMACK_nondet_unsigned_int == $sub.ref(0, 27867));
 procedure __SMACK_nondet_unsigned_int()
   returns ($r: i32);
 const __SMACK_nondet_long: ref;
-axiom (__SMACK_nondet_long == $sub.ref(0, 26835));
+axiom (__SMACK_nondet_long == $sub.ref(0, 28899));
 procedure __SMACK_nondet_long()
   returns ($r: i64);
 const __SMACK_nondet_long_int: ref;
-axiom (__SMACK_nondet_long_int == $sub.ref(0, 27867));
+axiom (__SMACK_nondet_long_int == $sub.ref(0, 29931));
 procedure __SMACK_nondet_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long: ref;
-axiom (__SMACK_nondet_signed_long == $sub.ref(0, 28899));
+axiom (__SMACK_nondet_signed_long == $sub.ref(0, 30963));
 procedure __SMACK_nondet_signed_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_int: ref;
-axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 29931));
+axiom (__SMACK_nondet_signed_long_int == $sub.ref(0, 31995));
 procedure __SMACK_nondet_signed_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long: ref;
-axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 30963));
+axiom (__SMACK_nondet_unsigned_long == $sub.ref(0, 33027));
 procedure __SMACK_nondet_unsigned_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 31995));
+axiom (__SMACK_nondet_unsigned_long_int == $sub.ref(0, 34059));
 procedure __SMACK_nondet_unsigned_long_int()
   returns ($r: i64);
 const __SMACK_nondet_long_long: ref;
-axiom (__SMACK_nondet_long_long == $sub.ref(0, 33027));
+axiom (__SMACK_nondet_long_long == $sub.ref(0, 35091));
 procedure __SMACK_nondet_long_long()
   returns ($r: i64);
 const __SMACK_nondet_long_long_int: ref;
-axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 34059));
+axiom (__SMACK_nondet_long_long_int == $sub.ref(0, 36123));
 procedure __SMACK_nondet_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long: ref;
-axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 35091));
+axiom (__SMACK_nondet_signed_long_long == $sub.ref(0, 37155));
 procedure __SMACK_nondet_signed_long_long()
   returns ($r: i64);
 const __SMACK_nondet_signed_long_long_int: ref;
-axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 36123));
+axiom (__SMACK_nondet_signed_long_long_int == $sub.ref(0, 38187));
 procedure __SMACK_nondet_signed_long_long_int()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long: ref;
-axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 37155));
+axiom (__SMACK_nondet_unsigned_long_long == $sub.ref(0, 39219));
 procedure __SMACK_nondet_unsigned_long_long()
   returns ($r: i64);
 const __SMACK_nondet_unsigned_long_long_int: ref;
-axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 38187));
+axiom (__SMACK_nondet_unsigned_long_long_int == $sub.ref(0, 40251));
 procedure __SMACK_nondet_unsigned_long_long_int()
   returns ($r: i64);
+const __VERIFIER_nondet_bool: ref;
+axiom (__VERIFIER_nondet_bool == $sub.ref(0, 41283));
+procedure __VERIFIER_nondet_bool()
+  returns ($r: i1)
+{
+  var $i0: i32;
+  var $i1: i1;
+  var $i2: i8;
+  var $i3: i1;
+  var $i4: i32;
+  var $i5: i1;
+  var $i7: i1;
+  var $i8: i32;
+  var $i9: i1;
+  var $i6: i1;
+  var $i10: i32;
+  var $i11: i1;
+$bb0:
+  assume {:sourceloc "./lib/smack.c", 231, 20} true;
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 231, 20} true;
+  assume {:verifier.code 1} true;
+  call $i0 := __VERIFIER_nondet_int();
+  call {:cexpr "smack:ext:__VERIFIER_nondet_int"} boogie_si_record_i32($i0);
+  assume {:sourceloc "./lib/smack.c", 231, 13} true;
+  assume {:verifier.code 0} true;
+  $i1 := $ne.i32($i0, 0);
+  assume {:sourceloc "./lib/smack.c", 231, 9} true;
+  assume {:verifier.code 0} true;
+  $i2 := $zext.i1.i8($i1);
+  call {:cexpr "x"} boogie_si_record_i8($i2);
+  assume {:sourceloc "./lib/smack.c", 232, 21} true;
+  assume {:verifier.code 0} true;
+  $i3 := $trunc.i8.i1($i2);
+  assume {:sourceloc "./lib/smack.c", 232, 21} true;
+  assume {:verifier.code 0} true;
+  $i4 := $zext.i1.i32($i3);
+  assume {:sourceloc "./lib/smack.c", 232, 23} true;
+  assume {:verifier.code 0} true;
+  $i5 := $eq.i32($i4, 0);
+  assume {:sourceloc "./lib/smack.c", 232, 28} true;
+  assume {:verifier.code 0} true;
+  $i6 := 1;
+  assume {:branchcond $i5} true;
+  goto $bb1, $bb3;
+$bb1:
+  assume {:sourceloc "./lib/smack.c", 232, 28} true;
+  assume {:verifier.code 0} true;
+  assume ($i5 == 1);
+  goto $bb2;
+$bb2:
+  assume {:verifier.code 1} true;
+  assume {:sourceloc "./lib/smack.c", 232, 28} true;
+  assume {:verifier.code 1} true;
+  $i10 := $zext.i1.i32($i6);
+  assume {:sourceloc "./lib/smack.c", 232, 3} true;
+  assume {:verifier.code 1} true;
+  call __VERIFIER_assume($i10);
+  assume {:sourceloc "./lib/smack.c", 233, 10} true;
+  assume {:verifier.code 0} true;
+  $i11 := $trunc.i8.i1($i2);
+  assume {:sourceloc "./lib/smack.c", 233, 3} true;
+  assume {:verifier.code 0} true;
+  $r := $i11;
+  $exn := false;
+  return;
+$bb3:
+  assume !(($i5 == 1));
+  assume {:sourceloc "./lib/smack.c", 232, 31} true;
+  assume {:verifier.code 1} true;
+  $i7 := $trunc.i8.i1($i2);
+  assume {:sourceloc "./lib/smack.c", 232, 31} true;
+  assume {:verifier.code 1} true;
+  $i8 := $zext.i1.i32($i7);
+  assume {:sourceloc "./lib/smack.c", 232, 33} true;
+  assume {:verifier.code 1} true;
+  $i9 := $eq.i32($i8, 1);
+  assume {:sourceloc "./lib/smack.c", 232, 28} true;
+  assume {:verifier.code 0} true;
+  $i6 := $i9;
+  goto $bb2;
+}
 const __SMACK_decls: ref;
-axiom (__SMACK_decls == $sub.ref(0, 39219));
+axiom (__SMACK_decls == $sub.ref(0, 42315));
 type $mop;
 procedure boogie_si_record_mop(m: $mop);
 const $MOP: $mop;
@@ -1728,10 +1858,10 @@ ensures $eq.ref.bool(n, $0.ref) ==> old($CurrAddr) == $CurrAddr && p == $0.ref;
 procedure $free(p: ref);
 
 const __SMACK_top_decl: ref;
-axiom (__SMACK_top_decl == $sub.ref(0, 40251));
+axiom (__SMACK_top_decl == $sub.ref(0, 43347));
 procedure __SMACK_top_decl.ref($p0: ref);
 const __SMACK_init_func_memory_model: ref;
-axiom (__SMACK_init_func_memory_model == $sub.ref(0, 41283));
+axiom (__SMACK_init_func_memory_model == $sub.ref(0, 44379));
 procedure __SMACK_init_func_memory_model()
 {
 $bb0:
@@ -1743,20 +1873,22 @@ $bb0:
   return;
 }
 const llvm.dbg.value: ref;
-axiom (llvm.dbg.value == $sub.ref(0, 42315));
+axiom (llvm.dbg.value == $sub.ref(0, 45411));
 procedure llvm.dbg.value($p0: ref, $p1: ref, $p2: ref);
 const __SMACK_static_init: ref;
-axiom (__SMACK_static_init == $sub.ref(0, 43347));
+axiom (__SMACK_static_init == $sub.ref(0, 46443));
 procedure __SMACK_static_init()
 {
 $bb0:
-  $M.0 := .str.1.1;
-  $M.1 := 0;
+  $M.1 := .str.1.3;
+  $M.2 := 0;
   call {:cexpr "errno_global"} boogie_si_record_i32(0);
   $exn := false;
   return;
 }
+procedure boogie_si_record_i1(x: i1);
 procedure boogie_si_record_i32(x: i32);
+procedure boogie_si_record_i8(x: i8);
 procedure boogie_si_record_ref(x: ref);
 procedure $initialize()
 {
