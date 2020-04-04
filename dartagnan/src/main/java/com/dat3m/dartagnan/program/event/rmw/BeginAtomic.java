@@ -36,7 +36,6 @@ public class BeginAtomic extends Event {
     	for(EndAtomic end : references) {
     		end.updateLabel(copy);
     	}
-    	references = new HashSet<>();
 		return copy;
 	}
 }

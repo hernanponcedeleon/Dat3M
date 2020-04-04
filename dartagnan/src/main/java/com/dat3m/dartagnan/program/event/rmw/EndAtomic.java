@@ -24,6 +24,7 @@ public class EndAtomic extends Event {
     protected EndAtomic(EndAtomic other){
 		super(other);
 		this.begin = other.begin;
+		begin.addReference(this);
 	}
 
     public BeginAtomic getBegin(){
