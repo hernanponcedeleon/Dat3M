@@ -12,7 +12,7 @@ public class EndAtomic extends Event {
 
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
-    	begin.addReference(this);
+    	this.begin.addReference(this);
         addFilters(EType.RMW, EType.ATOMIC);
     	Event next = begin.getSuccessor();
     	while(next != null && next != this) {
@@ -23,8 +23,8 @@ public class EndAtomic extends Event {
 
     protected EndAtomic(EndAtomic other){
 		super(other);
-		this.begin = other.begin;
-		begin.addReference(this);
+		this.begin = other.getBegin();
+		this.begin.addReference(this);
 	}
 
     public BeginAtomic getBegin(){
@@ -46,10 +46,11 @@ public class EndAtomic extends Event {
     	return "end_atomic()";
     }
     
-    public void updateLabel(BeginAtomic begin) {
-    	this.begin = begin;
+    @Override
+    public void updateReference(Event begin) {
+    	this.begin = (BeginAtomic)begin;
     }
-        
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

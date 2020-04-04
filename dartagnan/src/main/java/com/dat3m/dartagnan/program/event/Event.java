@@ -24,6 +24,8 @@ public abstract class Event implements Comparable<Event> {
 	protected transient BoolExpr cfVar;
 	protected transient BoolExpr execVar;
 
+	protected Set<Event> references = new HashSet<>();
+	
 	protected Event(){
 		filter = new HashSet<>();
 	}
@@ -91,6 +93,18 @@ public abstract class Event implements Comparable<Event> {
 		return result;
 	}
 
+    public void addReference(Event e) {
+    	references.add(e);
+    }
+    
+    public Set<Event> getReferences() {
+    	return references;
+    }
+    
+    public void updateReference(Event e) {
+    	throw new UnsupportedOperationException("updateReference is not allowed for " + getClass().getSimpleName());
+    }
+    
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

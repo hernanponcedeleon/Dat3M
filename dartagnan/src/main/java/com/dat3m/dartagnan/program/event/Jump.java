@@ -20,6 +20,7 @@ public class Jump extends Event {
     protected Jump(Jump other) {
 		super(other);
 		this.label = other.label;
+		this.label.addReference(this);
     }
     
     public Label getLabel(){
@@ -31,10 +32,11 @@ public class Jump extends Event {
         return "goto " + label;
     }
 
-    public void updateLabel(Label label) {
-    	this.label = label;
+    @Override
+    public void updateReference(Event label) {
+    	this.label = (Label)label;
     }
-        
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -57,9 +59,7 @@ public class Jump extends Event {
 
     @Override
     public Jump getCopy(){
-    	Jump copy = new Jump(this);
-    	label.addReference(copy);
-    	return copy;
+    	return new Jump(this);
     }
 
     // Compilation
