@@ -48,7 +48,7 @@ public class Jump extends Event {
         	while(currentBound > 1){
         		predecessor = copyPath(label.successor, this, predecessor);
 				currentBound--;
-			}        	
+			}
     		if(successor != null){
     			nextId = successor.unroll(bound, nextId, predecessor);
     		}
