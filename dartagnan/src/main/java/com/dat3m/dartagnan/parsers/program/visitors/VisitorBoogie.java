@@ -137,7 +137,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$ashr.", "$xor.", "$or.", "$and.", "$nand.");
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "printk.", "memcpy.i8");
-	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "nvram_read_byte", "memset", "pthread_key_create", "pthread_getspecific", "pthread_setspecific");
+	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "strncpy", "nvram_read_byte", "memset", "pthread_key_create", "pthread_getspecific", "pthread_setspecific");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;

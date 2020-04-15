@@ -28,7 +28,7 @@ public class FenceCond extends Fence {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public int unroll(int bound, int nextId, Event predecessor) {
+    public void unroll(int bound, Event predecessor) {
         throw new RuntimeException("FenceCond cannot be unrolled: event must be generated during compilation");
     }
 }

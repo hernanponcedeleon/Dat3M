@@ -1,10 +1,6 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.event.BoundEvent;
-import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Jump;
-import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -103,46 +99,15 @@ public class Thread {
         return id == ((Thread) obj).id;
     }
 
-	public void reduce() {
-		Event current = entry;
-		while(current != null) {
-			Event next = current.getSuccessor();
-			if(next == null) {
-				break;
-			}
-			Event next2 = next.getSuccessor();
-			if(next2 == null) {
-				break;
-			}
-			Event next3 = next2.getSuccessor();
-
-			// If the loop is empty, we remove it and the next two events which we added just to handle loop unrolling (which does not exists anymore)
-			// We don't apply this to main since the empty loop might be related to pthread_create inside a loop and we need the BoundEvent
-			if(current instanceof Label && next instanceof Jump && !(next instanceof CondJump) && ((Jump)next).getLabel().equals(current) && id != 1) {
-				if(next2 instanceof BoundEvent && next3 instanceof Jump) {
-					current.setSuccessor(next3.getSuccessor());
-				}
-			}
-			
-			// We remove trivial jumps which do not introduce data dependencies
-			if(next instanceof Jump && !(next instanceof CondJump) && next2.equals(((Jump)next).getLabel())) {
-				// If nobody else refers to the label, we can also remove the label
-				if(((Label)next2).getReferences().size() == 1) {
-					current.setSuccessor(next2.getSuccessor());
-				} else {
-					current.setSuccessor(next2);
-				}
-			}
-			current = current.getSuccessor();
-		}
-		cache = null;
-	}
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     public int unroll(int bound, int nextId){
-        nextId = entry.unroll(bound, nextId, null);
+    	while(bound > 0) {
+    		entry.unroll(bound, null);
+    		bound--;
+    	}
+        nextId = entry.setUId(nextId);
         updateExit(entry);
         cache = null;
         return nextId;

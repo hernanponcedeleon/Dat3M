@@ -8,19 +8,22 @@ import com.microsoft.z3.Context;
 public class Jump extends Event {
 
     protected Label label;
+    protected Label label4Copy;
     
     public Jump(Label label){
         if(label == null){
             throw new IllegalArgumentException("Jump event requires non null label event");
         }
         this.label = label;
+        this.label.addListener(this);
         addFilters(EType.ANY, EType.JUMP);
     }
 
     protected Jump(Jump other) {
 		super(other);
-		this.label = other.label;
-		this.label.addReference(this);
+		this.label = other.label4Copy;
+		Event notifier = label != null ? label : other.label;
+		notifier.addListener(this);
     }
     
     public Label getLabel(){
@@ -33,28 +36,29 @@ public class Jump extends Event {
     }
 
     @Override
-    public void updateReference(Event label) {
-    	this.label = (Label)label;
+    public void notify(Event label) {
+    	if(this.label == null) {
+        	this.label = (Label)label;
+    	} else if (oId > label.getOId()) {
+    		this.label4Copy = (Label)label;
+    	}
     }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public int unroll(int bound, int nextId, Event predecessor) {
+    public void unroll(int bound, Event predecessor) {
         if(label.getOId() < oId){
-        	int currentBound = bound;    			
-
-        	while(currentBound > 1){
-        		predecessor = copyPath(label.successor, this, predecessor);
-				currentBound--;
-			}
-    		if(successor != null){
-    			nextId = successor.unroll(bound, nextId, predecessor);
-    		}
-    	    return nextId;
+        	if(bound > 1) {
+        		predecessor = copyPath(label, successor, predecessor);
+        	}
+        	if(successor != null) {
+        		successor.unroll(bound, predecessor);
+        	}
+    	    return;
         }
-        return super.unroll(bound, nextId, predecessor);
+        super.unroll(bound, predecessor);
     }
 
     @Override

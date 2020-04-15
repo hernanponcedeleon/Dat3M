@@ -137,13 +137,6 @@ public class Program {
 		return ass;
 	}
 
-	public void reduce() {
-		for(Thread t : getThreads()) {
-			t.reduce();
-		}
-		cache = null;
-	}
-	
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

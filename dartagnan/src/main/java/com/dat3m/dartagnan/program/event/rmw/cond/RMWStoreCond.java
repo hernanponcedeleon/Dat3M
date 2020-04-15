@@ -28,7 +28,7 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public int unroll(int bound, int nextId, Event predecessor) {
+    public void unroll(int bound, Event predecessor) {
         throw new RuntimeException("RMWStoreCond cannot be unrolled: event must be generated during compilation");
     }
 }

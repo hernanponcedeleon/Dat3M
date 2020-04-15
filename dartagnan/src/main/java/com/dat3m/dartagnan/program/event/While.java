@@ -51,7 +51,7 @@ public class While extends Event implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public int unroll(int bound, int nextId, Event predecessor) {
+	public void unroll(int bound, Event predecessor) {
 		if(successor != null){
 			int currentBound = bound;
 
@@ -60,7 +60,6 @@ public class While extends Event implements RegReaderData {
 				Skip exitElseBranch = exitEvent.getCopy();
 				If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
 				ifEvent.oId = oId;
-				ifEvent.uId = nextId++;
 
 				predecessor.setSuccessor(ifEvent);
 				predecessor = copyPath(successor, exitEvent, ifEvent);
@@ -68,15 +67,15 @@ public class While extends Event implements RegReaderData {
 				exitMainBranch.setSuccessor(exitElseBranch);
 				predecessor = exitElseBranch;
 
-				nextId = ifEvent.successor.unroll(currentBound, nextId, ifEvent);
+				ifEvent.successor.unroll(currentBound, ifEvent);
 				currentBound--;
 			}
 
 			predecessor.setSuccessor(exitEvent.getSuccessor());
 			if(predecessor.getSuccessor() != null){
-				nextId = predecessor.getSuccessor().unroll(bound, nextId, predecessor);
+				predecessor.getSuccessor().unroll(bound, predecessor);
 			}
-			return nextId;
+			return;
 		}
 
 		throw new RuntimeException("Malformed While event");

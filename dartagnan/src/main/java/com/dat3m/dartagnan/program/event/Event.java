@@ -24,7 +24,7 @@ public abstract class Event implements Comparable<Event> {
 	protected transient BoolExpr cfVar;
 	protected transient BoolExpr execVar;
 
-	protected Set<Event> references = new HashSet<>();
+	protected Set<Event> listeners = new HashSet<>();
 	
 	protected Event(){
 		filter = new HashSet<>();
@@ -93,33 +93,39 @@ public abstract class Event implements Comparable<Event> {
 		return result;
 	}
 
-    public void addReference(Event e) {
-    	references.add(e);
+    public void addListener(Event e) {
+    	listeners.add(e);
     }
-    
-    public Set<Event> getReferences() {
-    	return references;
-    }
-    
-    public void updateReference(Event e) {
-    	throw new UnsupportedOperationException("updateReference is not allowed for " + getClass().getSimpleName());
+
+    public void notify(Event e) {
+    	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
     
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    public int unroll(int bound, int nextId, Event predecessor) {
-		uId = nextId++;
-		// If this is the thread entry, we do not copy it.
-		// With bound 1 we return the original event.
-		Event copy = (predecessor == null || bound == 1) ? this : getCopy(); 
-		if(predecessor != null){
-			predecessor.setSuccessor(copy);							
-		}
-		if(successor != null){
-			nextId = successor.unroll(bound, nextId, copy);
-		}
+    public int setUId(int nextId) {
+    	uId = nextId++;
+    	if(successor != null) {
+    		nextId = successor.setUId(nextId);
+    	}
 	    return nextId;
+    }
+
+    public void unroll(int bound, Event predecessor) {
+    	Event copy = this;
+    	if(predecessor != null) {
+    		// This check must be done inside this if
+    		// Needed for the current implementation of copy in If events
+    		if(bound != 1) {
+        		copy = getCopy();    			
+    		}
+    		predecessor.setSuccessor(copy);
+    	}
+    	if(successor != null) {
+    		successor.unroll(bound, copy);
+    	}
+	    return;
     }
 
 	public Event getCopy(){
@@ -128,12 +134,6 @@ public abstract class Event implements Comparable<Event> {
 
 	static Event copyPath(Event from, Event until, Event appendTo){
 		while(from != null && !from.equals(until)){
-			// This mimics the unrolling
-			if(from instanceof Jump && ((Jump)from).getLabel().getOId() < from.getOId()) {
-				// Thus we don't copy the back jumps
-				from = from.successor;
-				continue;
-			}
 			Event copy = from.getCopy();
 			appendTo.setSuccessor(copy);
 			if(from instanceof If){
