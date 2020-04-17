@@ -53,8 +53,13 @@ public class Jump extends Event {
         	if(bound > 1) {
         		predecessor = copyPath(label, successor, predecessor);
         	}
+        	Event next = predecessor;
+        	if(bound == 1) {
+            	next = new BoundEvent();
+        		predecessor.setSuccessor(next);        		
+        	}
         	if(successor != null) {
-        		successor.unroll(bound, predecessor);
+        		successor.unroll(bound, next);
         	}
     	    return;
         }

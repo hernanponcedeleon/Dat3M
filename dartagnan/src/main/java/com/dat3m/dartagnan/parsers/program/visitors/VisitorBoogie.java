@@ -83,7 +83,6 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assume;
-import com.dat3m.dartagnan.program.event.BoundEvent;
 import com.dat3m.dartagnan.program.event.Comment;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
@@ -764,7 +763,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(loop) {
-            programBuilder.addChild(threadCount, new BoundEvent());
             Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
             programBuilder.addChild(threadCount, new Jump(label));        	
         }
