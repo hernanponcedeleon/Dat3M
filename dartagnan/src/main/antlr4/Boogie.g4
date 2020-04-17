@@ -317,7 +317,7 @@ atom_expr
     :	bool_lit
     |	dec
     |	int_expr
-    |	Bv_lit
+    |	bv_expr
     |	var_expr
     |	fun_expr
     |	old_expr
@@ -328,6 +328,10 @@ atom_expr
     |	lambda_expr
     |	if_then_else_expr
     |	code_expr
+    ;
+
+bv_expr
+    :   Bv_lit
     ;
 
 int_expr
@@ -350,10 +354,6 @@ bool_lit returns [Boolean value]
 dec
     :	Decimal
     |	Dec_float
-    ;
-
-Bv_lit
-    :   Int 'bv' Int
     ;
 
 old_expr
@@ -516,6 +516,10 @@ Dec_float
 
 Decimal
     :   Int 'e' Minus? Int
+    ;
+
+Bv_lit
+    :   Int 'bv' Int
     ;
 
 WS
