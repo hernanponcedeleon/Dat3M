@@ -6,7 +6,7 @@ public class BoundEvent extends Event {
 
 	public BoundEvent() {
 		super();
-		addFilters(EType.BOUND);
+        addFilters(EType.ANY, EType.BOUND);
 	}
 	
 	protected BoundEvent(BoundEvent other){

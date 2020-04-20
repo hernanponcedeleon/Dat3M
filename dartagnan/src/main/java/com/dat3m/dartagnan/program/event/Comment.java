@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.program.utils.EType;
+
 public class Comment extends Event {
 
 	String comment;
 	
 	public Comment(String comment) {
 		this.comment = comment;
+        addFilters(EType.ANY);
 	}
 	
 	protected Comment(Comment other){

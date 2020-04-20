@@ -583,8 +583,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0)),label));
 	        events.add(new Store(lockAddress, new IConst(1), "NA"));
 	        for(Event e : events) {
-	        	e.addFilters(EType.LOCK);
-	        	e.addFilters(EType.RMW);
+	        	e.addFilters(EType.LOCK, EType.RMW);
 				programBuilder.addChild(threadCount, e);
 	        }
 		}
@@ -600,8 +599,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1)),label));
 	        events.add(new Store(lockAddress, new IConst(0), "NA"));
 	        for(Event e : events) {
-	        	e.addFilters(EType.LOCK);
-	        	e.addFilters(EType.RMW);
+	        	e.addFilters(EType.LOCK, EType.RMW);
 				programBuilder.addChild(threadCount, e);
 	        }
 		}

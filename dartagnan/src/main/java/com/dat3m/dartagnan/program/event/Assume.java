@@ -6,6 +6,7 @@ import java.util.LinkedList;
 
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class Assume extends Event {
@@ -16,6 +17,7 @@ public class Assume extends Event {
 	public Assume(ExprInterface e, Label l) {
 		this.exp = e;
 		this.label = l;
+        addFilters(EType.ANY, EType.ASSUME);
 	}
 
 	protected Assume(Assume other){

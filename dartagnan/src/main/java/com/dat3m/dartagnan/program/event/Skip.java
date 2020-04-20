@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class Skip extends Event {
 	
 	public Skip() {
-		addFilters(EType.ANY);
+		addFilters(EType.ANY, EType.SKIP);
 	}
 
 	protected Skip(Skip other){
