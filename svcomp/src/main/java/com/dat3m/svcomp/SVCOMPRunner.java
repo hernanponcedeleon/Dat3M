@@ -5,7 +5,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Iterator;
+import java.util.ArrayList;
 import org.apache.commons.cli.HelpFormatter;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -34,13 +34,12 @@ public class SVCOMPRunner {
 		String path = file.getAbsolutePath();
 		// File name contains "_tmp.c"
 		String name = path.substring(path.lastIndexOf('/'), path.lastIndexOf('_'));
-		String catPath = options.getTargetModelFilePath();
-		Iterator<Integer> bounds = options.getBounds().iterator();
-		int bound;
+		int bound = 1;
+
 		String output = "BPASS";
-		while((output.equals("BPASS") || output.equals("BFAIL")) && bounds.hasNext()) {
+		while((output.equals("BPASS") || output.equals("BFAIL"))) {
 			try {
-				compile(file, options.getOptFlag());
+				compile(file, options.getOptimization());
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
 				System.exit(0);
@@ -49,9 +48,21 @@ public class SVCOMPRunner {
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
 	        // (it not the original C file) and we already created the Boogie file
 	        file.delete();
-			bound = bounds.next();
-			try {
-				Process proc = Runtime.getRuntime().exec("java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -i ./output/" + name + "-" + options.getOptFlag() + ".bpl -cat " + catPath + " -unroll " + bound);
+
+	    	ArrayList<String> cmd = new ArrayList<String>();
+	    	cmd.add("java");
+	    	cmd.add("-jar");
+	    	cmd.add("dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar");
+	    	cmd.add("-i");
+	    	cmd.add("./output/" + name + "-" + options.getOptimization() + ".bpl");
+	    	cmd.add("-cat");
+	    	cmd.add(options.getTargetModelFilePath());
+	    	cmd.add("-unroll");
+	    	cmd.add(String.valueOf(bound));
+	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
+
+	        try {
+	        	Process proc = processBuilder.start();
 				BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				try {
 					proc.waitFor();
@@ -73,12 +84,13 @@ public class SVCOMPRunner {
 				System.out.println(e.getMessage());
 				System.exit(0);
 			}
+			bound++;
 	        file = new SVCOMPSanitizer(options.getProgramFilePath()).run(bound);
 		}
 		output = output.contains("PASS") ? "PASS" : "FAIL";
 		System.out.println(output);
 		
-        if(options.getCreateWitness() && output.contains("FAIL")) {
+        if(options.getSettings().getGenerateWitness() && output.contains("FAIL")) {
 			try {
 				Program p = new ProgramParser().parse(file);
 	            new SVCOMPWitness(p, options).write();;

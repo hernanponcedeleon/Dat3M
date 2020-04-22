@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.getResult;
 
 import java.io.File;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import org.apache.commons.cli.HelpFormatter;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
+import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -86,7 +88,13 @@ public class Dartagnan {
         // AssertionInline depends on compiled events (copies)
         // Thus we need to set the assertion after compilation
         if(program.getAss() == null){
-        	program.setAss(program.createAssertion());
+        	AbstractAssert ass = program.createAssertion();
+			program.setAss(ass);
+        	// Due to optimizations, the program might be trivially true
+        	// Not returning here might loop forever for cyclic programs
+        	if(ass instanceof AssertTrue) {
+        		return PASS;
+        	}
         }
 
         solver.add(program.encodeUINonDet(ctx));
