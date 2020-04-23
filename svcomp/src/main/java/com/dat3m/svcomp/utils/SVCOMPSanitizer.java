@@ -49,9 +49,9 @@ public class SVCOMPSanitizer {
 						|| line.contains("while(1) pthread_create(&t, 0, thr1, 0);")
 						|| line.contains("while(__VERIFIER_nondet_int()) pthread_create(&t, 0, thr1, 0);")) {
 					// While with empty body to force the creation of boundEvents
-					line = line.replace("while(1) { pthread_create(&t, 0, thr1, 0); }", "while(1) {}");					
-					line = line.replace("while(1) pthread_create(&t, 0, thr1, 0);", "while(1) {}");
-					line = line.replace("while(__VERIFIER_nondet_int()) pthread_create(&t, 0, thr1, 0);", "while(1) {}");
+					line = line.replace("while(1) { pthread_create(&t, 0, thr1, 0); }", "for (int i = 1; i < 3; ++i) {}");					
+					line = line.replace("while(1) pthread_create(&t, 0, thr1, 0);", "for (int i = 1; i < 3; ++i) {}");
+					line = line.replace("while(__VERIFIER_nondet_int()) pthread_create(&t, 0, thr1, 0);", "for (int i = 1; i < 3; ++i) {}");
 					int i = 0;
 					while(i < bound) {
 						writer.println("pthread_t t" + i + ";");
