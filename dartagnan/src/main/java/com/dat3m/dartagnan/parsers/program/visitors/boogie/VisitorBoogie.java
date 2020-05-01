@@ -1,21 +1,20 @@
-package com.dat3m.dartagnan.parsers.program.visitors;
+package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
-import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
-import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
-import static com.dat3m.dartagnan.expression.op.IOpBin.AR_SHIFT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
-import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
-import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicFunctions.ATOMICFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicFunctions.handleAtomicFunction;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFunctions.PTHREADFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFunctions.handlePthreadsFunctions;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.SVCOMPFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.handleSvcompFunction;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,17 +25,13 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.expression.BExprBin;
 import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IExprUn;
-import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser.And_exprContext;
@@ -49,7 +44,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Bool_litContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.DecContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.FactorContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Fun_exprContext;
@@ -85,7 +79,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.Comment;
 import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
@@ -97,13 +90,13 @@ import com.dat3m.dartagnan.program.event.While;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.event.rmw.BeginAtomic;
-import com.dat3m.dartagnan.program.event.rmw.EndAtomic;
+import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
-	private ProgramBuilder programBuilder;
-    private int threadCount = 0;
+	protected ProgramBuilder programBuilder;
+	protected int threadCount = 0;
     
     private Label currentLabel = null;
     private Map<Label, Label> pairLabels = new HashMap<>();
@@ -115,10 +108,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private boolean initMode = false;
 	
 	private Map<String, Proc_declContext> procedures = new HashMap<>();
-	private PthreadPool pool = new PthreadPool();
+	protected PthreadPool pool = new PthreadPool();
 	
 	private int nextScopeID = 0;
-	private Scope currentScope = new Scope(nextScopeID, null);
+	protected Scope currentScope = new Scope(nextScopeID, null);
 	
 	private List<Register> returnRegister = new ArrayList<>();
 	private String currentReturnName = null;
@@ -127,14 +120,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
 	private Map<String, Address> constantMemoryMap = new HashMap<>();
 	
-	private List<ExprInterface> mainCallingValues = new ArrayList<>();
+	protected List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
-	private int assertionIndex = 0;
+	protected int assertionIndex = 0;
 	
-	private BeginAtomic currentBeginAtomic = null;
+	protected BeginAtomic currentBeginAtomic = null;
 	private Call_cmdContext atomicMode = null;
-	
-	private static List<String> llvmFunctions = Arrays.asList("$srem.", "$urem.", "$smod.", "$sdiv.", "$udiv.", "$shl.", "$lshr.", "$ashr.", "$xor.", "$or.", "$and.", "$nand.");
+	 
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "printk.", "memcpy.i8");
 	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "strncpy", "nvram_read_byte", "memset", "pthread_key_create", "pthread_getspecific", "pthread_setspecific");
 
@@ -352,98 +344,24 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
-		if(name.equals("pthread_mutex_init")) {
-			mutexInit(ctx.call_params().exprs().expr(0), ctx.call_params().exprs().expr(1));
+		if(PTHREADFUNCTIONS.stream().anyMatch(e -> name.equals(e))) {
+			handlePthreadsFunctions(this, ctx);
 			return null;
 		}
-		if(name.equals("pthread_mutex_lock")) {
-			mutexLock(ctx.call_params().exprs());
+		if(SVCOMPFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
+			handleSvcompFunction(this, ctx);
 			return null;
 		}
-		if(name.equals("pthread_mutex_unlock")) {
-			mutexUnlock(ctx.call_params().exprs());
-			return null;
-		}
-		if(name.equals("abort")) {
-			abort();
-			return null;
-		}
-		// TODO seems to be obsolete in SVCOMP 2021
-		if(name.contains("__VERIFIER_assume")) {
-			__VERIFIER_assume(ctx.call_params().exprs());
-			return null;
-		}
-		if(name.contains("reach_error") || name.contains("__VERIFIER_error")) {
-			__VERIFIER_error();
-			return null;
-		}
-		// The method can be called "__VERIFIER_assert" or "__VERIFIER_assert.i32" 
-		if(name.contains("__VERIFIER_assert")) {
-			__VERIFIER_assert(ctx.call_params().exprs());
-			return null;
-		}
-		if(name.contains("__VERIFIER_nondet_")) {
-			if(name.equals("__VERIFIER_nondet_bool")) {
-				__VERIFIER_nondet_bool(ctx.call_params().Ident(0).getText());
-				return null;
-			}
-			INonDetTypes type = null;
-			if(name.equals("__VERIFIER_nondet_int")) {
-				type = INonDetTypes.INT;
-			} else if (name.equals("__VERIFIER_nondet_uint") || name.equals("__VERIFIER_nondet_unsigned_int")) {
-				type = INonDetTypes.UINT;
-			} else if (name.equals("__VERIFIER_nondet_short")) {
-				type = INonDetTypes.SHORT;
-			} else if (name.equals("__VERIFIER_nondet_ushort")) {
-				type = INonDetTypes.USHORT;
-			} else if (name.equals("__VERIFIER_nondet_long")) {
-				type = INonDetTypes.LONG;
-			} else if (name.equals("__VERIFIER_nondet_ulong")) {
-				type = INonDetTypes.ULONG;
-			} else if (name.equals("__VERIFIER_nondet_char")) {
-				type = INonDetTypes.CHAR;
-			} else if (name.equals("__VERIFIER_nondet_uchar")) {
-				type = INonDetTypes.UCHAR;
-			} else {
-				throw new ParsingException(name + " is not supported");
-			}
-			__VERIFIER_nondet(ctx.call_params().Ident(0).getText(), type);
-			return null;
-		}
-		if(name.contains("__VERIFIER_atomic_begin")) {
-			__VERIFIER_atomic_begin();
-			return null;
-		}
-		if(name.contains("__VERIFIER_atomic_end")) {
-			__VERIFIER_atomic_end();
+		if(ATOMICFUNCTIONS.stream().anyMatch(e -> name.equals(e))) {
+			handleAtomicFunction(this, ctx);
 			return null;
 		}
 		// The order is important
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
-			__VERIFIER_atomic_begin();
+			currentBeginAtomic = new BeginAtomic();
+			programBuilder.addChild(threadCount, currentBeginAtomic);	
 			// No return, the body still needs to be parsed.
-		}
-		if(name.equals("pthread_create")) {
-			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
-			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register threadPtr = programBuilder.getOrCreateRegister(threadCount, namePtr);
-			String threadName = ctx.call_params().exprs().expr().get(2).getText();
-			ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(this);
-			mainCallingValues.clear();
-			mainCallingValues.add(callingValue);
-			pthread_create(threadPtr, threadName);
-			return null;
-		}
-		// Sometimes the compiler convert it to __pthread_join
-		if(name.contains("pthread_join") && ctx.call_params().Define() != null) {
-			String namePtr = ctx.call_params().exprs().expr().get(0).getText();
-			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register callReg = programBuilder.getOrCreateRegister(threadCount, namePtr);
-			String retName = ctx.call_params().Ident(0).getText();
-			Register retReg = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + retName);
-			pthread_join(retReg, pool.getPtrFromReg(callReg));
-			return null;
 		}
 		// Some procedures might have an empty implementation.
 		// There will be no return for them.
@@ -466,7 +384,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
-			__VERIFIER_atomic_end();
+			if(currentBeginAtomic == null) {
+	            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+			}
+			programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));	
+			currentBeginAtomic = null;
 			atomicMode = null;
 		}
 		// Nice to have for debugging
@@ -499,125 +421,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		programBuilder.addChild(threadCount, new Local(start, adds));
 	}
 
-	private void pthread_create(Register ptr, String name) {
-		if(!procedures.containsKey(name)) {
-			throw new ParsingException("Procedure " + name + " is not defined");
-		}
-		pool.add(ptr, name);
-		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
-		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(1), "NA"));
-	}
-
-	private void pthread_join(Register retRegister, Register ptr) {
-		Location loc = programBuilder.getOrCreateLocation(ptr + "_active");
-		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
-       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), "NA"));
-		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(0)), label));
-	}
-
-	private void __VERIFIER_nondet(String registerName, INonDetTypes type) {
-		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
-	    if(register != null){
-	    	programBuilder.addChild(threadCount, new Local(register, new INonDet(type)));
-	    }		
-	}
-
-	private void __VERIFIER_nondet_bool(String registerName) {
-		Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + registerName);
-	    if(register != null){
-	    	programBuilder.addChild(threadCount, new Local(register, new BNonDet()));
-	    }		
-	}
-
-	private void abort() {
-       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, new Jump(label));	
-	}
-	
-	//TODO: seems to be obsolete after SVCOMP 2020
-	private void __VERIFIER_assume(ExprsContext exp) {
-       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-       	ExprInterface c = (ExprInterface)exp.accept(this);
-		if(c != null) {
-			programBuilder.addChild(threadCount, new Assume(c, label));	
-		}
-	}
-
-	//TODO: seems to be obsolete after SVCOMP 2020
-	private void __VERIFIER_error() {
-    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
-    	assertionIndex++;
-    	Local event = new Local(ass, new BConst(false));
-		event.addFilters(EType.ASSERTION);
-		programBuilder.addChild(threadCount, event);
-	}
-	
-	private void __VERIFIER_assert(ExprsContext exp) {
-    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
-    	assertionIndex++;
-    	ExprInterface expr = (ExprInterface)exp.accept(this);
-    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
-    		return;
-    	}
-    	Local event = new Local(ass, expr);
-		event.addFilters(EType.ASSERTION);
-		programBuilder.addChild(threadCount, event);
-	}
-	
-	private void mutexInit(ExprContext lock, ExprContext value) {
-		IExpr lockAddress = (IExpr)lock.accept(this);
-		IExpr val = (IExpr)value.accept(this);
-		if(lockAddress != null) {
-			programBuilder.addChild(threadCount, new Store(lockAddress, val, "NA"));	
-		}
-	}
-	
-	private void mutexLock(ExprsContext exp) {
-        Register register = programBuilder.getOrCreateRegister(threadCount, null);
-		IExpr lockAddress = (IExpr)exp.accept(this);
-       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		if(lockAddress != null) {
-	        LinkedList<Event> events = new LinkedList<>();
-	        events.add(new Load(register, lockAddress, "NA"));
-	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0)),label));
-	        events.add(new Store(lockAddress, new IConst(1), "NA"));
-	        for(Event e : events) {
-	        	e.addFilters(EType.LOCK, EType.RMW);
-				programBuilder.addChild(threadCount, e);
-	        }
-		}
-	}
-	
-	private void mutexUnlock(ExprsContext exp) {
-        Register register = programBuilder.getOrCreateRegister(threadCount, null);
-		IExpr lockAddress = (IExpr)exp.accept(this);
-       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		if(lockAddress != null) {
-			LinkedList<Event> events = new LinkedList<>();
-	        events.add(new Load(register, lockAddress, "NA"));
-	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1)),label));
-	        events.add(new Store(lockAddress, new IConst(0), "NA"));
-	        for(Event e : events) {
-	        	e.addFilters(EType.LOCK, EType.RMW);
-				programBuilder.addChild(threadCount, e);
-	        }
-		}
-	}
-	
-	private void __VERIFIER_atomic_begin() {
-		currentBeginAtomic = new BeginAtomic();
-		programBuilder.addChild(threadCount, currentBeginAtomic);	
-	}
-	
-	private void __VERIFIER_atomic_end() {
-		if(currentBeginAtomic == null) {
-            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
-		}
-		programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));	
-		currentBeginAtomic = null;
-	}
-	
 	@Override
 	public Object visitWhile_cmd(While_cmdContext ctx) {
         ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
@@ -912,7 +715,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
 		currentCall = new FunctionCall(function, callParams, currentCall);
-		if(llvmFunctions.stream().anyMatch(f -> name.contains(f))) {
+		if(LLVMFUNCTIONS.stream().anyMatch(f -> name.contains(f))) {
 			currentCall = currentCall.getParent();
 			return llvmFunction(name, callParams);
 		}
@@ -960,38 +763,5 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitDec(DecContext ctx) {
         throw new ParsingException("Floats are not yet supported");
-	}
-	
-	private Object llvmFunction(String name, List<Object> callParams) {
-		IOpBin op = null; 
-		if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
-			op = MOD;
-		}
-		if(name.contains("$sdiv.") || name.contains("$udiv.")) {
-			op = DIV;
-		}
-		if(name.contains("$shl.")) {
-			op = L_SHIFT;
-		}
-		if(name.contains("$lshr.")) {
-			op = R_SHIFT;
-		}
-		if(name.contains("$ashr.")) {
-			op = AR_SHIFT;
-		}
-		if(name.contains("$xor.")) {
-			op = XOR;
-		}
-		if(name.contains("$or.")) {
-			op = OR;
-		}
-		if(name.contains("$and.") || name.contains("$nand.")) {
-			op = AND;
-		}
-		if(op == null) {
-			throw new ParsingException("Function " + name + " has no implementation");
-		}
-		op.setPrecision(Integer.parseInt(name.substring(name.lastIndexOf('i')+1)));
-		return new IExprBin((ExprInterface)callParams.get(0), op, (ExprInterface)callParams.get(1));
 	}
 }

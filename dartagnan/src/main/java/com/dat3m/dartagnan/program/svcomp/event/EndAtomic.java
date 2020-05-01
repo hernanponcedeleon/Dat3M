@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.rmw;
+package com.dat3m.dartagnan.program.svcomp.event;
 
 import java.util.ArrayList;
 import java.util.List;
