@@ -19,3 +19,7 @@ typedef _Atomic(long)               atomic_long;
 typedef _Atomic(unsigned long)      atomic_ulong;
 typedef _Atomic(long long)          atomic_llong;
 typedef _Atomic(unsigned long long) atomic_ullong;
+
+#define ATOMIC_VAR_INIT(VALUE)    (VALUE)
+
+#define NULL 0
