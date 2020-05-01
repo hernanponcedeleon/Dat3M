@@ -15,13 +15,13 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 import java.util.LinkedList;
 
-public class Atomic_Store_Explicit extends MemEvent implements RegReaderData {
+public class AtomicStoreExplicit extends MemEvent implements RegReaderData {
 
     private final ExprInterface value;
     private final String mo;
     private final ImmutableSet<Register> dataRegs;
 
-    public Atomic_Store_Explicit(IExpr address, ExprInterface value, String mo){
+    public AtomicStoreExplicit(IExpr address, ExprInterface value, String mo){
         super(address, mo);
         this.value = value;
         this.mo = mo;
@@ -29,7 +29,7 @@ public class Atomic_Store_Explicit extends MemEvent implements RegReaderData {
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
     }
 
-    private Atomic_Store_Explicit(Atomic_Store_Explicit other){
+    private AtomicStoreExplicit(AtomicStoreExplicit other){
         super(other);
         this.value = other.value;
         this.mo = other.mo;
@@ -51,8 +51,8 @@ public class Atomic_Store_Explicit extends MemEvent implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Atomic_Store_Explicit getCopy(){
-        return new Atomic_Store_Explicit(this);
+    public AtomicStoreExplicit getCopy(){
+        return new AtomicStoreExplicit(this);
     }
 
 

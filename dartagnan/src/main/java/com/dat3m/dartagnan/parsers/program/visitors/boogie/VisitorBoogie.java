@@ -352,7 +352,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			handleSvcompFunction(this, ctx);
 			return null;
 		}
-		if(ATOMICFUNCTIONS.stream().anyMatch(e -> name.equals(e))) {
+		if(ATOMICFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
 			handleAtomicFunction(this, ctx);
 			return null;
 		}

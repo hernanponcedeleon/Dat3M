@@ -13,19 +13,19 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.LinkedList;
 
-public class Atomic_Load_Explicit extends MemEvent implements RegWriter {
+public class AtomicLoadExplicit extends MemEvent implements RegWriter {
 
     private final Register resultRegister;
     private final String mo;
 
-    public Atomic_Load_Explicit(Register register, IExpr address, String mo) {
+    public AtomicLoadExplicit(Register register, IExpr address, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.mo = mo;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
     }
 
-    private Atomic_Load_Explicit(Atomic_Load_Explicit other){
+    private AtomicLoadExplicit(AtomicLoadExplicit other){
         super(other);
         this.resultRegister = other.resultRegister;
         this.mo = other.mo;
@@ -46,8 +46,8 @@ public class Atomic_Load_Explicit extends MemEvent implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Atomic_Load_Explicit getCopy(){
-        return new Atomic_Load_Explicit(this);
+    public AtomicLoadExplicit getCopy(){
+        return new AtomicLoadExplicit(this);
     }
 
 
