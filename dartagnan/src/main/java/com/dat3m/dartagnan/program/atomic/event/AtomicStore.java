@@ -6,22 +6,24 @@ import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.atomic.utils.Mo;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+
 import java.util.LinkedList;
 
-public class AtomicStoreExplicit extends MemEvent implements RegReaderData {
+public class AtomicStore extends MemEvent implements RegReaderData {
 
     private final ExprInterface value;
     private final String mo;
     private final ImmutableSet<Register> dataRegs;
 
-    public AtomicStoreExplicit(IExpr address, ExprInterface value, String mo){
+    public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
         this.value = value;
         this.mo = mo;
@@ -29,7 +31,7 @@ public class AtomicStoreExplicit extends MemEvent implements RegReaderData {
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
     }
 
-    private AtomicStoreExplicit(AtomicStoreExplicit other){
+    private AtomicStore(AtomicStore other){
         super(other);
         this.value = other.value;
         this.mo = other.mo;
@@ -43,7 +45,8 @@ public class AtomicStoreExplicit extends MemEvent implements RegReaderData {
 
     @Override
     public String toString() {
-        return "atomic_store_explicit(*" + address + ", " +  value + (mo != null ? ", " + mo : "") + ")";
+    	String tag = mo != null ? "_explicit" : "";
+        return "atomic_store" + tag + "(*" + address + ", " +  value + (mo != null ? ", " + mo : "") + ")";
     }
 
 
@@ -51,8 +54,8 @@ public class AtomicStoreExplicit extends MemEvent implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public AtomicStoreExplicit getCopy(){
-        return new AtomicStoreExplicit(this);
+    public AtomicStore getCopy(){
+        return new AtomicStore(this);
     }
 
 
@@ -68,29 +71,28 @@ public class AtomicStoreExplicit extends MemEvent implements RegReaderData {
             case NONE:
                 break;
             case TSO:
-                if(Mo.SC.equals(mo)){
+                if(SC.equals(mo)){
                     events.addLast(new Fence("Mfence"));
                 }
                 break;
             case POWER:
-                if(Mo.RELEASE.equals(mo)){
+                if(RELEASE.equals(mo)){
                     events.addFirst(new Fence("Lwsync"));
-                } else if(Mo.SC.equals(mo)){
+                } else if(SC.equals(mo)){
                     events.addFirst(new Fence("Sync"));
                 }
                 break;
             case ARM: case ARM8:
-                if(Mo.RELEASE.equals(mo) || Mo.SC.equals(mo)){
+                if(RELEASE.equals(mo) || SC.equals(mo)){
                     events.addFirst(new Fence("Ish"));
-                    if(Mo.SC.equals(mo)){
+                    if(SC.equals(mo)){
                         events.addLast(new Fence("Ish"));
                     }
                 }
                 break;
-                default:
-                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+            default:
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-
         return compileSequence(target, nextId, predecessor, events);
     }
 }
