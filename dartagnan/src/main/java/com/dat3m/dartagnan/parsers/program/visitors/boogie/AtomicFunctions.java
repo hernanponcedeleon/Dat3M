@@ -7,12 +7,12 @@ import java.util.List;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.atomic.event.AtomicThreadFence;
-import com.dat3m.dartagnan.program.memory.Address;
 
 public class AtomicFunctions {
 
@@ -39,7 +39,7 @@ public class AtomicFunctions {
 	}
 	
 	private static void atomicStore(VisitorBoogie visitor, Call_cmdContext ctx) {
-		Address add = (Address)ctx.call_params().exprs().expr().get(0).accept(visitor);
+		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 2) {
@@ -50,7 +50,7 @@ public class AtomicFunctions {
 
 	private static void atomicLoad(VisitorBoogie visitor, Call_cmdContext ctx) {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
-		Address add = (Address)ctx.call_params().exprs().expr().get(0).accept(visitor);
+		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 1) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getValue());			
