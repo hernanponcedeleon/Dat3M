@@ -8,9 +8,10 @@ import java.util.List;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.atomic.event.AtomicFetchAdd;
+import com.dat3m.dartagnan.program.atomic.event.AtomicFetchOp;
 import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.atomic.event.AtomicThreadFence;
@@ -20,7 +21,7 @@ public class AtomicFunctions {
 	public static List<String> ATOMICFUNCTIONS = Arrays.asList(
 			"atomic_store",
 			"atomic_load",
-			"atomic_fetch_add",
+			"atomic_fetch",
 			"atomic_thread_fence");
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -33,8 +34,8 @@ public class AtomicFunctions {
 			atomicLoad(visitor, ctx);
 			return;
 		}			
-		if(name.contains("atomic_fetch_add")) {
-			atomicFetchAdd(visitor, ctx);
+		if(name.contains("atomic_fetch")) {
+			atomicFetchOp(visitor, ctx);
 			return;
 		}			
 		if(name.contains("atomic_thread_fence")) {
@@ -64,15 +65,23 @@ public class AtomicFunctions {
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicLoad(reg, add, mo));
 	}
 
-	private static void atomicFetchAdd(VisitorBoogie visitor, Call_cmdContext ctx) {
+	private static void atomicFetchOp(VisitorBoogie visitor, Call_cmdContext ctx) {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		ExprInterface value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
+		IOpBin op;
+		if(ctx.getText().contains("_add")) {
+			op = IOpBin.PLUS;
+		} else if(ctx.getText().contains("_sub")) {
+			op = IOpBin.MINUS;
+		} else {
+			throw new RuntimeException("AtomicFetchOp operation cannot be handled");
+		}
 		if(ctx.call_params().exprs().expr().size() > 2) {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValue());			
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, new AtomicFetchAdd(reg, add, value, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, new AtomicFetchOp(reg, add, value, op, mo));
 	}
 
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {

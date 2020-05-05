@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -15,29 +16,31 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.arch.tso.utils.EType;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-public class AtomicFetchAdd extends MemEvent implements RegWriter, RegReaderData {
+public class AtomicFetchOp extends MemEvent implements RegWriter, RegReaderData {
 
     private final Register resultRegister;
     private final ExprInterface value;
     private final ImmutableSet<Register> dataRegs;
+    private final IOpBin op;
 
-    public AtomicFetchAdd(Register register, IExpr address, ExprInterface value, String mo) {
+    public AtomicFetchOp(Register register, IExpr address, ExprInterface value, IOpBin op, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value= value;
         this.dataRegs = ImmutableSet.of(resultRegister);
+        this.op = op;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.WRITE, EType.ATOM, EType.REG_WRITER, EType.REG_READER);
     }
 
-    private AtomicFetchAdd(AtomicFetchAdd other){
+    private AtomicFetchOp(AtomicFetchOp other){
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;
         this.dataRegs = other.dataRegs;
+        this.op = other.op;
     }
 
     @Override
@@ -53,15 +56,26 @@ public class AtomicFetchAdd extends MemEvent implements RegWriter, RegReaderData
     @Override
     public String toString() {
     	String tag = mo != null ? "_explicit" : "";
-        return "atomic_fetch_add" + tag + "(*" + address + ", " + resultRegister + (mo != null ? ", " + mo : "") + ")";
+    	String opName;
+    	switch(op) {
+    		case PLUS: 
+    			opName = "_add";
+    			break;
+    		case MINUS: 
+    			opName = "_sub";
+    			break;
+    		default:
+    			throw new RuntimeException("Operation " + op + " cannot be handled in AtomicFetchOp");
+    	}
+        return "atomic_fetch" + opName + tag + "(*" + address + ", " + resultRegister + (mo != null ? ", " + mo : "") + ")";
     }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public AtomicFetchAdd getCopy(){
-        return new AtomicFetchAdd(this);
+    public AtomicFetchOp getCopy(){
+        return new AtomicFetchOp(this);
     }
 
 
@@ -76,7 +90,7 @@ public class AtomicFetchAdd extends MemEvent implements RegWriter, RegReaderData
                 load.addFilters(EType.ATOM);
 
                 Register dummyReg = new Register(null, resultRegister.getThreadId());
-                Local add = new Local(dummyReg, new IExprBin(resultRegister, PLUS, value));
+                Local add = new Local(dummyReg, new IExprBin(resultRegister, op, value));
                 
                 RMWStore store = new RMWStore(load, address, dummyReg, mo);
                 store.addFilters(EType.ATOM);
