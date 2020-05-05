@@ -20,13 +20,11 @@ import java.util.LinkedList;
 public class AtomicStore extends MemEvent implements RegReaderData {
 
     private final ExprInterface value;
-    private final String mo;
     private final ImmutableSet<Register> dataRegs;
 
     public AtomicStore(IExpr address, ExprInterface value, String mo){
         super(address, mo);
         this.value = value;
-        this.mo = mo;
         this.dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
     }
@@ -34,7 +32,6 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     private AtomicStore(AtomicStore other){
         super(other);
         this.value = other.value;
-        this.mo = other.mo;
         this.dataRegs = other.dataRegs;
     }
 

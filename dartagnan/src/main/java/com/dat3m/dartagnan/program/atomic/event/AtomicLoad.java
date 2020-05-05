@@ -24,19 +24,16 @@ import java.util.LinkedList;
 public class AtomicLoad extends MemEvent implements RegWriter {
 
     private final Register resultRegister;
-    private final String mo;
 
     public AtomicLoad(Register register, IExpr address, String mo) {
         super(address, mo);
         this.resultRegister = register;
-        this.mo = mo;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
     }
 
     private AtomicLoad(AtomicLoad other){
         super(other);
         this.resultRegister = other.resultRegister;
-        this.mo = other.mo;
     }
 
     @Override

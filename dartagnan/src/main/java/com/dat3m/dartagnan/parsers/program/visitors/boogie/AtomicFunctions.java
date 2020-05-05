@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.atomic.event.AtomicFetchAdd;
 import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.atomic.event.AtomicThreadFence;
@@ -19,6 +20,7 @@ public class AtomicFunctions {
 	public static List<String> ATOMICFUNCTIONS = Arrays.asList(
 			"atomic_store",
 			"atomic_load",
+			"atomic_fetch_add",
 			"atomic_thread_fence");
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -29,6 +31,10 @@ public class AtomicFunctions {
 		}
 		if(name.contains("atomic_load")) {
 			atomicLoad(visitor, ctx);
+			return;
+		}			
+		if(name.contains("atomic_fetch_add")) {
+			atomicFetchAdd(visitor, ctx);
 			return;
 		}			
 		if(name.contains("atomic_thread_fence")) {
@@ -56,6 +62,17 @@ public class AtomicFunctions {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getValue());			
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicLoad(reg, add, mo));
+	}
+
+	private static void atomicFetchAdd(VisitorBoogie visitor, Call_cmdContext ctx) {
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
+		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
+		ExprInterface value = (IExpr)ctx.call_params().exprs().expr().get(1).accept(visitor);
+		String mo = null;
+		if(ctx.call_params().exprs().expr().size() > 2) {
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValue());			
+		}
+		visitor.programBuilder.addChild(visitor.threadCount, new AtomicFetchAdd(reg, add, value, mo));
 	}
 
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {
