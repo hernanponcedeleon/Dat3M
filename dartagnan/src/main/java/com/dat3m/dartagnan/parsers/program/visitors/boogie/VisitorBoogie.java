@@ -261,7 +261,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-        		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), "NA"));
+        		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), null));
         		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(1)), label));
             }
     	}
@@ -305,7 +305,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
-        		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(0), "NA"));
+        		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(0), null));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
@@ -491,11 +491,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.")) {
-	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, "NA"));
+	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null));
 		            continue;
 	        	}
 	        	if(value instanceof Location) {
-	                programBuilder.addChild(threadCount, new Load(register, ((Location)value).getAddress(), "NA"));
+	                programBuilder.addChild(threadCount, new Load(register, ((Location)value).getAddress(), null));
 	        	} else {
 		            programBuilder.addChild(threadCount, new Local(register, value));	        		
 	        	}
@@ -503,7 +503,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        }
 	        Location location = programBuilder.getLocation(name);
 	        if(location != null){
-	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, "NA"));
+	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, null));
 	            continue;
 	        }
 	        if(currentReturnName.equals(name)) {
@@ -709,7 +709,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(initMode && value instanceof IConst && ((IConst)value).getValue() == 0) {
 				return null;
 			}
-			programBuilder.addChild(threadCount, new Store(address, value, "NA"));	
+			programBuilder.addChild(threadCount, new Store(address, value, null));	
 			return null;
 		}
 		// push currentCall to the call stack
