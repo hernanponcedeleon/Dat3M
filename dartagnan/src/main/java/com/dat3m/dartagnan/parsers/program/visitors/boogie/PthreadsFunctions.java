@@ -68,7 +68,7 @@ public class PthreadsFunctions {
 		visitor.mainCallingValues.add(callingValue);
 		visitor.pool.add(threadPtr, threadName);
 		Location loc = visitor.programBuilder.getOrCreateLocation(threadPtr + "_active");
-		visitor.programBuilder.addChild(visitor.threadCount, new Store(loc.getAddress(), new IConst(1), "NA"));
+		visitor.programBuilder.addChild(visitor.threadCount, new Store(loc.getAddress(), new IConst(1), null));
 	}
 	
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -78,7 +78,7 @@ public class PthreadsFunctions {
 		Location loc = visitor.programBuilder.getOrCreateLocation(visitor.pool.getPtrFromReg(callReg) + "_active");
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, new Load(reg, loc.getAddress(), "NA"));
+       	visitor.programBuilder.addChild(visitor.threadCount, new Load(reg, loc.getAddress(), null));
        	visitor.programBuilder.addChild(visitor.threadCount, new Assume(new Atom(reg, EQ, new IConst(0)), label));
 	}
 
@@ -88,7 +88,7 @@ public class PthreadsFunctions {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		IExpr val = (IExpr)value.accept(visitor);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, new Store(lockAddress, val, "NA"));	
+			visitor.programBuilder.addChild(visitor.threadCount, new Store(lockAddress, val, null));	
 		}
 	}
 	
@@ -98,9 +98,9 @@ public class PthreadsFunctions {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 	        LinkedList<Event> events = new LinkedList<>();
-	        events.add(new Load(register, lockAddress, "NA"));
+	        events.add(new Load(register, lockAddress, null));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0)),label));
-	        events.add(new Store(lockAddress, new IConst(1), "NA"));
+	        events.add(new Store(lockAddress, new IConst(1), null));
 	        for(Event e : events) {
 	        	e.addFilters(EType.LOCK, EType.RMW);
 	        	visitor.programBuilder.addChild(visitor.threadCount, e);
@@ -114,9 +114,9 @@ public class PthreadsFunctions {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 			LinkedList<Event> events = new LinkedList<>();
-	        events.add(new Load(register, lockAddress, "NA"));
+	        events.add(new Load(register, lockAddress, null));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1)),label));
-	        events.add(new Store(lockAddress, new IConst(0), "NA"));
+	        events.add(new Store(lockAddress, new IConst(0), null));
 	        for(Event e : events) {
 	        	e.addFilters(EType.LOCK, EType.RMW);
 	        	visitor.programBuilder.addChild(visitor.threadCount, e);

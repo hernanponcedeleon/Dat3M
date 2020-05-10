@@ -348,7 +348,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			handlePthreadsFunctions(this, ctx);
 			return null;
 		}
-		if(SVCOMPFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
+		if(SVCOMPFUNCTIONS.stream().anyMatch(e -> name.equals(e))) {
 			handleSvcompFunction(this, ctx);
 			return null;
 		}
@@ -494,8 +494,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null));
 		            continue;
 	        	}
-	        	if(value instanceof Location) {
-	                programBuilder.addChild(threadCount, new Load(register, ((Location)value).getAddress(), null));
+	        	if(value instanceof Address) {
+	                programBuilder.addChild(threadCount, new Load(register, (Address)value, null));
 	        	} else {
 		            programBuilder.addChild(threadCount, new Local(register, value));	        		
 	        	}
@@ -686,7 +686,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         }
         Location location = programBuilder.getLocation(name);
         if(location != null){
-       		return location;
+       		return location.getAddress();
         }
         throw new ParsingException("Variable " + name + " is not defined");
 	}
