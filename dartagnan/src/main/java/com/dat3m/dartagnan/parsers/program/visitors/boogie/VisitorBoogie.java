@@ -202,7 +202,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			constants.add(name);
 			if(ctx.getText().contains("ref;")) {
-				programBuilder.getOrCreateLocation(name).getAddress();
+				programBuilder.getOrCreateLocation(name);
 			}
 		}
 		return null;
