@@ -118,7 +118,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
-	private Map<String, Address> constantMemoryMap = new HashMap<>();
 	
 	protected List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
@@ -189,6 +188,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			ExprInterface def = ((Atom)exp).getRHS();
 			constantsMap.put(name, def);
 		}
+		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
+			Address add = (Address)((Atom)exp).getLHS();
+			ExprInterface def = ((Atom)exp).getRHS();
+			add.setConstantValue(def.reduce().getValue());
+		}
 		return null;
 	}
 
@@ -198,8 +202,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			constants.add(name);
 			if(ctx.getText().contains("ref;")) {
-				programBuilder.addDeclarationArray(name, Arrays.asList(new IConst(0)));
-				constantMemoryMap.put(name, programBuilder.getPointer(name));
+				programBuilder.getOrCreateLocation(name).getAddress();
 			}
 		}
 		return null;
@@ -669,9 +672,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String name = ctx.getText();
 		if(currentCall != null && currentCall.getFunction().getBody() != null) {
 			return currentCall.replaceVarsByExprs(ctx);
-		}
-		if(constantMemoryMap.containsKey(name)) {
-			return constantMemoryMap.get(name);
 		}
 		if(constantsMap.containsKey(name)) {
 			return constantsMap.get(name);

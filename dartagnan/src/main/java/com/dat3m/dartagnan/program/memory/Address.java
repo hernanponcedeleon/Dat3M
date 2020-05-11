@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.Event;
 public class Address extends IConst implements ExprInterface {
 
     private final int index;
+    private Integer constantValue;
 
     Address(int index){
         super(index);
@@ -73,4 +74,16 @@ public class Address extends IConst implements ExprInterface {
     public int getIntValue(Event e, Context ctx, Model model){
         return Integer.parseInt(model.getConstInterp(toZ3Int(ctx)).toString());
     }
+    
+    public void setConstantValue(Integer value) {
+    	this.constantValue = value;
+    }
+    
+    public Integer getConstantValue() {
+    	return constantValue;
+    }
+    
+    public boolean hasConstantValue() {
+    	return constantValue != null;
+    }    
 }
