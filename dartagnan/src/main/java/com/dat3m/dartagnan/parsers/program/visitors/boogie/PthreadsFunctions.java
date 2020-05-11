@@ -71,10 +71,13 @@ public class PthreadsFunctions {
 		visitor.programBuilder.addChild(visitor.threadCount, new Store(loc.getAddress(), new IConst(1), null));
 	}
 	
-	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
+	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {		
 		String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 		// This names are global so we don't use currentScope.getID(), but per thread.
 		Register callReg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr);
+		if(visitor.pool.getPtrFromReg(callReg) == null) {
+        	throw new UnsupportedOperationException("pthread_join cannot be handled");
+		}
 		Location loc = visitor.programBuilder.getOrCreateLocation(visitor.pool.getPtrFromReg(callReg) + "_active");
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
