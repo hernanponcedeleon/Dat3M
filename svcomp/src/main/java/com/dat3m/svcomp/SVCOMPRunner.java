@@ -92,7 +92,7 @@ public class SVCOMPRunner {
 		
         if(options.getSettings().getGenerateWitness() && output.contains("FAIL")) {
 			try {
-				Program p = new ProgramParser().parse(file);
+				Program p = new ProgramParser().parse(new File("./output/" + name + "-" + options.getOptimization() + ".bpl"));
 	            new SVCOMPWitness(p, options).write();;
 			} catch (IOException e) {
 				e.printStackTrace();
