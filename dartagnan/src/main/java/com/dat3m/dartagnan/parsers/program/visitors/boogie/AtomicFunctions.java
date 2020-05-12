@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.atomic.event.AtomicFetchOp;
 import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.atomic.event.AtomicThreadFence;
+import com.dat3m.dartagnan.program.atomic.event.AtomicXchg;
 
 public class AtomicFunctions {
 
@@ -22,6 +23,7 @@ public class AtomicFunctions {
 			"atomic_store",
 			"atomic_load",
 			"atomic_fetch",
+			"atomic_exchange",
 			"atomic_thread_fence");
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -36,6 +38,10 @@ public class AtomicFunctions {
 		}			
 		if(name.contains("atomic_fetch")) {
 			atomicFetchOp(visitor, ctx);
+			return;
+		}			
+		if(name.contains("atomic_exchange")) {
+			atomicXchg(visitor, ctx);
 			return;
 		}			
 		if(name.contains("atomic_thread_fence")) {
@@ -75,6 +81,12 @@ public class AtomicFunctions {
 			op = IOpBin.PLUS;
 		} else if(ctx.getText().contains("_sub")) {
 			op = IOpBin.MINUS;
+		} else if(ctx.getText().contains("_and")) {
+			op = IOpBin.AND;
+		} else if(ctx.getText().contains("_or")) {
+			op = IOpBin.OR;
+		} else if(ctx.getText().contains("_xor")) {
+			op = IOpBin.XOR;
 		} else {
 			throw new RuntimeException("AtomicFetchOp operation cannot be handled");
 		}
@@ -82,6 +94,17 @@ public class AtomicFunctions {
 			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValue());			
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicFetchOp(reg, add, value, op, mo));
+	}
+
+	private static void atomicXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
+		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
+		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
+		String mo = null;
+		if(ctx.call_params().exprs().expr().size() > 2) {
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getValue());			
+		}
+		visitor.programBuilder.addChild(visitor.threadCount, new AtomicXchg(reg, add, value, mo));
 	}
 
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {

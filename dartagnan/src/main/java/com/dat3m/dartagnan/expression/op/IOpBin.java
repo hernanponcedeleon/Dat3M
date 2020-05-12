@@ -47,6 +47,12 @@ public enum IOpBin {
                 return "add";
             case MINUS:
                 return "sub";
+            case AND:
+                return "and";
+            case OR:
+                return "or";
+            case XOR:
+                return "xor";
             default:
             	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
         }
