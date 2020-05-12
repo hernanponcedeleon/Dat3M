@@ -195,9 +195,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitConst_decl(Const_declContext ctx) {
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
 			String name = ident.getText();
-			constants.add(name);
 			if(ctx.getText().contains("ref;")) {
 				programBuilder.getOrCreateLocation(name);
+			} else {
+				constants.add(name);				
 			}
 		}
 		return null;
