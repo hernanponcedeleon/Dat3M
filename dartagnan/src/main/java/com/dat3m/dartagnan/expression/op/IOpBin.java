@@ -6,10 +6,10 @@ import com.microsoft.z3.IntExpr;
 public enum IOpBin {
     PLUS, MINUS, MULT, DIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
 	
-	private int precision = 32;
+	private boolean useBV = true;
 	
-	public void setPrecision(int precision) {
-		this.precision = precision;
+	public void disableBV() {
+		this.useBV = false;
 	}
 
     @Override
@@ -71,17 +71,26 @@ public enum IOpBin {
             case MOD:
                 return (IntExpr)ctx.mkMod(e1, e2);
             case AND:
-                return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
+            	if(useBV) {
+                    return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
+            	}
+            	return (IntExpr)ctx.mkITE(ctx.mkEq(e1, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkInt(1)));
             case OR:
-                return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
+            	if(useBV) {
+                    return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
+            	}
+            	return (IntExpr)ctx.mkITE(ctx.mkNot(ctx.mkEq(e1, ctx.mkInt(0))), ctx.mkInt(1), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkInt(1)));
             case XOR:
-                return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
+            	if(useBV) {
+                    return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
+            	}
+            	return (IntExpr)ctx.mkITE(ctx.mkEq(e1, ctx.mkInt(0)), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkInt(1)), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(1), ctx.mkInt(0)));
             case L_SHIFT:
-            	return ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
+            	return ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
             case R_SHIFT:
-            	return ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
+            	return ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
             case AR_SHIFT:
-            	return ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(precision, e1), ctx.mkInt2BV(precision, e2)), false);
+            	return ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
             default:
                 throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
         }

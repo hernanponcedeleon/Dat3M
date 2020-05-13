@@ -35,17 +35,25 @@ public class Memory {
         for(List<Address> array : arrays.values()){
             int size = array.size();
             IntExpr e1 = array.get(0).toZ3Int(ctx);
-            expressions.add(e1);
+            if(!array.get(0).hasConstValue()) {
+                expressions.add(e1);            	
+            }
 
             for(int i = 1; i < size; i++){
                 IntExpr e2 = array.get(i).toZ3Int(ctx);
                 enc = ctx.mkAnd(enc, ctx.mkEq(ctx.mkAdd(e1, ctx.mkInt(1)), e2));
-                expressions.add(e2);
+                if(!array.get(i).hasConstValue()) {
+                    expressions.add(e2);                	
+                }
                 e1 = e2;
             }
         }
         for(Address address : map.values()){
-        	expressions.add(address.toZ3Int(ctx));
+        	if(!address.hasConstValue()) {
+            	expressions.add(address.toZ3Int(ctx));        		
+        	} else {
+        		enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3Int(ctx), ctx.mkInt(address.getConstValue())));
+        	}
         } 
         for(IntExpr expr : expressions){
             enc = ctx.mkAnd(enc, ctx.mkGe(expr, ctx.mkInt(0)));
