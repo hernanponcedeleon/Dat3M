@@ -24,7 +24,6 @@ class ParserBoogie implements ParserInterface{
         VisitorBoogie visitor = new VisitorBoogie(pb);
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setArch(Arch.NONE);
         return program;
     }
 }
