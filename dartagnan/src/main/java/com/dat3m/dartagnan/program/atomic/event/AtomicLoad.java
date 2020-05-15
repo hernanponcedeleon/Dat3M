@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
@@ -71,7 +70,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
             case POWER:
                 if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)){
                 	Label label = new Label("Jump_" + oId);
-                	CondJump jump = new CondJump(new Atom(resultRegister, EQ, new IConst(1)), label);
+                	CondJump jump = new CondJump(new Atom(resultRegister, EQ, resultRegister), label);
                 	events.addLast(jump);
                 	events.addLast(label);
                 	events.addLast(new Fence("Isync"));
