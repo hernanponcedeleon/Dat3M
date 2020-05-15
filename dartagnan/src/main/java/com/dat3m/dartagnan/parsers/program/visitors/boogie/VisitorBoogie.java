@@ -8,6 +8,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFuncti
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFunctions.handlePthreadsFunctions;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.SVCOMPFUNCTIONS;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.handleSvcompFunction;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
 
@@ -76,6 +77,8 @@ import com.dat3m.dartagnan.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
+import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.Comment;
 import com.dat3m.dartagnan.program.event.CondJump;
@@ -265,7 +268,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-        		programBuilder.addChild(threadCount, new Load(reg, loc.getAddress(), null));
+        		programBuilder.addChild(threadCount, new AtomicLoad(reg, loc.getAddress(), SC));
         		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(1)), label));
             }
     	}
@@ -309,7 +312,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
-        		programBuilder.addChild(threadCount, new Store(loc.getAddress(), new IConst(0), null));
+        		programBuilder.addChild(threadCount, new AtomicStore(loc.getAddress(), new IConst(0), SC));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
