@@ -278,6 +278,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	
     	Impl_bodyContext body = ctx.impl_body();;
     	if(body == null) {
+//			throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
     		currentScope = currentScope.getParent();
     		return;
     	}

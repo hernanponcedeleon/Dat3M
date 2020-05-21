@@ -16,10 +16,12 @@ import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.atomic.event.AtomicThreadFence;
 import com.dat3m.dartagnan.program.atomic.event.AtomicXchg;
+import com.dat3m.dartagnan.program.event.Store;
 
 public class AtomicFunctions {
 
 	public static List<String> ATOMICFUNCTIONS = Arrays.asList(
+			"atomic_init",
 			"atomic_store",
 			"atomic_load",
 			"atomic_fetch",
@@ -28,6 +30,10 @@ public class AtomicFunctions {
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
+		if(name.contains("atomic_init")) {
+			atomicInit(visitor, ctx);
+			return;
+		}
 		if(name.contains("atomic_store")) {
 			atomicStore(visitor, ctx);
 			return;
@@ -51,6 +57,12 @@ public class AtomicFunctions {
         throw new UnsupportedOperationException(name + " funcition is not part of ATOMICFUNCTIONS");
 	}
 	
+	private static void atomicInit(VisitorBoogie visitor, Call_cmdContext ctx) {
+		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
+		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
+		visitor.programBuilder.addChild(visitor.threadCount, new Store(add, value, null));
+	}
+
 	private static void atomicStore(VisitorBoogie visitor, Call_cmdContext ctx) {
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);

@@ -6,12 +6,6 @@ import com.microsoft.z3.IntExpr;
 public enum IOpBin {
     PLUS, MINUS, MULT, DIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
 	
-	private boolean useBV = true;
-	
-	public void disableBV() {
-		this.useBV = false;
-	}
-
     @Override
     public String toString() {
         switch(this){
@@ -71,20 +65,11 @@ public enum IOpBin {
             case MOD:
                 return (IntExpr)ctx.mkMod(e1, e2);
             case AND:
-            	if(useBV) {
-                    return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
-            	}
-            	return (IntExpr)ctx.mkITE(ctx.mkEq(e1, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkInt(1)));
+            	return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
             case OR:
-            	if(useBV) {
-                    return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
-            	}
-            	return (IntExpr)ctx.mkITE(ctx.mkNot(ctx.mkEq(e1, ctx.mkInt(0))), ctx.mkInt(1), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkInt(1)));
+            	return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
             case XOR:
-            	if(useBV) {
-                    return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
-            	}
-            	return (IntExpr)ctx.mkITE(ctx.mkEq(e1, ctx.mkInt(0)), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(0), ctx.mkInt(1)), ctx.mkITE(ctx.mkEq(e2, ctx.mkInt(0)), ctx.mkInt(1), ctx.mkInt(0)));
+            	return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
             case L_SHIFT:
             	return ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
             case R_SHIFT:
