@@ -57,6 +57,8 @@ public class SVCOMPRunner {
 	    	cmd.add("./output/" + name + "-" + options.getOptimization() + ".bpl");
 	    	cmd.add("-cat");
 	    	cmd.add(options.getTargetModelFilePath());
+	    	cmd.add("-t");
+	    	cmd.add("none");
 	    	cmd.add("-unroll");
 	    	cmd.add(String.valueOf(bound));
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
