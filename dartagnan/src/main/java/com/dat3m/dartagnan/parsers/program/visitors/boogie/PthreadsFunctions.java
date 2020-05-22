@@ -21,6 +21,8 @@ import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.base.Joiner;
@@ -92,7 +94,7 @@ public class PthreadsFunctions {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		IExpr val = (IExpr)value.accept(visitor);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, new AtomicStore(lockAddress, val, SC));	
+			visitor.programBuilder.addChild(visitor.threadCount, new Store(lockAddress, val, null));	
 		}
 	}
 	
@@ -102,9 +104,9 @@ public class PthreadsFunctions {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 	        LinkedList<Event> events = new LinkedList<>();
-	        events.add(new AtomicLoad(register, lockAddress, SC));
+	        events.add(new Load(register, lockAddress, null));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0)),label));
-	        events.add(new AtomicStore(lockAddress, new IConst(1), SC));
+	        events.add(new Store(lockAddress, new IConst(1), null));
 	        for(Event e : events) {
 	        	e.addFilters(EType.LOCK, EType.RMW);
 	        	visitor.programBuilder.addChild(visitor.threadCount, e);
@@ -118,9 +120,9 @@ public class PthreadsFunctions {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 			LinkedList<Event> events = new LinkedList<>();
-	        events.add(new AtomicLoad(register, lockAddress, SC));
+	        events.add(new Load(register, lockAddress, null));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1)),label));
-	        events.add(new AtomicStore(lockAddress, new IConst(0), SC));
+	        events.add(new Store(lockAddress, new IConst(0), null));
 	        for(Event e : events) {
 	        	e.addFilters(EType.LOCK, EType.RMW);
 	        	visitor.programBuilder.addChild(visitor.threadCount, e);
