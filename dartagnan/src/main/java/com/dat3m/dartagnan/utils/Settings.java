@@ -13,7 +13,7 @@ import java.util.Map;
 public class Settings {
 
     public static final String TACTIC = "qfbv";
-
+    
     // TODO: UI and console options to set these flags
     public static final int FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS      = 0;
     public static final int FLAG_USE_SEQ_ENCODING_REL_RF            = 1;
@@ -23,10 +23,12 @@ public class Settings {
     private Alias alias;
     private int bound;
 
-    private boolean witness = false;
-
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
+
+    private boolean witness = false;
+    
+    private boolean cegar = false; 
     
     private Map<Integer, Boolean> flags = new HashMap<Integer, Boolean>(){{
             put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, true);
@@ -60,11 +62,6 @@ public class Settings {
         this(mode, alias, bound, draw, Arrays.asList(relations));
     }
 
-    public Settings(Mode mode, Alias alias, int bound, boolean witness, boolean draw, String... relations){
-        this(mode, alias, bound, draw, Arrays.asList(relations));
-        this.witness = witness;
-    }
-
     public Mode getMode(){
         return mode;
     }
@@ -77,16 +74,28 @@ public class Settings {
         return bound;
     }
 
-    public boolean getGenerateWitness(){
-        return witness;
-    }
-
     public boolean getDrawGraph(){
         return draw;
     }
 
     public ImmutableSet<String> getGraphRelations(){
         return relations;
+    }
+
+    public boolean getGenerateWitness(){
+        return witness;
+    }
+
+    public void setGenerateWitness(boolean value){
+        this.witness = value;
+    }
+
+    public boolean getCegar(){
+        return cegar;
+    }
+
+    public void setCegar(boolean value){
+        this.cegar = value;
     }
 
     public boolean getFlag(int flag){

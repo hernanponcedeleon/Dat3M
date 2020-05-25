@@ -32,33 +32,33 @@ public class PthreadsFunctions {
 	public static List<String> PTHREADFUNCTIONS = Arrays.asList( 
 			"pthread_create", 
 			"pthread_join", 
-			"__pthread_join", 
 			"pthread_mutex_init", 
 			"pthread_mutex_lock", 
 			"pthread_mutex_unlock");
 
 	public static void handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		switch(name) {
-			case "pthread_create":
-				pthread_create(visitor, ctx);
-				return;
-			case "pthread_join":
-			case "__pthread_join":
-				pthread_join(visitor, ctx);
-				return;
-			case "pthread_mutex_init":
-				mutexInit(visitor, ctx);
-				return;
-			case "pthread_mutex_lock":
-				mutexLock(visitor, ctx);
-				return;
-			case "pthread_mutex_unlock":
-				mutexUnlock(visitor, ctx);
-				return;
-			default:
-	        	throw new UnsupportedOperationException(name + " funcition is not part of " + Joiner.on(",").join(PTHREADFUNCTIONS));
-			}
+		if(name.contains("pthread_create")) {
+			pthread_create(visitor, ctx);
+			return;			
+		}
+		if(name.contains("pthread_join")) {
+			pthread_join(visitor, ctx);
+			return;			
+		}
+		if(name.contains("pthread_mutex_init")) {
+			mutexInit(visitor, ctx);
+			return;
+		}
+		if(name.contains("pthread_mutex_lock")) {
+			mutexLock(visitor, ctx);
+			return;
+		}
+		if(name.contains("pthread_mutex_unlock")) {
+			mutexUnlock(visitor, ctx);
+			return;
+		}
+    	throw new UnsupportedOperationException(name + " funcition is not part of " + Joiner.on(",").join(PTHREADFUNCTIONS));
 	}
 	
 	private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {

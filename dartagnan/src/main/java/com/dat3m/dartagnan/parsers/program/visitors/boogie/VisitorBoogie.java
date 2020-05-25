@@ -352,11 +352,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
-		if(PTHREADFUNCTIONS.stream().anyMatch(e -> name.equals(e))) {
+		if(PTHREADFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
 			handlePthreadsFunctions(this, ctx);
 			return null;
 		}
-		if(SVCOMPFUNCTIONS.stream().anyMatch(e -> name.equals(e))) {
+		if(SVCOMPFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
 			handleSvcompFunction(this, ctx);
 			return null;
 		}

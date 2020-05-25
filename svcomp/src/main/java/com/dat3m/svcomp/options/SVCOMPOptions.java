@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -29,6 +28,10 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
+        Option cegarOption = new Option("cegar", false,
+                "Use CEGAR");
+        addOption(cegarOption);
+
         Option witnessOption = new Option("w", "witness", false,
                 "Creates a violation witness");
         addOption(witnessOption);
@@ -39,19 +42,23 @@ public class SVCOMPOptions extends BaseOptions {
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
-        CommandLine cmd = new DefaultParser().parse(this, args);
-        parseSettings(cmd);
-
-        programFilePath = cmd.getOptionValue("input");
+    	super.parse(args);
         if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
-        targetModelFilePath = cmd.getOptionValue("cat");
+
+    	CommandLine cmd = new DefaultParser().parse(this, args);
         if(cmd.hasOption("optimization")) {
         	optimization = cmd.getOptionValue("optimization");
         }
     }
 
+    protected void parseSettings(CommandLine cmd){
+    	super.parseSettings(cmd);
+    	settings.setCegar(cmd.hasOption("cegar"));
+    	settings.setGenerateWitness(cmd.hasOption("witness"));
+    }
+    
     public String getOptimization(){
         return optimization;
     }

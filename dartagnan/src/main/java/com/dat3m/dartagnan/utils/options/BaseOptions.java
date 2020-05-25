@@ -4,9 +4,6 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.google.common.collect.ImmutableSet;
-
-import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.commons.cli.*;
@@ -15,7 +12,7 @@ public abstract class BaseOptions extends Options {
 
     protected String programFilePath;
     protected String targetModelFilePath;
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "pts", "bpl")); 
+    protected Set<String> supportedFormats; 
     protected Settings settings;
     protected Arch target;
 
@@ -55,10 +52,6 @@ public abstract class BaseOptions extends Options {
         parseSettings(cmd);
         parseGraphFilePath(cmd);
 
-        String inputFilePath = cmd.getOptionValue("input");
-        if(supportedFormats.stream().map(f -> inputFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
-            throw new RuntimeException("Unrecognized program format");
-        }
         programFilePath = cmd.getOptionValue("input");
         targetModelFilePath = cmd.getOptionValue("cat");
 
@@ -91,7 +84,6 @@ public abstract class BaseOptions extends Options {
         Mode mode = cmd.hasOption("mode") ? Mode.get(cmd.getOptionValue("mode")) : null;
         Alias alias = cmd.hasOption("alias") ? Alias.get(cmd.getOptionValue("alias")) : null;
         boolean draw = cmd.hasOption("draw");
-        boolean witness = cmd.hasOption("witness");
         String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
 
         int bound = 1;
@@ -102,7 +94,7 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal unroll value");
             }
         }
-        settings = new Settings(mode, alias, bound, witness, draw, relations);
+        settings = new Settings(mode, alias, bound, draw, relations);
     }
 
     protected void parseGraphFilePath(CommandLine cmd){

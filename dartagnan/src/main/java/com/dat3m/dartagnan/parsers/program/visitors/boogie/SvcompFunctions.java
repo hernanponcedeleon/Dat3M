@@ -43,43 +43,42 @@ public class SvcompFunctions {
 
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		switch(name) {
-			case "abort":
-				abort(visitor);
-				return;
-			case "__VERIFIER_assume":
-				__VERIFIER_assume(visitor, ctx);
-				return;
-			case "reach_error":
-			case "__VERIFIER_error":
-				__VERIFIER_error(visitor);
-				return;
-			case "__VERIFIER_assert":
-				__VERIFIER_assert(visitor, ctx);
-				return;
-			case "__VERIFIER_atomic_begin":
-				__VERIFIER_atomic_begin(visitor);
-				return;
-			case "__VERIFIER_atomic_end":
-				__VERIFIER_atomic_end(visitor);
-				return;
-			case "__VERIFIER_nondet_bool":
-				__VERIFIER_nondet_bool(visitor, ctx);
-				return;
-			case "__VERIFIER_nondet_int":
-			case "__VERIFIER_nondet_uint":
-			case "__VERIFIER_nondet_unsigned_int":
-			case "__VERIFIER_nondet_short":
-			case "__VERIFIER_nondet_ushort":
-			case "__VERIFIER_nondet_long":
-			case "__VERIFIER_nondet_ulong":
-			case "__VERIFIER_nondet_char":
-			case "__VERIFIER_nondet_uchar":
-				__VERIFIER_nondet(visitor, ctx, name);
-				return;
-			default:
-	        	throw new UnsupportedOperationException(name + " funcition is not part of SVCOMPFUNCTIONS");
+		if(name.contains("abort")) {
+			abort(visitor);
+			return;			
 		}
+		if(name.contains("__VERIFIER_assume")) {
+			__VERIFIER_assume(visitor, ctx);
+			return;
+		}
+		if(name.contains("reach_error") || name.contains("__VERIFIER_error")) {
+			__VERIFIER_error(visitor);
+			return;			
+		}
+		if(name.contains("__VERIFIER_assert")) {
+			__VERIFIER_assert(visitor, ctx);
+			return;
+		}
+		if(name.contains("__VERIFIER_atomic_begin")) {
+			__VERIFIER_atomic_begin(visitor);
+			return;			
+		}
+		if(name.contains("__VERIFIER_atomic_end")) {
+			__VERIFIER_atomic_end(visitor);
+			return;
+		}
+		if(name.contains("__VERIFIER_nondet_bool")) {
+			__VERIFIER_nondet_bool(visitor, ctx);
+			return;
+		}
+		if(name.contains("__VERIFIER_nondet_int") || name.contains("__VERIFIER_nondet_uint") || name.contains("__VERIFIER_nondet_unsigned_int") || 
+		   name.contains("__VERIFIER_nondet_short") || name.contains("__VERIFIER_nondet_ushort") || 
+		   name.contains("__VERIFIER_nondet_long") || name.contains("__VERIFIER_nondet_ulong") || 
+		   name.contains("__VERIFIER_nondet_char") || name.contains("__VERIFIER_nondet_uchar")) {
+			__VERIFIER_nondet(visitor, ctx, name);
+			return;
+		}
+		throw new UnsupportedOperationException(name + " funcition is not part of SVCOMPFUNCTIONS");
 	}
 
 	private static void abort(VisitorBoogie visitor) {
