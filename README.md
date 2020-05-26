@@ -11,7 +11,7 @@ This tool suite is currently composed of two tools
 
 Requirements
 ======
-* [Maven](https://maven.apache.org/)
+* [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
 * [SMACK](https://github.com/smackers/smack) (only to verify C programs)
 
 Installation
@@ -35,10 +35,6 @@ We provide a set of unit tests that can be run by
 mvn test
 ```
 **Note:** there are almost 40K tests, running them takes more than 3 hs.
-
-Binaries
-======
-The precompiled jars can be found in the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section.
 
 Usage
 ======
