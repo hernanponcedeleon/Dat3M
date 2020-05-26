@@ -352,6 +352,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
+		if(name.equals("abort")) {
+	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+	       	programBuilder.addChild(threadCount, new Jump(label));
+		}
+		if(name.equals("reach_error")) {
+	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
+	    	assertionIndex++;
+	    	Local event = new Local(ass, new BConst(false));
+			event.addFilters(EType.ASSERTION);
+			programBuilder.addChild(threadCount, event);
+		}
+
 		if(PTHREADFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
 			handlePthreadsFunctions(this, ctx);
 			return null;
@@ -360,7 +372,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			handleSvcompFunction(this, ctx);
 			return null;
 		}
-		if(ATOMICFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
+		if(ATOMICFUNCTIONS.stream().anyMatch(e -> name.startsWith(e))) {
 			handleAtomicFunction(this, ctx);
 			return null;
 		}

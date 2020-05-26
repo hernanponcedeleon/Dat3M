@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Assume;
-import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
@@ -23,9 +22,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class SvcompFunctions {
 
 	public static List<String> SVCOMPFUNCTIONS = Arrays.asList(
-			"abort", 
 			"__VERIFIER_assume", 
-			"reach_error", 
 			"__VERIFIER_error", 
 			"__VERIFIER_assert",
 			"__VERIFIER_atomic_begin",
@@ -43,15 +40,11 @@ public class SvcompFunctions {
 
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.contains("abort")) {
-			abort(visitor);
-			return;			
-		}
 		if(name.contains("__VERIFIER_assume")) {
 			__VERIFIER_assume(visitor, ctx);
 			return;
 		}
-		if(name.contains("reach_error") || name.contains("__VERIFIER_error")) {
+		if(name.contains("__VERIFIER_error")) {
 			__VERIFIER_error(visitor);
 			return;			
 		}
@@ -81,11 +74,6 @@ public class SvcompFunctions {
 		throw new UnsupportedOperationException(name + " funcition is not part of SVCOMPFUNCTIONS");
 	}
 
-	private static void abort(VisitorBoogie visitor) {
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, new Jump(label));
-	}
-	
 	//TODO: seems to be obsolete after SVCOMP 2020
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);

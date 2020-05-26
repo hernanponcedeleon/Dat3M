@@ -9,7 +9,8 @@ import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
 
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl")); 
+    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
+    protected boolean cegar;
 	
     public DartagnanOptions(){
         super();
@@ -28,10 +29,11 @@ public class DartagnanOptions extends BaseOptions {
         if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
+        CommandLine cmd = new DefaultParser().parse(this, args);
+        cegar = cmd.hasOption("cegar");
     }
     
-    protected void parseSettings(CommandLine cmd){
-    	super.parseSettings(cmd);
-    	settings.setCegar(cmd.hasOption("cegar"));
+    public boolean getCegar(){
+        return cegar;
     }
 }

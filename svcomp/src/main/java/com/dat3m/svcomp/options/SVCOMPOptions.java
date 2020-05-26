@@ -20,6 +20,8 @@ public class SVCOMPOptions extends BaseOptions {
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
     protected List<Integer> bounds = rangeClosed(1, 10000).boxed().collect(Collectors.toList());
     protected String optimization = "O0";
+    protected boolean witness;
+    protected boolean cegar;
     
     public SVCOMPOptions(){
         super();
@@ -51,16 +53,20 @@ public class SVCOMPOptions extends BaseOptions {
         if(cmd.hasOption("optimization")) {
         	optimization = cmd.getOptionValue("optimization");
         }
+        witness = cmd.hasOption("witness");
+        cegar = cmd.hasOption("cegar");
     }
 
-    protected void parseSettings(CommandLine cmd){
-    	super.parseSettings(cmd);
-    	settings.setCegar(cmd.hasOption("cegar"));
-    	settings.setGenerateWitness(cmd.hasOption("witness"));
-    }
-    
     public String getOptimization(){
         return optimization;
+    }
+
+    public boolean getGenerateWitness(){
+        return witness;
+    }
+
+    public boolean getCegar(){
+        return cegar;
     }
 
     public List<Integer> getBounds() {

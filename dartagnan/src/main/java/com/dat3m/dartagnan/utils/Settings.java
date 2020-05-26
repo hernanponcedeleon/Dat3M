@@ -26,10 +26,6 @@ public class Settings {
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
 
-    private boolean witness = false;
-    
-    private boolean cegar = false; 
-    
     private Map<Integer, Boolean> flags = new HashMap<Integer, Boolean>(){{
             put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, true);
             put(FLAG_USE_SEQ_ENCODING_REL_RF, true);
@@ -80,22 +76,6 @@ public class Settings {
 
     public ImmutableSet<String> getGraphRelations(){
         return relations;
-    }
-
-    public boolean getGenerateWitness(){
-        return witness;
-    }
-
-    public void setGenerateWitness(boolean value){
-        this.witness = value;
-    }
-
-    public boolean getCegar(){
-        return cegar;
-    }
-
-    public void setCegar(boolean value){
-        this.cegar = value;
     }
 
     public boolean getFlag(int flag){

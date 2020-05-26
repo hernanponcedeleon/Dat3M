@@ -61,6 +61,9 @@ public class SVCOMPRunner {
 	    	cmd.add("none");
 	    	cmd.add("-unroll");
 	    	cmd.add(String.valueOf(bound));
+	    	if(options.getCegar()) {
+	    		cmd.add("-cegar");
+	    	}
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
 
 	        try {
@@ -92,7 +95,7 @@ public class SVCOMPRunner {
 		output = output.contains("PASS") ? "PASS" : "FAIL";
 		System.out.println(output);
 		
-        if(options.getSettings().getGenerateWitness() && output.contains("FAIL")) {
+        if(options.getGenerateWitness() && output.contains("FAIL")) {
 			try {
 				Program p = new ProgramParser().parse(new File("./output/" + name + "-" + options.getOptimization() + ".bpl"));
 	            new SVCOMPWitness(p, options).write();;
