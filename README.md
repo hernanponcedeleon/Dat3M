@@ -12,7 +12,7 @@ This tool suite is currently composed of two tools
 Requirements
 ======
 * [Maven](https://maven.apache.org/)
-* [SMACK](https://github.com/smackers/smack)
+* [SMACK](https://github.com/smackers/smack) (only to verify C programs)
 
 Installation
 ======
