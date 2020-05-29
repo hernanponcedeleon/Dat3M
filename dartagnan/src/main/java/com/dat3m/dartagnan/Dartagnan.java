@@ -2,7 +2,8 @@ package com.dat3m.dartagnan;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.getResult;
+import static com.dat3m.dartagnan.utils.Result.BFAIL;
+import static com.dat3m.dartagnan.utils.Result.BPASS;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -21,8 +22,10 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
+import com.microsoft.z3.Status;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 public class Dartagnan {
@@ -59,7 +62,7 @@ public class Dartagnan {
         Solver s = ctx.mkSolver();
         Settings settings = options.getSettings();
 
-        Result result = testProgram(s, ctx, p, mcm, target, settings);
+        Result result = testProgram(s, ctx, p, mcm, target, settings, options.getCegar());
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -81,8 +84,12 @@ public class Dartagnan {
         ctx.close();
     }
 
-    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings){
-
+    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    	return testProgram(solver, ctx, program, wmm, target, settings, false);
+    }
+    
+    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, boolean cegar) {
+    	
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
@@ -100,18 +107,69 @@ public class Dartagnan {
         solver.add(program.encodeUINonDet(ctx));
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
-        solver.add(wmm.encode(program, ctx, settings));
+		BoolExpr fullWmmEnc = wmm.encode(program, ctx, settings);
+        if(cegar) {
+            solver.add(wmm.encodeBase(program, ctx, settings));
+        	solver.add(wmm.encodeFirstAxiom(ctx));
+        } else {
+        	solver.add(fullWmmEnc);
+        }
         solver.add(wmm.consistent(program, ctx));
 
-        // Used for getting the UNKNOWN
-        // pop() is inside getResult
-        solver.push();
-       	solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
 
-        return getResult(solver, program, ctx);
+		// Termination guaranteed because we add a new constraint in each 
+		// iteration and thus the formula will eventually become UNSAT
+		Result res;
+        while(true) {
+	        solver.push();
+	        // This needs to be pop for the else branch below
+	        // If not the formula will always remain UNSAT
+	       	solver.add(program.getAss().encode(ctx));
+			
+			if(solver.check() == Status.SATISFIABLE) {
+				solver.push();
+				solver.add(program.encodeNoBoundEventExec(ctx));
+				res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;
+			} else {
+				solver.pop();
+				solver.push();
+				solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
+				res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;	
+			}
+			// We get rid of the formulas added in the above branches
+			solver.pop();
+			
+			if(program.getAss().getInvert()) {
+				res = res.invert();
+			}
+			
+			// If we are not using CEGAR or the formula was UNSAT, we return
+			if(!cegar || res.equals(PASS) || res.equals(BPASS)) {
+				return res;
+			}
+
+			solver.push();
+			// We need this to get the model below. This check will always succeed
+			// If not we would have returned above
+			solver.check();
+			BoolExpr execution = program.getRf(ctx, solver.getModel());
+			solver.add(fullWmmEnc);
+			solver.add(execution);
+			
+			if(solver.check() == Status.SATISFIABLE) {
+				// For CEGAR, the same code above seems to never give BFAIL
+				// Thus we add the constraint here to avoid FAIL when the unrolling was not enough
+				solver.add(program.encodeNoBoundEventExec(ctx));
+				res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;
+				return res;
+			}
+
+			solver.pop();
+			solver.add(ctx.mkNot(execution));
+		}
     }
 
     public static boolean canDrawGraph(AbstractAssert ass, boolean result){

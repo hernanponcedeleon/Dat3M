@@ -355,6 +355,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 	       	programBuilder.addChild(threadCount, new Jump(label));
+	       	return null;
 		}
 		if(name.equals("reach_error")) {
 	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
@@ -362,6 +363,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	    	Local event = new Local(ass, new BConst(false));
 			event.addFilters(EType.ASSERTION);
 			programBuilder.addChild(threadCount, event);
+			return null;
 		}
 
 		if(PTHREADFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {

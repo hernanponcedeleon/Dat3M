@@ -14,7 +14,7 @@ public class Compilation {
     	cmd.add("smack");
     	cmd.add("-q");
     	cmd.add("-t");
-    	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + flag + " -fno-vectorize -fno-slp-vectorize");
+    	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + flag + " -fno-vectorize -fno-slp-vectorize -I./include/");
     	cmd.add("-bpl");
     	cmd.add("./output" + name + "-" + flag + ".bpl");
     	cmd.add(file.getAbsolutePath());
