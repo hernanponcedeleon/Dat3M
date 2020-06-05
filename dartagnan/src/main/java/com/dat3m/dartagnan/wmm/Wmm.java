@@ -38,6 +38,10 @@ public class Wmm {
         axioms.add(ax);
     }
 
+    public List<Axiom> getAxioms() {
+        return axioms;
+    }
+
     public void addFilter(FilterAbstract filter) {
         filters.put(filter.getName(), filter);
     }
@@ -136,10 +140,6 @@ public class Wmm {
             enc = ctx.mkAnd(enc, ax.getRel().encode());
         }
         return enc;
-    }
-
-    public BoolExpr encodeFirstAxiom(Context ctx) {
-        return axioms.get(0).getRel().encode();
     }
 
     public BoolExpr consistent(Program program, Context ctx) {
