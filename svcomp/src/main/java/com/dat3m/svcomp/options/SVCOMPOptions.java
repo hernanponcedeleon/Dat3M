@@ -21,7 +21,7 @@ public class SVCOMPOptions extends BaseOptions {
     protected List<Integer> bounds = rangeClosed(1, 10000).boxed().collect(Collectors.toList());
     protected String optimization = "O0";
     protected boolean witness;
-    protected boolean cegar;
+    protected int cegar;
     
     public SVCOMPOptions(){
         super();
@@ -30,7 +30,7 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        Option cegarOption = new Option("cegar", false,
+        Option cegarOption = new Option("cegar", true,
                 "Use CEGAR");
         addOption(cegarOption);
 
@@ -54,7 +54,7 @@ public class SVCOMPOptions extends BaseOptions {
         	optimization = cmd.getOptionValue("optimization");
         }
         witness = cmd.hasOption("witness");
-        cegar = cmd.hasOption("cegar");
+        cegar = !cmd.hasOption("cegar") ? -1 : Integer.parseInt(cmd.getOptionValue("cegar"));
     }
 
     public String getOptimization(){
@@ -65,7 +65,7 @@ public class SVCOMPOptions extends BaseOptions {
         return witness;
     }
 
-    public boolean getCegar(){
+    public int getCegar(){
         return cegar;
     }
 

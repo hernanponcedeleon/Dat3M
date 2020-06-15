@@ -61,11 +61,18 @@ public class Dartagnan {
             return;
         }
         
+		int cegar = options.getCegar();
+        if(cegar >= mcm.getAxioms().size()) {
+            System.out.println("CEGAR argument must be between 1 and #axioms");
+            System.exit(0);
+            return;
+        }
+
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
         Settings settings = options.getSettings();
 
-        Result result = testProgram(s, ctx, p, mcm, target, settings, options.getCegar());
+        Result result = testProgram(s, ctx, p, mcm, target, settings, cegar);
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -88,10 +95,10 @@ public class Dartagnan {
     }
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-    	return testProgram(solver, ctx, program, wmm, target, settings, false);
+    	return testProgram(solver, ctx, program, wmm, target, settings, -1);
     }
     
-    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, boolean cegar) {
+    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
     	Map<BoolExpr, BoolExpr> track = new HashMap<>();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -110,9 +117,9 @@ public class Dartagnan {
         solver.add(program.encodeUINonDet(ctx));
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
-        if(cegar) {
+        if(cegar != -1) {
             solver.add(wmm.encodeBase(program, ctx, settings));
-        	solver.add(wmm.getAxioms().get(0).encodeRelAndConsistency(ctx));
+        	solver.add(wmm.getAxioms().get(cegar).encodeRelAndConsistency(ctx));
         } else {
         	solver.add(wmm.encode(program, ctx, settings));
         	solver.add(wmm.consistent(program, ctx));
@@ -135,11 +142,12 @@ public class Dartagnan {
 				solver.push();
 				solver.add(program.encodeNoBoundEventExec(ctx));
 				res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;
+				solver.pop();
 			} else {
 				solver.pop();
 				solver.push();
 				solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
-				res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;	
+				res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;
 			}
 			// We get rid of the formulas added in the above branches
 			solver.pop();
@@ -149,22 +157,24 @@ public class Dartagnan {
 			}
 			
 			// If we are not using CEGAR or the formula was UNSAT, we return
-			if(!cegar || res.equals(PASS) || res.equals(BPASS)) {
+			if(cegar == -1 || res.equals(PASS) || res.equals(BPASS)) {
 				return res;
 			}
 
 			solver.push();
+	       	solver.add(program.getAss().encode(ctx));
 			// We need this to get the model below. This check will always succeed
 			// If not we would have returned above
 			solver.check();
 			BoolExpr execution = program.getRf(ctx, solver.getModel());
+			solver.add(execution);
+    		solver.add(wmm.encodeBase(program, ctx, settings));
         	for(Axiom ax : wmm.getAxioms()) {
         		BoolExpr enc = ax.encodeRelAndConsistency(ctx);
         		BoolExpr axVar = ctx.mkBoolConst(ax.toString());
         		solver.assertAndTrack(enc, axVar);
         		track.put(axVar, enc);
         	}
-			solver.add(execution);
 			
 			if(solver.check() == Status.SATISFIABLE) {
 				// For CEGAR, the same code above seems to never give BFAIL
