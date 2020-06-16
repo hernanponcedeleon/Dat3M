@@ -18,12 +18,15 @@ import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -61,8 +64,8 @@ public class Dartagnan {
             return;
         }
         
-		int cegar = options.getCegar();
-        if(cegar >= mcm.getAxioms().size()) {
+		Integer cegar = options.getCegar();
+        if(cegar != null && cegar >= mcm.getAxioms().size()) {
             System.out.println("CEGAR argument must be between 1 and #axioms");
             System.exit(0);
             return;
@@ -72,7 +75,7 @@ public class Dartagnan {
         Solver s = ctx.mkSolver();
         Settings settings = options.getSettings();
 
-        Result result = testProgram(s, ctx, p, mcm, target, settings, cegar);
+        Result result = cegar != null ? runCegar(s, ctx, p, mcm, target, settings, cegar) : testProgram(s, ctx, p, mcm, target, settings);
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -95,10 +98,56 @@ public class Dartagnan {
     }
 
     public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-    	return testProgram(solver, ctx, program, wmm, target, settings, -1);
+    	program.unroll(settings.getBound(), 0);
+        program.compile(target, 0);
+        // AssertionInline depends on compiled events (copies)
+        // Thus we need to set the assertion after compilation
+        if(program.getAss() == null){
+        	AbstractAssert ass = program.createAssertion();
+			program.setAss(ass);
+        	// Due to optimizations, the program might be trivially true
+        	// Not returning here might loop forever for cyclic programs
+        	if(ass instanceof AssertTrue) {
+        		return PASS;
+        	}
+        }
+
+        solver.add(program.encodeUINonDet(ctx));
+        solver.add(program.encodeCF(ctx));
+        solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(wmm.encode(program, ctx, settings));
+        solver.add(wmm.consistent(program, ctx));
+
+        // Used for getting the UNKNOWN
+        // pop() is inside getResult
+        solver.push();
+       	solver.add(program.getAss().encode(ctx));
+        if(program.getAssFilter() != null){
+            solver.add(program.getAssFilter().encode(ctx));
+        }
+
+        Result res;
+        if(solver.check() == Status.SATISFIABLE) {
+			solver.add(program.encodeNoBoundEventExec(ctx));
+			res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
+		} else {
+			BoolExpr enc = ctx.mkFalse();
+			for(Event e : program.getCache().getEvents(FilterBasic.get(EType.BOUND))) {
+				enc = ctx.mkOr(enc, e.exec());
+			}
+			solver.pop();
+			solver.add(enc);
+			res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;	
+		}
+        
+		if(program.getAss().getInvert()) {
+			res = res.invert();
+		}
+		
+		return res;
     }
     
-    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
+    public static Result runCegar(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
     	Map<BoolExpr, BoolExpr> track = new HashMap<>();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -117,13 +166,8 @@ public class Dartagnan {
         solver.add(program.encodeUINonDet(ctx));
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
-        if(cegar != -1) {
-            solver.add(wmm.encodeBase(program, ctx, settings));
-        	solver.add(wmm.getAxioms().get(cegar).encodeRelAndConsistency(ctx));
-        } else {
-        	solver.add(wmm.encode(program, ctx, settings));
-        	solver.add(wmm.consistent(program, ctx));
-        }
+        solver.add(wmm.encodeBase(program, ctx, settings));
+       	solver.add(wmm.getAxioms().get(cegar).encodeRelAndConsistency(ctx));
 
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
@@ -137,7 +181,6 @@ public class Dartagnan {
 	        // This needs to be pop for the else branch below
 	        // If not the formula will always remain UNSAT
 	       	solver.add(program.getAss().encode(ctx));
-			
 			if(solver.check() == Status.SATISFIABLE) {
 				solver.push();
 				solver.add(program.encodeNoBoundEventExec(ctx));
