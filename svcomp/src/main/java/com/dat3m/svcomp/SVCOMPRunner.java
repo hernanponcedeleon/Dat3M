@@ -34,7 +34,7 @@ public class SVCOMPRunner {
 		String path = file.getAbsolutePath();
 		// File name contains "_tmp.c"
 		String name = path.substring(path.lastIndexOf('/'), path.lastIndexOf('_'));
-		int bound = 1;
+		int bound = 2;
 
 		String output = "BPASS";
 		while((output.equals("BPASS") || output.equals("BFAIL"))) {

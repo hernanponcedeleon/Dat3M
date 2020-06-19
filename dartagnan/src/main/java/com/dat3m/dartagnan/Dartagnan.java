@@ -18,15 +18,12 @@ import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -97,7 +94,7 @@ public class Dartagnan {
         ctx.close();
     }
 
-    public static Result testProgram(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    public static Result testProgram(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
@@ -111,39 +108,52 @@ public class Dartagnan {
         		return PASS;
         	}
         }
+        
+        // Using two solvers is much faster than using
+        // an incremental solver or check-sat-assuming
+        Solver s2 = ctx.mkSolver();
 
-        solver.add(program.encodeUINonDet(ctx));
-        solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeFinalRegisterValues(ctx));
-        solver.add(wmm.encode(program, ctx, settings));
-        solver.add(wmm.consistent(program, ctx));
-
-        // Used for getting the UNKNOWN
-        // pop() is inside getResult
-        solver.push();
-       	solver.add(program.getAss().encode(ctx));
+        BoolExpr encodeUINonDet = program.encodeUINonDet(ctx);
+		s1.add(encodeUINonDet);
+        s2.add(encodeUINonDet);
+        
+        BoolExpr encodeCF = program.encodeCF(ctx);
+		s1.add(encodeCF);
+        s2.add(encodeCF);
+        
+        BoolExpr encodeFinalRegisterValues = program.encodeFinalRegisterValues(ctx);
+		s1.add(encodeFinalRegisterValues);
+        s2.add(encodeFinalRegisterValues);
+        
+        BoolExpr encodeWmm = wmm.encode(program, ctx, settings);
+		s1.add(encodeWmm);
+        s2.add(encodeWmm);
+        
+        BoolExpr encodeConsistency = wmm.consistent(program, ctx);
+		s1.add(encodeConsistency);
+        s2.add(encodeConsistency);
+       	
+        s1.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(ctx));
+            BoolExpr encodeFilter = program.getAssFilter().encode(ctx);
+			s1.add(encodeFilter);
+            s2.add(encodeFilter);
         }
 
+        BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
+
         Result res;
-        if(solver.check() == Status.SATISFIABLE) {
-			solver.add(program.encodeNoBoundEventExec(ctx));
-			res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
+		if(s1.check() == Status.SATISFIABLE) {
+			s1.add(encodeNoBoundEventExec);
+			res = s1.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
 		} else {
-			BoolExpr enc = ctx.mkFalse();
-			for(Event e : program.getCache().getEvents(FilterBasic.get(EType.BOUND))) {
-				enc = ctx.mkOr(enc, e.exec());
-			}
-			solver.pop();
-			solver.add(enc);
-			res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;	
+			s2.add(ctx.mkNot(encodeNoBoundEventExec));
+			res = s2.check() == Status.SATISFIABLE ? BPASS : PASS;	
 		}
         
 		if(program.getAss().getInvert()) {
 			res = res.invert();
 		}
-		
 		return res;
     }
     
