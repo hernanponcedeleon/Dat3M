@@ -131,6 +131,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	 
 	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "printk.", "memcpy.i8");
 	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "strncpy", "nvram_read_byte", "memset", "pthread_key_create", "pthread_getspecific", "pthread_setspecific");
+	private static List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -141,6 +142,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	for(Func_declContext funDecContext : ctx.func_decl()) {
     		visitFunc_decl(funDecContext);
     	}
+    	for(Proc_declContext procDecContext : ctx.proc_decl()) {
+    		preProc_decl(procDecContext);
+    	}
     	for(Const_declContext constDecContext : ctx.const_decl()) {
     		visitConst_decl(constDecContext);
     	}
@@ -149,9 +153,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
     	for(Var_declContext varDecContext : ctx.var_decl()) {
     		visitVar_decl(varDecContext);
-    	}
-    	for(Proc_declContext procDecContext : ctx.proc_decl()) {
-    		preProc_decl(procDecContext);
     	}
     	if(!procedures.containsKey("main")) {
     		throw new ParsingException("Program shall have a main procedure");
@@ -203,7 +204,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitConst_decl(Const_declContext ctx) {
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
 			String name = ident.getText();
-			if(ctx.getText().contains("ref;")) {
+			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
 				programBuilder.getOrCreateLocation(name);
 			} else {
 				constants.add(name);				
