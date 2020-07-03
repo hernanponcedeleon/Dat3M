@@ -49,16 +49,11 @@ public class Memory {
             }
         }
         for(Address address : map.values()){
-        	if(!address.hasConstValue()) {
-            	expressions.add(address.toZ3Int(ctx));        		
-        	} else {
+        	if(address.hasConstValue()) {
         		enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3Int(ctx), ctx.mkInt(address.getConstValue())));
         	}
-        } 
-        for(IntExpr expr : expressions){
-            enc = ctx.mkAnd(enc, ctx.mkGe(expr, ctx.mkInt(0)));
         }
-        return ctx.mkAnd(enc, ctx.mkDistinct(expressions.toArray(new IntExpr[0])));
+        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx)).toArray(IntExpr[]::new)));
     }
 
     public List<Address> malloc(String name, int size){
