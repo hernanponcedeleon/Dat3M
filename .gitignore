@@ -36,6 +36,7 @@ dartagnan/target/
 porthos/target/
 ui/target/
 svcomp/target/
+zombmc/target/
 
 ##########
 # Boogie #
