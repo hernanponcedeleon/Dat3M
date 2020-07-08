@@ -40,7 +40,7 @@ public class SVCOMPSanitizer {
 			reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
 			for (String line; (line = reader.readLine()) != null;) {
 				// SMACK does not create procedure for inline functions
-				if(!line.contains("__")) {
+				if(!line.contains("__inline")) {
 					line = line.replace("inline ", "");	
 				}
 				line = line.replace("void reach_error(){}", "__attribute__((optnone))void reach_error(){}");

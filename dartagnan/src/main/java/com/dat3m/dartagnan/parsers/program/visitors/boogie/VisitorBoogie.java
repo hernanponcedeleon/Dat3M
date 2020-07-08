@@ -6,6 +6,8 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicFunction
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicFunctions.handleAtomicFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFunctions.PTHREADFUNCTIONS;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFunctions.handlePthreadsFunctions;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdFunctions.STDFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdFunctions.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.SVCOMPFUNCTIONS;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.handleSvcompFunction;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
@@ -279,9 +281,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	
     	Impl_bodyContext body = ctx.impl_body();;
     	if(body == null) {
-//			throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
-    		currentScope = currentScope.getParent();
-    		return;
+			throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
     	}
 
     	if(ctx.proc_sign().proc_sign_in() != null) {
@@ -377,6 +377,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(ATOMICFUNCTIONS.stream().anyMatch(e -> name.startsWith(e))) {
 			handleAtomicFunction(this, ctx);
+			return null;
+		}
+		if(STDFUNCTIONS.stream().anyMatch(e -> name.startsWith(e))) {
+			handleStdFunction(this, ctx);
 			return null;
 		}
 		// The order is important

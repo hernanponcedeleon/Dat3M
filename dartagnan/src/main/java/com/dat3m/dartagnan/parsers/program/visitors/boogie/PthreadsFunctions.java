@@ -31,8 +31,14 @@ public class PthreadsFunctions {
 	
 	public static List<String> PTHREADFUNCTIONS = Arrays.asList( 
 			"pthread_create", 
-			"pthread_join", 
-			"pthread_mutex_init", 
+			"pthread_join",
+			"pthread_exit",
+			"pthread_cond_init",
+			"pthread_cond_wait",			
+			"pthread_cond_signal",
+			"pthread_cond_broadcast",
+			"pthread_mutex_init",
+			"pthread_mutex_destroy",
 			"pthread_mutex_lock", 
 			"pthread_mutex_unlock");
 
@@ -46,9 +52,33 @@ public class PthreadsFunctions {
 			pthread_join(visitor, ctx);
 			return;			
 		}
+		if(name.contains("pthread_exit")) {
+			// TODO: implement this?
+			return;			
+		}
+		if(name.contains("pthread_cond_init")) {
+			// TODO: implement this?
+			return;			
+		}
+		if(name.contains("pthread_cond_wait")) {
+			// TODO: implement this?
+			return;			
+		}
+		if(name.contains("pthread_cond_signal")) {
+			// TODO: implement this?
+			return;			
+		}
+		if(name.contains("pthread_cond_broadcast")) {
+			// TODO: implement this?
+			return;			
+		}
 		if(name.contains("pthread_mutex_init")) {
 			mutexInit(visitor, ctx);
 			return;
+		}
+		if(name.contains("pthread_mutex_destroy")) {
+			// TODO: implement this?
+			return;			
 		}
 		if(name.contains("pthread_mutex_lock")) {
 			mutexLock(visitor, ctx);
