@@ -47,7 +47,7 @@ public class SVCOMPRunner {
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
 	        // (it not the original C file) and we already created the Boogie file
-//	        file.delete();
+	        file.delete();
 
 	    	ArrayList<String> cmd = new ArrayList<String>();
 	    	cmd.add("java");
@@ -104,7 +104,7 @@ public class SVCOMPRunner {
 				e.printStackTrace();
 			}
         }
-//        file.delete();
+        file.delete();
         return;        	
     }
 }
