@@ -54,7 +54,7 @@ public class AtomicProcedures {
 			atomicThreadFence(visitor, ctx);
 			return;
 		}	
-        throw new UnsupportedOperationException(name + " funcition is not part of ATOMICPROCEDURES");
+        throw new UnsupportedOperationException(name + " procedure is not part of ATOMICPROCEDURES");
 	}
 	
 	private static void atomicInit(VisitorBoogie visitor, Call_cmdContext ctx) {

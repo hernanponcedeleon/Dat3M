@@ -100,7 +100,7 @@ public class PthreadsProcedures {
 		if(name.contains("pthread_setspecific")) {
 			throw new ParsingException(name + " cannot be handled");
 		}
-    	throw new UnsupportedOperationException(name + " funcition is not part of PTHREADPROCEDURES");
+    	throw new UnsupportedOperationException(name + " procedure is not part of PTHREADPROCEDURES");
 	}
 	
 	private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {

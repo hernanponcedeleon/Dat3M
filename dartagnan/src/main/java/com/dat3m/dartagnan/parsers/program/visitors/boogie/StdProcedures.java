@@ -78,11 +78,11 @@ public class StdProcedures {
 			// TODO: Implement this
 			return;			
 		}
-		if(name.startsWith("llvm.lifetime.start.end")) {
+		if(name.startsWith("llvm.lifetime.end")) {
 			// TODO: Implement this
 			return;			
 		}
-        throw new UnsupportedOperationException(name + " funcition is not part of STDPROCEDURES");
+        throw new UnsupportedOperationException(name + " procedure is not part of STDPROCEDURES");
 	}	
 	
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {

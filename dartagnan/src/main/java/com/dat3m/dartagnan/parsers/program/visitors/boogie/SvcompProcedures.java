@@ -71,7 +71,7 @@ public class SvcompProcedures {
 			__VERIFIER_nondet(visitor, ctx, name);
 			return;
 		}
-		throw new UnsupportedOperationException(name + " funcition is not part of SVCOMPPROCEDURES");
+		throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 	}
 
 	//TODO: seems to be obsolete after SVCOMP 2020
