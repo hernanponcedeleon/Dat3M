@@ -19,9 +19,9 @@ import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
-public class SvcompFunctions {
+public class SvcompProcedures {
 
-	public static List<String> SVCOMPFUNCTIONS = Arrays.asList(
+	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assume", 
 			"__VERIFIER_error", 
 			"__VERIFIER_assert",

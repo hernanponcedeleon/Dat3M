@@ -2,14 +2,14 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicFunctions.ATOMICFUNCTIONS;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicFunctions.handleAtomicFunction;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFunctions.PTHREADFUNCTIONS;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsFunctions.handlePthreadsFunctions;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdFunctions.STDFUNCTIONS;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdFunctions.handleStdFunction;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.SVCOMPFUNCTIONS;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompFunctions.handleSvcompFunction;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.PROCEDURESFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.handleAtomicFunction;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.PTHREADPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
@@ -367,19 +367,19 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return null;
 		}
 
-		if(PTHREADFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
+		if(PTHREADPROCEDURES.stream().anyMatch(e -> name.contains(e))) {
 			handlePthreadsFunctions(this, ctx);
 			return null;
 		}
-		if(SVCOMPFUNCTIONS.stream().anyMatch(e -> name.contains(e))) {
+		if(SVCOMPPROCEDURES.stream().anyMatch(e -> name.contains(e))) {
 			handleSvcompFunction(this, ctx);
 			return null;
 		}
-		if(ATOMICFUNCTIONS.stream().anyMatch(e -> name.startsWith(e))) {
+		if(PROCEDURESFUNCTIONS.stream().anyMatch(e -> name.startsWith(e))) {
 			handleAtomicFunction(this, ctx);
 			return null;
 		}
-		if(STDFUNCTIONS.stream().anyMatch(e -> name.startsWith(e))) {
+		if(STDPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
 			handleStdFunction(this, ctx);
 			return null;
 		}

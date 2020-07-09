@@ -5,10 +5,14 @@ import java.util.List;
 
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 
-public class StdFunctions {
+public class StdProcedures {
 
-	public static List<String> STDFUNCTIONS = Arrays.asList(
-			"free");
+	public static List<String> STDPROCEDURES = Arrays.asList(
+			"free",
+			"llvm.stackrestore",
+			"llvm.stacksave",
+			"llvm.lifetime.start.p0i8",
+			"llvm.lifetime.end.p0i8");
 	
 	public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -16,7 +20,22 @@ public class StdFunctions {
 			// TODO: implement this?
 			return;			
 		}
-
+		if(name.contains("llvm.stackrestore")) {
+			// TODO: implement this?
+			return;			
+		}
+		if(name.contains("llvm.stacksave")) {
+			// TODO: implement this?
+			return;			
+		}
+		if(name.contains("llvm.lifetime.start.p0i8")) {
+			// TODO: implement this?
+			return;			
+		}
+		if(name.contains("llvm.lifetime.end.p0i8")) {
+			// TODO: implement this?
+			return;			
+		}
         throw new UnsupportedOperationException(name + " funcition is not part of STDFUNCTIONS");
 	}	
 }

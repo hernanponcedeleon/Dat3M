@@ -18,9 +18,9 @@ import com.dat3m.dartagnan.program.atomic.event.AtomicThreadFence;
 import com.dat3m.dartagnan.program.atomic.event.AtomicXchg;
 import com.dat3m.dartagnan.program.event.Store;
 
-public class AtomicFunctions {
+public class AtomicProcedures {
 
-	public static List<String> ATOMICFUNCTIONS = Arrays.asList(
+	public static List<String> PROCEDURESFUNCTIONS = Arrays.asList(
 			"atomic_init",
 			"atomic_store",
 			"atomic_load",

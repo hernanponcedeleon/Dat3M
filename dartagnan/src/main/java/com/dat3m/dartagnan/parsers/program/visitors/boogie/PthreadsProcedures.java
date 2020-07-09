@@ -27,9 +27,9 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.base.Joiner;
 
-public class PthreadsFunctions {
+public class PthreadsProcedures {
 	
-	public static List<String> PTHREADFUNCTIONS = Arrays.asList( 
+	public static List<String> PTHREADPROCEDURES = Arrays.asList( 
 			"pthread_create", 
 			"pthread_join",
 			"pthread_exit",
@@ -88,7 +88,7 @@ public class PthreadsFunctions {
 			mutexUnlock(visitor, ctx);
 			return;
 		}
-    	throw new UnsupportedOperationException(name + " funcition is not part of " + Joiner.on(",").join(PTHREADFUNCTIONS));
+    	throw new UnsupportedOperationException(name + " funcition is not part of " + Joiner.on(",").join(PTHREADPROCEDURES));
 	}
 	
 	private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
