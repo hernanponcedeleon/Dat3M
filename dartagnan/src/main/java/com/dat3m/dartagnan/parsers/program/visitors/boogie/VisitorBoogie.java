@@ -2,8 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.PROCEDURESFUNCTIONS;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.ATOMICPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.handleAtomicFunction;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.PTHREADPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
@@ -16,7 +17,6 @@ import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,8 +131,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected BeginAtomic currentBeginAtomic = null;
 	private Call_cmdContext atomicMode = null;
 	 
-	private static List<String> dummyProcedures = Arrays.asList("boogie_si_record", "printf.ref", "printk.", "memcpy.i8");
-	private static List<String> unhandledProcedures = Arrays.asList("strcpy", "strncpy", "nvram_read_byte", "memset", "pthread_key_create", "pthread_getspecific", "pthread_setspecific");
 	private static List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global");
 
 	public VisitorBoogie(ProgramBuilder pb) {
@@ -340,16 +338,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitCall_cmd(Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(dummyProcedures.stream().anyMatch(e -> name.contains(e))) {
-			return null;
-		}
-		if(unhandledProcedures.stream().anyMatch(e -> name.contains(e))) {
-			throw new ParsingException(name + " cannot be handled");
-		}
-		if(name.equals("$alloc") || name.equals("calloc") || name.equals("malloc") || name.equals("$malloc")) {
-			alloc(ctx);
-			return null;
-		}
 		if(name.equals("$initialize")) {
 			initMode = true;;
 		}
@@ -367,6 +355,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return null;
 		}
 
+		if(DUMMYPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+			return null;
+		}
 		if(PTHREADPROCEDURES.stream().anyMatch(e -> name.contains(e))) {
 			handlePthreadsFunctions(this, ctx);
 			return null;
@@ -375,7 +366,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			handleSvcompFunction(this, ctx);
 			return null;
 		}
-		if(PROCEDURESFUNCTIONS.stream().anyMatch(e -> name.startsWith(e))) {
+		if(ATOMICPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
 			handleAtomicFunction(this, ctx);
 			return null;
 		}
@@ -383,13 +374,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			handleStdFunction(this, ctx);
 			return null;
 		}
-		// The order is important
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
 			currentBeginAtomic = new BeginAtomic();
 			programBuilder.addChild(threadCount, currentBeginAtomic);	
 			// No return, the body still needs to be parsed.
 		}
+		// TODO: double check this 
 		// Some procedures might have an empty implementation.
 		// There will be no return for them.
 		if(ctx.call_params().Define() != null && procedures.get(name).impl_body() != null) {
@@ -406,9 +397,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
 		// Nice to have for debugging
-		if(dummyProcedures.stream().noneMatch(e -> name.contains(e))) {
-			programBuilder.addChild(threadCount, new Comment(" Start of " + name + " "));	
-		}
+		programBuilder.addChild(threadCount, new Comment(" Start of " + name + " "));	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			if(currentBeginAtomic == null) {
@@ -419,33 +408,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			atomicMode = null;
 		}
 		// Nice to have for debugging
-		if(dummyProcedures.stream().noneMatch(e -> name.contains(e))) {			
-			programBuilder.addChild(threadCount, new Comment(" End of " + name + " "));
-		}
+		programBuilder.addChild(threadCount, new Comment(" End of " + name + " "));
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
 		return null;
-	}
-
-	private void alloc(Call_cmdContext ctx) {
-		int size;
-		try {
-			size = ((ExprInterface)ctx.call_params().exprs().expr(0).accept(this)).reduce().getValue();			
-		} catch (Exception e) {
-			String tmp = ctx.call_params().getText();
-			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
-			tmp = tmp.substring(tmp.lastIndexOf('(')+1);						
-			size = Integer.parseInt(tmp);			
-		}
-		List<IConst> values = Collections.nCopies(size, new IConst(0));
-		String ptr = ctx.call_params().Ident(0).getText();
-		Register start = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ptr);
-		// Several threads can use the same pointer name but when using addDeclarationArray, 
-		// the name should be unique, thus we add the process identifier.
-		programBuilder.addDeclarationArray(currentScope.getID() + ":" + ptr, values);
-		Address adds = programBuilder.getPointer(currentScope.getID() + ":" + ptr);
-		programBuilder.addChild(threadCount, new Local(start, adds));
 	}
 
 	@Override

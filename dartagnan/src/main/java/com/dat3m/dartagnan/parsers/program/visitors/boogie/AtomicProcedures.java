@@ -20,7 +20,7 @@ import com.dat3m.dartagnan.program.event.Store;
 
 public class AtomicProcedures {
 
-	public static List<String> PROCEDURESFUNCTIONS = Arrays.asList(
+	public static List<String> ATOMICPROCEDURES = Arrays.asList(
 			"atomic_init",
 			"atomic_store",
 			"atomic_load",
@@ -54,7 +54,7 @@ public class AtomicProcedures {
 			atomicThreadFence(visitor, ctx);
 			return;
 		}	
-        throw new UnsupportedOperationException(name + " funcition is not part of ATOMICFUNCTIONS");
+        throw new UnsupportedOperationException(name + " funcition is not part of ATOMICPROCEDURES");
 	}
 	
 	private static void atomicInit(VisitorBoogie visitor, Call_cmdContext ctx) {

@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
@@ -25,22 +26,24 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.google.common.base.Joiner;
 
 public class PthreadsProcedures {
 	
 	public static List<String> PTHREADPROCEDURES = Arrays.asList( 
 			"pthread_create", 
-			"pthread_join",
-			"pthread_exit",
 			"pthread_cond_init",
 			"pthread_cond_wait",			
 			"pthread_cond_signal",
 			"pthread_cond_broadcast",
+			"pthread_exit",
+			"pthread_getspecific", 
+			"pthread_join",
+			"pthread_key_create", 
 			"pthread_mutex_init",
 			"pthread_mutex_destroy",
 			"pthread_mutex_lock", 
-			"pthread_mutex_unlock");
+			"pthread_mutex_unlock",
+			"pthread_setspecific");
 
 	public static void handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -48,36 +51,42 @@ public class PthreadsProcedures {
 			pthread_create(visitor, ctx);
 			return;			
 		}
+		if(name.contains("pthread_cond_init")) {
+			// TODO: Implement this
+			return;			
+		}
+		if(name.contains("pthread_cond_wait")) {
+			// TODO: Implement this
+			return;			
+		}
+		if(name.contains("pthread_cond_signal")) {
+			// TODO: Implement this
+			return;			
+		}
+		if(name.contains("pthread_cond_broadcast")) {
+			// TODO: Implement this
+			return;			
+		}
+		if(name.contains("pthread_exit")) {
+			// TODO: Implement this
+			return;			
+		}
+		if(name.contains("pthread_getspecific")) {
+			throw new ParsingException(name + " cannot be handled");
+		}
 		if(name.contains("pthread_join")) {
 			pthread_join(visitor, ctx);
 			return;			
 		}
-		if(name.contains("pthread_exit")) {
-			// TODO: implement this?
-			return;			
-		}
-		if(name.contains("pthread_cond_init")) {
-			// TODO: implement this?
-			return;			
-		}
-		if(name.contains("pthread_cond_wait")) {
-			// TODO: implement this?
-			return;			
-		}
-		if(name.contains("pthread_cond_signal")) {
-			// TODO: implement this?
-			return;			
-		}
-		if(name.contains("pthread_cond_broadcast")) {
-			// TODO: implement this?
-			return;			
+		if(name.contains("pthread_key_create")) {
+			throw new ParsingException(name + " cannot be handled");
 		}
 		if(name.contains("pthread_mutex_init")) {
 			mutexInit(visitor, ctx);
 			return;
 		}
 		if(name.contains("pthread_mutex_destroy")) {
-			// TODO: implement this?
+			// TODO: Implement this
 			return;			
 		}
 		if(name.contains("pthread_mutex_lock")) {
@@ -88,7 +97,10 @@ public class PthreadsProcedures {
 			mutexUnlock(visitor, ctx);
 			return;
 		}
-    	throw new UnsupportedOperationException(name + " funcition is not part of " + Joiner.on(",").join(PTHREADPROCEDURES));
+		if(name.contains("pthread_setspecific")) {
+			throw new ParsingException(name + " cannot be handled");
+		}
+    	throw new UnsupportedOperationException(name + " funcition is not part of PTHREADPROCEDURES");
 	}
 	
 	private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
