@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.wmm.utils.alias;
 
 public enum Alias {
-    NONE,
     CFIS, // Content flow insensitive (Andersen)
+    NONE,
     CFS;  // Content flow sensitive
 
     public static Alias get(String alias){

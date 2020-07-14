@@ -171,7 +171,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
     public Object visitBranch(LitmusAArch64Parser.BranchContext ctx) {
         Label label = programBuilder.getOrCreateLabel(ctx.label().getText());
         if(ctx.branchCondition() == null){
-            return programBuilder.addChild(mainThread, new Jump(label));
+            return programBuilder.addChild(mainThread, new CondJump(new BConst(true), label));
         }
         Event lastEvent = programBuilder.getLastEvent(mainThread);
         if(!(lastEvent instanceof Cmp)){

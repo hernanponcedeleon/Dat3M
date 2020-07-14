@@ -17,7 +17,7 @@ public class Assume extends Event {
 	public Assume(ExprInterface e, Label l) {
 		this.exp = e;
 		this.label = l;
-        addFilters(EType.ANY, EType.ASSUME);
+        addFilters(EType.ANY);
 	}
 
 	protected Assume(Assume other){

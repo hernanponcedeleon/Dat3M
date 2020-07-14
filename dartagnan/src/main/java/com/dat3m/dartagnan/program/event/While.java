@@ -25,7 +25,7 @@ public class While extends Event implements RegReaderData {
 		this.expr = expr;
 		this.exitEvent = exitEvent;
 		this.dataRegs = expr.getRegs();
-		addFilters(EType.ANY, EType.BRANCH, EType.CMP, EType.REG_READER);
+		addFilters(EType.ANY, EType.CMP, EType.REG_READER);
 	}
 
 	public ExprInterface getExpr(){

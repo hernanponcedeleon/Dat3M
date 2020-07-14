@@ -85,7 +85,6 @@ import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.Comment;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.If;
-import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
@@ -343,7 +342,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-	       	programBuilder.addChild(threadCount, new Jump(label));
+	       	programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
@@ -515,7 +514,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitReturn_cmd(Return_cmdContext ctx) {
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		programBuilder.addChild(threadCount, new Jump(label));
+		programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 		return null;
 	}
 
@@ -554,12 +553,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
     	boolean loop = programBuilder.hasLabel(labelName);
     	Label l1 = programBuilder.getOrCreateLabel(labelName);
-        programBuilder.addChild(threadCount, new Jump(l1));
+        programBuilder.addChild(threadCount, new CondJump(new BConst(true), l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(loop) {
             Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-            programBuilder.addChild(threadCount, new Jump(label));        	
+            programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));        	
         }
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {

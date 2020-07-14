@@ -211,8 +211,8 @@ public class ProgramBuilder {
         Set<String> referencedLabels = new HashSet<>();
         Event e = thread.getEntry();
         while(e != null){
-            if(e instanceof Jump){
-                referencedLabels.add(((Jump) e).getLabel().getName());
+            if(e instanceof CondJump){
+                referencedLabels.add(((CondJump) e).getLabel().getName());
             } else if(e instanceof Label){
                 Label label = labels.remove(((Label) e).getName());
                 if(label == null){
