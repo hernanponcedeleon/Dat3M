@@ -11,11 +11,13 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.utils.EType;
 
 public class StdProcedures {
 
 	public static List<String> STDPROCEDURES = Arrays.asList(
 			"$alloc",
+			"__assert_rtn",
 			"$malloc",
 			"calloc",
 			"malloc",
@@ -36,6 +38,10 @@ public class StdProcedures {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc")) {
 			alloc(visitor, ctx);
+			return;
+		}
+		if(name.equals("__assert_rtn")) {
+			__assert(visitor, ctx);
 			return;
 		}
 		if(name.startsWith("fopen")) {
@@ -104,4 +110,17 @@ public class StdProcedures {
 		Address adds = visitor.programBuilder.getPointer(visitor.currentScope.getID() + ":" + ptr);
 		visitor.programBuilder.addChild(visitor.threadCount, new Local(start, adds));
 	}
+	
+	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex);
+    	visitor.assertionIndex++;
+    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
+    		return;
+    	}
+    	Local event = new Local(ass, expr);
+		event.addFilters(EType.ASSERTION);
+		visitor.programBuilder.addChild(visitor.threadCount, event);
+	}
+
 }
