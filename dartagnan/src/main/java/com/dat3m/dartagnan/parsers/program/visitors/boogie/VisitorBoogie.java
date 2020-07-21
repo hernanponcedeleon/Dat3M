@@ -14,6 +14,8 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.LLVMPREDICATES;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.llvmPredicate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -700,11 +702,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
 		currentCall = new FunctionCall(function, callParams, currentCall);
-		if(LLVMFUNCTIONS.stream().anyMatch(f -> name.contains(f))) {
+		if(LLVMFUNCTIONS.stream().anyMatch(f -> name.startsWith(f))) {
 			currentCall = currentCall.getParent();
 			return llvmFunction(name, callParams);
 		}
-		if(name.contains("$not.")) {
+		if(LLVMPREDICATES.stream().anyMatch(f -> name.startsWith(f))) {
+			currentCall = currentCall.getParent();
+			return llvmPredicate(name, callParams);
+		}
+		if(name.startsWith("$not.")) {
 			currentCall = currentCall.getParent();
 			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
 		}

@@ -23,9 +23,9 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 public class LlvmFunctions {
 
 	public static List<String> LLVMFUNCTIONS = Arrays.asList(
-			"$add.bv",
-			"$sub.bv",
-			"$mul.bv",
+			"$add.",
+			"$sub.",
+			"$mul.",
 			"$srem.",
 			"$urem.",
 			"$smod.",
@@ -41,37 +41,37 @@ public class LlvmFunctions {
 	
 	public static Object llvmFunction(String name, List<Object> callParams) {
 		IOpBin op = null; 
-		if(name.contains("$add.bv")) {
+		if(name.startsWith("$add.")) {
 			op = PLUS;
 		}
-		if(name.contains("$sub.bv")) {
+		if(name.startsWith("$sub.")) {
 			op = MINUS;
 		}
-		if(name.contains("$mul.bv")) {
+		if(name.startsWith("$mul.")) {
 			op = MULT;
 		}
-		if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
+		if(name.startsWith("$srem.") || name.startsWith("$urem.") || name.startsWith("$smod.")) {
 			op = MOD;
 		}
-		if(name.contains("$sdiv.") || name.contains("$udiv.")) {
+		if(name.startsWith("$sdiv.") || name.startsWith("$udiv.")) {
 			op = DIV;
 		}
-		if(name.contains("$shl.")) {
+		if(name.startsWith("$shl.")) {
 			op = L_SHIFT;
 		}
-		if(name.contains("$lshr.")) {
+		if(name.startsWith("$lshr.")) {
 			op = R_SHIFT;
 		}
-		if(name.contains("$ashr.")) {
+		if(name.startsWith("$ashr.")) {
 			op = AR_SHIFT;
 		}
-		if(name.contains("$xor.")) {
+		if(name.startsWith("$xor.")) {
 			op = XOR;
 		}
-		if(name.contains("$or.")) {
+		if(name.startsWith("$or.")) {
 			op = OR;
 		}
-		if(name.contains("$and.") || name.contains("$nand.")) {
+		if(name.startsWith("$and.") || name.startsWith("$nand.")) {
 			op = AND;
 		}
 		if(op == null) {
