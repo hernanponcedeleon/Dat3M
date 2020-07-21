@@ -37,6 +37,7 @@ import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
+import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.And_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Assert_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Assign_cmdContext;
@@ -222,9 +223,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     @Override
     public Object visitVar_decl(Var_declContext ctx) {
     	 for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
- 			if(atiwC.typed_idents_where().typed_idents().type().getText().contains("bv")) {
-				throw new ParsingException("Bitvectors are not yet supported");		
-			}
  			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
  				programBuilder.getOrCreateLocation(ident.getText());
  			}
@@ -234,9 +232,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
 	public Object visitLocal_vars(Local_varsContext ctx, int scope) {
 		for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
-			if(atiwC.typed_idents_where().typed_idents().type().getText().contains("bv")) {
-				throw new ParsingException("Bitvectors are not yet supported");		
-			}
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
 				String name = ident.getText();
 				if(constants.contains(name)) {
@@ -734,6 +729,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitParen_expr(Paren_exprContext ctx) {
 		return ctx.expr().accept(this);
+	}
+
+	@Override 
+	public Object visitBv_expr(BoogieParser.Bv_exprContext ctx) {
+		return new IConst(Integer.parseInt(ctx.getText().split("bv")[0]));
 	}
 
 	@Override

@@ -15,6 +15,7 @@ public class Compilation {
     	cmd.add("-q");
     	cmd.add("-t");
     	cmd.add("--no-memory-splitting");
+    	cmd.add("--bit-precise");
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + flag + " -fno-vectorize -fno-slp-vectorize -I./include/");
     	cmd.add("-bpl");
     	cmd.add("./output" + name + "-" + flag + ".bpl");

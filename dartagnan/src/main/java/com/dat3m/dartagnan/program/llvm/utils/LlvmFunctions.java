@@ -4,8 +4,11 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AR_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
 import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
+import static com.dat3m.dartagnan.expression.op.IOpBin.MINUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
+import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
 
@@ -20,6 +23,9 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 public class LlvmFunctions {
 
 	public static List<String> LLVMFUNCTIONS = Arrays.asList(
+			"$add.bv",
+			"$sub.bv",
+			"$mul.bv",
 			"$srem.",
 			"$urem.",
 			"$smod.",
@@ -35,6 +41,15 @@ public class LlvmFunctions {
 	
 	public static Object llvmFunction(String name, List<Object> callParams) {
 		IOpBin op = null; 
+		if(name.contains("$add.bv")) {
+			op = PLUS;
+		}
+		if(name.contains("$sub.bv")) {
+			op = MINUS;
+		}
+		if(name.contains("$mul.bv")) {
+			op = MULT;
+		}
 		if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
 			op = MOD;
 		}
