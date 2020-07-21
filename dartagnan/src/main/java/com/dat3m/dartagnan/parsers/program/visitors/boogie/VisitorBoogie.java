@@ -714,6 +714,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentCall = currentCall.getParent();
 			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
 		}
+		if(name.startsWith("$zext.") | name.startsWith("$sext.") | name.startsWith("$bv2uint.")) {
+			currentCall = currentCall.getParent();
+			return callParams.get(0);
+		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
