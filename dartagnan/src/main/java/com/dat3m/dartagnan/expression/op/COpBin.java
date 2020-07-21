@@ -48,7 +48,7 @@ public enum COpBin {
             case GT:
                 return ctx.mkGt(e1, e2);
             case UGT:
-                return ctx.mkBVULT(ctx.mkInt2BV(32, (IntExpr) e1), ctx.mkInt2BV(32, (IntExpr) e1));
+                return ctx.mkBVUGT(ctx.mkInt2BV(32, (IntExpr) e1), ctx.mkInt2BV(32, (IntExpr) e1));
             case GTE:
                 return ctx.mkGe(e1, e2);
             case UGTE:
