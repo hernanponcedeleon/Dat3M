@@ -24,6 +24,7 @@ public class StdProcedures {
 			"fopen",
 			"free",
 			"memcpy",
+			"$memcpy",
 			"memset",
 			"nvram_read_byte", 
 			"strcpy",
@@ -52,7 +53,7 @@ public class StdProcedures {
 			// TODO: Implement this
 			return;			
 		}
-		if(name.startsWith("memcpy")) {
+		if(name.startsWith("memcpy") | name.startsWith("$memcpy")) {
 			// TODO: Implement this
 			return;			
 		}

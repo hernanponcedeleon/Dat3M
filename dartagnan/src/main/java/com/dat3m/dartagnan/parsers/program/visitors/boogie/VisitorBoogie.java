@@ -251,9 +251,25 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
    	 }
 
     public void visitProc_decl(Proc_declContext ctx, boolean create, List<ExprInterface> callingValues) {
+    	String name = ctx.proc_sign().Ident().getText();
     	if(ctx.proc_sign().proc_sign_out() != null) {
     		for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
     			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+    				if(DUMMYPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+    					continue;
+    				}
+    				if(PTHREADPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+    					continue;
+    				}
+    				if(SVCOMPPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+    					continue;
+    				}
+    				if(ATOMICPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+    					continue;
+    				}
+    				if(STDPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+    					continue;
+    				}
     				currentReturnName = ident.getText();
     			}
     		}    		
