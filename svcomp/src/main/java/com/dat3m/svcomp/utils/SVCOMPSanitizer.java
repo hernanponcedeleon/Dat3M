@@ -44,6 +44,7 @@ public class SVCOMPSanitizer {
 					line = line.replace("inline ", "");	
 				}
 				line = line.replace("void reach_error(){}", "__attribute__((optnone))void reach_error(){}");
+				line = line.replace("int __VERIFIER_nondet_;", "__attribute__((optnone))int __VERIFIER_nondet_;");
 				
 				if(line.contains("while(1) { pthread_create(&t, 0, thr1, 0); }")
 						|| line.contains("while(1) pthread_create(&t, 0, thr1, 0);")
