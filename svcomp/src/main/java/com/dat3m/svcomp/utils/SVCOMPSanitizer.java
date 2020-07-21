@@ -39,12 +39,11 @@ public class SVCOMPSanitizer {
 			}
 			reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
 			for (String line; (line = reader.readLine()) != null;) {
-				// SMACK does not create procedure for inline functions
+				// SMACK does not create procedures for inline functions
 				if(!line.contains("__inline")) {
 					line = line.replace("inline ", "");	
 				}
 				line = line.replace("void reach_error(){}", "__attribute__((optnone))void reach_error(){}");
-				line = line.replace("__VERIFIER_nondet_int();", "__attribute__((optnone))__VERIFIER_nondet_int();");
 				
 				if(line.contains("while(1) { pthread_create(&t, 0, thr1, 0); }")
 						|| line.contains("while(1) pthread_create(&t, 0, thr1, 0);")
