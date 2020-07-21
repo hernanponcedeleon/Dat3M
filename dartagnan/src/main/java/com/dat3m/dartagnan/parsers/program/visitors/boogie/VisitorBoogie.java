@@ -16,6 +16,8 @@ import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.LLVMPREDICATES;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.llvmPredicate;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.LLVMUNARY;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -710,13 +712,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentCall = currentCall.getParent();
 			return llvmPredicate(name, callParams);
 		}
-		if(name.startsWith("$not.")) {
+		if(LLVMUNARY.stream().anyMatch(f -> name.startsWith(f))) {
 			currentCall = currentCall.getParent();
-			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
-		}
-		if(name.startsWith("$zext.") | name.startsWith("$sext.") | name.startsWith("$bv2uint.") | name.startsWith("$bv2int.") | name.startsWith("$uint2bv.") | name.startsWith("$int2bv.")) {
-			currentCall = currentCall.getParent();
-			return callParams.get(0);
+			return llvmUnary(name, callParams);
 		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
