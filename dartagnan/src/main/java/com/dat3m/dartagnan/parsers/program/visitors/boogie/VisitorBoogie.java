@@ -714,7 +714,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentCall = currentCall.getParent();
 			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
 		}
-		if(name.startsWith("$zext.") | name.startsWith("$sext.") | name.startsWith("$bv2uint.")) {
+		if(name.startsWith("$zext.") | name.startsWith("$sext.") | name.startsWith("$bv2uint.") | name.startsWith("$bv2int.") | name.startsWith("$uint2bv.") | name.startsWith("$int2bv.")) {
 			currentCall = currentCall.getParent();
 			return callParams.get(0);
 		}
