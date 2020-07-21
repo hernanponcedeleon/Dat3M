@@ -39,7 +39,7 @@ public class LlvmPredicates {
 		if(name.startsWith("$sge.") | name.startsWith("$uge.")) {
 			op = GTE;
 		}
-		if(name.startsWith("$sgt.") | name.startsWith("$ugr.")) {
+		if(name.startsWith("$sgt.") | name.startsWith("$ugt.")) {
 			op = GT;
 		}
 		if(name.startsWith("$eq.")) {
