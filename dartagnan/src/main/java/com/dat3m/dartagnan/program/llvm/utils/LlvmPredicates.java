@@ -6,10 +6,6 @@ import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
 import static com.dat3m.dartagnan.expression.op.COpBin.LT;
 import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
 import static com.dat3m.dartagnan.expression.op.COpBin.GT;
-import static com.dat3m.dartagnan.expression.op.COpBin.ULTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.ULT;
-import static com.dat3m.dartagnan.expression.op.COpBin.UGTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.UGT;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,29 +30,17 @@ public class LlvmPredicates {
 	
 	public static Object llvmPredicate(String name, List<Object> callParams) {
 		COpBin op = null; 
-		if(name.startsWith("$sle.")) {
+		if(name.startsWith("$sle.") | name.startsWith("$ule.")) {
 			op = LTE;
 		}
-		if(name.startsWith("$ule.")) {
-			op = ULTE;
-		}
-		if(name.startsWith("$slt.")) {
+		if(name.startsWith("$slt.") | name.startsWith("$ult.")) {
 			op = LT;
 		}
-		if(name.startsWith("$ult.")) {
-			op = ULT;
-		}
-		if(name.startsWith("$sge.")) {
+		if(name.startsWith("$sge.") | name.startsWith("$uge.")) {
 			op = GTE;
 		}
-		if(name.startsWith("$uge.")) {
-			op = UGTE;
-		}
-		if(name.startsWith("$sgt.")) {
+		if(name.startsWith("$sgt.") | name.startsWith("$ugt.")) {
 			op = GT;
-		}
-		if(name.startsWith("$ugt.")) {
-			op = UGT;
 		}
 		if(name.startsWith("$eq.")) {
 			op = EQ;
