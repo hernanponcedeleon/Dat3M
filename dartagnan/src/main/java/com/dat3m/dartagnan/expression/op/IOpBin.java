@@ -57,6 +57,12 @@ public enum IOpBin {
                 return "or";
             case XOR:
                 return "xor";
+            case L_SHIFT:
+                return "shl";
+            case R_SHIFT:
+                return "lshr";
+            case AR_SHIFT:
+                return "ashr";
             default:
             	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
         }
