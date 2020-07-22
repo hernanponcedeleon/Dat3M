@@ -37,7 +37,7 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-        return USEBV ? name : "bv." + name;
+        return USEBV ? "bv." + name : name;
 	}
 
     @Override

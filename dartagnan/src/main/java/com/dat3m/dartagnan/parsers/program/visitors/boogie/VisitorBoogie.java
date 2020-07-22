@@ -48,6 +48,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Assume_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Bool_litContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Bv_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.DecContext;
@@ -339,9 +340,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	// we cannot just add the expression to the AbstractAssertion.
     	// We need to create an event carrying the value of the expression 
     	// and see if this event can be executed.
-    	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	assertionIndex++;
+    	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
     	Local event = new Local(ass, expr);
 		event.addFilters(EType.ASSERTION);
 		programBuilder.addChild(threadCount, event);
@@ -697,6 +698,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFun_expr(Fun_exprContext ctx) {
+		System.out.println(ctx.getText());
 		String name = ctx.Ident().getText();
 		Function function = functions.get(name);
 		if(function == null) {
@@ -713,6 +715,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(initMode && value instanceof IConst && ((IConst)value).getValue() == 0) {
 				return null;
 			}
+			System.out.println(address);
+			System.out.println(value);
 			programBuilder.addChild(threadCount, new Store(address, value, null));	
 			return null;
 		}
@@ -752,6 +756,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitParen_expr(Paren_exprContext ctx) {
 		return ctx.expr().accept(this);
+	}
+
+	@Override 
+	public Object visitBv_expr(Bv_exprContext ctx) {
+		return new IConst(Integer.parseInt(ctx.getText().split("bv")[0]));
 	}
 
 	@Override
