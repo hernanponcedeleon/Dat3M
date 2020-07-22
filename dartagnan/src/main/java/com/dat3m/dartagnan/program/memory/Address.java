@@ -70,7 +70,7 @@ public class Address extends IConst implements ExprInterface {
 
     @Override
     public Expr toZ3NumExpr(Context ctx){
-        return ctx.mkIntConst("memory_" + index);
+		return USEBV ? ctx.mkBVConst("memory_" + index, 32) : ctx.mkIntConst("memory_" + index);
     }
 
     @Override

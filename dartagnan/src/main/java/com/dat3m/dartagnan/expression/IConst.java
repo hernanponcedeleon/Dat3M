@@ -20,7 +20,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public Expr toZ3NumExpr(Event e, Context ctx) {
-		return ctx.mkInt(value);
+		return USEBV ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
@@ -35,7 +35,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public Expr getLastValueExpr(Context ctx){
-		return ctx.mkInt(value);
+		return USEBV ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
@@ -44,7 +44,7 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
     public Expr toZ3NumExpr(Context ctx) {
-        return ctx.mkInt(value);
+		return USEBV ? ctx.mkBV(value, 32) : ctx.mkInt(value);
     }
 
 	@Override
