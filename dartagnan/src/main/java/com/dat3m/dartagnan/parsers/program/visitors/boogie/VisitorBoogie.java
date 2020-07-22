@@ -760,7 +760,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override 
 	public Object visitBv_expr(Bv_exprContext ctx) {
-		return new IConst(Integer.parseInt(ctx.getText().split("bv")[0]));
+		try {
+			return new IConst(Integer.parseInt(ctx.getText().split("bv")[0]));
+		} catch (Exception e) {
+			return new IConst(Integer.MAX_VALUE);
+		}
 	}
 
 	@Override

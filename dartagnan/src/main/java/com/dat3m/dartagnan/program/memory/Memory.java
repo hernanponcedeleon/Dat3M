@@ -55,10 +55,11 @@ public class Memory {
         }
         for(Address address : map.values()){
         	if(address.hasConstValue()) {
-        		enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3NumExpr(ctx), ctx.mkInt(address.getConstValue())));
+        		Expr constantAddress = USEBV ? ctx.mkBV(address.getConstValue(), 32) : ctx.mkInt(address.getConstValue());
+				enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3NumExpr(ctx), constantAddress));
         	}
         }
-        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3NumExpr(ctx)).toArray(IntExpr[]::new)));
+        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3NumExpr(ctx)).toArray(Expr[]::new)));
     }
 
     public List<Address> malloc(String name, int size){
