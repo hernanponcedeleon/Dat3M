@@ -30,7 +30,8 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return USEBV ? "bv." : "" + Integer.toString(value);
+		String tag = USEBV ? "bv" : ""; 
+		return  tag + Integer.toString(value);
 	}
 
 	@Override

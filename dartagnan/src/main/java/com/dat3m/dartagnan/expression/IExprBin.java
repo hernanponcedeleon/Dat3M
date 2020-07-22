@@ -4,6 +4,9 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
+
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -37,7 +40,7 @@ public class IExprBin extends IExpr implements ExprInterface {
 
     @Override
     public String toString() {
-        return "(" + lhs + " " + op + " " + rhs + ")";
+        return USEBV ? op.toLinuxName() + "(" + lhs + ", " + rhs + ")" : "(" + lhs + " " + op + " " + rhs + ")";
     }
 
     @Override

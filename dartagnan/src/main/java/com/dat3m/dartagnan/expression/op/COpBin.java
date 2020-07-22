@@ -34,6 +34,33 @@ public enum COpBin {
         return super.toString();
     }
 
+    public String fullName(){
+        switch(this){
+            case EQ:
+                return "eq";
+            case NEQ:
+                return "neq";
+            case GTE:
+                return "sge";
+            case UGTE:
+                return "uge";
+            case LTE:
+                return "sle";
+            case ULTE:
+                return "ule";
+            case GT:
+                return "sgt";
+            case UGT:
+                return "ugt";
+            case LT:
+                return "slt";
+            case ULT:
+                return "ult";
+            default:
+            	throw new UnsupportedOperationException("Full op name is not defined for " + this);
+        }
+    }
+
     public BoolExpr encode(Expr e1, Expr e2, Context ctx) {
         switch(this) {
             case EQ:

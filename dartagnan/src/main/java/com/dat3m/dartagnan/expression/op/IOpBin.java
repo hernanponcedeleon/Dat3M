@@ -88,7 +88,7 @@ public enum IOpBin {
             			ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case L_SHIFT:
             	return USEBV ? 
-            			ctx.mkBVLSHR((BitVecExpr)e1, (BitVecExpr)e2) : 
+            			ctx.mkBVSHL((BitVecExpr)e1, (BitVecExpr)e2) : 
             			ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case R_SHIFT:
             	return USEBV ? 

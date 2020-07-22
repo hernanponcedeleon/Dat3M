@@ -45,7 +45,7 @@ public class Atom extends BExpr implements ExprInterface {
 
     @Override
     public String toString() {
-        return lhs + " " + op + " " + rhs;
+        return USEBV ? op.fullName() + "(" + lhs + ", " + rhs + ")" : lhs + " " + op + " " + rhs;
     }
     
     @Override
