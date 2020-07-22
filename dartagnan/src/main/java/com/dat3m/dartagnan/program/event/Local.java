@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -15,7 +15,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	protected final Register register;
 	protected final ExprInterface expr;
 	private final ImmutableSet<Register> dataRegs;
-	private IntExpr regResultExpr;
+	private Expr regResultExpr;
 	
 	public Local(Register register, ExprInterface expr) {
 		this.register = register;
@@ -35,7 +35,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	@Override
 	public void initialise(Context ctx) {
 		super.initialise(ctx);
-		regResultExpr = register.toZ3IntResult(this, ctx);
+		regResultExpr = register.toZ3NumExprResult(this, ctx);
 	}
 
 	public ExprInterface getExpr(){
@@ -48,7 +48,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public IntExpr getResultRegisterExpr(){
+	public Expr getResultRegisterExpr(){
 		return regResultExpr;
 	}
 
@@ -64,7 +64,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	protected BoolExpr encodeExec(Context ctx){
-		return ctx.mkAnd(super.encodeExec(ctx), ctx.mkEq(regResultExpr,  expr.toZ3Int(this, ctx)));
+		return ctx.mkAnd(super.encodeExec(ctx), ctx.mkEq(regResultExpr,  expr.toZ3NumExpr(this, ctx)));
 	}
 
 	// Unrolling

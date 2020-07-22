@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.arch.linux.event.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
+
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.*;

@@ -41,7 +41,6 @@ import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
-import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.And_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Assert_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Assign_cmdContext;
@@ -127,7 +126,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
-	
+
 	protected List<ExprInterface> mainCallingValues = new ArrayList<>();
 	
 	protected int assertionIndex = 0;
@@ -340,9 +339,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	// we cannot just add the expression to the AbstractAssertion.
     	// We need to create an event carrying the value of the expression 
     	// and see if this event can be executed.
+    	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
     	assertionIndex++;
-    	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
     	Local event = new Local(ass, expr);
 		event.addFilters(EType.ASSERTION);
 		programBuilder.addChild(threadCount, event);
@@ -753,11 +752,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitParen_expr(Paren_exprContext ctx) {
 		return ctx.expr().accept(this);
-	}
-
-	@Override 
-	public Object visitBv_expr(BoogieParser.Bv_exprContext ctx) {
-		return new IConst(Integer.parseInt(ctx.getText().split("bv")[0]));
 	}
 
 	@Override

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.arch.aarch64.event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -13,7 +13,7 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
 
     private final Register register;
     private final RMWStoreExclusive storeEvent;
-    private IntExpr regResultExpr;
+    private Expr regResultExpr;
 
     RMWStoreExclusiveStatus(Register register, RMWStoreExclusive storeEvent){
         this.register = register;
@@ -24,7 +24,7 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     @Override
     public void initialise(Context ctx) {
         super.initialise(ctx);
-        regResultExpr = register.toZ3IntResult(this, ctx);
+        regResultExpr = register.toZ3NumExprResult(this, ctx);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     }
 
     @Override
-    public IntExpr getResultRegisterExpr(){
+    public Expr getResultRegisterExpr(){
         return regResultExpr;
     }
 
@@ -45,8 +45,8 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     @Override
     protected BoolExpr encodeExec(Context ctx){
         BoolExpr enc = ctx.mkAnd(
-                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0).toZ3Int(this, ctx))),
-                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1).toZ3Int(this, ctx)))
+                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0).toZ3NumExpr(this, ctx))),
+                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1).toZ3NumExpr(this, ctx)))
         );
         return ctx.mkAnd(super.encodeExec(ctx), enc);
     }

@@ -27,7 +27,7 @@ public class Init extends MemEvent {
 	@Override
 	public void initialise(Context ctx) {
 		super.initialise(ctx);
-		memValueExpr = value.toZ3Int(ctx);
+		memValueExpr = value.toZ3NumExpr(ctx);
 	}
 
 	@Override

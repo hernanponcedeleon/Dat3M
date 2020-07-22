@@ -3,8 +3,10 @@ package com.dat3m.dartagnan.expression;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
 
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -24,15 +26,15 @@ public class Atom extends BExpr implements ExprInterface {
 
     @Override
 	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
+		return op.encode(lhs.toZ3NumExpr(e, ctx), rhs.toZ3NumExpr(e, ctx), ctx);
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx){
-		return (IntExpr)ctx.mkITE(
+	public Expr getLastValueExpr(Context ctx){
+		return ctx.mkITE(
 				op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx),
-				ctx.mkInt(1),
-				ctx.mkInt(0)
+				USEBV ? ctx.mkBV(1, 32) : ctx.mkInt(1),
+				USEBV ? ctx.mkBV(0, 32) : ctx.mkInt(0)
 		);
 	}
 
@@ -73,12 +75,16 @@ public class Atom extends BExpr implements ExprInterface {
         case NEQ:
             return new IConst(v1 != v2 ? 1 : 0);
         case LT:
+        case ULT:
             return new IConst(v1 < v2 ? 1 : 0);
         case LTE:
+        case ULTE:
             return new IConst(v1 <= v2 ? 1 : 0);
         case GT:
+        case UGT:
             return new IConst(v1 > v2 ? 1 : 0);
         case GTE:
+        case UGTE:
             return new IConst(v1 >= v2 ? 1 : 0);
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);

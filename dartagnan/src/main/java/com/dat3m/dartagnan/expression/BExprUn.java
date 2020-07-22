@@ -1,10 +1,15 @@
 package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
+
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -25,9 +30,11 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public IntExpr getLastValueExpr(Context ctx){
-        BoolExpr expr = ctx.mkGt(b.getLastValueExpr(ctx), ctx.mkInt(1));
-        return (IntExpr)ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    public Expr getLastValueExpr(Context ctx){
+        BoolExpr expr = USEBV ? 
+				ctx.mkBVSGT((BitVecExpr)b.getLastValueExpr(ctx), ctx.mkBV(1,32)) : 
+				ctx.mkGt((IntExpr)b.getLastValueExpr(ctx), ctx.mkInt(1));
+        return ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
     }
 
     @Override

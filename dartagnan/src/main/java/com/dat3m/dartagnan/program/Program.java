@@ -5,8 +5,10 @@ import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
@@ -20,6 +22,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 import java.util.*;
@@ -220,8 +223,13 @@ public class Program {
         	}
         	ExprInterface expr = ((Local)e).getExpr();
 			if(expr instanceof INonDet) {
-	        	enc = ctx.mkAnd(enc, ctx.mkGe(((INonDet)expr).toZ3Int(e, ctx), ctx.mkInt(((INonDet)expr).getMin())));
-	        	enc = ctx.mkAnd(enc, ctx.mkLe(((INonDet)expr).toZ3Int(e, ctx), ctx.mkInt(((INonDet)expr).getMax())));
+				if(USEBV) {
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkBV(((INonDet)expr).getMin(), 32)));
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkBV(((INonDet)expr).getMax(), 32)));					
+				} else {
+		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkInt(((INonDet)expr).getMin())));
+		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkInt(((INonDet)expr).getMax())));
+				}
 			}
         }
         return enc;  	

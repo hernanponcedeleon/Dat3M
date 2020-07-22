@@ -97,7 +97,7 @@ public class RelCo extends Relation {
 
             for(Address address : w1.getMaxAddressSet()){
                 enc = ctx.mkAnd(enc, ctx.mkImplies(
-                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3Int(ctx))),
+                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3NumExpr(ctx))),
                         ctx.mkEq(address.getLastMemValueExpr(ctx), w1.getMemValueExpr())
                 ));
             }

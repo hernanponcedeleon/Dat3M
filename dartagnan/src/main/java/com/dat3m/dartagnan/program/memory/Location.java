@@ -1,10 +1,15 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
@@ -58,12 +63,12 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx){
+	public Expr getLastValueExpr(Context ctx){
 		return address.getLastMemValueExpr(ctx);
 	}
 
 	@Override
-	public IntExpr toZ3Int(Event e, Context ctx){
+	public Expr toZ3NumExpr(Event e, Context ctx){
 		if(e instanceof MemEvent){
 			return ((MemEvent) e).getMemValueExpr();
 		}
@@ -73,7 +78,7 @@ public class Location implements ExprInterface {
 	@Override
 	public BoolExpr toZ3Bool(Event e, Context ctx){
 		if(e instanceof MemEvent){
-			return ctx.mkGt(((MemEvent) e).getMemValueExpr(), ctx.mkInt(0));
+			return USEBV ? ctx.mkBVSGT((BitVecExpr)((MemEvent) e).getMemValueExpr(), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)((MemEvent) e).getMemValueExpr(), ctx.mkInt(0));
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}

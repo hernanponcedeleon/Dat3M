@@ -2,8 +2,11 @@ package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
+
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -16,7 +19,7 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public IntExpr toZ3Int(Event e, Context ctx) {
+	public Expr toZ3NumExpr(Event e, Context ctx) {
 		return ctx.mkInt(value);
 	}
 
@@ -27,11 +30,11 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return Integer.toString(value);
+		return USEBV ? "" : "bv." + Integer.toString(value);
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx){
+	public Expr getLastValueExpr(Context ctx){
 		return ctx.mkInt(value);
 	}
 
@@ -40,7 +43,7 @@ public class IConst extends IExpr implements ExprInterface {
 		return value;
 	}
 
-    public IntExpr toZ3Int(Context ctx) {
+    public Expr toZ3NumExpr(Context ctx) {
         return ctx.mkInt(value);
     }
 

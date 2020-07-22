@@ -1,8 +1,11 @@
 package com.dat3m.dartagnan.expression;
 
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
+
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -11,7 +14,7 @@ import com.google.common.primitives.UnsignedLong;
 
 public class INonDet extends IExpr implements ExprInterface {
 	
-	INonDetTypes type;;
+	private INonDetTypes type;
 	
 	public INonDet(INonDetTypes type) {
 		this.type = type;
@@ -23,18 +26,20 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public IntExpr toZ3Int(Event e, Context ctx) {
-		return ctx.mkIntConst(Integer.toString(hashCode()));
+	public Expr toZ3NumExpr(Event e, Context ctx) {
+		String name = Integer.toString(hashCode());
+		return USEBV ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx) {
-		return ctx.mkIntConst(Integer.toString(hashCode()));
+	public Expr getLastValueExpr(Context ctx) {
+		String name = Integer.toString(hashCode());
+		return USEBV ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
 	public int getIntValue(Event e, Context ctx, Model model) {
-		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
+		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, ctx)).toString());
 	}
 
 	@Override

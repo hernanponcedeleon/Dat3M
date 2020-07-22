@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils;
 
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,6 +17,9 @@ public class Compilation {
     	cmd.add("-q");
     	cmd.add("-t");
     	cmd.add("--no-memory-splitting");
+    	if(USEBV) {
+        	cmd.add("--bit-precise");    		
+    	}
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + flag + " -fno-vectorize -fno-slp-vectorize -I./include/");
     	cmd.add("-bpl");
     	cmd.add("./output" + name + "-" + flag + ".bpl");

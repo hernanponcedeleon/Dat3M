@@ -19,6 +19,8 @@ public class Settings {
     public static final int FLAG_USE_SEQ_ENCODING_REL_RF            = 1;
     public static final int FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY    = 2;
 
+    public static boolean USEBV = false;
+    
     private Mode mode;
     private Alias alias;
     private int bound;

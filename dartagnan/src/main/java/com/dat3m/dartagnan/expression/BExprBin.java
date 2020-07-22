@@ -1,10 +1,14 @@
 package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
 
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -28,10 +32,14 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public IntExpr getLastValueExpr(Context ctx){
-        BoolExpr expr1 = ctx.mkGt(b1.getLastValueExpr(ctx), ctx.mkInt(1));
-        BoolExpr expr2 = ctx.mkGt(b2.getLastValueExpr(ctx), ctx.mkInt(1));
-        return (IntExpr)ctx.mkITE(op.encode(expr1, expr2, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    public Expr getLastValueExpr(Context ctx){
+        BoolExpr expr1 = USEBV ? 
+        					ctx.mkBVSGT((BitVecExpr)b1.getLastValueExpr(ctx), ctx.mkBV(1,32)) : 
+        					ctx.mkGt((IntExpr)b1.getLastValueExpr(ctx), ctx.mkInt(1));
+        BoolExpr expr2 = USEBV ? 
+                			ctx.mkBVSGT((BitVecExpr)b2.getLastValueExpr(ctx), ctx.mkBV(1,32)) : 
+                			ctx.mkGt((IntExpr)b2.getLastValueExpr(ctx), ctx.mkInt(1));
+        return ctx.mkITE(op.encode(expr1, expr2, ctx), ctx.mkInt(1), ctx.mkInt(0));
     }
 
     @Override

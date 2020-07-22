@@ -29,7 +29,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     @Override
     public void initialise(Context ctx) {
         super.initialise(ctx);
-        z3Cond = ctx.mkEq(memValueExpr, cmp.toZ3Int(this, ctx));
+        z3Cond = ctx.mkEq(memValueExpr, cmp.toZ3NumExpr(this, ctx));
     }
 
     public BoolExpr getCond(){

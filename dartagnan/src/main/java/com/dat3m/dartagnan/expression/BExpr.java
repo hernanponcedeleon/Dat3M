@@ -1,15 +1,18 @@
 package com.dat3m.dartagnan.expression;
 
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.event.Event;
+import static com.dat3m.dartagnan.utils.Settings.USEBV;
 
 public abstract class BExpr implements ExprInterface {
 
     @Override
-    public IntExpr toZ3Int(Event e, Context ctx) {
-        return (IntExpr) ctx.mkITE(toZ3Bool(e, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    public Expr toZ3NumExpr(Event e, Context ctx) {
+        return ctx.mkITE(toZ3Bool(e, ctx),
+				USEBV ? ctx.mkBV(1, 32) : ctx.mkInt(1),
+				USEBV ? ctx.mkBV(0, 32) : ctx.mkInt(0));
     }
 
     @Override
