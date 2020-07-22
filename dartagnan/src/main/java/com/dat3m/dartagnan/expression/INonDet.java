@@ -93,6 +93,9 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	public long getMax() {
+		if(USEBV) {
+			return Integer.MAX_VALUE;
+		}
         switch(type){
         case INT:
             return Integer.MAX_VALUE;
