@@ -698,7 +698,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitFun_expr(Fun_exprContext ctx) {
-		System.out.println(ctx.getText());
 		String name = ctx.Ident().getText();
 		Function function = functions.get(name);
 		if(function == null) {
@@ -715,8 +714,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(initMode && value instanceof IConst && ((IConst)value).getValue() == 0) {
 				return null;
 			}
-			System.out.println(address);
-			System.out.println(value);
 			programBuilder.addChild(threadCount, new Store(address, value, null));	
 			return null;
 		}
