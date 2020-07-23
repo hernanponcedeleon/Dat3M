@@ -22,9 +22,9 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     }
 
     @Override
-    public void initialise(Context ctx) {
-        super.initialise(ctx);
-        regResultExpr = register.toZ3NumExprResult(this, ctx);
+    public void initialise(Context ctx, boolean bp) {
+        super.initialise(ctx, bp);
+        regResultExpr = register.toZ3NumExprResult(this, ctx, bp);
     }
 
     @Override
@@ -43,12 +43,12 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     }
 
     @Override
-    protected BoolExpr encodeExec(Context ctx){
+    protected BoolExpr encodeExec(Context ctx, boolean bp){
         BoolExpr enc = ctx.mkAnd(
-                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0).toZ3NumExpr(this, ctx))),
-                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1).toZ3NumExpr(this, ctx)))
+                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0).toZ3NumExpr(this, ctx, bp))),
+                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1).toZ3NumExpr(this, ctx, bp)))
         );
-        return ctx.mkAnd(super.encodeExec(ctx), enc);
+        return ctx.mkAnd(super.encodeExec(ctx, bp), enc);
     }
 
     // Unrolling

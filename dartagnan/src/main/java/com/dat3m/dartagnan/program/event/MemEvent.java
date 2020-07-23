@@ -35,9 +35,9 @@ public abstract class MemEvent extends Event {
     }
 
     @Override
-    public void initialise(Context ctx) {
-        super.initialise(ctx);
-        memAddressExpr = address.toZ3NumExpr(this, ctx);
+    public void initialise(Context ctx, boolean bp) {
+        super.initialise(ctx, bp);
+        memAddressExpr = address.toZ3NumExpr(this, ctx, bp);
     }
 
     public Expr getMemAddressExpr(){

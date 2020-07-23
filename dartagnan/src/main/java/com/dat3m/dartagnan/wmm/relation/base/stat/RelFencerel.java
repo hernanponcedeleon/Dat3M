@@ -63,7 +63,7 @@ public class RelFencerel extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         BoolExpr enc = ctx.mkTrue();
 
         List<Event> fences = program.getCache().getEvents(FilterBasic.get(fenceName));

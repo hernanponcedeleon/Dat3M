@@ -6,8 +6,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -25,16 +23,16 @@ public class Atom extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return op.encode(lhs.toZ3NumExpr(e, ctx), rhs.toZ3NumExpr(e, ctx), ctx);
+	public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
+		return op.encode(lhs.toZ3NumExpr(e, ctx, bp), rhs.toZ3NumExpr(e, ctx, bp), ctx, bp);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
+	public Expr getLastValueExpr(Context ctx, boolean bp){
 		return ctx.mkITE(
-				op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx),
-				USEBV ? ctx.mkBV(1, 32) : ctx.mkInt(1),
-				USEBV ? ctx.mkBV(0, 32) : ctx.mkInt(0)
+				op.encode(lhs.getLastValueExpr(ctx, bp), rhs.getLastValueExpr(ctx, bp), ctx, bp),
+				bp ? ctx.mkBV(1, 32) : ctx.mkInt(1),
+				bp ? ctx.mkBV(0, 32) : ctx.mkInt(0)
 		);
 	}
 
@@ -45,12 +43,12 @@ public class Atom extends BExpr implements ExprInterface {
 
     @Override
     public String toString() {
-        return USEBV ? op.fullName() + "(" + lhs + ", " + rhs + ")" : lhs + " " + op + " " + rhs;
+        return lhs + " " + op + " " + rhs;
     }
     
     @Override
-	public boolean getBoolValue(Event e, Context ctx, Model model){
-		return op.combine(lhs.getIntValue(e, ctx, model), rhs.getIntValue(e, ctx, model));
+	public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp){
+		return op.combine(lhs.getIntValue(e, ctx, model, bp), rhs.getIntValue(e, ctx, model, bp));
 	}
     
     public COpBin getOp() {

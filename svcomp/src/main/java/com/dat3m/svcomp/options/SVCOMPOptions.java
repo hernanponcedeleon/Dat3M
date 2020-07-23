@@ -30,17 +30,14 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        Option cegarOption = new Option("cegar", true,
-                "Use CEGAR");
-        addOption(cegarOption);
+        addOption(new Option("cegar", true,
+                "Use CEGAR"));
 
-        Option witnessOption = new Option("w", "witness", false,
-                "Creates a violation witness");
-        addOption(witnessOption);
+        addOption(new Option("w", "witness", false,
+                "Creates a violation witness"));
         
-        Option optOption = new Option("o", "optimization", true,
-                "Optimization flag for LLVM compiler");
-        addOption(optOption);
+        addOption(new Option("o", "optimization", true,
+                "Optimization flag for LLVM compiler"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {

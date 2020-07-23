@@ -52,7 +52,7 @@ public class RelRangeIdentity extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();

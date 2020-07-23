@@ -44,7 +44,7 @@ public abstract class AbstractSvCompTest {
         	
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
-            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, bound);
+            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, bound, false);
             Solver solver = ctx.mkSolver();
             assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
             ctx.close();

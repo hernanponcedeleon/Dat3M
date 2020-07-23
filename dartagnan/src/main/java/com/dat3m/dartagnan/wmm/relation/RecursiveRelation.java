@@ -96,27 +96,27 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode() {
+    public BoolExpr encode(boolean bp) {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return r1.encode();
+        return r1.encode(bp);
     }
 
     @Override
-    protected BoolExpr encodeLFP() {
-        return r1.encodeLFP();
+    protected BoolExpr encodeLFP(boolean bp) {
+        return r1.encodeLFP(bp);
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
-        return r1.encodeIDL();
+    protected BoolExpr encodeIDL(boolean bp) {
+        return r1.encodeIDL(bp);
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
-        return r1.encodeApprox();
+    protected BoolExpr encodeApprox(boolean bp) {
+        return r1.encodeApprox(bp);
     }
 
     @Override

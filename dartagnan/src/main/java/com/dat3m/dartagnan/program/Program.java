@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 import java.util.*;
@@ -172,18 +171,18 @@ public class Program {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public BoolExpr encodeCF(Context ctx) {
+    public BoolExpr encodeCF(Context ctx, boolean bp) {
         for(Event e : getEvents()){
-            e.initialise(ctx);
+            e.initialise(ctx, bp);
         }
-        BoolExpr enc = memory.encode(ctx);
+        BoolExpr enc = memory.encode(ctx, bp);
         for(Thread t : threads){
-            enc = ctx.mkAnd(enc, t.encodeCF(ctx));
+            enc = ctx.mkAnd(enc, t.encodeCF(ctx, bp));
         }
         return enc;
     }
 
-    public BoolExpr encodeFinalRegisterValues(Context ctx){
+    public BoolExpr encodeFinalRegisterValues(Context ctx, boolean bp){
         Map<Register, List<Event>> eMap = new HashMap<>();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.REG_WRITER))){
             Register reg = ((RegWriter)e).getResultRegister();
@@ -201,7 +200,7 @@ public class Program {
                     lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).exec()));
                 }
                 enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
-                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)events.get(i)).getResultRegisterExpr())));
+                        ctx.mkEq(reg.getLastValueExpr(ctx, bp), ((RegWriter)events.get(i)).getResultRegisterExpr())));
             }
         }
         return enc;
@@ -215,7 +214,7 @@ public class Program {
         return enc;
     }
     
-    public BoolExpr encodeUINonDet(Context ctx) {
+    public BoolExpr encodeUINonDet(Context ctx, boolean bp) {
     	BoolExpr enc = ctx.mkTrue();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.LOCAL))){
         	if(!(e instanceof Local)) {
@@ -223,12 +222,12 @@ public class Program {
         	}
         	ExprInterface expr = ((Local)e).getExpr();
 			if(expr instanceof INonDet) {
-				if(USEBV) {
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkBV(((INonDet)expr).getMin(), 32)));
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkBV(((INonDet)expr).getMax(), 32)));					
+				if(bp) {
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, ctx, bp), ctx.mkBV(((INonDet)expr).getMin(bp), 32)));
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, ctx, bp), ctx.mkBV(((INonDet)expr).getMax(bp), 32)));					
 				} else {
-		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkInt(((INonDet)expr).getMin())));
-		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)((INonDet)expr).toZ3NumExpr(e, ctx), ctx.mkInt(((INonDet)expr).getMax())));
+		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)((INonDet)expr).toZ3NumExpr(e, ctx, bp), ctx.mkInt(((INonDet)expr).getMin(bp))));
+		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)((INonDet)expr).toZ3NumExpr(e, ctx, bp), ctx.mkInt(((INonDet)expr).getMax(bp))));
 				}
 			}
         }

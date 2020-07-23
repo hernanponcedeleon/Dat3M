@@ -122,7 +122,7 @@ public class Wmm {
 
         BoolExpr enc = ctx.mkTrue();
         for(String relName : baseRelations){
-            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
+            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode(settings.getBP()));
         }
 
         if(settings.getMode() == Mode.KLEENE){
@@ -137,7 +137,7 @@ public class Wmm {
     public BoolExpr encode(Program program, Context ctx, Settings settings) {
         BoolExpr enc = encodeBase(program, ctx, settings);
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode());
+            enc = ctx.mkAnd(enc, ax.getRel().encode(settings.getBP()));
         }
         return enc;
     }

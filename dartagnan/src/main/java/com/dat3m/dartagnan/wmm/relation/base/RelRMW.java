@@ -104,11 +104,11 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
         encodeTupleSet = baseMaxTupleSet;
-        BoolExpr enc = super.encodeApprox();
+        BoolExpr enc = super.encodeApprox(bp);
         encodeTupleSet = origEncodeTupleSet;
 
         // Encode RMW for exclusive pairs

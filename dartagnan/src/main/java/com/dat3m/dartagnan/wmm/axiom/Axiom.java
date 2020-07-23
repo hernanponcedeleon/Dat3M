@@ -28,8 +28,8 @@ public abstract class Axiom {
         return rel;
     }
 
-    public BoolExpr encodeRelAndConsistency(Context ctx) {
-    	return ctx.mkAnd(rel.encode(), consistent(ctx));
+    public BoolExpr encodeRelAndConsistency(Context ctx, boolean bp) {
+    	return ctx.mkAnd(rel.encode(bp), consistent(ctx));
     }
     
     public BoolExpr consistent(Context ctx) {

@@ -128,7 +128,7 @@ public class Thread {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public BoolExpr encodeCF(Context ctx){
-        return entry.encodeCF(ctx, ctx.mkTrue());
+    public BoolExpr encodeCF(Context ctx, boolean bp){
+        return entry.encodeCF(ctx, ctx.mkTrue(), bp);
     }
 }

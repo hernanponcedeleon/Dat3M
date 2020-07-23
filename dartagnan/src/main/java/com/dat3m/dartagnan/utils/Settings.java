@@ -19,11 +19,10 @@ public class Settings {
     public static final int FLAG_USE_SEQ_ENCODING_REL_RF            = 1;
     public static final int FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY    = 2;
 
-    public static boolean USEBV = true;
-    
     private Mode mode;
     private Alias alias;
     private int bound;
+    private boolean bitPrecise;
 
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
@@ -34,14 +33,15 @@ public class Settings {
             put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
     }};
 
-    public Settings(Mode mode, Alias alias, int bound){
+    public Settings(Mode mode, Alias alias, int bound, boolean bp){
         this.mode = mode == null ? Mode.KNASTER : mode;
         this.alias = alias == null ? Alias.CFIS : alias;
         this.bound = Math.max(1, bound);
+        this.bitPrecise = bp;
     }
 
-    public Settings(Mode mode, Alias alias, int bound, boolean draw, Collection<String> relations){
-        this(mode, alias, bound);
+    public Settings(Mode mode, Alias alias, int bound, boolean bp, boolean draw, Collection<String> relations){
+        this(mode, alias, bound, bp);
         if(draw){
             this.draw = true;
             if(flags.get(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS) && mode == Mode.KNASTER){
@@ -56,8 +56,8 @@ public class Settings {
         }
     }
 
-    public Settings(Mode mode, Alias alias, int bound, boolean draw, String... relations){
-        this(mode, alias, bound, draw, Arrays.asList(relations));
+    public Settings(Mode mode, Alias alias, int bound, boolean bp, boolean draw, String... relations){
+        this(mode, alias, bound, bp, draw, Arrays.asList(relations));
     }
 
     public Mode getMode(){
@@ -71,6 +71,10 @@ public class Settings {
     public int getBound(){
         return bound;
     }
+
+	public boolean getBP() {
+		return bitPrecise;
+	}
 
     public boolean getDrawGraph(){
         return draw;

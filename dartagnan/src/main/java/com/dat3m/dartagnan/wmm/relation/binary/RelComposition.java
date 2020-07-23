@@ -100,7 +100,7 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         BoolExpr enc = ctx.mkTrue();
 
         TupleSet r1Set = new TupleSet();
@@ -138,9 +138,9 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
+    protected BoolExpr encodeIDL(boolean bp) {
         if(recursiveGroupId == 0){
-            return encodeApprox();
+            return encodeApprox(bp);
         }
 
         BoolExpr enc = ctx.mkTrue();

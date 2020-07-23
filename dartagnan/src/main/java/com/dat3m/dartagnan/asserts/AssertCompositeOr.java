@@ -14,8 +14,8 @@ public class AssertCompositeOr extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
-        return ctx.mkOr(a1.encode(ctx), a2.encode(ctx));
+    public BoolExpr encode(Context ctx, boolean bp) {
+        return ctx.mkOr(a1.encode(ctx, bp), a2.encode(ctx, bp));
     }
 
     @Override

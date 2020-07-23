@@ -16,18 +16,18 @@ public class BNonDet extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
+	public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
 		return ctx.mkBoolConst(Integer.toString(hashCode()));
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
+	public Expr getLastValueExpr(Context ctx, boolean bp) {
 		throw new UnsupportedOperationException("getLastValueExpr not supported for " + this);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Context ctx, Model model) {
-		return model.getConstInterp(toZ3NumExpr(e, ctx)).isTrue();
+	public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp) {
+		return model.getConstInterp(toZ3NumExpr(e, ctx, bp)).isTrue();
 	}
 
 	@Override

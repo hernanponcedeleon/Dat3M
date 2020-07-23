@@ -37,7 +37,7 @@ public class RelCrit extends StaticRelation {
     // TODO: Not the most efficient implementation
     // Let's see if we need to keep a reference to a thread in events for anything else, and then optimize this method
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         BoolExpr enc = ctx.mkTrue();
         for(Thread thread : program.getThreads()){
             for(Event lock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){

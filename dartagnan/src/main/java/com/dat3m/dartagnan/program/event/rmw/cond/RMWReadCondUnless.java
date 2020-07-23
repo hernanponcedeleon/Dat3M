@@ -14,8 +14,8 @@ public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegRead
     }
 
     @Override
-    public void initialise(Context ctx) {
-        super.initialise(ctx);
+    public void initialise(Context ctx, boolean bp) {
+        super.initialise(ctx, bp);
         this.z3Cond = ctx.mkNot(z3Cond);
     }
 

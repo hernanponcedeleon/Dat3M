@@ -25,20 +25,20 @@ public abstract class BaseOptions extends Options {
         inputOption.setRequired(true);
         addOption(inputOption);
 
-        Option targetOption = new Option("t", "target", true,
-                "Target architecture {none|arm|arm8|power|tso}");
-        addOption(targetOption);
+        addOption(new Option("t", "target", true,
+                "Target architecture {none|arm|arm8|power|tso}"));
 
-        Option modeOption = new Option("m", "mode", true,
-                "Encoding mode {knastertarski|idl|kleene}");
-        addOption(modeOption);
+        addOption(new Option("m", "mode", true,
+                "Encoding mode {knastertarski|idl|kleene}"));
 
-        Option aliasOption = new Option("a", "alias", true,
-                "Type of alias analysis {none|andersen|cfs}");
-        addOption(aliasOption);
+        addOption(new Option("a", "alias", true,
+                "Type of alias analysis {none|andersen|cfs}"));
 
         addOption(new Option("unroll", true,
                 "Unrolling bound <integer>"));
+
+        addOption(new Option("bp", "bit-precise", false,
+                "Use bit precise encoding"));
 
         addOption(new Option("draw", true,
                 "Path to save the execution graph if the state is reachable"));
@@ -83,6 +83,7 @@ public abstract class BaseOptions extends Options {
     protected void parseSettings(CommandLine cmd){
         Mode mode = cmd.hasOption("mode") ? Mode.get(cmd.getOptionValue("mode")) : null;
         Alias alias = cmd.hasOption("alias") ? Alias.get(cmd.getOptionValue("alias")) : null;
+        boolean bp = cmd.hasOption("bp");
         boolean draw = cmd.hasOption("draw");
         String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
 
@@ -94,7 +95,8 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal unroll value");
             }
         }
-        settings = new Settings(mode, alias, bound, draw, relations);
+        
+        settings = new Settings(mode, alias, bound, bp, draw, relations);
     }
 
     protected void parseGraphFilePath(CommandLine cmd){

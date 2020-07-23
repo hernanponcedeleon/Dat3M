@@ -4,9 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
-
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -58,12 +55,14 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx) {
-		return USEBV ? ctx.mkBVConst(getName() + "(" + e.repr() + ")", 32) : ctx.mkIntConst(getName() + "(" + e.repr() + ")");
+	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
+		String varName = getName() + "(" + e.repr() + ")";
+		return bp ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
 	}
 
-	public Expr toZ3NumExprResult(Event e, Context ctx) {
-		return USEBV ? ctx.mkBVConst(getName() + "(" + e.repr() + "_result)", 32) : ctx.mkIntConst(getName() + "(" + e.repr() + "_result)");
+	public Expr toZ3NumExprResult(Event e, Context ctx, boolean bp) {
+		String varName = getName() + "(" + e.repr() + "_result)";
+		return bp ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
 	}
 
 	@Override
@@ -72,13 +71,13 @@ public class Register extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
-		return USEBV ? ctx.mkBVConst(getName() + "_" + threadId + "_final", 32) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
+	public Expr getLastValueExpr(Context ctx, boolean bp){
+		return bp ? ctx.mkBVConst(getName() + "_" + threadId + "_final", 32) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model){
-		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, ctx)).toString());
+	public int getIntValue(Event e, Context ctx, Model model, boolean bp){
+		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, ctx, bp)).toString());
 	}
 
 	@Override

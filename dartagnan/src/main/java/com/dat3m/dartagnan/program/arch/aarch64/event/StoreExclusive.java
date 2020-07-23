@@ -68,7 +68,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
+    public BoolExpr encodeCF(Context ctx, BoolExpr cond, boolean bp) {
         throw new RuntimeException("StoreExclusive event must be compiled before encoding");
     }
 }

@@ -181,7 +181,7 @@ public abstract class Event implements Comparable<Event> {
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initialise(Context ctx){
+	public void initialise(Context ctx, boolean bp){
 		if(cId < 0){
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
@@ -205,19 +205,19 @@ public abstract class Event implements Comparable<Event> {
 		cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
 	}
 
-	public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
+	public BoolExpr encodeCF(Context ctx, BoolExpr cond, boolean bp) {
 		if(cfEnc == null){
 			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
 			cfEnc = ctx.mkEq(cfVar, cfCond);
-			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
+			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx, bp));
 			if(successor != null){
-				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, cfVar));
+				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, cfVar, bp));
 			}
 		}
 		return cfEnc;
 	}
 
-	protected BoolExpr encodeExec(Context ctx){
+	protected BoolExpr encodeExec(Context ctx, boolean bp){
 		return ctx.mkEq(execVar, cfVar);
 	}
 }

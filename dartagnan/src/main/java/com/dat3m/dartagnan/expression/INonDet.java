@@ -3,9 +3,6 @@ package com.dat3m.dartagnan.expression;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
-
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -26,20 +23,20 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx) {
+	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
 		String name = Integer.toString(hashCode());
-		return USEBV ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return bp ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
+	public Expr getLastValueExpr(Context ctx, boolean bp) {
 		String name = Integer.toString(hashCode());
-		return USEBV ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return bp ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model) {
-		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, ctx)).toString());
+	public int getIntValue(Event e, Context ctx, Model model, boolean bp) {
+		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, ctx, bp)).toString());
 	}
 
 	@Override
@@ -70,14 +67,14 @@ public class INonDet extends IExpr implements ExprInterface {
         throw new UnsupportedOperationException("toString() not supported for " + this);
 	}
 
-	public long getMin() {
+	public long getMin(boolean bp) {
         switch(type){
         case INT:
             return Integer.MIN_VALUE;
         case UINT:
             return UnsignedInteger.ZERO.longValue();
 		case LONG:
-            return USEBV ? Integer.MIN_VALUE : Long.MIN_VALUE;
+            return bp ? Integer.MIN_VALUE : Long.MIN_VALUE;
 		case ULONG:
             return UnsignedLong.ZERO.longValue();
 		case SHORT:
@@ -92,18 +89,18 @@ public class INonDet extends IExpr implements ExprInterface {
         throw new UnsupportedOperationException("getMin() not supported for " + this);
 	}
 
-	public long getMax() {
+	public long getMax(boolean bp) {
         switch(type){
         case INT:
             return Integer.MAX_VALUE;
         case UINT:
-            return USEBV ? Integer.MAX_VALUE : UnsignedInteger.MAX_VALUE.longValue();
+            return bp ? Integer.MAX_VALUE : UnsignedInteger.MAX_VALUE.longValue();
 		case LONG:
-            return USEBV ? Integer.MAX_VALUE : Long.MAX_VALUE;
+            return bp ? Integer.MAX_VALUE : Long.MAX_VALUE;
 		case ULONG:
-            return USEBV ? Integer.MAX_VALUE : UnsignedLong.MAX_VALUE.longValue();
+            return bp ? Integer.MAX_VALUE : UnsignedLong.MAX_VALUE.longValue();
 		case SHORT:
-            return USEBV ? Integer.MAX_VALUE : Short.MAX_VALUE;
+            return bp ? Integer.MAX_VALUE : Short.MAX_VALUE;
 		case USHORT:
             return 65535;
 		case CHAR:

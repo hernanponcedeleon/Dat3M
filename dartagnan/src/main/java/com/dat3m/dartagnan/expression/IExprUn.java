@@ -19,18 +19,18 @@ public class IExprUn extends IExpr {
     }
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx) {
-		return op.encode(b.toZ3NumExpr(e, ctx), ctx);
+	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
+		return op.encode(b.toZ3NumExpr(e, ctx, bp), ctx, bp);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
-        return op.encode(b.getLastValueExpr(ctx), ctx);
+	public Expr getLastValueExpr(Context ctx, boolean bp) {
+        return op.encode(b.getLastValueExpr(ctx, bp), ctx, bp);
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model) {
-        return -(b.getIntValue(e, ctx, model));
+	public int getIntValue(Event e, Context ctx, Model model, boolean bp) {
+        return -(b.getIntValue(e, ctx, model, bp));
 	}
 
 	@Override

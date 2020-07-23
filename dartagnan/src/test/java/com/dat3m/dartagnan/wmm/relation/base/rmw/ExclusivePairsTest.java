@@ -33,7 +33,7 @@ public class ExclusivePairsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
         String path = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rmw/aarch64/";
 
@@ -111,8 +111,8 @@ public class ExclusivePairsTest {
             // Add program without assertions
             program.unroll(1, 0);
             program.compile(program.getArch(), 0);
-            solver.add(program.encodeCF(ctx));
-            solver.add(program.encodeFinalRegisterValues(ctx));
+            solver.add(program.encodeCF(ctx, settings.getBP()));
+            solver.add(program.encodeFinalRegisterValues(ctx, settings.getBP()));
             solver.add(wmm.encode(program, ctx, settings));
             solver.add(wmm.consistent(program, ctx));
 

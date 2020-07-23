@@ -5,8 +5,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -19,8 +17,8 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx) {
-		return USEBV ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
+		return bp ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
@@ -30,22 +28,21 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		String tag = USEBV ? "bv" : ""; 
-		return  tag + Integer.toString(value);
+		return  Integer.toString(value);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
-		return USEBV ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+	public Expr getLastValueExpr(Context ctx, boolean bp){
+		return bp ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model){
+	public int getIntValue(Event e, Context ctx, Model model, boolean bp){
 		return value;
 	}
 
-    public Expr toZ3NumExpr(Context ctx) {
-		return USEBV ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+    public Expr toZ3NumExpr(Context ctx, boolean bp) {
+		return bp ? ctx.mkBV(value, 32) : ctx.mkInt(value);
     }
 
 	@Override

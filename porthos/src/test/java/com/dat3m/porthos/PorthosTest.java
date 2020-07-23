@@ -39,9 +39,9 @@ public class PorthosTest {
         Wmm wmmPpc = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/power.cat"));
         Wmm wmmArm = new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/arm.cat"));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 2);
-        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 2);
-        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 2);
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 2, false);
+        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 2, false);
+        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 2, false);
 
         return Arrays.asList(new Object[][] {
                 { BENCHMARKS_RESOURCE_PATH + "Bakery.pts", false, Arch.NONE, Arch.TSO, wmmSc, wmmTso, s1 },

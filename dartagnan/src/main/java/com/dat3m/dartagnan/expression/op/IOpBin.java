@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.expression.op;
 
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -68,42 +66,30 @@ public enum IOpBin {
         }
     }
 
-    public Expr encode(Expr e1, Expr e2, Context ctx){
+    public Expr encode(Expr e1, Expr e2, Context ctx, boolean bp){
         switch(this){
             case PLUS:
-            	return USEBV ? ctx.mkBVAdd((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkAdd((IntExpr)e1, (IntExpr)e2);            		
+            	return bp ? ctx.mkBVAdd((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkAdd((IntExpr)e1, (IntExpr)e2);            		
             case MINUS:
-            	return USEBV ? ctx.mkBVSub((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkSub((IntExpr)e1, (IntExpr)e2);
+            	return bp ? ctx.mkBVSub((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkSub((IntExpr)e1, (IntExpr)e2);
             case MULT:
-            	return USEBV ? ctx.mkBVMul((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMul((IntExpr)e1, (IntExpr)e2);
+            	return bp ? ctx.mkBVMul((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMul((IntExpr)e1, (IntExpr)e2);
             case DIV:
-            	return USEBV ? ctx.mkBVSDiv((BitVecExpr)e1, (BitVecExpr)e2) :  ctx.mkDiv((IntExpr)e1, (IntExpr)e2);
+            	return bp ? ctx.mkBVSDiv((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkDiv((IntExpr)e1, (IntExpr)e2);
             case MOD:
-            	return USEBV ? ctx.mkBVSMod((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMod((IntExpr)e1, (IntExpr)e2);
+            	return bp ? ctx.mkBVSMod((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMod((IntExpr)e1, (IntExpr)e2);
             case AND:
-            	return USEBV ? 
-            			ctx.mkBVAND((BitVecExpr)e1, (BitVecExpr)e2) : 
-            			ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
+            	return bp ? ctx.mkBVAND((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
             case OR:
-            	return USEBV ? 
-            			ctx.mkBVOR((BitVecExpr)e1, (BitVecExpr)e2) : 
-            			ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
+            	return bp ? ctx.mkBVOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
             case XOR:
-            	return USEBV ? 
-            			ctx.mkBVXOR((BitVecExpr)e1, (BitVecExpr)e2) : 
-            			ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return bp ? ctx.mkBVXOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case L_SHIFT:
-            	return USEBV ? 
-            			ctx.mkBVSHL((BitVecExpr)e1, (BitVecExpr)e2) : 
-            			ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return bp ? ctx.mkBVSHL((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case R_SHIFT:
-            	return USEBV ? 
-            			ctx.mkBVLSHR((BitVecExpr)e1, (BitVecExpr)e2) : 
-            			ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return bp ? ctx.mkBVLSHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case AR_SHIFT:
-            	return USEBV ? 
-            			ctx.mkBVASHR((BitVecExpr)e1, (BitVecExpr)e2) : 
-            			ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return bp ? ctx.mkBVASHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             default:
                 throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
         }

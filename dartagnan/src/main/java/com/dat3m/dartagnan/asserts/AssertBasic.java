@@ -19,8 +19,8 @@ public class AssertBasic extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
-        return op.encode(e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx), ctx);
+    public BoolExpr encode(Context ctx, boolean bp) {
+        return op.encode(e1.getLastValueExpr(ctx, bp), e2.getLastValueExpr(ctx, bp), ctx, bp);
     }
 
     @Override

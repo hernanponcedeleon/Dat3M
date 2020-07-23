@@ -63,7 +63,7 @@ public class Porthos {
             System.out.println("Iterations: " + result.getIterations());
             if(settings.getDrawGraph()) {
                 ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-                Dartagnan.drawGraph(new Graph(s1.getModel(), ctx, pSource, pTarget, settings.getGraphRelations()), options.getGraphFilePath());
+                Dartagnan.drawGraph(new Graph(s1.getModel(), ctx, pSource, pTarget, settings.getGraphRelations(), settings.getBP()), options.getGraphFilePath());
                 System.out.println("Execution graph is written to " + options.getGraphFilePath());
             }
         }
@@ -74,18 +74,20 @@ public class Porthos {
     public static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, Settings settings){
 
+        boolean bp = settings.getBP();
+
         pSource.unroll(settings.getBound(), 0);
         pTarget.unroll(settings.getBound(), 0);
 
         int nextId = pSource.compile(source, 0);
         pTarget.compile(target, nextId);
 
-        BoolExpr sourceCF = pSource.encodeCF(ctx);
-        BoolExpr sourceFV = pSource.encodeFinalRegisterValues(ctx);
+		BoolExpr sourceCF = pSource.encodeCF(ctx, bp);
+        BoolExpr sourceFV = pSource.encodeFinalRegisterValues(ctx, bp);
         BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, settings);
 
-        s1.add(pTarget.encodeCF(ctx));
-        s1.add(pTarget.encodeFinalRegisterValues(ctx));
+        s1.add(pTarget.encodeCF(ctx, bp));
+        s1.add(pTarget.encodeFinalRegisterValues(ctx, bp));
         s1.add(targetWmm.encode(pTarget, ctx, settings));
         s1.add(targetWmm.consistent(pTarget, ctx));
 
@@ -108,7 +110,7 @@ public class Porthos {
 
         while(lastCheck == Status.SATISFIABLE) {
             Model model = s1.getModel();
-            BoolExpr reachedState = encodeReachedState(pTarget, model, ctx);
+            BoolExpr reachedState = encodeReachedState(pTarget, model, ctx, bp);
             s2.push();
             s2.add(reachedState);
             if(s2.check() == Status.UNSATISFIABLE) {

@@ -84,10 +84,10 @@ class Encodings {
 		return enc;
 	}
 	
-	static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
+	static BoolExpr encodeReachedState(Program p, Model model, Context ctx, boolean bp) {
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : p.getLocations()) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx, bp), model.getConstInterp(loc.getLastValueExpr(ctx, bp))));
 		}
 		Set<RegWriter> executedEvents = p.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
                 .filter(e -> model.getConstInterp(e.exec()).isTrue())
@@ -99,7 +99,7 @@ class Encodings {
 			regs.add(e.getResultRegister());
 		}
 		for(Register reg : regs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx), model.getConstInterp(reg.getLastValueExpr(ctx))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx, bp), model.getConstInterp(reg.getLastValueExpr(ctx, bp))));
 		}
 		return reachedState;
 	}

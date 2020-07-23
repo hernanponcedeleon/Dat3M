@@ -7,9 +7,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
-
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -27,18 +24,18 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, Context ctx) {
-        return op.encode(b1.toZ3Bool(e, ctx), b2.toZ3Bool(e, ctx), ctx);
+    public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
+        return op.encode(b1.toZ3Bool(e, ctx, bp), b2.toZ3Bool(e, ctx, bp), ctx);
     }
 
     @Override
-    public Expr getLastValueExpr(Context ctx){
-        BoolExpr expr1 = USEBV ? 
-        					ctx.mkBVSGT((BitVecExpr)b1.getLastValueExpr(ctx), ctx.mkBV(1,32)) : 
-        					ctx.mkGt((IntExpr)b1.getLastValueExpr(ctx), ctx.mkInt(1));
-        BoolExpr expr2 = USEBV ? 
-                			ctx.mkBVSGT((BitVecExpr)b2.getLastValueExpr(ctx), ctx.mkBV(1,32)) : 
-                			ctx.mkGt((IntExpr)b2.getLastValueExpr(ctx), ctx.mkInt(1));
+    public Expr getLastValueExpr(Context ctx, boolean bp){
+        BoolExpr expr1 = bp ? 
+        					ctx.mkBVSGT((BitVecExpr)b1.getLastValueExpr(ctx, bp), ctx.mkBV(1,32)) : 
+        					ctx.mkGt((IntExpr)b1.getLastValueExpr(ctx, bp), ctx.mkInt(1));
+        BoolExpr expr2 = bp ? 
+                			ctx.mkBVSGT((BitVecExpr)b2.getLastValueExpr(ctx, bp), ctx.mkBV(1,32)) : 
+                			ctx.mkGt((IntExpr)b2.getLastValueExpr(ctx, bp), ctx.mkInt(1));
         return ctx.mkITE(op.encode(expr1, expr2, ctx), ctx.mkInt(1), ctx.mkInt(0));
     }
 
@@ -53,8 +50,8 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public boolean getBoolValue(Event e, Context ctx, Model model){
-        return op.combine(b1.getBoolValue(e, ctx, model), b2.getBoolValue(e, ctx, model));
+    public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp){
+        return op.combine(b1.getBoolValue(e, ctx, model, bp), b2.getBoolValue(e, ctx, model, bp));
     }
 
     @Override

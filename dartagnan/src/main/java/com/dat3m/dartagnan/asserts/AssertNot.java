@@ -16,9 +16,9 @@ public class AssertNot extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
+    public BoolExpr encode(Context ctx, boolean bp) {
         if(child != null){
-            return ctx.mkNot(child.encode(ctx));
+            return ctx.mkNot(child.encode(ctx, bp));
         }
         throw new RuntimeException("Empty assertion clause in " + this.getClass().getName());
     }

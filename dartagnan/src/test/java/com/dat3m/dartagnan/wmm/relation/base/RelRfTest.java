@@ -31,7 +31,7 @@ public class RelRfTest {
 
     @Test
     public void testUninitializedMemory() throws IOException {
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
         settings.setFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, true);
 
         String programPath = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rf/";
@@ -65,7 +65,7 @@ public class RelRfTest {
         String wmmPath = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat";
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
 
         settings.setFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
@@ -85,7 +85,9 @@ public class RelRfTest {
     }
 
     private void doTestDuplicatedEdges(String programPath, Wmm wmm, Settings settings) throws IOException {
-        Program program = new ProgramParser().parse(new File(programPath));
+        boolean bp = settings.getBP();
+
+    	Program program = new ProgramParser().parse(new File(programPath));
         program.unroll(settings.getBound(), 0);
         program.compile(program.getArch(), 0);
 
@@ -97,12 +99,12 @@ public class RelRfTest {
         Context ctx = new Context();
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
 
-        solver.add(program.getAss().encode(ctx));
+		solver.add(program.getAss().encode(ctx, bp));
         if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(ctx));
+            solver.add(program.getAssFilter().encode(ctx, bp));
         }
-        solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(program.encodeCF(ctx, bp));
+        solver.add(program.encodeFinalRegisterValues(ctx, bp));
         solver.add(wmm.encode(program, ctx, settings));
         // Don't add constraint of MM, they can also forbid illegal edges
 

@@ -20,7 +20,7 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    protected BoolExpr encodeExec(Context ctx){
+    protected BoolExpr encodeExec(Context ctx, boolean bp){
         return ctx.mkEq(execVar, ctx.mkAnd(cfVar, loadEvent.getCond()));
     }
 

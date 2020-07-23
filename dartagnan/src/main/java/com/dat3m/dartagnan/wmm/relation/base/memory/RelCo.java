@@ -56,7 +56,7 @@ public class RelCo extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         BoolExpr enc = ctx.mkTrue();
 
         List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
@@ -97,8 +97,8 @@ public class RelCo extends Relation {
 
             for(Address address : w1.getMaxAddressSet()){
                 enc = ctx.mkAnd(enc, ctx.mkImplies(
-                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3NumExpr(ctx))),
-                        ctx.mkEq(address.getLastMemValueExpr(ctx), w1.getMemValueExpr())
+                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3NumExpr(ctx, bp))),
+                        ctx.mkEq(address.getLastMemValueExpr(ctx, bp), w1.getMemValueExpr())
                 ));
             }
         }

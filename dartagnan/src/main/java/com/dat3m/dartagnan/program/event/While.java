@@ -104,7 +104,7 @@ public class While extends Event implements RegReaderData {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
+	public BoolExpr encodeCF(Context ctx, BoolExpr cond, boolean bp) {
 		throw new RuntimeException("While event must be unrolled before encoding");
 	}
 }

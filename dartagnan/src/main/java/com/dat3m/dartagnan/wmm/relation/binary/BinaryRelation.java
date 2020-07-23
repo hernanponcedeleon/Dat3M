@@ -60,19 +60,19 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode() {
+    public BoolExpr encode(boolean bp) {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return ctx.mkAnd(r1.encode(), r2.encode(), doEncode());
+        return ctx.mkAnd(r1.encode(bp), r2.encode(bp), doEncode(bp));
     }
 
     @Override
-    protected BoolExpr encodeLFP() {
+    protected BoolExpr encodeLFP(boolean bp) {
         if(recursiveGroupId > 0){
             return ctx.mkTrue();
         }
-        return encodeApprox();
+        return encodeApprox(bp);
     }
 }

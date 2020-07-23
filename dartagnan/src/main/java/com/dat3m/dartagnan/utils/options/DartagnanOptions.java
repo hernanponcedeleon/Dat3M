@@ -19,9 +19,8 @@ public class DartagnanOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        Option cegarOption = new Option("cegar", true,
-                "Use CEGAR");
-        addOption(cegarOption);
+        addOption(new Option("cegar", true,
+                "Use CEGAR"));
     }
     
     public void parse(String[] args) throws ParseException, RuntimeException {

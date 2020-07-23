@@ -84,17 +84,17 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         return invokeEncode("encodeApprox");
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
+    protected BoolExpr encodeIDL(boolean bp) {
         return invokeEncode("encodeIDL");
     }
 
     @Override
-    protected BoolExpr encodeLFP() {
+    protected BoolExpr encodeLFP(boolean bp) {
         return invokeEncode("encodeLFP");
     }
 

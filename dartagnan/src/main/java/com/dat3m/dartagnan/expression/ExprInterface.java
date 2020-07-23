@@ -12,15 +12,15 @@ public interface ExprInterface {
 
 	IConst reduce();
 	
-    Expr toZ3NumExpr(Event e, Context ctx);
+    Expr toZ3NumExpr(Event e, Context ctx, boolean bp);
 
-    BoolExpr toZ3Bool(Event e, Context ctx);
+    BoolExpr toZ3Bool(Event e, Context ctx, boolean bp);
 
-    Expr getLastValueExpr(Context ctx);
+    Expr getLastValueExpr(Context ctx, boolean bp);
 
-    int getIntValue(Event e, Context ctx, Model model);
+    int getIntValue(Event e, Context ctx, Model model, boolean bp);
 
-    boolean getBoolValue(Event e, Context ctx, Model model);
+    boolean getBoolValue(Event e, Context ctx, Model model, boolean bp);
 
     ImmutableSet<Register> getRegs();
     

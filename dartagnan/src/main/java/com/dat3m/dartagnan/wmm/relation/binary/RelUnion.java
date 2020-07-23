@@ -48,7 +48,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(boolean bp) {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -67,9 +67,9 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
+    protected BoolExpr encodeIDL(boolean bp) {
         if(recursiveGroupId == 0){
-            return encodeApprox();
+            return encodeApprox(bp);
         }
 
         BoolExpr enc = ctx.mkTrue();

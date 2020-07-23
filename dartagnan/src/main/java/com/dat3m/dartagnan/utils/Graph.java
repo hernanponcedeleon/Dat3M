@@ -49,14 +49,14 @@ public class Graph {
 
     private final String DEFAULT_EDGE_COLOR = "indigo";
 
-    public Graph(Model model, Context ctx, Program program, Collection<String> relations){
+    public Graph(Model model, Context ctx, Program program, Collection<String> relations, boolean bp){
         this(model, ctx, relations);
-        build(program);
+        build(program, bp);
     }
 
-    public Graph(Model model, Context ctx, Program pSource, Program pTarget, Collection<String> relations){
+    public Graph(Model model, Context ctx, Program pSource, Program pTarget, Collection<String> relations, boolean bp){
         this(model, ctx, relations);
-        build(pSource, pTarget);
+        build(pSource, pTarget, bp);
     }
 
     private Graph(Model model, Context ctx, Collection<String> relations){
@@ -73,40 +73,40 @@ public class Graph {
         return buffer.toString();
     }
 
-    private void build(Program program){
+    private void build(Program program, boolean bp){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n")
         		.append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
-                .append(buildProgramGraph(program))
+                .append(buildProgramGraph(program, bp))
                 .append(L1).append("}\n")
                 .append("}\n");
     }
 
-    private void build(Program pSource, Program pTarget){
+    private void build(Program pSource, Program pTarget, boolean bp){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n");
 
         buffer.append(L1).append("subgraph cluster_Source { ").append(getProgramDef(sourceLabel)).append("\n")
-                .append(buildProgramGraph(pSource))
+                .append(buildProgramGraph(pSource, bp))
                 .append(buildCycle())
                 .append(L1).append("}\n");
 
         buffer.append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
-                .append(buildProgramGraph(pTarget))
+                .append(buildProgramGraph(pTarget, bp))
                 .append(L1).append("}\n");
 
         buffer.append("}\n");
     }
 
-    private StringBuilder buildProgramGraph(Program program){
-        buildAddressLocationMap(program);
-        return buildEvents(program)
+    private StringBuilder buildProgramGraph(Program program, boolean bp){
+        buildAddressLocationMap(program, bp);
+        return buildEvents(program, bp)
                 .append(buildPo(program))
-                .append(buildCo(program))
+                .append(buildCo(program, bp))
                 .append(buildRelations(program));
     }
 
-    private StringBuilder buildEvents(Program program){
+    private StringBuilder buildEvents(Program program, boolean bp){
         StringBuilder sb = new StringBuilder();
 
         int tId = 0;
@@ -114,7 +114,7 @@ public class Graph {
             Event firstEvent = t.getEntry().getSuccessor();
             if(firstEvent instanceof Init){
                 Init e = (Init)firstEvent;
-                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model));
+                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model, bp));
                 String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
@@ -123,13 +123,13 @@ public class Graph {
                     if(model.getConstInterp(e.exec()).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
-                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model));
+                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model, bp));
                             int value = 0;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
-                                value = Integer.parseInt(model.getConstInterp(r.toZ3NumExprResult(e, ctx)).toString());
+                                value = Integer.parseInt(model.getConstInterp(r.toZ3NumExprResult(e, ctx, bp)).toString());
                             } else {
-                                value = ((MemEvent) e).getMemValue().getIntValue(e, ctx, model);
+                                value = ((MemEvent) e).getMemValue().getIntValue(e, ctx, model, bp);
                             }
                             label += " " + location + " = " + value;
                         }
@@ -163,14 +163,14 @@ public class Graph {
         return sb;
     }
 
-    private StringBuilder buildCo(Program program){
+    private StringBuilder buildCo(Program program, boolean bp){
         StringBuilder sb = new StringBuilder();
         String edge = " " + getEdgeDef("co") + ";\n";
 
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.exec()).isTrue()){
-                int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
+                int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model, bp);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
             }
@@ -240,10 +240,10 @@ public class Graph {
         return sb;
     }
 
-    private void buildAddressLocationMap(Program program){
+    private void buildAddressLocationMap(Program program, boolean bp){
         mapAddressLocation = new HashMap<>();
         for(Location location : program.getLocations()){
-            mapAddressLocation.put(location.getAddress().getIntValue(null, ctx, model), location);
+            mapAddressLocation.put(location.getAddress().getIntValue(null, ctx, model, bp), location);
         }
     }
 

@@ -124,37 +124,37 @@ public abstract class Relation {
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BoolExpr encode() {
+    public BoolExpr encode(boolean bp) {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return doEncode();
+        return doEncode(bp);
     }
 
-    protected BoolExpr encodeLFP() {
-        return encodeApprox();
+    protected BoolExpr encodeLFP(boolean bp) {
+        return encodeApprox(bp);
     }
 
-    protected BoolExpr encodeIDL() {
-        return encodeApprox();
+    protected BoolExpr encodeIDL(boolean bp) {
+        return encodeApprox(bp);
     }
 
-    protected abstract BoolExpr encodeApprox();
+    protected abstract BoolExpr encodeApprox(boolean bp);
 
     public BoolExpr encodeIteration(int recGroupId, int iteration){
         return ctx.mkTrue();
     }
 
-    protected BoolExpr doEncode(){
+    protected BoolExpr doEncode(boolean bp){
         BoolExpr enc = encodeNegations();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             if(settings.getMode() == Mode.KLEENE) {
-                return ctx.mkAnd(enc, encodeLFP());
+                return ctx.mkAnd(enc, encodeLFP(bp));
             } else if(settings.getMode() == Mode.IDL) {
-                return ctx.mkAnd(enc, encodeIDL());
+                return ctx.mkAnd(enc, encodeIDL(bp));
             }
-            return ctx.mkAnd(enc, encodeApprox());
+            return ctx.mkAnd(enc, encodeApprox(bp));
         }
         return enc;
     }

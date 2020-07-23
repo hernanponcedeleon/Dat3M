@@ -38,5 +38,5 @@ public abstract class AbstractAssert {
         return toString();
     }
 
-    public abstract BoolExpr encode(Context ctx);
+    public abstract BoolExpr encode(Context ctx, boolean bp);
 }

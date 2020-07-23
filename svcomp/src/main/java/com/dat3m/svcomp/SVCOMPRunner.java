@@ -39,7 +39,7 @@ public class SVCOMPRunner {
 		String output = "BPASS";
 		while((output.equals("BPASS") || output.equals("BFAIL"))) {
 			try {
-				compile(file, options.getOptimization());
+				compile(file, options.getOptimization(), options.getSettings().getBP());
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
 				System.exit(0);
@@ -64,6 +64,9 @@ public class SVCOMPRunner {
 	    	if(options.getCegar() != null) {
 	    		cmd.add("-cegar");
 	    		cmd.add(String.valueOf(options.getCegar()));
+	    	}
+	    	if(options.getSettings().getBP()) {
+	    		cmd.add("-bp");
 	    	}
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
 

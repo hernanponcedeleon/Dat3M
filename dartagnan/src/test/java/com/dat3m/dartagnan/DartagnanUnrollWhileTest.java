@@ -88,7 +88,7 @@ public class DartagnanUnrollWhileTest {
             Program program = new ProgramParser().parse(new File(path));
             program.setAss(mkAssert(program, names, values));
             Context ctx = new Context();
-            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, bound);
+            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, bound, false);
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings).equals(FAIL));
             ctx.close();

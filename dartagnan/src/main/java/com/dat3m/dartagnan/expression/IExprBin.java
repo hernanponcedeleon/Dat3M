@@ -4,9 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
-
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -24,13 +21,13 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3NumExpr(Event e, Context ctx) {
-        return op.encode(lhs.toZ3NumExpr(e, ctx), rhs.toZ3NumExpr(e, ctx), ctx);
+    public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
+        return op.encode(lhs.toZ3NumExpr(e, ctx, bp), rhs.toZ3NumExpr(e, ctx, bp), ctx, bp);
     }
 
     @Override
-    public Expr getLastValueExpr(Context ctx){
-        return op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx);
+    public Expr getLastValueExpr(Context ctx, boolean bp){
+        return op.encode(lhs.getLastValueExpr(ctx, bp), rhs.getLastValueExpr(ctx, bp), ctx, bp);
     }
 
     @Override
@@ -40,12 +37,12 @@ public class IExprBin extends IExpr implements ExprInterface {
 
     @Override
     public String toString() {
-        return USEBV ? op.toLinuxName() + "(" + lhs + ", " + rhs + ")" : "(" + lhs + " " + op + " " + rhs + ")";
+        return "(" + lhs + " " + op + " " + rhs + ")";
     }
 
     @Override
-    public int getIntValue(Event e, Context ctx, Model model){
-        return op.combine(lhs.getIntValue(e, ctx, model), rhs.getIntValue(e, ctx, model));
+    public int getIntValue(Event e, Context ctx, Model model, boolean bp){
+        return op.combine(lhs.getIntValue(e, ctx, model, bp), rhs.getIntValue(e, ctx, model, bp));
     }
     
     @Override

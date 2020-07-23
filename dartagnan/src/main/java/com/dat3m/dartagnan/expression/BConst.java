@@ -6,8 +6,6 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
-import static com.dat3m.dartagnan.utils.Settings.USEBV;
-
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -20,13 +18,13 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
+	public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
 		return value ? ctx.mkTrue() : ctx.mkFalse();
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
-		return value ? USEBV ? ctx.mkBV(1, 32) : ctx.mkInt(1) : USEBV ? ctx.mkBV(0, 32) : ctx.mkInt(0);
+	public Expr getLastValueExpr(Context ctx, boolean bp){
+		return value ? bp ? ctx.mkBV(1, 32) : ctx.mkInt(1) : bp ? ctx.mkBV(0, 32) : ctx.mkInt(0);
 	}
 
     @Override
@@ -40,7 +38,7 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Context ctx, Model model){
+	public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp){
 		return value;
 	}
 

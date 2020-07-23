@@ -21,30 +21,30 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx) {
-		return ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3NumExpr(e, ctx), fbranch.toZ3NumExpr(e, ctx));
+	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
+		return ctx.mkITE(guard.toZ3Bool(e, ctx, bp), tbranch.toZ3NumExpr(e, ctx, bp), fbranch.toZ3NumExpr(e, ctx, bp));
 	}
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return (BoolExpr)ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3Bool(e, ctx), fbranch.toZ3Bool(e, ctx));
+	public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
+		return (BoolExpr)ctx.mkITE(guard.toZ3Bool(e, ctx, bp), tbranch.toZ3Bool(e, ctx, bp), fbranch.toZ3Bool(e, ctx, bp));
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
+	public Expr getLastValueExpr(Context ctx, boolean bp) {
 		// In principle this method is only called by assertions 
 		// and thus it should never be called for this class
         throw new RuntimeException("Problem with getLastValueExpr in " + this.toString());
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model) {
-		return guard.getBoolValue(e, ctx, model) ? tbranch.getIntValue(e, ctx, model) : fbranch.getIntValue(e, ctx, model);
+	public int getIntValue(Event e, Context ctx, Model model, boolean bp) {
+		return guard.getBoolValue(e, ctx, model, bp) ? tbranch.getIntValue(e, ctx, model, bp) : fbranch.getIntValue(e, ctx, model, bp);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Context ctx, Model model) {
-		return guard.getBoolValue(e, ctx, model)? tbranch.getBoolValue(e, ctx, model) : fbranch.getBoolValue(e, ctx, model);
+	public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp) {
+		return guard.getBoolValue(e, ctx, model, bp)? tbranch.getBoolValue(e, ctx, model, bp) : fbranch.getBoolValue(e, ctx, model, bp);
 	}
 
 	@Override
