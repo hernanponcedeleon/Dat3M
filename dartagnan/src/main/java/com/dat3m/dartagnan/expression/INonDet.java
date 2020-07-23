@@ -77,7 +77,7 @@ public class INonDet extends IExpr implements ExprInterface {
         case UINT:
             return UnsignedInteger.ZERO.longValue();
 		case LONG:
-            return Long.MIN_VALUE;
+            return USEBV ? Integer.MIN_VALUE : Long.MIN_VALUE;
 		case ULONG:
             return UnsignedLong.ZERO.longValue();
 		case SHORT:
@@ -93,20 +93,17 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	public long getMax() {
-		if(USEBV) {
-			return Integer.MAX_VALUE;
-		}
         switch(type){
         case INT:
             return Integer.MAX_VALUE;
         case UINT:
-            return UnsignedInteger.MAX_VALUE.longValue();
+            return USEBV ? Integer.MAX_VALUE : UnsignedInteger.MAX_VALUE.longValue();
 		case LONG:
-            return Long.MAX_VALUE;
+            return USEBV ? Integer.MAX_VALUE : Long.MAX_VALUE;
 		case ULONG:
-            return UnsignedLong.MAX_VALUE.longValue();
+            return USEBV ? Integer.MAX_VALUE : UnsignedLong.MAX_VALUE.longValue();
 		case SHORT:
-            return Short.MAX_VALUE;
+            return USEBV ? Integer.MAX_VALUE : Short.MAX_VALUE;
 		case USHORT:
             return 65535;
 		case CHAR:
@@ -114,6 +111,6 @@ public class INonDet extends IExpr implements ExprInterface {
 		case UCHAR:
             return 255;
         }
-        throw new UnsupportedOperationException("getMin() not supported for " + this);
+        throw new UnsupportedOperationException("getMax() not supported for " + this);
 	}
 }
