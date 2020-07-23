@@ -85,27 +85,27 @@ public class RelTransRef extends RelTrans {
 
     @Override
     protected BoolExpr encodeApprox(boolean bp) {
-        return invokeEncode("encodeApprox");
+        return invokeEncode("encodeApprox", bp);
     }
 
     @Override
     protected BoolExpr encodeIDL(boolean bp) {
-        return invokeEncode("encodeIDL");
+        return invokeEncode("encodeIDL", bp);
     }
 
     @Override
     protected BoolExpr encodeLFP(boolean bp) {
-        return invokeEncode("encodeLFP");
+        return invokeEncode("encodeLFP", bp);
     }
 
-    private BoolExpr invokeEncode(String methodName){
+    private BoolExpr invokeEncode(String methodName, boolean bp){
         try{
             MethodHandle method = MethodHandles.lookup().findSpecial(RelTrans.class, methodName,
-                    MethodType.methodType(BoolExpr.class), RelTransRef.class);
+                    MethodType.methodType(BoolExpr.class, boolean.class), RelTransRef.class);
 
             TupleSet temp = encodeTupleSet;
             encodeTupleSet = transEncodeTupleSet;
-            BoolExpr enc = (BoolExpr)method.invoke(this);
+            BoolExpr enc = (BoolExpr)method.invoke(this, bp);
             encodeTupleSet = temp;
 
             for(Tuple tuple : identityEncodeTupleSet){
