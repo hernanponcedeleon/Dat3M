@@ -22,9 +22,8 @@ public enum  Flag {
                 return "ARM unpredictable behaviour";
             case LINUX_UNBALANCED_RCU:
                 return "Linux unbalanced RCU lock-unlock";
-            default:
-                throw new UnsupportedOperationException("Illegal flag type");
         }
+        throw new UnsupportedOperationException("Illegal flag type");
     }
 
     private String code(){
@@ -33,8 +32,7 @@ public enum  Flag {
                 return "ARM_unpredictable_flag";
             case LINUX_UNBALANCED_RCU:
                 return "Linux_unbalanced_RCU_flag";
-                default:
-                    throw new UnsupportedOperationException("Illegal flag type");
         }
+        throw new UnsupportedOperationException("Illegal flag type");
     }
 }

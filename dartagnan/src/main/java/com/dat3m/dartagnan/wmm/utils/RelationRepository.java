@@ -186,8 +186,7 @@ public class RelationRepository {
                 return getRelation(RelIntersection.class, getRelation("ctrl"), getRelation("isync")).setName("ctrlisync");
             case "ctrlisb":
                 return getRelation(RelIntersection.class, getRelation("ctrl"), getRelation("isb")).setName("ctrlisb");
-            default:
-                return null;
         }
+        throw new UnsupportedOperationException("Unknown relation " + name);
     }
 }

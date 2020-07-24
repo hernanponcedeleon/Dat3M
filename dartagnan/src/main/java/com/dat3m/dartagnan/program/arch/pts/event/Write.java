@@ -87,8 +87,8 @@ public class Write extends MemEvent implements RegReaderData {
                     }
                 }
                 break;
-                default:
-                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+            default:
+            	throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
         return compileSequence(target, nextId, predecessor, events);

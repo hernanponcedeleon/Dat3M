@@ -54,9 +54,8 @@ public enum COpBin {
                 return "slt";
             case ULT:
                 return "ult";
-            default:
-            	throw new UnsupportedOperationException("Full op name is not defined for " + this);
         }
+    	throw new UnsupportedOperationException("Full op name is not defined for " + this);
     }
 
     public BoolExpr encode(Expr e1, Expr e2, Context ctx, boolean bp) {

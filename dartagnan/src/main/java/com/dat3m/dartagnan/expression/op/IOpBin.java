@@ -71,13 +71,12 @@ public enum IOpBin {
                 return "srem";
             case UREM:
                 return "urem";
-            default:
-            	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
         }
+    	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
     }
 
     public Expr encode(Expr e1, Expr e2, Context ctx, boolean bp){
-        switch(this){
+		switch(this){
             case PLUS:
             	return bp ? ctx.mkBVAdd((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkAdd((IntExpr)e1, (IntExpr)e2);            		
             case MINUS:
@@ -106,9 +105,8 @@ public enum IOpBin {
             	return bp ? ctx.mkBVSRem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVSRem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case UREM:
             	return bp ? ctx.mkBVURem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVURem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
-            default:
-                throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
         }
+        throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
     }
 
     public int combine(int a, int b){

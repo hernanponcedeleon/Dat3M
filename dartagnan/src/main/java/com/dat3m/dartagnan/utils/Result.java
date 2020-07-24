@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils;
 
 public enum Result {
-	PASS, FAIL, UNKNOWN, BPASS, BFAIL;
+	PASS, FAIL, BPASS, BFAIL;
 
 	public static Result fromString(String name) {
 		switch (name) {
@@ -13,9 +13,8 @@ public enum Result {
 			return FAIL;
 		case "BFAIL":
 			return BFAIL;
-		default:
-			return UNKNOWN;
 		}
+        throw new UnsupportedOperationException("Illegal operator in Result");
 	}
 	
 	public Result invert() {
@@ -28,8 +27,7 @@ public enum Result {
 			return PASS;
 		case BFAIL:
 			return BPASS;
-		default:
-			return UNKNOWN;
 		}
+		throw new UnsupportedOperationException("Illegal operator in Result");
 	}
 }
