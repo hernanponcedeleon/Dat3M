@@ -7,6 +7,8 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.UDIV;
 import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MINUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+import static com.dat3m.dartagnan.expression.op.IOpBin.UREM;
+import static com.dat3m.dartagnan.expression.op.IOpBin.SREM;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
@@ -51,8 +53,14 @@ public class LlvmFunctions {
 		if(name.startsWith("$mul.")) {
 			op = MULT;
 		}
-		if(name.startsWith("$srem.") || name.startsWith("$urem.") || name.startsWith("$smod.")) {
+		if(name.startsWith("$smod.")) {
 			op = MOD;
+		}
+		if(name.startsWith("$srem.")) {
+			op = SREM;
+		}
+		if(name.startsWith("$urem.")) {
+			op = UREM;
 		}
 		if(name.startsWith("$sdiv.")) {
 			op = DIV;

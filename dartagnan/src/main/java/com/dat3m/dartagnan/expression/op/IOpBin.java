@@ -6,7 +6,7 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 
 public enum IOpBin {
-    PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
+    PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM;
 	
     @Override
     public String toString() {
@@ -34,6 +34,9 @@ public enum IOpBin {
                 return ">>>";
             case AR_SHIFT:
                 return ">>";
+            case SREM:
+            case UREM:
+                return "rem";
         }
         return super.toString();
     }
@@ -64,6 +67,10 @@ public enum IOpBin {
                 return "lshr";
             case AR_SHIFT:
                 return "ashr";
+            case SREM:
+                return "srem";
+            case UREM:
+                return "urem";
             default:
             	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
         }
@@ -95,6 +102,10 @@ public enum IOpBin {
             	return bp ? ctx.mkBVLSHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case AR_SHIFT:
             	return bp ? ctx.mkBVASHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            case SREM:
+            	return bp ? ctx.mkBVSRem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVSRem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            case UREM:
+            	return bp ? ctx.mkBVURem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVURem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             default:
                 throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
         }
@@ -112,6 +123,8 @@ public enum IOpBin {
             case UDIV:
                 return a / b;
             case MOD:
+            case SREM:
+            case UREM:
                 return a % b;
             case AND:
                 return a & b;
