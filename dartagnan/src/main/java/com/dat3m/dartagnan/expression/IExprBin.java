@@ -57,6 +57,7 @@ public class IExprBin extends IExpr implements ExprInterface {
         case MULT:
         	return new IConst(v1 * v2);
         case DIV:
+        case UDIV:
         	return new IConst(v1 / v2);
         case MOD:
         	return new IConst(v1 % v2);

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.llvm.utils;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AR_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
+import static com.dat3m.dartagnan.expression.op.IOpBin.UDIV;
 import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MINUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
@@ -53,8 +54,11 @@ public class LlvmFunctions {
 		if(name.startsWith("$srem.") || name.startsWith("$urem.") || name.startsWith("$smod.")) {
 			op = MOD;
 		}
-		if(name.startsWith("$sdiv.") || name.startsWith("$udiv.")) {
+		if(name.startsWith("$sdiv.")) {
 			op = DIV;
+		}
+		if(name.startsWith("$udiv.")) {
+			op = UDIV;
 		}
 		if(name.startsWith("$shl.")) {
 			op = L_SHIFT;

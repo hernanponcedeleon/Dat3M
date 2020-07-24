@@ -6,7 +6,7 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 
 public enum IOpBin {
-    PLUS, MINUS, MULT, DIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
+    PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
 	
     @Override
     public String toString() {
@@ -18,6 +18,7 @@ public enum IOpBin {
             case MULT:
                 return "*";
             case DIV:
+            case UDIV:
                 return "/";
             case MOD:
                 return "%";
@@ -47,6 +48,8 @@ public enum IOpBin {
                 return "mult";
             case DIV:
                 return "div";
+            case UDIV:
+                return "udiv";
             case MOD:
                 return "mod";
             case AND:
@@ -76,6 +79,8 @@ public enum IOpBin {
             	return bp ? ctx.mkBVMul((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMul((IntExpr)e1, (IntExpr)e2);
             case DIV:
             	return bp ? ctx.mkBVSDiv((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkDiv((IntExpr)e1, (IntExpr)e2);
+            case UDIV:
+            	return bp ? ctx.mkBVUDiv((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVUDiv(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case MOD:
             	return bp ? ctx.mkBVSMod((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMod((IntExpr)e1, (IntExpr)e2);
             case AND:
@@ -104,6 +109,7 @@ public enum IOpBin {
             case MULT:
                 return a * b;
             case DIV:
+            case UDIV:
                 return a / b;
             case MOD:
                 return a % b;
