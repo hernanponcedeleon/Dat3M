@@ -471,12 +471,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// TODO: find a nicer way of dealing with this
 		if(ctx.getText().contains("$load.")) {
 			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register reg = programBuilder.getRegister(threadCount, ctx.Ident(0).getText());
+			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText());
 			String tmp = ctx.def_body().exprs().expr(0).getText();
 			tmp = tmp.substring(0, tmp.lastIndexOf(')'));
 			tmp = tmp.substring(tmp.lastIndexOf(',')+1);
 			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register ptr = programBuilder.getRegister(threadCount, tmp);
+			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp);
 			pool.addRegPtr(reg, ptr);
 		}
         ExprsContext exprs = ctx.def_body().exprs();
