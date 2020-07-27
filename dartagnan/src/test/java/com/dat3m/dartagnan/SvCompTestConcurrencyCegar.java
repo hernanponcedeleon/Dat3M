@@ -69,12 +69,12 @@ public class SvCompTestConcurrencyCegar {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-1-O0.bpl", wmm, s6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-2-O0.bpl", wmm, s6});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qrcu-2-O0.bpl", wmm, s1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qrcu-2-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-1-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-2-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/time_var_mutex-O0.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/01_inc-O0.bpl", wmm, s3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/02_inc_cas-O0.bpl", wmm, s3});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/02_inc_cas-O0.bpl", wmm, s3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/14_spin2003-O0.bpl", wmm, s3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/18_read_write_lock-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/19_time_var_mutex-O0.bpl", wmm, s2});
@@ -85,14 +85,14 @@ public class SvCompTestConcurrencyCegar {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_1-join-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_2-join-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_3-join-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_1-container_of-O0.bpl", wmm, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_1-container_of-O0.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_2-container_of-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_3-container_of-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_4-container_of-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_5-container_of-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_1-container_of-global-O0.bpl", wmm, s1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_5-container_of-O0.bpl", wmm, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_1-container_of-global-O0.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_2-container_of-global-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/char_generic_nvram_nvram_unlocked_ioctl_write_nvram-O0.bpl", wmm, s1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/char_generic_nvram_nvram_unlocked_ioctl_write_nvram-O0.bpl", wmm, s1});
 
         return data;
     }
