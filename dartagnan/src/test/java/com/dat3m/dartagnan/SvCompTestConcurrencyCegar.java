@@ -1,24 +1,48 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Solver;
 
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class SvCompTestConcurrency extends AbstractSvCompTest {
+public class SvCompTestConcurrencyCegar {
 
+    private String path;
+    private Wmm wmm;
+    private Settings settings;
+    private Result expected;
+
+	public SvCompTestConcurrencyCegar(String path, Wmm wmm, Settings settings) {
+        this.path = path;
+        this.wmm = wmm;
+        this.settings = settings;
+	}
+    
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
@@ -72,8 +96,33 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
 
         return data;
     }
+    
+    @Test(timeout = 120000)
+    public void test() {
+        try {
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	expected = readExptected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            Context ctx = new Context();
+            Solver solver = ctx.mkSolver();
+            assertTrue(Dartagnan.runCegar(solver, ctx, program, wmm, Arch.NONE, settings, 1).equals(expected));
+            ctx.close();
+        } catch (IOException e){
+            fail("Missing resource file");
+        }
+    }
 
-	public SvCompTestConcurrency(String path, Wmm wmm, Settings settings) {
-		super(path, wmm, settings);
+	private Result readExptected(String property) {
+		try (BufferedReader br = new BufferedReader(new FileReader(new File(property)))) {
+		    while (!(br.readLine()).contains("unreach-call.prp")) {
+		       continue;
+		    }
+		    return br.readLine().contains("false") ? FAIL : PASS;
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+            System.exit(0);
+		}
+		return null;
 	}
 }
