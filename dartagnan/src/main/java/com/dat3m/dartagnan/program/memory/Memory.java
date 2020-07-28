@@ -29,19 +29,21 @@ public class Memory {
         return map.inverse().get(address);
     }
 
-    public BoolExpr encode(Context ctx, boolean bp){
+    public BoolExpr encode(com.dat3m.dartagnan.utils.EncodingConf conf){
+    	Context ctx = conf.getCtx();
+    	boolean bp = conf.getBP();
         BoolExpr enc = ctx.mkTrue();
         Set<Expr> expressions = new HashSet<>();
 
         for(List<Address> array : arrays.values()){
             int size = array.size();
-            Expr e1 = array.get(0).toZ3NumExpr(ctx, bp);
+            Expr e1 = array.get(0).toZ3NumExpr(conf);
             if(!array.get(0).hasConstValue()) {
                 expressions.add(e1);            	
             }
 
             for(int i = 1; i < size; i++){
-                Expr e2 = array.get(i).toZ3NumExpr(ctx, bp);
+                Expr e2 = array.get(i).toZ3NumExpr(conf);
                 Expr newAddress = bp ? ctx.mkBVAdd((BitVecExpr)e1, ctx.mkBV(1, 32)) : ctx.mkAdd((IntExpr)e1, ctx.mkInt(1));
 				enc = ctx.mkAnd(enc, ctx.mkEq(newAddress, e2));
                 if(!array.get(i).hasConstValue()) {
@@ -53,10 +55,10 @@ public class Memory {
         for(Address address : map.values()){
         	if(address.hasConstValue()) {
         		Expr constantAddress = bp ? ctx.mkBV(address.getConstValue(), 32) : ctx.mkInt(address.getConstValue());
-				enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3NumExpr(ctx, bp), constantAddress));
+				enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3NumExpr(conf), constantAddress));
         	}
         }
-        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3NumExpr(ctx, bp)).toArray(Expr[]::new)));
+        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3NumExpr(conf)).toArray(Expr[]::new)));
     }
 
     public List<Address> malloc(String name, int size){

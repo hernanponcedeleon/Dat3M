@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 import java.util.*;
 
@@ -128,7 +128,7 @@ public class Thread {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public BoolExpr encodeCF(Context ctx, boolean bp){
-        return entry.encodeCF(ctx, ctx.mkTrue(), bp);
+    public BoolExpr encodeCF(EncodingConf conf){
+        return entry.encodeCF(conf, conf.getCtx().mkTrue());
     }
 }

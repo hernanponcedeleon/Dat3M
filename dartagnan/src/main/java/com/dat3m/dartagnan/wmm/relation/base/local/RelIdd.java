@@ -26,8 +26,8 @@ public class RelIdd extends BasicRegRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
-        return doEncodeApprox(program.getCache().getEvents(FilterBasic.get(EType.REG_READER)), bp);
+    protected BoolExpr encodeApprox() {
+        return doEncodeApprox(program.getCache().getEvents(FilterBasic.get(EType.REG_READER)));
     }
 
     @Override

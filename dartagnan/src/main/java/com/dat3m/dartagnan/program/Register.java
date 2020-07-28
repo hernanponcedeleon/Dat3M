@@ -7,6 +7,7 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.program.event.Event;
 
 public class Register extends IExpr implements ExprInterface {
@@ -55,14 +56,16 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
+	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
 		String varName = getName() + "(" + e.repr() + ")";
-		return bp ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
+		Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
 	}
 
-	public Expr toZ3NumExprResult(Event e, Context ctx, boolean bp) {
+	public Expr toZ3NumExprResult(Event e, EncodingConf conf) {
 		String varName = getName() + "(" + e.repr() + "_result)";
-		return bp ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
+		Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
 	}
 
 	@Override
@@ -71,13 +74,14 @@ public class Register extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx, boolean bp){
-		return bp ? ctx.mkBVConst(getName() + "_" + threadId + "_final", 32) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
+	public Expr getLastValueExpr(EncodingConf conf){
+		Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBVConst(getName() + "_" + threadId + "_final", 32) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model, boolean bp){
-		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, ctx, bp)).toString());
+	public int getIntValue(Event e, Model model, EncodingConf conf){
+		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, conf)).toString());
 	}
 
 	@Override

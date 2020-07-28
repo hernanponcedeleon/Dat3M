@@ -20,7 +20,7 @@ public class RelEmpty extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
-        return ctx.mkTrue();
+    protected BoolExpr encodeApprox() {
+        return conf.getCtx().mkTrue();
     }
 }

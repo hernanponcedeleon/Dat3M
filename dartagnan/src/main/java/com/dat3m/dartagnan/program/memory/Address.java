@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class Address extends IConst implements ExprInterface {
 
@@ -26,22 +27,23 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3NumExpr(Event e, Context ctx, boolean bp){
-        return toZ3NumExpr(ctx, bp);
+    public Expr toZ3NumExpr(Event e, EncodingConf conf){
+        return toZ3NumExpr(conf);
     }
 
     @Override
-    public Expr getLastValueExpr(Context ctx, boolean bp){
-        return toZ3NumExpr(ctx, bp);
+    public Expr getLastValueExpr(EncodingConf conf){
+        return toZ3NumExpr(conf);
     }
 
-    public Expr getLastMemValueExpr(Context ctx, boolean bp){
-        return bp ? ctx.mkBVConst("last_val_at_memory_" + index, 32) : ctx.mkIntConst("last_val_at_memory_" + index);
+    public Expr getLastMemValueExpr(EncodingConf conf){
+    	Context ctx = conf.getCtx();
+        return conf.getBP() ? ctx.mkBVConst("last_val_at_memory_" + index, 32) : ctx.mkIntConst("last_val_at_memory_" + index);
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp){
-        return ctx.mkTrue();
+    public BoolExpr toZ3Bool(Event e, EncodingConf conf){
+        return conf.getCtx().mkTrue();
     }
 
     @Override
@@ -66,13 +68,14 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3NumExpr(Context ctx, boolean bp){
-		return bp ? ctx.mkBVConst("memory_" + index, 32) : ctx.mkIntConst("memory_" + index);
+    public Expr toZ3NumExpr(EncodingConf conf){
+    	Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBVConst("memory_" + index, 32) : ctx.mkIntConst("memory_" + index);
     }
 
     @Override
-    public int getIntValue(Event e, Context ctx, Model model, boolean bp){
-        return Integer.parseInt(model.getConstInterp(toZ3NumExpr(ctx, bp)).toString());
+    public int getIntValue(Event e, Model model, EncodingConf conf){
+        return Integer.parseInt(model.getConstInterp(toZ3NumExpr(conf)).toString());
     }
     
     public boolean hasConstValue() {

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
@@ -42,8 +43,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(Program program, EncodingConf conf, Settings settings){
+        super.initialise(program, conf, settings);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }
@@ -84,30 +85,31 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
-        return invokeEncode("encodeApprox", bp);
+    protected BoolExpr encodeApprox() {
+        return invokeEncode("encodeApprox");
     }
 
     @Override
-    protected BoolExpr encodeIDL(boolean bp) {
-        return invokeEncode("encodeIDL", bp);
+    protected BoolExpr encodeIDL() {
+        return invokeEncode("encodeIDL");
     }
 
     @Override
-    protected BoolExpr encodeLFP(boolean bp) {
-        return invokeEncode("encodeLFP", bp);
+    protected BoolExpr encodeLFP() {
+        return invokeEncode("encodeLFP");
     }
 
-    private BoolExpr invokeEncode(String methodName, boolean bp){
+    private BoolExpr invokeEncode(String methodName){
         try{
             MethodHandle method = MethodHandles.lookup().findSpecial(RelTrans.class, methodName,
-                    MethodType.methodType(BoolExpr.class, boolean.class), RelTransRef.class);
+                    MethodType.methodType(BoolExpr.class), RelTransRef.class);
 
             TupleSet temp = encodeTupleSet;
             encodeTupleSet = transEncodeTupleSet;
-            BoolExpr enc = (BoolExpr)method.invoke(this, bp);
+            BoolExpr enc = (BoolExpr)method.invoke(this);
             encodeTupleSet = temp;
 
+            Context ctx = conf.getCtx();
             for(Tuple tuple : identityEncodeTupleSet){
                 enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
             }

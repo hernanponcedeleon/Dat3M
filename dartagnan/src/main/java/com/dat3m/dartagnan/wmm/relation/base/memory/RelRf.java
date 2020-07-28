@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -54,7 +55,8 @@ public class RelRf extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
+    protected BoolExpr encodeApprox() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         Map<MemEvent, List<BoolExpr>> edgeMap = new HashMap<>();
         Map<MemEvent, BoolExpr> memInitMap = new HashMap<>();
@@ -86,6 +88,7 @@ public class RelRf extends Relation {
     }
 
     private BoolExpr encodeEdgeNaive(Event read, BoolExpr isMemInit, List<BoolExpr> edges){
+    	Context ctx = conf.getCtx();
         BoolExpr atMostOne = ctx.mkTrue();
         BoolExpr atLeastOne = ctx.mkFalse();
         for(int i = 0; i < edges.size(); i++){
@@ -104,6 +107,7 @@ public class RelRf extends Relation {
     }
 
     private BoolExpr encodeEdgeSeq(Event read, BoolExpr isMemInit, List<BoolExpr> edges){
+    	Context ctx = conf.getCtx();
         int num = edges.size();
         int readId = read.getCId();
         BoolExpr lastSeqVar = mkSeqVar(readId, 0);
@@ -127,6 +131,7 @@ public class RelRf extends Relation {
     }
 
     private BoolExpr mkSeqVar(int readId, int i) {
+    	Context ctx = conf.getCtx();
         return (BoolExpr) ctx.mkConst("s(" + term + ",E" + readId + "," + i + ")", ctx.mkBoolSort());
     }
 }

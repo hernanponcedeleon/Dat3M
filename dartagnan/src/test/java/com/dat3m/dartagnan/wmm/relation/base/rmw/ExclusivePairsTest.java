@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
@@ -106,14 +107,16 @@ public class ExclusivePairsTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
+            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
+            
             Program program = new ProgramParser().parse(new File(path));
 
             // Add program without assertions
             program.unroll(1, 0);
             program.compile(program.getArch(), 0);
-            solver.add(program.encodeCF(ctx, settings.getBP()));
-            solver.add(program.encodeFinalRegisterValues(ctx, settings.getBP()));
-            solver.add(wmm.encode(program, ctx, settings));
+            solver.add(program.encodeCF(conf));
+            solver.add(program.encodeFinalRegisterValues(conf));
+            solver.add(wmm.encode(program, conf, settings));
             solver.add(wmm.consistent(program, ctx));
 
             // Check flag

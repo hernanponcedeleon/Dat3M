@@ -1,6 +1,7 @@
 package com.dat3m.ui.result;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -53,7 +54,7 @@ public class PortabilityResult implements Dat3mResult {
                     + "Iterations: " + result.getIterations();
 
             if(!result.getIsPortable()){
-                graph = new Graph(s1.getModel(), ctx, sourceProgram, targetProgram, options.getSettings().getGraphRelations(), options.getSettings().getBP());
+                graph = new Graph(s1.getModel(), new EncodingConf(ctx, options.getSettings().getBP()), sourceProgram, targetProgram, options.getSettings().getGraphRelations());
             }
             ctx.close();
         }

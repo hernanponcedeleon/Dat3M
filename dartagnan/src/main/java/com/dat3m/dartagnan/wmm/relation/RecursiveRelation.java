@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -26,11 +27,11 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initialise(Program program, Context ctx, Settings settings){
+    public void initialise(Program program, EncodingConf conf, Settings settings){
         if(doRecurse){
             doRecurse = false;
-            super.initialise(program, ctx, settings);
-            r1.initialise(program, ctx, settings);
+            super.initialise(program, conf, settings);
+            r1.initialise(program, conf, settings);
         }
     }
 
@@ -96,27 +97,27 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(boolean bp) {
+    public BoolExpr encode() {
         if(isEncoded){
-            return ctx.mkTrue();
+            return conf.getCtx().mkTrue();
         }
         isEncoded = true;
-        return r1.encode(bp);
+        return r1.encode();
     }
 
     @Override
-    protected BoolExpr encodeLFP(boolean bp) {
-        return r1.encodeLFP(bp);
+    protected BoolExpr encodeLFP() {
+        return r1.encodeLFP();
     }
 
     @Override
-    protected BoolExpr encodeIDL(boolean bp) {
-        return r1.encodeIDL(bp);
+    protected BoolExpr encodeIDL() {
+        return r1.encodeIDL();
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
-        return r1.encodeApprox(bp);
+    protected BoolExpr encodeApprox() {
+        return r1.encodeApprox();
     }
 
     @Override
@@ -125,10 +126,11 @@ public class RecursiveRelation extends Relation {
             doRecurse = false;
             return r1.encodeIteration(recGroupId, iteration);
         }
-        return ctx.mkTrue();
+        return conf.getCtx().mkTrue();
     }
 
     public BoolExpr encodeFinalIteration(int iteration){
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet){
             enc = ctx.mkAnd(enc, ctx.mkEq(

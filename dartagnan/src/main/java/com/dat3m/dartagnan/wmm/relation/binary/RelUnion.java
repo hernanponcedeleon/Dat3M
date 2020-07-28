@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -48,7 +49,8 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
+    protected BoolExpr encodeApprox() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -67,11 +69,12 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL(boolean bp) {
+    protected BoolExpr encodeIDL() {
         if(recursiveGroupId == 0){
-            return encodeApprox(bp);
+            return encodeApprox();
         }
 
+        Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
@@ -98,6 +101,7 @@ public class RelUnion extends BinaryRelation {
 
     @Override
     public BoolExpr encodeIteration(int groupId, int iteration){
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){

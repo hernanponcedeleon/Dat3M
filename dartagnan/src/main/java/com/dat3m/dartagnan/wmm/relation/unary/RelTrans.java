@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.program.Program;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -42,8 +43,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(Program program, EncodingConf conf, Settings settings){
+        super.initialise(program, conf, settings);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }
@@ -78,7 +79,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
+    protected BoolExpr encodeApprox() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : fullEncodeTupleSet){
@@ -108,7 +110,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL(boolean bp) {
+    protected BoolExpr encodeIDL() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : fullEncodeTupleSet){
@@ -160,7 +163,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeLFP(boolean bp) {
+    protected BoolExpr encodeLFP() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         int iteration = 0;
 

@@ -4,6 +4,7 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class FenceCond extends Fence {
 
@@ -20,7 +21,8 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    protected BoolExpr encodeExec(Context ctx, boolean bp){
+    protected BoolExpr encodeExec(EncodingConf conf){
+    	Context ctx = conf.getCtx();
         return ctx.mkEq(execVar, ctx.mkAnd(cfVar, loadEvent.getCond()));
     }
 

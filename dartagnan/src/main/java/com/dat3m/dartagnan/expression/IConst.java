@@ -7,6 +7,7 @@ import com.microsoft.z3.Model;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class IConst extends IExpr implements ExprInterface {
 
@@ -17,8 +18,9 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
-		return bp ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
+		Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
@@ -32,17 +34,19 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx, boolean bp){
-		return bp ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+	public Expr getLastValueExpr(EncodingConf conf){
+		Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model, boolean bp){
+	public int getIntValue(Event e, Model model, EncodingConf conf){
 		return value;
 	}
 
-    public Expr toZ3NumExpr(Context ctx, boolean bp) {
-		return bp ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+    public Expr toZ3NumExpr(EncodingConf conf) {
+    	Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
     }
 
 	@Override

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -31,8 +32,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(Program program, EncodingConf conf, Settings settings){
+        super.initialise(program, conf, settings);
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
         }
@@ -58,7 +59,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
+    protected BoolExpr encodeApprox() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();
@@ -76,11 +78,12 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL(boolean bp) {
+    protected BoolExpr encodeIDL() {
         if(recursiveGroupId == 0){
-            return encodeApprox(bp);
+            return encodeApprox();
         }
 
+        Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -99,6 +102,7 @@ public class RelMinus extends BinaryRelation {
 
     @Override
     public BoolExpr encodeIteration(int groupId, int iteration){
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){

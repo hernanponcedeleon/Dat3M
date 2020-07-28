@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class Location implements ExprInterface {
 
@@ -60,12 +61,12 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx, boolean bp){
-		return address.getLastMemValueExpr(ctx, bp);
+	public Expr getLastValueExpr(EncodingConf conf){
+		return address.getLastMemValueExpr(conf);
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp){
+	public Expr toZ3NumExpr(Event e, EncodingConf conf){
 		if(e instanceof MemEvent){
 			return ((MemEvent) e).getMemValueExpr();
 		}
@@ -73,25 +74,26 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp){
+	public BoolExpr toZ3Bool(Event e, EncodingConf conf){
 		if(e instanceof MemEvent){
-			return bp ? ctx.mkBVSGT((BitVecExpr)((MemEvent) e).getMemValueExpr(), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)((MemEvent) e).getMemValueExpr(), ctx.mkInt(0));
+			Context ctx = conf.getCtx();
+			return conf.getBP() ? ctx.mkBVSGT((BitVecExpr)((MemEvent) e).getMemValueExpr(), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)((MemEvent) e).getMemValueExpr(), ctx.mkInt(0));
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model, boolean bp){
+	public int getIntValue(Event e, Model model, EncodingConf conf){
 		if(e instanceof MemEvent){
-			return ((MemEvent) e).getMemValue().getIntValue(e, ctx, model, bp);
+			return ((MemEvent) e).getMemValue().getIntValue(e, model, conf);
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp){
+	public boolean getBoolValue(Event e, Model model, EncodingConf conf){
 		if(e instanceof MemEvent){
-			return ((MemEvent) e).getMemValue().getBoolValue(e, ctx, model, bp);
+			return ((MemEvent) e).getMemValue().getBoolValue(e, model, conf);
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}

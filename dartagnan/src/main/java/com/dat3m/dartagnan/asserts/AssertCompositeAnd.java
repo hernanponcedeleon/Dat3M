@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.asserts;
 
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 public class AssertCompositeAnd extends AbstractAssert {
 
@@ -14,8 +14,8 @@ public class AssertCompositeAnd extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx, boolean bp) {
-        return ctx.mkAnd(a1.encode(ctx, bp), a2.encode(ctx, bp));
+    public BoolExpr encode(EncodingConf conf) {
+        return conf.getCtx().mkAnd(a1.encode(conf), a2.encode(conf));
     }
 
     @Override

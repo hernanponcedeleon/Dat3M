@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -85,7 +86,6 @@ public class RelRfTest {
     }
 
     private void doTestDuplicatedEdges(String programPath, Wmm wmm, Settings settings) throws IOException {
-        boolean bp = settings.getBP();
 
     	Program program = new ProgramParser().parse(new File(programPath));
         program.unroll(settings.getBound(), 0);
@@ -98,14 +98,15 @@ public class RelRfTest {
 
         Context ctx = new Context();
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-
-		solver.add(program.getAss().encode(ctx, bp));
+        EncodingConf conf = new EncodingConf(ctx, settings.getBP()); 
+        
+		solver.add(program.getAss().encode(conf));
         if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(ctx, bp));
+            solver.add(program.getAssFilter().encode(conf));
         }
-        solver.add(program.encodeCF(ctx, bp));
-        solver.add(program.encodeFinalRegisterValues(ctx, bp));
-        solver.add(wmm.encode(program, ctx, settings));
+        solver.add(program.encodeCF(conf));
+        solver.add(program.encodeFinalRegisterValues(conf));
+        solver.add(wmm.encode(program, conf, settings));
         // Don't add constraint of MM, they can also forbid illegal edges
 
         assertEquals(Status.SATISFIABLE, solver.check());

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -129,17 +130,18 @@ public class If extends Event implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public BoolExpr encodeCF(Context ctx, BoolExpr cond, boolean bp) {
+    public BoolExpr encodeCF(EncodingConf conf, BoolExpr cond) {
         if(cfEnc == null){
+        	Context ctx = conf.getCtx();
             cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-            BoolExpr ifCond = expr.toZ3Bool(this, ctx, bp);
-            cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx, bp));
+            BoolExpr ifCond = expr.toZ3Bool(this, conf);
+            cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(conf));
 
-            cfEnc = ctx.mkAnd(cfEnc, successorMain.encodeCF(ctx, ctx.mkAnd(ifCond, cfVar), bp));
-            cfEnc = ctx.mkAnd(cfEnc, successorElse.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar), bp));
+            cfEnc = ctx.mkAnd(cfEnc, successorMain.encodeCF(conf, ctx.mkAnd(ifCond, cfVar)));
+            cfEnc = ctx.mkAnd(cfEnc, successorElse.encodeCF(conf, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
 
             if(successor != null){
-                cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkOr(exitMainBranch.cfCond, exitElseBranch.cfCond), bp));
+                cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(conf, ctx.mkOr(exitMainBranch.cfCond, exitElseBranch.cfCond)));
             }
         }
         return cfEnc;

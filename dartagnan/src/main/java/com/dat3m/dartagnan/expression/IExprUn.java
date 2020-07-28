@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class IExprUn extends IExpr {
 
@@ -19,18 +19,18 @@ public class IExprUn extends IExpr {
     }
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
-		return op.encode(b.toZ3NumExpr(e, ctx, bp), ctx, bp);
+	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
+		return op.encode(b.toZ3NumExpr(e, conf), conf);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx, boolean bp) {
-        return op.encode(b.getLastValueExpr(ctx, bp), ctx, bp);
+	public Expr getLastValueExpr(EncodingConf conf) {
+        return op.encode(b.getLastValueExpr(conf), conf);
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model, boolean bp) {
-        return -(b.getIntValue(e, ctx, model, bp));
+	public int getIntValue(Event e, Model model, EncodingConf conf) {
+        return -(b.getIntValue(e, model, conf));
 	}
 
 	@Override

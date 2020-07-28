@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -33,9 +34,9 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public void initialise(Context ctx, boolean bp) {
-		super.initialise(ctx, bp);
-		regResultExpr = register.toZ3NumExprResult(this, ctx, bp);
+	public void initialise(EncodingConf conf) {
+		super.initialise(conf);
+		regResultExpr = register.toZ3NumExprResult(this, conf);
 	}
 
 	public ExprInterface getExpr(){
@@ -63,8 +64,9 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	protected BoolExpr encodeExec(Context ctx, boolean bp){
-		return ctx.mkAnd(super.encodeExec(ctx, bp), ctx.mkEq(regResultExpr,  expr.toZ3NumExpr(this, ctx, bp)));
+	protected BoolExpr encodeExec(EncodingConf conf){
+		Context ctx = conf.getCtx();
+		return ctx.mkAnd(super.encodeExec(conf), ctx.mkEq(regResultExpr,  expr.toZ3NumExpr(this, conf)));
 	}
 
 	// Unrolling

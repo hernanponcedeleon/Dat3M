@@ -8,9 +8,9 @@ import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -68,7 +68,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public BoolExpr encodeCF(Context ctx, BoolExpr cond, boolean bp) {
+    public BoolExpr encodeCF(EncodingConf conf, BoolExpr cond) {
         throw new RuntimeException("StoreExclusive event must be compiled before encoding");
     }
 }

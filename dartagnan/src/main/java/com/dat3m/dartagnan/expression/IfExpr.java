@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
@@ -21,30 +21,30 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
-		return ctx.mkITE(guard.toZ3Bool(e, ctx, bp), tbranch.toZ3NumExpr(e, ctx, bp), fbranch.toZ3NumExpr(e, ctx, bp));
+	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
+		return conf.getCtx().mkITE(guard.toZ3Bool(e, conf), tbranch.toZ3NumExpr(e, conf), fbranch.toZ3NumExpr(e, conf));
 	}
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
-		return (BoolExpr)ctx.mkITE(guard.toZ3Bool(e, ctx, bp), tbranch.toZ3Bool(e, ctx, bp), fbranch.toZ3Bool(e, ctx, bp));
+	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
+		return (BoolExpr)conf.getCtx().mkITE(guard.toZ3Bool(e, conf), tbranch.toZ3Bool(e, conf), fbranch.toZ3Bool(e, conf));
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx, boolean bp) {
+	public Expr getLastValueExpr(EncodingConf conf) {
 		// In principle this method is only called by assertions 
 		// and thus it should never be called for this class
         throw new RuntimeException("Problem with getLastValueExpr in " + this.toString());
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model, boolean bp) {
-		return guard.getBoolValue(e, ctx, model, bp) ? tbranch.getIntValue(e, ctx, model, bp) : fbranch.getIntValue(e, ctx, model, bp);
+	public int getIntValue(Event e, Model model, EncodingConf conf) {
+		return guard.getBoolValue(e, model, conf) ? tbranch.getIntValue(e, model, conf) : fbranch.getIntValue(e, model, conf);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp) {
-		return guard.getBoolValue(e, ctx, model, bp)? tbranch.getBoolValue(e, ctx, model, bp) : fbranch.getBoolValue(e, ctx, model, bp);
+	public boolean getBoolValue(Event e, Model model, EncodingConf conf) {
+		return guard.getBoolValue(e, model, conf)? tbranch.getBoolValue(e, model, conf) : fbranch.getBoolValue(e, model, conf);
 	}
 
 	@Override

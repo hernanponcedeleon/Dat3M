@@ -34,7 +34,7 @@ public class Graph {
     }
 
     private Model model;
-    private Context ctx;
+    private EncodingConf conf;
 
     private StringBuilder buffer;
     private Map<Integer, Location> mapAddressLocation;
@@ -49,19 +49,19 @@ public class Graph {
 
     private final String DEFAULT_EDGE_COLOR = "indigo";
 
-    public Graph(Model model, Context ctx, Program program, Collection<String> relations, boolean bp){
-        this(model, ctx, relations);
-        build(program, bp);
+    public Graph(Model model, EncodingConf conf, Program program, Collection<String> relations){
+        this(model, conf, relations);
+        build(program);
     }
 
-    public Graph(Model model, Context ctx, Program pSource, Program pTarget, Collection<String> relations, boolean bp){
-        this(model, ctx, relations);
-        build(pSource, pTarget, bp);
+    public Graph(Model model, EncodingConf conf, Program pSource, Program pTarget, Collection<String> relations){
+        this(model, conf, relations);
+        build(pSource, pTarget);
     }
 
-    private Graph(Model model, Context ctx, Collection<String> relations){
+    private Graph(Model model, EncodingConf conf, Collection<String> relations){
         this.model = model;
-        this.ctx = ctx;
+        this.conf = conf;
         this.relations.addAll(relations);
         this.relations.add("rf");
         this.relations.remove("po");
@@ -73,40 +73,40 @@ public class Graph {
         return buffer.toString();
     }
 
-    private void build(Program program, boolean bp){
+    private void build(Program program){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n")
         		.append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
-                .append(buildProgramGraph(program, bp))
+                .append(buildProgramGraph(program))
                 .append(L1).append("}\n")
                 .append("}\n");
     }
 
-    private void build(Program pSource, Program pTarget, boolean bp){
+    private void build(Program pSource, Program pTarget){
         buffer = new StringBuilder();
         buffer.append("digraph G {\n");
 
         buffer.append(L1).append("subgraph cluster_Source { ").append(getProgramDef(sourceLabel)).append("\n")
-                .append(buildProgramGraph(pSource, bp))
+                .append(buildProgramGraph(pSource))
                 .append(buildCycle())
                 .append(L1).append("}\n");
 
         buffer.append(L1).append("subgraph cluster_Target { ").append(getProgramDef(targetLabel)).append("\n")
-                .append(buildProgramGraph(pTarget, bp))
+                .append(buildProgramGraph(pTarget))
                 .append(L1).append("}\n");
 
         buffer.append("}\n");
     }
 
-    private StringBuilder buildProgramGraph(Program program, boolean bp){
-        buildAddressLocationMap(program, bp);
-        return buildEvents(program, bp)
+    private StringBuilder buildProgramGraph(Program program){
+        buildAddressLocationMap(program);
+        return buildEvents(program)
                 .append(buildPo(program))
-                .append(buildCo(program, bp))
+                .append(buildCo(program))
                 .append(buildRelations(program));
     }
 
-    private StringBuilder buildEvents(Program program, boolean bp){
+    private StringBuilder buildEvents(Program program){
         StringBuilder sb = new StringBuilder();
 
         int tId = 0;
@@ -114,7 +114,7 @@ public class Graph {
             Event firstEvent = t.getEntry().getSuccessor();
             if(firstEvent instanceof Init){
                 Init e = (Init)firstEvent;
-                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model, bp));
+                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, model, conf));
                 String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
@@ -123,13 +123,13 @@ public class Graph {
                     if(model.getConstInterp(e.exec()).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
-                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model, bp));
+                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, model, conf));
                             int value = 0;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
-                                value = Integer.parseInt(model.getConstInterp(r.toZ3NumExprResult(e, ctx, bp)).toString());
+                                value = Integer.parseInt(model.getConstInterp(r.toZ3NumExprResult(e, conf)).toString());
                             } else {
-                                value = ((MemEvent) e).getMemValue().getIntValue(e, ctx, model, bp);
+                                value = ((MemEvent) e).getMemValue().getIntValue(e, model, conf);
                             }
                             label += " " + location + " = " + value;
                         }
@@ -163,14 +163,14 @@ public class Graph {
         return sb;
     }
 
-    private StringBuilder buildCo(Program program, boolean bp){
+    private StringBuilder buildCo(Program program){
         StringBuilder sb = new StringBuilder();
         String edge = " " + getEdgeDef("co") + ";\n";
 
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.exec()).isTrue()){
-                int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model, bp);
+                int address = ((MemEvent)e).getAddress().getIntValue(e, model, conf);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
             }
@@ -181,7 +181,7 @@ public class Graph {
             for(Event e2 : mapAddressEvent.get(address)){
                 map.put(e2, 0);
                 for(Event e1 : mapAddressEvent.get(address)){
-                    Expr expr = model.getConstInterp(Utils.edge("co", e1, e2, ctx));
+                    Expr expr = model.getConstInterp(Utils.edge("co", e1, e2, conf.getCtx()));
                     if(expr != null && expr.isTrue()){
                         map.put(e2, map.get(e2) + 1);
                     }
@@ -213,7 +213,7 @@ public class Graph {
             String edge = " " + getEdgeDef(relName) + ";\n";
             for(Event e1 : events) {
                 for(Event e2 : events) {
-                    Expr expr = model.getConstInterp(Utils.edge(relName, e1, e2, ctx));
+                    Expr expr = model.getConstInterp(Utils.edge(relName, e1, e2, conf.getCtx()));
                     if(expr != null && expr.isTrue()){
                         sb.append("      ").append(e1.repr()).append(" -> ").append(e2.repr()).append(edge);
                     }
@@ -240,10 +240,10 @@ public class Graph {
         return sb;
     }
 
-    private void buildAddressLocationMap(Program program, boolean bp){
+    private void buildAddressLocationMap(Program program){
         mapAddressLocation = new HashMap<>();
         for(Location location : program.getLocations()){
-            mapAddressLocation.put(location.getAddress().getIntValue(null, ctx, model, bp), location);
+            mapAddressLocation.put(location.getAddress().getIntValue(null, model, conf), location);
         }
     }
 

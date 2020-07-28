@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -52,7 +53,8 @@ public class RelRangeIdentity extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
+    protected BoolExpr encodeApprox() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();

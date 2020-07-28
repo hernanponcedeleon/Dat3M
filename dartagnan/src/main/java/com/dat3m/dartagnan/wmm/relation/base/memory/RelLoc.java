@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -36,7 +37,8 @@ public class RelLoc extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
+    protected BoolExpr encodeApprox() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet) {
             BoolExpr rel = edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx);

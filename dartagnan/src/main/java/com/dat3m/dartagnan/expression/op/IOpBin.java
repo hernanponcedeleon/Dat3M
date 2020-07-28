@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression.op;
 
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -75,7 +76,9 @@ public enum IOpBin {
     	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
     }
 
-    public Expr encode(Expr e1, Expr e2, Context ctx, boolean bp){
+    public Expr encode(Expr e1, Expr e2, EncodingConf conf){
+    	Context ctx = conf.getCtx();
+    	boolean bp = conf.getBP();
 		switch(this){
             case PLUS:
             	return bp ? ctx.mkBVAdd((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkAdd((IntExpr)e1, (IntExpr)e2);            		

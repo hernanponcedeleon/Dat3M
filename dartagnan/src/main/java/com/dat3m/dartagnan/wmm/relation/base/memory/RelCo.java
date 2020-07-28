@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -56,7 +57,8 @@ public class RelCo extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(boolean bp) {
+    protected BoolExpr encodeApprox() {
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
@@ -97,8 +99,8 @@ public class RelCo extends Relation {
 
             for(Address address : w1.getMaxAddressSet()){
                 enc = ctx.mkAnd(enc, ctx.mkImplies(
-                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3NumExpr(ctx, bp))),
-                        ctx.mkEq(address.getLastMemValueExpr(ctx, bp), w1.getMemValueExpr())
+                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3NumExpr(conf))),
+                        ctx.mkEq(address.getLastMemValueExpr(conf), w1.getMemValueExpr())
                 ));
             }
         }

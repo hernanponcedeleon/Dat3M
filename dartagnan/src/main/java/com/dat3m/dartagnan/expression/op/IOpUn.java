@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression.op;
 
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -13,7 +14,8 @@ public enum IOpUn {
         return "-";
     }
 
-    public Expr encode(Expr e, Context ctx, boolean bp) {
-    	return bp ? ctx.mkBVSub(ctx.mkBV(0, 32), (BitVecExpr)e) : ctx.mkSub(ctx.mkInt(0), (IntExpr)e);
+    public Expr encode(Expr e, EncodingConf conf) {
+    	Context ctx = conf.getCtx();
+    	return conf.getBP() ? ctx.mkBVSub(ctx.mkBV(0, 32), (BitVecExpr)e) : ctx.mkSub(ctx.mkInt(0), (IntExpr)e);
     }
 }

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.asserts;
 
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 public class AssertNot extends AbstractAssert {
 
@@ -16,9 +16,9 @@ public class AssertNot extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx, boolean bp) {
+    public BoolExpr encode(EncodingConf conf) {
         if(child != null){
-            return ctx.mkNot(child.encode(ctx, bp));
+            return conf.getCtx().mkNot(child.encode(conf));
         }
         throw new RuntimeException("Empty assertion clause in " + this.getClass().getName());
     }

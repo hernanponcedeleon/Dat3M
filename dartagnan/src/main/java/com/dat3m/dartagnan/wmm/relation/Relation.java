@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -26,7 +27,7 @@ public abstract class Relation {
 
     protected Settings settings;
     protected Program program;
-    protected Context ctx;
+    protected EncodingConf conf;
 
     protected boolean isEncoded;
 
@@ -57,9 +58,9 @@ public abstract class Relation {
         return recursiveGroupId;
     }
 
-    public void initialise(Program program, Context ctx, Settings settings){
+    public void initialise(Program program, EncodingConf conf, Settings settings){
         this.program = program;
-        this.ctx = ctx;
+        this.conf = conf;
         this.settings = settings;
         this.maxTupleSet = null;
         this.isEncoded = false;
@@ -124,42 +125,43 @@ public abstract class Relation {
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BoolExpr encode(boolean bp) {
+    public BoolExpr encode() {
         if(isEncoded){
-            return ctx.mkTrue();
+            return conf.getCtx().mkTrue();
         }
         isEncoded = true;
-        return doEncode(bp);
+        return doEncode();
     }
 
-    protected BoolExpr encodeLFP(boolean bp) {
-        return encodeApprox(bp);
+    protected BoolExpr encodeLFP() {
+        return encodeApprox();
     }
 
-    protected BoolExpr encodeIDL(boolean bp) {
-        return encodeApprox(bp);
+    protected BoolExpr encodeIDL() {
+        return encodeApprox();
     }
 
-    protected abstract BoolExpr encodeApprox(boolean bp);
+    protected abstract BoolExpr encodeApprox();
 
     public BoolExpr encodeIteration(int recGroupId, int iteration){
-        return ctx.mkTrue();
+        return conf.getCtx().mkTrue();
     }
 
-    protected BoolExpr doEncode(boolean bp){
+    protected BoolExpr doEncode(){
         BoolExpr enc = encodeNegations();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             if(settings.getMode() == Mode.KLEENE) {
-                return ctx.mkAnd(enc, encodeLFP(bp));
+                return conf.getCtx().mkAnd(enc, encodeLFP());
             } else if(settings.getMode() == Mode.IDL) {
-                return ctx.mkAnd(enc, encodeIDL(bp));
+                return conf.getCtx().mkAnd(enc, encodeIDL());
             }
-            return ctx.mkAnd(enc, encodeApprox(bp));
+            return conf.getCtx().mkAnd(enc, encodeApprox());
         }
         return enc;
     }
 
     private BoolExpr encodeNegations(){
+    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         if(!encodeTupleSet.isEmpty()){
             Set<Tuple> negations = new HashSet<>(encodeTupleSet);

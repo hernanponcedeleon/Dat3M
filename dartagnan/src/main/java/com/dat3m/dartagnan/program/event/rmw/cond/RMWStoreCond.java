@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class RMWStoreCond extends RMWStore implements RegReaderData {
 
@@ -20,7 +21,8 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     }
 
     @Override
-    protected BoolExpr encodeExec(Context ctx, boolean bp){
+    protected BoolExpr encodeExec(EncodingConf conf){
+    	Context ctx = conf.getCtx();
         return ctx.mkEq(execVar, ctx.mkAnd(cfVar, ((RMWReadCond)loadEvent).getCond()));
     }
 

@@ -6,16 +6,18 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public abstract class IExpr implements ExprInterface {
 
     @Override
-	public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
-   		return bp ? ctx.mkBVSGT((BitVecExpr)toZ3NumExpr(e, ctx, bp), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)toZ3NumExpr(e, ctx, bp), ctx.mkInt(0));	
+	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
+    	Context ctx = conf.getCtx();
+   		return conf.getBP() ? ctx.mkBVSGT((BitVecExpr)toZ3NumExpr(e, conf), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)toZ3NumExpr(e, conf), ctx.mkInt(0));	
 	}
 
     @Override
-    public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp){
-        return getIntValue(e, ctx, model, bp) > 0;
+    public boolean getBoolValue(Event e, Model model, EncodingConf conf){
+        return getIntValue(e, model, conf) > 0;
     }
 }

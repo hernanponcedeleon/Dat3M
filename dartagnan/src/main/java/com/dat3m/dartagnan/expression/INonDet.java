@@ -5,6 +5,7 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
@@ -23,20 +24,22 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, Context ctx, boolean bp) {
+	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
 		String name = Integer.toString(hashCode());
-		return bp ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx, boolean bp) {
+	public Expr getLastValueExpr(EncodingConf conf) {
 		String name = Integer.toString(hashCode());
-		return bp ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		Context ctx = conf.getCtx();
+		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model, boolean bp) {
-		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, ctx, bp)).toString());
+	public int getIntValue(Event e, Model model, EncodingConf conf) {
+		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, conf)).toString());
 	}
 
 	@Override

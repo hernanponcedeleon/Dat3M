@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression.op;
 
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
@@ -58,7 +59,9 @@ public enum COpBin {
     	throw new UnsupportedOperationException("Full op name is not defined for " + this);
     }
 
-    public BoolExpr encode(Expr e1, Expr e2, Context ctx, boolean bp) {
+    public BoolExpr encode(Expr e1, Expr e2, EncodingConf conf) {
+    	Context ctx = conf.getCtx();
+    	boolean bp = conf.getBP();
         switch(this) {
             case EQ:
                 return ctx.mkEq(e1, e2);

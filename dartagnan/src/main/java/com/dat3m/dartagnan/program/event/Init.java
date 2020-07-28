@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class Init extends MemEvent {
 
@@ -25,9 +25,9 @@ public class Init extends MemEvent {
 	}
 
 	@Override
-	public void initialise(Context ctx, boolean bp) {
-		super.initialise(ctx, bp);
-		memValueExpr = value.toZ3NumExpr(ctx, bp);
+	public void initialise(EncodingConf conf) {
+		super.initialise(conf);
+		memValueExpr = value.toZ3NumExpr(conf);
 	}
 
 	@Override

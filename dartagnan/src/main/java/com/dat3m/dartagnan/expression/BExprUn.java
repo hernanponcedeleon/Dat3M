@@ -10,6 +10,7 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class BExprUn extends BExpr {
 
@@ -22,16 +23,17 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, Context ctx, boolean bp) {
-        return op.encode(b.toZ3Bool(e, ctx, bp), ctx);
+    public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
+        return op.encode(b.toZ3Bool(e, conf), conf.getCtx());
     }
 
     @Override
-    public Expr getLastValueExpr(Context ctx, boolean bp){
-        BoolExpr expr = bp ? 
-				ctx.mkBVSGT((BitVecExpr)b.getLastValueExpr(ctx, bp), ctx.mkBV(1,32)) : 
-				ctx.mkGt((IntExpr)b.getLastValueExpr(ctx, bp), ctx.mkInt(1));
-        return ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    public Expr getLastValueExpr(EncodingConf conf){
+    	Context ctx = conf.getCtx();
+        BoolExpr expr = conf.getBP() ? 
+				ctx.mkBVSGT((BitVecExpr)b.getLastValueExpr(conf), ctx.mkBV(1,32)) : 
+				ctx.mkGt((IntExpr)b.getLastValueExpr(conf), ctx.mkInt(1));
+        return ctx.mkITE(op.encode(expr, conf.getCtx()), ctx.mkInt(1), ctx.mkInt(0));
     }
 
     @Override
@@ -45,8 +47,8 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public boolean getBoolValue(Event e, Context ctx, Model model, boolean bp){
-        return op.combine(b.getBoolValue(e, ctx, model, bp));
+    public boolean getBoolValue(Event e, Model model, EncodingConf conf){
+        return op.combine(b.getBoolValue(e, model, conf));
     }
 
 	@Override
