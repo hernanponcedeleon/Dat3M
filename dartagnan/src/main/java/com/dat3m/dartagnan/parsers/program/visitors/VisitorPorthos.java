@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.arch.pts.event.Read;
 import com.dat3m.dartagnan.program.arch.pts.event.Write;
 import com.dat3m.dartagnan.program.memory.Location;
-
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorPorthos extends PorthosBaseVisitor<Object> implements PorthosVisitor<Object> {

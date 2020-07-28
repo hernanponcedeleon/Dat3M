@@ -19,7 +19,6 @@ public enum IOpBin {
             case MULT:
                 return "*";
             case DIV:
-            case UDIV:
                 return "/";
             case MOD:
                 return "%";
@@ -35,11 +34,9 @@ public enum IOpBin {
                 return ">>>";
             case AR_SHIFT:
                 return ">>";
-            case SREM:
-            case UREM:
-                return "rem";
+            default:
+            	return super.toString();        	
         }
-        return super.toString();
     }
 
     public String toLinuxName(){
@@ -48,32 +45,15 @@ public enum IOpBin {
                 return "add";
             case MINUS:
                 return "sub";
-            case MULT:
-                return "mult";
-            case DIV:
-                return "div";
-            case UDIV:
-                return "udiv";
-            case MOD:
-                return "mod";
             case AND:
                 return "and";
             case OR:
                 return "or";
             case XOR:
                 return "xor";
-            case L_SHIFT:
-                return "shl";
-            case R_SHIFT:
-                return "lshr";
-            case AR_SHIFT:
-                return "ashr";
-            case SREM:
-                return "srem";
-            case UREM:
-                return "urem";
+            default:
+            	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
         }
-    	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
     }
 
     public Expr encode(Expr e1, Expr e2, EncodingConf conf){

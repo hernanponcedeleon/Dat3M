@@ -36,7 +36,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	@Override
 	public void initialise(EncodingConf conf) {
 		super.initialise(conf);
-		regResultExpr = register.toZ3NumExprResult(this, conf);
+		regResultExpr = register.toZ3IntResult(this, conf);
 	}
 
 	public ExprInterface getExpr(){

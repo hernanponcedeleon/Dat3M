@@ -22,7 +22,7 @@ public class Settings {
     private Mode mode;
     private Alias alias;
     private int bound;
-    private boolean bitPrecise;
+    private boolean bp;
 
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
@@ -37,7 +37,7 @@ public class Settings {
         this.mode = mode == null ? Mode.KNASTER : mode;
         this.alias = alias == null ? Alias.CFIS : alias;
         this.bound = Math.max(1, bound);
-        this.bitPrecise = bp;
+        this.bp = bp;
     }
 
     public Settings(Mode mode, Alias alias, int bound, boolean bp, boolean draw, Collection<String> relations){
@@ -73,7 +73,7 @@ public class Settings {
     }
 
 	public boolean getBP() {
-		return bitPrecise;
+		return bp;
 	}
 
     public boolean getDrawGraph(){

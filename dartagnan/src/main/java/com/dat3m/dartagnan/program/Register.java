@@ -57,15 +57,15 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public Expr toZ3Int(Event e, EncodingConf conf) {
-		String varName = getName() + "(" + e.repr() + ")";
+		String name = getName() + "(" + e.repr() + ")";
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
+		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
-	public Expr toZ3NumExprResult(Event e, EncodingConf conf) {
-		String varName = getName() + "(" + e.repr() + "_result)";
+	public Expr toZ3IntResult(Event e, EncodingConf conf) {
+		String name = getName() + "(" + e.repr() + "_result)";
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
+		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override

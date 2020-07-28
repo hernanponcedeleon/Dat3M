@@ -30,7 +30,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return  Integer.toString(value);
+		return Integer.toString(value);
 	}
 
 	@Override

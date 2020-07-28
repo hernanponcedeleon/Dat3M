@@ -25,7 +25,7 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     @Override
     public void initialise(EncodingConf conf) {
         super.initialise(conf);
-        regResultExpr = register.toZ3NumExprResult(this, conf);
+        regResultExpr = register.toZ3IntResult(this, conf);
     }
 
     @Override

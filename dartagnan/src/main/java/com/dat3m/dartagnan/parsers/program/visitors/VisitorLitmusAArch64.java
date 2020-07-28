@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
 import com.dat3m.dartagnan.program.arch.aarch64.event.StoreExclusive;
 import com.dat3m.dartagnan.program.event.*;
-
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>

@@ -127,7 +127,7 @@ public class Graph {
                             int value = 0;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
-                                value = Integer.parseInt(model.getConstInterp(r.toZ3NumExprResult(e, conf)).toString());
+                                value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, conf)).toString());
                             } else {
                                 value = ((MemEvent) e).getMemValue().getIntValue(e, model, conf);
                             }

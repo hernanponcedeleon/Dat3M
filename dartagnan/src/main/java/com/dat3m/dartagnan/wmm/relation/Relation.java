@@ -148,14 +148,15 @@ public abstract class Relation {
     }
 
     protected BoolExpr doEncode(){
+    	Context ctx = conf.getCtx();
         BoolExpr enc = encodeNegations();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             if(settings.getMode() == Mode.KLEENE) {
-                return conf.getCtx().mkAnd(enc, encodeLFP());
+                return ctx.mkAnd(enc, encodeLFP());
             } else if(settings.getMode() == Mode.IDL) {
-                return conf.getCtx().mkAnd(enc, encodeIDL());
+                return ctx.mkAnd(enc, encodeIDL());
             }
-            return conf.getCtx().mkAnd(enc, encodeApprox());
+            return ctx.mkAnd(enc, encodeApprox());
         }
         return enc;
     }

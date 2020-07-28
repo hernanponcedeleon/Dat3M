@@ -148,7 +148,7 @@ public class RelRMW extends StaticRelation {
 
     private BoolExpr pairingCond(Thread thread, Event load, Event store){
     	Context ctx = conf.getCtx();
-        BoolExpr pairingCond = conf.getCtx().mkAnd(load.exec(), store.cf());
+        BoolExpr pairingCond = ctx.mkAnd(load.exec(), store.cf());
 
         for (Event otherLoad : thread.getCache().getEvents(loadFilter)) {
             if (otherLoad.getCId() > load.getCId() && otherLoad.getCId() < store.getCId()) {

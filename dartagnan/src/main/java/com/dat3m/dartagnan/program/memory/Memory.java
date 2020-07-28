@@ -9,6 +9,8 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
+import com.dat3m.dartagnan.utils.EncodingConf;
+
 import java.util.*;
 
 public class Memory {
@@ -29,7 +31,7 @@ public class Memory {
         return map.inverse().get(address);
     }
 
-    public BoolExpr encode(com.dat3m.dartagnan.utils.EncodingConf conf){
+    public BoolExpr encode(EncodingConf conf){
     	Context ctx = conf.getCtx();
     	boolean bp = conf.getBP();
         BoolExpr enc = ctx.mkTrue();
