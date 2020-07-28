@@ -29,7 +29,7 @@ public class Store extends MemEvent implements RegReaderData {
     @Override
     public void initialise(EncodingConf conf) {
         super.initialise(conf);
-        memValueExpr = value.toZ3NumExpr(this, conf);
+        memValueExpr = value.toZ3Int(this, conf);
     }
 
     @Override

@@ -66,7 +66,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	@Override
 	protected BoolExpr encodeExec(EncodingConf conf){
 		Context ctx = conf.getCtx();
-		return ctx.mkAnd(super.encodeExec(conf), ctx.mkEq(regResultExpr,  expr.toZ3NumExpr(this, conf)));
+		return ctx.mkAnd(super.encodeExec(conf), ctx.mkEq(regResultExpr,  expr.toZ3Int(this, conf)));
 	}
 
 	// Unrolling

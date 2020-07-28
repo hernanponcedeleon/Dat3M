@@ -21,8 +21,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3NumExpr(Event e, EncodingConf conf) {
-        return op.encode(lhs.toZ3NumExpr(e, conf), rhs.toZ3NumExpr(e, conf), conf);
+    public Expr toZ3Int(Event e, EncodingConf conf) {
+        return op.encode(lhs.toZ3Int(e, conf), rhs.toZ3Int(e, conf), conf);
     }
 
     @Override

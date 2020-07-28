@@ -27,13 +27,13 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3NumExpr(Event e, EncodingConf conf){
-        return toZ3NumExpr(conf);
+    public Expr toZ3Int(Event e, EncodingConf conf){
+        return toZ3Int(conf);
     }
 
     @Override
     public Expr getLastValueExpr(EncodingConf conf){
-        return toZ3NumExpr(conf);
+        return toZ3Int(conf);
     }
 
     public Expr getLastMemValueExpr(EncodingConf conf){
@@ -68,14 +68,14 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3NumExpr(EncodingConf conf){
+    public Expr toZ3Int(EncodingConf conf){
     	Context ctx = conf.getCtx();
 		return conf.getBP() ? ctx.mkBVConst("memory_" + index, 32) : ctx.mkIntConst("memory_" + index);
     }
 
     @Override
     public int getIntValue(Event e, Model model, EncodingConf conf){
-        return Integer.parseInt(model.getConstInterp(toZ3NumExpr(conf)).toString());
+        return Integer.parseInt(model.getConstInterp(toZ3Int(conf)).toString());
     }
     
     public boolean hasConstValue() {

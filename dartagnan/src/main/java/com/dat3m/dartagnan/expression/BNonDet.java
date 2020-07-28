@@ -27,7 +27,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public boolean getBoolValue(Event e, Model model, EncodingConf conf) {
-		return model.getConstInterp(toZ3NumExpr(e, conf)).isTrue();
+		return model.getConstInterp(toZ3Int(e, conf)).isTrue();
 	}
 
 	@Override

@@ -37,7 +37,7 @@ public abstract class MemEvent extends Event {
     @Override
     public void initialise(EncodingConf conf) {
         super.initialise(conf);
-        memAddressExpr = address.toZ3NumExpr(this, conf);
+        memAddressExpr = address.toZ3Int(this, conf);
     }
 
     public Expr getMemAddressExpr(){

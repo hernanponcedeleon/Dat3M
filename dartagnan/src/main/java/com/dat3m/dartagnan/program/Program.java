@@ -226,12 +226,13 @@ public class Program {
         	}
         	ExprInterface expr = ((Local)e).getExpr();
 			if(expr instanceof INonDet) {
+				INonDet iNonDet = (INonDet)expr;
 				if(bp) {
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, conf), ctx.mkBV(((INonDet)expr).getMin(bp), 32)));
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)((INonDet)expr).toZ3NumExpr(e, conf), ctx.mkBV(((INonDet)expr).getMax(bp), 32)));					
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)iNonDet.toZ3Int(e, conf), ctx.mkBV(iNonDet.getMin(bp), 32)));
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)iNonDet.toZ3Int(e, conf), ctx.mkBV(iNonDet.getMax(bp), 32)));					
 				} else {
-		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)((INonDet)expr).toZ3NumExpr(e, conf), ctx.mkInt(((INonDet)expr).getMin(bp))));
-		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)((INonDet)expr).toZ3NumExpr(e, conf), ctx.mkInt(((INonDet)expr).getMax(bp))));
+		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)iNonDet.toZ3Int(e, conf), ctx.mkInt(iNonDet.getMin(bp))));
+		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)iNonDet.toZ3Int(e, conf), ctx.mkInt(iNonDet.getMax(bp))));
 				}
 			}
         }

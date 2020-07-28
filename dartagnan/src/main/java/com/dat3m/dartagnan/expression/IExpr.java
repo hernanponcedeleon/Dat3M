@@ -13,7 +13,7 @@ public abstract class IExpr implements ExprInterface {
     @Override
 	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
     	Context ctx = conf.getCtx();
-   		return conf.getBP() ? ctx.mkBVSGT((BitVecExpr)toZ3NumExpr(e, conf), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)toZ3NumExpr(e, conf), ctx.mkInt(0));	
+   		return conf.getBP() ? ctx.mkBVSGT((BitVecExpr)toZ3Int(e, conf), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)toZ3Int(e, conf), ctx.mkInt(0));	
 	}
 
     @Override

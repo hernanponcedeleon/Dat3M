@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.utils.EncodingConf;
 public abstract class BExpr implements ExprInterface {
 
     @Override
-    public Expr toZ3NumExpr(Event e, EncodingConf conf) {
+    public Expr toZ3Int(Event e, EncodingConf conf) {
     	Context ctx = conf.getCtx();
     	boolean bp = conf.getBP();
         return ctx.mkITE(toZ3Bool(e, conf),

@@ -27,7 +27,7 @@ public class Init extends MemEvent {
 	@Override
 	public void initialise(EncodingConf conf) {
 		super.initialise(conf);
-		memValueExpr = value.toZ3NumExpr(conf);
+		memValueExpr = value.toZ3Int(conf);
 	}
 
 	@Override

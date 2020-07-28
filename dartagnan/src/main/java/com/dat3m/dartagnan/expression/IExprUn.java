@@ -19,8 +19,8 @@ public class IExprUn extends IExpr {
     }
 
 	@Override
-	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
-		return op.encode(b.toZ3NumExpr(e, conf), conf);
+	public Expr toZ3Int(Event e, EncodingConf conf) {
+		return op.encode(b.toZ3Int(e, conf), conf);
 	}
 
 	@Override

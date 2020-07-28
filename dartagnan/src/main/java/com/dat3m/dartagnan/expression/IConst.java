@@ -18,7 +18,7 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
+	public Expr toZ3Int(Event e, EncodingConf conf) {
 		Context ctx = conf.getCtx();
 		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
@@ -44,7 +44,7 @@ public class IConst extends IExpr implements ExprInterface {
 		return value;
 	}
 
-    public Expr toZ3NumExpr(EncodingConf conf) {
+    public Expr toZ3Int(EncodingConf conf) {
     	Context ctx = conf.getCtx();
 		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
     }

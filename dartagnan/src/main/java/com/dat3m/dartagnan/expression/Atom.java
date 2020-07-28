@@ -25,7 +25,7 @@ public class Atom extends BExpr implements ExprInterface {
 
     @Override
 	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
-		return op.encode(lhs.toZ3NumExpr(e, conf), rhs.toZ3NumExpr(e, conf), conf);
+		return op.encode(lhs.toZ3Int(e, conf), rhs.toZ3Int(e, conf), conf);
 	}
 
 	@Override

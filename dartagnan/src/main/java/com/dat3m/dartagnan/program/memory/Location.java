@@ -66,7 +66,7 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, EncodingConf conf){
+	public Expr toZ3Int(Event e, EncodingConf conf){
 		if(e instanceof MemEvent){
 			return ((MemEvent) e).getMemValueExpr();
 		}

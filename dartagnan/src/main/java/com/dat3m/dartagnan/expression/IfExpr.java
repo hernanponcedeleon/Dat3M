@@ -21,8 +21,8 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
-		return conf.getCtx().mkITE(guard.toZ3Bool(e, conf), tbranch.toZ3NumExpr(e, conf), fbranch.toZ3NumExpr(e, conf));
+	public Expr toZ3Int(Event e, EncodingConf conf) {
+		return conf.getCtx().mkITE(guard.toZ3Bool(e, conf), tbranch.toZ3Int(e, conf), fbranch.toZ3Int(e, conf));
 	}
 
 	@Override

@@ -56,7 +56,7 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public Expr toZ3NumExpr(Event e, EncodingConf conf) {
+	public Expr toZ3Int(Event e, EncodingConf conf) {
 		String varName = getName() + "(" + e.repr() + ")";
 		Context ctx = conf.getCtx();
 		return conf.getBP() ? ctx.mkBVConst(varName, 32) : ctx.mkIntConst(varName);
@@ -81,7 +81,7 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public int getIntValue(Event e, Model model, EncodingConf conf){
-		return Integer.parseInt(model.getConstInterp(toZ3NumExpr(e, conf)).toString());
+		return Integer.parseInt(model.getConstInterp(toZ3Int(e, conf)).toString());
 	}
 
 	@Override

@@ -12,7 +12,7 @@ public interface ExprInterface {
 
 	IConst reduce();
 	
-    Expr toZ3NumExpr(Event e, EncodingConf conf);
+    Expr toZ3Int(Event e, EncodingConf conf);
 
     BoolExpr toZ3Bool(Event e, EncodingConf conf);
 
