@@ -77,11 +77,12 @@ public class ExclusivePairsTest {
     public void testReachableStates() {
         try{
             Context ctx = new Context();
+            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Program program = new ProgramParser().parse(new File(path));
 
             // Test final state
-            assertEquals(expectedState, Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings));
+            assertEquals(expectedState, Dartagnan.testProgram(solver, conf, program, wmm, program.getArch(), settings));
 
             // Test edges
             if(expectedEdges != null){

@@ -70,11 +70,11 @@ public class Dartagnan {
         }
 
         Settings settings = options.getSettings();
-        EncodingConf conf = new EncodingConf(new Context(), settings.getBP());
-        Context ctx = conf.getCtx();
+        Context ctx = new Context();
+		EncodingConf conf = new EncodingConf(ctx, settings.getBP());
         Solver s = ctx.mkSolver();
 
-        Result result = cegar != null ? runCegar(s, ctx, p, mcm, target, settings, cegar) : testProgram(s, ctx, p, mcm, target, settings);
+        Result result = cegar != null ? runCegar(s, conf, p, mcm, target, settings, cegar) : testProgram(s, conf, p, mcm, target, settings);
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -88,7 +88,7 @@ public class Dartagnan {
         }
 
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
-            ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+        	ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
             drawGraph(new Graph(s.getModel(), conf, p, settings.getGraphRelations()), options.getGraphFilePath());
             System.out.println("Execution graph is written to " + options.getGraphFilePath());
         }
@@ -96,9 +96,7 @@ public class Dartagnan {
         ctx.close();
     }
 
-    public static Result testProgram(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-        EncodingConf conf = new EncodingConf(ctx, settings.getBP());
-
+    public static Result testProgram(Solver s1, EncodingConf conf, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
@@ -115,7 +113,7 @@ public class Dartagnan {
         
         // Using two solvers is much faster than using
         // an incremental solver or check-sat-assuming
-        Solver s2 = ctx.mkSolver();
+        Solver s2 = conf.getCtx().mkSolver();
 
 		BoolExpr encodeUINonDet = program.encodeUINonDet(conf);
 		s1.add(encodeUINonDet);
@@ -133,7 +131,7 @@ public class Dartagnan {
 		s1.add(encodeWmm);
         s2.add(encodeWmm);
         
-        BoolExpr encodeConsistency = wmm.consistent(program, ctx);
+        BoolExpr encodeConsistency = wmm.consistent(program, conf.getCtx());
 		s1.add(encodeConsistency);
         s2.add(encodeConsistency);
        	
@@ -144,14 +142,14 @@ public class Dartagnan {
             s2.add(encodeFilter);
         }
 
-        BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
+        BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(conf.getCtx());
 
         Result res;
 		if(s1.check() == Status.SATISFIABLE) {
 			s1.add(encodeNoBoundEventExec);
 			res = s1.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
 		} else {
-			s2.add(ctx.mkNot(encodeNoBoundEventExec));
+			s2.add(conf.getCtx().mkNot(encodeNoBoundEventExec));
 			res = s2.check() == Status.SATISFIABLE ? BPASS : PASS;	
 		}
         
@@ -161,9 +159,7 @@ public class Dartagnan {
 		return res;
     }
     
-    public static Result runCegar(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
-    	EncodingConf conf = new EncodingConf(ctx, settings.getBP());
-
+    public static Result runCegar(Solver solver, EncodingConf conf, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
     	Map<BoolExpr, BoolExpr> track = new HashMap<>();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -192,7 +188,8 @@ public class Dartagnan {
 		// Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
 		Result res;
-        while(true) {
+    	Context ctx = conf.getCtx();
+		while(true) {
 	        solver.push();
 	        // This needs to be pop for the else branch below
 	        // If not the formula will always remain UNSAT

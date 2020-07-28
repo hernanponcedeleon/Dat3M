@@ -41,8 +41,9 @@ public class ReachabilityResult implements Dat3mResult {
     private void run(){
         if(validate()){
             Context ctx = new Context();
+            EncodingConf conf = new EncodingConf(ctx, options.getSettings().getBP());
             Solver solver = ctx.mkSolver();
-            Result result = Dartagnan.testProgram(solver, ctx, program, wmm, options.getTarget(), options.getSettings());
+            Result result = Dartagnan.testProgram(solver, conf, program, wmm, options.getTarget(), options.getSettings());
             buildVerdict(result);
             if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result == FAIL)){
                 graph = new Graph(solver.getModel(), new EncodingConf(ctx, options.getSettings().getBP()), program, options.getSettings().getGraphRelations());

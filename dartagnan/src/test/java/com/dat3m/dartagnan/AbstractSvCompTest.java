@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -41,8 +42,9 @@ public abstract class AbstractSvCompTest {
         	expected = readExptected(property);
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
+            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
             Solver solver = ctx.mkSolver();
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            assertTrue(Dartagnan.testProgram(solver, conf, program, wmm, Arch.NONE, settings).equals(expected));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

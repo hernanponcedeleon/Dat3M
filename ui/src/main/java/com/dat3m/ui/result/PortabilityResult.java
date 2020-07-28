@@ -43,10 +43,11 @@ public class PortabilityResult implements Dat3mResult {
     private void run(){
         if(validate()){
             Context ctx = new Context();
+            EncodingConf conf = new EncodingConf(ctx, options.getSettings().getBP());
             Solver s1 = ctx.mkSolver();
             Solver s2 = ctx.mkSolver();
 
-            PorthosResult result = Porthos.testProgram(s1, s2, ctx, sourceProgram, targetProgram, sourceProgram.getArch(),
+            PorthosResult result = Porthos.testProgram(s1, s2, conf, sourceProgram, targetProgram, sourceProgram.getArch(),
                     targetProgram.getArch(), sourceWmm, targetWmm, options.getSettings());
 
             verdict = "Settings: " + options.getSettings() + "\n"

@@ -39,6 +39,7 @@ public class RelRfTest {
         String wmmPath = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat";
 
         Context ctx = new Context();
+        EncodingConf conf = new EncodingConf(ctx, settings.getBP());
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
         Program p1 = new ProgramParser().parse(new File(programPath + "C-rf-01.litmus"));
         Program p2 = new ProgramParser().parse(new File(programPath + "C-rf-02.litmus"));
@@ -46,15 +47,15 @@ public class RelRfTest {
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, conf, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, conf, p2, wmm, p2.getArch(), settings).equals(FAIL));
         solver.reset();
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, true);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, conf, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, conf, p2, wmm, p2.getArch(), settings).equals(FAIL));
         ctx.close();
     }
 

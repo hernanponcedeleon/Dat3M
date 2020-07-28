@@ -54,7 +54,7 @@ public class Porthos {
         System.out.println("Settings: " + options.getSettings());
         EncodingConf conf = new EncodingConf(new Context(), settings.getBP());
 
-        PorthosResult result = testProgram(s1, s2, ctx, pSource, pTarget, source, target, mcmS, mcmT, settings);
+        PorthosResult result = testProgram(s1, s2, conf, pSource, pTarget, source, target, mcmS, mcmT, settings);
 
         if(result.getIsPortable()){
             System.out.println("The program is state-portable");
@@ -73,11 +73,11 @@ public class Porthos {
         ctx.close();
     }
 
-    public static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
+    public static PorthosResult testProgram(Solver s1, Solver s2, EncodingConf conf, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, Settings settings){
-    	EncodingConf conf = new EncodingConf(ctx, settings.getBP());
-
-        pSource.unroll(settings.getBound(), 0);
+        Context ctx = conf.getCtx();
+    	
+    	pSource.unroll(settings.getBound(), 0);
         pTarget.unroll(settings.getBound(), 0);
 
         int nextId = pSource.compile(source, 0);
