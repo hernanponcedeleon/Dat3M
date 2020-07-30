@@ -85,15 +85,15 @@ public class SvcompProcedures {
 
 	//TODO: seems to be obsolete after SVCOMP 2020
 	private static void __VERIFIER_error(VisitorBoogie visitor) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex);
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
-    	Local event = new Local(ass, new BConst(false));
+    	Local event = new Local(ass, new BConst(false, -1));
 		event.addFilters(EType.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}
 	
 	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex);
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
     	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
@@ -142,7 +142,7 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-	    	visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new INonDet(type)));
+	    	visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new INonDet(type, register.getPrecision())));
 	    }
 	}
 

@@ -58,7 +58,7 @@ public enum IOpBin {
 
     public Expr encode(Expr e1, Expr e2, EncodingConf conf){
     	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
+    	boolean bp = e1 instanceof BitVecExpr;
 		switch(this){
             case PLUS:
             	return bp ? ctx.mkBVAdd((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkAdd((IntExpr)e1, (IntExpr)e2);            		

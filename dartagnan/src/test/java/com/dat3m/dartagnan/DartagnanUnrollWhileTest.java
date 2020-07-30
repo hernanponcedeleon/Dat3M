@@ -117,9 +117,9 @@ public class DartagnanUnrollWhileTest {
         for(Register register : program.getCache().getRegisters()){
             registers.put(register.getName(), register);
         }
-        AbstractAssert ass = new AssertBasic(new IConst(0), COpBin.EQ, new IConst(0));
+        AbstractAssert ass = new AssertBasic(new IConst(0, -1), COpBin.EQ, new IConst(0, -1));
         for(int i = 0; i < names.length; i++){
-            ass = new AssertCompositeAnd(ass, new AssertBasic(registers.get(names[i]), COpBin.EQ, new IConst(values[i])));
+            ass = new AssertCompositeAnd(ass, new AssertBasic(registers.get(names[i]), COpBin.EQ, new IConst(values[i], -1)));
         }
         ass = new AssertNot(ass);
         ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);

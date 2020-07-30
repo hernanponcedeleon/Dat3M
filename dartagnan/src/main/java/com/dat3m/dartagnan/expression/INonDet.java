@@ -13,9 +13,11 @@ import com.google.common.primitives.UnsignedLong;
 public class INonDet extends IExpr implements ExprInterface {
 	
 	private INonDetTypes type;
+	private final int precision;
 	
-	public INonDet(INonDetTypes type) {
+	public INonDet(INonDetTypes type, int precision) {
 		this.type = type;
+		this.precision = precision;
 	}
 
 	@Override
@@ -27,14 +29,14 @@ public class INonDet extends IExpr implements ExprInterface {
 	public Expr toZ3Int(Event e, EncodingConf conf) {
 		String name = Integer.toString(hashCode());
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return precision > 0 ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
 	public Expr getLastValueExpr(EncodingConf conf) {
 		String name = Integer.toString(hashCode());
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return precision > 0 ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
@@ -70,14 +72,14 @@ public class INonDet extends IExpr implements ExprInterface {
         throw new UnsupportedOperationException("toString() not supported for " + this);
 	}
 
-	public long getMin(boolean bp) {
+	public long getMin() {
         switch(type){
         case INT:
             return Integer.MIN_VALUE;
         case UINT:
             return UnsignedInteger.ZERO.longValue();
 		case LONG:
-            return bp ? Integer.MIN_VALUE : Long.MIN_VALUE;
+            return precision > 0 ? Integer.MIN_VALUE : Long.MIN_VALUE;
 		case ULONG:
             return UnsignedLong.ZERO.longValue();
 		case SHORT:
@@ -92,7 +94,8 @@ public class INonDet extends IExpr implements ExprInterface {
         throw new UnsupportedOperationException("getMin() not supported for " + this);
 	}
 
-	public long getMax(boolean bp) {
+	public long getMax() {
+		boolean bp = precision > 0;
         switch(type){
         case INT:
             return Integer.MAX_VALUE;
@@ -112,5 +115,10 @@ public class INonDet extends IExpr implements ExprInterface {
             return 255;
         }
         throw new UnsupportedOperationException("getMax() not supported for " + this);
+	}
+
+	@Override
+	public int getPrecision() {
+		return precision;
 	}
 }

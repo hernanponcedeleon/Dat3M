@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.expression;
 
-import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
@@ -13,7 +12,7 @@ public abstract class IExpr implements ExprInterface {
     @Override
 	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
     	Context ctx = conf.getCtx();
-   		return conf.getBP() ? ctx.mkBVSGT((BitVecExpr)toZ3Int(e, conf), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)toZ3Int(e, conf), ctx.mkInt(0));	
+   		return ctx.mkGt((IntExpr)toZ3Int(e, conf), ctx.mkInt(0));	
 	}
 
     @Override

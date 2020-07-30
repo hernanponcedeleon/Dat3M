@@ -218,7 +218,6 @@ public class Program {
     
     public BoolExpr encodeUINonDet(EncodingConf conf) {
     	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
     	BoolExpr enc = ctx.mkTrue();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.LOCAL))){
         	if(!(e instanceof Local)) {
@@ -227,12 +226,12 @@ public class Program {
         	ExprInterface expr = ((Local)e).getExpr();
 			if(expr instanceof INonDet) {
 				INonDet iNonDet = (INonDet)expr;
-				if(bp) {
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)iNonDet.toZ3Int(e, conf), ctx.mkBV(iNonDet.getMin(bp), 32)));
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)iNonDet.toZ3Int(e, conf), ctx.mkBV(iNonDet.getMax(bp), 32)));					
+				if(iNonDet.toZ3Int(e, conf) instanceof BitVecExpr) {
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)iNonDet.toZ3Int(e, conf), ctx.mkBV(iNonDet.getMin(), 32)));
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)iNonDet.toZ3Int(e, conf), ctx.mkBV(iNonDet.getMax(), 32)));					
 				} else {
-		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)iNonDet.toZ3Int(e, conf), ctx.mkInt(iNonDet.getMin(bp))));
-		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)iNonDet.toZ3Int(e, conf), ctx.mkInt(iNonDet.getMax(bp))));
+		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)iNonDet.toZ3Int(e, conf), ctx.mkInt(iNonDet.getMin())));
+		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)iNonDet.toZ3Int(e, conf), ctx.mkInt(iNonDet.getMax())));
 				}
 			}
         }

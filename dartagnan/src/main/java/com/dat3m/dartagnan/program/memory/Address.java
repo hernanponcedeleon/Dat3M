@@ -16,8 +16,8 @@ public class Address extends IConst implements ExprInterface {
     private final int index;
     private Integer constValue;
 
-    Address(int index){
-        super(index);
+    Address(int index, int precision){
+        super(index, precision);
         this.index = index;
     }
 
@@ -38,7 +38,7 @@ public class Address extends IConst implements ExprInterface {
 
     public Expr getLastMemValueExpr(EncodingConf conf){
     	Context ctx = conf.getCtx();
-        return conf.getBP() ? ctx.mkBVConst("last_val_at_memory_" + index, 32) : ctx.mkIntConst("last_val_at_memory_" + index);
+        return precision > 0 ? ctx.mkBVConst("last_val_at_memory_" + index, precision) : ctx.mkIntConst("last_val_at_memory_" + index);
     }
 
     @Override
@@ -70,7 +70,7 @@ public class Address extends IConst implements ExprInterface {
     @Override
     public Expr toZ3Int(EncodingConf conf){
     	Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst("memory_" + index, 32) : ctx.mkIntConst("memory_" + index);
+		return precision > 0 ? ctx.mkBVConst("memory_" + index, precision) : ctx.mkIntConst("memory_" + index);
     }
 
     @Override

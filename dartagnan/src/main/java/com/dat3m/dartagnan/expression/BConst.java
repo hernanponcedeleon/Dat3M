@@ -13,9 +13,11 @@ import com.dat3m.dartagnan.utils.EncodingConf;
 public class BConst extends BExpr implements ExprInterface {
 
 	private final boolean value;
+	private final int precision;
 	
-	public BConst(boolean value) {
+	public BConst(boolean value, int precision) {
 		this.value = value;
+		this.precision = precision;
 	}
 
     @Override
@@ -27,8 +29,7 @@ public class BConst extends BExpr implements ExprInterface {
 	@Override
 	public Expr getLastValueExpr(EncodingConf conf){
 		Context ctx = conf.getCtx();
-		boolean bp = conf.getBP();
-		return value ? bp ? ctx.mkBV(1, 32) : ctx.mkInt(1) : bp ? ctx.mkBV(0, 32) : ctx.mkInt(0);
+		return value ? ctx.mkInt(1) : ctx.mkInt(0);
 	}
 
     @Override
@@ -48,10 +49,15 @@ public class BConst extends BExpr implements ExprInterface {
 
 	@Override
 	public IConst reduce() {
-		return new IConst(value ? 1 : 0);
+		return new IConst(value ? 1 : 0, precision);
 	}
 	
 	public boolean getValue() {
 		return value;
+	}
+
+	@Override
+	public int getPrecision() {
+		return precision;
 	}
 }

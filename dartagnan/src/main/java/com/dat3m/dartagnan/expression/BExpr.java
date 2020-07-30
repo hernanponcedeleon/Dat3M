@@ -11,7 +11,7 @@ public abstract class BExpr implements ExprInterface {
     @Override
     public Expr toZ3Int(Event e, EncodingConf conf) {
     	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
+    	boolean bp = getPrecision() > 0;
         return ctx.mkITE(toZ3Bool(e, conf),
 				bp ? ctx.mkBV(1, 32) : ctx.mkInt(1),
 				bp ? ctx.mkBV(0, 32) : ctx.mkInt(0));
@@ -20,5 +20,5 @@ public abstract class BExpr implements ExprInterface {
     @Override
     public int getIntValue(Event e, Model model, EncodingConf conf){
         return getBoolValue(e, model, conf) ? 1 : 0;
-    }
+    }    
 }

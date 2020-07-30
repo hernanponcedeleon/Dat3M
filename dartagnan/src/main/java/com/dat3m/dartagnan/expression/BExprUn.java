@@ -30,9 +30,7 @@ public class BExprUn extends BExpr {
     @Override
     public Expr getLastValueExpr(EncodingConf conf){
     	Context ctx = conf.getCtx();
-        BoolExpr expr = conf.getBP() ? 
-				ctx.mkBVSGT((BitVecExpr)b.getLastValueExpr(conf), ctx.mkBV(1,32)) : 
-				ctx.mkGt((IntExpr)b.getLastValueExpr(conf), ctx.mkInt(1));
+        BoolExpr expr = ctx.mkGt((IntExpr)b.getLastValueExpr(conf), ctx.mkInt(1));
         return ctx.mkITE(op.encode(expr, conf.getCtx()), ctx.mkInt(1), ctx.mkInt(0));
     }
 
@@ -53,6 +51,11 @@ public class BExprUn extends BExpr {
 
 	@Override
 	public IConst reduce() {
-		return new IConst(b.reduce().getValue());
+		return new IConst(b.reduce().getValue(), b.getPrecision());
+	}
+	
+	@Override
+	public int getPrecision() {
+		return b.getPrecision();
 	}
 }

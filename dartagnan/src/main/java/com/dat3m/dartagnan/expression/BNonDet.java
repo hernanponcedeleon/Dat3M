@@ -39,4 +39,9 @@ public class BNonDet extends BExpr implements ExprInterface {
 	public String toString() {
 		return "nondet_bool()";
 	}
+
+	@Override
+	public int getPrecision() {
+		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
+	}
 }

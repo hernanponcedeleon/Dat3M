@@ -53,7 +53,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     	switch(target) {
     		case NONE: case TSO:
                 RMWLoad load = new RMWLoad(resultRegister, address, mo);
-                Register dummyReg = new Register(null, resultRegister.getThreadId());
+                Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
                 Local add = new Local(dummyReg, new IExprBin(resultRegister, op, value));                
                 RMWStore store = new RMWStore(load, address, dummyReg, mo);
 

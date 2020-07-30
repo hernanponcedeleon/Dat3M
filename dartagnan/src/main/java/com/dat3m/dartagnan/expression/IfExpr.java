@@ -65,4 +65,12 @@ public class IfExpr implements ExprInterface {
 	public BExpr getGuard() {
 		return guard;
 	}
+
+	@Override
+	public int getPrecision() {
+		if(fbranch.getPrecision() != tbranch.getPrecision()) {
+            throw new RuntimeException("The type of " + tbranch + " and " + fbranch + " does not match");
+		}
+		return tbranch.getPrecision();
+	}
 }

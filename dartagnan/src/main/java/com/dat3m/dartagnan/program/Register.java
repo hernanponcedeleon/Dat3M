@@ -17,18 +17,20 @@ public class Register extends IExpr implements ExprInterface {
 	private final String name;
     private final int threadId;
 
-	public Register(String name, int threadId) {
+    private final int precision;
+
+	public Register(String name, int threadId, int precision) {
 		if(name == null){
 			name = "DUMMY_REG_" + dummyCount++;
 		}
 		this.name = name;
 		this.threadId = threadId;
+		this.precision = precision;
 	}
 	
 	public String getName() {
 		return name;
 	}
-
 	public int getThreadId(){
 		return threadId;
 	}
@@ -59,13 +61,13 @@ public class Register extends IExpr implements ExprInterface {
 	public Expr toZ3Int(Event e, EncodingConf conf) {
 		String name = getName() + "(" + e.repr() + ")";
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return precision > 0 ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	public Expr toZ3IntResult(Event e, EncodingConf conf) {
 		String name = getName() + "(" + e.repr() + "_result)";
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return precision > 0 ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
 	}
 
 	@Override
@@ -76,7 +78,7 @@ public class Register extends IExpr implements ExprInterface {
 	@Override
 	public Expr getLastValueExpr(EncodingConf conf){
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBVConst(getName() + "_" + threadId + "_final", 32) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
+		return precision > 0 ? ctx.mkBVConst(getName() + "_" + threadId + "_final", 32) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
 	}
 
 	@Override
@@ -88,4 +90,9 @@ public class Register extends IExpr implements ExprInterface {
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
+
+	@Override
+	public int getPrecision() {
+    	return precision;
+    }
 }

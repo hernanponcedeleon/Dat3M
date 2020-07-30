@@ -58,25 +58,25 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPPCParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(Integer.parseInt(ctx.constant().getText())));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(Integer.parseInt(ctx.constant().getText())));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPPCParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), -1);
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusPPCParser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText(), -1);
         return null;
     }
 
@@ -108,14 +108,14 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         return programBuilder.addChild(mainThread, new Load(r1, ra, "_rx"));
     }
@@ -141,22 +141,22 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitMr(LitmusPPCParser.MrContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         return programBuilder.addChild(mainThread, new Local(r1, r2));
     }
 
     @Override
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Local(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
     }
 
     @Override
     public Object visitXor(LitmusPPCParser.XorContext ctx) {
-        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText());
+        Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
         return programBuilder.addChild(mainThread, new Local(r1, new IExprBin(r2, IOpBin.XOR, r3)));

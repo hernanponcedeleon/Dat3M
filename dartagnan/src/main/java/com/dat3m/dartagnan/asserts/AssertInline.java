@@ -17,8 +17,7 @@ public class AssertInline extends AbstractAssert {
     @Override
     public BoolExpr encode(EncodingConf conf) {
     	Context ctx = conf.getCtx();
-		Expr expr = conf.getBP() ? ctx.mkBV(0, 32) : ctx.mkInt(0);
-		return ctx.mkAnd(e.exec(), ctx.mkEq(e.getResultRegisterExpr(), expr));
+		return ctx.mkAnd(e.exec(), ctx.mkEq(e.getResultRegisterExpr(), ctx.mkInt(0)));
     }
 
     @Override

@@ -24,4 +24,6 @@ public interface ExprInterface {
 
     ImmutableSet<Register> getRegs();
     
+    int getPrecision();
+    
 }

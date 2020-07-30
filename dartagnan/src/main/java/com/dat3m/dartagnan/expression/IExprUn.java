@@ -47,8 +47,13 @@ public class IExprUn extends IExpr {
 	public IConst reduce() {
         switch(op){
 			case MINUS:
-				return new IConst(-b.reduce().getValue());
+				return new IConst(-b.reduce().getValue(), b.getPrecision());
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
+	@Override
+	public int getPrecision() {
+		return b.getPrecision();
 	}
 }

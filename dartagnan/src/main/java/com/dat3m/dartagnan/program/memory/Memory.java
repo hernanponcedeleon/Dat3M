@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.memory;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -33,7 +32,6 @@ public class Memory {
 
     public BoolExpr encode(EncodingConf conf){
     	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
         BoolExpr enc = ctx.mkTrue();
         Set<Expr> expressions = new HashSet<>();
 
@@ -46,7 +44,7 @@ public class Memory {
 
             for(int i = 1; i < size; i++){
                 Expr e2 = array.get(i).toZ3Int(conf);
-                Expr newAddress = bp ? ctx.mkBVAdd((BitVecExpr)e1, ctx.mkBV(1, 32)) : ctx.mkAdd((IntExpr)e1, ctx.mkInt(1));
+                Expr newAddress = ctx.mkAdd((IntExpr)e1, ctx.mkInt(1));
 				enc = ctx.mkAnd(enc, ctx.mkEq(newAddress, e2));
                 if(!array.get(i).hasConstValue()) {
                     expressions.add(e2);                	
@@ -56,7 +54,7 @@ public class Memory {
         }
         for(Address address : map.values()){
         	if(address.hasConstValue()) {
-        		Expr constantAddress = bp ? ctx.mkBV(address.getConstValue(), 32) : ctx.mkInt(address.getConstValue());
+        		Expr constantAddress = ctx.mkInt(address.getConstValue());
 				enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3Int(conf), constantAddress));
         	}
         }
@@ -67,7 +65,7 @@ public class Memory {
         if(!arrays.containsKey(name) && size > 0){
             List<Address> addresses = new ArrayList<>();
             for(int i = 0; i < size; i++){
-                addresses.add(new Address(nextIndex++));
+                addresses.add(new Address(nextIndex++, -1));
             }
             arrays.put(name, addresses);
             return addresses;
@@ -75,9 +73,9 @@ public class Memory {
         throw new IllegalMemoryAccessException("Illegal malloc for " + name);
     }
 
-    public Location getOrCreateLocation(String name){
+    public Location getOrCreateLocation(String name, int precision){
         if(!locationIndex.containsKey(name)){
-            Location location = new Location(name, new Address(nextIndex++));
+            Location location = new Location(name, new Address(nextIndex++, precision));
             map.put(location, location.getAddress());
             locationIndex.put(name, location);
             return location;

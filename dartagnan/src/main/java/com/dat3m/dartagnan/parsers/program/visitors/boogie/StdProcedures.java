@@ -102,9 +102,9 @@ public class StdProcedures {
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);						
 			size = Integer.parseInt(tmp);			
 		}
-		List<IConst> values = Collections.nCopies(size, new IConst(0));
+		List<IConst> values = Collections.nCopies(size, new IConst(0, -1));
 		String ptr = ctx.call_params().Ident(0).getText();
-		Register start = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
+		Register start = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr, -1);
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
 		// the name should be unique, thus we add the process identifier.
 		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values);
@@ -113,7 +113,7 @@ public class StdProcedures {
 	}
 	
 	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex);
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
     	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {

@@ -35,7 +35,7 @@ public enum COpBin {
 
     public BoolExpr encode(Expr e1, Expr e2, EncodingConf conf) {
     	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
+    	boolean bp = e1 instanceof BitVecExpr;
         switch(this) {
             case EQ:
                 return ctx.mkEq(e1, e2);

@@ -43,7 +43,7 @@ abstract class BasicRegRelation extends StaticRelation {
             for (Register register : getRegisters(regReader)) {
                 List<Event> writers = regWriterMap.getOrDefault(register, ImmutableList.of());
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
-                    enc = ctx.mkAnd(enc, ctx.mkEq(register.toZ3Int(regReader, conf), new IConst(0).toZ3Int(conf)));
+                    enc = ctx.mkAnd(enc, ctx.mkEq(register.toZ3Int(regReader, conf), new IConst(0, register.getPrecision()).toZ3Int(conf)));
 
                 } else {
                     ListIterator<Event> writerIt = writers.listIterator();

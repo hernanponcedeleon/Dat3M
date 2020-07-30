@@ -12,15 +12,17 @@ import com.dat3m.dartagnan.utils.EncodingConf;
 public class IConst extends IExpr implements ExprInterface {
 
 	private final int value;
+	protected final int precision;
 	
-	public IConst(int value) {
+	public IConst(int value, int precision) {
 		this.value = value;
+		this.precision = precision;
 	}
 
 	@Override
 	public Expr toZ3Int(Event e, EncodingConf conf) {
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+		return precision > 0 ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
@@ -36,7 +38,7 @@ public class IConst extends IExpr implements ExprInterface {
 	@Override
 	public Expr getLastValueExpr(EncodingConf conf){
 		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+		return precision > 0 ? ctx.mkBV(value, 32) : ctx.mkInt(value);
 	}
 
 	@Override
@@ -46,7 +48,7 @@ public class IConst extends IExpr implements ExprInterface {
 
     public Expr toZ3Int(EncodingConf conf) {
     	Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+		return precision > 0 ? ctx.mkBV(value, 32) : ctx.mkInt(value);
     }
 
 	@Override
@@ -57,4 +59,9 @@ public class IConst extends IExpr implements ExprInterface {
 	public int getValue() {
 		return value;
 	}
+    
+	@Override
+	public int getPrecision() {
+    	return precision;
+    }
 }

@@ -31,12 +31,13 @@ public class Atom extends BExpr implements ExprInterface {
 	@Override
 	public Expr getLastValueExpr(EncodingConf conf){
 		Context ctx = conf.getCtx();
-		boolean bp = conf.getBP();
+		boolean bp = getPrecision() > 0;
 		return ctx.mkITE(
 				op.encode(lhs.getLastValueExpr(conf), rhs.getLastValueExpr(conf), conf),
 				bp ? ctx.mkBV(1, 32) : ctx.mkInt(1),
 				bp ? ctx.mkBV(0, 32) : ctx.mkInt(0)
 		);
+
 	}
 
     @Override
@@ -69,25 +70,33 @@ public class Atom extends BExpr implements ExprInterface {
     @Override
 	public IConst reduce() {
 		int v1 = lhs.reduce().getValue();
-		int v2 = lhs.reduce().getValue();
+		int v2 = rhs.reduce().getValue();
         switch(op) {
         case EQ:
-            return new IConst(v1 == v2 ? 1 : 0);
+            return new IConst(v1 == v2 ? 1 : 0, lhs.getPrecision());
         case NEQ:
-            return new IConst(v1 != v2 ? 1 : 0);
+            return new IConst(v1 != v2 ? 1 : 0, lhs.getPrecision());
         case LT:
         case ULT:
-            return new IConst(v1 < v2 ? 1 : 0);
+            return new IConst(v1 < v2 ? 1 : 0, lhs.getPrecision());
         case LTE:
         case ULTE:
-            return new IConst(v1 <= v2 ? 1 : 0);
+            return new IConst(v1 <= v2 ? 1 : 0, lhs.getPrecision());
         case GT:
         case UGT:
-            return new IConst(v1 > v2 ? 1 : 0);
+            return new IConst(v1 > v2 ? 1 : 0, lhs.getPrecision());
         case GTE:
         case UGTE:
-            return new IConst(v1 >= v2 ? 1 : 0);
+            return new IConst(v1 >= v2 ? 1 : 0, lhs.getPrecision());
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
+	@Override
+	public int getPrecision() {
+		if(lhs.getPrecision() != rhs.getPrecision()) {
+            throw new RuntimeException("The type of " + lhs + " and " + rhs + " does not match");
+		}
+		return lhs.getPrecision();
 	}
 }

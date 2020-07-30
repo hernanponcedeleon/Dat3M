@@ -50,12 +50,12 @@ public class Thread {
         return registers.get(name);
     }
 
-    public Register addRegister(String name){
+    public Register addRegister(String name, int precision){
         if(registers.containsKey(name)){
             throw new RuntimeException("Register " + id + ":" + name + " already exists");
         }
         cache = null;
-        Register register = new Register(name, id);
+        Register register = new Register(name, id, precision);
         registers.put(register.getName(), register);
         return register;
     }

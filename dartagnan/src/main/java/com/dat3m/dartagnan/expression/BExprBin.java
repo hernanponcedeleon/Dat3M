@@ -32,13 +32,8 @@ public class BExprBin extends BExpr {
     @Override
     public Expr getLastValueExpr(EncodingConf conf){
     	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
-        BoolExpr expr1 = bp ? 
-        					ctx.mkBVSGT((BitVecExpr)b1.getLastValueExpr(conf), ctx.mkBV(1,32)) : 
-        					ctx.mkGt((IntExpr)b1.getLastValueExpr(conf), ctx.mkInt(1));
-        BoolExpr expr2 = bp ? 
-                			ctx.mkBVSGT((BitVecExpr)b2.getLastValueExpr(conf), ctx.mkBV(1,32)) : 
-                			ctx.mkGt((IntExpr)b2.getLastValueExpr(conf), ctx.mkInt(1));
+        BoolExpr expr1 = ctx.mkGt((IntExpr)b1.getLastValueExpr(conf), ctx.mkInt(1));
+        BoolExpr expr2 = ctx.mkGt((IntExpr)b2.getLastValueExpr(conf), ctx.mkInt(1));
         return ctx.mkITE(op.encode(expr1, expr2, conf.getCtx()), ctx.mkInt(1), ctx.mkInt(0));
     }
 
@@ -61,12 +56,21 @@ public class BExprBin extends BExpr {
 	public IConst reduce() {
 		int v1 = b1.reduce().getValue();
 		int v2 = b2.reduce().getValue();
-        switch(op) {
+        int precision = b1.getPrecision();
+		switch(op) {
         case AND:
-        	return new IConst(v1 == 1 ? v2 : 0);
+        	return new IConst(v1 == 1 ? v2 : 0, precision);
         case OR:
-        	return new IConst(v1 == 1 ? 1 : v2);
+        	return new IConst(v1 == 1 ? 1 : v2, precision);
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
+	@Override
+	public int getPrecision() {
+		if(b1.getPrecision() != b2.getPrecision()) {
+            throw new RuntimeException("The type of " + b1 + " and " + b2 + " does not match");
+		}
+		return b1.getPrecision();
 	}
 }

@@ -46,9 +46,10 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     @Override
     protected BoolExpr encodeExec(EncodingConf conf){
     	Context ctx = conf.getCtx();
-        BoolExpr enc = ctx.mkAnd(
-                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0).toZ3Int(this, conf))),
-                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1).toZ3Int(this, conf)))
+        int precision = register.getPrecision();
+		BoolExpr enc = ctx.mkAnd(
+                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0, precision).toZ3Int(this, conf))),
+                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1, precision).toZ3Int(this, conf)))
         );
         return ctx.mkAnd(super.encodeExec(conf), enc);
     }

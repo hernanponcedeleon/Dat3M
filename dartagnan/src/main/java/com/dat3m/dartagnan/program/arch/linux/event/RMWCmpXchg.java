@@ -54,7 +54,7 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
         if(target == Arch.NONE) {
             Register dummy = resultRegister;
             if(resultRegister == value || resultRegister == cmp){
-                dummy = new Register(null, resultRegister.getThreadId());
+                dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
             RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));

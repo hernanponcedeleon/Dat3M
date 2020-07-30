@@ -14,9 +14,5 @@ public class EncodingConf {
 	
 	public Context getCtx() {
 		return ctx;
-	}
-	
-	public boolean getBP() {
-		return bp;
-	}
+	}	
 }

@@ -77,7 +77,7 @@ public class Location implements ExprInterface {
 	public BoolExpr toZ3Bool(Event e, EncodingConf conf){
 		if(e instanceof MemEvent){
 			Context ctx = conf.getCtx();
-			return conf.getBP() ? ctx.mkBVSGT((BitVecExpr)((MemEvent) e).getMemValueExpr(), ctx.mkBV(0, 32)) : ctx.mkGt((IntExpr)((MemEvent) e).getMemValueExpr(), ctx.mkInt(0));
+			return ctx.mkGt((IntExpr)((MemEvent) e).getMemValueExpr(), ctx.mkInt(0));
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}
@@ -101,5 +101,10 @@ public class Location implements ExprInterface {
 	@Override
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
+	@Override
+	public int getPrecision() {
+		return address.getPrecision();
 	}
 }

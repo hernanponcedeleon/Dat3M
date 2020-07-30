@@ -49,6 +49,14 @@ public class IExprBin extends IExpr implements ExprInterface {
 	public IConst reduce() {
 		int v1 = lhs.reduce().getValue();
 		int v2 = rhs.reduce().getValue();
-		return new IConst(op.combine(v1,  v2));
+		return new IConst(op.combine(v1,  v2), lhs.getPrecision());
+	}
+
+	@Override
+	public int getPrecision() {
+		if(lhs.getPrecision() != rhs.getPrecision()) {
+            throw new RuntimeException("The type of " + lhs + " and " + rhs + " does not match");
+		}
+		return lhs.getPrecision();
 	}
 }
