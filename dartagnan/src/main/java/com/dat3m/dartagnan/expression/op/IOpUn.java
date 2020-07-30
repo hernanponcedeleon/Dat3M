@@ -7,15 +7,26 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 
 public enum IOpUn {
-    MINUS;
+    MINUS, INT2BV;
 
     @Override
     public String toString() {
-        return "-";
+        switch(this){
+        	case MINUS:
+        		return "-";
+        	default:
+        		return "";
+        }
     }
 
     public Expr encode(Expr e, EncodingConf conf) {
     	Context ctx = conf.getCtx();
-    	return e instanceof BitVecExpr ? ctx.mkBVSub(ctx.mkBV(0, 32), (BitVecExpr)e) : ctx.mkSub(ctx.mkInt(0), (IntExpr)e);
+    	switch(this){
+    		case MINUS:
+    			return e instanceof BitVecExpr ? ctx.mkBVSub(ctx.mkBV(0, 32), (BitVecExpr)e) : ctx.mkSub(ctx.mkInt(0), (IntExpr)e);
+    		case INT2BV:
+    			return e instanceof BitVecExpr ? e : ctx.mkInt2BV(32, (IntExpr) e);
+    	}
+        throw new UnsupportedOperationException("Encoding of not supported for IOpUn " + this);
     }
 }
