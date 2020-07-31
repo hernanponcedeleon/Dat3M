@@ -22,6 +22,7 @@ public class SVCOMPOptions extends BaseOptions {
     protected String optimization = "O0";
     protected boolean witness;
     protected Integer cegar;
+    protected boolean bp;
     
     public SVCOMPOptions(){
         super();
@@ -38,6 +39,9 @@ public class SVCOMPOptions extends BaseOptions {
         
         addOption(new Option("o", "optimization", true,
                 "Optimization flag for LLVM compiler"));
+        
+        addOption(new Option("bp", "bit-precise", false,
+                "Use bit precise encoding"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -54,6 +58,7 @@ public class SVCOMPOptions extends BaseOptions {
         if(cmd.hasOption("cegar")) {
             cegar = Integer.parseInt(cmd.getOptionValue("cegar"));        	
         }
+        bp = cmd.hasOption("bit-precise");
     }
 
     public String getOptimization(){
@@ -62,6 +67,10 @@ public class SVCOMPOptions extends BaseOptions {
 
     public boolean getGenerateWitness(){
         return witness;
+    }
+
+    public boolean getBP(){
+        return bp;
     }
 
     public Integer getCegar(){

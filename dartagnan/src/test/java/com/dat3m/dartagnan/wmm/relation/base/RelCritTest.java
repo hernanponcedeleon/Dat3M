@@ -59,7 +59,7 @@ public class RelCritTest {
     public void test() {
         try{
             // Force encoding all possible "crit" relations
-            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false, true, "crit");
+            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, true, "crit");
 
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));

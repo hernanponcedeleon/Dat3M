@@ -22,7 +22,6 @@ public class Settings {
     private Mode mode;
     private Alias alias;
     private int bound;
-    private boolean bp;
 
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
@@ -33,15 +32,14 @@ public class Settings {
             put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
     }};
 
-    public Settings(Mode mode, Alias alias, int bound, boolean bp){
+    public Settings(Mode mode, Alias alias, int bound){
         this.mode = mode == null ? Mode.KNASTER : mode;
         this.alias = alias == null ? Alias.CFIS : alias;
         this.bound = Math.max(1, bound);
-        this.bp = bp;
     }
 
-    public Settings(Mode mode, Alias alias, int bound, boolean bp, boolean draw, Collection<String> relations){
-        this(mode, alias, bound, bp);
+    public Settings(Mode mode, Alias alias, int bound, boolean draw, Collection<String> relations){
+        this(mode, alias, bound);
         if(draw){
             this.draw = true;
             if(flags.get(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS) && mode == Mode.KNASTER){
@@ -56,8 +54,8 @@ public class Settings {
         }
     }
 
-    public Settings(Mode mode, Alias alias, int bound, boolean bp, boolean draw, String... relations){
-        this(mode, alias, bound, bp, draw, Arrays.asList(relations));
+    public Settings(Mode mode, Alias alias, int bound, boolean draw, String... relations){
+        this(mode, alias, bound, draw, Arrays.asList(relations));
     }
 
     public Mode getMode(){
@@ -71,10 +69,6 @@ public class Settings {
     public int getBound(){
         return bound;
     }
-
-	public boolean getBP() {
-		return bp;
-	}
 
     public boolean getDrawGraph(){
         return draw;

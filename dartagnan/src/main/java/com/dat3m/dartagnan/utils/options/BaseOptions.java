@@ -37,9 +37,6 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("unroll", true,
                 "Unrolling bound <integer>"));
 
-        addOption(new Option("bp", "bit-precise", false,
-                "Use bit precise encoding"));
-
         addOption(new Option("draw", true,
                 "Path to save the execution graph if the state is reachable"));
 
@@ -83,7 +80,6 @@ public abstract class BaseOptions extends Options {
     protected void parseSettings(CommandLine cmd){
         Mode mode = cmd.hasOption("mode") ? Mode.get(cmd.getOptionValue("mode")) : null;
         Alias alias = cmd.hasOption("alias") ? Alias.get(cmd.getOptionValue("alias")) : null;
-        boolean bp = cmd.hasOption("bp");
         boolean draw = cmd.hasOption("draw");
         String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
 
@@ -96,7 +92,7 @@ public abstract class BaseOptions extends Options {
             }
         }
         
-        settings = new Settings(mode, alias, bound, bp, draw, relations);
+        settings = new Settings(mode, alias, bound, draw, relations);
     }
 
     protected void parseGraphFilePath(CommandLine cmd){
