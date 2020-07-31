@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class IExprBin extends IExpr implements ExprInterface {
 
@@ -21,13 +21,13 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3Int(Event e, EncodingConf conf) {
-        return op.encode(lhs.toZ3Int(e, conf), rhs.toZ3Int(e, conf), conf);
+    public Expr toZ3Int(Event e, Context ctx) {
+        return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
     }
 
     @Override
-    public Expr getLastValueExpr(EncodingConf conf){
-        return op.encode(lhs.getLastValueExpr(conf), rhs.getLastValueExpr(conf), conf);
+    public Expr getLastValueExpr(Context ctx){
+        return op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx);
     }
 
     @Override
@@ -41,8 +41,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public int getIntValue(Event e, Model model, EncodingConf conf){
-        return op.combine(lhs.getIntValue(e, model, conf), rhs.getIntValue(e, model, conf));
+    public int getIntValue(Event e, Model model, Context ctx){
+        return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
     }
     
     @Override

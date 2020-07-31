@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -42,8 +41,8 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public void initialise(Program program, EncodingConf conf, Settings settings){
-        super.initialise(program, conf, settings);
+    public void initialise(Program program, Context ctx, Settings settings){
+        super.initialise(program, ctx, settings);
         lastEncodedIteration = -1;
     }
 
@@ -62,7 +61,6 @@ public abstract class BinaryRelation extends Relation {
 
     @Override
     public BoolExpr encode() {
-    	Context ctx = conf.getCtx();
         if(isEncoded){
             return ctx.mkTrue();
         }
@@ -73,7 +71,7 @@ public abstract class BinaryRelation extends Relation {
     @Override
     protected BoolExpr encodeLFP() {
         if(recursiveGroupId > 0){
-            return conf.getCtx().mkTrue();
+            return ctx.mkTrue();
         }
         return encodeApprox();
     }

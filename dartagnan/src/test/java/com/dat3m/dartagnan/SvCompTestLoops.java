@@ -35,7 +35,7 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/array-1-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/array-2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/bubble_sort-1-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/bubble_sort-2-O3.bpl", wmm, s1});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/bubble_sort-2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/count_up_down-1-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/count_up_down-2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/eureka_05-O3.bpl", wmm, s1});
@@ -50,7 +50,7 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nec20-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nec40-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/string-1-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/string-2-O3.bpl", wmm, s2});
+//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/string-2-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum_array-1-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum01_bug02_sum01_bug02_base.case-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum01_bug02-O3.bpl", wmm, s3});

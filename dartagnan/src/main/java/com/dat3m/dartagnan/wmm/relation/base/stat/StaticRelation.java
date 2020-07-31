@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
@@ -19,7 +18,6 @@ public abstract class StaticRelation extends Relation {
 
     @Override
     protected BoolExpr encodeApprox() {
-    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet) {
             BoolExpr rel = edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx);

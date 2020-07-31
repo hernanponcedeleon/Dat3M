@@ -21,6 +21,6 @@ public class RelEmpty extends Relation {
 
     @Override
     protected BoolExpr encodeApprox() {
-        return conf.getCtx().mkTrue();
+        return ctx.mkTrue();
     }
 }

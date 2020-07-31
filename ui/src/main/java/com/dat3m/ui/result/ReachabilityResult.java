@@ -4,7 +4,6 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -41,12 +40,11 @@ public class ReachabilityResult implements Dat3mResult {
     private void run(){
         if(validate()){
             Context ctx = new Context();
-            EncodingConf conf = new EncodingConf(ctx, options.getSettings().getBP());
             Solver solver = ctx.mkSolver();
-            Result result = Dartagnan.testProgram(solver, conf, program, wmm, options.getTarget(), options.getSettings());
+            Result result = Dartagnan.testProgram(solver, ctx, program, wmm, options.getTarget(), options.getSettings());
             buildVerdict(result);
             if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result == FAIL)){
-                graph = new Graph(solver.getModel(), new EncodingConf(ctx, options.getSettings().getBP()), program, options.getSettings().getGraphRelations());
+                graph = new Graph(solver.getModel(), ctx, program, options.getSettings().getGraphRelations());
             }
             ctx.close();
         }

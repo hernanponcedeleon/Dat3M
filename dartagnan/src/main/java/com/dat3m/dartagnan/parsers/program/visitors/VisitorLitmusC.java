@@ -336,7 +336,7 @@ public class VisitorLitmusC
 
     @Override
     public ExprInterface visitReBoolConst(LitmusCParser.ReBoolConstContext ctx){
-        return new BConst(ctx.boolConst().value, -1);
+        return new BConst(ctx.boolConst().value);
     }
 
     @Override

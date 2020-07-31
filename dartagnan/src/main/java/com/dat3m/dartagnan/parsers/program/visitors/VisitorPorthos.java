@@ -167,6 +167,6 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public BConst visitBoolExprConst(PorthosParser.BoolExprConstContext ctx) {
-        return new BConst(Boolean.parseBoolean(ctx.getText()), -1);
+        return new BConst(Boolean.parseBoolean(ctx.getText()));
     }
 }

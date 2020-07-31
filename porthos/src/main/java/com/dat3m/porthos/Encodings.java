@@ -1,7 +1,6 @@
 package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.microsoft.z3.BoolExpr;
@@ -85,11 +84,10 @@ class Encodings {
 		return enc;
 	}
 	
-	static BoolExpr encodeReachedState(Program p, Model model, EncodingConf conf) {
-		Context ctx = conf.getCtx();
+	static BoolExpr encodeReachedState(Program p, Model model, Context ctx) {
 		BoolExpr reachedState = ctx.mkTrue();
 		for(Location loc : p.getLocations()) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(conf), model.getConstInterp(loc.getLastValueExpr(conf))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(loc.getLastValueExpr(ctx), model.getConstInterp(loc.getLastValueExpr(ctx))));
 		}
 		Set<RegWriter> executedEvents = p.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
                 .filter(e -> model.getConstInterp(e.exec()).isTrue())
@@ -101,7 +99,7 @@ class Encodings {
 			regs.add(e.getResultRegister());
 		}
 		for(Register reg : regs) {
-			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(conf), model.getConstInterp(reg.getLastValueExpr(conf))));
+			reachedState = ctx.mkAnd(reachedState, ctx.mkEq(reg.getLastValueExpr(ctx), model.getConstInterp(reg.getLastValueExpr(ctx))));
 		}
 		return reachedState;
 	}

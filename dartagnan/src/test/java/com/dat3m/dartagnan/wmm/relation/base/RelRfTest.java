@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -39,7 +38,6 @@ public class RelRfTest {
         String wmmPath = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat";
 
         Context ctx = new Context();
-        EncodingConf conf = new EncodingConf(ctx, settings.getBP());
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
         Program p1 = new ProgramParser().parse(new File(programPath + "C-rf-01.litmus"));
         Program p2 = new ProgramParser().parse(new File(programPath + "C-rf-02.litmus"));
@@ -47,15 +45,15 @@ public class RelRfTest {
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
-        assertTrue(Dartagnan.testProgram(solver, conf, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, conf, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
         solver.reset();
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, true);
-        assertTrue(Dartagnan.testProgram(solver, conf, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, conf, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
         ctx.close();
     }
 
@@ -99,15 +97,14 @@ public class RelRfTest {
 
         Context ctx = new Context();
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-        EncodingConf conf = new EncodingConf(ctx, settings.getBP()); 
         
-		solver.add(program.getAss().encode(conf));
+		solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(conf));
+            solver.add(program.getAssFilter().encode(ctx));
         }
-        solver.add(program.encodeCF(conf));
-        solver.add(program.encodeFinalRegisterValues(conf));
-        solver.add(wmm.encode(program, conf, settings));
+        solver.add(program.encodeCF(ctx));
+        solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(wmm.encode(program, ctx, settings));
         // Don't add constraint of MM, they can also forbid illegal edges
 
         assertEquals(Status.SATISFIABLE, solver.check());

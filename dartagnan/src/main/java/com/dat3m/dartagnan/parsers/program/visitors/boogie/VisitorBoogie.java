@@ -181,7 +181,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
         	for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
         		for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-            		mainCallingValues.add(programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), -1));
+        			String type = atiwC.typed_idents_where().typed_idents().type().getText();
+        			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+            		mainCallingValues.add(programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision));
         		}
         	}
     	}
@@ -230,9 +232,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     public Object visitVar_decl(Var_declContext ctx) {
     	 for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
     		 for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+    			 String name = ident.getText();
     			 String type = atiwC.typed_idents_where().typed_idents().type().getText();
-    			 int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
-    			 programBuilder.getOrCreateLocation(ident.getText(), precision);
+    			 int precision = type.contains("bv") && !name.equals("$M.0") ? Integer.parseInt(type.split("bv")[1]) : -1;
+    			 programBuilder.getOrCreateLocation(name, precision);
     		 }
     	 }
     	 return null;
@@ -349,13 +352,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-	       	programBuilder.addChild(threadCount, new CondJump(new BConst(true, -1), label));
+	       	programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
 	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, -1);
 	    	assertionIndex++;
-	    	Local event = new Local(ass, new BConst(false, -1));
+	    	Local event = new Local(ass, new BConst(false));
 			event.addFilters(EType.ASSERTION);
 			programBuilder.addChild(threadCount, event);
 			return null;
@@ -521,7 +524,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitReturn_cmd(Return_cmdContext ctx) {
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		programBuilder.addChild(threadCount, new CondJump(new BConst(true, -1), label));
+		programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 		return null;
 	}
 
@@ -560,12 +563,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
     	boolean loop = programBuilder.hasLabel(labelName);
     	Label l1 = programBuilder.getOrCreateLabel(labelName);
-        programBuilder.addChild(threadCount, new CondJump(new BConst(true, -1), l1));
+        programBuilder.addChild(threadCount, new CondJump(new BConst(true), l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(loop) {
             Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-            programBuilder.addChild(threadCount, new CondJump(new BConst(true, -1), label));        	
+            programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));        	
         }
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
@@ -716,7 +719,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentCall = currentCall.getParent();
 			return llvmFunction(name, callParams);
 		}
-		if(LLVMPREDICATES.stream().anyMatch(f -> name.startsWith(f))) {
+		if(LLVMPREDICATES.stream().anyMatch(f -> name.equals(f))) {
 			currentCall = currentCall.getParent();
 			return llvmPredicate(name, callParams);
 		}
@@ -750,13 +753,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override 
 	public Object visitBv_expr(Bv_exprContext ctx) {
 		int value;
-		int precision;
+		int precision = Integer.parseInt(ctx.getText().split("bv")[1]);
 		try {
 			value = Integer.parseInt(ctx.getText().split("bv")[0]);
-			precision = Integer.parseInt(ctx.getText().split("bv")[1]);
 		} catch (Exception e) {
+			//TODO: this can be longer for unsigned int
 			value = Integer.MAX_VALUE;
-			precision = 32;
 		}
 		return new IConst(value, precision);
 	}
@@ -774,7 +776,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	@Override
 	public Object visitBool_lit(Bool_litContext ctx) {
-		return new BConst(Boolean.parseBoolean(ctx.getText()), -1);
+		return new BConst(Boolean.parseBoolean(ctx.getText()));
 	}
 
 	@Override

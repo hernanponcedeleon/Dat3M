@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class Address extends IConst implements ExprInterface {
 
@@ -27,28 +26,28 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3Int(Event e, EncodingConf conf){
-        return toZ3Int(conf);
+    public Expr toZ3Int(Event e, Context ctx){
+        return toZ3Int(ctx);
     }
 
     @Override
-    public Expr getLastValueExpr(EncodingConf conf){
-        return toZ3Int(conf);
+    public Expr getLastValueExpr(Context ctx){
+        return toZ3Int(ctx);
     }
 
-    public Expr getLastMemValueExpr(EncodingConf conf){
-    	Context ctx = conf.getCtx();
+    public Expr getLastMemValueExpr(Context ctx){
         return precision > 0 ? ctx.mkBVConst("last_val_at_memory_" + index, precision) : ctx.mkIntConst("last_val_at_memory_" + index);
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, EncodingConf conf){
-        return conf.getCtx().mkTrue();
+    public BoolExpr toZ3Bool(Event e, Context ctx){
+        return ctx.mkTrue();
     }
 
     @Override
     public String toString(){
-        return "&mem" + index;
+		String tag = precision > 0 ? "bv" + precision : "";
+        return "&mem" + index + tag;
     }
 
     @Override
@@ -68,14 +67,13 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3Int(EncodingConf conf){
-    	Context ctx = conf.getCtx();
+    public Expr toZ3Int(Context ctx){
 		return precision > 0 ? ctx.mkBVConst("memory_" + index, precision) : ctx.mkIntConst("memory_" + index);
     }
 
     @Override
-    public int getIntValue(Event e, Model model, EncodingConf conf){
-        return Integer.parseInt(model.getConstInterp(toZ3Int(conf)).toString());
+    public int getIntValue(Event e, Model model, Context ctx){
+        return Integer.parseInt(model.getConstInterp(toZ3Int(ctx)).toString());
     }
     
     public boolean hasConstValue() {

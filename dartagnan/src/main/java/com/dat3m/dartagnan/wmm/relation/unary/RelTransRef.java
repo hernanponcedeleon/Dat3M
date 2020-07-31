@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
@@ -43,8 +42,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(Program program, EncodingConf conf, Settings settings){
-        super.initialise(program, conf, settings);
+    public void initialise(Program program, Context ctx, Settings settings){
+        super.initialise(program, ctx, settings);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }
@@ -109,7 +108,6 @@ public class RelTransRef extends RelTrans {
             BoolExpr enc = (BoolExpr)method.invoke(this);
             encodeTupleSet = temp;
 
-            Context ctx = conf.getCtx();
             for(Tuple tuple : identityEncodeTupleSet){
                 enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
             }

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -35,7 +34,6 @@ abstract class BasicRegRelation extends StaticRelation {
     }
 
     BoolExpr doEncodeApprox(Collection<Event> regReaders) {
-    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = program.getCache().getRegWriterMap();
 
@@ -43,7 +41,7 @@ abstract class BasicRegRelation extends StaticRelation {
             for (Register register : getRegisters(regReader)) {
                 List<Event> writers = regWriterMap.getOrDefault(register, ImmutableList.of());
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
-                    enc = ctx.mkAnd(enc, ctx.mkEq(register.toZ3Int(regReader, conf), new IConst(0, register.getPrecision()).toZ3Int(conf)));
+                    enc = ctx.mkAnd(enc, ctx.mkEq(register.toZ3Int(regReader, ctx), new IConst(0, register.getPrecision()).toZ3Int(ctx)));
 
                 } else {
                     ListIterator<Event> writerIt = writers.listIterator();
@@ -71,7 +69,7 @@ abstract class BasicRegRelation extends StaticRelation {
                         enc = ctx.mkAnd(enc, ctx.mkEq(edge, clause));
                         enc = ctx.mkAnd(enc, ctx.mkImplies(edge, ctx.mkEq(
                                 ((RegWriter) regWriter).getResultRegisterExpr(),
-                                register.toZ3Int(regReader, conf)
+                                register.toZ3Int(regReader, ctx)
                         )));
                     }
                 }

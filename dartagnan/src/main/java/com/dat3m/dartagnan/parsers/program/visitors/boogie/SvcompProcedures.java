@@ -87,7 +87,7 @@ public class SvcompProcedures {
 	private static void __VERIFIER_error(VisitorBoogie visitor) {
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
-    	Local event = new Local(ass, new BConst(false, -1));
+    	Local event = new Local(ass, new BConst(false));
 		event.addFilters(EType.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}
@@ -150,7 +150,7 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-	    	visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new BNonDet()));
+	    	visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new BNonDet(register.getPrecision())));
 	    }
 	}
 }

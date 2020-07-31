@@ -1,7 +1,6 @@
 package com.dat3m.ui.result;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -43,11 +42,10 @@ public class PortabilityResult implements Dat3mResult {
     private void run(){
         if(validate()){
             Context ctx = new Context();
-            EncodingConf conf = new EncodingConf(ctx, options.getSettings().getBP());
             Solver s1 = ctx.mkSolver();
             Solver s2 = ctx.mkSolver();
 
-            PorthosResult result = Porthos.testProgram(s1, s2, conf, sourceProgram, targetProgram, sourceProgram.getArch(),
+            PorthosResult result = Porthos.testProgram(s1, s2, ctx, sourceProgram, targetProgram, sourceProgram.getArch(),
                     targetProgram.getArch(), sourceWmm, targetWmm, options.getSettings());
 
             verdict = "Settings: " + options.getSettings() + "\n"
@@ -55,7 +53,7 @@ public class PortabilityResult implements Dat3mResult {
                     + "Iterations: " + result.getIterations();
 
             if(!result.getIsPortable()){
-                graph = new Graph(s1.getModel(), new EncodingConf(ctx, options.getSettings().getBP()), sourceProgram, targetProgram, options.getSettings().getGraphRelations());
+                graph = new Graph(s1.getModel(), ctx, sourceProgram, targetProgram, options.getSettings().getGraphRelations());
             }
             ctx.close();
         }

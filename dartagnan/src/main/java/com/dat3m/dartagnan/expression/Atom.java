@@ -9,7 +9,6 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class Atom extends BExpr implements ExprInterface {
 	
@@ -24,18 +23,17 @@ public class Atom extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
-		return op.encode(lhs.toZ3Int(e, conf), rhs.toZ3Int(e, conf), conf);
+	public BoolExpr toZ3Bool(Event e, Context ctx) {
+		return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
 	}
 
 	@Override
-	public Expr getLastValueExpr(EncodingConf conf){
-		Context ctx = conf.getCtx();
+	public Expr getLastValueExpr(Context ctx){
 		boolean bp = getPrecision() > 0;
 		return ctx.mkITE(
-				op.encode(lhs.getLastValueExpr(conf), rhs.getLastValueExpr(conf), conf),
-				bp ? ctx.mkBV(1, 32) : ctx.mkInt(1),
-				bp ? ctx.mkBV(0, 32) : ctx.mkInt(0)
+				op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx),
+				bp ? ctx.mkBV(1, getPrecision()) : ctx.mkInt(1),
+				bp ? ctx.mkBV(0, getPrecision()) : ctx.mkInt(0)
 		);
 
 	}
@@ -51,8 +49,8 @@ public class Atom extends BExpr implements ExprInterface {
     }
     
     @Override
-	public boolean getBoolValue(Event e, Model model, EncodingConf conf){
-		return op.combine(lhs.getIntValue(e, model, conf), rhs.getIntValue(e, model, conf));
+	public boolean getBoolValue(Event e, Model model, Context ctx){
+		return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
 	}
     
     public COpBin getOp() {

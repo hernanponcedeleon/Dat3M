@@ -34,7 +34,7 @@ public class Graph {
     }
 
     private Model model;
-    private EncodingConf conf;
+    private Context ctx;
 
     private StringBuilder buffer;
     private Map<Integer, Location> mapAddressLocation;
@@ -49,19 +49,19 @@ public class Graph {
 
     private final String DEFAULT_EDGE_COLOR = "indigo";
 
-    public Graph(Model model, EncodingConf conf, Program program, Collection<String> relations){
-        this(model, conf, relations);
+    public Graph(Model model, Context ctx, Program program, Collection<String> relations){
+        this(model, ctx, relations);
         build(program);
     }
 
-    public Graph(Model model, EncodingConf conf, Program pSource, Program pTarget, Collection<String> relations){
-        this(model, conf, relations);
+    public Graph(Model model, Context ctx, Program pSource, Program pTarget, Collection<String> relations){
+        this(model, ctx, relations);
         build(pSource, pTarget);
     }
 
-    private Graph(Model model, EncodingConf conf, Collection<String> relations){
+    private Graph(Model model, Context ctx, Collection<String> relations){
         this.model = model;
-        this.conf = conf;
+        this.ctx = ctx;
         this.relations.addAll(relations);
         this.relations.add("rf");
         this.relations.remove("po");
@@ -114,7 +114,7 @@ public class Graph {
             Event firstEvent = t.getEntry().getSuccessor();
             if(firstEvent instanceof Init){
                 Init e = (Init)firstEvent;
-                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, model, conf));
+                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, model, ctx));
                 String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
@@ -123,13 +123,13 @@ public class Graph {
                     if(model.getConstInterp(e.exec()).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
-                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, model, conf));
+                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, model, ctx));
                             int value = 0;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
-                                value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, conf)).toString());
+                                value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());
                             } else {
-                                value = ((MemEvent) e).getMemValue().getIntValue(e, model, conf);
+                                value = ((MemEvent) e).getMemValue().getIntValue(e, model, ctx);
                             }
                             label += " " + location + " = " + value;
                         }
@@ -170,7 +170,7 @@ public class Graph {
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.exec()).isTrue()){
-                int address = ((MemEvent)e).getAddress().getIntValue(e, model, conf);
+                int address = ((MemEvent)e).getAddress().getIntValue(e, model, ctx);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
             }
@@ -181,7 +181,7 @@ public class Graph {
             for(Event e2 : mapAddressEvent.get(address)){
                 map.put(e2, 0);
                 for(Event e1 : mapAddressEvent.get(address)){
-                    Expr expr = model.getConstInterp(Utils.edge("co", e1, e2, conf.getCtx()));
+                    Expr expr = model.getConstInterp(Utils.edge("co", e1, e2, ctx));
                     if(expr != null && expr.isTrue()){
                         map.put(e2, map.get(e2) + 1);
                     }
@@ -213,7 +213,7 @@ public class Graph {
             String edge = " " + getEdgeDef(relName) + ";\n";
             for(Event e1 : events) {
                 for(Event e2 : events) {
-                    Expr expr = model.getConstInterp(Utils.edge(relName, e1, e2, conf.getCtx()));
+                    Expr expr = model.getConstInterp(Utils.edge(relName, e1, e2, ctx));
                     if(expr != null && expr.isTrue()){
                         sb.append("      ").append(e1.repr()).append(" -> ").append(e2.repr()).append(edge);
                     }
@@ -243,7 +243,7 @@ public class Graph {
     private void buildAddressLocationMap(Program program){
         mapAddressLocation = new HashMap<>();
         for(Location location : program.getLocations()){
-            mapAddressLocation.put(location.getAddress().getIntValue(null, model, conf), location);
+            mapAddressLocation.put(location.getAddress().getIntValue(null, model, ctx), location);
         }
     }
 

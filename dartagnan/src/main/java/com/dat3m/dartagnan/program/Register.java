@@ -7,7 +7,6 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.program.event.Event;
 
 public class Register extends IExpr implements ExprInterface {
@@ -37,7 +36,8 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-        return name;
+		String tag = precision > 0 ? "bv" + precision : "";
+        return name + tag;
 	}
 
     @Override
@@ -58,16 +58,14 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public Expr toZ3Int(Event e, EncodingConf conf) {
+	public Expr toZ3Int(Event e, Context ctx) {
 		String name = getName() + "(" + e.repr() + ")";
-		Context ctx = conf.getCtx();
-		return precision > 0 ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
 	}
 
-	public Expr toZ3IntResult(Event e, EncodingConf conf) {
+	public Expr toZ3IntResult(Event e, Context ctx) {
 		String name = getName() + "(" + e.repr() + "_result)";
-		Context ctx = conf.getCtx();
-		return precision > 0 ? ctx.mkBVConst(name, 32) : ctx.mkIntConst(name);
+		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
 	}
 
 	@Override
@@ -76,14 +74,13 @@ public class Register extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(EncodingConf conf){
-		Context ctx = conf.getCtx();
-		return precision > 0 ? ctx.mkBVConst(getName() + "_" + threadId + "_final", 32) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
+	public Expr getLastValueExpr(Context ctx){
+		return precision > 0 ? ctx.mkBVConst(getName() + "_" + threadId + "_final", precision) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, EncodingConf conf){
-		return Integer.parseInt(model.getConstInterp(toZ3Int(e, conf)).toString());
+	public int getIntValue(Event e, Model model, Context ctx){
+		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
 	@Override
