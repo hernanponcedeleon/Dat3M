@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -10,7 +9,6 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class BExprBin extends BExpr {
 
@@ -25,21 +23,15 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
-        return op.encode(b1.toZ3Bool(e, conf), b2.toZ3Bool(e, conf), conf.getCtx());
+    public BoolExpr toZ3Bool(Event e, Context ctx) {
+        return op.encode(b1.toZ3Bool(e, ctx), b2.toZ3Bool(e, ctx), ctx);
     }
 
     @Override
-    public Expr getLastValueExpr(EncodingConf conf){
-    	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
-        BoolExpr expr1 = bp ? 
-        					ctx.mkBVSGT((BitVecExpr)b1.getLastValueExpr(conf), ctx.mkBV(1,32)) : 
-        					ctx.mkGt((IntExpr)b1.getLastValueExpr(conf), ctx.mkInt(1));
-        BoolExpr expr2 = bp ? 
-                			ctx.mkBVSGT((BitVecExpr)b2.getLastValueExpr(conf), ctx.mkBV(1,32)) : 
-                			ctx.mkGt((IntExpr)b2.getLastValueExpr(conf), ctx.mkInt(1));
-        return ctx.mkITE(op.encode(expr1, expr2, conf.getCtx()), ctx.mkInt(1), ctx.mkInt(0));
+    public Expr getLastValueExpr(Context ctx){
+        BoolExpr expr1 = ctx.mkGt((IntExpr)b1.getLastValueExpr(ctx), ctx.mkInt(1));
+        BoolExpr expr2 = ctx.mkGt((IntExpr)b2.getLastValueExpr(ctx), ctx.mkInt(1));
+        return ctx.mkITE(op.encode(expr1, expr2, ctx), ctx.mkInt(1), ctx.mkInt(0));
     }
 
     @Override
@@ -53,19 +45,19 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public boolean getBoolValue(Event e, Model model, EncodingConf conf){
-        return op.combine(b1.getBoolValue(e, model, conf), b2.getBoolValue(e, model, conf));
+    public boolean getBoolValue(Event e, Model model, Context ctx){
+        return op.combine(b1.getBoolValue(e, model, ctx), b2.getBoolValue(e, model, ctx));
     }
 
     @Override
 	public IConst reduce() {
 		int v1 = b1.reduce().getValue();
 		int v2 = b2.reduce().getValue();
-        switch(op) {
+		switch(op) {
         case AND:
-        	return new IConst(v1 == 1 ? v2 : 0);
+        	return new IConst(v1 == 1 ? v2 : 0, -1);
         case OR:
-        	return new IConst(v1 == 1 ? 1 : v2);
+        	return new IConst(v1 == 1 ? 1 : v2, -1);
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}

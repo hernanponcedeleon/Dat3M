@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.*;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
@@ -67,7 +66,7 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encodeBase(Program program, EncodingConf conf, Settings settings) {
+    public BoolExpr encodeBase(Program program, Context ctx, Settings settings) {
         this.program = program;
         new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
 
@@ -88,7 +87,7 @@ public class Wmm {
         }
 
         for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(program, conf, settings);
+            relation.initialise(program, ctx, settings);
         }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
@@ -121,7 +120,6 @@ public class Wmm {
             recursiveGroup.updateEncodeTupleSets();
         }
 
-    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         for(String relName : baseRelations){
             enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
@@ -136,10 +134,10 @@ public class Wmm {
         return enc;
     }
 
-    public BoolExpr encode(Program program, EncodingConf conf, Settings settings) {
-        BoolExpr enc = encodeBase(program, conf, settings);
+    public BoolExpr encode(Program program, Context ctx, Settings settings) {
+        BoolExpr enc = encodeBase(program, ctx, settings);
         for (Axiom ax : axioms) {
-            enc = conf.getCtx().mkAnd(enc, ax.getRel().encode());
+            enc = ctx.mkAnd(enc, ax.getRel().encode());
         }
         return enc;
     }

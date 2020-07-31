@@ -7,20 +7,20 @@ import com.microsoft.z3.Model;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class IConst extends IExpr implements ExprInterface {
 
 	private final int value;
+	protected final int precision;
 	
-	public IConst(int value) {
+	public IConst(int value, int precision) {
 		this.value = value;
+		this.precision = precision;
 	}
 
 	@Override
-	public Expr toZ3Int(Event e, EncodingConf conf) {
-		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+	public Expr toZ3Int(Event e, Context ctx) {
+		return precision > 0 ? ctx.mkBV(value, precision) : ctx.mkInt(value);
 	}
 
 	@Override
@@ -30,23 +30,22 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return Integer.toString(value);
+		String tag = precision > 0 ? "bv" + precision : "";
+		return Integer.toString(value) + tag;
 	}
 
 	@Override
-	public Expr getLastValueExpr(EncodingConf conf){
-		Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+	public Expr getLastValueExpr(Context ctx){
+		return precision > 0 ? ctx.mkBV(value, precision) : ctx.mkInt(value);
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, EncodingConf conf){
+	public int getIntValue(Event e, Model model, Context ctx){
 		return value;
 	}
 
-    public Expr toZ3Int(EncodingConf conf) {
-    	Context ctx = conf.getCtx();
-		return conf.getBP() ? ctx.mkBV(value, 32) : ctx.mkInt(value);
+    public Expr toZ3Int(Context ctx) {
+		return precision > 0 ? ctx.mkBV(value, precision) : ctx.mkInt(value);
     }
 
 	@Override
@@ -57,4 +56,9 @@ public class IConst extends IExpr implements ExprInterface {
 	public int getValue() {
 		return value;
 	}
+    
+	@Override
+	public int getPrecision() {
+    	return precision;
+    }
 }

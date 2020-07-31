@@ -8,7 +8,6 @@ import com.microsoft.z3.Model;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class BConst extends BExpr implements ExprInterface {
 
@@ -19,16 +18,13 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
-    	Context ctx = conf.getCtx();
+	public BoolExpr toZ3Bool(Event e, Context ctx) {
 		return value ? ctx.mkTrue() : ctx.mkFalse();
 	}
 
 	@Override
-	public Expr getLastValueExpr(EncodingConf conf){
-		Context ctx = conf.getCtx();
-		boolean bp = conf.getBP();
-		return value ? bp ? ctx.mkBV(1, 32) : ctx.mkInt(1) : bp ? ctx.mkBV(0, 32) : ctx.mkInt(0);
+	public Expr getLastValueExpr(Context ctx){
+		return value ? ctx.mkInt(1) : ctx.mkInt(0);
 	}
 
     @Override
@@ -42,13 +38,13 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, EncodingConf conf){
+	public boolean getBoolValue(Event e, Model model, Context ctx){
 		return value;
 	}
 
 	@Override
 	public IConst reduce() {
-		return new IConst(value ? 1 : 0);
+		return new IConst(value ? 1 : 0, -1);
 	}
 	
 	public boolean getValue() {

@@ -132,7 +132,6 @@ public class OptionsPane extends JPanel implements ActionListener {
                 (Mode)modePane.getSelectedItem(),
                 (Alias)aliasPane.getSelectedItem(),
                 Integer.parseInt(boundField.getText()),
-                true,
                 graphButton.isEnabled() && graphButton.isSelected(),
                 relSelector.getSelection()
         );

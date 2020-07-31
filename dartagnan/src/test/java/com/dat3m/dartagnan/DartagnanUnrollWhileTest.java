@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -90,9 +89,8 @@ public class DartagnanUnrollWhileTest {
             program.setAss(mkAssert(program, names, values));
             Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, bound, false);
             Context ctx = new Context();
-            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertTrue(Dartagnan.testProgram(solver, conf, program, wmm, Arch.NONE, settings).equals(FAIL));
+            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings).equals(FAIL));
             ctx.close();
 
             for(Thread thread : program.getThreads()){
@@ -117,9 +115,9 @@ public class DartagnanUnrollWhileTest {
         for(Register register : program.getCache().getRegisters()){
             registers.put(register.getName(), register);
         }
-        AbstractAssert ass = new AssertBasic(new IConst(0), COpBin.EQ, new IConst(0));
+        AbstractAssert ass = new AssertBasic(new IConst(0, -1), COpBin.EQ, new IConst(0, -1));
         for(int i = 0; i < names.length; i++){
-            ass = new AssertCompositeAnd(ass, new AssertBasic(registers.get(names[i]), COpBin.EQ, new IConst(values[i])));
+            ass = new AssertCompositeAnd(ass, new AssertBasic(registers.get(names[i]), COpBin.EQ, new IConst(values[i], -1)));
         }
         ass = new AssertNot(ass);
         ass.setType(AbstractAssert.ASSERT_TYPE_FORALL);

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -43,8 +42,8 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    public void initialise(Program program, EncodingConf conf, Settings settings){
-        super.initialise(program, conf, settings);
+    public void initialise(Program program, Context ctx, Settings settings){
+        super.initialise(program, ctx, settings);
         this.baseMaxTupleSet = null;
     }
 
@@ -105,9 +104,7 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
-    	Context ctx = conf.getCtx();
-    	
+    protected BoolExpr encodeApprox() {    	
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
         encodeTupleSet = baseMaxTupleSet;
@@ -147,7 +144,6 @@ public class RelRMW extends StaticRelation {
     }
 
     private BoolExpr pairingCond(Thread thread, Event load, Event store){
-    	Context ctx = conf.getCtx();
         BoolExpr pairingCond = ctx.mkAnd(load.exec(), store.cf());
 
         for (Event otherLoad : thread.getCache().getEvents(loadFilter)) {

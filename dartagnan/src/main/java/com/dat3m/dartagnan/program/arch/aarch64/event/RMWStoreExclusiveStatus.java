@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.arch.aarch64.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -23,9 +22,9 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     }
 
     @Override
-    public void initialise(EncodingConf conf) {
-        super.initialise(conf);
-        regResultExpr = register.toZ3IntResult(this, conf);
+    public void initialise(Context ctx) {
+        super.initialise(ctx);
+        regResultExpr = register.toZ3IntResult(this, ctx);
     }
 
     @Override
@@ -44,13 +43,13 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     }
 
     @Override
-    protected BoolExpr encodeExec(EncodingConf conf){
-    	Context ctx = conf.getCtx();
-        BoolExpr enc = ctx.mkAnd(
-                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0).toZ3Int(this, conf))),
-                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1).toZ3Int(this, conf)))
+    protected BoolExpr encodeExec(Context ctx){
+        int precision = register.getPrecision();
+		BoolExpr enc = ctx.mkAnd(
+                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0, precision).toZ3Int(this, ctx))),
+                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1, precision).toZ3Int(this, ctx)))
         );
-        return ctx.mkAnd(super.encodeExec(conf), enc);
+        return ctx.mkAnd(super.encodeExec(ctx), enc);
     }
 
     // Unrolling

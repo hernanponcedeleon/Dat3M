@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
@@ -71,10 +70,9 @@ public class Dartagnan {
 
         Settings settings = options.getSettings();
         Context ctx = new Context();
-		EncodingConf conf = new EncodingConf(ctx, settings.getBP());
         Solver s = ctx.mkSolver();
 
-        Result result = cegar != null ? runCegar(s, conf, p, mcm, target, settings, cegar) : testProgram(s, conf, p, mcm, target, settings);
+        Result result = cegar != null ? runCegar(s, ctx, p, mcm, target, settings, cegar) : testProgram(s, ctx, p, mcm, target, settings);
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -89,14 +87,14 @@ public class Dartagnan {
 
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
         	ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
-            drawGraph(new Graph(s.getModel(), conf, p, settings.getGraphRelations()), options.getGraphFilePath());
+            drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
             System.out.println("Execution graph is written to " + options.getGraphFilePath());
         }
 
         ctx.close();
     }
 
-    public static Result testProgram(Solver s1, EncodingConf conf, Program program, Wmm wmm, Arch target, Settings settings) {
+    public static Result testProgram(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
@@ -113,43 +111,43 @@ public class Dartagnan {
         
         // Using two solvers is much faster than using
         // an incremental solver or check-sat-assuming
-        Solver s2 = conf.getCtx().mkSolver();
+        Solver s2 = ctx.mkSolver();
 
-		BoolExpr encodeUINonDet = program.encodeUINonDet(conf);
+		BoolExpr encodeUINonDet = program.encodeUINonDet(ctx);
 		s1.add(encodeUINonDet);
         s2.add(encodeUINonDet);
         
-        BoolExpr encodeCF = program.encodeCF(conf);
+        BoolExpr encodeCF = program.encodeCF(ctx);
 		s1.add(encodeCF);
         s2.add(encodeCF);
         
-        BoolExpr encodeFinalRegisterValues = program.encodeFinalRegisterValues(conf);
+        BoolExpr encodeFinalRegisterValues = program.encodeFinalRegisterValues(ctx);
 		s1.add(encodeFinalRegisterValues);
         s2.add(encodeFinalRegisterValues);
         
-        BoolExpr encodeWmm = wmm.encode(program, conf, settings);
+        BoolExpr encodeWmm = wmm.encode(program, ctx, settings);
 		s1.add(encodeWmm);
         s2.add(encodeWmm);
         
-        BoolExpr encodeConsistency = wmm.consistent(program, conf.getCtx());
+        BoolExpr encodeConsistency = wmm.consistent(program, ctx);
 		s1.add(encodeConsistency);
         s2.add(encodeConsistency);
        	
-        s1.add(program.getAss().encode(conf));
+        s1.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
-            BoolExpr encodeFilter = program.getAssFilter().encode(conf);
+            BoolExpr encodeFilter = program.getAssFilter().encode(ctx);
 			s1.add(encodeFilter);
             s2.add(encodeFilter);
         }
 
-        BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(conf.getCtx());
+        BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
         Result res;
 		if(s1.check() == Status.SATISFIABLE) {
 			s1.add(encodeNoBoundEventExec);
 			res = s1.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
 		} else {
-			s2.add(conf.getCtx().mkNot(encodeNoBoundEventExec));
+			s2.add(ctx.mkNot(encodeNoBoundEventExec));
 			res = s2.check() == Status.SATISFIABLE ? BPASS : PASS;	
 		}
         
@@ -159,7 +157,7 @@ public class Dartagnan {
 		return res;
     }
     
-    public static Result runCegar(Solver solver, EncodingConf conf, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
+    public static Result runCegar(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
     	Map<BoolExpr, BoolExpr> track = new HashMap<>();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -175,25 +173,24 @@ public class Dartagnan {
         	}
         }
 
-        solver.add(program.encodeUINonDet(conf));
-        solver.add(program.encodeCF(conf));
-        solver.add(program.encodeFinalRegisterValues(conf));
-        solver.add(wmm.encodeBase(program, conf, settings));
-       	solver.add(wmm.getAxioms().get(cegar).encodeRelAndConsistency(conf));
+        solver.add(program.encodeUINonDet(ctx));
+        solver.add(program.encodeCF(ctx));
+        solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(wmm.encodeBase(program, ctx, settings));
+       	solver.add(wmm.getAxioms().get(cegar).encodeRelAndConsistency(ctx));
 
         if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(conf));
+            solver.add(program.getAssFilter().encode(ctx));
         }
 
 		// Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
 		Result res;
-    	Context ctx = conf.getCtx();
 		while(true) {
 	        solver.push();
 	        // This needs to be pop for the else branch below
 	        // If not the formula will always remain UNSAT
-	       	solver.add(program.getAss().encode(conf));
+	       	solver.add(program.getAss().encode(ctx));
 			if(solver.check() == Status.SATISFIABLE) {
 				solver.push();
 				solver.add(program.encodeNoBoundEventExec(ctx));
@@ -218,15 +215,15 @@ public class Dartagnan {
 			}
 
 			solver.push();
-	       	solver.add(program.getAss().encode(conf));
+	       	solver.add(program.getAss().encode(ctx));
 			// We need this to get the model below. This check will always succeed
 			// If not we would have returned above
 			solver.check();
 			BoolExpr execution = program.getRf(ctx, solver.getModel());
 			solver.add(execution);
-    		solver.add(wmm.encodeBase(program, conf, settings));
+    		solver.add(wmm.encodeBase(program, ctx, settings));
         	for(Axiom ax : wmm.getAxioms()) {
-        		BoolExpr enc = ax.encodeRelAndConsistency(conf);
+        		BoolExpr enc = ax.encodeRelAndConsistency(ctx);
         		BoolExpr axVar = ctx.mkBoolConst(ax.toString());
         		solver.assertAndTrack(enc, axVar);
         		track.put(axVar, enc);

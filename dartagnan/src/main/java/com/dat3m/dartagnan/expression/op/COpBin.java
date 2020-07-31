@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.expression.op;
 
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
@@ -33,30 +32,28 @@ public enum COpBin {
         return super.toString();
     }
 
-    public BoolExpr encode(Expr e1, Expr e2, EncodingConf conf) {
-    	Context ctx = conf.getCtx();
-    	boolean bp = conf.getBP();
+    public BoolExpr encode(Expr e1, Expr e2, Context ctx) {
         switch(this) {
             case EQ:
                 return ctx.mkEq(e1, e2);
             case NEQ:
                 return ctx.mkNot(ctx.mkEq(e1, e2));
             case LT:
-            	return bp ? ctx.mkBVSLT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLt((ArithExpr)e1, (ArithExpr)e2);
+            	return e1.isBV() ? ctx.mkBVSLT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLt((ArithExpr)e1, (ArithExpr)e2);
             case ULT:
-            	return bp ? ctx.mkBVULT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLt((ArithExpr)e1, (ArithExpr)e2);
+            	return e1.isBV() ? ctx.mkBVULT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLt((ArithExpr)e1, (ArithExpr)e2);
             case LTE:
-                return bp ? ctx.mkBVSLE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLe((ArithExpr)e1, (ArithExpr)e2);
+                return e1.isBV() ? ctx.mkBVSLE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLe((ArithExpr)e1, (ArithExpr)e2);
             case ULTE:
-                return bp ? ctx.mkBVULE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLe((ArithExpr)e1, (ArithExpr)e2);
+                return e1.isBV() ? ctx.mkBVULE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLe((ArithExpr)e1, (ArithExpr)e2);
             case GT:
-            	return bp ? ctx.mkBVSGT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGt((ArithExpr)e1, (ArithExpr)e2);
+            	return e1.isBV() ? ctx.mkBVSGT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGt((ArithExpr)e1, (ArithExpr)e2);
             case UGT:
-            	return bp ? ctx.mkBVUGT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGt((ArithExpr)e1, (ArithExpr)e2);
+            	return e1.isBV() ? ctx.mkBVUGT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGt((ArithExpr)e1, (ArithExpr)e2);
             case GTE:
-            	return bp ? ctx.mkBVSGE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGe((ArithExpr)e1, (ArithExpr)e2);
+            	return e1.isBV() ? ctx.mkBVSGE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGe((ArithExpr)e1, (ArithExpr)e2);
             case UGTE:
-            	return bp ? ctx.mkBVUGE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGe((ArithExpr)e1, (ArithExpr)e2);
+            	return e1.isBV() ? ctx.mkBVUGE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGe((ArithExpr)e1, (ArithExpr)e2);
         }
         throw new UnsupportedOperationException("Encoding of not supported for COpBin " + this);
     }

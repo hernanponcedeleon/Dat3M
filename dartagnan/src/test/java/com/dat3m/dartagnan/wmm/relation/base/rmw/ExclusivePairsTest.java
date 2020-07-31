@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
@@ -77,12 +76,11 @@ public class ExclusivePairsTest {
     public void testReachableStates() {
         try{
             Context ctx = new Context();
-            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Program program = new ProgramParser().parse(new File(path));
 
             // Test final state
-            assertEquals(expectedState, Dartagnan.testProgram(solver, conf, program, wmm, program.getArch(), settings));
+            assertEquals(expectedState, Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings));
 
             // Test edges
             if(expectedEdges != null){
@@ -108,16 +106,15 @@ public class ExclusivePairsTest {
         try{
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
             
             Program program = new ProgramParser().parse(new File(path));
 
             // Add program without assertions
             program.unroll(1, 0);
             program.compile(program.getArch(), 0);
-            solver.add(program.encodeCF(conf));
-            solver.add(program.encodeFinalRegisterValues(conf));
-            solver.add(wmm.encode(program, conf, settings));
+            solver.add(program.encodeCF(ctx));
+            solver.add(program.encodeFinalRegisterValues(ctx));
+            solver.add(wmm.encode(program, ctx, settings));
             solver.add(wmm.consistent(program, ctx));
 
             // Check flag

@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -27,7 +26,7 @@ public abstract class Relation {
 
     protected Settings settings;
     protected Program program;
-    protected EncodingConf conf;
+    protected Context ctx;
 
     protected boolean isEncoded;
 
@@ -58,9 +57,9 @@ public abstract class Relation {
         return recursiveGroupId;
     }
 
-    public void initialise(Program program, EncodingConf conf, Settings settings){
+    public void initialise(Program program, Context ctx, Settings settings){
         this.program = program;
-        this.conf = conf;
+        this.ctx = ctx;
         this.settings = settings;
         this.maxTupleSet = null;
         this.isEncoded = false;
@@ -127,7 +126,7 @@ public abstract class Relation {
 
     public BoolExpr encode() {
         if(isEncoded){
-            return conf.getCtx().mkTrue();
+            return ctx.mkTrue();
         }
         isEncoded = true;
         return doEncode();
@@ -144,11 +143,10 @@ public abstract class Relation {
     protected abstract BoolExpr encodeApprox();
 
     public BoolExpr encodeIteration(int recGroupId, int iteration){
-        return conf.getCtx().mkTrue();
+        return ctx.mkTrue();
     }
 
     protected BoolExpr doEncode(){
-    	Context ctx = conf.getCtx();
         BoolExpr enc = encodeNegations();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             if(settings.getMode() == Mode.KLEENE) {
@@ -162,7 +160,6 @@ public abstract class Relation {
     }
 
     private BoolExpr encodeNegations(){
-    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         if(!encodeTupleSet.isEmpty()){
             Set<Tuple> negations = new HashSet<>(encodeTupleSet);

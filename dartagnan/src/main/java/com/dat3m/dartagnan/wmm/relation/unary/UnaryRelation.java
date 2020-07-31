@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 
 /**
@@ -35,8 +34,8 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public void initialise(Program program, EncodingConf conf, Settings settings){
-        super.initialise(program, conf, settings);
+    public void initialise(Program program, Context ctx, Settings settings){
+        super.initialise(program, ctx, settings);
         if(recursiveGroupId > 0){
             throw new RuntimeException("Recursion is not implemented for " + this.getClass().getName());
         }
@@ -44,7 +43,6 @@ public abstract class UnaryRelation extends Relation {
 
     @Override
     public BoolExpr encode() {
-    	Context ctx = conf.getCtx();
         if(isEncoded){
             return ctx.mkTrue();
         }

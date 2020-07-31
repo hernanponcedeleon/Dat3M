@@ -3,7 +3,6 @@ package com.dat3m.porthos;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -145,11 +144,10 @@ public class PorthosTest {
             Program pTarget = programParser.parse(new File(programFilePath));
 
             Context ctx = new Context();
-            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
             
             Solver s1 = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Solver s2 = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            PorthosResult result = Porthos.testProgram(s1, s2, conf, pSource, pTarget,
+            PorthosResult result = Porthos.testProgram(s1, s2, ctx, pSource, pTarget,
                     source, target, sourceWmm, targetWmm, settings);
             assertEquals(expected, result.getIsPortable());
             ctx.close();

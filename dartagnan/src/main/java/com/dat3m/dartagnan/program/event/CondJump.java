@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -113,14 +112,13 @@ public class CondJump extends Event implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public BoolExpr encodeCF(EncodingConf conf, BoolExpr cond) {
+    public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
         if(cfEnc == null){
-        	Context ctx = conf.getCtx();
             cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-            BoolExpr ifCond = expr.toZ3Bool(this, conf);
+            BoolExpr ifCond = expr.toZ3Bool(this, ctx);
             label.addCfCond(ctx, ctx.mkAnd(ifCond, cfVar));
-            cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(conf));
-            cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(conf, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
+            cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx));
+            cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
         }
         return cfEnc;
     }

@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -58,7 +58,6 @@ public class RelCo extends Relation {
 
     @Override
     protected BoolExpr encodeApprox() {
-    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
 
         List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
@@ -99,8 +98,8 @@ public class RelCo extends Relation {
 
             for(Address address : w1.getMaxAddressSet()){
                 enc = ctx.mkAnd(enc, ctx.mkImplies(
-                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3Int(conf))),
-                        ctx.mkEq(address.getLastMemValueExpr(conf), w1.getMemValueExpr())
+                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3Int(ctx))),
+                        ctx.mkEq(address.getLastMemValueExpr(ctx), w1.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemValueExpr(), false) : w1.getMemValueExpr())
                 ));
             }
         }

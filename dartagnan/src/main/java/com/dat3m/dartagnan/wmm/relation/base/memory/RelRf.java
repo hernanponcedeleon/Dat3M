@@ -4,8 +4,9 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -56,7 +57,6 @@ public class RelRf extends Relation {
 
     @Override
     protected BoolExpr encodeApprox() {
-    	Context ctx = conf.getCtx();
         BoolExpr enc = ctx.mkTrue();
         Map<MemEvent, List<BoolExpr>> edgeMap = new HashMap<>();
         Map<MemEvent, BoolExpr> memInitMap = new HashMap<>();
@@ -68,8 +68,14 @@ public class RelRf extends Relation {
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();
             BoolExpr edge = edge(term, w, r, ctx);
-            BoolExpr sameAddress = ctx.mkEq(w.getMemAddressExpr(), r.getMemAddressExpr());
-            BoolExpr sameValue = ctx.mkEq(w.getMemValueExpr(), r.getMemValueExpr());
+            
+            IntExpr a1 = w.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w.getMemAddressExpr(), false) : (IntExpr)w.getMemAddressExpr();
+            IntExpr a2 = r.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)r.getMemAddressExpr(), false) : (IntExpr)r.getMemAddressExpr();
+            BoolExpr sameAddress = ctx.mkEq(a1, a2);
+            
+            IntExpr v1 = w.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w.getMemValueExpr(), false) : (IntExpr)w.getMemValueExpr();
+            IntExpr v2 = r.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)r.getMemValueExpr(), false) : (IntExpr)r.getMemValueExpr();
+            BoolExpr sameValue = ctx.mkEq(v1, v2);
 
             edgeMap.putIfAbsent(r, new ArrayList<>());
             edgeMap.get(r).add(edge);
@@ -88,7 +94,6 @@ public class RelRf extends Relation {
     }
 
     private BoolExpr encodeEdgeNaive(Event read, BoolExpr isMemInit, List<BoolExpr> edges){
-    	Context ctx = conf.getCtx();
         BoolExpr atMostOne = ctx.mkTrue();
         BoolExpr atLeastOne = ctx.mkFalse();
         for(int i = 0; i < edges.size(); i++){
@@ -107,7 +112,6 @@ public class RelRf extends Relation {
     }
 
     private BoolExpr encodeEdgeSeq(Event read, BoolExpr isMemInit, List<BoolExpr> edges){
-    	Context ctx = conf.getCtx();
         int num = edges.size();
         int readId = read.getCId();
         BoolExpr lastSeqVar = mkSeqVar(readId, 0);
@@ -131,7 +135,6 @@ public class RelRf extends Relation {
     }
 
     private BoolExpr mkSeqVar(int readId, int i) {
-    	Context ctx = conf.getCtx();
         return (BoolExpr) ctx.mkConst("s(" + term + ",E" + readId + "," + i + ")", ctx.mkBoolSort());
     }
 }

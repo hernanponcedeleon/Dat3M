@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 
 import java.util.*;
 
@@ -50,12 +50,12 @@ public class Thread {
         return registers.get(name);
     }
 
-    public Register addRegister(String name){
+    public Register addRegister(String name, int precision){
         if(registers.containsKey(name)){
             throw new RuntimeException("Register " + id + ":" + name + " already exists");
         }
         cache = null;
-        Register register = new Register(name, id);
+        Register register = new Register(name, id, precision);
         registers.put(register.getName(), register);
         return register;
     }
@@ -128,7 +128,7 @@ public class Thread {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public BoolExpr encodeCF(EncodingConf conf){
-        return entry.encodeCF(conf, conf.getCtx().mkTrue());
+    public BoolExpr encodeCF(Context ctx){
+        return entry.encodeCF(ctx, ctx.mkTrue());
     }
 }

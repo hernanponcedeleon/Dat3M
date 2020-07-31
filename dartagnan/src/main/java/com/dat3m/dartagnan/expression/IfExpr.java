@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
@@ -21,30 +21,30 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3Int(Event e, EncodingConf conf) {
-		return conf.getCtx().mkITE(guard.toZ3Bool(e, conf), tbranch.toZ3Int(e, conf), fbranch.toZ3Int(e, conf));
+	public Expr toZ3Int(Event e, Context ctx) {
+		return ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
 	}
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, EncodingConf conf) {
-		return (BoolExpr)conf.getCtx().mkITE(guard.toZ3Bool(e, conf), tbranch.toZ3Bool(e, conf), fbranch.toZ3Bool(e, conf));
+	public BoolExpr toZ3Bool(Event e, Context ctx) {
+		return (BoolExpr)ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3Bool(e, ctx), fbranch.toZ3Bool(e, ctx));
 	}
 
 	@Override
-	public Expr getLastValueExpr(EncodingConf conf) {
+	public Expr getLastValueExpr(Context ctx) {
 		// In principle this method is only called by assertions 
 		// and thus it should never be called for this class
         throw new RuntimeException("Problem with getLastValueExpr in " + this.toString());
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, EncodingConf conf) {
-		return guard.getBoolValue(e, model, conf) ? tbranch.getIntValue(e, model, conf) : fbranch.getIntValue(e, model, conf);
+	public int getIntValue(Event e, Model model, Context ctx) {
+		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, EncodingConf conf) {
-		return guard.getBoolValue(e, model, conf)? tbranch.getBoolValue(e, model, conf) : fbranch.getBoolValue(e, model, conf);
+	public boolean getBoolValue(Event e, Model model, Context ctx) {
+		return guard.getBoolValue(e, model, ctx)? tbranch.getBoolValue(e, model, ctx) : fbranch.getBoolValue(e, model, ctx);
 	}
 
 	@Override
@@ -64,5 +64,13 @@ public class IfExpr implements ExprInterface {
 	
 	public BExpr getGuard() {
 		return guard;
+	}
+
+	@Override
+	public int getPrecision() {
+		if(fbranch.getPrecision() != tbranch.getPrecision()) {
+            throw new RuntimeException("The type of " + tbranch + " and " + fbranch + " does not match");
+		}
+		return tbranch.getPrecision();
 	}
 }

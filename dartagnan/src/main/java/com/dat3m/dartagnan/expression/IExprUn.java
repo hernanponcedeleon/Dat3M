@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.EncodingConf;
 
 public class IExprUn extends IExpr {
 
@@ -19,18 +19,18 @@ public class IExprUn extends IExpr {
     }
 
 	@Override
-	public Expr toZ3Int(Event e, EncodingConf conf) {
-		return op.encode(b.toZ3Int(e, conf), conf);
+	public Expr toZ3Int(Event e, Context ctx) {
+		return op.encode(b.toZ3Int(e, ctx), ctx);
 	}
 
 	@Override
-	public Expr getLastValueExpr(EncodingConf conf) {
-        return op.encode(b.getLastValueExpr(conf), conf);
+	public Expr getLastValueExpr(Context ctx) {
+        return op.encode(b.getLastValueExpr(ctx), ctx);
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, EncodingConf conf) {
-        return -(b.getIntValue(e, model, conf));
+	public int getIntValue(Event e, Model model, Context ctx) {
+        return -(b.getIntValue(e, model, ctx));
 	}
 
 	@Override
@@ -47,8 +47,14 @@ public class IExprUn extends IExpr {
 	public IConst reduce() {
         switch(op){
 			case MINUS:
-				return new IConst(-b.reduce().getValue());
+				return new IConst(-b.reduce().getValue(), b.getPrecision());
+			default:
+		        throw new UnsupportedOperationException("Reduce not supported for " + this);				
         }
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
+	@Override
+	public int getPrecision() {
+		return b.getPrecision();
 	}
 }

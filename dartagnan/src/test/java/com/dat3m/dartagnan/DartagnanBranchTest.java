@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.EncodingConf;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -88,9 +87,8 @@ public class DartagnanBranchTest {
         try{
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
-            EncodingConf conf = new EncodingConf(ctx, settings.getBP());
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertEquals(expected, Dartagnan.testProgram(solver, conf, program, wmm, Arch.NONE, settings));
+            assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");
