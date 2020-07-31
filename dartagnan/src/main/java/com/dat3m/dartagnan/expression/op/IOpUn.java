@@ -29,40 +29,33 @@ public enum IOpUn {
     			return e.isBV() ? ctx.mkBVSub(ctx.mkBV(0, 32), (BitVecExpr)e) : ctx.mkSub(ctx.mkInt(0), (IntExpr)e);
     		case BV2INT:
     			return e.isBV() ? ctx.mkBV2Int((BitVecExpr)e, false) : e;
-
+    		// ============ INT2BV ============
     		case INT2BV1:
-    			return e.isBV() ? e : ctx.mkInt2BV(1, (IntExpr) e);
+    			return e.isBV() ? e : ctx.mkInt2BV(1, (IntExpr)e);
     		case INT2BV8:
-    			return e.isBV() ? e : ctx.mkInt2BV(8, (IntExpr) e);
+    			return e.isBV() ? e : ctx.mkInt2BV(8, (IntExpr)e);
     		case INT2BV16:
-    			return e.isBV() ? e : ctx.mkInt2BV(16, (IntExpr) e);
+    			return e.isBV() ? e : ctx.mkInt2BV(16, (IntExpr)e);
     		case INT2BV32:
-    			return e.isBV() ? e : ctx.mkInt2BV(32, (IntExpr) e);
+    			return e.isBV() ? e : ctx.mkInt2BV(32, (IntExpr)e);
     		case INT2BV64:
-    			return e.isBV() ? e : ctx.mkInt2BV(64, (IntExpr) e);
-    		
+    			return e.isBV() ? e : ctx.mkInt2BV(64, (IntExpr)e);
+        	// ============ TRUNC ============    		
     		case TRUNC6432:
-    			return e.isBV() ? ctx.mkExtract(63, 32, (BitVecExpr)e) : e;
+    			return e.isBV() ? ctx.mkExtract(31, 0, (BitVecExpr)e) : e;
     		case TRUNC6416:
-    			return e.isBV() ? ctx.mkExtract(63, 16, (BitVecExpr)e) : e;
-    		case TRUNC648:
-    			return e.isBV() ? ctx.mkExtract(63, 8, (BitVecExpr)e) : e;
-    		case TRUNC641:
-    			return e.isBV() ? ctx.mkExtract(63, 1, (BitVecExpr)e) : e;
     		case TRUNC3216:
-    			return e.isBV() ? ctx.mkExtract(31, 16, (BitVecExpr)e) : e;
+    			return e.isBV() ? ctx.mkExtract(15, 0, (BitVecExpr)e) : e;
+    		case TRUNC648:
     		case TRUNC328:
-    			return e.isBV() ? ctx.mkExtract(31, 8, (BitVecExpr)e) : e;
-    		case TRUNC321:
-    			return e.isBV() ? ctx.mkExtract(31, 1, (BitVecExpr)e) : e;
     		case TRUNC168:
-    			return e.isBV() ? ctx.mkExtract(15, 8, (BitVecExpr)e) : e;
+    			return e.isBV() ? ctx.mkExtract(7, 0, (BitVecExpr)e) : e;
+    		case TRUNC641:
+    		case TRUNC321:
     		case TRUNC161:
-    			return e.isBV() ? ctx.mkExtract(15, 1, (BitVecExpr)e) : e;
     		case TRUNC81:
-    			return e.isBV() ? ctx.mkExtract(7, 1, (BitVecExpr)e) : e;
-    		
-    		
+    			return e.isBV() ? ctx.mkExtract(0, 0, (BitVecExpr)e) : e;    		
+        	// ============ ZEXT ============    		
     		case ZEXT18:
     			return e.isBV() ? ctx.mkZeroExt(7, (BitVecExpr)e) : e;
     		case ZEXT116:
@@ -83,8 +76,7 @@ public enum IOpUn {
     			return e.isBV() ? ctx.mkZeroExt(484, (BitVecExpr)e) : e;
     		case ZEXT3264:
     			return e.isBV() ? ctx.mkZeroExt(32, (BitVecExpr)e) : e;
-
-    		
+        	// ============ SEXT ============
     		case SEXT18:
     			return e.isBV() ? ctx.mkSignExt(7, (BitVecExpr)e) : e;
     		case SEXT116:
@@ -105,7 +97,6 @@ public enum IOpUn {
     			return e.isBV() ? ctx.mkSignExt(48, (BitVecExpr)e) : e;
     		case SEXT3264:
     			return e.isBV() ? ctx.mkSignExt(32, (BitVecExpr)e) : e;
-
     	}
         throw new UnsupportedOperationException("Encoding of not supported for IOpUn " + this);
     }
