@@ -1,8 +1,17 @@
 package com.dat3m.dartagnan.expression;
 
+import com.microsoft.z3.BitVecExpr;
+import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
+import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.expression.INonDetTypes.UCHAR;
+import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
+import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
+import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
+
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -120,5 +129,24 @@ public class INonDet extends IExpr implements ExprInterface {
 	@Override
 	public int getPrecision() {
 		return precision;
+	}
+	
+	public BoolExpr encodeBounds(boolean bp, Context ctx) {
+		BoolExpr enc = ctx.mkTrue();
+		long min = getMin();
+		long max = getMax();
+		if(bp) {
+			if(type.equals(UINT) || type.equals(ULONG) || type.equals(USHORT) || type.equals(UCHAR)) {
+	        	enc = ctx.mkAnd(enc, ctx.mkBVUGE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(min, precision)));
+	        	enc = ctx.mkAnd(enc, ctx.mkBVULE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(max, precision)));					
+			} else {
+	        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(min, precision)));
+	        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(max, precision)));					
+			}
+		} else {
+        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)toZ3Int(null,ctx), ctx.mkInt(min)));
+        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)toZ3Int(null,ctx), ctx.mkInt(max)));
+		}
+		return enc;
 	}
 }
