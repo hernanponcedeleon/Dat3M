@@ -22,6 +22,7 @@ public class SVCOMPOptions extends BaseOptions {
     protected String optimization = "O0";
     protected boolean witness;
     protected Integer cegar;
+    protected boolean incremental;
     protected boolean bp;
     
     public SVCOMPOptions(){
@@ -33,6 +34,9 @@ public class SVCOMPOptions extends BaseOptions {
 
         addOption(new Option("cegar", true,
                 "Use CEGAR"));
+
+        addOption(new Option("incremental", true,
+                "Use Incremental Solver"));
 
         addOption(new Option("w", "witness", false,
                 "Creates a violation witness"));
@@ -55,6 +59,7 @@ public class SVCOMPOptions extends BaseOptions {
         	optimization = cmd.getOptionValue("optimization");
         }
         witness = cmd.hasOption("witness");
+        incremental = cmd.hasOption("incremental");
         if(cmd.hasOption("cegar")) {
             cegar = Integer.parseInt(cmd.getOptionValue("cegar"));        	
         }
@@ -71,6 +76,10 @@ public class SVCOMPOptions extends BaseOptions {
 
     public boolean getBP(){
         return bp;
+    }
+
+    public boolean getIncremental(){
+        return incremental;
     }
 
     public Integer getCegar(){

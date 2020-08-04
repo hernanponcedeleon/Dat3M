@@ -72,7 +72,11 @@ public class Dartagnan {
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
 
-        Result result = cegar != null ? runCegar(s, ctx, p, mcm, target, settings, cegar) : testProgram(s, ctx, p, mcm, target, settings);
+        Result result = cegar != null ? runCegar(s, ctx, p, mcm, target, settings, cegar) :
+        	// Normal Case
+        	options.getIncremental() ? 
+        			testProgramIncremental(s, ctx, p, mcm, target, settings) : 
+        			testProgram(s, ctx, p, mcm, target, settings);
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -145,6 +149,52 @@ public class Dartagnan {
 		} else {
 			s2.add(ctx.mkNot(encodeNoBoundEventExec));
 			res = s2.check() == Status.SATISFIABLE ? BPASS : PASS;	
+		}
+        
+		if(program.getAss().getInvert()) {
+			res = res.invert();
+		}
+		return res;
+    }
+    
+    public static Result testProgramIncremental(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    	program.unroll(settings.getBound(), 0);
+        program.compile(target, 0);
+        // AssertionInline depends on compiled events (copies)
+        // Thus we need to set the assertion after compilation
+        if(program.getAss() == null){
+        	AbstractAssert ass = program.createAssertion();
+			program.setAss(ass);
+        	// Due to optimizations, the program might be trivially true
+        	// Not returning here might loop forever for cyclic programs
+        	if(ass instanceof AssertTrue) {
+        		return PASS;
+        	}
+        }
+
+        solver.add(program.encodeCF(ctx));
+        solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(wmm.encode(program, ctx, settings));
+        solver.add(wmm.consistent(program, ctx));
+
+        // Used for getting the UNKNOWN
+        // pop() is inside getResult
+        solver.push();
+       	solver.add(program.getAss().encode(ctx));
+        if(program.getAssFilter() != null){
+            solver.add(program.getAssFilter().encode(ctx));
+        }
+
+        BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
+
+        Result res;
+        if(solver.check() == Status.SATISFIABLE) {
+			solver.add(encodeNoBoundEventExec);
+			res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
+		} else {
+			solver.pop();
+			solver.add(ctx.mkNot(encodeNoBoundEventExec));
+			res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;	
 		}
         
 		if(program.getAss().getInvert()) {

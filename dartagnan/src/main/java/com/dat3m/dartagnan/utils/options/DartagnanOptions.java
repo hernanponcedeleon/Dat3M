@@ -11,6 +11,7 @@ public class DartagnanOptions extends BaseOptions {
 
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
     protected Integer cegar;
+    protected boolean incremental;
 	
     public DartagnanOptions(){
         super();
@@ -21,6 +22,9 @@ public class DartagnanOptions extends BaseOptions {
 
         addOption(new Option("cegar", true,
                 "Use CEGAR"));
+        
+        addOption(new Option("incremental", true,
+                "Use Incremental Solver"));
     }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -32,9 +36,14 @@ public class DartagnanOptions extends BaseOptions {
         if(cmd.hasOption("cegar")) {
             cegar = Integer.parseInt(cmd.getOptionValue("cegar")) - 1;        	
         }
+        incremental = cmd.hasOption("incremental");
     }
     
     public Integer getCegar(){
         return cegar;
+    }
+    
+    public boolean getIncremental(){
+        return incremental;
     }
 }
