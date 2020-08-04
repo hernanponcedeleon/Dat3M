@@ -6,8 +6,6 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.primitives.UnsignedInteger;
-import com.google.common.primitives.UnsignedLong;
 
 public class INonDet extends IExpr implements ExprInterface {
 	
@@ -67,51 +65,6 @@ public class INonDet extends IExpr implements ExprInterface {
 			return "nondet_uchar()";
         }
         throw new UnsupportedOperationException("toString() not supported for " + this);
-	}
-
-	public long getMin() {
-        switch(type){
-        case INT:
-            return Integer.MIN_VALUE;
-        case UINT:
-            return UnsignedInteger.ZERO.longValue();
-		case LONG:
-            return precision > 0 ? Integer.MIN_VALUE : Long.MIN_VALUE;
-		case ULONG:
-            return UnsignedLong.ZERO.longValue();
-		case SHORT:
-            return Short.MIN_VALUE;
-		case USHORT:
-            return 0;
-		case CHAR:
-            return -128;
-		case UCHAR:
-            return 0;
-        }
-        throw new UnsupportedOperationException("getMin() not supported for " + this);
-	}
-
-	public long getMax() {
-		boolean bp = precision > 0;
-        switch(type){
-        case INT:
-            return Integer.MAX_VALUE;
-        case UINT:
-            return bp ? Integer.MAX_VALUE : UnsignedInteger.MAX_VALUE.longValue();
-		case LONG:
-            return bp ? Integer.MAX_VALUE : Long.MAX_VALUE;
-		case ULONG:
-            return bp ? Integer.MAX_VALUE : UnsignedLong.MAX_VALUE.longValue();
-		case SHORT:
-            return bp ? Integer.MAX_VALUE : Short.MAX_VALUE;
-		case USHORT:
-            return 65535;
-		case CHAR:
-            return 127;
-		case UCHAR:
-            return 255;
-        }
-        throw new UnsupportedOperationException("getMax() not supported for " + this);
 	}
 
 	@Override

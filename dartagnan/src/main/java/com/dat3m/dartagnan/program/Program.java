@@ -5,17 +5,13 @@ import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
 import com.dat3m.dartagnan.asserts.AssertTrue;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -214,27 +210,6 @@ public class Program {
         return enc;
     }
     
-    public BoolExpr encodeUINonDet(Context ctx) {
-    	BoolExpr enc = ctx.mkTrue();
-        for(Event e : getCache().getEvents(FilterBasic.get(EType.LOCAL))){
-        	if(!(e instanceof Local)) {
-        		continue;
-        	}
-        	ExprInterface expr = ((Local)e).getExpr();
-			if(expr instanceof INonDet) {
-				INonDet iNonDet = (INonDet)expr;
-				if(iNonDet.toZ3Int(e, ctx).isBV()) {
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)iNonDet.toZ3Int(e, ctx), ctx.mkBV(iNonDet.getMin(), iNonDet.getPrecision())));
-		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)iNonDet.toZ3Int(e, ctx), ctx.mkBV(iNonDet.getMax(), iNonDet.getPrecision())));					
-				} else {
-		        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)iNonDet.toZ3Int(e, ctx), ctx.mkInt(iNonDet.getMin())));
-		        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)iNonDet.toZ3Int(e, ctx), ctx.mkInt(iNonDet.getMax())));
-				}
-			}
-        }
-        return enc;  	
-    }
-
     public BoolExpr getRf(Context ctx, Model m) {
     	BoolExpr enc = ctx.mkTrue();
         for(Event r : getCache().getEvents(FilterBasic.get(EType.READ))){

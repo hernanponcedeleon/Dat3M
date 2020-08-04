@@ -112,10 +112,6 @@ public class Dartagnan {
         // Using two solvers is much faster than using
         // an incremental solver or check-sat-assuming
         Solver s2 = ctx.mkSolver();
-
-		BoolExpr encodeUINonDet = program.encodeUINonDet(ctx);
-		s1.add(encodeUINonDet);
-        s2.add(encodeUINonDet);
         
         BoolExpr encodeCF = program.encodeCF(ctx);
 		s1.add(encodeCF);
@@ -173,7 +169,6 @@ public class Dartagnan {
         	}
         }
 
-        solver.add(program.encodeUINonDet(ctx));
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encodeBase(program, ctx, settings));
