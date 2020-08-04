@@ -19,6 +19,10 @@ public class INonDet extends IExpr implements ExprInterface {
 		this.precision = precision;
 	}
 
+	public INonDetTypes getType() {
+		return type;
+	}
+	
 	@Override
 	public IConst reduce() {
         throw new UnsupportedOperationException("Reduce not supported for " + this);
@@ -76,7 +80,7 @@ public class INonDet extends IExpr implements ExprInterface {
         case UINT:
             return UnsignedInteger.ZERO.longValue();
 		case LONG:
-            return precision > 0 ? Integer.MIN_VALUE : Long.MIN_VALUE;
+            return Long.MIN_VALUE;
 		case ULONG:
             return UnsignedLong.ZERO.longValue();
 		case SHORT:
@@ -92,18 +96,17 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	public long getMax() {
-		boolean bp = precision > 0;
         switch(type){
         case INT:
             return Integer.MAX_VALUE;
         case UINT:
-            return bp ? Integer.MAX_VALUE : UnsignedInteger.MAX_VALUE.longValue();
+            return UnsignedInteger.MAX_VALUE.longValue();
 		case LONG:
-            return bp ? Integer.MAX_VALUE : Long.MAX_VALUE;
+            return Long.MAX_VALUE;
 		case ULONG:
-            return bp ? Integer.MAX_VALUE : UnsignedLong.MAX_VALUE.longValue();
+            return UnsignedLong.MAX_VALUE.longValue();
 		case SHORT:
-            return bp ? Integer.MAX_VALUE : Short.MAX_VALUE;
+            return Short.MAX_VALUE;
 		case USHORT:
             return 65535;
 		case CHAR:

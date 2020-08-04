@@ -7,6 +7,12 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
+
+import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
+import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
+import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
+import static com.dat3m.dartagnan.expression.INonDetTypes.UCHAR;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
@@ -72,8 +78,13 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		if(expr instanceof INonDet) {
 			INonDet iNonDet = (INonDet)expr;
 			if(exprEnc.isBV()) {
-	        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMin(), iNonDet.getPrecision())));
-	        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMax(), iNonDet.getPrecision())));					
+				if(iNonDet.getType().equals(UINT) || iNonDet.getType().equals(ULONG) || iNonDet.getType().equals(USHORT) || iNonDet.getType().equals(UCHAR)) {
+		        	enc = ctx.mkAnd(enc, ctx.mkBVUGE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMin(), iNonDet.getPrecision())));
+		        	enc = ctx.mkAnd(enc, ctx.mkBVULE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMax(), iNonDet.getPrecision())));					
+				} else {
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMin(), iNonDet.getPrecision())));
+		        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMax(), iNonDet.getPrecision())));					
+				}
 			} else {
 	        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)exprEnc, ctx.mkInt(iNonDet.getMin())));
 	        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)exprEnc, ctx.mkInt(iNonDet.getMax())));
