@@ -2,10 +2,13 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
+import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -64,7 +67,19 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
 	@Override
 	protected BoolExpr encodeExec(Context ctx){
-		return ctx.mkAnd(super.encodeExec(ctx), ctx.mkEq(regResultExpr,  expr.toZ3Int(this, ctx)));
+		BoolExpr enc = super.encodeExec(ctx);
+		Expr exprEnc = expr.toZ3Int(this, ctx);
+		if(expr instanceof INonDet) {
+			INonDet iNonDet = (INonDet)expr;
+			if(exprEnc.isBV()) {
+	        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMin(), iNonDet.getPrecision())));
+	        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)exprEnc, ctx.mkBV(iNonDet.getMax(), iNonDet.getPrecision())));					
+			} else {
+	        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)exprEnc, ctx.mkInt(iNonDet.getMin())));
+	        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)exprEnc, ctx.mkInt(iNonDet.getMax())));
+			}
+		}
+		return ctx.mkAnd(enc, ctx.mkEq(regResultExpr,  exprEnc));
 	}
 
 	// Unrolling
