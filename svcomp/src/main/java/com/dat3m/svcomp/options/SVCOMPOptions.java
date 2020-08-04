@@ -35,7 +35,7 @@ public class SVCOMPOptions extends BaseOptions {
         addOption(new Option("cegar", true,
                 "Use CEGAR"));
 
-        addOption(new Option("incremental", true,
+        addOption(new Option("incremental", false,
                 "Use Incremental Solver"));
 
         addOption(new Option("w", "witness", false,
