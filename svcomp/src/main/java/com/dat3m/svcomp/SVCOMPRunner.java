@@ -65,9 +65,6 @@ public class SVCOMPRunner {
 	    		cmd.add("-cegar");
 	    		cmd.add(String.valueOf(options.getCegar()));
 	    	}
-	    	if(options.getIncremental()) {
-	    		cmd.add("-incremental");
-	    	}
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
 
 	        try {
