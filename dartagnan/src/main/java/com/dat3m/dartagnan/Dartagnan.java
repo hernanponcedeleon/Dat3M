@@ -8,6 +8,7 @@ import static com.dat3m.dartagnan.utils.Result.BPASS;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -112,12 +113,9 @@ public class Dartagnan {
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
-        solver.add(wmm.consistent(program, ctx));
-
-        // Used for getting the UNKNOWN
-        // pop() is inside getResult
-        solver.push();
-       	solver.add(program.getAss().encode(ctx));
+        solver.add(wmm.consistent(program, ctx));        
+       	BoolExpr assEnc = ctx.mkBoolConst("assertion"); 
+       	solver.assertAndTrack(program.getAss().encode(ctx), assEnc);;
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
@@ -129,9 +127,8 @@ public class Dartagnan {
 			solver.add(encodeNoBoundEventExec);
 			res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
 		} else {
-			solver.pop();
 			solver.add(ctx.mkNot(encodeNoBoundEventExec));
-			res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;	
+			res = Arrays.asList(solver.getUnsatCore()).contains(assEnc) ? PASS : BPASS; 
 		}
         
 		if(program.getAss().getInvert()) {
@@ -160,7 +157,7 @@ public class Dartagnan {
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encodeBase(program, ctx, settings));
        	solver.add(wmm.getAxioms().get(cegar).encodeRelAndConsistency(ctx));
-
+       	
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
