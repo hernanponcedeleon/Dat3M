@@ -1,18 +1,16 @@
 package com.dat3m.dartagnan.utils;
 
 public enum Result {
-	PASS, FAIL, BPASS, BFAIL;
+	PASS, FAIL, UNKNOWN;
 
 	public static Result fromString(String name) {
 		switch (name) {
 		case "PASS":
 			return PASS;
-		case "BPASS":
-			return BPASS;
 		case "FAIL":
 			return FAIL;
-		case "BFAIL":
-			return BFAIL;
+		case "UNKNOWN":
+			return UNKNOWN;
 		}
         throw new UnsupportedOperationException("Illegal operator in Result");
 	}
@@ -21,12 +19,10 @@ public enum Result {
 		switch (this) {
 		case PASS:
 			return FAIL;
-		case BPASS:
-			return BFAIL;
 		case FAIL:
 			return PASS;
-		case BFAIL:
-			return BPASS;
+		case UNKNOWN:
+			return UNKNOWN;
 		}
 		throw new UnsupportedOperationException("Illegal operator in Result");
 	}

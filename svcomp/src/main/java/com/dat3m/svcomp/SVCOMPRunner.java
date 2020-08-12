@@ -36,8 +36,8 @@ public class SVCOMPRunner {
 		String name = path.substring(path.lastIndexOf('/'), path.lastIndexOf('_'));
 		int bound = 2;
 
-		String output = "BPASS";
-		while((output.equals("BPASS") || output.equals("BFAIL"))) {
+		String output = "UNKNOWN";
+		while(output.equals("UNKNOWN")) {
 			try {
 				compile(file, options.getOptimization(), options.getBP());
 			} catch (IOException e) {

@@ -2,13 +2,11 @@ package com.dat3m.dartagnan;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.BFAIL;
-import static com.dat3m.dartagnan.utils.Result.BPASS;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -114,8 +112,6 @@ public class Dartagnan {
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
         solver.add(wmm.consistent(program, ctx));        
-       	BoolExpr assEnc = ctx.mkBoolConst("assertion"); 
-       	solver.assertAndTrack(program.getAss().encode(ctx), assEnc);;
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
@@ -123,14 +119,11 @@ public class Dartagnan {
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
         Result res;
-        if(solver.check() == Status.SATISFIABLE) {
-			solver.add(encodeNoBoundEventExec);
-			res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;	
-		} else {
-			solver.add(ctx.mkNot(encodeNoBoundEventExec));
-			res = Arrays.asList(solver.getUnsatCore()).contains(assEnc) ? PASS : BPASS; 
-		}
-        
+        if(solver.check(encodeNoBoundEventExec) == Status.SATISFIABLE) {
+        	res = solver.check(program.getAss().encode(ctx)) == Status.SATISFIABLE ? FAIL : PASS;
+        } else {
+        	res = UNKNOWN;        	
+        }
 		if(program.getAss().getInvert()) {
 			res = res.invert();
 		}
@@ -173,13 +166,13 @@ public class Dartagnan {
 			if(solver.check() == Status.SATISFIABLE) {
 				solver.push();
 				solver.add(program.encodeNoBoundEventExec(ctx));
-				res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;
+				res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
 				solver.pop();
 			} else {
 				solver.pop();
 				solver.push();
 				solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
-				res = solver.check() == Status.SATISFIABLE ? BPASS : PASS;
+				res = solver.check() == Status.SATISFIABLE ? UNKNOWN : PASS;
 			}
 			// We get rid of the formulas added in the above branches
 			solver.pop();
@@ -189,7 +182,7 @@ public class Dartagnan {
 			}
 			
 			// If we are not using CEGAR or the formula was UNSAT, we return
-			if(cegar == -1 || res.equals(PASS) || res.equals(BPASS)) {
+			if(cegar == -1 || res.equals(PASS) || res.equals(UNKNOWN)) {
 				return res;
 			}
 
@@ -212,7 +205,7 @@ public class Dartagnan {
 				// For CEGAR, the same code above seems to never give BFAIL
 				// Thus we add the constraint here to avoid FAIL when the unrolling was not enough
 				solver.add(program.encodeNoBoundEventExec(ctx));
-				res = solver.check() == Status.SATISFIABLE ? FAIL : BFAIL;
+				res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
 				return res;
 			}
 
