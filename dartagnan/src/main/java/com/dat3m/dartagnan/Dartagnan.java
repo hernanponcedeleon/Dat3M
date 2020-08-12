@@ -111,7 +111,10 @@ public class Dartagnan {
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
-        solver.add(wmm.consistent(program, ctx));        
+        solver.add(wmm.consistent(program, ctx));
+        
+        solver.push();
+        solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
@@ -119,10 +122,13 @@ public class Dartagnan {
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
         Result res;
-        if(solver.check(encodeNoBoundEventExec) == Status.SATISFIABLE) {
-        	res = solver.check(program.getAss().encode(ctx)) == Status.SATISFIABLE ? FAIL : PASS;
+        if(solver.check() == Status.SATISFIABLE) {
+        	solver.add(encodeNoBoundEventExec);
+        	res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
         } else {
-        	res = UNKNOWN;        	
+        	solver.pop();
+			solver.add(ctx.mkNot(encodeNoBoundEventExec));
+        	res = solver.check() == Status.SATISFIABLE ? UNKNOWN : PASS;
         }
 		if(program.getAss().getInvert()) {
 			res = res.invert();
