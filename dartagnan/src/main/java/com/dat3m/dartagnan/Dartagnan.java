@@ -48,7 +48,7 @@ public class Dartagnan {
         }
 
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-        Wmm overApprox = options.getOverApproxPath() != null ? null : new ParserCat().parse(new File(options.getOverApproxPath()));
+        Wmm overApprox = options.getOverApproxPath() != null ? new ParserCat().parse(new File(options.getOverApproxPath())) : null;
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
 		
         Arch target = p.getArch();
