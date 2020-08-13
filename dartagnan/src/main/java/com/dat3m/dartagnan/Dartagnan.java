@@ -48,7 +48,8 @@ public class Dartagnan {
         }
 
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-		Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
+        Wmm overApprox = options.getOverApproxPath() != null ? null : new ParserCat().parse(new File(options.getOverApproxPath()));
+        Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
 		
         Arch target = p.getArch();
         if(target == null){
@@ -60,18 +61,11 @@ public class Dartagnan {
             return;
         }
         
-		Integer cegar = options.getCegar();
-        if(cegar != null && cegar >= mcm.getAxioms().size()) {
-            System.out.println("CEGAR argument must be between 1 and #axioms");
-            System.exit(0);
-            return;
-        }
-
         Settings settings = options.getSettings();
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
 
-        Result result = cegar != null ? runCegar(s, ctx, p, mcm, target, settings, cegar) : testProgram(s, ctx, p, mcm, target, settings);
+        Result result = overApprox != null ? runCegar(s, ctx, p, mcm, overApprox, target, settings) : testProgram(s, ctx, p, mcm, target, settings);
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -136,7 +130,7 @@ public class Dartagnan {
 		return res;
     }
     
-    public static Result runCegar(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings, int cegar) {
+    public static Result runCegar(Solver solver, Context ctx, Program program, Wmm exact, Wmm overApprox, Arch target, Settings settings) {
     	Map<BoolExpr, BoolExpr> track = new HashMap<>();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -154,14 +148,13 @@ public class Dartagnan {
 
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
-        solver.add(wmm.encodeBase(program, ctx, settings));
-       	solver.add(wmm.getAxioms().get(cegar).encodeRelAndConsistency(ctx));
-       	
+        solver.add(overApprox.encode(program, ctx, settings));
+       	solver.add(overApprox.consistent(program, ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
 
-		// Termination guaranteed because we add a new constraint in each 
+        // Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
 		Result res;
 		while(true) {
@@ -188,7 +181,7 @@ public class Dartagnan {
 			}
 			
 			// If we are not using CEGAR or the formula was UNSAT, we return
-			if(cegar == -1 || res.equals(PASS) || res.equals(UNKNOWN)) {
+			if(res.equals(PASS) || res.equals(UNKNOWN)) {
 				return res;
 			}
 
@@ -199,8 +192,8 @@ public class Dartagnan {
 			solver.check();
 			BoolExpr execution = program.getRf(ctx, solver.getModel());
 			solver.add(execution);
-    		solver.add(wmm.encodeBase(program, ctx, settings));
-        	for(Axiom ax : wmm.getAxioms()) {
+    		solver.add(exact.encodeBase(program, ctx, settings));
+        	for(Axiom ax : exact.getAxioms()) {
         		BoolExpr enc = ax.encodeRelAndConsistency(ctx);
         		BoolExpr axVar = ctx.mkBoolConst(ax.toString());
         		solver.assertAndTrack(enc, axVar);

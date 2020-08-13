@@ -33,19 +33,22 @@ import static org.junit.Assert.fail;
 public class SvCompTestConcurrencyCegar {
 
     private String path;
-    private Wmm wmm;
+    private Wmm exact;
+    private Wmm overApproximation;
     private Settings settings;
     private Result expected;
-
-	public SvCompTestConcurrencyCegar(String path, Wmm wmm, Settings settings) {
+	
+	public SvCompTestConcurrencyCegar(String path, Wmm wmm, Wmm wmm2, Settings settings) {
         this.path = path;
-        this.wmm = wmm;
+        this.exact = wmm;
+        this.overApproximation = wmm2;
         this.settings = settings;
 	}
     
-	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
+	@Parameterized.Parameters(name = "{index}: {0} bound={3}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
+        Wmm exact = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
+        Wmm overApprox = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcompC1.cat"));
 
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
         Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2, false);
@@ -55,44 +58,41 @@ public class SvCompTestConcurrencyCegar {
         
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl", wmm, s6});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-2-O0.bpl", wmm, s6});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-1-O0.bpl", wmm, s7});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-2-O0.bpl", wmm, s7});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/lazy01-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton_with-uninit-problems-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-2-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longer-1-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longest-1-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-1-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-1-O0.bpl", wmm, s6});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-2-O0.bpl", wmm, s6});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qrcu-2-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-1-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-2-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/time_var_mutex-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/01_inc-O0.bpl", wmm, s3});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/02_inc_cas-O0.bpl", wmm, s3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/14_spin2003-O0.bpl", wmm, s3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/18_read_write_lock-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/19_time_var_mutex-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/40_barrier_vf-O0.bpl", wmm, s3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/45_monabsex1_vs-O0.bpl", wmm, s3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/46_monabsex2_vs-O0.bpl", wmm, s3});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qw2004-2-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_1-join-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_2-join-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_3-join-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_1-container_of-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_2-container_of-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_3-container_of-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_4-container_of-O0.bpl", wmm, s1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_5-container_of-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_1-container_of-global-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_2-container_of-global-O0.bpl", wmm, s1});
-//        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/char_generic_nvram_nvram_unlocked_ioctl_write_nvram-O0.bpl", wmm, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl", exact, overApprox, s6});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-2-O0.bpl", exact, overApprox, s6});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-1-O0.bpl", exact, overApprox, s7});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-2-O0.bpl", exact, overApprox, s7});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/lazy01-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton_with-uninit-problems-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-2-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longer-1-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longest-1-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-1-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-1-O0.bpl", exact, overApprox, s6});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-2-O0.bpl", exact, overApprox, s6});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-1-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-2-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/time_var_mutex-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/01_inc-O0.bpl", exact, overApprox, s3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/14_spin2003-O0.bpl", exact, overApprox, s3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/18_read_write_lock-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/19_time_var_mutex-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/40_barrier_vf-O0.bpl", exact, overApprox, s3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/45_monabsex1_vs-O0.bpl", exact, overApprox, s3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/46_monabsex2_vs-O0.bpl", exact, overApprox, s3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qw2004-2-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_1-join-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_2-join-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-1_3-join-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_1-container_of-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_2-container_of-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_3-container_of-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_4-container_of-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_5-container_of-O0.bpl", exact, overApprox, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_1-container_of-global-O0.bpl", exact, overApprox, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_2-container_of-global-O0.bpl", exact, overApprox, s1});
 
         return data;
     }
@@ -105,7 +105,7 @@ public class SvCompTestConcurrencyCegar {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
-            assertTrue(Dartagnan.runCegar(solver, ctx, program, wmm, Arch.NONE, settings, 1).equals(expected));
+            assertTrue(Dartagnan.runCegar(solver, ctx, program, exact, overApproximation, Arch.NONE, settings).equals(expected));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

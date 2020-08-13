@@ -21,7 +21,7 @@ public class SVCOMPOptions extends BaseOptions {
     protected List<Integer> bounds = rangeClosed(1, 10000).boxed().collect(Collectors.toList());
     protected String optimization = "O0";
     protected boolean witness;
-    protected Integer cegar;
+    protected String overApproxFilePath;
     protected boolean bp;
     
     public SVCOMPOptions(){
@@ -32,7 +32,7 @@ public class SVCOMPOptions extends BaseOptions {
         addOption(catOption);
 
         addOption(new Option("cegar", true,
-                "Use CEGAR"));
+                "Use CEGAR. Argument is the path to the over-approximation memory model"));
 
         addOption(new Option("w", "witness", false,
                 "Creates a violation witness"));
@@ -56,7 +56,7 @@ public class SVCOMPOptions extends BaseOptions {
         }
         witness = cmd.hasOption("witness");
         if(cmd.hasOption("cegar")) {
-            cegar = Integer.parseInt(cmd.getOptionValue("cegar"));        	
+            overApproxFilePath = cmd.getOptionValue("cegar");
         }
         bp = cmd.hasOption("bit-precise");
     }
@@ -73,8 +73,8 @@ public class SVCOMPOptions extends BaseOptions {
         return bp;
     }
 
-    public Integer getCegar(){
-        return cegar;
+    public String getOverApproxPath(){
+        return overApproxFilePath;
     }
 
     public List<Integer> getBounds() {

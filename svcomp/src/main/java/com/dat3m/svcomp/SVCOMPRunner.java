@@ -61,9 +61,9 @@ public class SVCOMPRunner {
 	    	cmd.add("none");
 	    	cmd.add("-unroll");
 	    	cmd.add(String.valueOf(bound));
-	    	if(options.getCegar() != null) {
+	    	if(options.getOverApproxPath() != null) {
 	    		cmd.add("-cegar");
-	    		cmd.add(String.valueOf(options.getCegar()));
+	    		cmd.add(String.valueOf(options.getOverApproxPath()));
 	    	}
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
 

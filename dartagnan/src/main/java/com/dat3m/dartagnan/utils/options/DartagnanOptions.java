@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableSet;
 public class DartagnanOptions extends BaseOptions {
 
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
-    protected Integer cegar;
+    protected String overApproxFilePath;
 	
     public DartagnanOptions(){
         super();
@@ -20,7 +20,7 @@ public class DartagnanOptions extends BaseOptions {
         addOption(catOption);
 
         addOption(new Option("cegar", true,
-                "Use CEGAR"));
+        		"Use CEGAR. Argument is the path to the over-approximation memory model"));
     }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -30,11 +30,11 @@ public class DartagnanOptions extends BaseOptions {
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
         if(cmd.hasOption("cegar")) {
-            cegar = Integer.parseInt(cmd.getOptionValue("cegar")) - 1;        	
+            overApproxFilePath = cmd.getOptionValue("cegar");
         }
     }
     
-    public Integer getCegar(){
-        return cegar;
+    public String getOverApproxPath(){
+        return overApproxFilePath;
     }
 }
