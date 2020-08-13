@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.memory;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -56,7 +57,7 @@ public class Memory {
 				enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3Int(ctx), constantAddress));
         	}
         }
-        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx)).toArray(Expr[]::new)));
+        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false) : a.toZ3Int(ctx)).toArray(Expr[]::new)));
     }
 
     public List<Address> malloc(String name, int size){

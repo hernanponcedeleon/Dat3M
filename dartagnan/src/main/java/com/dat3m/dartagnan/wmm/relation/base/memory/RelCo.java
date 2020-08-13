@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -97,10 +98,11 @@ public class RelCo extends Relation {
             enc = ctx.mkAnd(enc, ctx.mkEq(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
-                enc = ctx.mkAnd(enc, ctx.mkImplies(
-                        ctx.mkAnd(lastCoExpr, ctx.mkEq(w1.getMemAddressExpr(), address.toZ3Int(ctx))),
-                        ctx.mkEq(address.getLastMemValueExpr(ctx), w1.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemValueExpr(), false) : w1.getMemValueExpr())
-                ));
+            	Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
+            	Expr a2 = address.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr)address.toZ3Int(ctx), false) : address.toZ3Int(ctx);
+				Expr v1 = address.getLastMemValueExpr(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr)address.getLastMemValueExpr(ctx), false) : address.getLastMemValueExpr(ctx);
+                Expr v2 = w1.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemValueExpr(), false) : w1.getMemValueExpr();
+				enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(lastCoExpr, ctx.mkEq(a1, a2)),ctx.mkEq(v1, v2)));
             }
         }
         return enc;
