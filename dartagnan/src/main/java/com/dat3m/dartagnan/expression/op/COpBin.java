@@ -37,7 +37,7 @@ public enum COpBin {
             case EQ:
                 return ctx.mkEq(e1, e2);
             case NEQ:
-                return ctx.mkNot(ctx.mkEq(e1, e2));
+                return ctx.mkDistinct(e1, e2);
             case LT:
             	return e1.isBV() ? ctx.mkBVSLT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLt((ArithExpr)e1, (ArithExpr)e2);
             case ULT:
