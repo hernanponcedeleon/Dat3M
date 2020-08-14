@@ -150,10 +150,14 @@ public class Dartagnan {
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(overApprox.encode(program, ctx, settings));
        	solver.add(overApprox.consistent(program, ctx));
+       	
+       	// Assertion + filter
+       	BoolExpr ass = program.getAss().encode(ctx);
         if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(ctx));
+            ass = ctx.mkAnd(ass, program.getAssFilter().encode(ctx));
         }
-
+        BoolExpr execution = null;
+        
         // Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
 		Result res;
@@ -161,8 +165,9 @@ public class Dartagnan {
 	        solver.push();
 	        // This needs to be pop for the else branch below
 	        // If not the formula will always remain UNSAT
-	       	solver.add(program.getAss().encode(ctx));
+	       	solver.add(ass);
 			if(solver.check() == Status.SATISFIABLE) {
+				execution = program.getRf(ctx, solver.getModel());
 				solver.push();
 				solver.add(program.encodeNoBoundEventExec(ctx));
 				res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
@@ -180,20 +185,16 @@ public class Dartagnan {
 				res = res.invert();
 			}
 			
-			// If we are not using CEGAR or the formula was UNSAT, we return
+			// If any of the formulas was UNSAT, we return
 			if(res.equals(PASS) || res.equals(UNKNOWN)) {
 				return res;
 			}
 
+			// Check if the execution consistent in the exact model
 			solver.push();
-	       	solver.add(program.getAss().encode(ctx));
-			// We need this to get the model below. This check will always succeed
-			// If not we would have returned above
-			solver.check();
-			BoolExpr execution = program.getRf(ctx, solver.getModel());
 			solver.add(execution);
-    		solver.add(exact.encodeBase(program, ctx, settings));
-        	for(Axiom ax : exact.getAxioms()) {
+    		solver.add(exact.encodeBase(program, ctx, settings));        	
+    		for(Axiom ax : exact.getAxioms()) {
         		BoolExpr enc = ax.encodeRelAndConsistency(ctx);
         		BoolExpr axVar = ctx.mkBoolConst(ax.toString());
         		solver.assertAndTrack(enc, axVar);
@@ -201,11 +202,7 @@ public class Dartagnan {
         	}
 			
 			if(solver.check() == Status.SATISFIABLE) {
-				// For CEGAR, the same code above seems to never give BFAIL
-				// Thus we add the constraint here to avoid FAIL when the unrolling was not enough
-				solver.add(program.encodeNoBoundEventExec(ctx));
-				res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
-				return res;
+				return FAIL;
 			}
 
 			BoolExpr[] unsatCore = solver.getUnsatCore();
