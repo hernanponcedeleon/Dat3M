@@ -11,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.HelpFormatter;
 
@@ -29,7 +30,6 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
-import com.microsoft.z3.Status;
 
 public class Dartagnan {
 
@@ -109,9 +109,9 @@ public class Dartagnan {
         }
 
         Result res = UNKNOWN;
-        if(solver.check() == SATISFIABLE) {
+		if(solver.check() == SATISFIABLE) {
         	solver.add(program.encodeNoBoundEventExec(ctx));
-        	res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
+			res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
         } else {
         	solver.pop();
 			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
@@ -134,6 +134,7 @@ public class Dartagnan {
 
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
+        // Encode over-approximation memory model
         solver.add(overApprox.encode(program, ctx, settings));
        	solver.add(overApprox.consistent(program, ctx));
        	
@@ -143,10 +144,22 @@ public class Dartagnan {
             ass = ctx.mkAnd(ass, program.getAssFilter().encode(ctx));
         }
         BoolExpr execution = null;
-        
+
+        // Encode precise memory model
+        // On the tested experiments, it is faster to computer this here even if latter is not used
+		solver.add(exact.encodeBase(program, ctx, settings));
+		for(Axiom ax : exact.getAxioms()) {
+			if(overApprox.getAxioms().stream().map(a -> a.toString()).collect(Collectors.toList()).contains(ax.toString())) {
+				continue;
+			}
+    		BoolExpr enc = ax.encodeRelAndConsistency(ctx);
+    		BoolExpr axVar = ctx.mkBoolConst(ax.toString());
+    		track.put(axVar, enc);
+    	}
+
         // Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
-		Result res;
+        Result res = UNKNOWN;
 		while(true) {
 	        solver.push();
 	        // This needs to be pop for the else branch below
@@ -179,24 +192,20 @@ public class Dartagnan {
 			// Check if the execution consistent in the exact model
 			solver.push();
 			solver.add(execution);
-    		solver.add(exact.encodeBase(program, ctx, settings));        	
-    		for(Axiom ax : exact.getAxioms()) {
-        		BoolExpr enc = ax.encodeRelAndConsistency(ctx);
-        		BoolExpr axVar = ctx.mkBoolConst(ax.toString());
-        		solver.assertAndTrack(enc, axVar);
-        		track.put(axVar, enc);
-        	}
+    		for(BoolExpr k : track.keySet()) {
+    			solver.assertAndTrack(track.get(k), k);
+    		}
 			
 			if(solver.check() == SATISFIABLE) {
 				return FAIL;
 			}
 
+			// Add the axiom that forbids the spurious execution
 			BoolExpr[] unsatCore = solver.getUnsatCore();
 			solver.pop();
 			for(BoolExpr axVar : unsatCore) {
 				solver.add(track.get(axVar));					
 			}
-			solver.add(ctx.mkNot(execution));
 		}
     }
 
