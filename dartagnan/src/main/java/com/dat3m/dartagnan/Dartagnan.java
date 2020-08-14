@@ -3,6 +3,8 @@ package com.dat3m.dartagnan;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static com.microsoft.z3.Status.SATISFIABLE;
+import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,7 +30,6 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
-import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 public class Dartagnan {
 
@@ -79,7 +80,7 @@ public class Dartagnan {
         }
 
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
-        	ctx.setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL);
+        	ctx.setPrintMode(Z3_PRINT_SMTLIB_FULL);
             drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
             System.out.println("Execution graph is written to " + options.getGraphFilePath());
         }
@@ -91,43 +92,33 @@ public class Dartagnan {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
-        // Thus we need to set the assertion after compilation
-        if(program.getAss() == null){
-        	AbstractAssert ass = program.createAssertion();
-			program.setAss(ass);
-        	// Due to optimizations, the program might be trivially true
-        	// Not returning here might loop forever for cyclic programs
-        	if(ass instanceof AssertTrue) {
-        		return PASS;
-        	}
-        }
+        // Thus we need to update the assertion after compilation
+        program.updateAssertion();
+       	if(program.getAss() instanceof AssertTrue) {
+       		return PASS;
+       	}
 
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
-        solver.add(wmm.consistent(program, ctx));
-        
+        solver.add(wmm.consistent(program, ctx));  
         solver.push();
         solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
 
-        BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
-
-        Result res;
-        if(solver.check() == Status.SATISFIABLE) {
-        	solver.add(encodeNoBoundEventExec);
+        Result res = UNKNOWN;
+        if(solver.check() == SATISFIABLE) {
+        	solver.add(program.encodeNoBoundEventExec(ctx));
         	res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
         } else {
         	solver.pop();
-			solver.add(ctx.mkNot(encodeNoBoundEventExec));
-        	res = solver.check() == Status.SATISFIABLE ? UNKNOWN : PASS;
+			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
+        	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
-		if(program.getAss().getInvert()) {
-			res = res.invert();
-		}
-		return res;
+
+        return program.getAss().getInvert() ? res.invert() : res;
     }
     
     public static Result runCegar(Solver solver, Context ctx, Program program, Wmm exact, Wmm overApprox, Arch target, Settings settings) {
@@ -135,16 +126,11 @@ public class Dartagnan {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
-        // Thus we need to set the assertion after compilation
-        if(program.getAss() == null){
-        	AbstractAssert ass = program.createAssertion();
-			program.setAss(ass);
-        	// Due to optimizations, the program might be trivially true
-        	// Not returning here might loop forever for cyclic programs
-        	if(ass instanceof AssertTrue) {
-        		return PASS;
-        	}
-        }
+        // Thus we need to update the assertion after compilation
+        program.updateAssertion();
+       	if(program.getAss() instanceof AssertTrue) {
+       		return PASS;
+       	}
 
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
@@ -166,17 +152,17 @@ public class Dartagnan {
 	        // This needs to be pop for the else branch below
 	        // If not the formula will always remain UNSAT
 	       	solver.add(ass);
-			if(solver.check() == Status.SATISFIABLE) {
+			if(solver.check() == SATISFIABLE) {
 				execution = program.getRf(ctx, solver.getModel());
 				solver.push();
 				solver.add(program.encodeNoBoundEventExec(ctx));
-				res = solver.check() == Status.SATISFIABLE ? FAIL : UNKNOWN;
+				res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
 				solver.pop();
 			} else {
 				solver.pop();
 				solver.push();
 				solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
-				res = solver.check() == Status.SATISFIABLE ? UNKNOWN : PASS;
+				res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
 			}
 			// We get rid of the formulas added in the above branches
 			solver.pop();
@@ -201,7 +187,7 @@ public class Dartagnan {
         		track.put(axVar, enc);
         	}
 			
-			if(solver.check() == Status.SATISFIABLE) {
+			if(solver.check() == SATISFIABLE) {
 				return FAIL;
 			}
 

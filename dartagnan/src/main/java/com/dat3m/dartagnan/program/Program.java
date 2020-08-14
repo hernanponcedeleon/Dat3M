@@ -123,19 +123,21 @@ public class Program {
 		return events;
 	}
 
-	public AbstractAssert createAssertion() {
-		AbstractAssert ass = new AssertTrue();
+	public void updateAssertion() {
+		if(ass != null) {
+			return;
+		}
 		List<Event> assertions = new ArrayList<>();
 		for(Thread t : threads){
 			assertions.addAll(t.getCache().getEvents(FilterBasic.get(EType.ASSERTION)));
 		}
-    	if(!assertions.isEmpty()) {
+		ass = new AssertTrue();
+		if(!assertions.isEmpty()) {
     		ass = new AssertInline((Local)assertions.get(0));
     		for(int i = 1; i < assertions.size(); i++) {
     			ass = new AssertCompositeOr(ass, new AssertInline((Local)assertions.get(i)));
     		}
     	}
-		return ass;
 	}
 
     // Unrolling
