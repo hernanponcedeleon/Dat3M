@@ -146,17 +146,16 @@ public class Dartagnan {
         BoolExpr execution = null;
 
         // Encode precise memory model
-        // On the tested experiments, it is faster to computer this here even if latter is not used
+        // On the tested experiments, it is faster to compute this here even if latter is not used
 		solver.add(exact.encodeBase(program, ctx, settings));
 		for(Axiom ax : exact.getAxioms()) {
+			// Avoid adding what was already added by the over-approximation
 			if(overApprox.getAxioms().stream().map(a -> a.toString()).collect(Collectors.toList()).contains(ax.toString())) {
 				continue;
 			}
-    		BoolExpr enc = ax.encodeRelAndConsistency(ctx);
-    		BoolExpr axVar = ctx.mkBoolConst(ax.toString());
-    		track.put(axVar, enc);
+			track.put(ctx.mkBoolConst(ax.toString()), ax.encodeRelAndConsistency(ctx));	
     	}
-
+        
         Result res = UNKNOWN;
         // Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
@@ -192,9 +191,9 @@ public class Dartagnan {
 			// Check if the execution consistent in the exact model
 			solver.push();
 			solver.add(execution);
-    		for(BoolExpr k : track.keySet()) {
-    			solver.assertAndTrack(track.get(k), k);
-    		}
+			for(BoolExpr k : track.keySet()) {
+        		solver.assertAndTrack(track.get(k), k);
+			}
 			
 			if(solver.check() == SATISFIABLE) {
 				return FAIL;
