@@ -157,9 +157,9 @@ public class Dartagnan {
     		track.put(axVar, enc);
     	}
 
+        Result res = UNKNOWN;
         // Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
-        Result res = UNKNOWN;
 		while(true) {
 	        solver.push();
 	        // This needs to be pop for the else branch below
