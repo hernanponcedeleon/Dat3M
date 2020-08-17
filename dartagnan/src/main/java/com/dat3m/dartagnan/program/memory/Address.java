@@ -68,6 +68,9 @@ public class Address extends IConst implements ExprInterface {
 
     @Override
     public Expr toZ3Int(Context ctx){
+    	if(hasConstValue()) {
+    		return precision > 0 ? ctx.mkBV(constValue, precision) : ctx.mkInt(constValue);
+    	}
 		return precision > 0 ? ctx.mkBVConst("memory_" + index, precision) : ctx.mkIntConst("memory_" + index);
     }
 

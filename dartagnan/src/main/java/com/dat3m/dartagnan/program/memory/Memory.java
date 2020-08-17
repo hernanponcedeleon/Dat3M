@@ -32,30 +32,14 @@ public class Memory {
 
     public BoolExpr encode(Context ctx){
         BoolExpr enc = ctx.mkTrue();
-        Set<Expr> expressions = new HashSet<>();
-
         for(List<Address> array : arrays.values()){
-            int size = array.size();
             Expr e1 = array.get(0).toZ3Int(ctx);
-            if(!array.get(0).hasConstValue()) {
-                expressions.add(e1);            	
-            }
-
-            for(int i = 1; i < size; i++){
+            for(int i = 1; i < array.size(); i++){
                 Expr e2 = array.get(i).toZ3Int(ctx);
-                Expr newAddress = ctx.mkAdd((IntExpr)e1, ctx.mkInt(1));
-				enc = ctx.mkAnd(enc, ctx.mkEq(newAddress, e2));
-                if(!array.get(i).hasConstValue()) {
-                    expressions.add(e2);                	
-                }
+                Expr newAddress = e1.isBV() ? ctx.mkBVAdd((BitVecExpr)e1, ctx.mkBV(1, array.get(0).getPrecision())) : ctx.mkAdd((IntExpr)e1, ctx.mkInt(1));
+				enc = ctx.mkAnd(enc, ctx.mkEq(e2, newAddress));
                 e1 = e2;
             }
-        }
-        for(Address address : map.values()){
-        	if(address.hasConstValue()) {
-        		Expr constantAddress = ctx.mkInt(address.getConstValue());
-				enc = ctx.mkAnd(enc, ctx.mkEq(address.toZ3Int(ctx), constantAddress));
-        	}
         }
         return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false) : a.toZ3Int(ctx)).toArray(Expr[]::new)));
     }
