@@ -145,17 +145,6 @@ public class Dartagnan {
         }
         BoolExpr execution = null;
 
-        // Encode precise memory model
-        // On the tested experiments, it is faster to compute this here even if latter is not used
-		solver.add(exact.encodeBase(program, ctx, settings));
-		for(Axiom ax : exact.getAxioms()) {
-			// Avoid adding what was already added by the over-approximation
-			if(overApprox.getAxioms().stream().map(a -> a.toString()).collect(Collectors.toList()).contains(ax.toString())) {
-				continue;
-			}
-			track.put(ctx.mkBoolConst(ax.toString()), ax.encodeRelAndConsistency(ctx));	
-    	}
-        
         Result res = UNKNOWN;
         // Termination guaranteed because we add a new constraint in each 
 		// iteration and thus the formula will eventually become UNSAT
@@ -191,9 +180,21 @@ public class Dartagnan {
 			// Check if the execution consistent in the exact model
 			solver.push();
 			solver.add(execution);
-			for(BoolExpr k : track.keySet()) {
-        		solver.assertAndTrack(track.get(k), k);
-			}
+	        // Encode precise memory model
+			// In principle having this inside the loop is not a problem because
+			// the expensive things to computed (may/active sets) are cached.
+			solver.add(exact.encodeBase(program, ctx, settings));
+			for(Axiom ax : exact.getAxioms()) {
+				// Avoid adding what was already added by the over-approximation
+				if(overApprox.getAxioms().stream().map(a -> a.toString()).collect(Collectors.toList()).contains(ax.toString())) {
+					continue;
+				}
+				BoolExpr axVar = ctx.mkBoolConst(ax.toString());
+				if(!track.containsKey(axVar)) {
+					track.put(axVar, ax.encodeRelAndConsistency(ctx));						
+				}
+				solver.assertAndTrack(track.get(axVar), axVar);
+	    	}
 			
 			if(solver.check() == SATISFIABLE) {
 				return FAIL;
