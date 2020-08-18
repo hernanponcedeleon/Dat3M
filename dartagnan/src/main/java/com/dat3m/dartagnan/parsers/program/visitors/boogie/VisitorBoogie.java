@@ -463,17 +463,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
-		// TODO: find a nicer way of dealing with this
-		if(ctx.getText().contains("$load.")) {
-			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
-			String tmp = ctx.def_body().exprs().expr(0).getText();
-			tmp = tmp.substring(0, tmp.lastIndexOf(')'));
-			tmp = tmp.substring(tmp.lastIndexOf(',')+1);
-			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, -1);
-			pool.addRegPtr(reg, ptr);
-		}
         ExprsContext exprs = ctx.def_body().exprs();
     	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
@@ -493,15 +482,22 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	        	if(ctx.getText().contains("$load.")) {
-	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null));
+	        	if(ctx.getText().contains("$load.") || value instanceof Address) {
+	        		try {
+		    			// This names are global so we don't use currentScope.getID(), but per thread.
+		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
+		    			String tmp = ctx.def_body().exprs().expr(0).getText();
+		    			tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
+		    			// This names are global so we don't use currentScope.getID(), but per thread.
+		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, -1);
+	        			pool.addRegPtr(reg, ptr);	        				        			
+	        		} catch (Exception e) {
+	        			// Nothing to be done
+	        		}
+	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null));	        			
 		            continue;
 	        	}
-	        	if(value instanceof Address) {
-	                programBuilder.addChild(threadCount, new Load(register, (Address)value, null));
-	        	} else {
-		            programBuilder.addChild(threadCount, new Local(register, value));	        		
-	        	}
+	            programBuilder.addChild(threadCount, new Local(register, value));	        		
 	            continue;
 	        }
 	        Location location = programBuilder.getLocation(name);
@@ -701,7 +697,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.contains("$load.")) {
 			return (IExpr)ctx.expr(1).accept(this);
 		}
-		// TODO this blows up when we have big arrays
 		if(name.contains("$store.")) {
 			IExpr address = (IExpr)ctx.expr(1).accept(this);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
