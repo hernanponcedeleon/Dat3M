@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base.rmw;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -24,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.*;
@@ -80,7 +80,7 @@ public class ExclusivePairsTest {
             Program program = new ProgramParser().parse(new File(path));
 
             // Test final state
-            assertEquals(expectedState, Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings));
+            assertEquals(expectedState, runAnalysis(solver, ctx, program, wmm, program.getArch(), settings));
 
             // Test edges
             if(expectedEdges != null){

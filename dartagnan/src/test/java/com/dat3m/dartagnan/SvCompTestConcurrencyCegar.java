@@ -23,6 +23,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.dat3m.dartagnan.analysis.Cegar.runAnalysis;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -105,7 +107,7 @@ public class SvCompTestConcurrencyCegar {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
-            assertTrue(Dartagnan.runCegar(solver, ctx, program, exact, overApproximation, Arch.NONE, settings).equals(expected));
+            assertTrue(runAnalysis(solver, ctx, program, exact, overApproximation, Arch.NONE, settings).equals(expected));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");
