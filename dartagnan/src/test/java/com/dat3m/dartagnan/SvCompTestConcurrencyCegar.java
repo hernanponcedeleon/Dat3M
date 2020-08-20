@@ -109,6 +109,20 @@ public class SvCompTestConcurrencyCegar {
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             assertTrue(runAnalysis(solver, ctx, program, exact, overApproximation, Arch.NONE, settings).equals(expected));
+            ctx.close();
+        } catch (IOException e){
+            fail("Missing resource file");
+        }
+    }
+
+    @Test(timeout = 180000)
+    public void testIncremenral() {
+        try {
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	expected = readExptected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            Context ctx = new Context();
+            Solver solver = ctx.mkSolver();
             assertTrue(runAnalysisIncrementalSolver(solver, ctx, program, exact, overApproximation, Arch.NONE, settings).equals(expected));
             ctx.close();
         } catch (IOException e){
