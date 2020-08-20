@@ -67,7 +67,6 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-2_5-container_of-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_1-container_of-global-O0.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/race-3_2-container_of-global-O0.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/char_generic_nvram_nvram_unlocked_ioctl_write_nvram-O0.bpl", wmm, s1});
 
         return data;
     }

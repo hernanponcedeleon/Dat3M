@@ -37,7 +37,7 @@ public abstract class AbstractSvCompTest {
         this.settings = settings;
     }
 
-    @Test(timeout = 120000)
+    @Test(timeout = 180000)
     public void test() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
@@ -52,7 +52,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = 120000)
+    @Test(timeout = 180000)
     public void testIncremental() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
