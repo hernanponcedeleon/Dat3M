@@ -23,6 +23,7 @@ public class SVCOMPOptions extends BaseOptions {
     protected boolean witness;
     protected String overApproxFilePath;
     protected boolean bp;
+    protected boolean iSolver;
     
     public SVCOMPOptions(){
         super();
@@ -33,6 +34,9 @@ public class SVCOMPOptions extends BaseOptions {
 
         addOption(new Option("cegar", true,
                 "Use CEGAR. Argument is the path to the over-approximation memory model"));
+        
+        addOption(new Option("incrementalSolver", false,
+        		"Use an incremental solver"));
 
         addOption(new Option("w", "witness", false,
                 "Creates a violation witness"));
@@ -58,6 +62,7 @@ public class SVCOMPOptions extends BaseOptions {
         if(cmd.hasOption("cegar")) {
             overApproxFilePath = cmd.getOptionValue("cegar");
         }
+        iSolver = cmd.hasOption("incrementalSolver");
         bp = cmd.hasOption("bit-precise");
     }
 
@@ -65,11 +70,15 @@ public class SVCOMPOptions extends BaseOptions {
         return optimization;
     }
 
+    public boolean useISolver(){
+        return iSolver;
+    }
+
     public boolean getGenerateWitness(){
         return witness;
     }
 
-    public boolean getBP(){
+    public boolean useBP(){
         return bp;
     }
 

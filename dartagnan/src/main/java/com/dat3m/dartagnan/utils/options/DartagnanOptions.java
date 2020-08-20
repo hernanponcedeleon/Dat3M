@@ -11,6 +11,7 @@ public class DartagnanOptions extends BaseOptions {
 
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
     protected String overApproxFilePath;
+    protected boolean iSolver;
 	
     public DartagnanOptions(){
         super();
@@ -21,7 +22,10 @@ public class DartagnanOptions extends BaseOptions {
 
         addOption(new Option("cegar", true,
         		"Use CEGAR. Argument is the path to the over-approximation memory model"));
-    }
+
+        addOption(new Option("incrementalSolver", false,
+        		"Use an incremental solver"));
+}
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
@@ -32,9 +36,14 @@ public class DartagnanOptions extends BaseOptions {
         if(cmd.hasOption("cegar")) {
             overApproxFilePath = cmd.getOptionValue("cegar");
         }
+        iSolver = cmd.hasOption("incrementalSolver");
     }
     
     public String getOverApproxPath(){
         return overApproxFilePath;
+    }
+    
+    public boolean useISolver(){
+        return iSolver;
     }
 }

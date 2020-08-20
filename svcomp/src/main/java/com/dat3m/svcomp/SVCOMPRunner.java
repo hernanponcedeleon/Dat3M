@@ -39,7 +39,7 @@ public class SVCOMPRunner {
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
 			try {
-				compile(file, options.getOptimization(), options.getBP());
+				compile(file, options.getOptimization(), options.useBP());
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
 				System.exit(0);
@@ -64,6 +64,9 @@ public class SVCOMPRunner {
 	    	if(options.getOverApproxPath() != null) {
 	    		cmd.add("-cegar");
 	    		cmd.add(String.valueOf(options.getOverApproxPath()));
+	    	}
+	    	if(options.useISolver()) {
+	    		cmd.add("-incrementalSolver");
 	    	}
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
 

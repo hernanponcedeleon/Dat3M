@@ -2,7 +2,10 @@ package com.dat3m.dartagnan;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Cegar.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.Cegar.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
 import java.io.File;
@@ -58,7 +61,12 @@ public class Dartagnan {
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
 
-        Result result = overApprox != null ? runAnalysis(s, ctx, p, mcm, overApprox, target, settings) : runAnalysis(s, ctx, p, mcm, target, settings);
+        Result result = UNKNOWN;
+        if(options.useISolver()) {
+            result = overApprox != null ? runAnalysisIncrementalSolver(s, ctx, p, mcm, overApprox, target, settings) : runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings);        	
+        } else {
+            result = overApprox != null ? runAnalysis(s, ctx, p, mcm, overApprox, target, settings) : runAnalysis(s, ctx, p, mcm, target, settings);
+        }
 
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
