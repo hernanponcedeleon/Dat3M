@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.analysis.Cegar.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Cegar.runAnalysis;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -99,7 +100,7 @@ public class SvCompTestConcurrencyCegar {
         return data;
     }
     
-    @Test(timeout = 120000)
+    @Test(timeout = 180000)
     public void test() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
@@ -108,6 +109,7 @@ public class SvCompTestConcurrencyCegar {
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             assertTrue(runAnalysis(solver, ctx, program, exact, overApproximation, Arch.NONE, settings).equals(expected));
+            assertTrue(runAnalysisIncrementalSolver(solver, ctx, program, exact, overApproximation, Arch.NONE, settings).equals(expected));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

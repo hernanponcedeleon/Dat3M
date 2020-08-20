@@ -6,7 +6,9 @@ import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.microsoft.z3.Status.SATISFIABLE;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
@@ -22,7 +24,98 @@ import com.microsoft.z3.Solver;
 
 public class Cegar {
 
-    public static Result runAnalysis(Solver solver, Context ctx, Program program, Wmm exact, Wmm overApprox, Arch target, Settings settings) {
+    public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm exact, Wmm overApprox, Arch target, Settings settings) {
+    	
+    	Set<BoolExpr> refAxioms = new HashSet<>();
+    	Map<BoolExpr, BoolExpr> track = new HashMap<>();
+    	
+    	program.unroll(settings.getBound(), 0);
+        program.compile(target, 0);
+        program.updateAssertion();
+       	if(program.getAss() instanceof AssertTrue) {
+       		return PASS;
+       	}
+
+        BoolExpr encodeCF = program.encodeCF(ctx);
+        BoolExpr encodeFV = program.encodeFinalRegisterValues(ctx);
+        BoolExpr encodeOverApprox = overApprox.encode(program, ctx, settings);
+       	BoolExpr consOverApprox = overApprox.consistent(program, ctx);
+       	BoolExpr ass = program.getAss().encode(ctx);
+        if(program.getAssFilter() != null){
+            ass = ctx.mkAnd(ass, program.getAssFilter().encode(ctx));
+        }
+        BoolExpr execution = null;
+        
+        Result res = UNKNOWN;
+		while(true) {
+			
+			s1 = ctx.mkSolver();
+			Solver s2 = ctx.mkSolver();
+			Solver s3 = ctx.mkSolver();
+			
+			// Encodes the over-approximation + refinement axioms + assertion
+	       	s1.add(encodeCF);
+			s1.add(encodeFV);
+			s1.add(encodeOverApprox);
+			s1.add(consOverApprox);
+			for(BoolExpr ax : refAxioms) {
+				s1.add(ax);
+			}
+	       	s1.add(ass);
+
+	       	if(s1.check() == SATISFIABLE) {
+				execution = program.getRf(ctx, s1.getModel());
+				s1.add(program.encodeNoBoundEventExec(ctx));
+				res = s1.check() == SATISFIABLE ? FAIL : UNKNOWN;
+			} else {
+				s2.add(encodeCF);
+				s2.add(encodeFV);
+				s2.add(encodeOverApprox);
+				s2.add(consOverApprox);
+				for(BoolExpr ax : refAxioms) {
+					s2.add(ax);
+				}
+				s2.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
+				res = s2.check() == SATISFIABLE ? UNKNOWN : PASS;
+			}
+			
+			if(program.getAss().getInvert()) {
+				res = res.invert();
+			}
+			
+			if(res.equals(PASS) || res.equals(UNKNOWN)) {
+				return res;
+			}
+
+			// Encodes the exact memory model + assertion + the execution obtained from the abstraction
+	       	s3.add(encodeCF);
+			s3.add(encodeFV);
+			s3.add(exact.encodeBase(program, ctx, settings));
+			for(Axiom ax : exact.getAxioms()) {
+				BoolExpr axVar = ctx.mkBoolConst(ax.toString());
+				if(!track.containsKey(axVar)) {
+					track.put(axVar, ax.encodeRelAndConsistency(ctx));						
+				}
+				s3.assertAndTrack(track.get(axVar), axVar);
+	    	}
+	       	s3.add(ass);
+			s3.add(execution);
+			if(s3.check() == SATISFIABLE) {
+				return FAIL;
+			}
+
+			for(BoolExpr b : s3.getUnsatCore()) {
+				// No need to add what is in the over-approximation already
+				if(overApprox.getAxioms().stream().anyMatch(e -> b.toString().contains(e.toString()))) {
+					continue;
+				}
+				// Adds axioms to the refinement
+				refAxioms.add(track.get(b));				
+			}
+		}
+    }
+	
+    public static Result runAnalysisIncrementalSolver(Solver solver, Context ctx, Program program, Wmm exact, Wmm overApprox, Arch target, Settings settings) {
     	Map<BoolExpr, BoolExpr> track = new HashMap<>();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -109,5 +202,4 @@ public class Cegar {
 			}
 		}
     }
-	
 }
