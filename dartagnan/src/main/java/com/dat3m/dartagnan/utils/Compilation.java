@@ -16,7 +16,8 @@ public class Compilation {
     	cmd.add("-t");
     	cmd.add("--no-memory-splitting");
     	if(bp) {
-        	cmd.add("--integer-encoding bit-vector");    		
+    		cmd.add("--integer-encoding");
+    		cmd.add("bit-vector");
     	}
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + flag + " -fno-vectorize -fno-slp-vectorize -I./include/");
     	cmd.add("-bpl");
