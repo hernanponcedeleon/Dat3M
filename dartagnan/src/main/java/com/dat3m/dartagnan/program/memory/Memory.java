@@ -41,6 +41,12 @@ public class Memory {
                 e1 = e2;
             }
         }
+        for(Address add : getAllAddresses()) {
+        	if(!add.hasConstValue()) {
+        		BoolExpr positive = add.toZ3Int(ctx).isBV() ? ctx.mkBVSGE((BitVecExpr)add.toZ3Int(ctx), ctx.mkBV(0, add.getPrecision())) : ctx.mkGe((IntExpr)add.toZ3Int(ctx), ctx.mkInt(0));
+        		enc = ctx.mkAnd(enc, positive);
+        	}
+        }
         return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false) : a.toZ3Int(ctx)).toArray(Expr[]::new)));
     }
 
