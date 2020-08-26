@@ -36,6 +36,7 @@ public abstract class Event implements Comparable<Event> {
 		this.oId = other.oId;
         this.uId = other.uId;
         this.cId = other.cId;
+        this.cLine = other.cLine;
         this.filter = other.filter;
     }
 
