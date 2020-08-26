@@ -71,7 +71,7 @@ public class Witness {
 					}
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
-                                        if(threads == 0) {
+					if(threads == 0) {
 						fw.write("      <data key=\"enterFunction\">" + t.getName() + "</data>\n");
 					}
 					fw.write("    </edge>\n");
