@@ -62,7 +62,7 @@ public class Witness {
 			int nextNode = 0;
 			int threads = 0;
 			for(Thread t : program.getThreads()) {
-				if(t.getName() != null) {
+				if(t.getName() != null && !t.getName().equals(String.valueOf(t.getId()))) {
 					fw.write("    <node id=\"N" + nextNode + "\"> </node>");
 					if(threads == 0) {
 						fw.write(" <data key=\"entry\">true</data> </node>\n");
