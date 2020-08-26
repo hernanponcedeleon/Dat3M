@@ -60,7 +60,7 @@ public class Witness {
 			fw.write("");
 			fw.write("    <node id=\"N0\"> <data key=\"entry\">true</data> </node>\n");
 			fw.write("    <edge source=\"N0\" target=\"N1\">\n");
-			fw.write("      <data key=\"threadId\">0</data>\n");
+			fw.write("      <data key=\"createThread\">0</data>\n");
 			fw.write("      <data key=\"enterFunction\">main</data>\n");
 			fw.write("    </edge>\n");
 			fw.write("    <node id=\"N1\"> </node>\n");
