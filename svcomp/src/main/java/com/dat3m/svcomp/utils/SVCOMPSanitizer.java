@@ -54,8 +54,8 @@ public class SVCOMPSanitizer {
 					line = line.replace("while(__VERIFIER_nondet_int()) pthread_create(&t, 0, thr1, 0);", "for (int i = 1; i < 3; ++i) {}");
 					int i = 0;
 					while(i < bound) {
-						writer.println("pthread_t t" + i + ";");
-						writer.println("pthread_create(&t" + i + ", 0, thr1, 0);");
+						writer.print("pthread_t t" + i + "; ");
+						writer.print("pthread_create(&t" + i + ", 0, thr1, 0); ");
 						i++;
 					}
 				}
@@ -64,7 +64,7 @@ public class SVCOMPSanitizer {
 					line = line.replace("while(1) { pthread_create(&t, 0, thr2, 0); }", "while(1) {}");					
 					int i = 0;
 					while(i < bound) {
-						writer.println("pthread_create(&t, 0, thr2, 0);");
+						writer.print("pthread_create(&t, 0, thr2, 0); ");
 						i++;
 					}
 				}
