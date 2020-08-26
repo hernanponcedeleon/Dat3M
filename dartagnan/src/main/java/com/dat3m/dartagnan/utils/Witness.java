@@ -63,25 +63,24 @@ public class Witness {
 			fw.write("      <data key=\"createThread\">0</data>\n");
 			fw.write("      <data key=\"enterFunction\">main</data>\n");
 			fw.write("    </edge>\n");
-			fw.write("    <node id=\"N1\"> </node>\n");
 			int nextNode = 1;
 			int noMainThreads = program.getThreads().size() - program.getCache().getEvents(FilterBasic.get(INIT)).size() - 1;
 			for(int i= 1 ; i < noMainThreads ; i++) {
+				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 				fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 				fw.write("      <data key=\"createThread\">" + i + "</data>\n");
 				fw.write("    </edge>\n");
-				fw.write("    <node id=\"N" + (nextNode+1) + "\"> </node>\n");
 				nextNode++;
 			}
 			for(Event e : getSCExecutionOrder()) {
+				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 				fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 				fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
 				fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
 				fw.write("    </edge>\n");
-				fw.write("    <node id=\"N" + (nextNode+1) + "\"> </node>\n");
 				nextNode++;
 			}
-			fw.write("    <node id=\"N" + (nextNode+1) + "\"> <data key=\"violation\">true</data> </node>\n");
+			fw.write("    <node id=\"N" + nextNode + "\"> <data key=\"violation\">true</data> </node>\n");
 			fw.write("  </graph>\n");
 			fw.write("</graphml>\n");
 			fw.close();
