@@ -63,11 +63,11 @@ public class Witness {
 			int threads = 0;
 			for(Thread t : program.getThreads()) {
 				if(t.getName() != null && !t.getName().equals(String.valueOf(t.getId()))) {
-					fw.write("    <node id=\"N" + nextNode + "\"> </node>");
+					fw.write("    <node id=\"N" + nextNode + "\">");
 					if(threads == 0) {
 						fw.write(" <data key=\"entry\">true</data> </node>\n");
 					} else {
-						fw.write("\n");
+						fw.write("</node>\n");
 					}
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
