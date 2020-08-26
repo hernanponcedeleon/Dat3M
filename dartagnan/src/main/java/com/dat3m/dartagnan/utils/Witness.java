@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.utils;
 
-import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 import java.io.BufferedReader;
@@ -18,6 +17,8 @@ import java.util.TreeSet;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.FunCall;
+import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.Context;
@@ -58,25 +59,35 @@ public class Witness {
 			fw.write("    <data key=\"programhash\">" + checksum() + "</data>\n");
 			fw.write("    <data key=\"sourcecodelang\">C</data>\n");
 			fw.write("");
-			fw.write("    <node id=\"N0\"> <data key=\"entry\">true</data> </node>\n");
-			fw.write("    <edge source=\"N0\" target=\"N1\">\n");
-			fw.write("      <data key=\"createThread\">0</data>\n");
-			fw.write("      <data key=\"enterFunction\">main</data>\n");
-			fw.write("    </edge>\n");
-			int nextNode = 1;
-			int noMainThreads = program.getThreads().size() - program.getCache().getEvents(FilterBasic.get(INIT)).size() - 1;
-			for(int i= 1 ; i < noMainThreads ; i++) {
-				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
-				fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
-				fw.write("      <data key=\"createThread\">" + i + "</data>\n");
-				fw.write("    </edge>\n");
-				nextNode++;
+			int nextNode = 0;
+			int threads = 0;
+			for(Thread t : program.getThreads()) {
+				if(t.getName() != null) {
+					fw.write("    <node id=\"N" + nextNode + "\"> </node>");
+					if(threads == 0) {
+						fw.write(" <data key=\"entry\">true</data> </node>\n");
+					} else {
+						fw.write("\n");
+					}
+					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
+					fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
+					fw.write("      <data key=\"enterFunction\">" + t.getName() + "</data>\n");
+					fw.write("    </edge>\n");
+					nextNode++;
+					threads++;
+				}
 			}
 			for(Event e : getSCExecutionOrder()) {
 				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 				fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 				fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
 				fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
+				if(e instanceof FunCall) {
+					fw.write("      <data key=\"enterFunction\">" + ((FunCall)e).getFunctionName() + "</data>\n");
+				}
+				if(e instanceof FunRet) {
+					fw.write("      <data key=\"returnFrom\">" + ((FunCall)e).getFunctionName() + "</data>\n");
+				}
 				fw.write("    </edge>\n");
 				nextNode++;
 			}

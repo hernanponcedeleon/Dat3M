@@ -2,30 +2,34 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
 
-public class Comment extends Event {
+public class FunRet extends Event {
 
-	String comment;
+	String funName;
 	
-	public Comment(String comment) {
-		this.comment = comment;
+	public FunRet(String funName) {
+		this.funName = funName;
         addFilters(EType.ANY);
 	}
 	
-	protected Comment(Comment other){
+	protected FunRet(FunRet other){
 		super(other);
-		this.comment = other.comment;
+		this.funName = other.funName;
 	}
 
     @Override
     public String toString(){
-        return "===" + comment + "===";
+        return "=== Returning " + funName + "===";
+    }
+
+    public String getFunctionName() {
+    	return funName;
     }
 
 	// Unrolling
 	// -----------------------------------------------------------------------------------------------------------------
 
 	@Override
-	public Comment getCopy(){
-		return new Comment(this);
+	public FunRet getCopy(){
+		return new FunRet(this);
 	}
 }

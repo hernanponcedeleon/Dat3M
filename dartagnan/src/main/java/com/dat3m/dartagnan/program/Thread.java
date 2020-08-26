@@ -10,6 +10,7 @@ import java.util.*;
 
 public class Thread {
 
+	private final String name;
     private final int id;
     private final Event entry;
     private Event exit;
@@ -17,17 +18,26 @@ public class Thread {
     private Map<String, Register> registers;
     private ThreadCache cache;
 
-    public Thread(int id, Event entry){
+    public Thread(String name, int id, Event entry){
         if(id < 0){
             throw new IllegalArgumentException("Invalid thread ID");
         }
         if(entry == null){
             throw new IllegalArgumentException("Thread entry event must be not null");
         }
+        this.name = name;
         this.id = id;
         this.entry = entry;
         this.exit = this.entry;
         this.registers = new HashMap<>();
+    }
+
+    public Thread(int id, Event entry){
+    	this(String.valueOf(id), id, entry);
+    }
+
+    public String getName(){
+        return name;
     }
 
     public int getId(){

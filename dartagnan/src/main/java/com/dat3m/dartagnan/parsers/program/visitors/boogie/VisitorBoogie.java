@@ -87,8 +87,9 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.event.Assume;
-import com.dat3m.dartagnan.program.event.Comment;
 import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.FunCall;
+import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
@@ -273,7 +274,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
     	if(create) {
          	threadCount ++;
-            programBuilder.initThread(threadCount);
+    		String name = ctx.proc_sign().Ident().getText();
+            programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
             	// Used to allow execution of threads after they have been created (pthread_create)
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
@@ -417,8 +419,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		// Nice to have for debugging
-		programBuilder.addChild(threadCount, new Comment(" Start of " + name + " "));	
+		programBuilder.addChild(threadCount, new FunCall(name));	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			if(currentBeginAtomic == null) {
@@ -428,8 +429,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentBeginAtomic = null;
 			atomicMode = null;
 		}
-		// Nice to have for debugging
-		programBuilder.addChild(threadCount, new Comment(" End of " + name + " "));
+		programBuilder.addChild(threadCount, new FunRet(name));
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}

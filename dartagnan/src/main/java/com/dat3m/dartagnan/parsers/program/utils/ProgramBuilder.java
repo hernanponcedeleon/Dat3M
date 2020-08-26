@@ -42,12 +42,16 @@ public class ProgramBuilder {
         return program;
     }
 
-    public void initThread(int id){
+    public void initThread(String name, int id){
         if(!threads.containsKey(id)){
             Skip threadEntry = new Skip();
             threadEntry.setOId(lastOrigId++);
-            threads.putIfAbsent(id, new Thread(id, threadEntry));
+            threads.putIfAbsent(id, new Thread(name, id, threadEntry));
         }
+    }
+
+    public void initThread(int id){
+        initThread(null, id);
     }
 
     public Event addChild(int thread, Event child){
