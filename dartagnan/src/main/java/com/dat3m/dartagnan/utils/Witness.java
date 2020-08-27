@@ -19,11 +19,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
@@ -116,15 +111,7 @@ public class Witness {
 	private List<Event> getSCExecutionOrder() {
 		List<Event> exec = new ArrayList<Event>();
 		Map<Integer, Event> map = new HashMap<Integer, Event>();
-        for(Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
-        	MemEvent m = (MemEvent)e;
-        	if(m.getAddress() instanceof Address) {
-        		Address add = (Address)m.getAddress();
-        		Location loc = program.getMemory().getLocationForAddress(add);
-				if(loc != null && loc.getName().contains("_active")) {
-					continue;	
-				}
-        	}
+        for(Event e : program.getEvents()) {
         	Expr var = model.getConstInterp(intVar("hb", e, ctx));
         	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1 && var != null) {
         		map.put(Integer.parseInt(var.toString()), e);
