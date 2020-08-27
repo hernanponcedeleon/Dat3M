@@ -40,6 +40,7 @@ public class Witness {
 	}
 	
 	public void write() {
+		int lastLineWritten = -1;
 		populateMap();
         File newTextFile = new File("./output/witness.graphml");        
         FileWriter fw;
@@ -78,18 +79,21 @@ public class Witness {
 				}
 			}
 			for(Event e : getSCExecutionOrder()) {
-				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
-				fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
-				fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
-				fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
-				if(e instanceof FunCall) {
-					fw.write("      <data key=\"enterFunction\">" + ((FunCall)e).getFunctionName() + "</data>\n");
+				if(e.getCLine() != lastLineWritten) {
+					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
+					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
+					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
+					fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
+					lastLineWritten = e.getCLine();					
+					if(e instanceof FunCall) {
+						fw.write("      <data key=\"enterFunction\">" + ((FunCall)e).getFunctionName() + "</data>\n");
+					}
+					if(e instanceof FunRet) {
+						fw.write("      <data key=\"returnFrom\">" + ((FunCall)e).getFunctionName() + "</data>\n");
+					}
+					fw.write("    </edge>\n");
+					nextNode++;
 				}
-				if(e instanceof FunRet) {
-					fw.write("      <data key=\"returnFrom\">" + ((FunCall)e).getFunctionName() + "</data>\n");
-				}
-				fw.write("    </edge>\n");
-				nextNode++;
 			}
 			fw.write("    <node id=\"N" + nextNode + "\"> <data key=\"violation\">true</data> </node>\n");
 			fw.write("  </graph>\n");
