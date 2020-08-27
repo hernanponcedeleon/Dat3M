@@ -12,7 +12,7 @@ This tool suite is currently composed of two tools
 Requirements
 ======
 * [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
-* [SMACK](https://github.com/smackers/smack) (only to verify C programs)
+* [SMACK 2.5.0](https://github.com/smackers/smack) (only to verify C programs)
 
 Installation
 ======
@@ -20,10 +20,11 @@ Download the z3 dependency
 ```
 mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 ```
-Set the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
+Set Dat3M's home, the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
 ```
-export PATH=<Dat3M's root>/:$PATH
-export LD_LIBRARY_PATH=<Dat3M's root>/lib/:$LD_LIBRARY_PATH
+export DAT3M_HOME=<Dat3M's root>
+export PATH=$DAT3M_HOME/:$PATH
+export LD_LIBRARY_PATH=$DAT3M_HOME/lib/:$LD_LIBRARY_PATH
 ```
 
 To build the tools run
@@ -37,7 +38,7 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
-**Note:** there are almost 40K tests, running them takes more than 3 hs.
+**Note:** there are almost 40K tests, running them can take several 3 hs.
 
 Usage
 ======
@@ -52,12 +53,12 @@ java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
 
 Dartagnan supports programs written in the .litmus or .bpl (Boogie) formats. For Porthos, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
 
-If SMACK was correctly installed, C programs can be converted to Boogie using the following script:
+If SMACK was correctly installed, C programs can be converted to Boogie using the following command:
 ```
-smack -t -bpl <new Boogie file> <C file>
+smack -t -bpl <new Boogie file> <C file> --no-memory-splitting --clang-options="-DCUSTOM_VERIFIER_ASSERT -I\$DAT3M_HOME/include/"
 ```
 
-Additionally, you can run Dartagnan and Porthos from the console.
+You can also run Dartagnan and Porthos from the console.
 
 For checking reachability (Dartagnan):
 ```
