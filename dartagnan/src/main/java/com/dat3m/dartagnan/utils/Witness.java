@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.Context;
@@ -117,8 +118,12 @@ public class Witness {
 		Map<Integer, Event> map = new HashMap<Integer, Event>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
         	MemEvent m = (MemEvent)e;
-        	if(m.getAddress() instanceof Address && program.getMemory().getLocationForAddress((Address)m.getAddress()).toString().contains("_active")) {
-        		continue;
+        	if(m.getAddress() instanceof Address) {
+        		Address add = (Address)m.getAddress();
+        		Location loc = program.getMemory().getLocationForAddress(add);
+				if(loc != null && loc.getName().contains("_active")) {
+					continue;	
+				}
         	}
         	Expr var = model.getConstInterp(intVar("hb", e, ctx));
         	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1 && var != null) {
