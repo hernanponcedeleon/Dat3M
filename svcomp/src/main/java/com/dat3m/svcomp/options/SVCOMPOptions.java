@@ -74,7 +74,7 @@ public class SVCOMPOptions extends BaseOptions {
         return iSolver;
     }
 
-    public boolean getGenerateWitness(){
+    public boolean createWitness(){
         return witness;
     }
 

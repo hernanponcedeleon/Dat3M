@@ -8,11 +8,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import org.apache.commons.cli.HelpFormatter;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.svcomp.options.SVCOMPOptions;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
-import com.dat3m.svcomp.utils.SVCOMPWitness;
 
 public class SVCOMPRunner {
 
@@ -68,6 +65,10 @@ public class SVCOMPRunner {
 	    	if(options.useISolver()) {
 	    		cmd.add("-incrementalSolver");
 	    	}
+	    	if(options.createWitness()) {
+	    		cmd.add("-w");
+	    		cmd.add(options.getProgramFilePath());
+	    	}
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
 
 	        try {
@@ -99,14 +100,6 @@ public class SVCOMPRunner {
 		output = output.contains("PASS") ? "PASS" : "FAIL";
 		System.out.println(output);
 		
-        if(options.getGenerateWitness() && output.contains("FAIL")) {
-			try {
-				Program p = new ProgramParser().parse(new File("./output/" + name + "-" + options.getOptimization() + ".bpl"));
-	            new SVCOMPWitness(p, options).write();;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-        }
         file.delete();
         return;        	
     }
