@@ -55,7 +55,7 @@ Dartagnan supports programs written in the .litmus or .bpl (Boogie) formats. For
 
 If SMACK was correctly installed, C programs can be converted to Boogie using the following command:
 ```
-smack -t -bpl <new Boogie file> <C file> --no-memory-splitting --clang-options="-DCUSTOM_VERIFIER_ASSERT -I\$DAT3M_HOME/include/"
+smack -t -bpl <new Boogie file> <C file> [--integer-encoding bit-vector] --no-memory-splitting --clang-options="-DCUSTOM_VERIFIER_ASSERT -I\$DAT3M_HOME/include/"
 ```
 
 You can also run Dartagnan and Porthos from the console.
