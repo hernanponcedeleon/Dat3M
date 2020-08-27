@@ -16,6 +16,10 @@ Requirements
 
 Installation
 ======
+Download the z3 dependency
+```
+mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
+```
 Set the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
 ```
 export PATH=<Dat3M's root>/:$PATH
@@ -24,7 +28,6 @@ export LD_LIBRARY_PATH=<Dat3M's root>/lib/:$LD_LIBRARY_PATH
 
 To build the tools run
 ```
-mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
 mvn clean install -DskipTests
 ```
 
