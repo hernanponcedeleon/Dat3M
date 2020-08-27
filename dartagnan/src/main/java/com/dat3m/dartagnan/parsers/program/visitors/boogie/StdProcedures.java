@@ -110,6 +110,7 @@ public class StdProcedures {
 		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values);
 		Address adds = visitor.programBuilder.getPointer(visitor.currentScope.getID() + ":" + ptr);
 		visitor.programBuilder.addChild(visitor.threadCount, new Local(start, adds));
+		visitor.allocationRegs.add(start);
 	}
 	
 	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {

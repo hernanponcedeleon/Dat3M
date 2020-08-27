@@ -121,6 +121,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private Map<String, Proc_declContext> procedures = new HashMap<>();
 	protected PthreadPool pool = new PthreadPool();
+	protected List<Register> allocationRegs = new ArrayList<Register>();
 	
 	private int nextScopeID = 0;
 	protected Scope currentScope = new Scope(nextScopeID, null);
@@ -507,7 +508,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        			// Nothing to be done
 	        		}
 	        		Load child = new Load(register, (IExpr)value, null);
-	        		child.setCLine(currentLine);
+	        		if(!allocationRegs.contains(value)) {
+		        		child.setCLine(currentLine);
+	        		}
 					programBuilder.addChild(threadCount, child);	        			
 		            continue;
 	        	}
