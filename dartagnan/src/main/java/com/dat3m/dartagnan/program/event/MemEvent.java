@@ -76,4 +76,8 @@ public abstract class MemEvent extends Event {
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
         return !Sets.intersection(e1.getMaxAddressSet(), e2.getMaxAddressSet()).isEmpty();
     }
+    
+    public boolean canRace() {
+    	return mo == null;
+    }
 }

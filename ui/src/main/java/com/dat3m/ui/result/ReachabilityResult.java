@@ -1,6 +1,6 @@
 package com.dat3m.ui.result;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.DataRaces.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
 import com.dat3m.dartagnan.Dartagnan;
