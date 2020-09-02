@@ -139,7 +139,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected BeginAtomic currentBeginAtomic = null;
 	private Call_cmdContext atomicMode = null;
 	 
-	private static List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global");
+	private static List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$exn", "$CurrAddr");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -486,6 +486,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        	continue;
 	        }		
 			String name = ctx.Ident(i).getText();
+	        if(smackDummyVariables.contains(name)) {
+	        	continue;
+	        }
 			if(constantsTypeMap.containsKey(name)) {
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
@@ -734,6 +737,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return (IExpr)ctx.expr(1).accept(this);
 		}
 		if(name.contains("$store.")) {
+			if(smackDummyVariables.contains(ctx.expr(1).getText())) {
+				return null;
+			}
 			IExpr address = (IExpr)ctx.expr(1).accept(this);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
