@@ -231,4 +231,8 @@ public abstract class Event implements Comparable<Event> {
 	protected BoolExpr encodeExec(Context ctx){
 		return ctx.mkEq(execVar, cfVar);
 	}
+	
+	public BoolExpr race(Context ctx){
+		return ctx.mkBoolConst(repr());
+	}
 }

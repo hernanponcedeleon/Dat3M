@@ -7,6 +7,7 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static com.microsoft.z3.Status.SATISFIABLE;
 
+import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -14,6 +15,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
@@ -21,6 +23,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 import com.microsoft.z3.Solver;
 
 public class DataRaces {
@@ -74,6 +77,9 @@ public class DataRaces {
         program.compile(target, 0);
         program.updateAssertion();
 
+        Printer p = new Printer();
+        System.out.println(p.print(program));
+        
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
@@ -91,6 +97,17 @@ public class DataRaces {
         	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
 
+		if(res.equals(FAIL)) {
+			Model m = solver.getModel();
+			for(Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
+				if(m.getConstInterp(e.race(ctx)) != null) {
+					System.out.println(e.repr());
+					System.out.println(e);
+					System.out.println("");
+				}
+			}
+		}
+		
         return res;
     }
     
@@ -105,14 +122,20 @@ public class DataRaces {
     				MemEvent w = (MemEvent)e1;
     				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterUnion.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.INIT))))) {
     					MemEvent m = (MemEvent)e2;
+    					if(w.getMemValue() instanceof BConst && !((BConst)w.getMemValue()).getValue()) {
+    						continue;
+    					}
+    					if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
+    						continue;
+    					}
     					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {
         					BoolExpr conflict = ctx.mkAnd(m.exec(), w.exec(), ctx.mkEq(w.getMemAddressExpr(), m.getMemAddressExpr()), 
         							edge("hb", m, w, ctx), ctx.mkEq(intVar("hb", w, ctx), ctx.mkAdd(intVar("hb", m, ctx), ctx.mkInt(1))));
-    						enc = ctx.mkOr(enc, conflict);    						
+    						enc = ctx.mkOr(enc, conflict);
+    						enc = ctx.mkAnd(enc, ctx.mkImplies(conflict, ctx.mkAnd(w.race(ctx), m.race(ctx))));
     					}
     				}
     			}
-
     		}
     	}
     	return enc;
