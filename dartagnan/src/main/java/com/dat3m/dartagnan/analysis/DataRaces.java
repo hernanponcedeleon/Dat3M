@@ -7,25 +7,20 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static com.microsoft.z3.Status.SATISFIABLE;
 
-import com.dat3m.dartagnan.asserts.AssertTrue;
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.arch.pts.event.Write;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
+import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Model;
 import com.microsoft.z3.Solver;
 
 public class DataRaces {
@@ -33,12 +28,7 @@ public class DataRaces {
     public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
-        // AssertionInline depends on compiled events (copies)
-        // Thus we need to set the assertion after compilation
         program.updateAssertion();
-       	if(program.getAss() instanceof AssertTrue) {
-       		return PASS;
-       	}
        	
         // Using two solvers is much faster than using
         // an incremental solver or check-sat-assuming
@@ -60,12 +50,7 @@ public class DataRaces {
 		s1.add(encodeConsistency);
         s2.add(encodeConsistency);
        	
-        s1.add(program.getAss().encode(ctx));
-        if(program.getAssFilter() != null){
-            BoolExpr encodeFilter = program.getAssFilter().encode(ctx);
-			s1.add(encodeFilter);
-            s2.add(encodeFilter);
-        }
+        s1.add(encodeRaces(program, ctx));
 
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
@@ -89,8 +74,6 @@ public class DataRaces {
         program.compile(target, 0);
         program.updateAssertion();
 
-       	Printer p = new Printer();
-       	System.out.print(p.print(program));
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
@@ -108,17 +91,6 @@ public class DataRaces {
         	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
 
-		if(res.equals(Result.FAIL)) {
-			Model model = solver.getModel();
-			for(Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
-				if(model.getConstInterp(e.exec()).isTrue()) {
-//					System.out.println(e.repr());
-//					System.out.println(model.getConstInterp(intVar("hb", e, ctx)));
-//					System.out.println("===");
-				}
-			}
-		}
-		
         return res;
     }
     
@@ -131,20 +103,11 @@ public class DataRaces {
     			}
     			for(Event e1 : t1.getCache().getEvents(FilterBasic.get(EType.WRITE))) {
     				MemEvent w = (MemEvent)e1;
-    				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterBasic.get(EType.RMW)))) {
+    				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterUnion.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.INIT))))) {
     					MemEvent m = (MemEvent)e2;
     					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {
-    						if(w.getMemValue() instanceof BConst && !((BConst)w.getMemValue()).getValue()) {
-    							continue;
-    						}
-    						if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
-    							continue;
-    						}
-        					BoolExpr conflict = ctx.mkEq(w.getMemAddressExpr(), m.getMemAddressExpr());
-        					conflict = ctx.mkAnd(conflict, m.exec(), w.exec());
-        					BoolExpr o1 = ctx.mkAnd(edge("hb", m, w, ctx), ctx.mkEq(intVar("hb", w, ctx), ctx.mkAdd(intVar("hb", m, ctx), ctx.mkInt(1))));
-        					BoolExpr o2 = ctx.mkAnd(edge("hb", w, m, ctx), ctx.mkEq(intVar("hb", m, ctx), ctx.mkAdd(intVar("hb", w, ctx), ctx.mkInt(1))));
-							conflict = ctx.mkAnd(conflict, ctx.mkOr(o1, o2));
+        					BoolExpr conflict = ctx.mkAnd(m.exec(), w.exec(), ctx.mkEq(w.getMemAddressExpr(), m.getMemAddressExpr()), 
+        							edge("hb", m, w, ctx), ctx.mkEq(intVar("hb", w, ctx), ctx.mkAdd(intVar("hb", m, ctx), ctx.mkInt(1))));
     						enc = ctx.mkOr(enc, conflict);    						
     					}
     				}
@@ -152,7 +115,6 @@ public class DataRaces {
 
     		}
     	}
-//    	System.out.println(enc.simplify());
     	return enc;
     }
 }

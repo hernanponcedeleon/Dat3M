@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.DataRaces.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Cegar.runAnalysis;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.DataRaces.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Cegar.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
