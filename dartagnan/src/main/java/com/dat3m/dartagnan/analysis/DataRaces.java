@@ -58,7 +58,7 @@ public static Result runAnalysis(Solver solver, Context ctx, Program program, Wm
     			if(t1.getId() >= t2.getId()) {
     				continue;
     			}
-    			for(Event e1 : t1.getCache().getEvents(FilterBasic.get(EType.WRITE))) {
+    			for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.WRITE), FilterBasic.get(EType.RMW)))) {
     				MemEvent w = (MemEvent)e1;
     				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterUnion.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.INIT))))) {
     					MemEvent m = (MemEvent)e2;
@@ -73,6 +73,7 @@ public static Result runAnalysis(Solver solver, Context ctx, Program program, Wm
         					BoolExpr conflict = ctx.mkAnd(m.exec(), w.exec(), ctx.mkEq(w.getMemAddressExpr(), m.getMemAddressExpr()), 
         							edge("hb", m, w, ctx), ctx.mkEq(intVar("hb", w, ctx), ctx.mkAdd(intVar("hb", m, ctx), ctx.mkInt(1))));
     						enc = ctx.mkOr(enc, conflict);
+    						enc = ctx.mkAnd(enc, ctx.mkImplies(conflict, ctx.mkAnd(m.race(ctx), w.race(ctx))));
     					}
     				}
     			}
