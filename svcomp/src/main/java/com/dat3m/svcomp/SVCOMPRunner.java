@@ -65,6 +65,9 @@ public class SVCOMPRunner {
 	    	if(options.useISolver()) {
 	    		cmd.add("-incrementalSolver");
 	    	}
+	    	if(options.testRaces()) {
+	    		cmd.add("-races");
+	    	}
 	    	if(options.createWitness()) {
 	    		cmd.add("-w");
 	    		cmd.add(options.getProgramFilePath());

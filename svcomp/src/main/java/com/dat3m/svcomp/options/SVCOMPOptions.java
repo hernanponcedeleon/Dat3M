@@ -24,6 +24,7 @@ public class SVCOMPOptions extends BaseOptions {
     protected String overApproxFilePath;
     protected boolean bp;
     protected boolean iSolver;
+    protected boolean races;
     
     public SVCOMPOptions(){
         super();
@@ -32,6 +33,9 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
+        addOption(new Option("races", false,
+                "Checks if the program contains data races instead of checking reachability"));
+        
         addOption(new Option("cegar", true,
                 "Use CEGAR. Argument is the path to the over-approximation memory model"));
         
@@ -64,6 +68,7 @@ public class SVCOMPOptions extends BaseOptions {
         }
         iSolver = cmd.hasOption("incrementalSolver");
         bp = cmd.hasOption("bit-precise");
+        races = cmd.hasOption("races");
     }
 
     public String getOptimization(){
@@ -80,6 +85,10 @@ public class SVCOMPOptions extends BaseOptions {
 
     public boolean useBP(){
         return bp;
+    }
+
+    public boolean testRaces(){
+        return races;
     }
 
     public String getOverApproxPath(){

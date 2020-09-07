@@ -78,6 +78,6 @@ public abstract class MemEvent extends Event {
     }
     
     public boolean canRace() {
-    	return mo == null;
+    	return mo == null || mo == "NA";
     }
 }
