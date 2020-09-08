@@ -73,7 +73,6 @@ public static Result runAnalysis(Solver solver, Context ctx, Program program, Wm
         					BoolExpr conflict = ctx.mkAnd(m.exec(), w.exec(), ctx.mkEq(w.getMemAddressExpr(), m.getMemAddressExpr()), 
         							edge("hb", m, w, ctx), ctx.mkEq(intVar("hb", w, ctx), ctx.mkAdd(intVar("hb", m, ctx), ctx.mkInt(1))));
     						enc = ctx.mkOr(enc, conflict);
-    						enc = ctx.mkAnd(enc, ctx.mkImplies(conflict, ctx.mkAnd(m.race(ctx), w.race(ctx))));
     					}
     				}
     			}
