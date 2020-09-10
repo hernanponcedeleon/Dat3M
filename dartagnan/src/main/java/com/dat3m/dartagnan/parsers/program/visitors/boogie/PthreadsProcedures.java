@@ -4,6 +4,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -104,13 +105,14 @@ public class PthreadsProcedures {
 	}
 	
 	private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
+		visitor.currentThread++;
+		visitor.threadCallingValues.put(visitor.currentThread, new ArrayList<>());
 		String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 		// This names are global so we don't use currentScope.getID(), but per thread.
 		Register threadPtr = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr, -1);
 		String threadName = ctx.call_params().exprs().expr().get(2).getText();
 		ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(visitor);
-		visitor.mainCallingValues.clear();
-		visitor.mainCallingValues.add(callingValue);
+		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 		visitor.pool.add(threadPtr, threadName);
 		Location loc = visitor.programBuilder.getOrCreateLocation(threadPtr + "_active", -1);
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicStore(loc.getAddress(), new IConst(1, -1), SC));
