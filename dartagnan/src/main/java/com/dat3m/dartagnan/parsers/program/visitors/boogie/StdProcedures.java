@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class StdProcedures {
 
 	public static List<String> STDPROCEDURES = Arrays.asList(
+			"external_alloc",
 			"$alloc",
 			"__assert_rtn",
 			"$malloc",
@@ -37,7 +38,7 @@ public class StdProcedures {
 	
 	public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc")) {
+		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc") || name.equals("external_alloc") ) {
 			alloc(visitor, ctx);
 			return;
 		}

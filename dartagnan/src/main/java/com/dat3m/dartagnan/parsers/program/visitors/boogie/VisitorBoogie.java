@@ -21,6 +21,7 @@ import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -202,11 +203,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			ExprInterface def = ((Atom)exp).getRHS();
 			constantsMap.put(name, def);
 		}
-		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
-			Address add = ((Address)((Atom)exp).getLHS());
-			int value = ((Atom)exp).getRHS().reduce().getValue();
-			add.setConstValue(value);
-		}
 		return null;
 	}
 
@@ -216,7 +212,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
-			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
+			if(ctx.getText().contains("count")) {
+				int size = Integer.parseInt((ctx.getText().substring(0, ctx.getText().lastIndexOf("}")).split("count")[1]));
+				programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0, precision)));
+			} else if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
 				programBuilder.getOrCreateLocation(name, precision);
 			} else {
 				constantsTypeMap.put(name, precision);
@@ -224,7 +223,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		return null;
 	}
-
+	
 	@Override
 	public Object visitFunc_decl(Func_declContext ctx) {
 		String name = ctx.Ident().getText();
@@ -720,6 +719,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
             return register;
         }
         Location location = programBuilder.getLocation(name);
+        if(location != null){
+       		return location.getAddress();
+        }
+        // It might be the start of an array
+        location = programBuilder.getLocation(name+"[0]");
         if(location != null){
        		return location.getAddress();
         }
