@@ -216,7 +216,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
 			if(ctx.getText().contains("{:count")) {
 				int size = Integer.parseInt((ctx.getText().substring(0, ctx.getText().lastIndexOf("}")).split("count")[1]));
-				programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0, precision)));
+				programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0, precision)), precision);
 			} else if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
 				programBuilder.getOrCreateLocation(name, precision);
 			} else {
