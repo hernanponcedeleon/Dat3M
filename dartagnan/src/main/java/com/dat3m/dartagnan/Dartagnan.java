@@ -4,6 +4,7 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Cegar.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Cegar.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
@@ -90,7 +91,7 @@ public class Dartagnan {
 	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Wmm overApprox, Program p, Arch target, Settings settings, Context ctx, Solver s) {
 		// Testing for races
         if(options.testRaces()) {
-        	return com.dat3m.dartagnan.analysis.DataRaces.runAnalysis(s, ctx, p, mcm, target, settings);
+        	return checkForRaces(s, ctx, p, mcm, target, settings);
         } else {
         	// Testing reachability
             if(options.useISolver()) {

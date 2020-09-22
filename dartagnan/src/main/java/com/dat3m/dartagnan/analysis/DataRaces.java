@@ -29,7 +29,7 @@ public class DataRaces {
 	// This analysis assumes that CAT file defining the memory model has a happens-before 
 	// relation named hb: it should contain the following axiom "acyclic hb"
 
-public static Result runAnalysis(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+public static Result checkForRaces(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         program.updateAssertion();
