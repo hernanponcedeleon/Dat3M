@@ -87,8 +87,7 @@ public class Dartagnan {
         ctx.close();
     }
 
-	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Wmm overApprox, Program p,
-			Arch target, Settings settings, Context ctx, Solver s) {
+	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Wmm overApprox, Program p, Arch target, Settings settings, Context ctx, Solver s) {
 		// Testing for races
         if(options.testRaces()) {
         	return com.dat3m.dartagnan.analysis.DataRaces.runAnalysis(s, ctx, p, mcm, target, settings);
