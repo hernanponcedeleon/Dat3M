@@ -19,6 +19,7 @@ public class StdProcedures {
 			"external_alloc",
 			"$alloc",
 			"__assert_rtn",
+			"assert_.i32",
 			"$malloc",
 			"calloc",
 			"malloc",
@@ -42,7 +43,7 @@ public class StdProcedures {
 			alloc(visitor, ctx);
 			return;
 		}
-		if(name.equals("__assert_rtn")) {
+		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
 			__assert(visitor, ctx);
 			return;
 		}
