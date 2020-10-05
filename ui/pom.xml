@@ -6,7 +6,7 @@
   <parent>
     <artifactId>dat3m</artifactId>
     <groupId>com.dat3m</groupId>
-    <version>2.0.6</version>
+    <version>2.0.7</version>
   </parent>
 
   <groupId>com.dat3m.ui</groupId>
@@ -19,7 +19,7 @@
     <dependency>
     	<groupId>com.dat3m.porthos</groupId>
     	<artifactId>porthos</artifactId>
-    	<version>2.0.6</version>
+    	<version>2.0.7</version>
     </dependency>
     <dependency>
 	    <groupId>guru.nidi</groupId>

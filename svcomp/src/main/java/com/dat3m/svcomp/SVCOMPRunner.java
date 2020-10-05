@@ -49,7 +49,7 @@ public class SVCOMPRunner {
 	    	ArrayList<String> cmd = new ArrayList<String>();
 	    	cmd.add("java");
 	    	cmd.add("-jar");
-	    	cmd.add("dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar");
+	    	cmd.add("dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar");
 	    	cmd.add("-i");
 	    	cmd.add("./output/" + name + "-" + options.getOptimization() + ".bpl");
 	    	cmd.add("-cat");
