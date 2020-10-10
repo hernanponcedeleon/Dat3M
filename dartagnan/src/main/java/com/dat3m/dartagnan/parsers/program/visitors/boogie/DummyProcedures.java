@@ -7,6 +7,5 @@ public class DummyProcedures {
 
 	public static List<String> DUMMYPROCEDURES = Arrays.asList(
 			"boogie_si_record", 
-			"printf.ref", 
 			"printk.");
 }	
