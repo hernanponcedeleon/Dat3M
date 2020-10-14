@@ -55,10 +55,10 @@ public static Result checkForRaces(Solver solver, Context ctx, Program program, 
     	BoolExpr enc = ctx.mkFalse();
     	for(Thread t1 : p.getThreads()) {
     		for(Thread t2 : p.getThreads()) {
-    			if(t1.getId() != t2.getId()) {
+    			if(t1.getId() == t2.getId()) {
     				continue;
     			}
-    			for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.WRITE), FilterBasic.get(EType.RMW)))) {
+    			for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.WRITE), FilterUnion.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.INIT))))) {
     				MemEvent w = (MemEvent)e1;
     				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterUnion.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.INIT))))) {
     					MemEvent m = (MemEvent)e2;
