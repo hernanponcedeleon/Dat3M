@@ -92,6 +92,10 @@ public abstract class Event implements Comparable<Event> {
 		filter.addAll(Arrays.asList(params));
 	}
 
+	public boolean hasFilter(String f) {
+		return filter.contains(f);
+	}
+	
 	@Override
 	public int compareTo(Event e){
 		int result = Integer.compare(cId, e.cId);
