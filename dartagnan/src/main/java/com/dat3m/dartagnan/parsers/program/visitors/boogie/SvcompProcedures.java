@@ -33,6 +33,7 @@ public class SvcompProcedures {
 			"__VERIFIER_nondet_unsigned_int",
 			"__VERIFIER_nondet_short",
 			"__VERIFIER_nondet_ushort",
+			"__VERIFIER_nondet_unsigned_short",
 			"__VERIFIER_nondet_long",
 			"__VERIFIER_nondet_ulong",
 			"__VERIFIER_nondet_char",
@@ -65,7 +66,7 @@ public class SvcompProcedures {
 			return;
 		}
 		if(name.contains("__VERIFIER_nondet_int") || name.contains("__VERIFIER_nondet_uint") || name.contains("__VERIFIER_nondet_unsigned_int") || 
-		   name.contains("__VERIFIER_nondet_short") || name.contains("__VERIFIER_nondet_ushort") || 
+		   name.contains("__VERIFIER_nondet_short") || name.contains("__VERIFIER_nondet_ushort") || name.contains("__VERIFIER_nondet_unsigned_short") ||
 		   name.contains("__VERIFIER_nondet_long") || name.contains("__VERIFIER_nondet_ulong") || 
 		   name.contains("__VERIFIER_nondet_char") || name.contains("__VERIFIER_nondet_uchar")) {
 			__VERIFIER_nondet(visitor, ctx, name);
@@ -130,7 +131,7 @@ public class SvcompProcedures {
 			type = INonDetTypes.UINT;
 		} else if (name.equals("__VERIFIER_nondet_short")) {
 			type = INonDetTypes.SHORT;
-		} else if (name.equals("__VERIFIER_nondet_ushort")) {
+		} else if (name.equals("__VERIFIER_nondet_ushort") || name.equals("__VERIFIER_nondet_unsigned_short")) {
 			type = INonDetTypes.USHORT;
 		} else if (name.equals("__VERIFIER_nondet_long")) {
 			type = INonDetTypes.LONG;
