@@ -31,7 +31,7 @@ public class SVCOMPRunner {
 		String path = file.getAbsolutePath();
 		// File name contains "_tmp.c"
 		String name = path.substring(path.lastIndexOf('/'), path.lastIndexOf('_'));
-		int bound = 2;
+		int bound = 1;
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
