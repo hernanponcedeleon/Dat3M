@@ -1,10 +1,16 @@
 package com.dat3m.dartagnan.utils.options;
 
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.fromString;
+
 import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.commons.cli.*;
 
+import com.dat3m.dartagnan.analysis.AnalysisTypes;
 import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
@@ -13,7 +19,8 @@ public class DartagnanOptions extends BaseOptions {
     protected String overApproxFilePath;
     protected boolean iSolver;
     protected String witness;
-    protected boolean races;
+    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES, TERMINATION));
+    private AnalysisTypes analysis = REACHABILITY; 
 	
     public DartagnanOptions(){
         super();
@@ -31,9 +38,9 @@ public class DartagnanOptions extends BaseOptions {
         addOption(new Option("w", "witness", true,
                 "Creates a violation witness. The argument is the original *.c file from which the Boogie code was generated."));
 
-        addOption(new Option("races", false,
-                "Checks if the program contains data races instead of checking reachability"));
-}
+        addOption(new Option("analysis", true,
+        		"The analysis to be performed: reachability (default), data-race detection, termination"));
+        }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
@@ -45,7 +52,13 @@ public class DartagnanOptions extends BaseOptions {
             overApproxFilePath = cmd.getOptionValue("cegar");
         }
         iSolver = cmd.hasOption("incrementalSolver");
-        races = cmd.hasOption("races");
+        if(cmd.hasOption("analysis")) {
+        	AnalysisTypes selectedAnalysis = fromString(cmd.getOptionValue("analysis"));
+        	if(!analyses.contains(selectedAnalysis)) {
+        		throw new RuntimeException("Unrecognized analysis");
+        	}
+        	analysis = selectedAnalysis;
+        }
         if(cmd.hasOption("witness")) {
         	witness = cmd.getOptionValue("witness");
         }
@@ -59,8 +72,8 @@ public class DartagnanOptions extends BaseOptions {
         return iSolver;
     }
 
-    public boolean testRaces(){
-        return races;
+    public AnalysisTypes getAnalysis(){
+		return analysis;
     }
 
     public String createWitness(){

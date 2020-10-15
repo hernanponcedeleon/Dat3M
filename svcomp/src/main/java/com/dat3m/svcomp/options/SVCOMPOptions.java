@@ -1,5 +1,9 @@
 package com.dat3m.svcomp.options;
 
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.fromString;
 import static java.util.stream.IntStream.rangeClosed;
 
 import java.util.Arrays;
@@ -12,6 +16,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
+import com.dat3m.dartagnan.analysis.AnalysisTypes;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.google.common.collect.ImmutableSet;
 
@@ -24,7 +29,8 @@ public class SVCOMPOptions extends BaseOptions {
     protected String overApproxFilePath;
     protected boolean bp;
     protected boolean iSolver;
-    protected boolean races;
+    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES, TERMINATION));
+    private AnalysisTypes analysis = REACHABILITY; 
     
     public SVCOMPOptions(){
         super();
@@ -33,8 +39,8 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        addOption(new Option("races", false,
-                "Checks if the program contains data races instead of checking reachability"));
+        addOption(new Option("analysis", true,
+                "The analysis to be performed: reachability (default), data-race detection, termination"));
         
         addOption(new Option("cegar", true,
                 "Use CEGAR. Argument is the path to the over-approximation memory model"));
@@ -68,7 +74,13 @@ public class SVCOMPOptions extends BaseOptions {
         }
         iSolver = cmd.hasOption("incrementalSolver");
         bp = cmd.hasOption("bit-precise");
-        races = cmd.hasOption("races");
+        if(cmd.hasOption("analysis")) {
+        	AnalysisTypes selectedAnalysis = fromString(cmd.getOptionValue("analysis"));
+        	if(!analyses.contains(selectedAnalysis)) {
+        		throw new RuntimeException("Unrecognized analysis");
+        	}
+        	analysis = selectedAnalysis;
+        }
     }
 
     public String getOptimization(){
@@ -87,8 +99,8 @@ public class SVCOMPOptions extends BaseOptions {
         return bp;
     }
 
-    public boolean testRaces(){
-        return races;
+    public AnalysisTypes getAnalysis(){
+		return analysis;
     }
 
     public String getOverApproxPath(){

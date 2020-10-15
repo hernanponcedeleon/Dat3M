@@ -58,15 +58,14 @@ public class SVCOMPRunner {
 	    	cmd.add("none");
 	    	cmd.add("-unroll");
 	    	cmd.add(String.valueOf(bound));
+	    	cmd.add("-analysis");
+	    	cmd.add(options.getAnalysis().toString());
 	    	if(options.getOverApproxPath() != null) {
 	    		cmd.add("-cegar");
 	    		cmd.add(String.valueOf(options.getOverApproxPath()));
 	    	}
 	    	if(options.useISolver()) {
 	    		cmd.add("-incrementalSolver");
-	    	}
-	    	if(options.testRaces()) {
-	    		cmd.add("-races");
 	    	}
 	    	if(options.createWitness()) {
 	    		cmd.add("-w");

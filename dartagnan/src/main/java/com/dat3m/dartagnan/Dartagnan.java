@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan;
 
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Cegar.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
@@ -13,6 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import org.apache.commons.cli.HelpFormatter;
 
+import com.dat3m.dartagnan.analysis.Termination;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -90,8 +93,11 @@ public class Dartagnan {
 
 	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Wmm overApprox, Program p, Arch target, Settings settings, Context ctx, Solver s) {
 		// Testing for races
-        if(options.testRaces()) {
+        if(options.getAnalysis().equals(RACES)) {
         	return checkForRaces(s, ctx, p, mcm, target, settings);
+        } else if(options.getAnalysis().equals(TERMINATION)) {
+        	// Testing termination
+        	return Termination.runAnalysis(s, ctx, p, mcm, target, settings);
         } else {
         	// Testing reachability
             if(options.useISolver()) {
