@@ -19,6 +19,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
@@ -61,6 +63,10 @@ public class Witness {
 			int nextNode = 0;
 			int threads = 0;
 			for(Thread t : program.getThreads()) {
+				// We do nothing with Init threads
+				if(!t.getCache().getEvents(FilterBasic.get(EType.INIT)).isEmpty()) {
+					continue;
+				}
 				if(t.getName() != null && !t.getName().equals(String.valueOf(t.getId()))) {
 					fw.write("    <node id=\"N" + nextNode + "\">");
 					if(threads == 0) {
