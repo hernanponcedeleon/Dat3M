@@ -19,8 +19,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.Location;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
@@ -61,30 +62,34 @@ public class Witness {
 			fw.write("    <data key=\"sourcecodelang\">C</data>\n");
 			fw.write("");
 			int nextNode = 0;
-			int threads = 0;
-			for(Thread t : program.getThreads()) {
-				// We do nothing with Init threads
-				if(!t.getCache().getEvents(FilterBasic.get(EType.INIT)).isEmpty()) {
-					continue;
-				}
-				if(t.getName() != null && !t.getName().equals(String.valueOf(t.getId()))) {
-					fw.write("    <node id=\"N" + nextNode + "\">");
-					if(threads == 0) {
-						fw.write(" <data key=\"entry\">true</data> </node>\n");
-					} else {
-						fw.write("</node>\n");
-					}
-					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
-					fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
-					if(threads == 0) {
-						fw.write("      <data key=\"enterFunction\">" + t.getName() + "</data>\n");
-					}
-					fw.write("    </edge>\n");
-					nextNode++;
-					threads++;
-				}
-			}
+			int threads = 1;
+			
+			fw.write("    <node id=\"N" + nextNode + "\"> <data key=\"entry\">true</data> </node>\n");
+			fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
+			fw.write("      <data key=\"threadId\">0</data>\n");
+			fw.write("      <data key=\"enterFunction\">main</data>\n");
+			fw.write("    </edge>\n");
+			nextNode++;
+			
 			for(Event e : getSCExecutionOrder()) {
+				if(e instanceof MemEvent) {
+					MemEvent m = (MemEvent)e;
+					if(m.getAddress() instanceof Address) {
+						Location l = program.getMemory().getLocationForAddress((Address)m.getAddress());
+						if(l.getName().contains("_active")) {
+							fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
+							fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
+							fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
+ 							fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
+ 							fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
+							fw.write("    </edge>\n");
+							nextNode++;
+							threads++;
+							continue;
+						}
+					}
+					
+				}
 				if(e.getCLine() != lastLineWritten) {
 					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
