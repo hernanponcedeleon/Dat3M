@@ -52,7 +52,7 @@ public class Witness {
 			fw.write("    <data key=\"witness-type\">violation_witness</data>\n");
 			fw.write("    <data key=\"sourcecodelang\">C</data>\n");
 			fw.write("    <data key=\"producer\">Dartagnan</data>\n");
-			fw.write("    <data key=\"specification\">CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )</data>\n");
+			fw.write("    <data key=\"specification\">CHECK( init(main()), LTL(G ! call(reach_error())) )</data>\n");
 			fw.write("    <data key=\"programfile\">" + path + "</data>\n");
 			fw.write("    <data key=\"architecture\">32bit</data>\n");
 			fw.write("    <data key=\"programhash\">" + checksum() + "</data>\n");
