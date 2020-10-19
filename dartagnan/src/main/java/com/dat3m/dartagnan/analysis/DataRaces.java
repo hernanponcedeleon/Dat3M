@@ -71,7 +71,7 @@ public class DataRaces {
     					if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
     						continue;
     					}
-    					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m) && w.getCLine() > 1 && m.getCLine() > 1) {
+    					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {
         					BoolExpr conflict = ctx.mkAnd(m.exec(), w.exec(), ctx.mkEq(w.getMemAddressExpr(), m.getMemAddressExpr()), 
         							edge("hb", m, w, ctx), ctx.mkEq(intVar("hb", w, ctx), ctx.mkAdd(intVar("hb", m, ctx), ctx.mkInt(1))));
     						enc = ctx.mkOr(enc, conflict);

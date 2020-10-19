@@ -140,7 +140,7 @@ public class PthreadsProcedures {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		IExpr val = (IExpr)value.accept(visitor);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, new Store(lockAddress, val, null));	
+			visitor.programBuilder.addChild(visitor.threadCount, new Store(lockAddress, val, SC));	
 		}
 	}
 	
@@ -150,9 +150,9 @@ public class PthreadsProcedures {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 	        LinkedList<Event> events = new LinkedList<>();
-	        events.add(new Load(register, lockAddress, null));
+	        events.add(new Load(register, lockAddress, SC));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(0, -1)),label));
-	        events.add(new Store(lockAddress, new IConst(1, -1), null));
+	        events.add(new Store(lockAddress, new IConst(1, -1), SC));
 	        for(Event e : events) {
 	        	e.addFilters(EType.LOCK, EType.RMW);
 	        	visitor.programBuilder.addChild(visitor.threadCount, e);
@@ -166,9 +166,9 @@ public class PthreadsProcedures {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
 			LinkedList<Event> events = new LinkedList<>();
-	        events.add(new Load(register, lockAddress, null));
+	        events.add(new Load(register, lockAddress, SC));
 	        events.add(new CondJump(new Atom(register, NEQ, new IConst(1, -1)),label));
-	        events.add(new Store(lockAddress, new IConst(0, -1), null));
+	        events.add(new Store(lockAddress, new IConst(0, -1), SC));
 	        for(Event e : events) {
 	        	e.addFilters(EType.LOCK, EType.RMW);
 	        	visitor.programBuilder.addChild(visitor.threadCount, e);
