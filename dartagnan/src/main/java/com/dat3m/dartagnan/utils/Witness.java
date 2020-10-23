@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -44,6 +45,7 @@ public class Witness {
 	
 	public void write() {
 		int lastLineWritten = -1;
+		Event lastEventWritten = null;
 		populateMap();
         File newTextFile = new File("./output/witness.graphml");        
         FileWriter fw;
@@ -74,6 +76,10 @@ public class Witness {
 			for(Event e : getSCExecutionOrder()) {
 				if(e instanceof MemEvent) {
 					MemEvent m = (MemEvent)e;
+					// TODO improve this: these events correspond to return statements
+					if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
+						continue;
+					}
 					if(m.getAddress() instanceof Address) {
 						Location l = program.getMemory().getLocationForAddress((Address)m.getAddress());
 						if(l.getName().contains("_active")) {
@@ -87,15 +93,19 @@ public class Witness {
 							threads++;
 							continue;
 						}
-					}
-					
+					}		
 				}
-				if(e.getCLine() != lastLineWritten) {
+				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten)) {
 					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
 					fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
-					lastLineWritten = e.getCLine();					
+					// We need to keep this because SVCOMP assumes every statement is atomic
+					lastLineWritten = e.getCLine();
+					// Needed because of the above
+					// We need to differentiate two events being instances of the same 
+					// instructions if a thread is created more than once 
+					lastEventWritten = e;
 					if(e instanceof FunCall) {
 						fw.write("      <data key=\"enterFunction\">" + ((FunCall)e).getFunctionName() + "</data>\n");
 					}
