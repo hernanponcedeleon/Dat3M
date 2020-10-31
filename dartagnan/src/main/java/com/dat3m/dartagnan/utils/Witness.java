@@ -18,11 +18,8 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.FunCall;
-import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
@@ -74,44 +71,29 @@ public class Witness {
 			nextNode++;
 			
 			for(Event e : getSCExecutionOrder()) {
-				if(e instanceof MemEvent) {
-					MemEvent m = (MemEvent)e;
-					// TODO improve this: these events correspond to return statements
-					if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
-						continue;
-					}
-					if(m.getAddress() instanceof Address) {
-						Location l = program.getMemory().getLocationForAddress((Address)m.getAddress());
-						if(l.getName().contains("_active")) {
-							fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
-							fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
-							fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
- 							fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
- 							fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
-							fw.write("    </edge>\n");
-							nextNode++;
-							threads++;
-							continue;
-						}
-					}		
+				// We know all events are MemEvents
+				MemEvent m = (MemEvent)e;
+				// TODO improve this: these events correspond to return statements
+				if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
+					continue;
 				}
 				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten)) {
 					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
 					fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
+					if(m.getAddress() instanceof Address) {
+						if(program.getMemory().getLocationForAddress((Address)m.getAddress()).getName().contains("_active")) {
+							fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
+							threads++;
+						}
+					}		
 					// We need to keep this because SVCOMP assumes every statement is atomic
 					lastLineWritten = e.getCLine();
 					// Needed because of the above
 					// We need to differentiate two events being instances of the same 
 					// instructions if a thread is created more than once 
 					lastEventWritten = e;
-					if(e instanceof FunCall) {
-						fw.write("      <data key=\"enterFunction\">" + ((FunCall)e).getFunctionName() + "</data>\n");
-					}
-					if(e instanceof FunRet) {
-						fw.write("      <data key=\"returnFrom\">" + ((FunCall)e).getFunctionName() + "</data>\n");
-					}
 					fw.write("    </edge>\n");
 					nextNode++;
 				}
