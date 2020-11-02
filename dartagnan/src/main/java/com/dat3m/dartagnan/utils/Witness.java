@@ -71,10 +71,8 @@ public class Witness {
 			nextNode++;
 			
 			for(Event e : getSCExecutionOrder()) {
-				// We know all events are MemEvents
-				MemEvent m = (MemEvent)e;
 				// TODO improve this: these events correspond to return statements
-				if(m.getMemValue() instanceof BConst && !((BConst)m.getMemValue()).getValue()) {
+				if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 					continue;
 				}
 				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten)) {
@@ -82,8 +80,8 @@ public class Witness {
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
 					fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
-					if(m.getAddress() instanceof Address) {
-						if(program.getMemory().getLocationForAddress((Address)m.getAddress()).getName().contains("_active")) {
+					if(e instanceof MemEvent && ((MemEvent)e).getAddress() instanceof Address) {
+						if(program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getName().contains("_active")) {
 							fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
 							threads++;
 						}
@@ -123,6 +121,13 @@ public class Witness {
         	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1 && var != null) {
         		map.put(Integer.parseInt(var.toString()), e);
         	}
+        }
+        if(map.keySet().isEmpty()) {
+            for(Event e : program.getEvents()) {
+            	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1) {
+            		map.put(e.getCId(), e);
+            	}
+            }        	
         }
         SortedSet<Integer> keys = new TreeSet<>(map.keySet());
         for (Integer key : keys) {

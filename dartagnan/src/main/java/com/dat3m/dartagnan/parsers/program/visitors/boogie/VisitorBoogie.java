@@ -322,7 +322,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         visitChildren(body.stmt_list());
 
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		label.setCLine(currentLine);
    		programBuilder.addChild(threadCount, label);
         
         currentScope = currentScope.getParent();
@@ -334,7 +333,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         		programBuilder.addChild(threadCount, new AtomicStore(loc.getAddress(), new IConst(0, -1), SC));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-        	label.setCLine(currentLine);
          	programBuilder.addChild(threadCount, label);
     	}
     	currentLine = -1;
@@ -365,9 +363,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-	       	CondJump child = new CondJump(new BConst(true), label);
-	       	child.setCLine(currentLine);
-			programBuilder.addChild(threadCount, child);
+			programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
@@ -547,9 +543,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitReturn_cmd(Return_cmdContext ctx) {
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		CondJump child = new CondJump(new BConst(true), label);
-		child.setCLine(currentLine);
-		programBuilder.addChild(threadCount, child);
+		programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 		return null;
 	}
 
@@ -570,9 +564,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			if(c != null) {
-				CondJump child = new CondJump(new BExprUn(NOT, c), pairingLabel);
-				child.setCLine(currentLine);
-				programBuilder.addChild(threadCount, child);	
+				programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), pairingLabel));	
 			}
 		}
         return null;
@@ -584,7 +576,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// thus we use currentScope.getID() + ":"
 		String labelName = currentScope.getID() + ":" + ctx.children.get(0).getText();
 		Label label = programBuilder.getOrCreateLabel(labelName);
-		label.setCLine(currentLine);
         programBuilder.addChild(threadCount, label);
         currentLabel = label;
         return null;
@@ -595,16 +586,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
     	boolean loop = programBuilder.hasLabel(labelName);
     	Label l1 = programBuilder.getOrCreateLabel(labelName);
-        CondJump child = new CondJump(new BConst(true), l1);
-        child.setCLine(currentLine);
-		programBuilder.addChild(threadCount, child);
+		programBuilder.addChild(threadCount, new CondJump(new BConst(true), l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(loop) {
             Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-            child = new CondJump(new BConst(true), label);
-            child.setCLine(currentLine);
-			programBuilder.addChild(threadCount, child);        	
+			programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));        	
         }
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
