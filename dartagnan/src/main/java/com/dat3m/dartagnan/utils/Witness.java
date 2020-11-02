@@ -18,6 +18,8 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.FunCall;
+import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.microsoft.z3.Context;
@@ -85,7 +87,13 @@ public class Witness {
 							fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
 							threads++;
 						}
-					}		
+					}	
+					if(e instanceof FunCall) {
+						fw.write("      <data key=\"enterFunction\">" + ((FunCall)e).getFunctionName()+ "</data>\n");
+					}	
+					if(e instanceof FunRet) {
+						fw.write("      <data key=\"returnFrom\">" + ((FunRet)e).getFunctionName()+ "</data>\n");
+					}	
 					// We need to keep this because SVCOMP assumes every statement is atomic
 					lastLineWritten = e.getCLine();
 					// Needed because of the above
