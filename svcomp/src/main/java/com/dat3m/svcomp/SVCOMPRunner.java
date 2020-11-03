@@ -60,10 +60,6 @@ public class SVCOMPRunner {
 	    	cmd.add(String.valueOf(bound));
 	    	cmd.add("-analysis");
 	    	cmd.add(options.getAnalysis().toString());
-	    	if(options.getOverApproxPath() != null) {
-	    		cmd.add("-cegar");
-	    		cmd.add(String.valueOf(options.getOverApproxPath()));
-	    	}
 	    	if(options.useISolver()) {
 	    		cmd.add("-incrementalSolver");
 	    	}

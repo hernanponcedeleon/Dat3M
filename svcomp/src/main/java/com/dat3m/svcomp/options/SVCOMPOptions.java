@@ -42,9 +42,6 @@ public class SVCOMPOptions extends BaseOptions {
         addOption(new Option("analysis", true,
                 "The analysis to be performed: reachability (default), data-race detection, termination"));
         
-        addOption(new Option("cegar", true,
-                "Use CEGAR. Argument is the path to the over-approximation memory model"));
-        
         addOption(new Option("incrementalSolver", false,
         		"Use an incremental solver"));
 
@@ -69,9 +66,6 @@ public class SVCOMPOptions extends BaseOptions {
         	optimization = cmd.getOptionValue("optimization");
         }
         witness = cmd.hasOption("witness");
-        if(cmd.hasOption("cegar")) {
-            overApproxFilePath = cmd.getOptionValue("cegar");
-        }
         iSolver = cmd.hasOption("incrementalSolver");
         bp = cmd.hasOption("bit-precise");
         if(cmd.hasOption("analysis")) {
@@ -101,10 +95,6 @@ public class SVCOMPOptions extends BaseOptions {
 
     public AnalysisTypes getAnalysis(){
 		return analysis;
-    }
-
-    public String getOverApproxPath(){
-        return overApproxFilePath;
     }
 
     public List<Integer> getBounds() {

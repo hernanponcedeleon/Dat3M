@@ -66,7 +66,7 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
-    public BoolExpr encodeBase(Program program, Context ctx, Settings settings) {
+    public BoolExpr encode(Program program, Context ctx, Settings settings) {
         this.program = program;
         new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
 
@@ -130,12 +130,7 @@ public class Wmm {
                 enc = ctx.mkAnd(enc, group.encode(ctx));
             }
         }
-
-        return enc;
-    }
-
-    public BoolExpr encode(Program program, Context ctx, Settings settings) {
-        BoolExpr enc = encodeBase(program, ctx, settings);
+        
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode());
         }

@@ -29,9 +29,6 @@ public class DartagnanOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        addOption(new Option("cegar", true,
-        		"Use CEGAR. Argument is the path to the over-approximation memory model"));
-
         addOption(new Option("incrementalSolver", false,
         		"Use an incremental solver"));
         
@@ -48,9 +45,6 @@ public class DartagnanOptions extends BaseOptions {
             throw new RuntimeException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
-        if(cmd.hasOption("cegar")) {
-            overApproxFilePath = cmd.getOptionValue("cegar");
-        }
         iSolver = cmd.hasOption("incrementalSolver");
         if(cmd.hasOption("analysis")) {
         	AnalysisTypes selectedAnalysis = fromString(cmd.getOptionValue("analysis"));
@@ -62,10 +56,6 @@ public class DartagnanOptions extends BaseOptions {
         if(cmd.hasOption("witness")) {
         	witness = cmd.getOptionValue("witness");
         }
-    }
-    
-    public String getOverApproxPath(){
-        return overApproxFilePath;
     }
     
     public boolean useISolver(){
