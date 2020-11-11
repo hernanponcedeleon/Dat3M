@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.utils.*;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
@@ -66,6 +67,96 @@ public class Wmm {
         recursiveGroups.add(new RecursiveGroup(id, recursiveGroup));
     }
 
+    // Encodes the memory models relations as if co was empty (but not the axioms yet)
+    // NOTE: The call to <consistent> for encoding the axioms does not see co as empty anymore
+    // This should not be a problem though.
+    public BoolExpr encodeEmptyCo(Program program, Context ctx, Settings settings) {
+        RelCo co = ((RelCo)getRelationRepository().getRelation("co"));
+        co.setDoEncode(false);
+        BoolExpr enc = encode(program, ctx, settings);
+        co.setDoEncode(true);
+        return enc;
+    }
+
+    // Encodes only the base relations of the memory model without co!
+    // This should be (almost) equivalent to encoding the empty memory model
+    // A call to <consistent> should not be performed afterwards.
+    public BoolExpr encodeCore(Program program, Context ctx, Settings settings) {
+        this.program = program;
+        new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
+
+        for(String relName : baseRelations){
+            relationRepository.getRelation(relName);
+        }
+
+        /*for (Axiom ax : axioms) {
+            ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
+        }*/
+
+        /*for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.setDoRecurse();
+        }*/
+
+        for(FilterAbstract filter : filters.values()){
+            filter.initialise();
+        }
+
+        for(Relation relation : relationRepository.getRelations()){
+            relation.initialise(program, ctx, settings);
+        }
+
+       /* for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.initMaxTupleSets();
+        }*/
+
+        for (Axiom ax : axioms) {
+            ax.getRel().getMaxTupleSet();
+        }
+
+        for(String relName : baseRelations){
+            relationRepository.getRelation(relName).getMaxTupleSet();
+        }
+
+        // NOT SUPPORTED FOR NOW
+        /*if(settings.getDrawGraph()){
+            for(String relName : settings.getGraphRelations()){
+                Relation relation = relationRepository.getRelation(relName);
+                if(relation != null){
+                    relation.addEncodeTupleSet(relation.getMaxTupleSet());
+                }
+            }
+        }*/
+
+        for (Axiom ax : axioms) {
+            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
+        }
+
+        /*Collections.reverse(recursiveGroups);
+        for(RecursiveGroup recursiveGroup : recursiveGroups){
+            recursiveGroup.updateEncodeTupleSets();
+        }*/
+
+        BoolExpr enc = ctx.mkTrue();
+        for(String relName : baseRelations){
+            if (relName.equals("co"))
+                continue;
+            relationRepository.getRelation(relName).getMaxTupleSet();
+            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
+        }
+
+        /*if(settings.getMode() == Mode.KLEENE){
+            for(RecursiveGroup group : recursiveGroups){
+                enc = ctx.mkAnd(enc, group.encode(ctx));
+            }
+        }*/
+
+        return enc;
+    }
+
+    // This methods initializes all relations and encodes all base relations
+    // and recursive groups (why recursive groups?)
+    // It also triggers the computation of may and active sets!
+    // It does NOT encode the axioms or any non-base relation!
     public BoolExpr encodeBase(Program program, Context ctx, Settings settings) {
         this.program = program;
         new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
@@ -134,6 +225,8 @@ public class Wmm {
         return enc;
     }
 
+    // Initalizes everything just like encodeBase and also encodes all
+    // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     public BoolExpr encode(Program program, Context ctx, Settings settings) {
         BoolExpr enc = encodeBase(program, ctx, settings);
         for (Axiom ax : axioms) {
@@ -142,6 +235,7 @@ public class Wmm {
         return enc;
     }
 
+    // Encodes all axioms. This should be called after <encode>
     public BoolExpr consistent(Program program, Context ctx) {
         if(this.program != program){
             throw new RuntimeException("Wmm relations must be encoded before consistency predicate");

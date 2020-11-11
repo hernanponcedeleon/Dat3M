@@ -17,6 +17,10 @@ public class RecursiveRelation extends Relation {
     private Relation r1;
     private boolean doRecurse = false;
 
+    public Relation getInner() {
+        return r1;
+    }
+
     public RecursiveRelation(String name) {
         super(name);
         term = name;

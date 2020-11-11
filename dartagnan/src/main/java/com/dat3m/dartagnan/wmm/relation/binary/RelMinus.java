@@ -39,6 +39,21 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
+    public void addEncodeTupleSet(TupleSet tuples) {
+        TupleSet activeSet = new TupleSet();
+        activeSet.addAll(tuples);
+        activeSet.removeAll(encodeTupleSet);
+        encodeTupleSet.addAll(activeSet);
+        activeSet.retainAll(maxTupleSet);
+
+        if(!activeSet.isEmpty()){
+            r1.addEncodeTupleSet(activeSet);
+            activeSet.retainAll(r2.getMaxTupleSet());
+            r2.addEncodeTupleSet(activeSet);
+        }
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();

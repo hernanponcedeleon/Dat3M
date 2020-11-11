@@ -25,6 +25,7 @@ public class Thread {
         if(entry == null){
             throw new IllegalArgumentException("Thread entry event must be not null");
         }
+        entry.setThread(this);
         this.name = name;
         this.id = id;
         this.entry = entry;
@@ -80,6 +81,7 @@ public class Thread {
 
     public void append(Event event){
         exit.setSuccessor(event);
+        event.setThread(this);
         updateExit(event);
         cache = null;
     }
@@ -89,6 +91,7 @@ public class Thread {
         Event next = exit.getSuccessor();
         while(next != null){
             exit = next;
+            exit.setThread(this);
             next = next.getSuccessor();
         }
     }

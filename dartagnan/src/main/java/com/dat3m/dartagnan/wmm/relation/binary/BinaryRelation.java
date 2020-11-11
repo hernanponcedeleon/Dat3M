@@ -29,6 +29,15 @@ public abstract class BinaryRelation extends Relation {
         this.r2 = r2;
     }
 
+    // Newly added
+    public Relation getFirst() {
+        return r1;
+    }
+    // Newly added
+    public  Relation getSecond() {
+        return r2;
+    }
+
     @Override
     public int updateRecursiveGroupId(int parentId){
         if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){
@@ -47,12 +56,13 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
+    public void addEncodeTupleSet(TupleSet tuples){ // Only valid for intersection and one case of set minus
         TupleSet activeSet = new TupleSet();
         activeSet.addAll(tuples);
         activeSet.removeAll(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
         activeSet.retainAll(maxTupleSet);
+
         if(!activeSet.isEmpty()){
             r1.addEncodeTupleSet(activeSet);
             r2.addEncodeTupleSet(activeSet);

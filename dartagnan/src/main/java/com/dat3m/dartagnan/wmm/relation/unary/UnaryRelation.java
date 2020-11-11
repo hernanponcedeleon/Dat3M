@@ -23,6 +23,12 @@ public abstract class UnaryRelation extends Relation {
         this.r1 = r1;
     }
 
+    // newly added
+    public Relation getInner() {
+        return r1;
+    }
+
+
     @Override
     public int updateRecursiveGroupId(int parentId){
         if(recursiveGroupId == 0 || forceUpdateRecursiveGroupId){

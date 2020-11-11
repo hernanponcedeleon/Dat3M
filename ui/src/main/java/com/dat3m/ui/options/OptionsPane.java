@@ -11,6 +11,7 @@ import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.options.utils.ArchManager;
 import com.dat3m.ui.options.utils.ControlCode;
+import com.dat3m.ui.options.utils.Method;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.options.utils.Task;
 
@@ -38,6 +39,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     private final Selector<Task> taskPane;
     private final Selector<Mode> modePane;
     private final Selector<Alias> aliasPane;
+    private final Selector<Method> methodPane;
 
     private final ArchManager archManager;
     private final Selector<Arch> sourcePane;
@@ -63,6 +65,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         taskPane = new Selector<>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
         modePane = new Selector<>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
         aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
+        methodPane = new Selector<>(EnumSet.allOf(Method.class).toArray(new Method[0]), ControlCode.METHOD);
 
         Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
         sourcePane = new Selector<>(architectures, ControlCode.SOURCE);
@@ -139,7 +142,8 @@ public class OptionsPane extends JPanel implements ActionListener {
         Task task = (Task)taskPane.getSelectedItem();
         Arch source = (Arch)sourcePane.getSelectedItem();
         Arch target = (Arch)targetPane.getSelectedItem();
-        return new UiOptions(task, source, target, settings);
+        Method method = (Method)methodPane.getSelectedItem();
+        return new UiOptions(task, source, target, method, settings);
     }
 
     private int getIconHeight(){
@@ -168,7 +172,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         graphPane.setLeftComponent(graphButton);
         graphPane.setRightComponent(relsButton);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, boundPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, methodPane, boundPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);

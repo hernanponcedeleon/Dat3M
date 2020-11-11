@@ -3,6 +3,7 @@ package com.dat3m.ui.utils;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.ui.options.utils.Method;
 import com.dat3m.ui.options.utils.Task;
 
 public class UiOptions {
@@ -10,13 +11,15 @@ public class UiOptions {
 	private final Task task;
 	private Arch source;
 	private Arch target;
+	private final Method method;
 	private final Settings settings;
 
 
-	public UiOptions(Task task, Arch source, Arch target, Settings settings) {
+	public UiOptions(Task task, Arch source, Arch target, Method method, Settings settings) {
 		this.task = task;
 		this.source = source;
 		this.target = target;
+		this.method = method;
 		this.settings = settings;
 	}
 	
@@ -31,6 +34,8 @@ public class UiOptions {
 	public Arch getTarget(){
 		return target;
 	}
+
+	public Method getMethod() { return method; }
 
 	public Settings getSettings(){
 		return settings;

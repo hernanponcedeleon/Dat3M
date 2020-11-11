@@ -1,8 +1,12 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
+import com.dat3m.dartagnan.program.Thread;
 
 import java.util.*;
 
@@ -15,6 +19,8 @@ public abstract class Event implements Comparable<Event> {
 	protected int cId = -1;		// ID after compilation
 	
 	protected int cLine = -1;	// line in the original C program
+
+	protected Thread thread; // The thread this event belongs to
 
 	protected final Set<String> filter;
 
@@ -38,6 +44,7 @@ public abstract class Event implements Comparable<Event> {
         this.cId = other.cId;
         this.cLine = other.cLine;
         this.filter = other.filter;
+        this.thread = other.thread;
     }
 
 	public int getOId() {
@@ -70,6 +77,17 @@ public abstract class Event implements Comparable<Event> {
 
 	public void setSuccessor(Event event){
 		successor = event;
+		successor.setThread(this.thread);
+	}
+
+	public Thread getThread() { return thread; }
+
+	public void setThread(Thread thread) {
+		if (thread != null && !thread.equals(this.thread)) {
+			this.thread = thread;
+			if (successor != null)
+				successor.setThread(thread);
+		}
 	}
 
 	public LinkedList<Event> getSuccessors(){
@@ -230,5 +248,16 @@ public abstract class Event implements Comparable<Event> {
 
 	protected BoolExpr encodeExec(Context ctx){
 		return ctx.mkEq(execVar, cfVar);
+	}
+
+
+	//
+
+	public boolean wasExecuted(Model model) {
+		return model.getConstInterp(execVar).isTrue();
+	}
+
+	public boolean wasInControlFlow(Model model) {
+		return model.getConstInterp(cfVar).isTrue();
 	}
 }

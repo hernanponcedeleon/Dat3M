@@ -21,8 +21,12 @@ public class Tuple implements Comparable<Tuple> {
     }
 
     public String toString() {
-        return "(" + first + ", " + second + ")";
+        //return "(" + first + ", " + second + ")";
+        return "(" + first.getCId() + ", " + second.getCId() + ")";
+
     }
+
+    public Tuple getInverse() { return new Tuple(second, first); }
 
     @Override
     public int hashCode() {

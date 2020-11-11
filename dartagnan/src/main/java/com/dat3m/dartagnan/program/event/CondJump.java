@@ -3,12 +3,14 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Model;
 
 public class CondJump extends Event implements RegReaderData {
 
@@ -26,6 +28,7 @@ public class CondJump extends Event implements RegReaderData {
         }
         this.label = label;
         this.label.addListener(this);
+        this.thread = label.getThread();
         this.expr = expr;
         dataRegs = expr.getRegs();
         addFilters(EType.ANY, EType.JUMP, EType.REG_READER);
@@ -39,9 +42,20 @@ public class CondJump extends Event implements RegReaderData {
 		Event notifier = label != null ? label : other.label;
 		notifier.addListener(this);
     }
+
+    public boolean isGoto() {
+        return expr instanceof BConst && ((BConst)expr).getValue();
+    }
     
     public Label getLabel(){
         return label;
+    }
+
+    @Override
+    public void setThread(Thread thread) {
+        super.setThread(thread);
+        if (label != null)
+            label.setThread(thread);
     }
 
     @Override
@@ -51,7 +65,7 @@ public class CondJump extends Event implements RegReaderData {
 
     @Override
     public String toString(){
-    	if(expr instanceof BConst && ((BConst)expr).getValue()) {
+    	if(isGoto()) {
             return "goto " + label;
     	}
         return "if(" + expr + "); then goto " + label;
@@ -64,6 +78,10 @@ public class CondJump extends Event implements RegReaderData {
     	} else if (oId > label.getOId()) {
     		this.label4Copy = (Label)label;
     	}
+    }
+
+    public boolean didJump(Model model, Context ctx) {
+        return expr.getBoolValue(this, model, ctx);
     }
 
     // Unrolling

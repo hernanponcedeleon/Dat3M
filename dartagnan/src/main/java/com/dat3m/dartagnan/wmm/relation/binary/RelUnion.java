@@ -28,6 +28,26 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
+    public void addEncodeTupleSet(TupleSet tuples) {
+        TupleSet activeSet = new TupleSet();
+        activeSet.addAll(tuples);
+        activeSet.removeAll(encodeTupleSet);
+        encodeTupleSet.addAll(activeSet);
+        //activeSet.retainAll(maxTupleSet);
+
+        if(!activeSet.isEmpty()){
+            TupleSet r1Active = new TupleSet();
+            r1Active.addAll(activeSet);
+            r1Active.retainAll(r1.getMaxTupleSet());
+            r1.addEncodeTupleSet(r1Active);
+
+            TupleSet r2Active = activeSet;
+            r2Active.retainAll(r2.getMaxTupleSet());
+            r2.addEncodeTupleSet(r2Active);
+        }
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();

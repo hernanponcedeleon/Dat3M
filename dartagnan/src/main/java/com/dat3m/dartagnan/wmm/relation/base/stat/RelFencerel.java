@@ -14,7 +14,7 @@ import java.util.ListIterator;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
-public class RelFencerel extends Relation {
+public class RelFencerel extends StaticRelation {
 
     private String fenceName;
 

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
@@ -34,6 +35,7 @@ public class If extends Event implements RegReaderData {
         this.expr = expr;
         this.exitMainBranch = exitMainBranch;
         this.exitElseBranch = exitElseBranch;
+        this.thread = exitElseBranch.getThread();
         this.dataRegs = expr.getRegs();
         addFilters(EType.ANY, EType.CMP, EType.REG_READER);
     }
@@ -45,6 +47,10 @@ public class If extends Event implements RegReaderData {
     public Event getExitElseBranch(){
         return exitElseBranch;
     }
+
+    public Event getSuccessorMainBranch() { return successorMain; }
+
+    public Event getSuccessorElseBranch() { return successorElse; }
 
     public List<Event> getMainBranchEvents(){
         if(cId > -1){
@@ -58,6 +64,17 @@ public class If extends Event implements RegReaderData {
             return successorElse.getSuccessors();
         }
         throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public void setThread(Thread thread) {
+        super.setThread(thread);
+        if (successorMain != null)
+            successorMain.setThread(thread);
+        if (successorElse != null)
+            successorElse.setThread(thread);
+        if (successor != null)
+            successor.setThread(thread);
     }
 
     @Override
@@ -94,6 +111,7 @@ public class If extends Event implements RegReaderData {
         Skip copyExitElseBranch =(Skip) exitElseBranch.getCopy();
         If copy = new If(expr, copyExitMainBranch, copyExitElseBranch);
         copy.setOId(oId);
+
 
         Event ptr = copyPath(successor, exitMainBranch, copy);
         ptr.successor = copyExitMainBranch;

@@ -28,8 +28,35 @@ public class RelCo extends Relation {
         forceDoEncode = true;
     }
 
+    // This one is a placeholder needed for the graph refinement
+    // It shall not be used anywhere else
+    // In particular, we might want to remove the ability of "_co" to be encoded
+    public RelCo(boolean transitive) {
+        this();
+        if (!transitive)
+            term = "_co";
+    }
+
+    // Temporary test code
+    boolean doEncode = true;
+    // if set to false, the co-relation will not be encoded
+    // and it will be considered empty for may and active set computations
+    public void setDoEncode(Boolean value) {
+        doEncode = value;
+    }
+
+    @Override
+    public TupleSet getEncodeTupleSet() {
+        if (!doEncode)
+            return new TupleSet();
+        return super.getEncodeTupleSet();
+    }
+
     @Override
     public TupleSet getMaxTupleSet(){
+        if (!doEncode)
+            return new TupleSet();
+
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
@@ -60,6 +87,9 @@ public class RelCo extends Relation {
     @Override
     protected BoolExpr encodeApprox() {
         BoolExpr enc = ctx.mkTrue();
+
+        if (!doEncode)
+            return enc;
 
         List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
         List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(

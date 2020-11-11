@@ -36,6 +36,7 @@ public class RelPo extends StaticRelation {
             for(Thread t : program.getThreads()){
                 List<Event> events = t.getCache().getEvents(filter);
 
+                // Note: Also relates events on different branches
                 ListIterator<Event> it1 = events.listIterator();
                 while(it1.hasNext()){
                     Event e1 = it1.next();

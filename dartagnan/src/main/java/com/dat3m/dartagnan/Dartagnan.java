@@ -11,6 +11,7 @@ import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FU
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+
 import org.apache.commons.cli.HelpFormatter;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
@@ -47,7 +48,7 @@ public class Dartagnan {
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Wmm overApprox = options.getOverApproxPath() != null ? new ParserCat().parse(new File(options.getOverApproxPath())) : null;
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
-		
+
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();

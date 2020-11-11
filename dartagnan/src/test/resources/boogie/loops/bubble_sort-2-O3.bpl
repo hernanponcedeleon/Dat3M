@@ -2496,7 +2496,7 @@ $bb10:
   assume {:sourceloc "./output/bubble_sort-2_tmp.c", 304, 19} true;
   assume {:verifier.code 0} true;
   $i22 := $p2i.ref.bv64($p21);
-  call {:cexpr "node"} boogie_si_record_bv64($i22);
+  call {:cexpr "relation"} boogie_si_record_bv64($i22);
   assume {:sourceloc "./output/bubble_sort-2_tmp.c", 304, 19} true;
   assume {:verifier.code 0} true;
   $i23 := $trunc.bv64.bv32($i22);

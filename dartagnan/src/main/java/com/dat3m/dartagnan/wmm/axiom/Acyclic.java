@@ -61,6 +61,7 @@ public class Acyclic extends Axiom {
             Event e2 = tuple.getSecond();
             enc = ctx.mkAnd(enc, ctx.mkImplies(e1.exec(), ctx.mkGt(Utils.intVar(rel.getName(), e1, ctx), ctx.mkInt(0))));
             enc = ctx.mkAnd(enc, ctx.mkImplies(Utils.edge(rel.getName(), e1, e2, ctx), ctx.mkLt(Utils.intVar(rel.getName(), e1, ctx), Utils.intVar(rel.getName(), e2, ctx))));
+            enc = ctx.mkAnd(enc, ctx.mkImplies(e2.exec(), ctx.mkGt(Utils.intVar(rel.getName(), e2, ctx), ctx.mkInt(0))));
         }
         return enc;
     }
