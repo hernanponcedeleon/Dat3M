@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.llvm.utils;
 
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
-import static com.dat3m.dartagnan.expression.op.IOpUn.BV2INT;
+import static com.dat3m.dartagnan.expression.op.IOpUn.BV2UINT;
 
 import static com.dat3m.dartagnan.expression.op.IOpUn.INT2BV1;
 import static com.dat3m.dartagnan.expression.op.IOpUn.INT2BV8;
@@ -56,7 +56,6 @@ public class LlvmUnary {
 			"$not.",
 
 			"$bv2uint.",
-			"$bv2int.",
 
 			"$uint2bv.1", "$uint2bv.8", "$uint2bv.16", "$uint2bv.32", "$uint2bv.64",
 			"$int2bv.1", "$int2bv.8", "$int2bv.16", "$int2bv.32", "$int2bv.64",
@@ -83,8 +82,8 @@ public class LlvmUnary {
 		}
 
 		IOpUn op = null;
-		if(name.startsWith("$bv2int.")) {
-			op = BV2INT;
+		if(name.startsWith("$bv2uint.")) {
+			op = BV2UINT;
 		}
 		// ============ INT2BV ============
 		if(name.equals("$uint2bv.1") || name.equals("$int2bv.1")) {

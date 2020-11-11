@@ -7,7 +7,7 @@ import com.microsoft.z3.IntExpr;
 
 public enum IOpUn {
     MINUS, 
-    BV2INT, 
+    BV2UINT, 
     INT2BV1, INT2BV8, INT2BV16, INT2BV32, INT2BV64, 
     TRUNC6432, TRUNC6416,TRUNC648, TRUNC641, TRUNC3216, TRUNC328, TRUNC321, TRUNC168, TRUNC161, TRUNC81,    
     ZEXT18, ZEXT116, ZEXT132, ZEXT164, ZEXT816, ZEXT832, ZEXT864, ZEXT1632, ZEXT1664, ZEXT3264, 
@@ -27,7 +27,7 @@ public enum IOpUn {
     	switch(this){
     		case MINUS:
     			return e.isBV() ? ctx.mkBVSub(ctx.mkBV(0, 32), (BitVecExpr)e) : ctx.mkSub(ctx.mkInt(0), (IntExpr)e);
-    		case BV2INT:
+    		case BV2UINT:
     			return e.isBV() ? ctx.mkBV2Int((BitVecExpr)e, false) : e;
     		// ============ INT2BV ============
     		case INT2BV1:
