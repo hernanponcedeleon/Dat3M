@@ -46,6 +46,7 @@ public class Witness {
 	
 	public void write() {
 		int lastLineWritten = -1;
+		int lastOid = -1;
 		Event lastEventWritten = null;
 		populateMap();
         File newTextFile = new File("./output/witness.graphml");        
@@ -79,7 +80,7 @@ public class Witness {
 				if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 					continue;
 				}
-				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten) || (lastEventWritten != null && e.getOId() == lastEventWritten.getOId())) {
+				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten) || e.getOId() <= lastOid) {
 					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
@@ -105,6 +106,7 @@ public class Witness {
 					fw.write("    </edge>\n");
 					nextNode++;
 				}
+				lastOid = e.getOId();
 			}
 			fw.write("    <node id=\"N" + nextNode + "\"> <data key=\"violation\">true</data> </node>\n");
 			fw.write("  </graph>\n");
