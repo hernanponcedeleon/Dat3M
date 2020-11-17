@@ -77,7 +77,7 @@ public class Witness {
 				if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 					continue;
 				}
-				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten)) {
+				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten) || e.getOId() == lastEventWritten.getOId()) {
 					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
