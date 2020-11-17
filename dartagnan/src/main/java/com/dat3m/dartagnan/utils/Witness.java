@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -77,7 +79,7 @@ public class Witness {
 				if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 					continue;
 				}
-				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten) || e.getOId() == lastEventWritten.getOId()) {
+				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten) || (lastEventWritten != null && e.getOId() == lastEventWritten.getOId())) {
 					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
 					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
 					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
@@ -123,23 +125,31 @@ public class Witness {
 	
 	private List<Event> getSCExecutionOrder() {
 		List<Event> exec = new ArrayList<Event>();
-		Map<Integer, Event> map = new HashMap<Integer, Event>();
+		Map<Integer, Set<Event>> map = new HashMap<Integer, Set<Event>>();
         for(Event e : program.getEvents()) {
         	Expr var = model.getConstInterp(intVar("hb", e, ctx));
         	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1 && var != null) {
-        		map.put(Integer.parseInt(var.toString()), e);
+        		int key = Integer.parseInt(var.toString());
+				if(!map.containsKey(key)) {
+					map.put(key, new HashSet<Event>());
+				}
+        		map.get(key).add(e);
         	}
         }
         if(map.keySet().isEmpty()) {
             for(Event e : program.getEvents()) {
             	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1) {
-            		map.put(e.getCId(), e);
+            		int key = e.getCId();
+    				if(!map.containsKey(key)) {
+    					map.put(key, new HashSet<Event>());
+    				}
+            		map.get(key).add(e);
             	}
             }        	
         }
         SortedSet<Integer> keys = new TreeSet<>(map.keySet());
         for (Integer key : keys) {
-        	exec.add(map.get(key));
+        	exec.addAll(map.get(key));
         }
 		return exec;
 	}
