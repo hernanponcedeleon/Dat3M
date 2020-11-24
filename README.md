@@ -38,7 +38,7 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
-**Note:** there are almost 40K tests, running them can take several 3 hs.
+**Note:** there are almost 40K tests, running them can take several hs.
 
 Usage
 ======
@@ -62,7 +62,7 @@ You can also run Dartagnan and Porthos from the console.
 
 For checking reachability (Dartagnan):
 ```
-java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -cat <CAT file> -i <program file> [options]
+java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -cat <CAT file> [-t <target>] -i <program file> [options]
 ```
 For checking state inclusion (Porthos):
 ```
@@ -70,13 +70,15 @@ java -jar porthos/target/porthos-2.0.6-jar-with-dependencies.jar -s <source> -sc
 ```
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
-For programs written in the .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
+For programs written in the .c or .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
 They must be one of the following: 
 - none
 - tso
 - power
 - arm
 - arm8
+
+Program written in .litmus format do not require such options.
 
 Other optional arguments include:
 - -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
