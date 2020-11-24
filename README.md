@@ -70,7 +70,7 @@ java -jar porthos/target/porthos-2.0.6-jar-with-dependencies.jar -s <source> -sc
 ```
 The -cat,-scat,-tcat options specify the paths to the CAT files.
 
-For programs written in the .c or .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
+For programs written in the .bpl (if the original .c file uses the std::atomic library) or .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
 They must be one of the following: 
 - none
 - tso
