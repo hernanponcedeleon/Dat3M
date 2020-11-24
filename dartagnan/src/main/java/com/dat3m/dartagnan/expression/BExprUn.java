@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.BOpUn;
@@ -25,9 +26,9 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public IntExpr getLastValueExpr(Context ctx){
-        BoolExpr expr = ctx.mkGt(b.getLastValueExpr(ctx), ctx.mkInt(1));
-        return (IntExpr)ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    public Expr getLastValueExpr(Context ctx){
+        BoolExpr expr = ctx.mkGt((IntExpr)b.getLastValueExpr(ctx), ctx.mkInt(1));
+        return ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
     }
 
     @Override
@@ -41,12 +42,12 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public boolean getBoolValue(Event e, Context ctx, Model model){
-        return op.combine(b.getBoolValue(e, ctx, model));
+    public boolean getBoolValue(Event e, Model model, Context ctx){
+        return op.combine(b.getBoolValue(e, model, ctx));
     }
 
 	@Override
 	public IConst reduce() {
-		return new IConst(b.reduce().getValue());
+		return new IConst(b.reduce().getValue(), -1);
 	}
 }

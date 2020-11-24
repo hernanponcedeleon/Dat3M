@@ -7,8 +7,8 @@ include "cos.cat"
 let com = (rf | fr | co)
 
 (* Sequential consistency *)
-acyclic po | com as sc
+let hb = po | com
+acyclic hb as sc
 
-(* Using (id | po | com) we only allow 3 context switch.
-   The general case should use (po | com)* instead *)
-empty rmw & ( (com & ext) ; (id | po | com) ; (com & ext) )
+(* Atomicity *)
+acyclic (rmw^-1 | (com & ext) | (po \ rmw))

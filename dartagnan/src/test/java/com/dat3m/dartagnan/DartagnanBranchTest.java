@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.*;
@@ -36,7 +37,7 @@ public class DartagnanBranchTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         ImmutableMap<String, Result> expected = readExpectedResults();
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
 
         Wmm linuxWmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
         Wmm aarch64Wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
@@ -88,7 +89,7 @@ public class DartagnanBranchTest {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings));
+            assertEquals(expected, runAnalysis(solver, ctx, program, wmm, Arch.NONE, settings));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

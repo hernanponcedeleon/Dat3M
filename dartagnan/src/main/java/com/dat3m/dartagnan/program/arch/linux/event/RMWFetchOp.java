@@ -54,7 +54,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
         if(target == Arch.NONE) {
             Register dummy = resultRegister;
             if(resultRegister == value){
-                dummy = new Register(null, resultRegister.getThreadId());
+                dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
             RMWLoad load = new RMWLoad(dummy, address, Mo.loadMO(mo));

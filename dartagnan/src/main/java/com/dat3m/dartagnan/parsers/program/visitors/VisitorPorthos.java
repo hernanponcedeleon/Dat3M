@@ -38,7 +38,7 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
     @Override
     public Object visitVariableDeclaratorList(PorthosParser.VariableDeclaratorListContext ctx) {
         for(PorthosParser.LocationContext locationContext : ctx.location()){
-            programBuilder.getOrCreateLocation(locationContext.getText());
+            programBuilder.getOrCreateLocation(locationContext.getText(), -1);
         }
         return null;
     }
@@ -80,14 +80,14 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public Event visitInstructionLocal(PorthosParser.InstructionLocalContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText());
+        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText(), -1);
         IExpr expr = (IExpr)ctx.arithExpr().accept(this);
         return programBuilder.addChild(currentThread, new Local(register, expr));
     }
 
     @Override
     public Event visitInstructionLoad(PorthosParser.InstructionLoadContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText());
+        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText(), -1);
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
         return programBuilder.addChild(currentThread, new Load(register, location.getAddress(), null));
     }
@@ -101,7 +101,7 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public Event visitInstructionRead(PorthosParser.InstructionReadContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText());
+        Register register = programBuilder.getOrCreateRegister(currentThread, ctx.register().getText(), -1);
         Location location = programBuilder.getOrErrorLocation(ctx.location().getText());
         return programBuilder.addChild(currentThread, new Read(register, location.getAddress(), ctx.MemoryOrder().getText()));
     }
@@ -137,7 +137,7 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public IConst visitArithExprConst(PorthosParser.ArithExprConstContext ctx) {
-        return new IConst(Integer.parseInt(ctx.getText()));
+        return new IConst(Integer.parseInt(ctx.getText()), -1);
     }
 
     @Override

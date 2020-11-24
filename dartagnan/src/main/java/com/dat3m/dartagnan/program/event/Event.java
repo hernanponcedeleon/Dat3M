@@ -13,6 +13,8 @@ public abstract class Event implements Comparable<Event> {
 	protected int oId = -1;		// ID after parsing (original)
 	protected int uId = -1;		// ID after unrolling
 	protected int cId = -1;		// ID after compilation
+	
+	protected int cLine = -1;	// line in the original C program
 
 	protected final Set<String> filter;
 
@@ -34,6 +36,7 @@ public abstract class Event implements Comparable<Event> {
 		this.oId = other.oId;
         this.uId = other.uId;
         this.cId = other.cId;
+        this.cLine = other.cLine;
         this.filter = other.filter;
     }
 
@@ -51,6 +54,14 @@ public abstract class Event implements Comparable<Event> {
 
 	public int getCId() {
 		return cId;
+	}
+
+	public int getCLine() {
+		return cLine;
+	}
+
+	public void setCLine(int line) {
+		this.cLine = line;
 	}
 
 	public Event getSuccessor(){
@@ -81,6 +92,10 @@ public abstract class Event implements Comparable<Event> {
 		filter.addAll(Arrays.asList(params));
 	}
 
+	public boolean hasFilter(String f) {
+		return filter.contains(f);
+	}
+	
 	@Override
 	public int compareTo(Event e){
 		int result = Integer.compare(cId, e.cId);

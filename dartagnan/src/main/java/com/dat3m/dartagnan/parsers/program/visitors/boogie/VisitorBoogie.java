@@ -14,9 +14,14 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.llvmFunction;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.LLVMPREDICATES;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.llvmPredicate;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.LLVMUNARY;
+import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +49,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Assume_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Bool_litContext;
+import com.dat3m.dartagnan.parsers.BoogieParser.Bv_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.DecContext;
@@ -82,10 +88,10 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.event.Assume;
-import com.dat3m.dartagnan.program.event.Comment;
 import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.FunCall;
+import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.If;
-import com.dat3m.dartagnan.program.event.Jump;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
@@ -102,7 +108,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	protected ProgramBuilder programBuilder;
 	protected int threadCount = 0;
+	protected int currentThread = 0;
     
+	protected int currentLine= -1;
+	
     private Label currentLabel = null;
     private Map<Label, Label> pairLabels = new HashMap<>();
     
@@ -114,6 +123,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private Map<String, Proc_declContext> procedures = new HashMap<>();
 	protected PthreadPool pool = new PthreadPool();
+	protected List<Register> allocationRegs = new ArrayList<Register>();
 	
 	private int nextScopeID = 0;
 	protected Scope currentScope = new Scope(nextScopeID, null);
@@ -121,17 +131,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private List<Register> returnRegister = new ArrayList<>();
 	private String currentReturnName = null;
 	
-	private List<String> constants = new ArrayList<>();
 	private Map<String, ExprInterface> constantsMap = new HashMap<>();
-	
-	protected List<ExprInterface> mainCallingValues = new ArrayList<>();
+	private Map<String, Integer> constantsTypeMap = new HashMap<>();
+
+	protected Map<Integer, List<ExprInterface>> threadCallingValues = new HashMap<>();
 	
 	protected int assertionIndex = 0;
 	
 	protected BeginAtomic currentBeginAtomic = null;
 	private Call_cmdContext atomicMode = null;
 	 
-	private static List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global");
+	private List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -158,13 +168,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		throw new ParsingException("Program shall have a main procedure");
     	}
 
-    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain");
+    	Register next = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + "ptrMain", -1);
     	pool.add(next, "main");
     	while(pool.canCreate()) {
     		next = pool.next();
     		String nextName = pool.getNameFromPtr(next);
     		pool.addIntPtr(threadCount + 1, next);
-    		visitProc_decl(procedures.get(nextName), true, mainCallingValues);	
+    		visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));	
     	}
     	return programBuilder.build();
     }
@@ -175,9 +185,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		throw new ParsingException("Procedure " + name + " is already defined");
     	}
     	if(name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
+    		threadCallingValues.put(threadCount, new ArrayList<>());
         	for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
         		for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-            		mainCallingValues.add(programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText()));
+        			String type = atiwC.typed_idents_where().typed_idents().type().getText();
+        			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+            		threadCallingValues.get(threadCount).add(programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision));
         		}
         	}
     	}
@@ -192,11 +205,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			ExprInterface def = ((Atom)exp).getRHS();
 			constantsMap.put(name, def);
 		}
-		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
-			Address add = ((Address)((Atom)exp).getLHS());
-			int value = ((Atom)exp).getRHS().reduce().getValue();
-			add.setConstValue(value);
-		}
 		return null;
 	}
 
@@ -204,15 +212,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitConst_decl(Const_declContext ctx) {
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
 			String name = ident.getText();
-			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
-				programBuilder.getOrCreateLocation(name);
+			String type = ctx.typed_idents().type().getText();
+			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+			if(ctx.getText().contains("{:count")) {
+				int size = Integer.parseInt((ctx.getText().substring(0, ctx.getText().lastIndexOf("}")).split("count")[1]));
+				programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0, precision)), precision);
+			} else if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
+				programBuilder.getOrCreateLocation(name, precision);
 			} else {
-				constants.add(name);				
+				constantsTypeMap.put(name, precision);
 			}
 		}
 		return null;
 	}
-
+	
 	@Override
 	public Object visitFunc_decl(Func_declContext ctx) {
 		String name = ctx.Ident().getText();
@@ -223,36 +236,36 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     @Override
     public Object visitVar_decl(Var_declContext ctx) {
     	 for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
- 			if(atiwC.typed_idents_where().typed_idents().type().getText().contains("bv")) {
-				throw new ParsingException("Bitvectors are not yet supported");		
-			}
- 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
- 				programBuilder.getOrCreateLocation(ident.getText());
- 			}
+    		 for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+    			 String name = ident.getText();
+    			 String type = atiwC.typed_idents_where().typed_idents().type().getText();
+    			 int precision = type.contains("bv") && !name.equals("$M.0") ? Integer.parseInt(type.split("bv")[1]) : -1;
+    			 programBuilder.getOrCreateLocation(name, precision);
+    		 }
     	 }
     	 return null;
     }
     
 	public Object visitLocal_vars(Local_varsContext ctx, int scope) {
 		for(Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
-			if(atiwC.typed_idents_where().typed_idents().type().getText().contains("bv")) {
-				throw new ParsingException("Bitvectors are not yet supported");		
-			}
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
 				String name = ident.getText();
-				if(constants.contains(name)) {
+				String type = atiwC.typed_idents_where().typed_idents().type().getText();
+				int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+				if(constantsTypeMap.containsKey(name)) {
 	                throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
 				if(programBuilder.getLocation(name) != null) {
 	                throw new ParsingException("Variable " + name + " is already defined globally");
 				}
-				programBuilder.getOrCreateRegister(scope, currentScope.getID() + ":" + name);
+				programBuilder.getOrCreateRegister(scope, currentScope.getID() + ":" + name, precision);
 			}			
 		}
    	 	return null;
    	 }
 
-    public void visitProc_decl(Proc_declContext ctx, boolean create, List<ExprInterface> callingValues) {
+    private void visitProc_decl(Proc_declContext ctx, boolean create, List<ExprInterface> callingValues) {
+    	currentLine = -1;
     	if(ctx.proc_sign().proc_sign_out() != null) {
     		for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
     			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
@@ -263,14 +276,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
     	if(create) {
          	threadCount ++;
-            programBuilder.initThread(threadCount);
+    		String name = ctx.proc_sign().Ident().getText();
+            programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
             	// Used to allow execution of threads after they have been created (pthread_create)
-        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
-        		Register reg = programBuilder.getOrCreateRegister(threadCount, null);
+        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
+        		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
         		programBuilder.addChild(threadCount, new AtomicLoad(reg, loc.getAddress(), SC));
-        		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(1)), label));
+        		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(1, -1)), label));
             }
     	}
 
@@ -288,9 +302,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
     				// To deal with references passed to created threads
     				if(index < callingValues.size()) {
-        				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText());
+    					String type = atiwC.typed_idents_where().typed_idents().type().getText();
+    					int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
+        				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision);
         				ExprInterface value = callingValues.get(index);
-        				programBuilder.addChild(threadCount, new Local(register, value));
+        				Local child = new Local(register, value);
+        				child.setCLine(currentLine);
+						programBuilder.addChild(threadCount, child);
         				index++;    					
     				}
     			}
@@ -311,12 +329,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	if(create) {
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
-        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active");
-        		programBuilder.addChild(threadCount, new AtomicStore(loc.getAddress(), new IConst(0), SC));
+        		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
+        		programBuilder.addChild(threadCount, new AtomicStore(loc.getAddress(), new IConst(0, -1), SC));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
     	}
+    	currentLine = -1;
     }
     
     @Override 
@@ -326,11 +345,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	// we cannot just add the expression to the AbstractAssertion.
     	// We need to create an event carrying the value of the expression 
     	// and see if this event can be executed.
-    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
-    	assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
+    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
+    	assertionIndex++;
     	Local event = new Local(ass, expr);
 		event.addFilters(EType.ASSERTION);
+		event.setCLine(currentLine);
 		programBuilder.addChild(threadCount, event);
     	return null;
     }
@@ -343,14 +363,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-	       	programBuilder.addChild(threadCount, new Jump(label));
+			programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 	       	return null;
 		}
 		if(name.equals("reach_error")) {
-	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex);
+	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, -1);
 	    	assertionIndex++;
 	    	Local event = new Local(ass, new BConst(false));
 			event.addFilters(EType.ASSERTION);
+			event.setCLine(currentLine);
 			programBuilder.addChild(threadCount, event);
 			return null;
 		}
@@ -396,8 +417,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		// Nice to have for debugging
-		programBuilder.addChild(threadCount, new Comment(" Start of " + name + " "));	
+		programBuilder.addChild(threadCount, new FunCall(name));	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			if(currentBeginAtomic == null) {
@@ -407,8 +427,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentBeginAtomic = null;
 			atomicMode = null;
 		}
-		// Nice to have for debugging
-		programBuilder.addChild(threadCount, new Comment(" End of " + name + " "));
+		programBuilder.addChild(threadCount, new FunRet(name));
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
@@ -454,17 +473,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
-		// TODO: find a nicer way of dealing with this
-		if(ctx.getText().contains("$load.")) {
-			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText());
-			String tmp = ctx.def_body().exprs().expr(0).getText();
-			tmp = tmp.substring(0, tmp.lastIndexOf(')'));
-			tmp = tmp.substring(tmp.lastIndexOf(',')+1);
-			// This names are global so we don't use currentScope.getID(), but per thread.
-			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp);
-			pool.addRegPtr(reg, ptr);
-		}
         ExprsContext exprs = ctx.def_body().exprs();
     	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
@@ -475,7 +483,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        	continue;
 	        }		
 			String name = ctx.Ident(i).getText();
-			if(constants.contains(name)) {
+	        if(smackDummyVariables.contains(name)) {
+	        	continue;
+	        }
+			if(constantsTypeMap.containsKey(name)) {
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
 			if(initMode) {
@@ -484,26 +495,43 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
-	        	if(ctx.getText().contains("$load.")) {
-	        		programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null));
+	        	if(ctx.getText().contains("$load.") || value instanceof Address) {
+	        		try {
+		    			// This names are global so we don't use currentScope.getID(), but per thread.
+		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
+		    			String tmp = ctx.def_body().exprs().expr(0).getText();
+		    			tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
+		    			// This names are global so we don't use currentScope.getID(), but per thread.
+		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, -1);
+	        			pool.addRegPtr(reg, ptr);	        				        			
+	        		} catch (Exception e) {
+	        			// Nothing to be done
+	        		}
+	        		Load child = new Load(register, (IExpr)value, null);
+	        		if(!allocationRegs.contains(value)) {
+		        		child.setCLine(currentLine);
+	        		}
+					programBuilder.addChild(threadCount, child);	        			
 		            continue;
 	        	}
-	        	if(value instanceof Address) {
-	                programBuilder.addChild(threadCount, new Load(register, (Address)value, null));
-	        	} else {
-		            programBuilder.addChild(threadCount, new Local(register, value));	        		
-	        	}
+	            Local child = new Local(register, value);
+	            child.setCLine(currentLine);
+				programBuilder.addChild(threadCount, child);	        		
 	            continue;
 	        }
 	        Location location = programBuilder.getLocation(name);
 	        if(location != null){
-	            programBuilder.addChild(threadCount, new Store(location.getAddress(), value, null));
+	            Store child = new Store(location.getAddress(), value, null);
+	            child.setCLine(currentLine);
+				programBuilder.addChild(threadCount, child);
 	            continue;
 	        }
 	        if(currentReturnName.equals(name)) {
 	        	if(!returnRegister.isEmpty()) {
 	        		Register ret = returnRegister.remove(returnRegister.size() - 1);
-					programBuilder.addChild(threadCount, new Local(ret, value));
+					Local child = new Local(ret, value);
+					child.setCLine(currentLine);
+					programBuilder.addChild(threadCount, child);
 	        	}
 	        	continue;
 	        }
@@ -515,12 +543,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitReturn_cmd(Return_cmdContext ctx) {
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		programBuilder.addChild(threadCount, new Jump(label));
+		programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 		return null;
 	}
 
 	@Override
 	public Object visitAssume_cmd(Assume_cmdContext ctx) {
+		if(ctx.getText().contains("sourceloc")) {
+			String line = ctx.getText();
+			currentLine = Integer.parseInt(line.substring(line.indexOf(',')+1, line.lastIndexOf(',')));
+		}
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
 			Label pairingLabel = null;
@@ -554,12 +586,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
     	boolean loop = programBuilder.hasLabel(labelName);
     	Label l1 = programBuilder.getOrCreateLabel(labelName);
-        programBuilder.addChild(threadCount, new Jump(l1));
+		programBuilder.addChild(threadCount, new CondJump(new BConst(true), l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(loop) {
             Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-            programBuilder.addChild(threadCount, new Jump(label));        	
+			programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));        	
         }
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
@@ -667,15 +699,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(constantsMap.containsKey(name)) {
 			return constantsMap.get(name);
 		}
-		if(constants.contains(name)) {
+		if(constantsTypeMap.containsKey(name)) {
 			// Dummy register needed to parse axioms
-			return new Register(name, -1);
+			return new Register(name, -1, constantsTypeMap.get(name));
 		}
         Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
         if(register != null){
             return register;
         }
         Location location = programBuilder.getLocation(name);
+        if(location != null){
+       		return location.getAddress();
+        }
+        // It might be the start of an array
+        location = programBuilder.getLocation(name+"[0]");
         if(location != null){
        		return location.getAddress();
         }
@@ -692,27 +729,35 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.contains("$load.")) {
 			return (IExpr)ctx.expr(1).accept(this);
 		}
-		// TODO this blows up when we have big arrays
 		if(name.contains("$store.")) {
+			if(smackDummyVariables.contains(ctx.expr(1).getText())) {
+				return null;
+			}
 			IExpr address = (IExpr)ctx.expr(1).accept(this);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
 			if(initMode && value instanceof IConst && ((IConst)value).getValue() == 0) {
 				return null;
 			}
-			programBuilder.addChild(threadCount, new Store(address, value, null));	
+			Store child = new Store(address, value, null);
+			child.setCLine(currentLine);
+			programBuilder.addChild(threadCount, child);	
 			return null;
 		}
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
 		currentCall = new FunctionCall(function, callParams, currentCall);
-		if(LLVMFUNCTIONS.stream().anyMatch(f -> name.contains(f))) {
+		if(LLVMFUNCTIONS.stream().anyMatch(f -> name.startsWith(f))) {
 			currentCall = currentCall.getParent();
 			return llvmFunction(name, callParams);
 		}
-		if(name.contains("$not.")) {
+		if(LLVMPREDICATES.stream().anyMatch(f -> name.equals(f))) {
 			currentCall = currentCall.getParent();
-			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
+			return llvmPredicate(name, callParams);
+		}
+		if(LLVMUNARY.stream().anyMatch(f -> name.startsWith(f))) {
+			currentCall = currentCall.getParent();
+			return llvmUnary(name, callParams);
 		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
@@ -737,13 +782,28 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		return ctx.expr().accept(this);
 	}
 
+	@Override 
+	public Object visitBv_expr(Bv_exprContext ctx) {
+		int value;
+		int precision = Integer.parseInt(ctx.getText().split("bv")[1]);
+		try {
+			value = Integer.parseInt(ctx.getText().split("bv")[0]);
+		} catch (Exception e) {
+			//TODO: this can be longer for unsigned int
+			value = Integer.MAX_VALUE;
+		}
+		return new IConst(value, precision);
+	}
+
 	@Override
 	public Object visitInt_expr(Int_exprContext ctx) {
+		int value;
 		try {
-			return new IConst(Integer.parseInt(ctx.getText()));
+			value = Integer.parseInt(ctx.getText());
 		} catch (Exception e) {
-			return new IConst(Integer.MAX_VALUE);
+			value = Integer.MAX_VALUE;
 		}
+		return new IConst(value, -1);
 	}
 	
 	@Override

@@ -31,7 +31,7 @@ public class RelCtrlDirect extends StaticRelation {
                     }
                 }
 
-                List<Event> condJumps = thread.getCache().getEvents(FilterBasic.get(EType.COND_JUMP));
+                List<Event> condJumps = thread.getCache().getEvents(FilterBasic.get(EType.JUMP));
                 if(!condJumps.isEmpty()){
                     for(Event e2 : thread.getCache().getEvents(FilterBasic.get(EType.ANY))){
                         for(Event e1 : condJumps){

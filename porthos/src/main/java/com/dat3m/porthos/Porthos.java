@@ -73,14 +73,13 @@ public class Porthos {
 
     public static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, Settings settings){
-
-        pSource.unroll(settings.getBound(), 0);
+    	pSource.unroll(settings.getBound(), 0);
         pTarget.unroll(settings.getBound(), 0);
 
         int nextId = pSource.compile(source, 0);
         pTarget.compile(target, nextId);
 
-        BoolExpr sourceCF = pSource.encodeCF(ctx);
+		BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalRegisterValues(ctx);
         BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, settings);
 

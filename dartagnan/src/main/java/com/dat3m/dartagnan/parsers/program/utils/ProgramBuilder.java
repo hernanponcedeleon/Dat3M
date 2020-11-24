@@ -42,12 +42,16 @@ public class ProgramBuilder {
         return program;
     }
 
-    public void initThread(int id){
+    public void initThread(String name, int id){
         if(!threads.containsKey(id)){
             Skip threadEntry = new Skip();
             threadEntry.setOId(lastOrigId++);
-            threads.putIfAbsent(id, new Thread(id, threadEntry));
+            threads.putIfAbsent(id, new Thread(name, id, threadEntry));
         }
+    }
+
+    public void initThread(int id){
+        initThread(null, id);
     }
 
     public Event addChild(int thread, Event child){
@@ -70,41 +74,41 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
 
-    public void initLocEqLocPtr(String leftName, String rightName){
-        Location location = getOrCreateLocation(leftName);
-        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName).getAddress());
+    public void initLocEqLocPtr(String leftName, String rightName, int precision){
+        Location location = getOrCreateLocation(leftName, precision);
+        iValueMap.put(location.getAddress(), getOrCreateLocation(rightName, precision).getAddress());
     }
 
-    public void initLocEqLocVal(String leftName, String rightName){
-        Location left = getOrCreateLocation(leftName);
-        Location right = getOrCreateLocation(rightName);
+    public void initLocEqLocVal(String leftName, String rightName, int precision){
+        Location left = getOrCreateLocation(leftName, precision);
+        Location right = getOrCreateLocation(rightName, precision);
         iValueMap.put(left.getAddress(), iValueMap.get(right.getAddress()));
     }
 
     public void initLocEqConst(String locName, IConst iValue){
-        Location location = getOrCreateLocation(locName);
+        Location location = getOrCreateLocation(locName, iValue.getPrecision());
         iValueMap.put(location.getAddress(), iValue);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName){
-        Location loc = getOrCreateLocation(locName);
-        Register reg = getOrCreateRegister(regThread, regName);
+    public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
+        Location loc = getOrCreateLocation(locName, precision);
+        Register reg = getOrCreateRegister(regThread, regName, precision);
         addChild(regThread, new Local(reg, loc.getAddress()));
     }
 
-    public void initRegEqLocVal(int regThread, String regName, String locName){
-        Location loc = getOrCreateLocation(locName);
-        Register reg = getOrCreateRegister(regThread, regName);
+    public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
+        Location loc = getOrCreateLocation(locName, precision);
+        Register reg = getOrCreateRegister(regThread, regName, precision);
         addChild(regThread, new Local(reg, iValueMap.get(loc.getAddress())));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, new Local(getOrCreateRegister(regThread, regName), iValue));
+        addChild(regThread, new Local(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
     }
 
-    public void addDeclarationArray(String name, List<IConst> values){
+    public void addDeclarationArray(String name, List<IConst> values, int precision){
         int size = values.size();
-        List<Address> addresses = memory.malloc(name, size);
+        List<Address> addresses = memory.malloc(name, size, precision);
         for(int i = 0; i < size; i++){
             String varName = name + "[" + i + "]";
             Address address = addresses.get(i);
@@ -112,6 +116,10 @@ public class ProgramBuilder {
             iValueMap.put(address, values.get(i));
         }
         pointers.put(name, addresses.get(0));
+    }
+
+    public void addDeclarationArray(String name, List<IConst> values){
+    	addDeclarationArray(name, values, -1);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -125,11 +133,11 @@ public class ProgramBuilder {
         return locations.get(name);
     }
 
-    public Location getOrCreateLocation(String name){
+    public Location getOrCreateLocation(String name, int precision){
         if(!locations.containsKey(name)){
-            Location location = memory.getOrCreateLocation(name);
+            Location location = memory.getOrCreateLocation(name, precision);
             locations.put(name, location);
-            iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE));
+            iValueMap.put(location.getAddress(), new IConst(Location.DEFAULT_INIT_VALUE, location.getAddress().getPrecision()));
         }
         return locations.get(name);
     }
@@ -148,12 +156,12 @@ public class ProgramBuilder {
         return null;
     }
 
-    public Register getOrCreateRegister(int threadId, String name){
+    public Register getOrCreateRegister(int threadId, String name, int precision){
         initThread(threadId);
         Thread thread = threads.get(threadId);
         Register register = thread.getRegister(name);
         if(register == null){
-            return thread.addRegister(name);
+            return thread.addRegister(name, precision);
         }
         return register;
     }
@@ -178,7 +186,7 @@ public class ProgramBuilder {
     }
 
     public IConst getInitValue(Address address){
-        return iValueMap.getOrDefault(address, new IConst(Location.DEFAULT_INIT_VALUE));
+        return iValueMap.getOrDefault(address, new IConst(Location.DEFAULT_INIT_VALUE, address.getPrecision()));
     }
 
     public Address getPointer(String name){
@@ -211,8 +219,8 @@ public class ProgramBuilder {
         Set<String> referencedLabels = new HashSet<>();
         Event e = thread.getEntry();
         while(e != null){
-            if(e instanceof Jump){
-                referencedLabels.add(((Jump) e).getLabel().getName());
+            if(e instanceof CondJump){
+                referencedLabels.add(((CondJump) e).getLabel().getName());
             } else if(e instanceof Label){
                 Label label = labels.remove(((Label) e).getName());
                 if(label == null){

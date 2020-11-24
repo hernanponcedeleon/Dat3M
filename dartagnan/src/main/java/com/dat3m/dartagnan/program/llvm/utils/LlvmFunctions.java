@@ -3,9 +3,15 @@ package com.dat3m.dartagnan.program.llvm.utils;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.IOpBin.AR_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
+import static com.dat3m.dartagnan.expression.op.IOpBin.UDIV;
 import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
+import static com.dat3m.dartagnan.expression.op.IOpBin.MINUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+import static com.dat3m.dartagnan.expression.op.IOpBin.UREM;
+import static com.dat3m.dartagnan.expression.op.IOpBin.SREM;
+import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
+import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
 
@@ -20,6 +26,9 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 public class LlvmFunctions {
 
 	public static List<String> LLVMFUNCTIONS = Arrays.asList(
+			"$add.",
+			"$sub.",
+			"$mul.",
 			"$srem.",
 			"$urem.",
 			"$smod.",
@@ -35,28 +44,46 @@ public class LlvmFunctions {
 	
 	public static Object llvmFunction(String name, List<Object> callParams) {
 		IOpBin op = null; 
-		if(name.contains("$srem.") || name.contains("$urem.") || name.contains("$smod.")) {
+		if(name.startsWith("$add.")) {
+			op = PLUS;
+		}
+		if(name.startsWith("$sub.")) {
+			op = MINUS;
+		}
+		if(name.startsWith("$mul.")) {
+			op = MULT;
+		}
+		if(name.startsWith("$smod.")) {
 			op = MOD;
 		}
-		if(name.contains("$sdiv.") || name.contains("$udiv.")) {
+		if(name.startsWith("$srem.")) {
+			op = SREM;
+		}
+		if(name.startsWith("$urem.")) {
+			op = UREM;
+		}
+		if(name.startsWith("$sdiv.")) {
 			op = DIV;
 		}
-		if(name.contains("$shl.")) {
+		if(name.startsWith("$udiv.")) {
+			op = UDIV;
+		}
+		if(name.startsWith("$shl.")) {
 			op = L_SHIFT;
 		}
-		if(name.contains("$lshr.")) {
+		if(name.startsWith("$lshr.")) {
 			op = R_SHIFT;
 		}
-		if(name.contains("$ashr.")) {
+		if(name.startsWith("$ashr.")) {
 			op = AR_SHIFT;
 		}
-		if(name.contains("$xor.")) {
+		if(name.startsWith("$xor.")) {
 			op = XOR;
 		}
-		if(name.contains("$or.")) {
+		if(name.startsWith("$or.")) {
 			op = OR;
 		}
-		if(name.contains("$and.") || name.contains("$nand.")) {
+		if(name.startsWith("$and.") || name.startsWith("$nand.")) {
 			op = AND;
 		}
 		if(op == null) {

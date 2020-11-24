@@ -1,27 +1,28 @@
 package com.dat3m.svcomp.options;
 
-import static java.util.stream.IntStream.rangeClosed;
-
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
+import com.dat3m.dartagnan.analysis.AnalysisTypes;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 
 public class SVCOMPOptions extends BaseOptions {
 
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
-    protected List<Integer> bounds = rangeClosed(1, 10000).boxed().collect(Collectors.toList());
     protected String optimization = "O0";
     protected boolean witness;
-    protected Integer cegar;
+    protected boolean bp;
+    protected boolean iSolver;
+    private AnalysisTypes analysis; 
     
     public SVCOMPOptions(){
         super();
@@ -30,17 +31,22 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        Option cegarOption = new Option("cegar", true,
-                "Use CEGAR");
-        addOption(cegarOption);
+        Option propOption = new Option("property", true,
+                "The path to the property to be checked");
+        propOption.setRequired(true);
+        addOption(propOption);
 
-        Option witnessOption = new Option("w", "witness", false,
-                "Creates a violation witness");
-        addOption(witnessOption);
+        addOption(new Option("incrementalSolver", false,
+        		"Use an incremental solver"));
+
+        addOption(new Option("w", "witness", false,
+                "Creates a violation witness"));
         
-        Option optOption = new Option("o", "optimization", true,
-                "Optimization flag for LLVM compiler");
-        addOption(optOption);
+        addOption(new Option("o", "optimization", true,
+                "Optimization flag for LLVM compiler"));
+        
+        addOption(new Option("bp", "bit-precise", false,
+                "Use bit precise encoding"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -54,8 +60,22 @@ public class SVCOMPOptions extends BaseOptions {
         	optimization = cmd.getOptionValue("optimization");
         }
         witness = cmd.hasOption("witness");
-        if(cmd.hasOption("cegar")) {
-            cegar = Integer.parseInt(cmd.getOptionValue("cegar"));        	
+        iSolver = cmd.hasOption("incrementalSolver");
+        bp = cmd.hasOption("bit-precise");
+        
+        String property = Files.getNameWithoutExtension(cmd.getOptionValue("property"));
+        switch(property) {
+			case "no-data-race":
+				analysis = RACES;
+				break;
+			case "termination":
+				analysis = TERMINATION;
+				break;
+			case "unreach-call":
+				analysis = REACHABILITY;
+				break;
+			default:
+				throw new UnsupportedOperationException("Unrecognized property " + property);
         }
     }
 
@@ -63,15 +83,19 @@ public class SVCOMPOptions extends BaseOptions {
         return optimization;
     }
 
-    public boolean getGenerateWitness(){
+    public boolean useISolver(){
+        return iSolver;
+    }
+
+    public boolean createWitness(){
         return witness;
     }
 
-    public Integer getCegar(){
-        return cegar;
+    public boolean useBP(){
+        return bp;
     }
 
-    public List<Integer> getBounds() {
-        return bounds;
+    public AnalysisTypes getAnalysis(){
+		return analysis;
     }
 }

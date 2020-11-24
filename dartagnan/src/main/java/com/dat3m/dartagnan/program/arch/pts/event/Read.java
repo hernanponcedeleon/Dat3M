@@ -75,7 +75,7 @@ public class Read extends MemEvent implements RegWriter {
                     events.addLast(new Fence("Ish"));
                 }
                 break;
-                default:
+            default:
                     throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 

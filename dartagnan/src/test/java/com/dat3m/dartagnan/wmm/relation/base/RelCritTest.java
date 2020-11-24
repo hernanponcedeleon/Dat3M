@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -21,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.*;
 
@@ -58,15 +58,15 @@ public class RelCritTest {
     @Test
     public void test() {
         try{
+            // Force encoding all possible "crit" relations
+            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, true, "crit");
+
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Program program = new ProgramParser().parse(new File(path));
 
-            // Force encoding all possible "crit" relations
-            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, true, "crit");
-
             // Sanity check, can be skipped
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, program.getArch(), settings).equals(FAIL));
+            assertTrue(runAnalysis(solver, ctx, program, wmm, program.getArch(), settings).equals(FAIL));
 
             // Test edges
             EdgeTestHelper helper = new EdgeTestHelper(

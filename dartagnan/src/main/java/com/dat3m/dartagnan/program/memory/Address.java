@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.memory;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -13,10 +13,9 @@ import com.dat3m.dartagnan.program.event.Event;
 public class Address extends IConst implements ExprInterface {
 
     private final int index;
-    private Integer constValue;
 
-    Address(int index){
-        super(index);
+    Address(int index, int precision){
+        super(index, precision);
         this.index = index;
     }
 
@@ -26,17 +25,17 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public IntExpr toZ3Int(Event e, Context ctx){
+    public Expr toZ3Int(Event e, Context ctx){
         return toZ3Int(ctx);
     }
 
     @Override
-    public IntExpr getLastValueExpr(Context ctx){
+    public Expr getLastValueExpr(Context ctx){
         return toZ3Int(ctx);
     }
 
-    public IntExpr getLastMemValueExpr(Context ctx){
-        return ctx.mkIntConst("last_val_at_memory_" + index);
+    public Expr getLastMemValueExpr(Context ctx){
+        return precision > 0 ? ctx.mkBVConst("last_val_at_memory_" + index, precision) : ctx.mkIntConst("last_val_at_memory_" + index);
     }
 
     @Override
@@ -66,24 +65,12 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public IntExpr toZ3Int(Context ctx){
-        return ctx.mkIntConst("memory_" + index);
+    public Expr toZ3Int(Context ctx){
+		return precision > 0 ? ctx.mkBVConst("memory_" + index, precision) : ctx.mkIntConst("memory_" + index);
     }
 
     @Override
-    public int getIntValue(Event e, Context ctx, Model model){
+    public int getIntValue(Event e, Model model, Context ctx){
         return Integer.parseInt(model.getConstInterp(toZ3Int(ctx)).toString());
-    }
-    
-    public boolean hasConstValue() {
-    	return constValue != null;
-    }
-    
-    public Integer getConstValue() {
-    	return constValue;
-    }
-    
-    public void setConstValue(Integer value) {
-    	this.constValue = value;
-    }
+    }    
 }

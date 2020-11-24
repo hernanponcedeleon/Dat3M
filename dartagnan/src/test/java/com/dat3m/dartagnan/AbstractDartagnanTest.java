@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -32,9 +33,9 @@ public abstract class AbstractDartagnanTest {
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1);
-        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1);
-        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1);
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
+        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1, false);
+        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1, false);
 
         return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)
@@ -71,7 +72,7 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-                assertEquals(expected, Dartagnan.testProgram(solver, ctx, program, wmm, target, settings));
+                assertEquals(expected, runAnalysis(solver, ctx, program, wmm, target, settings));
                 ctx.close();
             }
         } catch (IOException e){

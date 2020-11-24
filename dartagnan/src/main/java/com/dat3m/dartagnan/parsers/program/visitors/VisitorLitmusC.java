@@ -63,7 +63,7 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
-        programBuilder.initLocEqConst(ctx.varName().getText(), new IConst(value));
+        programBuilder.initLocEqConst(ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
@@ -73,21 +73,21 @@ public class VisitorLitmusC
         if (ctx.initConstantValue() != null) {
             value = Integer.parseInt(ctx.initConstantValue().constant().getText());
         }
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName().getText(), new IConst(value));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName().getText(), new IConst(value, -1));
         return null;
     }
 
     @Override
     public Object visitGlobalDeclaratorLocationLocation(LitmusCParser.GlobalDeclaratorLocationLocationContext ctx) {
         if(ctx.Ast() == null){
-            programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
+            programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
         } else {
             String rightName = ctx.varName(1).getText();
             Address address = programBuilder.getPointer(rightName);
             if(address != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), address);
             } else {
-                programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText());
+                programBuilder.initLocEqLocVal(ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
             }
         }
         return null;
@@ -96,14 +96,14 @@ public class VisitorLitmusC
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
         if(ctx.Ast() == null){
-            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText());
+            programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
         } else {
             String rightName = ctx.varName(1).getText();
             Address address = programBuilder.getPointer(rightName);
             if(address != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), address);
             } else {
-                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText());
+                programBuilder.initRegEqLocVal(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), -1);
             }
         }
         return null;
@@ -115,7 +115,7 @@ public class VisitorLitmusC
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0)));
+            programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0, -1)));
             return null;
         }
         if(ctx.initArray() != null){
@@ -123,14 +123,14 @@ public class VisitorLitmusC
                 List<IConst> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
                     if(elCtx.constant() != null){
-                        values.add(new IConst(Integer.parseInt(elCtx.constant().getText())));
+                        values.add(new IConst(Integer.parseInt(elCtx.constant().getText()), -1));
                     } else {
                         String varName = elCtx.varName().getText();
                         Address address = programBuilder.getPointer(varName);
                         if(address != null){
                             values.add(address);
                         } else {
-                            address = programBuilder.getOrCreateLocation(varName).getAddress();
+                            address = programBuilder.getOrCreateLocation(varName, -1).getAddress();
                             values.add(elCtx.Ast() == null ? address : programBuilder.getInitValue(address));
                         }
                     }
@@ -166,11 +166,11 @@ public class VisitorLitmusC
                 String name = varName.getText();
                 Address pointer = programBuilder.getPointer(name);
                 if(pointer != null){
-                    Register register = programBuilder.getOrCreateRegister(scope, name);
+                    Register register = programBuilder.getOrCreateRegister(scope, name, -1);
                     programBuilder.addChild(currentThread, new Local(register, pointer));
                 } else {
-                    Location location = programBuilder.getOrCreateLocation(varName.getText());
-                    Register register = programBuilder.getOrCreateRegister(scope, varName.getText());
+                    Location location = programBuilder.getOrCreateLocation(varName.getText(), -1);
+                    Register register = programBuilder.getOrCreateRegister(scope, varName.getText(), -1);
                     programBuilder.addChild(currentThread, new Local(register, location.getAddress()));
                 }
             }
@@ -365,7 +365,7 @@ public class VisitorLitmusC
     @Override
     public ExprInterface visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
-        IConst result = new IConst(Integer.parseInt(ctx.getText()));
+        IConst result = new IConst(Integer.parseInt(ctx.getText()), -1);
         return assignToReturnRegister(register, result);
     }
 
@@ -376,7 +376,7 @@ public class VisitorLitmusC
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
         ExprInterface value = returnExpressionOrDefault(ctx.value, 1);
-        Register register = programBuilder.getOrCreateRegister(scope, null);
+        Register register = programBuilder.getOrCreateRegister(scope, null, -1);
         Event event = new RMWOp(getAddress(ctx.address), register, value, ctx.op);
         return programBuilder.addChild(currentThread, event);
     }
@@ -424,7 +424,7 @@ public class VisitorLitmusC
     public Object visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
         Register register = programBuilder.getRegister(scope, ctx.varName().getText());
         if(register == null){
-            register = programBuilder.getOrCreateRegister(scope, ctx.varName().getText());
+            register = programBuilder.getOrCreateRegister(scope, ctx.varName().getText(), -1);
             if(ctx.re() != null){
                 returnRegister = register;
                 ctx.re().accept(this);
@@ -452,14 +452,14 @@ public class VisitorLitmusC
             }
             Location location = programBuilder.getLocation(ctx.getText());
             if(location != null){
-                register = programBuilder.getOrCreateRegister(scope, null);
+                register = programBuilder.getOrCreateRegister(scope, null, -1);
                 programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
                 return register;
             }
-            return programBuilder.getOrCreateRegister(scope, ctx.getText());
+            return programBuilder.getOrCreateRegister(scope, ctx.getText(), -1);
         }
-        Location location = programBuilder.getOrCreateLocation(ctx.getText());
-        Register register = programBuilder.getOrCreateRegister(scope, null);
+        Location location = programBuilder.getOrCreateLocation(ctx.getText(), -1);
+        Register register = programBuilder.getOrCreateRegister(scope, null, -1);
         programBuilder.addChild(currentThread, new Load(register, location.getAddress(), "NA"));
         return register;
     }
@@ -473,13 +473,13 @@ public class VisitorLitmusC
     }
 
     private ExprInterface returnExpressionOrDefault(LitmusCParser.ReContext ctx, int defaultValue){
-        return ctx != null ? (ExprInterface)ctx.accept(this) : new IConst(defaultValue);
+        return ctx != null ? (ExprInterface)ctx.accept(this) : new IConst(defaultValue, -1);
     }
 
     private Register getReturnRegister(boolean createOnNull){
         Register register = returnRegister;
         if(register == null && createOnNull){
-            return programBuilder.getOrCreateRegister(scope, null);
+            return programBuilder.getOrCreateRegister(scope, null, -1);
         }
         returnRegister = null;
         return register;

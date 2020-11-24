@@ -1,8 +1,17 @@
 package com.dat3m.dartagnan.expression;
 
+import com.microsoft.z3.BitVecExpr;
+import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
+import static com.dat3m.dartagnan.expression.INonDetTypes.UCHAR;
+import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
+import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
+import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
+
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -11,29 +20,37 @@ import com.google.common.primitives.UnsignedLong;
 
 public class INonDet extends IExpr implements ExprInterface {
 	
-	INonDetTypes type;;
+	private INonDetTypes type;
+	private final int precision;
 	
-	public INonDet(INonDetTypes type) {
+	public INonDet(INonDetTypes type, int precision) {
 		this.type = type;
+		this.precision = precision;
 	}
 
+	public INonDetTypes getType() {
+		return type;
+	}
+	
 	@Override
 	public IConst reduce() {
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 
 	@Override
-	public IntExpr toZ3Int(Event e, Context ctx) {
-		return ctx.mkIntConst(Integer.toString(hashCode()));
+	public Expr toZ3Int(Event e, Context ctx) {
+		String name = Integer.toString(hashCode());
+		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx) {
-		return ctx.mkIntConst(Integer.toString(hashCode()));
+	public Expr getLastValueExpr(Context ctx) {
+		String name = Integer.toString(hashCode());
+		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model) {
+	public int getIntValue(Event e, Model model, Context ctx) {
 		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
@@ -106,6 +123,30 @@ public class INonDet extends IExpr implements ExprInterface {
 		case UCHAR:
             return 255;
         }
-        throw new UnsupportedOperationException("getMin() not supported for " + this);
+        throw new UnsupportedOperationException("getMax() not supported for " + this);
+	}
+
+	@Override
+	public int getPrecision() {
+		return precision;
+	}
+	
+	public BoolExpr encodeBounds(boolean bp, Context ctx) {
+		BoolExpr enc = ctx.mkTrue();
+		long min = getMin();
+		long max = getMax();
+		if(bp) {
+			if(type.equals(UINT) || type.equals(ULONG) || type.equals(USHORT) || type.equals(UCHAR)) {
+	        	enc = ctx.mkAnd(enc, ctx.mkBVUGE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(min, precision)));
+	        	enc = ctx.mkAnd(enc, ctx.mkBVULE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(max, precision)));					
+			} else {
+	        	enc = ctx.mkAnd(enc, ctx.mkBVSGE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(min, precision)));
+	        	enc = ctx.mkAnd(enc, ctx.mkBVSLE((BitVecExpr)toZ3Int(null,ctx), ctx.mkBV(max, precision)));					
+			}
+		} else {
+        	enc = ctx.mkAnd(enc, ctx.mkGe((IntExpr)toZ3Int(null,ctx), ctx.mkInt(min)));
+        	enc = ctx.mkAnd(enc, ctx.mkLe((IntExpr)toZ3Int(null,ctx), ctx.mkInt(max)));
+		}
+		return enc;
 	}
 }

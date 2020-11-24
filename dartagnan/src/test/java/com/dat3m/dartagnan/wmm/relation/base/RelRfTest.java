@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -24,6 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.*;
 
@@ -31,7 +31,7 @@ public class RelRfTest {
 
     @Test
     public void testUninitializedMemory() throws IOException {
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
         settings.setFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, true);
 
         String programPath = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rf/";
@@ -45,15 +45,15 @@ public class RelRfTest {
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertTrue(runAnalysis(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertTrue(runAnalysis(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
         solver.reset();
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, true);
-        assertTrue(Dartagnan.testProgram(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertTrue(runAnalysis(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
         solver.reset();
-        assertTrue(Dartagnan.testProgram(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertTrue(runAnalysis(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
         ctx.close();
     }
 
@@ -65,7 +65,7 @@ public class RelRfTest {
         String wmmPath = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat";
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
 
         settings.setFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
@@ -85,7 +85,8 @@ public class RelRfTest {
     }
 
     private void doTestDuplicatedEdges(String programPath, Wmm wmm, Settings settings) throws IOException {
-        Program program = new ProgramParser().parse(new File(programPath));
+
+    	Program program = new ProgramParser().parse(new File(programPath));
         program.unroll(settings.getBound(), 0);
         program.compile(program.getArch(), 0);
 
@@ -96,8 +97,8 @@ public class RelRfTest {
 
         Context ctx = new Context();
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-
-        solver.add(program.getAss().encode(ctx));
+        
+		solver.add(program.getAss().encode(ctx));
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }

@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -31,7 +32,7 @@ public class DartagnanArrayValidTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
         return Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "arrays/ok/"))
                 .filter(Files::isRegularFile)
                 .filter(f -> (f.toString().endsWith("litmus")))
@@ -55,7 +56,7 @@ public class DartagnanArrayValidTest {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings).equals(FAIL));
+            assertTrue(runAnalysis(solver, ctx, program, wmm, Arch.NONE, settings).equals(FAIL));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

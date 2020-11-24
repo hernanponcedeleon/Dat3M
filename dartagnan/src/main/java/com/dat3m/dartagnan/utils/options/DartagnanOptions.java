@@ -1,16 +1,25 @@
 package com.dat3m.dartagnan.utils.options;
 
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.fromString;
+
 import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.commons.cli.*;
 
+import com.dat3m.dartagnan.analysis.AnalysisTypes;
 import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
 
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
-    protected Integer cegar;
+    protected boolean iSolver;
+    protected String witness;
+    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES, TERMINATION));
+    private AnalysisTypes analysis = REACHABILITY; 
 	
     public DartagnanOptions(){
         super();
@@ -19,10 +28,15 @@ public class DartagnanOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        Option cegarOption = new Option("cegar", true,
-                "Use CEGAR");
-        addOption(cegarOption);
-    }
+        addOption(new Option("incrementalSolver", false,
+        		"Use an incremental solver"));
+        
+        addOption(new Option("w", "witness", true,
+                "Creates a violation witness. The argument is the original *.c file from which the Boogie code was generated."));
+
+        addOption(new Option("analysis", true,
+        		"The analysis to be performed: reachability (default), data-race detection, termination"));
+        }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
@@ -30,12 +44,28 @@ public class DartagnanOptions extends BaseOptions {
             throw new RuntimeException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
-        if(cmd.hasOption("cegar")) {
-            cegar = Integer.parseInt(cmd.getOptionValue("cegar")) - 1;        	
+        iSolver = cmd.hasOption("incrementalSolver");
+        if(cmd.hasOption("analysis")) {
+        	AnalysisTypes selectedAnalysis = fromString(cmd.getOptionValue("analysis"));
+        	if(!analyses.contains(selectedAnalysis)) {
+        		throw new RuntimeException("Unrecognized analysis");
+        	}
+        	analysis = selectedAnalysis;
+        }
+        if(cmd.hasOption("witness")) {
+        	witness = cmd.getOptionValue("witness");
         }
     }
     
-    public Integer getCegar(){
-        return cegar;
+    public boolean useISolver(){
+        return iSolver;
+    }
+
+    public AnalysisTypes getAnalysis(){
+		return analysis;
+    }
+
+    public String createWitness(){
+        return witness;
     }
 }

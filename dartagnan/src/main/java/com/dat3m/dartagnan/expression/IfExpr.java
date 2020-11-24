@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
 public class IfExpr implements ExprInterface {
@@ -21,8 +21,8 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public IntExpr toZ3Int(Event e, Context ctx) {
-		return (IntExpr)ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
+	public Expr toZ3Int(Event e, Context ctx) {
+		return ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
 	}
 
 	@Override
@@ -31,20 +31,20 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx) {
+	public Expr getLastValueExpr(Context ctx) {
 		// In principle this method is only called by assertions 
 		// and thus it should never be called for this class
         throw new RuntimeException("Problem with getLastValueExpr in " + this.toString());
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model) {
-		return guard.getBoolValue(e, ctx, model) ? tbranch.getIntValue(e, ctx, model) : fbranch.getIntValue(e, ctx, model);
+	public int getIntValue(Event e, Model model, Context ctx) {
+		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Context ctx, Model model) {
-		return guard.getBoolValue(e, ctx, model)? tbranch.getBoolValue(e, ctx, model) : fbranch.getBoolValue(e, ctx, model);
+	public boolean getBoolValue(Event e, Model model, Context ctx) {
+		return guard.getBoolValue(e, model, ctx)? tbranch.getBoolValue(e, model, ctx) : fbranch.getBoolValue(e, model, ctx);
 	}
 
 	@Override
@@ -64,5 +64,13 @@ public class IfExpr implements ExprInterface {
 	
 	public BExpr getGuard() {
 		return guard;
+	}
+
+	@Override
+	public int getPrecision() {
+		if(fbranch.getPrecision() != tbranch.getPrecision()) {
+            throw new RuntimeException("The type of " + tbranch + " and " + fbranch + " does not match");
+		}
+		return tbranch.getPrecision();
 	}
 }

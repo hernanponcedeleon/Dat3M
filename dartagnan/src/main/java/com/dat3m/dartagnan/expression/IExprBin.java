@@ -1,9 +1,8 @@
 package com.dat3m.dartagnan.expression;
 
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -22,17 +21,12 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public IntExpr toZ3Int(Event e, Context ctx) {
+    public Expr toZ3Int(Event e, Context ctx) {
         return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, Context ctx) {
-        return ctx.mkGt(toZ3Int(e, ctx), ctx.mkInt(0));
-    }
-
-    @Override
-    public IntExpr getLastValueExpr(Context ctx){
+    public Expr getLastValueExpr(Context ctx){
         return op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx);
     }
 
@@ -47,33 +41,22 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public int getIntValue(Event e, Context ctx, Model model){
-        return op.combine(lhs.getIntValue(e, ctx, model), rhs.getIntValue(e, ctx, model));
+    public int getIntValue(Event e, Model model, Context ctx){
+        return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
     }
     
     @Override
 	public IConst reduce() {
 		int v1 = lhs.reduce().getValue();
 		int v2 = rhs.reduce().getValue();
-        switch(op){
-        case PLUS:
-            return new IConst(v1 + v2);
-        case MINUS:
-        	return new IConst(v1 - v2);
-        case MULT:
-        	return new IConst(v1 * v2);
-        case DIV:
-        	return new IConst(v1 / v2);
-        case MOD:
-        	return new IConst(v1 % v2);
-        case AND:
-        	return new IConst(v1 == 1 ? v2 : 0);
-        case OR:
-        	return new IConst(v1 == 1 ? 1 : v2);
-        case XOR:
-        	return new IConst(v1 + v2 == 1 ? 1 : 0);
-		default:
-			throw new UnsupportedOperationException("Reduce not supported for " + this);
-        }
+		return new IConst(op.combine(v1, v2), lhs.getPrecision());
+	}
+
+	@Override
+	public int getPrecision() {
+		if(lhs.getPrecision() != rhs.getPrecision()) {
+            throw new RuntimeException("The type of " + lhs + " and " + rhs + " does not match");
+		}
+		return lhs.getPrecision();
 	}
 }

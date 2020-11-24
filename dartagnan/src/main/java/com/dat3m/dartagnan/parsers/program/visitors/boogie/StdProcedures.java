@@ -11,18 +11,27 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.utils.EType;
 
 public class StdProcedures {
+	
+	// TODO: find a good way of dealing with allocation of dynamic size
+	private static int MALLOC_ARRAY_SIZE = 100;
 
 	public static List<String> STDPROCEDURES = Arrays.asList(
+			"external_alloc",
 			"$alloc",
+			"__assert_rtn",
+			"assert_.i32",
 			"$malloc",
 			"calloc",
 			"malloc",
 			"fopen",
 			"free",
 			"memcpy",
+			"$memcpy",
 			"memset",
+			"$memset",
 			"nvram_read_byte", 
 			"strcpy",
 			"strcmp",
@@ -34,8 +43,12 @@ public class StdProcedures {
 	
 	public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc")) {
+		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc") || name.equals("external_alloc") ) {
 			alloc(visitor, ctx);
+			return;
+		}
+		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
+			__assert(visitor, ctx);
 			return;
 		}
 		if(name.startsWith("fopen")) {
@@ -46,11 +59,11 @@ public class StdProcedures {
 			// TODO: Implement this
 			return;			
 		}
-		if(name.startsWith("memcpy")) {
+		if(name.startsWith("memcpy") | name.startsWith("$memcpy")) {
 			// TODO: Implement this
 			return;			
 		}
-		if(name.startsWith("memset")) {
+		if(name.startsWith("memset") || name.startsWith("$memset")) {
 			throw new ParsingException(name + " cannot be handled");
 		}
 		if(name.startsWith("nvram_read_byte")) {
@@ -93,15 +106,29 @@ public class StdProcedures {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);						
-			size = Integer.parseInt(tmp);			
+			size = Integer.parseInt(tmp)*MALLOC_ARRAY_SIZE;			
 		}
-		List<IConst> values = Collections.nCopies(size, new IConst(0));
+		List<IConst> values = Collections.nCopies(size, new IConst(0, -1));
 		String ptr = ctx.call_params().Ident(0).getText();
-		Register start = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
+		Register start = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
 		// the name should be unique, thus we add the process identifier.
-		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values);
+		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values, start.getPrecision());
 		Address adds = visitor.programBuilder.getPointer(visitor.currentScope.getID() + ":" + ptr);
 		visitor.programBuilder.addChild(visitor.threadCount, new Local(start, adds));
+		visitor.allocationRegs.add(start);
 	}
+	
+	private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
+    	visitor.assertionIndex++;
+    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
+    		return;
+    	}
+    	Local event = new Local(ass, expr);
+		event.addFilters(EType.ASSERTION);
+		visitor.programBuilder.addChild(visitor.threadCount, event);
+	}
+
 }

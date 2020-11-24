@@ -8,11 +8,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import org.apache.commons.cli.HelpFormatter;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.svcomp.options.SVCOMPOptions;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
-import com.dat3m.svcomp.utils.SVCOMPWitness;
 
 public class SVCOMPRunner {
 
@@ -34,12 +31,12 @@ public class SVCOMPRunner {
 		String path = file.getAbsolutePath();
 		// File name contains "_tmp.c"
 		String name = path.substring(path.lastIndexOf('/'), path.lastIndexOf('_'));
-		int bound = 2;
+		int bound = 1;
 
-		String output = "BPASS";
-		while((output.equals("BPASS") || output.equals("BFAIL"))) {
+		String output = "UNKNOWN";
+		while(output.equals("UNKNOWN")) {
 			try {
-				compile(file, options.getOptimization());
+				compile(file, options.getOptimization(), options.useBP());
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
 				System.exit(0);
@@ -52,7 +49,7 @@ public class SVCOMPRunner {
 	    	ArrayList<String> cmd = new ArrayList<String>();
 	    	cmd.add("java");
 	    	cmd.add("-jar");
-	    	cmd.add("dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar");
+	    	cmd.add("dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar");
 	    	cmd.add("-i");
 	    	cmd.add("./output/" + name + "-" + options.getOptimization() + ".bpl");
 	    	cmd.add("-cat");
@@ -61,9 +58,14 @@ public class SVCOMPRunner {
 	    	cmd.add("none");
 	    	cmd.add("-unroll");
 	    	cmd.add(String.valueOf(bound));
-	    	if(options.getCegar() != null) {
-	    		cmd.add("-cegar");
-	    		cmd.add(String.valueOf(options.getCegar()));
+	    	cmd.add("-analysis");
+	    	cmd.add(options.getAnalysis().toString());
+	    	if(options.useISolver()) {
+	    		cmd.add("-incrementalSolver");
+	    	}
+	    	if(options.createWitness()) {
+	    		cmd.add("-w");
+	    		cmd.add(options.getProgramFilePath());
 	    	}
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
 
@@ -96,14 +98,6 @@ public class SVCOMPRunner {
 		output = output.contains("PASS") ? "PASS" : "FAIL";
 		System.out.println(output);
 		
-        if(options.getGenerateWitness() && output.contains("FAIL")) {
-			try {
-				Program p = new ProgramParser().parse(new File("./output/" + name + "-" + options.getOptimization() + ".bpl"));
-	            new SVCOMPWitness(p, options).write();;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-        }
         file.delete();
         return;        	
     }

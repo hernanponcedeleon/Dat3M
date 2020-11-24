@@ -3,8 +3,9 @@ package com.dat3m.dartagnan.expression;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -22,7 +23,7 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx){
+	public Expr getLastValueExpr(Context ctx){
 		return value ? ctx.mkInt(1) : ctx.mkInt(0);
 	}
 
@@ -37,13 +38,13 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Context ctx, Model model){
+	public boolean getBoolValue(Event e, Model model, Context ctx){
 		return value;
 	}
 
 	@Override
 	public IConst reduce() {
-		return new IConst(value ? 1 : 0);
+		return new IConst(value ? 1 : 0, -1);
 	}
 	
 	public boolean getValue() {

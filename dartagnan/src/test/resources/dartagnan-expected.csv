@@ -9911,8 +9911,8 @@ litmus/C/manual/kernel/C-RW-G+RW-C.litmus,0
 litmus/C/manual/kernel/C-RW-R+RR-G+WR-B.litmus,0
 litmus/C/manual/kernel/C-RW-s+RW-D.litmus,0
 litmus/C/manual/kernel/C-RW-sD+RW-sD.litmus,0
-litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr-WA.litmus,1
-litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr.litmus,1
+litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr-WA.litmus,0
+litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr.litmus,0
 litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr-WA-dart-def-of-null.litmus,0
 litmus/C/manual/kernel/C-RomanPenyaev-list-rcu-rr-dart-def-of-null.litmus,0
 litmus/C/manual/kernel/C-W+MP+o+o-wmb-o+o-rmb-o.litmus,0

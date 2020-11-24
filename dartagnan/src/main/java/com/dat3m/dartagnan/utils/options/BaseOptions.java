@@ -25,17 +25,14 @@ public abstract class BaseOptions extends Options {
         inputOption.setRequired(true);
         addOption(inputOption);
 
-        Option targetOption = new Option("t", "target", true,
-                "Target architecture {none|arm|arm8|power|tso}");
-        addOption(targetOption);
+        addOption(new Option("t", "target", true,
+                "Target architecture {none|arm|arm8|power|tso}"));
 
-        Option modeOption = new Option("m", "mode", true,
-                "Encoding mode {knastertarski|idl|kleene}");
-        addOption(modeOption);
+        addOption(new Option("m", "mode", true,
+                "Encoding mode {knastertarski|idl|kleene}"));
 
-        Option aliasOption = new Option("a", "alias", true,
-                "Type of alias analysis {none|andersen|cfs}");
-        addOption(aliasOption);
+        addOption(new Option("a", "alias", true,
+                "Type of alias analysis {none|andersen|cfs}"));
 
         addOption(new Option("unroll", true,
                 "Unrolling bound <integer>"));

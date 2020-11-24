@@ -6,8 +6,6 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.Mode;
-import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import org.junit.Test;
@@ -18,6 +16,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.*;
@@ -27,26 +28,39 @@ public abstract class AbstractSvCompTest {
 
     private String path;
     private Wmm wmm;
-    private int bound;
+    private Settings settings;
     private Result expected;
 
-    public AbstractSvCompTest(String path, Wmm wmm, int bound) {
+    public AbstractSvCompTest(String path, Wmm wmm, Settings settings) {
         this.path = path;
         this.wmm = wmm;
-        this.bound = bound;
+        this.settings = settings;
     }
 
-    @Test
+    @Test(timeout = 180000)
     public void test() {
         try {
-        	String property = path.substring(0, path.lastIndexOf(".")) + ".yml";
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExptected(property);
-        	
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
-            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, bound);
             Solver solver = ctx.mkSolver();
-            assertTrue(Dartagnan.testProgram(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            assertTrue(runAnalysis(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            ctx.close();
+        } catch (IOException e){
+            fail("Missing resource file");
+        }
+    }
+
+    @Test(timeout = 180000)
+    public void testIncremental() {
+        try {
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	expected = readExptected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            Context ctx = new Context();
+            Solver solver = ctx.mkSolver();
+            assertTrue(runAnalysisIncrementalSolver(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

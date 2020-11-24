@@ -1,0 +1,8 @@
+format_version: '1.0'
+
+# old file name: simple_true-unreach-call4.c
+input_files: 'simple_4-2.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: true

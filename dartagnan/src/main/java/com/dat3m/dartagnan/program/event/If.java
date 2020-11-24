@@ -35,7 +35,7 @@ public class If extends Event implements RegReaderData {
         this.exitMainBranch = exitMainBranch;
         this.exitElseBranch = exitElseBranch;
         this.dataRegs = expr.getRegs();
-        addFilters(EType.ANY, EType.BRANCH, EType.CMP, EType.REG_READER);
+        addFilters(EType.ANY, EType.CMP, EType.REG_READER);
     }
 
     public Event getExitMainBranch(){

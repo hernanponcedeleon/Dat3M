@@ -33,6 +33,7 @@ public class SvcompProcedures {
 			"__VERIFIER_nondet_unsigned_int",
 			"__VERIFIER_nondet_short",
 			"__VERIFIER_nondet_ushort",
+			"__VERIFIER_nondet_unsigned_short",
 			"__VERIFIER_nondet_long",
 			"__VERIFIER_nondet_ulong",
 			"__VERIFIER_nondet_char",
@@ -65,7 +66,7 @@ public class SvcompProcedures {
 			return;
 		}
 		if(name.contains("__VERIFIER_nondet_int") || name.contains("__VERIFIER_nondet_uint") || name.contains("__VERIFIER_nondet_unsigned_int") || 
-		   name.contains("__VERIFIER_nondet_short") || name.contains("__VERIFIER_nondet_ushort") || 
+		   name.contains("__VERIFIER_nondet_short") || name.contains("__VERIFIER_nondet_ushort") || name.contains("__VERIFIER_nondet_unsigned_short") ||
 		   name.contains("__VERIFIER_nondet_long") || name.contains("__VERIFIER_nondet_ulong") || 
 		   name.contains("__VERIFIER_nondet_char") || name.contains("__VERIFIER_nondet_uchar")) {
 			__VERIFIER_nondet(visitor, ctx, name);
@@ -79,28 +80,32 @@ public class SvcompProcedures {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
        	ExprInterface c = (ExprInterface)ctx.call_params().exprs().accept(visitor);
 		if(c != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, new Assume(c, label));	
+			Assume child = new Assume(c, label);
+			child.setCLine(visitor.currentLine);
+			visitor.programBuilder.addChild(visitor.threadCount, child);	
 		}
 	}
 
 	//TODO: seems to be obsolete after SVCOMP 2020
 	private static void __VERIFIER_error(VisitorBoogie visitor) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex);
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	Local event = new Local(ass, new BConst(false));
 		event.addFilters(EType.ASSERTION);
+		event.setCLine(visitor.currentLine);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}
 	
 	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex);
-    	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
+    	visitor.assertionIndex++;
     	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
     		return;
     	}
     	Local event = new Local(ass, expr);
 		event.addFilters(EType.ASSERTION);
+		event.setCLine(visitor.currentLine);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}
 	
@@ -126,7 +131,7 @@ public class SvcompProcedures {
 			type = INonDetTypes.UINT;
 		} else if (name.equals("__VERIFIER_nondet_short")) {
 			type = INonDetTypes.SHORT;
-		} else if (name.equals("__VERIFIER_nondet_ushort")) {
+		} else if (name.equals("__VERIFIER_nondet_ushort") || name.equals("__VERIFIER_nondet_unsigned_short")) {
 			type = INonDetTypes.USHORT;
 		} else if (name.equals("__VERIFIER_nondet_long")) {
 			type = INonDetTypes.LONG;
@@ -142,7 +147,9 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-	    	visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new INonDet(type)));
+	    	Local child = new Local(register, new INonDet(type, register.getPrecision()));
+	    	child.setCLine(visitor.currentLine);
+			visitor.programBuilder.addChild(visitor.threadCount, child);
 	    }
 	}
 
@@ -150,7 +157,9 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-	    	visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new BNonDet()));
+	    	Local child = new Local(register, new BNonDet(register.getPrecision()));
+	    	child.setCLine(visitor.currentLine);
+			visitor.programBuilder.addChild(visitor.threadCount, child);
 	    }
 	}
 }

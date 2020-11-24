@@ -25,8 +25,7 @@ public class Mo {
                 return "_release";
             case MB:
                 return "";
-            default:
-                throw new IllegalArgumentException("Unrecognised memory order " + mo);
         }
+        throw new IllegalArgumentException("Unrecognised memory order " + mo);
     }
 }

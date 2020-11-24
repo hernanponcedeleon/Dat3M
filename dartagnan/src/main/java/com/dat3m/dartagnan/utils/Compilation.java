@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public class Compilation {
 	
-	public static void compile(File file, String flag) throws IOException {
+	public static void compile(File file, String flag, boolean bp) throws IOException {
 		String path = file.getAbsolutePath();
 		String name = path.contains("_tmp") ? path.substring(path.lastIndexOf('/'), path.lastIndexOf('_')) : path.substring(path.lastIndexOf('/'), path.lastIndexOf('.'));
 
@@ -15,6 +15,10 @@ public class Compilation {
     	cmd.add("-q");
     	cmd.add("-t");
     	cmd.add("--no-memory-splitting");
+    	if(bp) {
+    		cmd.add("--integer-encoding");
+    		cmd.add("bit-vector");
+    	}
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + flag + " -fno-vectorize -fno-slp-vectorize -I./include/");
     	cmd.add("-bpl");
     	cmd.add("./output" + name + "-" + flag + ".bpl");

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -16,18 +16,20 @@ public class Register extends IExpr implements ExprInterface {
 	private final String name;
     private final int threadId;
 
-	public Register(String name, int threadId) {
+    private final int precision;
+
+	public Register(String name, int threadId, int precision) {
 		if(name == null){
 			name = "DUMMY_REG_" + dummyCount++;
 		}
 		this.name = name;
 		this.threadId = threadId;
+		this.precision = precision;
 	}
 	
 	public String getName() {
 		return name;
 	}
-
 	public int getThreadId(){
 		return threadId;
 	}
@@ -55,12 +57,14 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public IntExpr toZ3Int(Event e, Context ctx) {
-		return ctx.mkIntConst(getName() + "(" + e.repr() + ")");
+	public Expr toZ3Int(Event e, Context ctx) {
+		String name = getName() + "(" + e.repr() + ")";
+		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
 	}
 
-	public IntExpr toZ3IntResult(Event e, Context ctx) {
-		return ctx.mkIntConst(getName() + "(" + e.repr() + "_result)");
+	public Expr toZ3IntResult(Event e, Context ctx) {
+		String name = getName() + "(" + e.repr() + "_result)";
+		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
 	}
 
 	@Override
@@ -69,12 +73,12 @@ public class Register extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public IntExpr getLastValueExpr(Context ctx){
-		return ctx.mkIntConst(getName() + "_" + threadId + "_final");
+	public Expr getLastValueExpr(Context ctx){
+		return precision > 0 ? ctx.mkBVConst(getName() + "_" + threadId + "_final", precision) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
 	}
 
 	@Override
-	public int getIntValue(Event e, Context ctx, Model model){
+	public int getIntValue(Event e, Model model, Context ctx){
 		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
@@ -82,4 +86,9 @@ public class Register extends IExpr implements ExprInterface {
 	public IConst reduce() {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
+
+	@Override
+	public int getPrecision() {
+    	return precision;
+    }
 }

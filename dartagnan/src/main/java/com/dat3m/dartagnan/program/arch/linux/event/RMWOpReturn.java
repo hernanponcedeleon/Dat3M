@@ -52,7 +52,7 @@ public class RMWOpReturn extends RMWAbstract implements RegWriter, RegReaderData
     @Override
     public int compile(Arch target, int nextId, Event predecessor) {
         if(target == Arch.NONE) {
-            Register dummy = new Register(null, resultRegister.getThreadId());
+            Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             RMWLoad load = new RMWLoad(dummy, address, Mo.loadMO(mo));
             Local local = new Local(resultRegister, new IExprBin(dummy, op, value));
             RMWStore store = new RMWStore(load, address, resultRegister, Mo.storeMO(mo));

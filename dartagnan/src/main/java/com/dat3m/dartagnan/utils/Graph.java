@@ -114,7 +114,7 @@ public class Graph {
             Event firstEvent = t.getEntry().getSuccessor();
             if(firstEvent instanceof Init){
                 Init e = (Init)firstEvent;
-                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, ctx, model));
+                Location location = mapAddressLocation.get(e.getAddress().getIntValue(e, model, ctx));
                 String label = e.label() + " " + location.getName() + " = " + e.getValue();
                 sb.append(L3).append(e.repr()).append(" ").append(getEventDef(label)).append(";\n");
             } else {
@@ -123,13 +123,13 @@ public class Graph {
                     if(model.getConstInterp(e.exec()).isTrue()){
                         String label = e.label();
                         if(e instanceof MemEvent) {
-                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, ctx, model));
+                            Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, model, ctx));
                             int value = 0;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
                                 value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());
                             } else {
-                                value = ((MemEvent) e).getMemValue().getIntValue(e, ctx, model);
+                                value = ((MemEvent) e).getMemValue().getIntValue(e, model, ctx);
                             }
                             label += " " + location + " = " + value;
                         }
@@ -170,7 +170,7 @@ public class Graph {
         Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.exec()).isTrue()){
-                int address = ((MemEvent)e).getAddress().getIntValue(e, ctx, model);
+                int address = ((MemEvent)e).getAddress().getIntValue(e, model, ctx);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
             }
@@ -243,7 +243,7 @@ public class Graph {
     private void buildAddressLocationMap(Program program){
         mapAddressLocation = new HashMap<>();
         for(Location location : program.getLocations()){
-            mapAddressLocation.put(location.getAddress().getIntValue(null, ctx, model), location);
+            mapAddressLocation.put(location.getAddress().getIntValue(null, model, ctx), location);
         }
     }
 

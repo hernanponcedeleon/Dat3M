@@ -1,10 +1,12 @@
 package com.dat3m.dartagnan.expression.op;
 
+import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 
 public enum IOpBin {
-    PLUS, MINUS, MULT, DIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT;
+    PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM;
 	
     @Override
     public String toString() {
@@ -31,8 +33,9 @@ public enum IOpBin {
                 return ">>>";
             case AR_SHIFT:
                 return ">>";
+            default:
+            	return super.toString();        	
         }
-        return super.toString();
     }
 
     public String toLinuxName(){
@@ -52,33 +55,38 @@ public enum IOpBin {
         }
     }
 
-    public IntExpr encode(IntExpr e1, IntExpr e2, Context ctx){
-        switch(this){
+    public Expr encode(Expr e1, Expr e2, Context ctx){
+		switch(this){
             case PLUS:
-                return (IntExpr)ctx.mkAdd(e1, e2);
+            	return e1.isBV() ? ctx.mkBVAdd((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkAdd((IntExpr)e1, (IntExpr)e2);            		
             case MINUS:
-                return (IntExpr)ctx.mkSub(e1, e2);
+            	return e1.isBV() ? ctx.mkBVSub((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkSub((IntExpr)e1, (IntExpr)e2);
             case MULT:
-                return (IntExpr)ctx.mkMul(e1, e2);
+            	return e1.isBV() ? ctx.mkBVMul((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMul((IntExpr)e1, (IntExpr)e2);
             case DIV:
-                return (IntExpr)ctx.mkDiv(e1, e2);
+            	return e1.isBV() ? ctx.mkBVSDiv((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkDiv((IntExpr)e1, (IntExpr)e2);
+            case UDIV:
+            	return e1.isBV() ? ctx.mkBVUDiv((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVUDiv(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case MOD:
-                return (IntExpr)ctx.mkMod(e1, e2);
+            	return e1.isBV() ? ctx.mkBVSMod((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMod((IntExpr)e1, (IntExpr)e2);
             case AND:
-            	return ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
+            	return e1.isBV() ? ctx.mkBVAND((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
             case OR:
-            	return ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);	
+            	return e1.isBV() ? ctx.mkBVOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
             case XOR:
-            	return ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
+            	return e1.isBV() ? ctx.mkBVXOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case L_SHIFT:
-            	return ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
+            	return e1.isBV() ? ctx.mkBVSHL((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case R_SHIFT:
-            	return ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
+            	return e1.isBV() ? ctx.mkBVLSHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case AR_SHIFT:
-            	return ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(32, e1), ctx.mkInt2BV(32, e2)), false);
-            default:
-                throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
+            	return e1.isBV() ? ctx.mkBVASHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            case SREM:
+            	return e1.isBV() ? ctx.mkBVSRem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVSRem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            case UREM:
+            	return e1.isBV() ? ctx.mkBVURem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVURem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
         }
+        throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
     }
 
     public int combine(int a, int b){
@@ -90,8 +98,11 @@ public enum IOpBin {
             case MULT:
                 return a * b;
             case DIV:
+            case UDIV:
                 return a / b;
             case MOD:
+            case SREM:
+            case UREM:
                 return a % b;
             case AND:
                 return a & b;

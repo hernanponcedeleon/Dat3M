@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.Expr;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -13,8 +13,8 @@ public abstract class MemEvent extends Event {
     protected final IExpr address;
     protected final String mo;
 
-    protected IntExpr memAddressExpr;
-    protected IntExpr memValueExpr;
+    protected Expr memAddressExpr;
+    protected Expr memValueExpr;
     private ImmutableSet<Address> maxAddressSet;
 
     public MemEvent(IExpr address, String mo){
@@ -40,14 +40,14 @@ public abstract class MemEvent extends Event {
         memAddressExpr = address.toZ3Int(this, ctx);
     }
 
-    public IntExpr getMemAddressExpr(){
+    public Expr getMemAddressExpr(){
         if(memAddressExpr != null){
             return memAddressExpr;
         }
         throw new RuntimeException("Attempt to access not initialised address expression in " + this);
     }
 
-    public IntExpr getMemValueExpr(){
+    public Expr getMemValueExpr(){
         if(memValueExpr != null){
             return memValueExpr;
         }
@@ -75,5 +75,9 @@ public abstract class MemEvent extends Event {
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
         return !Sets.intersection(e1.getMaxAddressSet(), e2.getMaxAddressSet()).isEmpty();
+    }
+    
+    public boolean canRace() {
+    	return mo == null || mo == "NA";
     }
 }

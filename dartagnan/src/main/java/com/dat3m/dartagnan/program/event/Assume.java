@@ -17,7 +17,7 @@ public class Assume extends Event {
 	public Assume(ExprInterface e, Label l) {
 		this.exp = e;
 		this.label = l;
-        addFilters(EType.ANY, EType.ASSUME);
+        addFilters(EType.ANY);
 	}
 
 	protected Assume(Assume other){
@@ -42,6 +42,7 @@ public class Assume extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
+	@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         events.add(new CondJump(new BExprUn(NOT, exp), label));

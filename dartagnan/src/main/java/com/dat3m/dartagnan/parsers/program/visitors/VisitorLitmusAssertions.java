@@ -74,7 +74,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     private ExprInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx){
         if(ctx.constant() != null){
-            return new IConst(Integer.parseInt(ctx.constant().getText()));
+            return new IConst(Integer.parseInt(ctx.constant().getText()), -1);
         }
         if(ctx.threadId() != null){
             return programBuilder.getOrErrorRegister(ctx.threadId().id, ctx.varName().getText());

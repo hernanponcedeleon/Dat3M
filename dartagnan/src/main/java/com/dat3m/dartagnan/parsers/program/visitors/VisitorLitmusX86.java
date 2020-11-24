@@ -60,25 +60,25 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(Integer.parseInt(ctx.constant().getText())));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(Integer.parseInt(ctx.constant().getText())));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusX86Parser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), -1);
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusX86Parser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
+        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText(), -1);
         return null;
     }
 
@@ -110,36 +110,36 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText());
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
         return programBuilder.addChild(mainThread, new Load(register, location.getAddress(), "_rx"));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()));
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
+        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Store(location.getAddress(), constant, "_rx"));
     }
 
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
         return programBuilder.addChild(mainThread, new Store(location.getAddress(), register, "_rx"));
     }
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        Location location = programBuilder.getOrCreateLocation(ctx.location().getText());
+        Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
         return programBuilder.addChild(mainThread, new Xchg(location.getAddress(), register));
     }
 
