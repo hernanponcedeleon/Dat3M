@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
@@ -17,8 +16,6 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
-
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 import java.util.*;
 
@@ -210,17 +207,5 @@ public class Program {
         	enc = ctx.mkAnd(enc, ctx.mkNot(e.exec()));
         }
         return enc;
-    }
-    
-    public BoolExpr getRf(Context ctx, Model m) {
-    	BoolExpr enc = ctx.mkTrue();
-        for(Event r : getCache().getEvents(FilterBasic.get(EType.READ))){
-            for(Event w : getCache().getEvents(FilterBasic.get(EType.WRITE))){
-        		if(m.getConstInterp(edge("rf", w, r, ctx)) != null && m.getConstInterp(edge("rf", w, r, ctx)).isTrue()) {
-        			enc = ctx.mkAnd(enc, edge("rf", w, r, ctx));
-        		}
-        	}
-        }
-        return enc;  	
     }
 }

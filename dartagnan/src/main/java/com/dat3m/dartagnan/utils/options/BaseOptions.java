@@ -91,7 +91,6 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal unroll value");
             }
         }
-        
         settings = new Settings(mode, alias, bound, draw, relations);
     }
 

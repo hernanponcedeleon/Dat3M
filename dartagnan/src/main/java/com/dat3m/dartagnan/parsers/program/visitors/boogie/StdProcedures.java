@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class StdProcedures {
 	
 	// TODO: find a good way of dealing with allocation of dynamic size
-	private static int MALLIC_ARRAY_SIZE = 100;
+	private static int MALLOC_ARRAY_SIZE = 100;
 
 	public static List<String> STDPROCEDURES = Arrays.asList(
 			"external_alloc",
@@ -106,7 +106,7 @@ public class StdProcedures {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);						
-			size = Integer.parseInt(tmp)*MALLIC_ARRAY_SIZE;			
+			size = Integer.parseInt(tmp)*MALLOC_ARRAY_SIZE;			
 		}
 		List<IConst> values = Collections.nCopies(size, new IConst(0, -1));
 		String ptr = ctx.call_params().Ident(0).getText();

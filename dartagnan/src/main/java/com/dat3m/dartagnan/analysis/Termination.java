@@ -14,15 +14,15 @@ import com.microsoft.z3.Solver;
 
 public class Termination {
 
-    public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    public static Result runAnalysis(Solver s, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         
-		s1.add(program.encodeCF(ctx));
-		s1.add(program.encodeFinalRegisterValues(ctx));
-		s1.add(wmm.encode(program, ctx, settings));
-		s1.add(wmm.consistent(program, ctx));       	
-		s1.add(program.encodeNoBoundEventExec(ctx));
-		return s1.check() == SATISFIABLE ? PASS : UNKNOWN;	
+		s.add(program.encodeCF(ctx));
+		s.add(program.encodeFinalRegisterValues(ctx));
+		s.add(wmm.encode(program, ctx, settings));
+		s.add(wmm.consistent(program, ctx));       	
+		s.add(program.encodeNoBoundEventExec(ctx));
+		return s.check() == SATISFIABLE ? PASS : UNKNOWN;	
     }
 }

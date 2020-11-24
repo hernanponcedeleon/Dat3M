@@ -36,8 +36,7 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		String tag = precision > 0 ? "bv" + precision : "";
-        return name + tag;
+        return name;
 	}
 
     @Override

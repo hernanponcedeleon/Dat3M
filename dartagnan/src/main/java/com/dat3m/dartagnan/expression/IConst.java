@@ -30,8 +30,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		String tag = precision > 0 ? "bv" + precision : "";
-		return Integer.toString(value) + tag;
+		return Integer.toString(value);
 	}
 
 	@Override

@@ -27,7 +27,7 @@ public class Base {
        		return PASS;
        	}
        	
-        // Using two solvers is much faster than using
+        // Using two solvers can be faster than using
         // an incremental solver or check-sat-assuming
         Solver s2 = ctx.mkSolver();
         

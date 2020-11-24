@@ -134,6 +134,7 @@ public class Wmm {
         for (Axiom ax : axioms) {
             enc = ctx.mkAnd(enc, ax.getRel().encode());
         }
+        
         return enc;
     }
 

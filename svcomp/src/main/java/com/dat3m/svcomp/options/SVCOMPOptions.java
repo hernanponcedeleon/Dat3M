@@ -20,7 +20,6 @@ public class SVCOMPOptions extends BaseOptions {
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
     protected String optimization = "O0";
     protected boolean witness;
-    protected String overApproxFilePath;
     protected boolean bp;
     protected boolean iSolver;
     private AnalysisTypes analysis; 
