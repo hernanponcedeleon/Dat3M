@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils;
 
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 import java.io.BufferedReader;
@@ -25,24 +26,33 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+import com.microsoft.z3.Solver;
 
 public class Witness {
 	
 	private Program program;
-	private Context ctx;
-	private Model model;
 	private String path;
 	
 	private Map<Event, Integer> eventThreadMap = new HashMap<>();
 
-	public Witness(Program program, Context ctx, Model model, String path) {
+	public Witness(Program program, String path) {
 		this.program = program;
-		this.ctx = ctx;
-		this.model = model;
 		this.path = path;
 	}
 	
-	public void write() {
+	public void write(Context ctx, Solver solver, Result result) {
+		String type;
+		switch(result) {
+			case PASS:
+				type = "correctness";
+				break;
+			case FAIL:
+				type = "violation";
+				break;
+			default:
+				return;
+		}
+
 		int lastLineWritten = -1;
 		int lastOid = -1;
 		Event lastEventWritten = null;
@@ -54,7 +64,7 @@ public class Witness {
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
 			fw.write("  <graph edgedefault=\"directed\">\n");
-			fw.write("    <data key=\"witness-type\">violation_witness</data>\n");
+			fw.write("    <data key=\"witness-type\">" + type + "_witness</data>\n");
 			fw.write("    <data key=\"sourcecodelang\">C</data>\n");
 			fw.write("    <data key=\"producer\">Dartagnan</data>\n");
 			fw.write("    <data key=\"specification\">CHECK( init(main()), LTL(G ! call(reach_error())) )</data>\n");
@@ -73,7 +83,15 @@ public class Witness {
 			fw.write("    </edge>\n");
 			nextNode++;
 			
-			for(Event e : getSCExecutionOrder()) {
+			if(!result.equals(FAIL)) {
+				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
+				fw.write("  </graph>\n");
+				fw.write("</graphml>\n");
+				fw.close();
+				return;
+			}
+			
+			for(Event e : getSCExecutionOrder(ctx, solver)) {
 				// TODO improve this: these events correspond to return statements
 				if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 					continue;
@@ -119,7 +137,8 @@ public class Witness {
 		}
 	}
 	
-	private List<Event> getSCExecutionOrder() {
+	private List<Event> getSCExecutionOrder(Context ctx, Solver solver) {
+		Model model = solver.getModel();
 		List<Event> exec = new ArrayList<Event>();
 		Map<Integer, Set<Event>> map = new HashMap<Integer, Set<Event>>();
         for(Event e : program.getEvents()) {
