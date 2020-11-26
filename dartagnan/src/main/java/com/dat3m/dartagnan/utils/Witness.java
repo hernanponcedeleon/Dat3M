@@ -8,13 +8,17 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TimeZone;
 import java.util.TreeSet;
 
 import com.dat3m.dartagnan.expression.BConst;
@@ -63,6 +67,21 @@ public class Witness {
 			fw = new FileWriter(newTextFile);
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
+			fw.write("<key attr.name=\"sourcecodeLanguage\" attr.type=\"string\" for=\"graph\" id=\"sourcecodelang\"/>");
+			fw.write("<key attr.name=\"programFile\" attr.type=\"string\" for=\"graph\" id=\"programfile\"/>");
+			fw.write("<key attr.name=\"programHash\" attr.type=\"string\" for=\"graph\" id=\"programhash\"/>");
+			fw.write("<key attr.name=\"specification\" attr.type=\"string\" for=\"graph\" id=\"specification\"/>");
+			fw.write("<key attr.name=\"architecture\" attr.type=\"string\" for=\"graph\" id=\"architecture\"/>");
+			fw.write("<key attr.name=\"producer\" attr.type=\"string\" for=\"graph\" id=\"producer\"/>");
+			fw.write("<key attr.name=\"startline\" attr.type=\"int\" for=\"edge\" id=\"startline\"/>");
+			fw.write("<key attr.name=\"enterFunction\" attr.type=\"string\" for=\"edge\" id=\"enterFunction\"/>");
+			fw.write("<key attr.name=\"witness-type\" attr.type=\"string\" for=\"graph\" id=\"witness-type\"/>");
+			fw.write("<key attr.name=\"creationTime\" attr.type=\"string\" for=\"graph\" id=\"creationtime\"/>");
+			fw.write("<key attr.name=\"threadId\" attr.type=\"string\" for=\"edge\" id=\"threadId\"/>");
+			fw.write("<key attr.name=\"createThread\" attr.type=\"string\" for=\"edge\" id=\"createThread\"/>");
+			fw.write("<key attr.name=\"isEntryNode\" attr.type=\"boolean\" for=\"node\" id=\"entry\"><default>false</default></key>");
+			fw.write("<key attr.name=\"isViolationNode\" attr.type=\"boolean\" for=\"node\" id=\"violation\"><default>false</default></key>");
+			
 			fw.write("  <graph edgedefault=\"directed\">\n");
 			fw.write("    <data key=\"witness-type\">" + type + "_witness</data>\n");
 			fw.write("    <data key=\"sourcecodelang\">C</data>\n");
@@ -71,17 +90,25 @@ public class Witness {
 			fw.write("    <data key=\"programfile\">" + path + "</data>\n");
 			fw.write("    <data key=\"architecture\">32bit</data>\n");
 			fw.write("    <data key=\"programhash\">" + checksum() + "</data>\n");
-			fw.write("    <data key=\"sourcecodelang\">C</data>\n");
-			fw.write("");
-			int nextNode = 0;
-			int threads = 1;
 			
-			fw.write("    <node id=\"N" + nextNode + "\"> <data key=\"entry\">true</data> </node>\n");
-			fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
+			TimeZone tz = TimeZone.getTimeZone("UTC");
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+			df.setTimeZone(tz);
+			String nowAsISO = df.format(new Date());
+			fw.write("    <data key=\"creationtime\">" + nowAsISO + "</data>\n");
+			
+			fw.write("    <node id=\"N0\"> <data key=\"entry\">true</data> </node>\n");
+			fw.write("    <edge source=\"N0\" target=\"N2\">\n");
+			fw.write("      <data key=\"createThread\">0</data>\n");
+			fw.write("    </edge>\n");
+			fw.write("    <node id=\"N1\"></node>\n");
+			fw.write("    <edge source=\"N1\" target=\"N2\">\n");
 			fw.write("      <data key=\"threadId\">0</data>\n");
 			fw.write("      <data key=\"enterFunction\">main</data>\n");
 			fw.write("    </edge>\n");
-			nextNode++;
+			
+			int nextNode = 2;
+			int threads = 1;
 			
 			if(!result.equals(FAIL)) {
 				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
