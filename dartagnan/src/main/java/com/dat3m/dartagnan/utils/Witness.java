@@ -222,6 +222,7 @@ public class Witness {
 			System.exit(0);
 		}
 		output = output.substring(0, output.lastIndexOf(' '));
+		output = output.substring(0, output.lastIndexOf(' '));
 		return output;
 	}
 
