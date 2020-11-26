@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.utils;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 import java.io.BufferedReader;
@@ -110,8 +110,8 @@ public class Witness {
 			int nextNode = 2;
 			int threads = 1;
 			
-			if(!result.equals(FAIL)) {
-				fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
+			if(result.equals(PASS)) {
+				fw.write("    <node id=\"N" + nextNode + "\"></node>\n");
 				fw.write("  </graph>\n");
 				fw.write("</graphml>\n");
 				fw.close();
