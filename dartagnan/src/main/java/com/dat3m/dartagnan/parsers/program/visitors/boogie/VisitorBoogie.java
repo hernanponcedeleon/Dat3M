@@ -551,7 +551,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitAssume_cmd(Assume_cmdContext ctx) {
 		if(ctx.getText().contains("sourceloc")) {
 			String line = ctx.getText();
-			currentLine = Integer.parseInt(line.substring(line.indexOf(',')+1, line.lastIndexOf(',')));
+			currentLine = Integer.parseInt(line.substring(line.indexOf(',') + 1, line.lastIndexOf(',')));
+		} else if(!ctx.proposition().expr().getText().equals("true")) {
+			currentLine = -1;
 		}
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
