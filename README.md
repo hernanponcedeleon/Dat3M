@@ -18,7 +18,7 @@ Installation
 ======
 Download the z3 dependency
 ```
-mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
+mvn install:install-file -Dfile=lib/z3-4.8.6.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.6 -Dpackaging=jar
 ```
 Set Dat3M's home, the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
 ```
