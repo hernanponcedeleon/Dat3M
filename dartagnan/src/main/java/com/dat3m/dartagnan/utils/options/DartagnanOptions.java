@@ -32,7 +32,7 @@ public class DartagnanOptions extends BaseOptions {
         		"Use an incremental solver"));
         
         addOption(new Option("w", "witness", true,
-                "Creates a violation witness. The argument is the original *.c file from which the Boogie code was generated."));
+                "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
 
         addOption(new Option("analysis", true,
         		"The analysis to be performed: reachability (default), data-race detection, termination"));

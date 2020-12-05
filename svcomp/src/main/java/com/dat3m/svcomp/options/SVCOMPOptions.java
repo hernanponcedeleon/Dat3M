@@ -40,7 +40,7 @@ public class SVCOMPOptions extends BaseOptions {
         		"Use an incremental solver"));
 
         addOption(new Option("w", "witness", false,
-                "Creates a violation witness"));
+                "Creates a machine readable witness"));
         
         addOption(new Option("o", "optimization", true,
                 "Optimization flag for LLVM compiler"));
