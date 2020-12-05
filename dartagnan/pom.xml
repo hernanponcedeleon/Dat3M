@@ -19,7 +19,7 @@
     <dependency>
       <groupId>com.microsoft</groupId>
       <artifactId>z3</artifactId>
-      <version>4.3.2</version>
+      <version>4.8.6</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

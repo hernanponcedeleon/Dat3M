@@ -73,8 +73,8 @@ public class Dartagnan {
         	System.out.println(result);
         }
 
-        if(options.createWitness() != null && result.equals(FAIL)) {
-        	new Witness(p, ctx, s.getModel(), options.createWitness()).write();
+        if(options.createWitness() != null) {
+        	new Witness(p, options.createWitness()).write(ctx, s, result);
         }
         
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
