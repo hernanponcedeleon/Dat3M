@@ -10,7 +10,9 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.event.Store;
 
 public class Location implements ExprInterface {
 
@@ -81,8 +83,13 @@ public class Location implements ExprInterface {
 
 	@Override
 	public int getIntValue(Event e, Model model, Context ctx){
-		if(e instanceof MemEvent){
-			return ((MemEvent) e).getMemValue().getIntValue(e, model, ctx);
+		if(e instanceof Store){
+			return ((Store) e).getMemValue().getIntValue(e, model, ctx);
+		}
+		if(e instanceof Load){
+			Register reg = ((Load) e).getResultRegister();
+			return Integer.parseInt(model.getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
+
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}

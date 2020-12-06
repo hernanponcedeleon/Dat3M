@@ -14,10 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.Stack;
 import java.util.TimeZone;
@@ -26,10 +24,12 @@ import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
+import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.microsoft.z3.Context;
@@ -151,6 +151,14 @@ public class Witness {
 					callStack.get(eventThreadMap.get(e)).pop();
 					fw.write("      <data key=\"returnFromFunction\">" + ((FunRet)e).getFunctionName() + "</data>\n");
 				}
+				if(e instanceof Local) {
+					Register reg = ((Local)e).getResultRegister();
+					if(reg.getCVar() != null) {
+						int value = Integer.parseInt(solver.getModel().getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
+						nextAss += "      <data key=\"assumption\">" + reg.getCVar() + "=" + value + ";</data>\n";
+						nextAss += "      <data key=\"assumption.scope\">" + callStack.get(eventThreadMap.get(e)).peek() + ";</data>\n";
+					}
+				}
 				if(e instanceof MemEvent 
 						&& ((MemEvent)e).getAddress() instanceof Address
 						&& program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()) != null) {
@@ -159,13 +167,8 @@ public class Witness {
 						fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
 						threads++;
 					} else {
-						// TODO: find out why this can result in null pointer exception
-						try {
-							int value = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getIntValue(e, solver.getModel(), ctx);
-							nextAss += "      <data key=\"assumption\">" + variable + "=" + value + ";</data>\n";
-						} catch (Exception ex) {
-							// Nothing to do
-						}
+						int value = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getIntValue(e, solver.getModel(), ctx);
+						nextAss += "      <data key=\"assumption\">" + variable + "=" + value + ";</data>\n";
 					}
 				}	
 				fw.write("    </edge>\n");
@@ -191,13 +194,13 @@ public class Witness {
 	private List<Event> getSCExecutionOrder(Context ctx, Model model) {
 		List<Event> execEvents = program.getEvents().stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList());
 		
-		Map<Integer, Set<Event>> map = new HashMap<Integer, Set<Event>>();
+		Map<Integer, List<Event>> map = new HashMap<Integer, List<Event>>();
         for(Event e : execEvents) {
         	Expr var = model.getConstInterp(intVar("hb", e, ctx));
         	if(var != null) {
         		int key = Integer.parseInt(var.toString());
 				if(!map.containsKey(key)) {
-					map.put(key, new HashSet<Event>());
+					map.put(key, new ArrayList<Event>());
 				}
 				List<Event> lst = new ArrayList<Event>(Arrays.asList(e));
 				Event next = e.getSuccessor();
