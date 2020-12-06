@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
@@ -66,24 +65,6 @@ public class RelRMW extends StaticRelation {
             		baseMaxTupleSet.add(new Tuple(e, next));
             		baseMaxTupleSet.add(new Tuple(e, nnext));
             		baseMaxTupleSet.add(new Tuple(next, nnext));
-            	}
-            }
-
-            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.ATOMIC));
-            for(Event end : program.getCache().getEvents(filter)){
-            	// TODO: why some non EndAtomic events match the ATOMIC filter?
-            	// The check below should not be necessary, but better to have 
-            	// in case some other event might get ATOMIC tag in the future
-            	if(!(end instanceof EndAtomic)) {
-            		continue;
-            	}
-            	for(Event b : ((EndAtomic)end).getBlock()) {
-            		Event next = b.getSuccessor();
-            		while(next != null && !(next instanceof EndAtomic)) {
-            			baseMaxTupleSet.add(new Tuple(b, next));
-            			next = next.getSuccessor();
-            		}
-            		baseMaxTupleSet.add(new Tuple(b, end));
             	}
             }
 

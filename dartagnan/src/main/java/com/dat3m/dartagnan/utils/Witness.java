@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,13 +19,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.Stack;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.FunCall;
+import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.microsoft.z3.Context;
@@ -57,9 +62,12 @@ public class Witness {
 				return;
 		}
 
-		int lastLineWritten = -1;
-		int lastOid = -1;
-		Event lastEventWritten = null;
+		HashMap<Integer, Stack<String>> callStack = new HashMap<Integer, Stack<String>>();
+		for(Thread t : program.getThreads()) {
+			callStack.put(t.getId()-1, new Stack<String>());
+			callStack.get(t.getId()-1).push(t.getName());
+		}
+		callStack.get(0).push("main");
 		populateMap();
         File newTextFile = new File("./output/witness.graphml");        
         FileWriter fw;
@@ -75,6 +83,8 @@ public class Witness {
 			fw.write("<key attr.name=\"producer\" attr.type=\"string\" for=\"graph\" id=\"producer\"/>\n");
 			fw.write("<key attr.name=\"startline\" attr.type=\"int\" for=\"edge\" id=\"startline\"/>\n");
 			fw.write("<key attr.name=\"enterFunction\" attr.type=\"string\" for=\"edge\" id=\"enterFunction\"/>\n");
+			fw.write("<key attr.name=\"assumption\" attr.type=\"string\" for=\"edge\" id=\"assumption\"/>");
+			fw.write("<key attr.name=\"assumption.scope\" attr.type=\"string\" for=\"edge\" id=\"assumption.scope\"/>");
 			fw.write("<key attr.name=\"witness-type\" attr.type=\"string\" for=\"graph\" id=\"witness-type\"/>\n");
 			fw.write("<key attr.name=\"creationTime\" attr.type=\"string\" for=\"graph\" id=\"creationtime\"/>\n");
 			fw.write("<key attr.name=\"threadId\" attr.type=\"string\" for=\"edge\" id=\"threadId\"/>\n");
@@ -91,23 +101,17 @@ public class Witness {
 			fw.write("    <data key=\"architecture\">32bit</data>\n");
 			fw.write("    <data key=\"programhash\">" + checksum() + "</data>\n");
 			
-			TimeZone tz = TimeZone.getTimeZone("UTC");
 			DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-			df.setTimeZone(tz);
-			String nowAsISO = df.format(new Date());
-			fw.write("    <data key=\"creationtime\">" + nowAsISO + "</data>\n");
+			df.setTimeZone(TimeZone.getTimeZone("UTC"));
+			fw.write("    <data key=\"creationtime\">" + df.format(new Date()) + "</data>\n");
 			
 			fw.write("    <node id=\"N0\"> <data key=\"entry\">true</data> </node>\n");
 			fw.write("    <edge source=\"N0\" target=\"N1\">\n");
-			fw.write("      <data key=\"createThread\">0</data>\n");
-			fw.write("    </edge>\n");
-			fw.write("    <node id=\"N1\"></node>\n");
-			fw.write("    <edge source=\"N1\" target=\"N2\">\n");
 			fw.write("      <data key=\"threadId\">0</data>\n");
 			fw.write("      <data key=\"enterFunction\">main</data>\n");
 			fw.write("    </edge>\n");
 			
-			int nextNode = 2;
+			int nextNode = 1;
 			int threads = 1;
 			
 			if(result.equals(PASS)) {
@@ -118,34 +122,54 @@ public class Witness {
 				return;
 			}
 			
-			for(Event e : getSCExecutionOrder(ctx, solver)) {
+			String nextAss = "";
+			
+			List<Event> execution = getSCExecutionOrder(ctx, solver.getModel());
+			for(int i = 0; i < execution.size(); i++) {
+				Event e = execution.get(i);
 				// TODO improve this: these events correspond to return statements
 				if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 					continue;
 				}
-				if(e.getCLine() != lastLineWritten || eventThreadMap.get(e) != eventThreadMap.get(lastEventWritten) || e.getOId() <= lastOid) {
-					fw.write("    <node id=\"N" + nextNode + "\"> </node>\n");
-					fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
-					fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
-					fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
-					if(e instanceof MemEvent 
-							&& ((MemEvent)e).getAddress() instanceof Address
-							&& program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()) != null) {
-						if(program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getName().contains("_active")) {
-							fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
-							threads++;
-						}
-					}	
-					// We need to keep this because SVCOMP assumes every statement is atomic
-					lastLineWritten = e.getCLine();
-					// Needed because of the above
-					// We need to differentiate two events being instances of the same 
-					// instructions if a thread is created more than once 
-					lastEventWritten = e;
-					fw.write("    </edge>\n");
-					nextNode++;
+				if(i+1 < execution.size() && e.getCLine() == execution.get(i+1).getCLine()) {
+					continue;
 				}
-				lastOid = e.getOId();
+				fw.write("    <node id=\"N" + nextNode + "\"></node>\n");
+				fw.write("    <edge source=\"N" + nextNode + "\" target=\"N" + (nextNode+1) + "\">\n");
+				fw.write("      <data key=\"threadId\">" + eventThreadMap.get(e) + "</data>\n");
+				fw.write("      <data key=\"startline\">" + e.getCLine() + "</data>\n");
+				if(nextAss != "") {
+					fw.write(nextAss);
+					nextAss = "";	
+				}
+				if(e instanceof FunCall) {
+					String name = ((FunCall)e).getFunctionName();
+					callStack.get(eventThreadMap.get(e)).push(name);
+					fw.write("      <data key=\"enterFunction\">" + name + "</data>\n");
+				}
+				if(e instanceof FunRet) {
+					callStack.get(eventThreadMap.get(e)).pop();
+					fw.write("      <data key=\"returnFromFunction\">" + ((FunRet)e).getFunctionName() + "</data>\n");
+				}
+				if(e instanceof MemEvent 
+						&& ((MemEvent)e).getAddress() instanceof Address
+						&& program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()) != null) {
+					String variable = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getName();
+					if(variable.contains("_active")) {
+						fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
+						threads++;
+					} else {
+						// TODO: find out why this can result in null pointer exception
+						try {
+							int value = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getIntValue(e, solver.getModel(), ctx);
+							nextAss += "      <data key=\"assumption\">" + variable + "=" + value + ";</data>\n";
+						} catch (Exception ex) {
+							// Nothing to do
+						}
+					}
+				}	
+				fw.write("    </edge>\n");
+				nextNode++;
 			}
 			fw.write("    <node id=\"N" + nextNode + "\"> <data key=\"violation\">true</data> </node>\n");
 			fw.write("  </graph>\n");
@@ -164,36 +188,35 @@ public class Witness {
 		}
 	}
 	
-	private List<Event> getSCExecutionOrder(Context ctx, Solver solver) {
-		Model model = solver.getModel();
-		List<Event> exec = new ArrayList<Event>();
+	private List<Event> getSCExecutionOrder(Context ctx, Model model) {
+		List<Event> execEvents = program.getEvents().stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList());
+		
 		Map<Integer, Set<Event>> map = new HashMap<Integer, Set<Event>>();
-        for(Event e : program.getEvents()) {
+        for(Event e : execEvents) {
         	Expr var = model.getConstInterp(intVar("hb", e, ctx));
-        	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1 && var != null) {
+        	if(var != null) {
         		int key = Integer.parseInt(var.toString());
 				if(!map.containsKey(key)) {
 					map.put(key, new HashSet<Event>());
 				}
-        		map.get(key).add(e);
+				List<Event> lst = new ArrayList<Event>(Arrays.asList(e));
+				Event next = e.getSuccessor();
+				// This collects all the successors not accessing global variables
+				while(next != null && execEvents.contains(next) && model.getConstInterp(intVar("hb", next, ctx)) == null) {
+					lst.add(next);
+					next = next.getSuccessor();
+				}
+        		map.get(key).addAll(lst);
         	}
         }
-        if(map.keySet().isEmpty()) {
-            for(Event e : program.getEvents()) {
-            	if(model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1) {
-            		int key = e.getCId();
-    				if(!map.containsKey(key)) {
-    					map.put(key, new HashSet<Event>());
-    				}
-            		map.get(key).add(e);
-            	}
-            }        	
-        }
+        
+        List<Event> exec = new ArrayList<Event>();
         SortedSet<Integer> keys = new TreeSet<>(map.keySet());
         for (Integer key : keys) {
         	exec.addAll(map.get(key));
         }
-		return exec;
+        
+        return exec.isEmpty() ? execEvents : exec;
 	}
 	
 	private String checksum() {

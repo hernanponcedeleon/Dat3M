@@ -90,6 +90,7 @@ import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
 import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
 import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.If;
@@ -102,8 +103,6 @@ import com.dat3m.dartagnan.program.event.While;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
@@ -139,8 +138,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	protected int assertionIndex = 0;
 	
-	protected BeginAtomic currentBeginAtomic = null;
-	private Call_cmdContext atomicMode = null;
+	protected Call_cmdContext atomicMode = null;
 	 
 	private List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
@@ -336,7 +334,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
     	}
-    	currentLine = -1;
     }
     
     @Override 
@@ -398,9 +395,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
-			currentBeginAtomic = new BeginAtomic();
-			programBuilder.addChild(threadCount, currentBeginAtomic);	
-			// No return, the body still needs to be parsed.
+			SvcompProcedures.__VERIFIER_atomic(this, true);
 		}
 		// TODO: double check this 
 		// Some procedures might have an empty implementation.
@@ -418,17 +413,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		programBuilder.addChild(threadCount, new FunCall(name));	
+		Event call = new FunCall(name);
+		call.setCLine(currentLine);
+		programBuilder.addChild(threadCount, call);	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
-			if(currentBeginAtomic == null) {
-	            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
-			}
-			programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));	
-			currentBeginAtomic = null;
+			SvcompProcedures.__VERIFIER_atomic(this, false);
 			atomicMode = null;
 		}
-		programBuilder.addChild(threadCount, new FunRet(name));
+		Event ret = new FunRet(name);
+		ret.setCLine(call.getCLine());
+		programBuilder.addChild(threadCount, ret);
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}
@@ -553,8 +548,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(ctx.getText().contains("sourceloc")) {
 			String line = ctx.getText();
 			currentLine = Integer.parseInt(line.substring(line.indexOf(',') + 1, line.lastIndexOf(',')));
-		} else if(!ctx.proposition().expr().getText().equals("true")) {
-			currentLine = -1;
 		}
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
