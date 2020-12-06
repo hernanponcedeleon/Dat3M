@@ -32,6 +32,7 @@ import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
@@ -173,6 +174,9 @@ public class Witness {
 				}	
 				fw.write("    </edge>\n");
 				nextNode++;
+				if(e.hasFilter(EType.ASSERTION)) {
+					break;
+				}
 			}
 			fw.write("    <node id=\"N" + nextNode + "\"> <data key=\"violation\">true</data> </node>\n");
 			fw.write("  </graph>\n");
