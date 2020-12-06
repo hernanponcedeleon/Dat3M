@@ -155,7 +155,7 @@ public class Witness {
 				if(e instanceof Local) {
 					Register reg = ((Local)e).getResultRegister();
 					if(reg.getCVar() != null) {
-						int value = Integer.parseInt(solver.getModel().getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
+						long value = Long.parseLong(solver.getModel().getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
 						nextAss += "      <data key=\"assumption\">" + reg.getCVar() + "=" + value + ";</data>\n";
 						nextAss += "      <data key=\"assumption.scope\">" + callStack.get(eventThreadMap.get(e)).peek() + ";</data>\n";
 					}
