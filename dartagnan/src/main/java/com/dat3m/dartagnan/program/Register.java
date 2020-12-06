@@ -14,6 +14,7 @@ public class Register extends IExpr implements ExprInterface {
 	private static int dummyCount = 0;
 
 	private final String name;
+	private String cVar;
     private final int threadId;
 
     private final int precision;
@@ -30,6 +31,15 @@ public class Register extends IExpr implements ExprInterface {
 	public String getName() {
 		return name;
 	}
+
+	public String getCVar() {
+		return cVar;
+	}
+
+	public void setCVar(String name) {
+		this.cVar = name;
+	}
+
 	public int getThreadId(){
 		return threadId;
 	}
