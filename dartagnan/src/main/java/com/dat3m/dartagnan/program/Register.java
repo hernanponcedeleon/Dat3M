@@ -89,7 +89,7 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public int getIntValue(Event e, Model model, Context ctx){
-		return Integer.parseInt(model.getConstInterp(toZ3IntResult(e, ctx)).toString());
+		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
 	@Override
