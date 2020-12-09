@@ -17,8 +17,6 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
-import static com.dat3m.dartagnan.utils.BitwiseEncodings.BVOpasUF;
-
 import java.util.*;
 
 public class Program {
@@ -172,8 +170,7 @@ public class Program {
         for(Event e : getEvents()){
             e.initialise(ctx);
         }
-        BoolExpr enc = BVOpasUF(ctx);
-        enc = ctx.mkAnd(enc, memory.encode(ctx));
+        BoolExpr enc = memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.mkAnd(enc, t.encodeCF(ctx));
         }
