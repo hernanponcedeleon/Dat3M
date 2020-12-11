@@ -45,7 +45,7 @@ Usage
 Dat3M comes with a user interface (UI) where it is easy to select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the UI by running
 ```
-java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
+java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 ```
 <p align="center"> 
 <img src="ui/src/main/resources/ui.jpg">
@@ -62,11 +62,11 @@ You can also run Dartagnan and Porthos from the console.
 
 For checking reachability (Dartagnan):
 ```
-java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -cat <CAT file> [-t <target>] -i <program file> [options]
+java -jar dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar -cat <CAT file> [-t <target>] -i <program file> [options]
 ```
 For checking state inclusion (Porthos):
 ```
-java -jar porthos/target/porthos-2.0.6-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
+java -jar porthos/target/porthos-2.0.7-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
 The `-cat`,`-scat`,`-tcat` options specify the paths to the CAT files.
 
