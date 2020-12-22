@@ -26,4 +26,6 @@ public interface ExprInterface {
     
     int getPrecision();
     
+    IExpr getBase();
+    
 }

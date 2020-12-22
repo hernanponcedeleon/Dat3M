@@ -59,4 +59,9 @@ public class IExprBin extends IExpr implements ExprInterface {
 		}
 		return lhs.getPrecision();
 	}
+	
+	@Override
+	public IExpr getBase() {
+		return lhs.getBase();
+	}
 }

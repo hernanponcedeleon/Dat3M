@@ -57,4 +57,9 @@ public class IExprUn extends IExpr {
 	public int getPrecision() {
 		return b.getPrecision();
 	}
+	
+	@Override
+	public IExpr getBase() {
+		throw new UnsupportedOperationException("getBase not supported for " + this);
+	}
 }

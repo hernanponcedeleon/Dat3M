@@ -21,4 +21,9 @@ public abstract class BExpr implements ExprInterface {
 	public int getPrecision() {
 		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
 	}
+	
+	@Override
+	public IExpr getBase() {
+		return null;
+	}
 }

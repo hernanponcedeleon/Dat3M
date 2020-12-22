@@ -8,6 +8,7 @@ import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
@@ -110,5 +111,10 @@ public class Location implements ExprInterface {
 	@Override
 	public int getPrecision() {
 		return address.getPrecision();
+	}
+
+	@Override
+	public IExpr getBase() {
+		throw new UnsupportedOperationException("getBase not supported for " + this);
 	}
 }

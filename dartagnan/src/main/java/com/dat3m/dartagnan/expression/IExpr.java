@@ -17,4 +17,9 @@ public abstract class IExpr implements ExprInterface {
     public boolean getBoolValue(Event e, Model model, Context ctx){
         return getIntValue(e, model, ctx) > 0;
     }
+
+	@Override
+	public IExpr getBase() {
+		return this;
+	}
 }
