@@ -59,7 +59,7 @@ public class IfExpr implements ExprInterface {
 
 	@Override
 	public IConst reduce() {
-		throw new UnsupportedOperationException("Reduce not supported for " + this);
+		return (IConst)(guard.reduce().getValue() > 0 ? tbranch.reduce() : fbranch.reduce());
 	}
 	
 	public BExpr getGuard() {
