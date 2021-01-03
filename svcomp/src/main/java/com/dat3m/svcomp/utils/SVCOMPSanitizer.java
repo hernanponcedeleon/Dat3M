@@ -13,17 +13,16 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 
 public class SVCOMPSanitizer {
 
-	String filePath;
+	File file;
 	
-	public SVCOMPSanitizer(String filePath) {
-		this.filePath = filePath;
+	public SVCOMPSanitizer(File file) {
+		this.file = file;
 	}
 
 	public File run(int bound) throws ParsingException {
-		String fileName = filePath.substring(filePath.lastIndexOf('/'), filePath.lastIndexOf('.')) + "_tmp.c";
-		File tmp = new File("./output/" + fileName);
+		File tmp = new File(System.getenv().get("DAT3M_HOME") + "/output/" + file.getName().substring(0, file.getName().lastIndexOf('.')) + "_tmp.c");
 		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file.getAbsolutePath())));
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tmp)));		
 			StringBuilder contents = new StringBuilder();
 			while(reader.ready()) {
@@ -37,7 +36,7 @@ public class SVCOMPSanitizer {
 				tmp.delete();
 		        throw new ParsingException("pthread_create cannot be inside a for loop");
 			}
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file.getAbsolutePath())));
 			for (String line; (line = reader.readLine()) != null;) {
 				// SMACK does not create procedures for inline functions
 				if(!line.contains("__inline")) {

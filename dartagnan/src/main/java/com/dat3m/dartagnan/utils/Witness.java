@@ -70,7 +70,7 @@ public class Witness {
 		}
 		callStack.get(0).push("main");
 		populateMap();
-        File newTextFile = new File("./output/witness.graphml");        
+        File newTextFile = new File(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");        
         FileWriter fw;
 		try {
 			fw = new FileWriter(newTextFile);
