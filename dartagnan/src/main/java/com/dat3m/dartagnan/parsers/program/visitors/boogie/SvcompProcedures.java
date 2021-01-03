@@ -7,16 +7,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BNonDet;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
@@ -29,9 +26,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
-			"__VERIFIER_assume", 
-			"__VERIFIER_error", 
-			"__VERIFIER_assert",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -48,18 +42,6 @@ public class SvcompProcedures {
 
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.contains("__VERIFIER_assume")) {
-			__VERIFIER_assume(visitor, ctx);
-			return;
-		}
-		if(name.contains("__VERIFIER_error")) {
-			__VERIFIER_error(visitor);
-			return;			
-		}
-		if(name.contains("__VERIFIER_assert")) {
-			__VERIFIER_assert(visitor, ctx);
-			return;
-		}
 		if(name.contains("__VERIFIER_atomic")) {
 			__VERIFIER_atomic(visitor, name.contains("begin"));
 			return;			
@@ -78,40 +60,6 @@ public class SvcompProcedures {
 		throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 	}
 
-	//TODO: seems to be obsolete after SVCOMP 2020
-	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	ExprInterface c = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-		if(c != null) {
-			Assume child = new Assume(c, label);
-			child.setCLine(visitor.currentLine);
-			visitor.programBuilder.addChild(visitor.threadCount, child);	
-		}
-	}
-
-	//TODO: seems to be obsolete after SVCOMP 2020
-	private static void __VERIFIER_error(VisitorBoogie visitor) {
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
-    	visitor.assertionIndex++;
-    	Local event = new Local(ass, new BConst(false));
-		event.addFilters(EType.ASSERTION);
-		event.setCLine(visitor.currentLine);
-		visitor.programBuilder.addChild(visitor.threadCount, event);
-	}
-	
-	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
-    	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
-    		return;
-    	}
-    	Local event = new Local(ass, expr);
-		event.addFilters(EType.ASSERTION);
-		event.setCLine(visitor.currentLine);
-		visitor.programBuilder.addChild(visitor.threadCount, event);
-	}
-	
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
         Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
         Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic", -1).getAddress();

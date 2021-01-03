@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
@@ -17,14 +16,13 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
-import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
-import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.event.pthread.Create;
+import com.dat3m.dartagnan.program.event.pthread.Join;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
 
@@ -115,12 +113,12 @@ public class PthreadsProcedures {
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 		visitor.pool.add(threadPtr, threadName);
 		Location loc = visitor.programBuilder.getOrCreateLocation(threadPtr + "_active", -1);
-		AtomicStore child = new AtomicStore(loc.getAddress(), new IConst(1, -1), SC);
+		Event child = new Create(threadPtr, threadName, loc.getAddress());
 		child.setCLine(visitor.currentLine);
 		visitor.programBuilder.addChild(visitor.threadCount, child);
 	}
 	
-	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {		
+	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String namePtr = ctx.call_params().exprs().expr().get(0).getText();
 		// This names are global so we don't use currentScope.getID(), but per thread.
 		Register callReg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, namePtr, -1);
@@ -130,8 +128,7 @@ public class PthreadsProcedures {
 		Location loc = visitor.programBuilder.getOrCreateLocation(visitor.pool.getPtrFromReg(callReg) + "_active", -1);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, new AtomicLoad(reg, loc.getAddress(), SC));
-       	visitor.programBuilder.addChild(visitor.threadCount, new Assume(new Atom(reg, EQ, new IConst(0, -1)), label));
+       	visitor.programBuilder.addChild(visitor.threadCount, new Join(visitor.pool.getPtrFromReg(callReg), reg, loc.getAddress(), label));
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {

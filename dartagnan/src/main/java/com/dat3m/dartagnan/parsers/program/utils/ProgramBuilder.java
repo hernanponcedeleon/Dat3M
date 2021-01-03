@@ -51,7 +51,7 @@ public class ProgramBuilder {
     }
 
     public void initThread(int id){
-        initThread(null, id);
+        initThread(String.valueOf(id), id);
     }
 
     public Event addChild(int thread, Event child){
