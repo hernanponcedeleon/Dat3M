@@ -11,14 +11,14 @@ import com.dat3m.svcomp.options.SVCOMPOptions;
 
 public class Compilation {
 	
-	public static void compile(File file, SVCOMPOptions opt) {
+	public static void compile(File file, SVCOMPOptions opt, boolean bp) {
 		String name = file.getName().contains("_tmp") ?
 				file.getName().substring(0, file.getName().lastIndexOf('_')) :
 				file.getName().substring(0, file.getName().lastIndexOf('.'));
 
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-    	if(opt.useBP()) {
+    	if(bp) {
     		cmd.addAll(asList("--integer-encoding", "bit-vector"));
     	}
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 

@@ -20,7 +20,6 @@ public class SVCOMPOptions extends BaseOptions {
     protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
     protected String optimization = "O0";
     protected boolean witness;
-    protected boolean bp;
     protected boolean iSolver;
     private AnalysisTypes analysis; 
     
@@ -44,9 +43,6 @@ public class SVCOMPOptions extends BaseOptions {
         
         addOption(new Option("o", "optimization", true,
                 "Optimization flag for LLVM compiler"));
-        
-        addOption(new Option("bp", "bit-precise", false,
-                "Use bit precise encoding"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -61,7 +57,6 @@ public class SVCOMPOptions extends BaseOptions {
         }
         witness = cmd.hasOption("witness");
         iSolver = cmd.hasOption("incrementalSolver");
-        bp = cmd.hasOption("bit-precise");
         
         String property = Files.getNameWithoutExtension(cmd.getOptionValue("property"));
         switch(property) {
@@ -89,10 +84,6 @@ public class SVCOMPOptions extends BaseOptions {
 
     public boolean createWitness(){
         return witness;
-    }
-
-    public boolean useBP(){
-        return bp;
     }
 
     public AnalysisTypes getAnalysis(){

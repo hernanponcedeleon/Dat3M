@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.expression.op;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -7,6 +10,8 @@ import com.microsoft.z3.IntExpr;
 
 public enum IOpBin {
     PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM;
+	
+	public static List<IOpBin> BWOps = Arrays.asList(UDIV, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM); 
 	
     @Override
     public String toString() {
