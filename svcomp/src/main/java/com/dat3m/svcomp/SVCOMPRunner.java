@@ -46,8 +46,8 @@ public class SVCOMPRunner {
 			// First time we compile without bit-precision
 			compile(tmp, options, false);
 			try {
-				Program program = new ProgramParser().parse(new File(System.getenv().get("DAT3M_HOME") + "/output/" + 
-								file.getName().substring(0, file.getName().lastIndexOf('.')) + 
+				Program program = new ProgramParser().parse(new File(System.getenv().get("DAT3M_HOME") + "/output/" +
+								file.getName().substring(0, file.getName().lastIndexOf('.')) +
 								"-" + options.getOptimization() + ".bpl"));
 				if(program.getCache().getEvents(FilterBasic.get(EType.LOCAL)).stream().
 						filter(e -> ((Local)e).getExpr() instanceof IExprBin).
@@ -60,15 +60,15 @@ public class SVCOMPRunner {
 				e1.printStackTrace();
 			}
 	        // If not removed here, file is not removed when we reach the timeout
-	        // File can be safely deleted since it was created by the SVCOMPSanitizer 
+	        // File can be safely deleted since it was created by the SVCOMPSanitizer
 	        // (it not the original C file) and we already created the Boogie file
 	        tmp.delete();
 
 	    	ArrayList<String> cmd = new ArrayList<String>();
 	    	cmd.addAll(asList("java", "-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
-	    	cmd.addAll(asList("-i", System.getenv().get("DAT3M_HOME") + "/output/" + 
-	    			file.getName().substring(0, file.getName().lastIndexOf('.')) + 
-	    			"-" + options.getOptimization() + ".bpl"));
+		cmd.addAll(asList("-i", System.getenv().get("DAT3M_HOME") + "/output/" +
+				file.getName().substring(0, file.getName().lastIndexOf('.')) +
+				"-" + options.getOptimization() + ".bpl"));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", "none"));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
@@ -79,7 +79,7 @@ public class SVCOMPRunner {
 	    	if(options.createWitness()) {
 	    		cmd.addAll(asList("-w", options.getProgramFilePath()));
 	    	}
-	    	
+
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
 	        try {
 	        	Process proc = processBuilder.start();
@@ -99,13 +99,13 @@ public class SVCOMPRunner {
 				System.out.println(e.getMessage());
 				System.exit(0);
 			}
-			bound++;
+			bound = bound * 2;
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
 		output = output.contains("PASS") ? "PASS" : "FAIL";
 		System.out.println(output);
-		
+
         tmp.delete();
-        return;        	
+        return;
     }
 }
