@@ -27,15 +27,15 @@ public class FunCall extends Event {
     
     @Override
     public void simplify(Event predecessor) {
+    	Event prev = this;
+    	Event next = successor;
     	if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(funName)) {
-    		predecessor.setSuccessor(successor.getSuccessor());
-    		if(successor.getSuccessor() != null){
-    			successor.getSuccessor().simplify(predecessor);
-    		}
-    		return;
+    		prev = predecessor;
+    		next = successor.getSuccessor();
+    		predecessor.setSuccessor(next);
     	}
-		if(successor != null){
-			successor.simplify(this);
+		if(next != null){
+			next.simplify(prev);
 		}
     }
 

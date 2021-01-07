@@ -27,15 +27,14 @@ public class Label extends Event {
 
     @Override
     public void simplify(Event predecessor) {
+    	Event prev = this;
+    	Event next = successor;
     	if(listeners.size() == 0) {
+    		prev = predecessor;
     		predecessor.setSuccessor(successor);
-    		if(successor != null){
-    			successor.simplify(predecessor);    			
-    		}
-			return;
     	}
-    	if(successor != null){
-			successor.simplify(this);
+    	if(next != null){
+			next.simplify(prev);
 		}
     }
 
