@@ -20,6 +20,8 @@ public class Compilation {
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
     	if(bp) {
     		cmd.addAll(asList("--integer-encoding", "bit-vector"));
+    	} else {
+    		cmd.addAll(asList("--integer-encoding", "wrapped-integer"));
     	}
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
     			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");

@@ -68,6 +68,9 @@ public class CondJump extends Event implements RegReaderData {
     
     @Override
     public void simplify(Event predecessor) {
+    	// If the label immediately follows, is not the target of any other jump
+    	// and the condition is either true or false we can remove both the jump and the label
+    	// If condition is true the jump and the label are irrelevant, if condition is false the code is dead
     	if(label.equals(successor) && label.listeners.size() == 1 && expr instanceof BConst) {
     		predecessor.setSuccessor(successor.getSuccessor());
     		if(successor.getSuccessor() != null){

@@ -138,6 +138,8 @@ public class Program {
 	}
 
 	public void simplify() {
+		// Some simplification are only applicable after others.
+		// Thus we apply them iteratively until we reach a fixpoint.
 		int size = getEvents().size();
 		one_step_simplify();
 		while(getEvents().size() != size) {
