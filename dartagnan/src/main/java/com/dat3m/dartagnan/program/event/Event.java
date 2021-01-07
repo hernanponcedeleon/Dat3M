@@ -116,6 +116,12 @@ public abstract class Event implements Comparable<Event> {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
     
+    public void simplify(Event predecessor) {
+		if(successor != null){
+			successor.simplify(this);
+		}
+    }
+
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

@@ -65,6 +65,21 @@ public class CondJump extends Event implements RegReaderData {
     		this.label4Copy = (Label)label;
     	}
     }
+    
+    @Override
+    public void simplify(Event predecessor) {
+    	if(label.equals(successor) && label.listeners.size() == 1 && expr instanceof BConst) {
+    		predecessor.setSuccessor(successor.getSuccessor());
+    		if(successor.getSuccessor() != null){
+    			successor.getSuccessor().simplify(predecessor);
+    		}
+    		return;
+    	}
+		if(successor != null){
+			successor.simplify(this);
+		}
+    }
+
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------

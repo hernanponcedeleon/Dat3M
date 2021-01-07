@@ -137,6 +137,22 @@ public class Program {
     	}
 	}
 
+	public void simplify() {
+		int size = getEvents().size();
+		one_step_simplify();
+		while(getEvents().size() != size) {
+	    	size = getEvents().size();
+	    	one_step_simplify();    		
+		}		
+	}
+	
+	private void one_step_simplify() {
+        for(Thread thread : threads){
+            thread.simplify();
+        }
+        cache = null;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
