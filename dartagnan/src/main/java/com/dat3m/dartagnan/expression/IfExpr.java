@@ -38,7 +38,7 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, Context ctx) {
+	public long getIntValue(Event e, Model model, Context ctx) {
 		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}
 

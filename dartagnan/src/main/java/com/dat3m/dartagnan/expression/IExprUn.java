@@ -29,7 +29,7 @@ public class IExprUn extends IExpr {
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, Context ctx) {
+	public long getIntValue(Event e, Model model, Context ctx) {
         return -(b.getIntValue(e, model, ctx));
 	}
 

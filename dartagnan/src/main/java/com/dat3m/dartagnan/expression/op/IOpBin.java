@@ -94,7 +94,7 @@ public enum IOpBin {
         throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
     }
 
-    public int combine(int a, int b){
+    public long combine(long a, long b){
         switch(this){
             case PLUS:
                 return a + b;

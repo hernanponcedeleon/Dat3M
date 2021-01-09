@@ -10,10 +10,10 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public class IConst extends IExpr implements ExprInterface {
 
-	private final int value;
+	private final long value;
 	protected final int precision;
 	
-	public IConst(int value, int precision) {
+	public IConst(long value, int precision) {
 		this.value = value;
 		this.precision = precision;
 	}
@@ -30,7 +30,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return Integer.toString(value);
+		return Long.toString(value);
 	}
 
 	@Override
@@ -39,7 +39,7 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, Context ctx){
+	public long getIntValue(Event e, Model model, Context ctx){
 		return value;
 	}
 
@@ -52,7 +52,7 @@ public class IConst extends IExpr implements ExprInterface {
 		return this;
 	}
 	
-	public int getValue() {
+	public long getValue() {
 		return value;
 	}
     

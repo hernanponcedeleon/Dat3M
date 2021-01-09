@@ -51,8 +51,8 @@ public class BExprBin extends BExpr {
 
     @Override
 	public IConst reduce() {
-		int v1 = b1.reduce().getValue();
-		int v2 = b2.reduce().getValue();
+		long v1 = b1.reduce().getValue();
+		long v2 = b2.reduce().getValue();
 		switch(op) {
         case AND:
         	return new IConst(v1 == 1 ? v2 : 0, -1);

@@ -18,7 +18,7 @@ public interface ExprInterface {
 
     Expr getLastValueExpr(Context ctx);
 
-    int getIntValue(Event e, Model model, Context ctx);
+    long getIntValue(Event e, Model model, Context ctx);
 
     boolean getBoolValue(Event e, Model model, Context ctx);
 

@@ -84,7 +84,7 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, Context ctx){
+	public long getIntValue(Event e, Model model, Context ctx){
 		if(e instanceof Store){
 			return ((Store) e).getMemValue().getIntValue(e, model, ctx);
 		}

@@ -103,7 +103,7 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = ((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValue()*I32_BYTES;			
+			size = (int)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValue()*I32_BYTES;			
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 

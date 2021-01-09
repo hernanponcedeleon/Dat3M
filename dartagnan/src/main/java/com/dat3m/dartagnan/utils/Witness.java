@@ -183,7 +183,7 @@ public class Witness {
 						fw.write("      <data key=\"createThread\">" + threads + "</data>\n");
 						threads++;
 					} else {
-						int value = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getIntValue(e, solver.getModel(), ctx);
+						long value = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getIntValue(e, solver.getModel(), ctx);
 						nextAss += "      <data key=\"assumption\">" + variable + "=" + value + ";</data>\n";
 					}
 				}

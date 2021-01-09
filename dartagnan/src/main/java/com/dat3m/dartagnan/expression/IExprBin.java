@@ -41,14 +41,14 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public int getIntValue(Event e, Model model, Context ctx){
+    public long getIntValue(Event e, Model model, Context ctx){
         return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
     }
     
     @Override
 	public IConst reduce() {
-		int v1 = lhs.reduce().getValue();
-		int v2 = rhs.reduce().getValue();
+		long v1 = lhs.reduce().getValue();
+		long v2 = rhs.reduce().getValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 
