@@ -29,8 +29,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
-import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.event.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.microsoft.z3.Context;
@@ -126,6 +127,7 @@ public class Witness {
 			String nextAss = "";
 			
 			List<Event> execution = getSCExecutionOrder(ctx, solver.getModel());
+			Map<Register, Long> regsVals = new HashMap<Register, Long>();
 			for(int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
 				// TODO improve this: these events correspond to return statements
@@ -152,13 +154,25 @@ public class Witness {
 					callStack.get(eventThreadMap.get(e)).pop();
 					fw.write("      <data key=\"returnFromFunction\">" + ((FunRet)e).getFunctionName() + "</data>\n");
 				}
-				if(e instanceof Local) {
-					Register reg = ((Local)e).getResultRegister();
+				if(e instanceof RegWriter) {
+					Register reg = ((RegWriter)e).getResultRegister();
 					if(reg.getCVar() != null) {
-						long value = Long.parseLong(solver.getModel().getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
-						nextAss += "      <data key=\"assumption\">" + reg.getCVar() + "=" + value + ";</data>\n";
-						nextAss += "      <data key=\"assumption.scope\">" + callStack.get(eventThreadMap.get(e)).peek() + ";</data>\n";
+						regsVals.put(reg, Long.parseLong(solver.getModel().getConstInterp(reg.toZ3IntResult(e, ctx)).toString()));
 					}
+				}
+				if(e instanceof RegReaderData) {
+					for(Register reg : ((RegReaderData)e).getDataRegs()) {
+						if(reg.getCVar() != null) {
+							// This uses toZ3Int instead of toZ3IntRegsult so this and the above cannot be merged
+							regsVals.put(reg, Long.parseLong(solver.getModel().getConstInterp(reg.toZ3Int(e, ctx)).toString()));
+						}						
+					}
+				}
+				for(Register reg : regsVals.keySet()) {
+					nextAss += "      <data key=\"assumption\">" + reg.getCVar() + "=" + regsVals.get(reg) + ";</data>\n";
+				}
+				if(!regsVals.keySet().isEmpty()) {
+					nextAss += "      <data key=\"assumption.scope\">" + callStack.get(eventThreadMap.get(e)).peek() + ";</data>\n";										
 				}
 				if(e instanceof MemEvent 
 						&& ((MemEvent)e).getAddress() instanceof Address

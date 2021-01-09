@@ -352,11 +352,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
 	@Override
 	public Object visitCall_cmd(Call_cmdContext ctx) {
-		if(ctx.getText().contains("boogie_si_record") && !ctx.getText().contains("smack") && !ctx.getText().contains("arg:")) {
+		if(ctx.getText().contains("boogie_si_record") && !ctx.getText().contains("smack")) {
 			Object local = ctx.call_params().exprs().expr(0).accept(this);
 			if(local instanceof Register) {
 				String txt = ctx.attr(0).getText();
-				String cVar = txt.substring(txt.indexOf("\"")+1, txt.lastIndexOf("\""));
+				String cVar;
+				if(ctx.getText().contains("arg:")) {
+					cVar = txt.substring(txt.lastIndexOf(":")+1, txt.lastIndexOf("\""));
+				} else {					
+					cVar = txt.substring(txt.indexOf("\"")+1, txt.lastIndexOf("\""));
+				}
 				((Register)local).setCVar(cVar);	
 			}
 			
