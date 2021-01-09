@@ -34,6 +34,7 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
@@ -71,7 +72,7 @@ public class Witness {
 		}
 		callStack.get(0).push("main");
 		populateMap();
-        File newTextFile = new File(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");        
+        File newTextFile = new File(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");
         FileWriter fw;
 		try {
 			fw = new FileWriter(newTextFile);
@@ -123,9 +124,9 @@ public class Witness {
 				fw.close();
 				return;
 			}
-			
+
 			String nextAss = "";
-			
+
 			List<Event> execution = getSCExecutionOrder(ctx, solver.getModel());
 			Map<String, Long> regsVals = new HashMap<String, Long>();
 			for(int i = 0; i < execution.size(); i++) {
@@ -165,16 +166,16 @@ public class Witness {
 						if(reg.getCVar() != null) {
 							// This uses toZ3Int instead of toZ3IntRegsult so this and the above cannot be merged
 							regsVals.put(reg.getCVar(), Long.parseLong(solver.getModel().getConstInterp(reg.toZ3Int(e, ctx)).toString()));
-						}						
+						}
 					}
 				}
 				for(String var : regsVals.keySet()) {
 					nextAss += "      <data key=\"assumption\">" + var + "=" + regsVals.get(var) + ";</data>\n";
 				}
 				if(!regsVals.keySet().isEmpty()) {
-					nextAss += "      <data key=\"assumption.scope\">" + callStack.get(eventThreadMap.get(e)).peek() + ";</data>\n";										
+					nextAss += "      <data key=\"assumption.scope\">" + callStack.get(eventThreadMap.get(e)).peek() + ";</data>\n";
 				}
-				if(e instanceof MemEvent 
+				if(e instanceof MemEvent
 						&& ((MemEvent)e).getAddress() instanceof Address
 						&& program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()) != null) {
 					String variable = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getName();
@@ -185,7 +186,7 @@ public class Witness {
 						int value = program.getMemory().getLocationForAddress((Address)((MemEvent)e).getAddress()).getIntValue(e, solver.getModel(), ctx);
 						nextAss += "      <data key=\"assumption\">" + variable + "=" + value + ";</data>\n";
 					}
-				}	
+				}
 				fw.write("    </edge>\n");
 				nextNode++;
 				if(e.hasFilter(EType.ASSERTION)) {
@@ -200,7 +201,7 @@ public class Witness {
 			e1.printStackTrace();
 		}
 	}
-	
+
 	private void populateMap() {
 		for(Thread t : program.getThreads()) {
 			for(Event e : t.getEntry().getSuccessors()) {
@@ -210,7 +211,9 @@ public class Witness {
 	}
 	
 	private List<Event> getSCExecutionOrder(Context ctx, Model model) {
-		List<Event> execEvents = program.getEvents().stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList());
+		List<Event> execEvents = new ArrayList<Event>();
+		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList()));
+		execEvents.addAll(program.getEvents().stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList()));
 		
 		Map<Integer, List<Event>> map = new HashMap<Integer, List<Event>>();
         for(Event e : execEvents) {

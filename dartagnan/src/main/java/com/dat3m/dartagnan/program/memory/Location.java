@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Init;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
@@ -86,6 +87,9 @@ public class Location implements ExprInterface {
 	public int getIntValue(Event e, Model model, Context ctx){
 		if(e instanceof Store){
 			return ((Store) e).getMemValue().getIntValue(e, model, ctx);
+		}
+		if(e instanceof Init){
+			return ((Init) e).getMemValue().getIntValue(e, model, ctx);
 		}
 		if(e instanceof Load){
 			Register reg = ((Load) e).getResultRegister();
