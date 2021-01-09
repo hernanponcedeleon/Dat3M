@@ -127,7 +127,7 @@ public class Witness {
 			String nextAss = "";
 			
 			List<Event> execution = getSCExecutionOrder(ctx, solver.getModel());
-			Map<Register, Long> regsVals = new HashMap<Register, Long>();
+			Map<String, Long> regsVals = new HashMap<String, Long>();
 			for(int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
 				// TODO improve this: these events correspond to return statements
@@ -157,19 +157,19 @@ public class Witness {
 				if(e instanceof RegWriter) {
 					Register reg = ((RegWriter)e).getResultRegister();
 					if(reg.getCVar() != null) {
-						regsVals.put(reg, Long.parseLong(solver.getModel().getConstInterp(reg.toZ3IntResult(e, ctx)).toString()));
+						regsVals.put(reg.getCVar(), Long.parseLong(solver.getModel().getConstInterp(reg.toZ3IntResult(e, ctx)).toString()));
 					}
 				}
 				if(e instanceof RegReaderData) {
 					for(Register reg : ((RegReaderData)e).getDataRegs()) {
 						if(reg.getCVar() != null) {
 							// This uses toZ3Int instead of toZ3IntRegsult so this and the above cannot be merged
-							regsVals.put(reg, Long.parseLong(solver.getModel().getConstInterp(reg.toZ3Int(e, ctx)).toString()));
+							regsVals.put(reg.getCVar(), Long.parseLong(solver.getModel().getConstInterp(reg.toZ3Int(e, ctx)).toString()));
 						}						
 					}
 				}
-				for(Register reg : regsVals.keySet()) {
-					nextAss += "      <data key=\"assumption\">" + reg.getCVar() + "=" + regsVals.get(reg) + ";</data>\n";
+				for(String var : regsVals.keySet()) {
+					nextAss += "      <data key=\"assumption\">" + var + "=" + regsVals.get(var) + ";</data>\n";
 				}
 				if(!regsVals.keySet().isEmpty()) {
 					nextAss += "      <data key=\"assumption.scope\">" + callStack.get(eventThreadMap.get(e)).peek() + ";</data>\n";										
