@@ -10,10 +10,17 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public class IConst extends IExpr implements ExprInterface {
 
-	private final long value;
+	// The theory of integers supports numbers which do not  fit 
+	// in int or long types, thus we represent them as strings
+	private final String value;
 	protected final int precision;
 	
 	public IConst(long value, int precision) {
+		this.value = Long.toString(value);
+		this.precision = precision;
+	}
+
+	public IConst(String value, int precision) {
 		this.value = value;
 		this.precision = precision;
 	}
@@ -30,7 +37,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return Long.toString(value);
+		return value;
 	}
 
 	@Override
@@ -40,7 +47,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public long getIntValue(Event e, Model model, Context ctx){
-		return value;
+		return Long.parseLong(value);
 	}
 
     public Expr toZ3Int(Context ctx) {
@@ -53,7 +60,7 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 	
 	public long getValue() {
-		return value;
+		return Long.parseLong(value);
 	}
     
 	@Override
