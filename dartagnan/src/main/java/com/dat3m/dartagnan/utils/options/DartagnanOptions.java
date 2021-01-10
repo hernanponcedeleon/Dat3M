@@ -33,7 +33,7 @@ public class DartagnanOptions extends BaseOptions {
         addOption(new Option("w", "witness", true,
                 "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
 
-        addOption(new Option("analysis", true,
+        addOption(new Option("a", "analysis", true,
         		"The analysis to be performed: reachability (default), data-race detection"));
         }
     

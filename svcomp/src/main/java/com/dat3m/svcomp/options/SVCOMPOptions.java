@@ -31,7 +31,7 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        Option propOption = new Option("property", true,
+        Option propOption = new Option("p", "property", true,
                 "The path to the property to be checked");
         propOption.setRequired(true);
         addOption(propOption);
@@ -45,7 +45,7 @@ public class SVCOMPOptions extends BaseOptions {
         addOption(new Option("o", "optimization", true,
                 "Optimization flag for LLVM compiler"));
 
-        addOption(new Option("enc", "integer_encoding", true,
+        addOption(new Option("e", "integer_encoding", true,
                 "bit-vector=use SMT bit-vector theory, " + 
                 "unbounded-integer=use SMT integer theory, " +
                 "wrapped-integer=use SMT integer theory but model wrap-around behavior" + 
