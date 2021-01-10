@@ -18,6 +18,8 @@ import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.LLVMPREDICAT
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.llvmPredicate;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.LLVMUNARY;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
+import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.SMACKPREDICATES;
+import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.smackPredicate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -765,6 +767,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(LLVMUNARY.stream().anyMatch(f -> name.startsWith(f))) {
 			currentCall = currentCall.getParent();
 			return llvmUnary(name, callParams);
+		}
+		if(SMACKPREDICATES.stream().anyMatch(f -> name.equals(f))) {
+			currentCall = currentCall.getParent();
+			return smackPredicate(name, callParams);
 		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
