@@ -2,7 +2,6 @@ package com.dat3m.svcomp.options;
 
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
 import java.util.Arrays;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
@@ -17,10 +16,12 @@ import com.google.common.io.Files;
 
 public class SVCOMPOptions extends BaseOptions {
 
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
-    protected String optimization = "O0";
-    protected boolean witness;
-    protected boolean iSolver;
+    private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
+    private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
+    private String encoding = "unbounded-integer";
+    private String optimization = "O0";
+    private boolean witness;
+    private boolean incremental_solver;
     private AnalysisTypes analysis; 
     
     public SVCOMPOptions(){
@@ -35,7 +36,7 @@ public class SVCOMPOptions extends BaseOptions {
         propOption.setRequired(true);
         addOption(propOption);
 
-        addOption(new Option("incrementalSolver", false,
+        addOption(new Option("incremental_solver", false,
         		"Use an incremental solver"));
 
         addOption(new Option("w", "witness", false,
@@ -43,11 +44,17 @@ public class SVCOMPOptions extends BaseOptions {
         
         addOption(new Option("o", "optimization", true,
                 "Optimization flag for LLVM compiler"));
+
+        addOption(new Option("enc", "integer_encoding", true,
+                "bit-vector=use SMT bit-vector theory, " + 
+                "unbounded-integer=use SMT integer theory, " +
+                "wrapped-integer=use SMT integer theory but model wrap-around behavior" + 
+                " [default: unbounded-integer]"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
-        if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
+        if(supported_formats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
 
@@ -55,16 +62,19 @@ public class SVCOMPOptions extends BaseOptions {
         if(cmd.hasOption("optimization")) {
         	optimization = cmd.getOptionValue("optimization");
         }
+        if(cmd.hasOption("integer_encoding")) {
+        	encoding = cmd.getOptionValue("integer_encoding");
+        	if(!supported_integer_encoding.contains(encoding)) {
+            	throw new UnsupportedOperationException("Unrecognized encoding " + encoding);        		
+        	}
+        }
         witness = cmd.hasOption("witness");
-        iSolver = cmd.hasOption("incrementalSolver");
+        incremental_solver = cmd.hasOption("incrementalSolver");
         
         String property = Files.getNameWithoutExtension(cmd.getOptionValue("property"));
         switch(property) {
 			case "no-data-race":
 				analysis = RACES;
-				break;
-			case "termination":
-				analysis = TERMINATION;
 				break;
 			case "unreach-call":
 				analysis = REACHABILITY;
@@ -78,8 +88,12 @@ public class SVCOMPOptions extends BaseOptions {
         return optimization;
     }
 
+    public String getEncoding(){
+        return encoding;
+    }
+
     public boolean useISolver(){
-        return iSolver;
+        return incremental_solver;
     }
 
     public boolean createWitness(){

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.utils.options;
 
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.fromString;
 
 import java.util.Arrays;
@@ -15,10 +14,10 @@ import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
 
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
-    protected boolean iSolver;
-    protected String witness;
-    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES, TERMINATION));
+    private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
+    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES));
+    private boolean incremental_solver;
+    private String witness;
     private AnalysisTypes analysis = REACHABILITY; 
 	
     public DartagnanOptions(){
@@ -28,14 +27,14 @@ public class DartagnanOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        addOption(new Option("incrementalSolver", false,
+        addOption(new Option("incremental_solver", false,
         		"Use an incremental solver"));
         
         addOption(new Option("w", "witness", true,
                 "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
 
         addOption(new Option("analysis", true,
-        		"The analysis to be performed: reachability (default), data-race detection, termination"));
+        		"The analysis to be performed: reachability (default), data-race detection"));
         }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -44,13 +43,12 @@ public class DartagnanOptions extends BaseOptions {
             throw new RuntimeException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
-        iSolver = cmd.hasOption("incrementalSolver");
+        incremental_solver = cmd.hasOption("incremental_solver");
         if(cmd.hasOption("analysis")) {
-        	AnalysisTypes selectedAnalysis = fromString(cmd.getOptionValue("analysis"));
-        	if(!analyses.contains(selectedAnalysis)) {
+        	analysis = fromString(cmd.getOptionValue("analysis"));
+        	if(!analyses.contains(analysis)) {
         		throw new RuntimeException("Unrecognized analysis");
         	}
-        	analysis = selectedAnalysis;
         }
         if(cmd.hasOption("witness")) {
         	witness = cmd.getOptionValue("witness");
@@ -58,7 +56,7 @@ public class DartagnanOptions extends BaseOptions {
     }
     
     public boolean useISolver(){
-        return iSolver;
+        return incremental_solver;
     }
 
     public AnalysisTypes getAnalysis(){

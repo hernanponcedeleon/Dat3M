@@ -11,18 +11,14 @@ import com.dat3m.svcomp.options.SVCOMPOptions;
 
 public class Compilation {
 	
-	public static void compile(File file, SVCOMPOptions opt, boolean bp) {
+	public static void compile(File file, SVCOMPOptions opt) {
 		String name = file.getName().contains("_tmp") ?
 				file.getName().substring(0, file.getName().lastIndexOf('_')) :
 				file.getName().substring(0, file.getName().lastIndexOf('.'));
 
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-    	if(bp) {
-    		cmd.addAll(asList("--integer-encoding", "bit-vector"));
-    	} else {
-    		cmd.addAll(asList("--integer-encoding", "wrapped-integer"));
-    	}
+    	cmd.addAll(asList("--integer-encoding", opt.getEncoding()));
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
     			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");
     	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + "-" + opt.getOptimization() + ".bpl"));
