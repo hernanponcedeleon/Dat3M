@@ -108,3 +108,5 @@ References
 [3] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**. CAV 2019.
 
 [4] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Dartagnan: Bounded Model Checking for Weak Memory Models (Competition Contribution)**. TACAS 2020.
+
+[5] Hernán Ponce de León, Thomas Haas, Roland Meyer: **Dartagnan: Leveraging Compiler Optimizations and the Price of Precision (Competition Contribution)**. TACAS 2021.
