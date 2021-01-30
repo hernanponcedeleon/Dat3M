@@ -38,6 +38,10 @@ public class If extends Event implements RegReaderData {
         addFilters(EType.ANY, EType.CMP, EType.REG_READER);
     }
 
+    public ExprInterface getGuard(){
+        return expr;
+    }
+
     public Event getExitMainBranch(){
         return exitMainBranch;
     }
@@ -135,12 +139,12 @@ public class If extends Event implements RegReaderData {
             BoolExpr ifCond = expr.toZ3Bool(this, ctx);
             cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx));
 
-            cfEnc = ctx.mkAnd(cfEnc, successorMain.encodeCF(ctx, ctx.mkAnd(ifCond, cfVar)));
-            cfEnc = ctx.mkAnd(cfEnc, successorElse.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
+//            cfEnc = ctx.mkAnd(cfEnc, successorMain.encodeCF(ctx, ctx.mkAnd(ifCond, cfVar)));
+//            cfEnc = ctx.mkAnd(cfEnc, successorElse.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
 
-            if(successor != null){
-                cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkOr(exitMainBranch.cfCond, exitElseBranch.cfCond)));
-            }
+//            if(successor != null){
+//                cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkOr(exitMainBranch.cfCond, exitElseBranch.cfCond)));
+//            }
         }
         return cfEnc;
     }

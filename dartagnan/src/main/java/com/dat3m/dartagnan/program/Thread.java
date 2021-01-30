@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -143,6 +145,28 @@ public class Thread {
     // -----------------------------------------------------------------------------------------------------------------
 
     public BoolExpr encodeCF(Context ctx){
-        return entry.encodeCF(ctx, ctx.mkTrue());
+    	BoolExpr enc = ctx.mkTrue();
+    	If lastIf = null;
+    	BoolExpr guard = ctx.mkTrue();
+    	for(Event e : entry.getSuccessors()) {
+    		if(lastIf != null && e.equals(lastIf.getMainBranchEvents().get(0))) {
+    			guard = ctx.mkAnd(lastIf.cf(), lastIf.getGuard().toZ3Bool(lastIf, ctx));
+    		}
+    		if (lastIf != null && e.equals(lastIf.getElseBranchEvents().get(0))) {
+    			guard = ctx.mkAnd(lastIf.cf(), ctx.mkNot(lastIf.getGuard().toZ3Bool(lastIf, ctx)));
+    		}
+    		if(lastIf != null && e.equals(lastIf.getSuccessor())) {
+    			guard = ctx.mkOr(lastIf.getExitMainBranch().getCfCond(), lastIf.getExitElseBranch().getCfCond());
+    		}
+    		enc = ctx.mkAnd(enc, e.encodeCF(ctx, guard));
+    		guard = e.cf();
+    		if(e instanceof CondJump) {
+    			guard = ctx.mkAnd(guard, ctx.mkNot(((CondJump)e).getGuard().toZ3Bool(e, ctx)));
+    		}
+    		if(e instanceof If) {
+    			lastIf = (If)e;
+    		}
+    	}
+        return enc;
     }
 }
