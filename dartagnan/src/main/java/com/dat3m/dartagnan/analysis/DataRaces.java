@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -29,7 +28,7 @@ public class DataRaces {
 	// This analysis assumes that CAT file defining the memory model has a happens-before 
 	// relation named hb: it should contain the following axiom "acyclic hb"
 
-public static Result checkForRaces(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+	public static Result checkForRaces(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         program.updateAssertion();
@@ -55,13 +54,16 @@ public static Result checkForRaces(Solver solver, Context ctx, Program program, 
     	BoolExpr enc = ctx.mkFalse();
     	for(Thread t1 : p.getThreads()) {
     		for(Thread t2 : p.getThreads()) {
-    			if(t1.getId() >= t2.getId()) {
+    			if(t1.getId() == t2.getId()) {
     				continue;
     			}
-    			for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.WRITE), FilterBasic.get(EType.RMW)))) {
+    			for(Event e1 : t1.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.WRITE), FilterBasic.get(EType.INIT)))) {
     				MemEvent w = (MemEvent)e1;
-    				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterUnion.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.INIT))))) {
+    				for(Event e2 : t2.getCache().getEvents(FilterMinus.get(FilterBasic.get(EType.MEMORY), FilterBasic.get(EType.INIT)))) {
     					MemEvent m = (MemEvent)e2;
+    					if(w.hasFilter(EType.RMW) && m.hasFilter(EType.RMW)) {
+    						continue;
+    					}
     					// TODO improve this: these events correspond to return statements
     					if(w.getMemValue() instanceof BConst && !((BConst)w.getMemValue()).getValue()) {
     						continue;

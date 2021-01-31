@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.expression.op;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -7,6 +10,8 @@ import com.microsoft.z3.IntExpr;
 
 public enum IOpBin {
     PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM;
+	
+	public static List<IOpBin> BWOps = Arrays.asList(UDIV, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM); 
 	
     @Override
     public String toString() {
@@ -72,7 +77,7 @@ public enum IOpBin {
             case AND:
             	return e1.isBV() ? ctx.mkBVAND((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
             case OR:
-            	return e1.isBV() ? ctx.mkBVOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
+            	return e1.isBV() ? ctx.mkBVOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case XOR:
             	return e1.isBV() ? ctx.mkBVXOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
             case L_SHIFT:
@@ -89,7 +94,7 @@ public enum IOpBin {
         throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
     }
 
-    public int combine(int a, int b){
+    public long combine(long a, long b){
         switch(this){
             case PLUS:
                 return a + b;

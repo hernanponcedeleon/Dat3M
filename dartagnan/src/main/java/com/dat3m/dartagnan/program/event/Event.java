@@ -110,6 +110,10 @@ public abstract class Event implements Comparable<Event> {
 		filter.addAll(Arrays.asList(params));
 	}
 
+	public boolean hasFilter(String f) {
+		return filter.contains(f);
+	}
+	
 	@Override
 	public int compareTo(Event e){
 		int result = Integer.compare(cId, e.cId);
@@ -130,6 +134,12 @@ public abstract class Event implements Comparable<Event> {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
     
+    public void simplify(Event predecessor) {
+		if(successor != null){
+			successor.simplify(this);
+		}
+    }
+
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

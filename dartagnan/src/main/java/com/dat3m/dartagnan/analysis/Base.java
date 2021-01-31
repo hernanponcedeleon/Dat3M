@@ -11,11 +11,14 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Solver;
 
 public class Base {
 
     public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    	program.simplify();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
@@ -25,7 +28,7 @@ public class Base {
        		return PASS;
        	}
        	
-        // Using two solvers is much faster than using
+        // Using two solvers can be faster than using
         // an incremental solver or check-sat-assuming
         Solver s2 = ctx.mkSolver();
         
@@ -70,7 +73,8 @@ public class Base {
     }
 	
     public static Result runAnalysisIncrementalSolver(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-        program.unroll(settings.getBound(), 0);
+        program.simplify();
+    	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
@@ -78,6 +82,7 @@ public class Base {
        	if(program.getAss() instanceof AssertTrue) {
        		return PASS;
        	}
+
         solver.add(program.encodeCF(ctx));
         solver.add(program.encodeFinalRegisterValues(ctx));
         solver.add(wmm.encode(program, ctx, settings));
@@ -88,12 +93,7 @@ public class Base {
             solver.add(program.getAssFilter().encode(ctx));
         }
 
-        /*System.out.println("Number of Assertions: ");
-        System.out.println(solver.getAssertions().length);
-        System.out.println("Statistics before: ");
-        System.out.println(solver.getStatistics());*/
-
-        Result res;
+        Result res = UNKNOWN;
 		if(solver.check() == SATISFIABLE) {
         	solver.add(program.encodeNoBoundEventExec(ctx));
 			res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
@@ -102,9 +102,6 @@ public class Base {
 			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
         	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
-
-        /*System.out.println("Statistics after: ");
-        System.out.println(solver.getStatistics());*/
 
         return program.getAss().getInvert() ? res.invert() : res;
     }

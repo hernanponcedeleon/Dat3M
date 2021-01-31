@@ -25,6 +25,19 @@ public class Label extends Event {
         return name + ":";
     }
 
+    @Override
+    public void simplify(Event predecessor) {
+    	Event prev = this;
+    	Event next = successor;
+    	if(listeners.size() == 0) {
+    		prev = predecessor;
+    		predecessor.setSuccessor(successor);
+    	}
+    	if(next != null){
+			next.simplify(prev);
+		}
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -35,5 +48,5 @@ public class Label extends Event {
     		jump.notify(copy);
     	}
     	return copy;
-    }
+    }    
 }

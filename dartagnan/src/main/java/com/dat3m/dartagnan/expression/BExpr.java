@@ -13,12 +13,17 @@ public abstract class BExpr implements ExprInterface {
     }
 
     @Override
-    public int getIntValue(Event e, Model model, Context ctx){
+    public long getIntValue(Event e, Model model, Context ctx){
         return getBoolValue(e, model, ctx) ? 1 : 0;
     }
     
 	@Override
 	public int getPrecision() {
 		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
+	}
+	
+	@Override
+	public IExpr getBase() {
+		return null;
 	}
 }

@@ -1,19 +1,24 @@
 package com.dat3m.dartagnan.utils.options;
 
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.fromString;
+
 import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.commons.cli.*;
 
+import com.dat3m.dartagnan.analysis.AnalysisTypes;
 import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
 
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
-    protected String overApproxFilePath;
-    protected boolean iSolver;
-    protected String witness;
-    protected boolean races;
+    private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
+    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES));
+    private boolean incremental_solver;
+    private String witness;
+    private AnalysisTypes analysis = REACHABILITY; 
 	
     public DartagnanOptions(){
         super();
@@ -22,18 +27,15 @@ public class DartagnanOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        addOption(new Option("cegar", true,
-        		"Use CEGAR. Argument is the path to the over-approximation memory model"));
-
-        addOption(new Option("incrementalSolver", false,
+        addOption(new Option("incremental_solver", false,
         		"Use an incremental solver"));
         
         addOption(new Option("w", "witness", true,
-                "Creates a violation witness. The argument is the original *.c file from which the Boogie code was generated."));
+                "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
 
-        addOption(new Option("races", false,
-                "Checks if the program contains data races instead of checking reachability"));
-}
+        addOption(new Option("a", "analysis", true,
+        		"The analysis to be performed: reachability (default), data-race detection"));
+        }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
@@ -41,26 +43,24 @@ public class DartagnanOptions extends BaseOptions {
             throw new RuntimeException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
-        if(cmd.hasOption("cegar")) {
-            overApproxFilePath = cmd.getOptionValue("cegar");
+        incremental_solver = cmd.hasOption("incremental_solver");
+        if(cmd.hasOption("analysis")) {
+        	analysis = fromString(cmd.getOptionValue("analysis"));
+        	if(!analyses.contains(analysis)) {
+        		throw new RuntimeException("Unrecognized analysis");
+        	}
         }
-        iSolver = cmd.hasOption("incrementalSolver");
-        races = cmd.hasOption("races");
         if(cmd.hasOption("witness")) {
         	witness = cmd.getOptionValue("witness");
         }
     }
     
-    public String getOverApproxPath(){
-        return overApproxFilePath;
-    }
-    
     public boolean useISolver(){
-        return iSolver;
+        return incremental_solver;
     }
 
-    public boolean testRaces(){
-        return races;
+    public AnalysisTypes getAnalysis(){
+		return analysis;
     }
 
     public String createWitness(){

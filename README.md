@@ -18,7 +18,7 @@ Installation
 ======
 Download the z3 dependency
 ```
-mvn install:install-file -Dfile=lib/z3-4.3.2.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.3.2 -Dpackaging=jar
+mvn install:install-file -Dfile=lib/z3-4.8.6.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.6 -Dpackaging=jar
 ```
 Set Dat3M's home, the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
 ```
@@ -38,7 +38,7 @@ We provide a set of unit tests that can be run by
 ```
 mvn test
 ```
-**Note:** there are almost 40K tests, running them can take several 3 hs.
+**Note:** there are almost 40K tests, running them can take several hs.
 
 Usage
 ======
@@ -51,7 +51,7 @@ java -jar ui/target/ui-2.0.6-jar-with-dependencies.jar
 <img src="ui/src/main/resources/ui.jpg">
 </p>
 
-Dartagnan supports programs written in the .litmus or .bpl (Boogie) formats. For Porthos, programs shall be written in the .pts format which is explained [here](porthos/pts.md).
+Dartagnan supports programs written in the `.litmus` or `.bpl` (Boogie) formats. For Porthos, programs shall be written in the `.pts` format which is explained [here](porthos/pts.md).
 
 If SMACK was correctly installed, C programs can be converted to Boogie using the following command:
 ```
@@ -62,28 +62,29 @@ You can also run Dartagnan and Porthos from the console.
 
 For checking reachability (Dartagnan):
 ```
-java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -cat <CAT file> -i <program file> [options]
+java -jar dartagnan/target/dartagnan-2.0.6-jar-with-dependencies.jar -cat <CAT file> [-t <target>] -i <program file> [options]
 ```
 For checking state inclusion (Porthos):
 ```
 java -jar porthos/target/porthos-2.0.6-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
 ```
-The -cat,-scat,-tcat options specify the paths to the CAT files.
+The `-cat`,`-scat`,`-tcat` options specify the paths to the CAT files.
 
-For programs written in the .pts format, \<source> and \<target> specify the architectures to which the program will be compiled. 
-They must be one of the following: 
+For programs written in the `.bpl` (if the original c program uses the `std::atomic` library) or `.pts` format, `\<source>` and `\<target>` specify the architectures to which the program will be compiled. They must be one of the following: 
 - none
 - tso
 - power
 - arm
 - arm8
 
-Other optional arguments include:
-- -m, --mode {knastertarski, idl, kleene}: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
-- -a, --alias {none, andersen, cfs}: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
-- -unroll: unrolling bound for the BMC.
+Program written in `.litmus` format do not require such options.
 
-Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands "__VERIFIER_nondet_X", "__VERIFIER_assume" and "__VERIFIER_assert".
+Other optional arguments include:
+- `-m, --mode {knastertarski, idl, kleene}`: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
+- `-a, --alias {none, andersen, cfs}`: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
+- `-unroll`: unrolling bound for the BMC.
+
+Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
 
 Authors and Contact
 ======

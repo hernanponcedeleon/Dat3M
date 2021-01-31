@@ -29,7 +29,7 @@ public class IExprUn extends IExpr {
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, Context ctx) {
+	public long getIntValue(Event e, Model model, Context ctx) {
         return -(b.getIntValue(e, model, ctx));
 	}
 
@@ -48,6 +48,12 @@ public class IExprUn extends IExpr {
         switch(op){
 			case MINUS:
 				return new IConst(-b.reduce().getValue(), b.getPrecision());
+			case BV2UINT:
+			case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
+			case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:
+			case ZEXT18: case ZEXT116: case ZEXT132: case ZEXT164: case ZEXT816: case ZEXT832: case ZEXT864: case ZEXT1632: case ZEXT1664: case ZEXT3264: 
+			case SEXT18: case SEXT116: case SEXT132: case SEXT164: case SEXT816: case SEXT832: case SEXT864: case SEXT1632: case SEXT1664: case SEXT3264:
+				return b.reduce();
 			default:
 		        throw new UnsupportedOperationException("Reduce not supported for " + this);				
         }
@@ -56,5 +62,10 @@ public class IExprUn extends IExpr {
 	@Override
 	public int getPrecision() {
 		return b.getPrecision();
+	}
+	
+	@Override
+	public IExpr getBase() {
+		throw new UnsupportedOperationException("getBase not supported for " + this);
 	}
 }

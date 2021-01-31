@@ -14,11 +14,17 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
 
 public class StdProcedures {
+	
+	// TODO: find a good way of dealing with allocation of dynamic size
+	private static int MALLOC_ARRAY_SIZE = 100;
+    // TODO: deal with this properly
+    public static int I32_BYTES = 4;
 
 	public static List<String> STDPROCEDURES = Arrays.asList(
 			"external_alloc",
 			"$alloc",
 			"__assert_rtn",
+			"assert_.i32",
 			"$malloc",
 			"calloc",
 			"malloc",
@@ -27,6 +33,7 @@ public class StdProcedures {
 			"memcpy",
 			"$memcpy",
 			"memset",
+			"$memset",
 			"nvram_read_byte", 
 			"strcpy",
 			"strcmp",
@@ -42,7 +49,7 @@ public class StdProcedures {
 			alloc(visitor, ctx);
 			return;
 		}
-		if(name.equals("__assert_rtn")) {
+		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
 			__assert(visitor, ctx);
 			return;
 		}
@@ -58,7 +65,7 @@ public class StdProcedures {
 			// TODO: Implement this
 			return;			
 		}
-		if(name.startsWith("memset")) {
+		if(name.startsWith("memset") || name.startsWith("$memset")) {
 			throw new ParsingException(name + " cannot be handled");
 		}
 		if(name.startsWith("nvram_read_byte")) {
@@ -96,12 +103,12 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = ((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValue();			
+			size = (int)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValue()*I32_BYTES;			
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
-			tmp = tmp.substring(tmp.lastIndexOf('(')+1);						
-			size = Integer.parseInt(tmp);			
+			tmp = tmp.substring(tmp.lastIndexOf('(')+1);
+			size = Integer.parseInt(tmp)*MALLOC_ARRAY_SIZE;			
 		}
 		List<IConst> values = Collections.nCopies(size, new IConst(0, -1));
 		String ptr = ctx.call_params().Ident(0).getText();

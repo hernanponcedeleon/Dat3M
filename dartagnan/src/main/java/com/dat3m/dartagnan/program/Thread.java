@@ -112,6 +112,11 @@ public class Thread {
         return id == ((Thread) obj).id;
     }
 
+    public void simplify() {
+        entry.simplify(null);
+        cache = null;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -136,7 +141,6 @@ public class Thread {
         cache = null;
         return nextId;
     }
-
 
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------

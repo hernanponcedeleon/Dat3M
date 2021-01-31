@@ -45,8 +45,7 @@ public class Address extends IConst implements ExprInterface {
 
     @Override
     public String toString(){
-		String tag = precision > 0 ? "bv" + precision : "";
-        return "&mem" + index + tag;
+        return "&mem" + index;
     }
 
     @Override
@@ -71,7 +70,7 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public int getIntValue(Event e, Model model, Context ctx){
+    public long getIntValue(Event e, Model model, Context ctx){
         return Integer.parseInt(model.getConstInterp(toZ3Int(ctx)).toString());
     }    
 }

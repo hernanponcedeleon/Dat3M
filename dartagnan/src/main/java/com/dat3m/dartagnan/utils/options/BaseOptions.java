@@ -34,7 +34,7 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("a", "alias", true,
                 "Type of alias analysis {none|andersen|cfs}"));
 
-        addOption(new Option("unroll", true,
+        addOption(new Option("u", "unroll", true,
                 "Unrolling bound <integer>"));
 
         addOption(new Option("draw", true,
@@ -91,7 +91,6 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal unroll value");
             }
         }
-        
         settings = new Settings(mode, alias, bound, draw, relations);
     }
 

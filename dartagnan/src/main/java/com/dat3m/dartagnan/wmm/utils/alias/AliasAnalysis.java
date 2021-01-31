@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
@@ -256,11 +257,37 @@ public class AliasAnalysis {
     }
 
     private void processResults(Program program) {
+    	// Used to have pointer analysis when having arrays and structures
+    	Map<Register, Address> bases = new HashMap<Register, Address>();
+    	for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
+    		// Not only Local events have EType.LOCAL tag
+    		if(!(ev instanceof Local)) {
+    			continue;
+    		}
+    		Local l = (Local)ev;
+    		ExprInterface exp = l.getExpr();
+    		Register reg = l.getResultRegister();
+			if(exp instanceof Address) {
+    			bases.put(reg, (Address)exp);
+    		} else if(exp instanceof IExprBin) {
+    			IExpr base = ((IExprBin)exp).getBase();
+    			if(base instanceof Address) {
+    				bases.put(reg, (Address)base);	
+    			} else if(base instanceof Register && bases.containsKey(base)) {
+    				bases.put(reg, bases.get(base));
+    			}
+    		}
+    	}
+
         for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
             Set<Address> adresses;
             if (address instanceof Register) {
-                adresses = graph.getAddresses(((Register) address));
+            	if(bases.containsKey(address)) {
+            		adresses = ImmutableSet.of(bases.get(address));
+            	} else {
+                    adresses = graph.getAddresses(((Register) address));            		
+            	}
             } else if (address instanceof Address) {
                     adresses = ImmutableSet.of(((Address) address));
             } else {

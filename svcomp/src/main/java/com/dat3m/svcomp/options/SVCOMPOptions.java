@@ -1,30 +1,28 @@
 package com.dat3m.svcomp.options;
 
-import static java.util.stream.IntStream.rangeClosed;
-
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
+import com.dat3m.dartagnan.analysis.AnalysisTypes;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 
 public class SVCOMPOptions extends BaseOptions {
 
-    protected Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("c", "i")); 
-    protected List<Integer> bounds = rangeClosed(1, 10000).boxed().collect(Collectors.toList());
-    protected String optimization = "O0";
-    protected boolean witness;
-    protected String overApproxFilePath;
-    protected boolean bp;
-    protected boolean iSolver;
-    protected boolean races;
+    private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
+    private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
+    private String encoding = "unbounded-integer";
+    private String optimization = "O0";
+    private boolean witness;
+    private boolean incremental_solver;
+    private AnalysisTypes analysis; 
     
     public SVCOMPOptions(){
         super();
@@ -33,28 +31,30 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        addOption(new Option("races", false,
-                "Checks if the program contains data races instead of checking reachability"));
-        
-        addOption(new Option("cegar", true,
-                "Use CEGAR. Argument is the path to the over-approximation memory model"));
-        
-        addOption(new Option("incrementalSolver", false,
+        Option propOption = new Option("p", "property", true,
+                "The path to the property to be checked");
+        propOption.setRequired(true);
+        addOption(propOption);
+
+        addOption(new Option("incremental_solver", false,
         		"Use an incremental solver"));
 
         addOption(new Option("w", "witness", false,
-                "Creates a violation witness"));
+                "Creates a machine readable witness"));
         
         addOption(new Option("o", "optimization", true,
                 "Optimization flag for LLVM compiler"));
-        
-        addOption(new Option("bp", "bit-precise", false,
-                "Use bit precise encoding"));
+
+        addOption(new Option("e", "integer_encoding", true,
+                "bit-vector=use SMT bit-vector theory, " + 
+                "unbounded-integer=use SMT integer theory, " +
+                "wrapped-integer=use SMT integer theory but model wrap-around behavior" + 
+                " [default: unbounded-integer]"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
-        if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
+        if(supported_formats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
             throw new RuntimeException("Unrecognized program format");
         }
 
@@ -62,40 +62,45 @@ public class SVCOMPOptions extends BaseOptions {
         if(cmd.hasOption("optimization")) {
         	optimization = cmd.getOptionValue("optimization");
         }
-        witness = cmd.hasOption("witness");
-        if(cmd.hasOption("cegar")) {
-            overApproxFilePath = cmd.getOptionValue("cegar");
+        if(cmd.hasOption("integer_encoding")) {
+        	encoding = cmd.getOptionValue("integer_encoding");
+        	if(!supported_integer_encoding.contains(encoding)) {
+            	throw new UnsupportedOperationException("Unrecognized encoding " + encoding);        		
+        	}
         }
-        iSolver = cmd.hasOption("incrementalSolver");
-        bp = cmd.hasOption("bit-precise");
-        races = cmd.hasOption("races");
+        witness = cmd.hasOption("witness");
+        incremental_solver = cmd.hasOption("incrementalSolver");
+        
+        String property = Files.getNameWithoutExtension(cmd.getOptionValue("property"));
+        switch(property) {
+			case "no-data-race":
+				analysis = RACES;
+				break;
+			case "unreach-call":
+				analysis = REACHABILITY;
+				break;
+			default:
+				throw new UnsupportedOperationException("Unrecognized property " + property);
+        }
     }
 
     public String getOptimization(){
         return optimization;
     }
 
+    public String getEncoding(){
+        return encoding;
+    }
+
     public boolean useISolver(){
-        return iSolver;
+        return incremental_solver;
     }
 
     public boolean createWitness(){
         return witness;
     }
 
-    public boolean useBP(){
-        return bp;
-    }
-
-    public boolean testRaces(){
-        return races;
-    }
-
-    public String getOverApproxPath(){
-        return overApproxFilePath;
-    }
-
-    public List<Integer> getBounds() {
-        return bounds;
+    public AnalysisTypes getAnalysis(){
+		return analysis;
     }
 }
