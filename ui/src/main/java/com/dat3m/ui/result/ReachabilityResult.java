@@ -1,11 +1,11 @@
 package com.dat3m.ui.result;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisGraphRefinement;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinementEmptyCoherence;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
 import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.analysis.Cegar;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;

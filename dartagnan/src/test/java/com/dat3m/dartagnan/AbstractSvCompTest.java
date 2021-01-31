@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
@@ -39,31 +40,77 @@ public abstract class AbstractSvCompTest {
 
     @Test(timeout = 180000)
     public void test() {
+        Context ctx = null;
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExptected(property);
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
+            ctx = new Context();
             Solver solver = ctx.mkSolver();
             assertTrue(runAnalysis(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
-            ctx.close();
         } catch (IOException e){
             fail("Missing resource file");
+        } finally {
+            if(ctx != null) {
+                ctx.close();
+            }
         }
     }
 
     @Test(timeout = 180000)
     public void testIncremental() {
+        Context ctx = null;
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExptected(property);
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
+            ctx = new Context();
             Solver solver = ctx.mkSolver();
             assertTrue(runAnalysisIncrementalSolver(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
-            ctx.close();
         } catch (IOException e){
             fail("Missing resource file");
+        }  finally {
+            if(ctx != null) {
+                ctx.close();
+            }
+        }
+    }
+
+    @Test(timeout = 180000)
+    public void testRefinement() {
+        Context ctx = null;
+        try {
+            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+            expected = readExptected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            ctx = new Context();
+            Solver solver = ctx.mkSolver();
+            assertTrue(Refinement.runAnalysisGraphRefinement(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+        } catch (IOException e){
+            fail("Missing resource file");
+        } finally {
+            if(ctx != null) {
+                ctx.close();
+            }
+        }
+    }
+
+    @Test(timeout = 180000)
+    public void testRefinementNoCo() {
+        Context ctx = null;
+        try {
+            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+            expected = readExptected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            ctx = new Context();
+            Solver solver = ctx.mkSolver();
+            assertTrue(Refinement.runAnalysisGraphRefinementEmptyCoherence(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+        } catch (IOException e){
+            fail("Missing resource file");
+        } finally {
+            if(ctx != null) {
+                ctx.close();
+            }
         }
     }
 

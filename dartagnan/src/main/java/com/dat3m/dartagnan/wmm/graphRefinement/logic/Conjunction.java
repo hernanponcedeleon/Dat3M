@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.graphRefinement.logic;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 // A formal minimal conjunction of ground literals of type T
 // The class is immutable
@@ -75,7 +76,7 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null || !(obj instanceof Conjunction))
+        if (obj == null || !(obj.getClass() == this.getClass()))
             return false;
 
         Conjunction<T> other = (Conjunction<T>)obj;
@@ -118,7 +119,7 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     public boolean isProperSubclauseOf(Conjunction<T> other) {
         if (this.literals.size() >= other.literals.size())
             return false;
-        return other.literals.contains(this.literals);
+        return other.literals.containsAll(this.literals);
     }
 
     @Override
@@ -185,7 +186,7 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
             if (!pred.test(literal))
                 result.add(literal);
         }
-        return new Conjunction<T>(result, false);
+        return new Conjunction<>(result, false);
     }
 
     public Conjunction<T> resolve(Conjunction<T> other) {
@@ -227,6 +228,14 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
 
     public List<T> toList() {
         return Arrays.asList((T[])literals.toArray());
+    }
+
+    public int getResolutionComplexity() {
+        return (int)literals.stream().filter(Literal::hasOpposite).count();
+    }
+
+    public Set<T> getResolvableLiterals() {
+        return literals.stream().filter(Literal::hasOpposite).collect(Collectors.toSet());
     }
 
 }

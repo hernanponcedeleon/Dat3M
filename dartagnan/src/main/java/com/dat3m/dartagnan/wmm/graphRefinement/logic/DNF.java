@@ -46,7 +46,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
 
     public DNF(T literal) {
-        this(new Conjunction<T>(literal));
+        this(new Conjunction<>(literal));
     }
 
     public DNF(Conjunction<T> cube) {
@@ -117,7 +117,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null || !(obj instanceof DNF))
+        if (obj == null || obj.getClass() != DNF.class)
             return false;
 
         DNF<T> other = (DNF<T>)obj;
@@ -166,7 +166,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
 
         // Same code as above but with roles swapped
-        boolean isGreaterThan = false;
+        boolean isGreaterThan = true;
         for (Conjunction<T> cube1 : other.cubes) {
             if (this.cubes.contains(cube1)) {
                 continue;
@@ -216,7 +216,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
         Set<Conjunction<T>> result = new HashSet<>(this.cubes);
         result.removeAll(cubes);
-        return new DNF<T>(result, false);
+        return new DNF<>(result, false);
 
     }
 
@@ -227,7 +227,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
             old = result;
             for (Conjunction<T> cube1 : result.cubes) {
                 for (Conjunction<T> cube2 : result.cubes) {
-                    result = result.or(new DNF<T>(cube1.resolve(cube2)));
+                    result = result.or(new DNF<>(cube1.resolve(cube2)));
                 }
             }
         } while (!result.equals(old));
@@ -246,7 +246,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
         HashSet<Conjunction<T>> result = new HashSet<>(this.cubes);
         result.addAll(other.cubes);
-        return new DNF<T>(result);
+        return new DNF<>(result);
     }
 
     public DNF<T> and(DNF<T> other) {
@@ -262,6 +262,6 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
             for (Conjunction<T> cube2 : other.cubes)
                 result.add(cube1.and(cube2));
         }
-        return new DNF<T>(result);
+        return new DNF<>(result);
     }
 }

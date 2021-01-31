@@ -1,0 +1,3 @@
+TODO: (1) Separate the refinement and the graph classes into separate packages
+      (2) Implement the remaining event graphs for special (static) relations.
+      (3) Implement fixed points.

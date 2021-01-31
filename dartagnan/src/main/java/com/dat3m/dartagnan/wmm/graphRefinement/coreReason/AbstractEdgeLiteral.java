@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.coreReason;
 
-import com.dat3m.dartagnan.wmm.graphRefinement.GraphContext;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -19,8 +17,7 @@ public abstract class AbstractEdgeLiteral extends AbstractLiteral {
         return edge;
     }
 
-    public AbstractEdgeLiteral(String name, Edge edge, GraphContext context) {
-        super(context);
+    public AbstractEdgeLiteral(String name, Edge edge) {
         this.edge = edge;
         this.name = name;
     }

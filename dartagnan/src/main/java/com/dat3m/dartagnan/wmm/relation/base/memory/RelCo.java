@@ -38,11 +38,12 @@ public class RelCo extends Relation {
     }
 
     // Temporary test code
-    boolean doEncode = true;
+    private boolean doEncode = true;
     // if set to false, the co-relation will not be encoded
     // and it will be considered empty for may and active set computations
     public void setDoEncode(Boolean value) {
         doEncode = value;
+        maxTupleSet = value ? null : new TupleSet();
     }
 
     @Override
@@ -54,8 +55,6 @@ public class RelCo extends Relation {
 
     @Override
     public TupleSet getMaxTupleSet(){
-        if (!doEncode)
-            return new TupleSet();
 
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();

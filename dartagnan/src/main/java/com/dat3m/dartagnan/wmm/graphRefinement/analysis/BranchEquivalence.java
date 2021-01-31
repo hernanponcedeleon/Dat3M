@@ -55,7 +55,7 @@ public class BranchEquivalence extends Equivalence<Event> {
     // Only used for the following algo
     // The implicationMap maps an event <e> to a set <reached> of events that
     // is guaranteed(!) to be reached from <e>.
-    private Map<Event, Set<Event>> implicationMap = new HashMap<>();
+    private final Map<Event, Set<Event>> implicationMap = new HashMap<>();
 
     private void analyseBranch(Event e) {
         if (e == null || implicationMap.containsKey(e)) {
@@ -116,7 +116,7 @@ public class BranchEquivalence extends Equivalence<Event> {
         } while (succ != null);
     }
 
-    // Merges the common successors if two branches into the parent branch given by a representative <rep>.
+    // Merges the common successors of two branches into the parent branch given by a representative <rep>.
     private void mergeBranches(Representative rep, Event firstBranch, Event secondBranch) {
         HashSet<Event> commonSucc = new HashSet<>(implicationMap.get(firstBranch));
         commonSucc.retainAll(implicationMap.get(secondBranch));
@@ -130,7 +130,7 @@ public class BranchEquivalence extends Equivalence<Event> {
             implicationMap.get(rep.getData()).addAll(commonSucc);
             // Note: Do we need to update the representative event of the branches? Probably not, since it
             // should always be the first event, which does not get lifted to a new class.
-            // And if it does get lifted, the branch class will be empty and get removed anyway.
+            // And if it does get lifted, the branch class will be empty and gets removed anyway.
         }
     }
 

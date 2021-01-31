@@ -11,6 +11,9 @@ public class RelCartesian extends StaticRelation {
     private FilterAbstract filter1;
     private FilterAbstract filter2;
 
+    public FilterAbstract getFirst() { return filter1; }
+    public FilterAbstract getSecond() { return filter2; }
+
     public static String makeTerm(FilterAbstract filter1, FilterAbstract filter2){
         return "(" + filter1 + "*" + filter2 + ")";
     }

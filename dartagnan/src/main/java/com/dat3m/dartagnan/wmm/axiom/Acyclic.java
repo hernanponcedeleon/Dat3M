@@ -30,19 +30,24 @@ public class Acyclic extends Axiom {
 
     @Override
     public TupleSet getEncodeTupleSet(){
+        //TODO: Instead of computing the transitive closure,
+        // we can get away with computing the set of SCCs using tarjan.
+        // It has FAR better asymptotic performance.
         Map<Event, Set<Event>> transMap = rel.getMaxTupleSet().transMap();
         TupleSet result = new TupleSet();
 
         for(Event e1 : transMap.keySet()){
             if(transMap.get(e1).contains(e1)){
                 for(Event e2 : transMap.get(e1)){
+                    // Why do we exclude self loops here and add them afterwards?
+                    // Is the transMap incorrect somehow?
                     if(e2.getCId() != e1.getCId() && transMap.get(e2).contains(e1)){
                         result.add(new Tuple(e1, e2));
                     }
                 }
             }
         }
-
+        // Why don't we add them in the above loop?
         for(Tuple tuple : rel.getMaxTupleSet()){
             if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
                 result.add(tuple);

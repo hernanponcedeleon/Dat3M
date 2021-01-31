@@ -1,20 +1,17 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.decoration;
 
-import com.dat3m.dartagnan.program.arch.pts.event.Read;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.Thread;
 
 
-// Not used yet.
-// The intended usage is to add an EventData field to the existing implementation of Event
-// and use this field to attach additional information for the current refinement.
+//A decoration/facade to enhance Event with additional information for refinement
 public class EventData implements Comparable<EventData> {
-    private EventMap map;
+    private final EventMap map; // Not used right now
 
-    private Event event;
+    private final Event event;
     private EventData readFrom;
-    private int id;
-    private int localId;
+    private int id = -1;
+    private int localId = -1;
     private int accessedAddress;
     private int importance;
     private boolean wasExecuted;

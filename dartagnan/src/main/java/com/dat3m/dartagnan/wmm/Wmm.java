@@ -69,12 +69,12 @@ public class Wmm {
 
     // Encodes the memory models relations as if co was empty (but not the axioms yet)
     // NOTE: The call to <consistent> for encoding the axioms does not see co as empty anymore
-    // This should not be a problem though.
+    // This is done to get a correct computation for the active set.
     public BoolExpr encodeEmptyCo(Program program, Context ctx, Settings settings) {
         RelCo co = ((RelCo)getRelationRepository().getRelation("co"));
         co.setDoEncode(false);
         BoolExpr enc = encode(program, ctx, settings);
-        co.setDoEncode(true);
+        //co.setDoEncode(true);
         return enc;
     }
 
@@ -89,29 +89,18 @@ public class Wmm {
             relationRepository.getRelation(relName);
         }
 
-        /*for (Axiom ax : axioms) {
-            ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
-        }*/
-
-        /*for(RecursiveGroup recursiveGroup : recursiveGroups){
-            recursiveGroup.setDoRecurse();
-        }*/
-
         for(FilterAbstract filter : filters.values()){
             filter.initialise();
         }
 
+        //TODO: Can be removed if the reworked EdgeSets are used
+        // Right now we need may sets/active sets to populate EdgeSetStatic
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program, ctx, settings);
         }
-
-       /* for(RecursiveGroup recursiveGroup : recursiveGroups){
-            recursiveGroup.initMaxTupleSets();
-        }*/
-
-        for (Axiom ax : axioms) {
+        /*for (Axiom ax : axioms) {
             ax.getRel().getMaxTupleSet();
-        }
+        }*/
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName).getMaxTupleSet();
@@ -120,22 +109,20 @@ public class Wmm {
         // NOT SUPPORTED FOR NOW
         /*if(settings.getDrawGraph()){
             for(String relName : settings.getGraphRelations()){
-                Relation relation = relationRepository.getRelation(relName);
+                Relation relation = relationRepository.getWrappedRelation(relName);
                 if(relation != null){
                     relation.addEncodeTupleSet(relation.getMaxTupleSet());
                 }
             }
         }*/
 
-        for (Axiom ax : axioms) {
+        //TODO: Can be removed if the reworked EdgeSets are used
+        // Right now we need may sets/active sets to populate EdgeSetStatic
+        /*for (Axiom ax : axioms) {
             ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
-        }
-
-        /*Collections.reverse(recursiveGroups);
-        for(RecursiveGroup recursiveGroup : recursiveGroups){
-            recursiveGroup.updateEncodeTupleSets();
         }*/
 
+        // Encode all base relations except co (essentially encodes rf and po)
         BoolExpr enc = ctx.mkTrue();
         for(String relName : baseRelations){
             if (relName.equals("co"))
@@ -144,19 +131,13 @@ public class Wmm {
             enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
         }
 
-        /*if(settings.getMode() == Mode.KLEENE){
-            for(RecursiveGroup group : recursiveGroups){
-                enc = ctx.mkAnd(enc, group.encode(ctx));
-            }
-        }*/
-
         return enc;
     }
 
     // This methods initializes all relations and encodes all base relations
     // and recursive groups (why recursive groups?)
     // It also triggers the computation of may and active sets!
-    // It does NOT encode the axioms or any non-base relation!
+    // It does NOT encode the axioms nor any non-base relation yet!
     public BoolExpr encodeBase(Program program, Context ctx, Settings settings) {
         this.program = program;
         new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
@@ -225,7 +206,7 @@ public class Wmm {
         return enc;
     }
 
-    // Initalizes everything just like encodeBase and also encodes all
+    // Initalizes everything just like encodeBase but also encodes all
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     public BoolExpr encode(Program program, Context ctx, Settings settings) {
         BoolExpr enc = encodeBase(program, ctx, settings);

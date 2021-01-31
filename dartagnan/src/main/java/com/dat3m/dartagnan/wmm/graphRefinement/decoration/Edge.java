@@ -1,17 +1,24 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.decoration;
 
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.timeable.Timeable;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.timeable.Timestamp;
 
 // An untyped edge.
 // This is just a decoration for Tuple to use EventData instead of Event
-public class Edge implements Comparable<Edge> {
+public class Edge implements Comparable<Edge>, Timeable {
 
-    private EventData first;
-    private EventData second;
+    private final EventData first;
+    private final EventData second;
+    private Timestamp time;
 
-    public Edge(EventData first, EventData second) {
+    public Edge(EventData first, EventData second, Timestamp time) {
         this.first = first;
         this.second = second;
+        this.time = time;
+    }
+
+    public Edge(EventData first, EventData second) {
+        this (first, second, Timestamp.ZERO);
     }
 
     public EventData getFirst(){
@@ -27,7 +34,11 @@ public class Edge implements Comparable<Edge> {
         return "(" + first.toString() + ", " + second.toString() + ")";
     }
 
-    public Edge getInverse() { return new Edge(second, first); }
+    public Timestamp getTime() {
+        return time;
+    }
+
+    public Edge getInverse() { return new Edge(second, first, time); }
 
     public boolean isCrossEdge() {
         return !first.getThread().equals(second.getThread());
@@ -48,9 +59,20 @@ public class Edge implements Comparable<Edge> {
     public boolean isLocEdge()  { return first.isMemoryEvent() && second.isMemoryEvent()
             && first.getAccessedAddress() == second.getAccessedAddress(); }
 
+    public void normalizeTime() {
+        if (time.isInitial())
+            time = Timestamp.ZERO;
+        else if (time.isInvalid())
+            time = Timestamp.INVALID;
+    }
+
+    public Edge withTimestamp(Timestamp t) {
+        return new Edge(first, second, t);
+    }
+
     @Override
     public int hashCode() {
-        return (first.getId() << 16) + second.getId();
+        return (first.getId() * 8191) + second.getId();
     }
 
     @Override
@@ -61,7 +83,7 @@ public class Edge implements Comparable<Edge> {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        Edge other= (Edge) obj;
+        Edge other = (Edge) obj;
         return first.equals(other.first)
                 && second.equals(other.second);
     }

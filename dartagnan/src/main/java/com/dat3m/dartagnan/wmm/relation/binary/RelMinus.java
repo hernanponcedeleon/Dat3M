@@ -40,7 +40,14 @@ public class RelMinus extends BinaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples) {
-        TupleSet activeSet = new TupleSet();
+        super.addEncodeTupleSet(tuples);
+        //TODO: The above code is correct but DOES NOT follow the relational analysis paper.
+        // The relational analysis paper is also correct. The implementation is simply chosen
+        // differently!
+
+        // === The following code seems to be correct according to Relational Analysis
+        //     but it produces wrong result.
+        /*TupleSet activeSet = new TupleSet();
         activeSet.addAll(tuples);
         activeSet.removeAll(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
@@ -50,7 +57,19 @@ public class RelMinus extends BinaryRelation {
             r1.addEncodeTupleSet(activeSet);
             activeSet.retainAll(r2.getMaxTupleSet());
             r2.addEncodeTupleSet(activeSet);
-        }
+        }*/
+        //TODO: The whole encoding of set minus seems to be bogus!!!
+        // It seems to hinge on the fact that the minus sides are actually constant/static
+        // and correct negation is possible (i.e. the may sets are exact)!!!
+        // The Relational Analysis Paper describes the commented code, but it is wrong
+        // We need to also propagate tuples to r2 which are outside of r2's mayset.
+        // Concretely, we need to propagate tuples intersected with r2^c's mayset.
+        // This can be seen by compiling (r1 \ r2) to (r1 \intersect r2^c)!
+        // and use the correct propagation rule for intersection.
+        // Right now, positive edges and negative edges are both inside a single active set.
+        // To distinguish them, we identify those outside the may set as negative edges (done by encodeNegations)
+        // This is only valid for relations were the may set is exact (i.e. static relations)
+        // For co, loc and rf this might break!
     }
 
     @Override

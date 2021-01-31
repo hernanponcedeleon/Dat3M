@@ -124,6 +124,7 @@ public class TupleSet implements Set<Tuple>{
         return bySecond.get(e);
     }
 
+    //TODO: Reimplemenmt transMap using tarjan and SCCs
     public Map<Event, Set<Event>> transMap(){
         Map<Event, Set<Event>> map = new HashMap<>();
 

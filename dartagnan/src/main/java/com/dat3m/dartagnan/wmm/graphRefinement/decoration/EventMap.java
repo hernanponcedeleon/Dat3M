@@ -1,11 +1,6 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.decoration;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.graphRefinement.GraphContext;
-import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
-import com.dat3m.dartagnan.wmm.relation.Relation;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +8,8 @@ import java.util.Set;
 
 public class EventMap {
 
-    private Map<Event, EventData> eventMap;
+    private final Map<Event, EventData> eventMap;
+
 
     public EventMap() {
         eventMap = new HashMap<>();
@@ -46,5 +42,9 @@ public class EventMap {
 
     public Collection<EventData> getValues() {
         return eventMap.values();
+    }
+
+    public void clear() {
+        eventMap.clear();
     }
 }

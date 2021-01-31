@@ -1,19 +1,12 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.coreReason;
 
-import com.dat3m.dartagnan.wmm.graphRefinement.GraphContext;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
+//TODO: Add some context field (implement some sort of refinement context?)
 public abstract class AbstractLiteral implements CoreLiteral {
-    protected GraphContext context;
 
-    public GraphContext getContext() {
-        return context;
-    }
-
-    public AbstractLiteral(GraphContext context) {
-        this.context = context;
-    }
+    public AbstractLiteral() {}
 
     public abstract BoolExpr getZ3BoolExpr(Context ctx);
 

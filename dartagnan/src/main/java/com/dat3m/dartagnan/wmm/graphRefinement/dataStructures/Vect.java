@@ -7,8 +7,8 @@ import java.util.function.UnaryOperator;
 
 
 // This is essentially an array with more functionality.
-// It is similar to an ArrayList but without automatic resizing and more
-// fine grained control over all operations.
+// It is similar to an ArrayList but without automatic resizing and
+// it allows more fine-grained control over all operations.
 // Most operations come in 2 variants, standard and unsafe
 // Unsafe operations generally do not perform index out of range or capacity checks
 public final class Vect<T> extends AbstractList<T> {
@@ -128,9 +128,9 @@ public final class Vect<T> extends AbstractList<T> {
                 numRemoved++;
                 array[j] = null;
             }
-            else if (cmpRes > 0) {
+            else if (cmpRes < 0) {
                 from = j++;
-            } else if (cmpRes < 0) {
+            } else {
                 throw new IllegalStateException("The vector was not correctly sorted.");
             }
         }
@@ -160,12 +160,25 @@ public final class Vect<T> extends AbstractList<T> {
         swapInsertUnsafe(value, index);
     }
 
-    public int insertSortedUnsafe(T value, Comparator<? super T> cmp) {
+    public int insertSortedUnsafe(T value) {
         int index = binarySearch(value);
         if (index < 0)
             index = ~index;
         insertUnsafe(value, index);
         return index;
+    }
+
+    public int insertSortedUnsafe(T value, Comparator<? super T> cmp) {
+        int index = binarySearch(value, cmp);
+        if (index < 0)
+            index = ~index;
+        insertUnsafe(value, index);
+        return index;
+    }
+
+    public int insertSorted(T value) {
+        checkCapacity(1);
+        return insertSortedUnsafe(value);
     }
 
     public int insertSorted(T value, Comparator<? super T> cmp) {
@@ -212,7 +225,7 @@ public final class Vect<T> extends AbstractList<T> {
     }
 
     public int insertSortedUniqueUnsafe(T value, Comparator<? super T> cmp) {
-        int index = Arrays.binarySearch(array, 0, numElements, value, cmp);
+        int index = binarySearch(value,0, numElements, cmp);
         boolean unique = index < 0;
         if (unique) {
             insertUnsafe(value, ~index);
@@ -283,12 +296,24 @@ public final class Vect<T> extends AbstractList<T> {
         return binarySearch(value, 0, numElements);
     }
 
+    public int binarySearch(T value, Comparator<? super T> cmp) {
+        return binarySearch(value, 0, numElements, cmp);
+    }
+
     public int binarySearch(T value, int from, int to) {
         if (to > numElements)
             to = numElements;
         if (from < 0)
             from = 0;
         return Arrays.binarySearch(array, from, to, value);
+    }
+
+    public int binarySearch(T value, int from, int to, Comparator<? super T> cmp) {
+        if (to > numElements)
+            to = numElements;
+        if (from < 0)
+            from = 0;
+        return Arrays.binarySearch(array, from, to, value, cmp);
     }
 
     public int linearSearch(T value) {

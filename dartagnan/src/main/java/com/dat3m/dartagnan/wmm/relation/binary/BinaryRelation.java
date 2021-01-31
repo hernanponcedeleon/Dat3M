@@ -29,12 +29,10 @@ public abstract class BinaryRelation extends Relation {
         this.r2 = r2;
     }
 
-    // Newly added
     public Relation getFirst() {
         return r1;
     }
-    // Newly added
-    public  Relation getSecond() {
+    public Relation getSecond() {
         return r2;
     }
 

@@ -1,11 +1,18 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.logic;
 
+import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.dataStructures.Vect;
 import com.dat3m.dartagnan.wmm.graphRefinement.util.CompareAdapter;
 
 import java.util.*;
 import java.util.function.Predicate;
 
+/*
+   This class is a sorted list of clauses without duplicates.
+   The sorting is done according to clause size.
+   Unlike DNF, this class is mutable for performance reasons.
+   Many methods modify the current instance and return it to allow chaining.
+ */
 public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjunction<T>> {
 
     private static final int INITIALCAPACITY = 10;
@@ -122,7 +129,7 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
     }
 
     public boolean contains(Conjunction<T> clause) {
-        return clauses.binarySearch(clause) > -1;
+        return clauses.binarySearch(clause, comparator) > -1;
         //return clauses.contains(clause);
     }
 
@@ -130,7 +137,8 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
         return clauses.remove(clause);
     }
 
-    public boolean removeWhere(Predicate<T> literalPredicate) {
+    // Removes clauses which contain certain literals
+    public boolean removeIf(Predicate<T> literalPredicate) {
         return clauses.removeIf(x -> x.getLiterals().stream().anyMatch(literalPredicate));
     }
 
@@ -176,10 +184,13 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
     public SortedClauseSet<T> computeAllResolvents() {
         Vect<Conjunction<T>> result = clauses.clone();
         result.ensureTotalCapacity(2 * clauses.size());
-        HashSet<CompareAdapter<Conjunction<T>>> foundClauses = new HashSet<>(result.getTotalCapacity());
-        for (int i = 0; i < result.size(); i++) {
-            foundClauses.add(new CompareAdapter<>(result.get(i), comparator));
-        }
+        HashSet<Conjunction<T>> foundClauses = new HashSet<>(result.getTotalCapacity());
+        //HashSet<CompareAdapter<Conjunction<T>>> foundClauses = new HashSet<>(result.getTotalCapacity());
+        /*for (int i = 0; i < result.size(); i++) {
+            //foundClauses.add(new CompareAdapter<>(result.get(i), comparator));
+            foundClauses.add(result.get(i));
+        }*/
+        foundClauses.addAll(result);
 
         int to = result.size();
         int start = 0;
@@ -187,7 +198,7 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
             for (int i = 0; i < to; i++) {
                 for (int j = Math.max(start, i + 1); j < to; j++) {
                     Conjunction<T> resolvent = result.get(i).resolve(result.get(j));
-                    if (!resolvent.isFalse() && foundClauses.add(new CompareAdapter<>(resolvent, comparator))) {
+                    if (!resolvent.isFalse() && foundClauses.add(resolvent)) {
                         result.ensureCapacity(1, result.size());
                         result.appendUnsafe(resolvent);
                     }
@@ -200,9 +211,78 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
         SortedClauseSet<T> retVal = new SortedClauseSet<>(false);
         retVal.clauses = result;
         retVal.comparator = comparator;
-        //retVal.simplify(); Not needed since we delete
         return retVal;
     }
+
+    // A fast version of the above algorithm
+    // It aims to compute only resolvents that cannot be further resolved (have no resolvable literal)
+    //TODO: Rework this to make it work in all cases.
+    public SortedClauseSet<T> computeProductiveResolvents() {
+        Vect<Conjunction<T>> result = clauses.clone();
+        // Delete unnecessary clauses
+        deleteUnproductiveClauses(result);
+
+        Comparator<Conjunction<T>> resComp = new ResolventClauseComparator<>();
+        result.sortUnique(resComp);
+
+        result.ensureTotalCapacity(2 * result.size());
+        HashSet<Conjunction<T>> foundClauses = new HashSet<>(result.getTotalCapacity());
+        foundClauses.addAll(result);
+
+        // A custom (test) implementation that only resolves clauses where one clause
+        // has a single resolvable literal (may break, if k-SAT with k>1 was used to find clauses)
+        int to;
+        int start = 0;
+        int co1Index = 0;
+        do {
+            start = start + co1Index;
+            to = result.size();
+            result.sort(start, to, resComp);
+            co1Index = 0;
+            for (int i = start; i < to; i++) {
+                if(result.get(i).getResolutionComplexity() < 2) {
+                    co1Index++;
+                } else {
+                    break;
+                }
+            }
+
+            for (int i = start; i < start + co1Index; i++) {
+                for (int j = i + 1; j < to; j++) {
+                    Conjunction<T> resolvent = result.get(i).resolve(result.get(j));
+                    if (!resolvent.isFalse() && foundClauses.add(resolvent)) {
+                        result.ensureCapacity(1, result.size());
+                        result.appendUnsafe(resolvent);
+                    }
+                }
+                to = result.size();
+            }
+        } while (co1Index != 0);
+
+        result.sort(comparator);
+        SortedClauseSet<T> retVal = new SortedClauseSet<>(false);
+        retVal.clauses = result;
+        retVal.comparator = comparator;
+        return retVal;
+    }
+
+    // Removes all clauses that contain some resolvable literal which can not be resolved
+    // with any other clause.
+    private void deleteUnproductiveClauses(Vect<Conjunction<T>> vect) {
+        boolean progress;
+        do {
+            HashSet<T> resolvableLiterals = new HashSet<>();
+            for (Conjunction<T> cube : vect) {
+                cube.getLiterals().stream().filter(Literal::hasOpposite).forEach(resolvableLiterals::add);
+            }
+
+            progress = vect.removeIf(x -> x.getLiterals().stream()
+                    .filter(Literal::hasOpposite)
+                    .anyMatch(y -> !resolvableLiterals.contains(y.getOpposite())));
+        } while (progress);
+    }
+
+
 
 
     @Override
@@ -211,22 +291,34 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
     }
 
 
+
     private static class DefaultClauseComparator<Y extends Literal<Y>> implements Comparator<Conjunction<Y>> {
 
         @Override
         public int compare(Conjunction<Y> o1, Conjunction<Y> o2) {
+            if (o1 == o2)
+                return 0;
             int cmp = o1.getSize() - o2.getSize();
+            return cmp != 0 ? cmp : (System.identityHashCode(o1) - System.identityHashCode(o2));
+            // The second case it needed to satisfy the contract of Comparable (it gives a total ordering)
+            // Violating the contract can cause exceptions!
+
+        }
+    }
+
+    private static class ResolventClauseComparator<Y extends Literal<Y>> implements Comparator<Conjunction<Y>> {
+
+        @Override
+        public int compare(Conjunction<Y> o1, Conjunction<Y> o2) {
+            if (o1 == o2)
+                return 0;
+            int cmp = o1.getResolutionComplexity() - o2.getResolutionComplexity();
             if (cmp == 0) {
-                cmp = o1.hashCode() - o2.hashCode();
-                if (cmp == 0) {
-                    return cmp;
-                    // This implementation is not valid.
-                    // We need to change conjunctions from sets to lists and perform lexicographic
-                    // comparisons
-                    //throw new UnsupportedOperationException();
-                }
+                cmp = o1.getSize() - o2.getSize();
             }
-            return cmp;
+            return cmp != 0 ? cmp : (System.identityHashCode(o1) - System.identityHashCode(o2));
+            // The second case it needed to satisfy the contract of Comparable (it gives a total ordering)
+            // Violating the contract can cause exceptions!
 
         }
     }

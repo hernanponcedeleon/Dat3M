@@ -1,14 +1,12 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.coreReason;
 
-import com.dat3m.dartagnan.wmm.graphRefinement.GraphContext;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 public class CoLiteral extends AbstractEdgeLiteral {
     private CoLiteral opposite;
 
-    public CoLiteral(Edge edge, GraphContext context) {
-        super("co", edge, context);
+    public CoLiteral(Edge edge) {
+        super("co", edge);
     }
 
     @Override
@@ -19,7 +17,7 @@ public class CoLiteral extends AbstractEdgeLiteral {
     @Override
     public CoreLiteral getOpposite() {
         if (opposite == null) {
-            opposite = new CoLiteral(edge.getInverse(), context);
+            opposite = new CoLiteral(edge.getInverse());
             opposite.opposite = this;
         }
         return opposite;
