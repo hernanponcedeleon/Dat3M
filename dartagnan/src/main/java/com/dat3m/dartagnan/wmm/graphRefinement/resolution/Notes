@@ -1,0 +1,3 @@
+Under construction.
+We try to build a search tree that reflects the decisions made during saturation.
+The leafs will contain found violations. We then intend to perform resolution along this tree.
