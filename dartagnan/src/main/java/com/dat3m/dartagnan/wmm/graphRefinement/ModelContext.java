@@ -37,9 +37,9 @@ public class ModelContext {
     private final Map<EventData, EventData> readWriteMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
     private final Map<String, Set<EventData>> fenceMap;
-    private final Map<Integer, Set<EventData>> addressReadsMap;
-    private final Map<Integer, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
-    private final Map<Integer, EventData> addressInitMap;
+    private final Map<Long, Set<EventData>> addressReadsMap;
+    private final Map<Long, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
+    private final Map<Long, EventData> addressInitMap;
     //TODO: Note, we could merge the
     // three above maps into a single one that holds writes, reads and init writes.
 
@@ -49,9 +49,9 @@ public class ModelContext {
     private Map<EventData, EventData> readWriteMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
     private Map<String, Set<EventData>> fenceMapView;
-    private Map<Integer, Set<EventData>> addressReadsMapView;
-    private Map<Integer, Set<EventData>> addressWritesMapView;
-    private Map<Integer, EventData> addressInitMapView;
+    private Map<Long, Set<EventData>> addressReadsMapView;
+    private Map<Long, Set<EventData>> addressWritesMapView;
+    private Map<Long, EventData> addressInitMapView;
 
 
     public ModelContext(VerificationContext verificationContext) {
@@ -112,13 +112,13 @@ public class ModelContext {
     public Map<String, Set<EventData>> getFenceMap() {
         return fenceMapView;
     }
-    public Map<Integer, Set<EventData>> getAddressReadsMap() {
+    public Map<Long, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
     }
-    public Map<Integer, Set<EventData>> getAddressWritesMap() {
+    public Map<Long, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
-    public Map<Integer, EventData> getAddressInitMap() {
+    public Map<Long, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
 
@@ -214,7 +214,7 @@ public class ModelContext {
             // ===== Memory Events =====
             // A memory event in the control flow need NOT be executed (e.g. AARCH's StoreExclusive)
             if (data.wasExecuted()) {
-                Integer address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
+                Long address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
                 data.setAccessedAddress(address);
                 if (!addressReadsMap.containsKey(address)) {
                     addressReadsMap.put(address, new HashSet<>());
@@ -252,8 +252,8 @@ public class ModelContext {
     private void extractReadsFrom() {
         readWriteMap.clear();
 
-        for (Map.Entry<Integer, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
-            Integer address = addressedReads.getKey();
+        for (Map.Entry<Long, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
+            Long address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
                     BoolExpr rf = Utils.edge("rf", write.getEvent(), read.getEvent(), context);

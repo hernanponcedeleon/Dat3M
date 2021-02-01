@@ -12,7 +12,7 @@ public class EventData implements Comparable<EventData> {
     private EventData readFrom;
     private int id = -1;
     private int localId = -1;
-    private int accessedAddress;
+    private long accessedAddress;
     private int importance;
     private boolean wasExecuted;
 
@@ -29,8 +29,8 @@ public class EventData implements Comparable<EventData> {
     public int getLocalId() { return localId; }
     public void setLocalId(int newId) { localId = newId; }
 
-    public int getAccessedAddress() { return accessedAddress; }
-    public void setAccessedAddress(int address) { accessedAddress = address; }
+    public long getAccessedAddress() { return accessedAddress; }
+    public void setAccessedAddress(long address) { accessedAddress = address; }
 
     public EventData getReadFrom() { return readFrom; }
     public void setReadFrom(EventData store) { readFrom = store; }

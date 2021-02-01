@@ -11,7 +11,7 @@ import java.util.*;
 
 public class LocationGraph extends StaticEventGraph {
 
-    private Map<Integer, Set<EventData>> addrEventsMap;
+    private Map<Long, Set<EventData>> addrEventsMap;
 
     @Override
     public boolean contains(Edge edge) {
@@ -36,7 +36,7 @@ public class LocationGraph extends StaticEventGraph {
     public void initialize(ModelContext context) {
         super.initialize(context);
         addrEventsMap = new HashMap<>(context.getAddressReadsMap().size());
-        for (Integer addr : context.getAddressReadsMap().keySet()) {
+        for (Long addr : context.getAddressReadsMap().keySet()) {
             Set<EventData> events = new HashSet<>(context.getAddressReadsMap().get(addr));
             events.addAll(context.getAddressWritesMap().get(addr));
             size += events.size() * events.size();
@@ -56,8 +56,8 @@ public class LocationGraph extends StaticEventGraph {
 
     private class LocIterator extends EdgeIterator {
 
-        private Iterator<Integer> addressIterator;
-        private Integer curAddress;
+        private Iterator<Long> addressIterator;
+        private Long curAddress;
         private Iterator<EventData> firstIterator;
         private Iterator<EventData> secondIterator;
 

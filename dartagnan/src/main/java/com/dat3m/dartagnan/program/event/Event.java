@@ -77,7 +77,9 @@ public abstract class Event implements Comparable<Event> {
 
 	public void setSuccessor(Event event){
 		successor = event;
-		successor.setThread(this.thread);
+		if (successor != null) {
+			successor.setThread(this.thread);
+		}
 	}
 
 	public Thread getThread() { return thread; }

@@ -47,7 +47,7 @@ public class GraphRefinement {
         execGraph.initializeFromModel(modelContext);
     }
 
-    private final Map<Integer, Set<Edge>> possibleCoEdges = new HashMap<>();
+    private final Map<Long, Set<Edge>> possibleCoEdges = new HashMap<>();
     private final SortedClauseSet<CoreLiteral> coreReasonsSorted = new SortedClauseSet<>();
    /* public GraphResult search() {
 
@@ -349,9 +349,9 @@ public class GraphRefinement {
 
 
     private void initSearch() {
-        for (Map.Entry<Integer, Set<EventData>> addressedWrites : modelContext.getAddressWritesMap().entrySet()) {
+        for (Map.Entry<Long, Set<EventData>> addressedWrites : modelContext.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
-            Integer address = addressedWrites.getKey();
+            Long address = addressedWrites.getKey();
             Set<Edge> coEdges = new HashSet<>();
             possibleCoEdges.put(address, coEdges);
 
