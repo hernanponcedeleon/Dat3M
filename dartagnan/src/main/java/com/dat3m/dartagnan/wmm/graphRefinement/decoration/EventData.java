@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.decoration;
 
+import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.Thread;
 
@@ -70,6 +71,14 @@ public class EventData implements Comparable<EventData> {
     public boolean isIfElse() {
         return event instanceof If;
     }
+
+    public boolean isExclusive() { return event.is(EType.EXCL); }
+
+    public boolean isLock() { return event.is(EType.LOCK); }
+
+    public boolean isRMW() { return event.is(EType.RMW); }
+
+    public boolean is(String type) { return event.is(type); }
 
     @Override
     public int hashCode() {

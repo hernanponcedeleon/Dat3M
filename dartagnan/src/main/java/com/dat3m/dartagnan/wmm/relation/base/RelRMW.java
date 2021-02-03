@@ -50,6 +50,8 @@ public class RelRMW extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             baseMaxTupleSet = new TupleSet();
+
+            // RMWLoad -> RMWStore
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
             for(Event store : program.getCache().getEvents(filter)){
             	if(store instanceof RMWStore) {
@@ -57,6 +59,7 @@ public class RelRMW extends StaticRelation {
             	}
             }
 
+            //Locks: Load -> CondJump -> Store
             filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.LOCK));
             for(Event e : program.getCache().getEvents(filter)){
             	if(e instanceof Load) {
@@ -71,6 +74,7 @@ public class RelRMW extends StaticRelation {
             maxTupleSet = new TupleSet();
             maxTupleSet.addAll(baseMaxTupleSet);
 
+            // LoadExcl -> StoreExcl
             for(Thread thread : program.getThreads()){
                 for(Event load : thread.getCache().getEvents(loadFilter)){
                     for(Event store : thread.getCache().getEvents(storeFilter)){

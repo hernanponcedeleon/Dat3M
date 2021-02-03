@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.graphRefinement.decoration.RelationData;
 import com.dat3m.dartagnan.wmm.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.SimpleGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Iterator;
 
@@ -50,10 +51,11 @@ public class StaticDefaultEventGraph extends StaticEventGraph {
     public void initialize(ModelContext context) {
         super.initialize(context);
         graph.initialize(context);
+        TupleSet maxTupleSet = relationData.getWrappedRelation().getMaxTupleSet();
         for (Tuple tuple : relationData.getWrappedRelation().getEncodeTupleSet()) {
             // Edges are present IFF the tuple is part of <encodeTupleSet> AND <maxTupleSet>
             // (due to negated edges, the <encodeTupleSet> is not necessarily subset of <maxTupleSet>)
-            if (!relationData.getWrappedRelation().getMaxTupleSet().contains(tuple))
+            if (!maxTupleSet.contains(tuple))
                 continue;
             Edge e = context.getEdge(tuple);
             if (e != null) {

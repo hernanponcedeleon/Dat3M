@@ -15,16 +15,16 @@ import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.binary.Composit
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.binary.IntersectionGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.binary.UnionGraph;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.LocationGraph;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.ProgramOrderGraph;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.ReadFromGraph;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.StaticDefaultEventGraph;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.*;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.unary.InverseGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.unary.RecursiveGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.unary.TransitiveGraph;
+import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelExt;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelPo;
 import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
@@ -178,8 +178,16 @@ public class ExecutionGraph {
             recGraph.setConcreteGraph(getGraphFromRelation(relData.getInner()));
             return recGraph;
         } else if (relData.isStaticRelation()) {
-            //TODO: Add all predefined static graphs (CartesianGraph, ExtGraph, ... etc.)
-            graph = new StaticDefaultEventGraph(relData);
+            if (relClass == RelCartesian.class) {
+                graph = new CartesianGraph(relData);
+            } else if (relClass == RelRMW.class) {
+                graph = new RMWGraph();
+            } else if (relClass == RelExt.class) {
+                graph = new ExternalGraph();
+            } else {
+                //TODO: Add all predefined static graphs (CartesianGraph, ExtGraph, ... etc.)
+                graph = new StaticDefaultEventGraph(relData);
+            }
         } else {
             throw new RuntimeException(new ClassNotFoundException(relClass.toString() + " is no supported relation class"));
         }

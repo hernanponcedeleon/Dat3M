@@ -141,8 +141,8 @@ public class GraphRefinement {
 
     /*
     kSearch performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
-    It returns whether it was successful, what violations where found (if any) and at which saturation depth
-    they were found.
+    It returns whether it was successful, what violations where found (if any) and the maximal saturation depth
+    that was used.
      */
     public RefinementResult kSearch(Model model, Context ctx, int maxSaturationDepth) {
         stats = new RefinementStats();
@@ -184,7 +184,10 @@ public class GraphRefinement {
                 // For k=0, it is impossible to exclude coherences since no search is happening at all
                 coSearchList.removeIf(this::coExists);
             }
-            //TODO: Maybe reset k, whenever progress is made?
+            /*TODO: Maybe reduce k, whenever progress is made?
+                if e.g. 2-SAT makes progress (finds some edge), then 1-SAT might be able to
+                make use of that progress.
+             */
         }
         // ==============================
 
@@ -328,6 +331,10 @@ public class GraphRefinement {
         return new DNF<>(res2.getClauses());
     }
 
+    /*
+    A simple heuristic which moves all coherences to the front, which involve
+    some write that was read from.
+     */
     private void sortCoSearchList(List<Edge> list) {
         int index = 0;
         EventGraph rf = execGraph.getRfGraph();
