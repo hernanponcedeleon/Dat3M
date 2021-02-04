@@ -242,6 +242,10 @@ public abstract class Event implements Comparable<Event> {
 		return cfVar;
 	}
 
+	public BoolExpr getCfCond(){
+		return cfCond;
+	}	
+	
 	public void addCfCond(Context ctx, BoolExpr cond){
 		cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
 	}
@@ -251,9 +255,9 @@ public abstract class Event implements Comparable<Event> {
 			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
 			cfEnc = ctx.mkEq(cfVar, cfCond);
 			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
-			if(successor != null){
-				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, cfVar));
-			}
+//			if(successor != null){
+//				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, cfVar));
+//			}
 		}
 		return cfEnc;
 	}
