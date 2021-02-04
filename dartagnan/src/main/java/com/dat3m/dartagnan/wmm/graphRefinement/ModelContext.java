@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
 import java.util.*;
@@ -257,7 +258,11 @@ public class ModelContext {
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
                     BoolExpr rf = Utils.edge("rf", write.getEvent(), read.getEvent(), context);
-                    if (model.getConstInterp(rf).isTrue()) {
+                    Expr rfInterp = model.getConstInterp(rf);
+                    // The null check is important: Currently there are cases where no rf-edge between
+                    // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
+                    // since in a well-initialized program, the init write should not be readable anyway.
+                    if ((rfInterp != null) && rfInterp.isTrue()) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
