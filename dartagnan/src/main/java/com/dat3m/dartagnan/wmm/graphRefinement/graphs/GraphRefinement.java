@@ -13,6 +13,11 @@ import com.dat3m.dartagnan.wmm.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.Literal;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.SortedClauseSet;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.timeable.Timestamp;
+import com.dat3m.dartagnan.wmm.graphRefinement.resolution.TreeResolution;
+import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.DecisionNode;
+import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.LeafNode;
+import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.SearchNode;
+import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.SearchTree;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;
 
@@ -133,11 +138,8 @@ public class GraphRefinement {
     */
 
 
+    // Statsistics of the last call to kSearch
     private RefinementStats stats;
-
-    // Returns the statistics associated with the last kSearch call, or NULL if no such call happened yet
-    public RefinementStats getStatistics() { return stats; }
-
 
     /*
     kSearch performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
@@ -145,8 +147,9 @@ public class GraphRefinement {
     that was used.
      */
     public RefinementResult kSearch(Model model, Context ctx, int maxSaturationDepth) {
-        stats = new RefinementStats();
         RefinementResult result = new RefinementResult();
+        stats = new RefinementStats();
+        result.setStats(stats);
 
         // ====== Populate from model ======
         long curTime = System.currentTimeMillis();
@@ -155,9 +158,10 @@ public class GraphRefinement {
         // =================================
 
         // ======= Initialize search =======
+        SearchTree sTree = new SearchTree();
         coreReasonsSorted.clear();
         possibleCoEdges.clear();
-        initSearch();
+        initSearch(sTree.getRoot());
 
         List<Edge> coSearchList = new ArrayList<>();
         for (Set<Edge> coEdges : possibleCoEdges.values()) {
@@ -169,13 +173,16 @@ public class GraphRefinement {
         // ========= Actual search =========
         curTime = System.currentTimeMillis();
         for (int k = 0; k <= maxSaturationDepth; k++) {
-            result.setSaturationDepth(k);
-            Result r = kSaturation(Timestamp.ZERO, k, coSearchList, 0);
+            stats.saturationDepth = k;
+            // There should always exist a single empty node unless we found a violation
+            SearchNode start = sTree.findNodes(SearchNode::isEmptyNode).get(0);
+            Result r = kSaturation(start, Timestamp.ZERO, k, coSearchList, 0);
             if (r != Result.UNKNOWN) {
                 result.setResult(r);
                 if (r == Result.FAIL) {
                     long temp = System.currentTimeMillis();
-                    result.setViolations(resolveViolations());
+                    //result.setViolations(resolveViolations());
+                    result.setViolations(computeResolventsFromTree(sTree));
                     stats.resolutionTime = System.currentTimeMillis() - temp;
                 }
                 break;
@@ -195,6 +202,14 @@ public class GraphRefinement {
         return result;
     }
 
+    private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
+        SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
+        SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
+        res.forEach(clause -> res2.add(clause.removeIf(x -> canBeRemoved(x, clause))));
+        res2.simplify();
+        return res2.toDNF();
+    }
+
 
 
     /*
@@ -202,12 +217,13 @@ public class GraphRefinement {
         that for each write-pair (w1,w2) there is exactly one edge in the list, either co(w1, w2) or
         co(w2, w1).
      */
-    private Result kSaturation(Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
+    private Result kSaturation(SearchNode node, Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
         if (k == 0) {
             // 0-SAT amounts to a simple violation check
             if (checkViolations()) {
                 long time = System.currentTimeMillis();
-                computeViolations();
+                //computeViolations();
+                node.replaceBy(new LeafNode(computeViolationList()));
                 stats.violationComputationTime += (System.currentTimeMillis() - time);
                 return Result.FAIL;
             } else if (searchList.subList(searchStart, searchList.size()).stream().allMatch(this::coExists)) {
@@ -229,18 +245,21 @@ public class GraphRefinement {
 
                 Timestamp nextTime = curTime.next();
                 coEdge = coEdge.withTimestamp(nextTime);
+                DecisionNode decNode = new DecisionNode(coEdge);
 
                 execGraph.addCoherenceEdge(coEdge);
                 stats.numGuessedCoherences++;
-                Result r = kSaturation(nextTime, k - 1, searchList, i + 1);
+                Result r = kSaturation(decNode.getPositive(), nextTime, k - 1, searchList, i + 1);
                 if (r == Result.PASS) {
                     return Result.PASS;
                 }
                 backtrackOn(nextTime);
 
                 if (r == Result.FAIL) {
+                    node.replaceBy(decNode);
+                    node = decNode.getNegative();
                     execGraph.addCoherenceEdge(coEdge.getInverse().withTimestamp(curTime));
-                    r = kSaturation(curTime, k - 1, searchList, i + 1);
+                    r = kSaturation(decNode.getNegative(), curTime, k - 1, searchList, i + 1);
                     if (r != Result.UNKNOWN) {
                         return r;
                     }
@@ -253,13 +272,15 @@ public class GraphRefinement {
                     Edge coEdgeInv = coEdge.getInverse().withTimestamp(nextTime);
                     execGraph.addCoherenceEdge(coEdgeInv);
                     stats.numGuessedCoherences++;
-                    r = kSaturation(nextTime, k - 1, searchList, i + 1);
+                    r = kSaturation(decNode.getNegative(), nextTime, k - 1, searchList, i + 1);
                     if (r == Result.PASS) {
                         return Result.PASS;
                     }
                     backtrackOn(nextTime);
 
                     if(r == Result.FAIL) {
+                        node.replaceBy(decNode);
+                        node = decNode.getPositive();
                         execGraph.addCoherenceEdge(coEdge.withTimestamp(curTime));
                     }
                 }
@@ -279,6 +300,27 @@ public class GraphRefinement {
         }
 
         return hasViolation;
+    }
+
+    private List<Conjunction<CoreLiteral>> computeViolationList() {
+        List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
+        for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
+            // Computes a single reason
+            /*Conjunction<CoreLiteral> clause = axiom.computeSomeReason();
+            if (!clause.isFalse()) {
+                coreReasonsSorted.add(clause.removeIf(x -> canBeRemoved(x, clause)));
+            }*/
+
+            // Computes many reasons
+            DNF<CoreLiteral> clauses = axiom.computeReasons();
+            if (!clauses.isFalse()) {
+                for (Conjunction<CoreLiteral> clause : clauses.getCubes()) {
+                    violations.add(clause.removeIf(x -> canBeRemoved(x, clause)));
+                }
+            }
+        }
+        stats.numComputedViolations += violations.size();
+        return violations;
     }
 
     private void computeViolations() {
@@ -355,7 +397,7 @@ public class GraphRefinement {
     }
 
 
-    private void initSearch() {
+    private void initSearch(SearchNode node) {
         for (Map.Entry<Long, Set<EventData>> addressedWrites : modelContext.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
             Long address = addressedWrites.getKey();
@@ -369,10 +411,15 @@ public class GraphRefinement {
                         continue;
 
                     if (e1.isInit() && !e2.isInit()) {
-                        execGraph.addCoherenceEdge(new Edge(e1, e2));
+                        Edge e = new Edge(e1, e2);
+                        execGraph.addCoherenceEdge(e);
                         // Test code: add violation for anti initial writes cause we will
                         // never search for them otherwise
-                        coreReasonsSorted.add( new Conjunction<>(new CoLiteral(new Edge(e2, e1))));
+                        DecisionNode decNode = new DecisionNode(e);
+                        node.replaceBy(decNode);
+                        decNode.getNegative().replaceBy(new LeafNode(new Conjunction<>(new CoLiteral(e.getInverse()))));
+                        node = decNode.getPositive();
+                        //coreReasonsSorted.add( new Conjunction<>(new CoLiteral(new Edge(e2, e1))));
                     } else if (!e1.isInit() && !e2.isInit()) {
                         coEdges.add(new Edge(e1, e2));
                     }

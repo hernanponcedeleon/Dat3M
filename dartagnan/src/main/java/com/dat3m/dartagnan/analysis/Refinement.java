@@ -87,7 +87,7 @@ public class Refinement {
             totalSolvingTime += (curTime - lastTime);
 
             RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
-            RefinementStats stats = refinement.getStatistics();
+            RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
             System.out.println(stats.toString());
 
@@ -193,7 +193,7 @@ public class Refinement {
             totalSolvingTime += (curTime - lastTime);
 
             RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
-            RefinementStats stats = refinement.getStatistics();
+            RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
             System.out.println(stats.toString());
 

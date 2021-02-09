@@ -8,7 +8,9 @@ import java.util.Set;
 
 public abstract class Equivalence<T> {
 
+    //  Maps each object <o> to its class representative
     protected Map<T, Representative> representativeMap;
+    // Maps each representative <r> to its represented class class(r)
     protected Map<Representative, Set<T>> classMap;
 
     public void setRepresentative(T x) {
@@ -40,6 +42,8 @@ public abstract class Equivalence<T> {
     }
 
 
+    // NOTE: We intentionally do NOT implement hashCode() and equals()
+    // If we did, we would break the classMap when changing the representative element of a class.
     public class Representative {
         private T data;
 

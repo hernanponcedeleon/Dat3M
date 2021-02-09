@@ -118,6 +118,12 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
         checkTriviality();
     }
 
+    public void addAll(Collection<Conjunction<T>> col) {
+        clauses.addAll(col);
+        clauses.sort(comparator);
+        checkTriviality();
+    }
+
     // Performs simple simplification to remove dominated clauses.
     // Should be highly performant
     // Assumes that clauses are ordered such that dominated clauses appear later (e.g. by sorting by size)
@@ -280,6 +286,10 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
                     .filter(Literal::hasOpposite)
                     .anyMatch(y -> !resolvableLiterals.contains(y.getOpposite())));
         } while (progress);
+    }
+
+    public DNF<T> toDNF() {
+        return new DNF<T>(clauses);
     }
 
 

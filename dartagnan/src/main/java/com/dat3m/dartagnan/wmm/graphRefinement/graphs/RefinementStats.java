@@ -7,6 +7,7 @@ public class RefinementStats {
     long violationComputationTime;
     int numGuessedCoherences;
     int numComputedViolations;
+    int saturationDepth;
 
     RefinementStats() {
         modelConstructionTime = 0;
@@ -15,6 +16,7 @@ public class RefinementStats {
         violationComputationTime = 0;
         numGuessedCoherences = 0;
         numComputedViolations = 0;
+        saturationDepth = 0;
     }
 
     public long getModelConstructionTime() { return modelConstructionTime; }
@@ -23,15 +25,17 @@ public class RefinementStats {
     public long getViolationComputationTime() { return violationComputationTime; }
     public int getNumGuessedCoherences() { return numGuessedCoherences; }
     public int getNumComputedViolations() { return numComputedViolations; }
+    public int getSaturationDepth() { return saturationDepth; }
 
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("Model construction time(ms): ").append(getModelConstructionTime()).append("\n");
         str.append("Violation computation time(ms): ").append(getViolationComputationTime()).append("\n");
         str.append("Resolution time(ms): ").append(getResolutionTime()).append("\n");
-        str.append("Search time(ms): ").append(getSearchTime()).append("\n");
+        str.append("Total search time(ms): ").append(getSearchTime()).append("\n");
         str.append("Guessings: ").append(numGuessedCoherences).append("\n");
         str.append("Computed violations: ").append(numComputedViolations).append("\n");
+        str.append("Saturation depth: ").append(saturationDepth).append("\n");
 
         return str.toString();
     }

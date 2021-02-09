@@ -38,7 +38,7 @@ public class BranchEquivalence extends Equivalence<Event> {
     }
 
     // We can merge all initial branches of threads. That is, all events that are guaranteed to be
-    // executed in every execution. In particular, this includes all init writes and init skips.
+    // part of every execution. In particular, this includes all init writes and init skips.
     private void mergeInitalBranches() {
         Representative initRep = new Representative(program.getThreads().get(0).getEntry());
         initialClass = new HashSet<>(100);
@@ -53,20 +53,22 @@ public class BranchEquivalence extends Equivalence<Event> {
     }
 
     // Only used for the following algo
-    // The implicationMap maps an event <e> to a set <reached> of events that
-    // is guaranteed(!) to be reached from <e>.
+    // The implicationMap maps a branch root event <e> to a set <reached> of events that
+    // is guaranteed(!) to be reached along the branch.
+    // NOTE: We might want to expose this map for further use
     private final Map<Event, Set<Event>> implicationMap = new HashMap<>();
 
     private void analyseBranch(Event e) {
         if (e == null || implicationMap.containsKey(e)) {
             return;
         }
+        // We have a new branch based in <e>. We use <e> as the representative of the class.
         Representative rep = new Representative(e);
-        Event succ = e;
 
         implicationMap.put(e, new HashSet<>());
         classMap.put(rep, new HashSet<>(10)); // Again, we have no estimate on class sizes
 
+        Event succ = e;
         do {
             implicationMap.get(e).add(succ);
             representativeMap.put(succ, rep);
@@ -121,13 +123,18 @@ public class BranchEquivalence extends Equivalence<Event> {
         HashSet<Event> commonSucc = new HashSet<>(implicationMap.get(firstBranch));
         commonSucc.retainAll(implicationMap.get(secondBranch));
         if(!commonSucc.isEmpty()) {
-            // We expect all common successors to be in the same equivalence class
+            // We expect all common successors to be in the same equivalence class (since we merge bottom-up)
+            // Move all common successors from their current class ...
             getEquivalenceClass(commonSucc.stream().findFirst().get()).removeAll(commonSucc);
+            // ... to their new class
             classMap.get(rep).addAll(commonSucc);
+            // Update the representatives for all moved events
             for (Event e : commonSucc) {
                 representativeMap.put(e, rep);
             }
+            // Add common successors to the implication map of their new branching root
             implicationMap.get(rep.getData()).addAll(commonSucc);
+
             // Note: Do we need to update the representative event of the branches? Probably not, since it
             // should always be the first event, which does not get lifted to a new class.
             // And if it does get lifted, the branch class will be empty and gets removed anyway.
