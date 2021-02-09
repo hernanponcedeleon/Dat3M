@@ -7,6 +7,9 @@ public class DecisionNode extends SearchNode {
     SearchNode positive;
     SearchNode negative;
 
+    public SearchNode getPositive() { return positive; }
+    public SearchNode getNegative() { return negative; }
+
 
     public DecisionNode(CoreLiteral choiceLiteral) {
         this.chosenLiteral = choiceLiteral;

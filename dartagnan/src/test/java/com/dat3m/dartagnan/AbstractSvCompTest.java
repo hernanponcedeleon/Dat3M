@@ -38,7 +38,7 @@ public abstract class AbstractSvCompTest {
         this.settings = settings;
     }
 
-    @Test(timeout = 180000)
+    //@Test(timeout = 180000)
     public void test() {
         Context ctx = null;
         try {
@@ -95,7 +95,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = 180000)
+    //@Test(timeout = 180000)
     public void testRefinementNoCo() {
         Context ctx = null;
         try {

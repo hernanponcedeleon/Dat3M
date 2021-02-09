@@ -5,22 +5,21 @@ import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.DNF;
 
 public class RefinementResult {
-    Result result;
-    DNF<CoreLiteral> violations;
-    int saturationDepth;
+    private Result result;
+    private DNF<CoreLiteral> violations;
+    private RefinementStats stats;
 
     public Result getResult() { return result; }
     public DNF<CoreLiteral> getViolations() { return violations; }
-    public int getSaturationDepth() { return saturationDepth; }
+    public RefinementStats getStatistics() { return stats; }
 
-    public void setResult(Result res) { result = res; }
-    public void setViolations(DNF<CoreLiteral> violations) { this.violations = violations; }
-    public void setSaturationDepth(int depth) { this.saturationDepth = depth;}
+    void setResult(Result res) { result = res; }
+    void setViolations(DNF<CoreLiteral> violations) { this.violations = violations; }
+    void setStats(RefinementStats stats) { this.stats = stats; }
 
     public RefinementResult() {
         result = Result.UNKNOWN;
         violations = DNF.FALSE;
-        saturationDepth = 0;
     }
 
 }

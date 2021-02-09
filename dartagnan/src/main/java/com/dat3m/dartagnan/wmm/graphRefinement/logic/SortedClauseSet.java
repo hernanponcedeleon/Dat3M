@@ -118,6 +118,12 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
         checkTriviality();
     }
 
+    public void addAll(Collection<Conjunction<T>> col) {
+        clauses.addAll(col);
+        clauses.sort(comparator);
+        checkTriviality();
+    }
+
     // Performs simple simplification to remove dominated clauses.
     // Should be highly performant
     // Assumes that clauses are ordered such that dominated clauses appear later (e.g. by sorting by size)
