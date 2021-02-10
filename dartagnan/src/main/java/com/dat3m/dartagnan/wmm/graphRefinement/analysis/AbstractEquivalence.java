@@ -47,7 +47,10 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         Representative rep = new Representative(x);
         HashSet<T> classSet = new HashSet<>(initialCapacity);
         classSet.add(x);
-        representativeMap.put(x, rep);
+        Representative oldRep = representativeMap.put(x, rep);
+        if (oldRep != null) {
+            classMap.get(oldRep).remove(x);
+        }
         classMap.put(rep, classSet);
         return rep;
     }

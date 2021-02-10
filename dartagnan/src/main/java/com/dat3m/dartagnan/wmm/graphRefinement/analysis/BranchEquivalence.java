@@ -60,6 +60,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     // is guaranteed(!) to be reached along the branch.
     // NOTE: We might want to expose this map for further use
     private final Map<Event, Set<Event>> implicationMap = new HashMap<>();
+    //private final Map<Event, Set<>>
 
     private void analyseBranch(Event e) {
         if (e == null || implicationMap.containsKey(e)) {
@@ -74,6 +75,13 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
         Event succ = e;
         do {
+            if (succ != e && representativeMap.containsKey(succ)) {
+                // Successor was already visited but is not itself a branch
+                analyseBranch(succ);
+                implicationMap.get(e).addAll(implicationMap.get(succ));
+                return;
+
+            }
             implicationMap.get(e).add(succ);
             addToClass(succ, rep);
             /*representativeMap.put(succ, rep);
