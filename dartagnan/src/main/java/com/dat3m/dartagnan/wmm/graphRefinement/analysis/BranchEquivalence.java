@@ -9,7 +9,7 @@ import java.util.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.If;
 
-public class BranchEquivalence extends Equivalence<Event> {
+public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private final Program program;
     private Set<Event> initialClass;
@@ -21,6 +21,8 @@ public class BranchEquivalence extends Equivalence<Event> {
     public boolean isGuaranteedEvent(Event e) {
         return initialClass.contains(e);
     }
+
+    public Set<Event> getInitialClass() { return Collections.unmodifiableSet(initialClass); }
 
     public BranchEquivalence(Program program) {
         if (!program.isCompiled())
@@ -34,12 +36,13 @@ public class BranchEquivalence extends Equivalence<Event> {
         // Because on merging branches we move events from one class to a different one,
         // we might end up with empty classes.
         classMap.values().removeIf(Set::isEmpty);
-        mergeInitalBranches();
+        mergeInitialBranches();
     }
 
     // We can merge all initial branches of threads. That is, all events that are guaranteed to be
     // part of every execution. In particular, this includes all init writes and init skips.
-    private void mergeInitalBranches() {
+    private void mergeInitialBranches() {
+
         Representative initRep = new Representative(program.getThreads().get(0).getEntry());
         initialClass = new HashSet<>(100);
         classMap.put(initRep, initialClass);
@@ -63,16 +66,18 @@ public class BranchEquivalence extends Equivalence<Event> {
             return;
         }
         // We have a new branch based in <e>. We use <e> as the representative of the class.
-        Representative rep = new Representative(e);
-
-        implicationMap.put(e, new HashSet<>());
+        Representative rep = makeNewClass(e, 10);
+        /*Representative rep = new Representative(e);
         classMap.put(rep, new HashSet<>(10)); // Again, we have no estimate on class sizes
+         */
+        implicationMap.put(e, new HashSet<>());
 
         Event succ = e;
         do {
             implicationMap.get(e).add(succ);
-            representativeMap.put(succ, rep);
-            classMap.get(rep).add(succ);
+            addToClass(succ, rep);
+            /*representativeMap.put(succ, rep);
+            classMap.get(rep).add(succ);*/
 
             if (succ instanceof CondJump) {
                 CondJump jump = (CondJump)succ;
@@ -127,13 +132,15 @@ public class BranchEquivalence extends Equivalence<Event> {
             // Move all common successors from their current class ...
             getEquivalenceClass(commonSucc.stream().findFirst().get()).removeAll(commonSucc);
             // ... to their new class
-            classMap.get(rep).addAll(commonSucc);
+            addAllToClass(commonSucc, rep);
+            /*rep.getEquivalenceClass().addAll(commonSucc);
+            //classMap.get(rep).addAll(commonSucc);
             // Update the representatives for all moved events
             for (Event e : commonSucc) {
                 representativeMap.put(e, rep);
-            }
+            }*/
             // Add common successors to the implication map of their new branching root
-            implicationMap.get(rep.getData()).addAll(commonSucc);
+            implicationMap.get(rep.getRepresentative()).addAll(commonSucc);
 
             // Note: Do we need to update the representative event of the branches? Probably not, since it
             // should always be the first event, which does not get lifted to a new class.

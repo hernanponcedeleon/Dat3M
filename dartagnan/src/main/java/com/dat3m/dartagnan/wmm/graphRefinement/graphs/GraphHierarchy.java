@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.GraphListener;
 import java.util.*;
 
 //TODO: Maybe add a concrete way of backtracking
+
 // This class should manage a hierarchy of event graphs such that the following operations are supported:
 // (1) Adding edges and propagating changes
 // (2) Backtracking to a previous state
