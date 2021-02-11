@@ -9,6 +9,11 @@ import java.util.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.If;
 
+//TODO: We need to rework our approach.
+// A single linear parse with "branching nodes" and "must-successor sets" seems to be not enough
+// We probably also need "merge nodes" and "must-predecessor" sets
+// This will require a top-down and a bottom-up parse of the Control Flow DAG
+// Then we have: cf(e1) <=> cf(e2) if  (e2 \in must-succ(e1) AND e1 \in must-pred(e2) or vice versa)
 public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private final Program program;
@@ -36,7 +41,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         // Because on merging branches we move events from one class to a different one,
         // we might end up with empty classes.
         classMap.values().removeIf(Set::isEmpty);
+        //implicationMap.keySet().removeIf(x -> getRepresentative(x) != x);
         mergeInitialBranches();
+        implicationMap.keySet().removeIf(x -> getRepresentative(x) != x);
     }
 
     // We can merge all initial branches of threads. That is, all events that are guaranteed to be
@@ -60,32 +67,26 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     // is guaranteed(!) to be reached along the branch.
     // NOTE: We might want to expose this map for further use
     private final Map<Event, Set<Event>> implicationMap = new HashMap<>();
-    //private final Map<Event, Set<>>
 
     private void analyseBranch(Event e) {
         if (e == null || implicationMap.containsKey(e)) {
+            // There is no branch OR the event is already the root of an analysed branch
             return;
         }
-        // We have a new branch based in <e>. We use <e> as the representative of the class.
+
+        // There are 2 cases:
+        // (1) The event <e> was never visited before
+        // (2) The event <e> was visited before as part of another branch
+        // In either case, we start a new branch in <e>
+        Representative oldRep = representativeMap.get(e);
         Representative rep = makeNewClass(e, 10);
-        /*Representative rep = new Representative(e);
-        classMap.put(rep, new HashSet<>(10)); // Again, we have no estimate on class sizes
-         */
         implicationMap.put(e, new HashSet<>());
 
         Event succ = e;
         do {
-            if (succ != e && representativeMap.containsKey(succ)) {
-                // Successor was already visited but is not itself a branch
-                analyseBranch(succ);
-                implicationMap.get(e).addAll(implicationMap.get(succ));
-                return;
-
-            }
+            // <succ> was not visited before, and hence is added to our current branch
             implicationMap.get(e).add(succ);
             addToClass(succ, rep);
-            /*representativeMap.put(succ, rep);
-            classMap.get(rep).add(succ);*/
 
             if (succ instanceof CondJump) {
                 CondJump jump = (CondJump)succ;
@@ -122,10 +123,22 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 succ = succ.getSuccessor();
             }
 
-            if (implicationMap.containsKey(succ)) {
+            /*if (implicationMap.containsKey(succ)) {
                 // We merged into an already visited branch and can short-circuit
                 implicationMap.get(e).addAll(implicationMap.get(succ));
                 return;
+            }*/
+
+            Representative succRep = representativeMap.get(succ);
+            if (succRep != null && !(succRep == oldRep)) {
+                // The event <succ> was already visited so we short circuit
+                if (!implicationMap.containsKey(succ)) {
+                    // <succ> is not yet the root of a branch
+                    analyseBranch(succ);
+                }
+                implicationMap.get(e).addAll(implicationMap.get(succ));
+                return;
+
             }
 
         } while (succ != null);
@@ -137,16 +150,13 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         commonSucc.retainAll(implicationMap.get(secondBranch));
         if(!commonSucc.isEmpty()) {
             // We expect all common successors to be in the same equivalence class (since we merge bottom-up)
-            // Move all common successors from their current class ...
-            getEquivalenceClass(commonSucc.stream().findFirst().get()).removeAll(commonSucc);
-            // ... to their new class
+
+            // NOTE: The representative of the class of common successors may itself not be
+            // in the set of common successors. This can happen due to
+            // early merging if there are more than 2 branches merging at the same event!
+
+            implicationMap.keySet().removeAll(commonSucc);
             addAllToClass(commonSucc, rep);
-            /*rep.getEquivalenceClass().addAll(commonSucc);
-            //classMap.get(rep).addAll(commonSucc);
-            // Update the representatives for all moved events
-            for (Event e : commonSucc) {
-                representativeMap.put(e, rep);
-            }*/
             // Add common successors to the implication map of their new branching root
             implicationMap.get(rep.getRepresentative()).addAll(commonSucc);
 

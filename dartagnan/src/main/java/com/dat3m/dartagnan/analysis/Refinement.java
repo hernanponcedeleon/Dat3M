@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.analysis;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -150,6 +151,7 @@ public class Refinement {
         GraphRefinement refinement = new GraphRefinement(verificationContext);
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+        BranchEquivalence eq = verificationContext.computeBranchEquivalence();
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
         program.updateAssertion();
