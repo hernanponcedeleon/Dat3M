@@ -14,6 +14,10 @@ import com.dat3m.dartagnan.program.event.If;
 // We probably also need "merge nodes" and "must-predecessor" sets
 // This will require a top-down and a bottom-up parse of the Control Flow DAG
 // Then we have: cf(e1) <=> cf(e2) if  (e2 \in must-succ(e1) AND e1 \in must-pred(e2) or vice versa)
+
+// Current workings: A branch gets linearly scanned until some branching event happens.
+// In that case, we split into two new branches and recursively work on them.
+//
 public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private final Program program;
@@ -131,7 +135,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
             Representative succRep = representativeMap.get(succ);
             if (succRep != null && !(succRep == oldRep)) {
-                // The event <succ> was already visited so we short circuit
+                // The event <succ> was already visited and is part of another branch
                 if (!implicationMap.containsKey(succ)) {
                     // <succ> is not yet the root of a branch
                     analyseBranch(succ);

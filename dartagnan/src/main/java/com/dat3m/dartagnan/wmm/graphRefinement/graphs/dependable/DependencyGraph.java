@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.graphs.dependable;
 
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.util.ListUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DependencyGraph<T extends Dependent<? extends T>> {
     private final Map<T, Node> nodeMap;
@@ -26,6 +28,10 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
 
     public T getRootContent() {
         return nodeList.get(0).getContent();
+    }
+
+    public Set<Set<Node>> getSCCs() {
+        return nodeList.stream().map(Node::getSCC).collect(Collectors.toSet());
     }
 
     private Node getNodeInternal(T item) {

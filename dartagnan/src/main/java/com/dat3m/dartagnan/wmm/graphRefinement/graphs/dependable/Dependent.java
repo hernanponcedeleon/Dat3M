@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.graphs.dependable;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public interface Dependent<T> {
-    List<T> getDependencies();
+    Collection<T> getDependencies();
 
 
     default boolean isStatic() {

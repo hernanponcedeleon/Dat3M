@@ -4,12 +4,13 @@ import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.EventLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.EventData;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.AbstractEventGraph;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.timeable.Timestamp;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 

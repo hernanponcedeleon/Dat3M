@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.DerivedEventGra
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.EventGraph;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public abstract class BinaryEventGraph extends DerivedEventGraph {

@@ -132,6 +132,10 @@ public abstract class Event implements Comparable<Event> {
     	listeners.add(e);
     }
 
+    public Set<Event> getListeners() {
+		return listeners;
+	}
+
     public void notify(Event e) {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }

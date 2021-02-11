@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.decoration;
 
-import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.graphRefinement.edgeSet.EdgeSet;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.dependable.Dependent;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
