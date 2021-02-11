@@ -60,9 +60,16 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
             Map<Event, Branch> branchMap = new HashMap<>();
             findBranch(t.getEntry(), branchMap);
             // Step (4)
-            for (Branch b : branchMap.values())
+            for (Branch b : branchMap.values()) {
                 computeMustPredSet(b);
+            }
 
+            for(Branch branch : branchMap.values()) {
+                Representative rep = makeNewClass(branch.getRoot(), branch.events.size());
+                addAllToClass(branch.events, rep);
+            }
+
+            /*
             //Step (5)-(6)
             DependencyGraph<Branch> depGraph = new DependencyGraph<>(branchMap.values());
             for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
@@ -74,6 +81,7 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
                     addAllToClass(node.getContent().events, rep);;
                 }
             }
+             */
         }
 
         classMap.values().removeIf(Set::isEmpty);
