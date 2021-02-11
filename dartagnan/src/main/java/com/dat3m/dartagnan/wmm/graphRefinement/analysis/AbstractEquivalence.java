@@ -67,7 +67,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
     protected void addAllToClass(Collection<T> col, Representative classRep) {
         for (T x : col) {
             Representative oldRep = representativeMap.put(x, classRep);
-            if (oldRep != null) {
+            if (oldRep != null && (oldRep != classRep)) {
                 // <x> was in a different class before
                 classMap.get(oldRep).remove(x);
             }

@@ -1,27 +1,43 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.analysis;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.If;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.dependable.DependencyGraph;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.dependable.Dependent;
 
 import java.util.*;
 
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.If;
-
-//TODO: We need to rework our approach.
-// A single linear parse with "branching nodes" and "must-successor sets" seems to be not enough
-// We probably also need "merge nodes" and "must-predecessor" sets
-// This will require a top-down and a bottom-up parse of the Control Flow DAG
-// Then we have: cf(e1) <=> cf(e2) if  (e2 \in must-succ(e1) AND e1 \in must-pred(e2) or vice versa)
-
-// Current workings: A branch gets linearly scanned until some branching event happens.
-// In that case, we split into two new branches and recursively work on them.
-//
+/* Procedure:
+   (1) Find all branches using
+        - Branching events (Jumps, ifs)
+        - Merging events (events with at least 1 non-trivial listener or successors of If-nodes)
+       The branches of the CFG can be reduced to a single node.
+       In the following we work in this reduced CFG.
+   (2) Compute the Must-Successors of each branch
+        - This CANNOT be done during step (1), if If-Statements are involves
+   (3) Compute the Must-Predecessors of each branch
+        - Towards this, we compute backward edges during (1)
+        - Essentially, we run the Must-Successor computation on the dual graph
+   (4) Build a branch graph with edges b1 -> b2 IFF
+        - b2 is must-pred or must-succ of b1
+   (5) Find all SCCs which will form our equivalence classes
+        - Here we use the fact that any cycle must contain a forward edge and a backward edge
+         which will give use the implications (b1 => b2 and b2 => b1)
+   (6) Merge all initial classes
+   (7) Compute the class of all unreachable events.
+*/
 public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private final Program program;
+
     private Set<Event> initialClass;
+    private Set<Event> unreachableClass;
 
     public Program getProgram() {
         return program;
@@ -31,142 +47,249 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return initialClass.contains(e);
     }
 
+    public boolean isUnreachableEvent(Event e) { return unreachableClass.contains(e); }
+
     public Set<Event> getInitialClass() { return Collections.unmodifiableSet(initialClass); }
 
+    public Set<Event> getUnreachableClass() { return Collections.unmodifiableSet(unreachableClass); }
+
+
     public BranchEquivalence(Program program) {
+        this.program = program;
         if (!program.isCompiled())
             throw new IllegalArgumentException("The program needs to be compiled first.");
 
-        this.program = program;
-
-        for (Thread t : program.getThreads())
-            analyseBranch(t.getEntry());
-
-        // Because on merging branches we move events from one class to a different one,
-        // we might end up with empty classes.
-        classMap.values().removeIf(Set::isEmpty);
-        //implicationMap.keySet().removeIf(x -> getRepresentative(x) != x);
+        for (Thread t : program.getThreads()) {
+            // Step (1)
+            Map<Event, Branch> branchMap = new HashMap<>();
+            Map<Event, Branch> finalBranchMap = new HashMap<>();
+            computeBranches(t.getEntry(), branchMap, finalBranchMap);
+            // Step (2)-(3)
+            for (Branch b : branchMap.values()) {
+                computeMustPredSet(b);
+                computeMustSuccSet(b);
+            }
+            //Step (4)-(5)
+            mergeThreadBranches(branchMap.values());
+        }
+        // Step (6)
         mergeInitialBranches();
-        implicationMap.keySet().removeIf(x -> getRepresentative(x) != x);
+        // Step (7)
+        computeUnreachableClass();
+
     }
 
-    // We can merge all initial branches of threads. That is, all events that are guaranteed to be
-    // part of every execution. In particular, this includes all init writes and init skips.
-    private void mergeInitialBranches() {
-
-        Representative initRep = new Representative(program.getThreads().get(0).getEntry());
-        initialClass = new HashSet<>(100);
-        classMap.put(initRep, initialClass);
+    private void computeUnreachableClass() {
+        unreachableClass = new HashSet<>();
         for (Thread t : program.getThreads()) {
-            Set<Event> initBranch = getEquivalenceClass(t.getEntry());
-            classMap.remove(representativeMap.get(t.getEntry()));
+            t.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
+                    .filter(x -> !representativeMap.containsKey(x)).forEach(unreachableClass::add);
+        }
+        if (!unreachableClass.isEmpty()) {
+            Event minEvent = unreachableClass.stream().findFirst().get();
+            Representative rep = new Representative(minEvent);
+            classMap.put(rep, unreachableClass);
+            for (Event e : unreachableClass) {
+                representativeMap.put(e, rep);
+                if (e.getCId() < minEvent.getCId()) {
+                    minEvent = e;
+                }
+            }
+            makeRepresentative(minEvent);
+        }
+    }
+
+    private void mergeThreadBranches(Collection<Branch> branches) {
+        DependencyGraph<Branch> depGraph = new DependencyGraph<>(branches);
+        for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
+            Event minEvent = null;
+            Set<Event> eqClass = new HashSet<>();
+
+            for (DependencyGraph<Branch>.Node node : scc) {
+                Branch b = node.getContent();
+                eqClass.addAll(b.events);
+                Event root = b.getRoot();
+                if (minEvent == null || root.getCId() < minEvent.getCId()) {
+                    minEvent = root;
+                }
+            }
+
+            Representative rep = new Representative(minEvent);
+            classMap.put(rep, eqClass);
+            for (Event e : eqClass) {
+                representativeMap.put(e, rep);
+            }
+        }
+    }
+
+    private void mergeInitialBranches() {
+        Representative initRep = representativeMap.get(program.getThreads().get(0).getEntry());
+        initialClass = classMap.get(initRep);
+        for (int i = 1; i < program.getThreads().size(); i++) {
+            Event entry = program.getThreads().get(i).getEntry();
+            Set<Event> initBranch = getEquivalenceClass(entry);
             initialClass.addAll(initBranch);
+            classMap.remove(representativeMap.get(entry));
             for (Event e : initBranch)
                 representativeMap.put(e, initRep);
         }
     }
 
-    // Only used for the following algo
-    // The implicationMap maps a branch root event <e> to a set <reached> of events that
-    // is guaranteed(!) to be reached along the branch.
-    // NOTE: We might want to expose this map for further use
-    private final Map<Event, Set<Event>> implicationMap = new HashMap<>();
 
-    private void analyseBranch(Event e) {
-        if (e == null || implicationMap.containsKey(e)) {
-            // There is no branch OR the event is already the root of an analysed branch
+    private void computeMustPredSet(Branch b) {
+        if (b.mustPredComputed)
             return;
+
+        Set<Branch> commonPred = null;
+        for (Branch br : b.parents) {
+            computeMustPredSet(br);
+            if (commonPred == null) {
+                commonPred = new HashSet<>(br.mustPred);
+            } else {
+                commonPred.retainAll(br.mustPred);
+            }
+        }
+        if (commonPred != null) {
+            b.mustPred.addAll(commonPred);
+        }
+        b.mustPredComputed = true;
+    }
+
+    private void computeMustSuccSet(Branch b) {
+        if (b.mustSuccComputed)
+            return;
+
+        Set<Branch> commonSucc = null;
+        for (Branch br : b.children) {
+            computeMustSuccSet(br);
+            if (commonSucc == null) {
+                commonSucc = new HashSet<>(br.mustSucc);
+            } else {
+                commonSucc.retainAll(br.mustSucc);
+            }
+        }
+        if (commonSucc != null) {
+            b.mustSucc.addAll(commonSucc);
+        }
+        b.mustSuccComputed = true;
+    }
+
+
+
+
+    public Branch computeBranches(Event start, Map<Event, Branch> branchMap, Map<Event, Branch> finalBranchMap) {
+        if ( branchMap.containsKey(start)) {
+            // <start> was already visited
+            return branchMap.get(start);
         }
 
-        // There are 2 cases:
-        // (1) The event <e> was never visited before
-        // (2) The event <e> was visited before as part of another branch
-        // In either case, we start a new branch in <e>
-        Representative oldRep = representativeMap.get(e);
-        Representative rep = makeNewClass(e, 10);
-        implicationMap.put(e, new HashSet<>());
-
-        Event succ = e;
+        Branch b = new Branch(start);
+        branchMap.put(start, b);
+        Event succ = start;
         do {
-            // <succ> was not visited before, and hence is added to our current branch
-            implicationMap.get(e).add(succ);
-            addToClass(succ, rep);
-
             if (succ instanceof CondJump) {
-                CondJump jump = (CondJump)succ;
+                CondJump jump = (CondJump) succ;
                 if (jump.isGoto()) {
                     // There is only one branch we can proceed on so we don't need to split the current branch
                     succ = jump.getLabel();
                 } else {
                     // Split into two branches...
-                    analyseBranch(jump.getSuccessor());
-                    analyseBranch(jump.getLabel());
-                    // ... and merge in case both branches have common successors
-                    mergeBranches(rep, jump.getSuccessor(), jump.getLabel());
-                    return;
+                    Branch b1 = computeBranches(jump.getSuccessor(), branchMap, finalBranchMap);
+                    Branch b2 = computeBranches(jump.getLabel(), branchMap, finalBranchMap);
+                    b1.parents.add(b);
+                    b.children.add(b1);
+                    b2.parents.add(b);
+                    b.children.add(b2);
+                    return b;
                 }
             } else if (succ instanceof If) {
                 If ifElse = (If)succ;
-                // Look at if and else branches...
-                analyseBranch(ifElse.getSuccessorMainBranch());
-                analyseBranch(ifElse.getSuccessorElseBranch());
+                Branch bSucc = null;
 
-                if (implicationMap.get(ifElse.getSuccessorMainBranch()).contains(ifElse.getExitMainBranch())
-                    && implicationMap.get(ifElse.getSuccessorElseBranch()).contains(ifElse.getExitElseBranch())) {
-                    /*mergeBranches(rep, ifElse.getSuccessorMainBranch(), ifElse.getSuccessorElseBranch());*/
-                    // ... and if both branches always terminate, we can proceed on the main branch
-                    succ = ifElse.getSuccessor();
-                } else {
-                    // ... if either the if or the else branch does NOT necessarily terminate,
-                    // then we need to end the current branch and open a new branch starting after the if-else.
-                    analyseBranch(ifElse.getSuccessor());
-                    return;
+                if (ifElse.getSuccessor() != null) {
+                    // There is this odd case that a final If
+                    // has no successor
+                    bSucc = computeBranches(ifElse.getSuccessor(), branchMap, finalBranchMap);
                 }
+                // Look at if and else branches...
+                Branch bMain = computeBranches(ifElse.getSuccessorMainBranch(), branchMap, finalBranchMap);
+                Branch bElse = computeBranches(ifElse.getSuccessorElseBranch(), branchMap, finalBranchMap);
+
+                b.children.add(bMain);
+                bMain.parents.add(b);
+                b.children.add(bElse);
+                bElse.parents.add(b);
+
+                // Get the last branch from the if/else branches ...
+                Branch bMainFinal = finalBranchMap.get(ifElse.getExitMainBranch());
+                Branch bElseFinal = finalBranchMap.get(ifElse.getExitElseBranch());
+                // ... and connect them with the successor branch of the if
+                if (bMainFinal != null && bSucc != null) {
+                    bSucc.parents.add(bMainFinal);
+                    bMainFinal.children.add(bSucc);
+                }
+                if (bElseFinal != null && bSucc != null) {
+                    bSucc.parents.add(bElseFinal);
+                    bElseFinal.children.add(bSucc);
+                }
+
+
+                return b;
+
             } else {
                 // No branching happened, thus we stay on the current branch
                 succ = succ.getSuccessor();
             }
 
-            /*if (implicationMap.containsKey(succ)) {
-                // We merged into an already visited branch and can short-circuit
-                implicationMap.get(e).addAll(implicationMap.get(succ));
-                return;
-            }*/
-
-            Representative succRep = representativeMap.get(succ);
-            if (succRep != null && !(succRep == oldRep)) {
-                // The event <succ> was already visited and is part of another branch
-                if (!implicationMap.containsKey(succ)) {
-                    // <succ> is not yet the root of a branch
-                    analyseBranch(succ);
-                }
-                implicationMap.get(e).addAll(implicationMap.get(succ));
-                return;
-
+            if (succ == null) {
+                finalBranchMap.put(b.events.get(b.events.size() - 1), b);
+                return b;
+            } else if (!succ.getListeners().isEmpty() || branchMap.containsKey(succ)) {
+                // We ran into a merge point
+                Branch b1 = computeBranches(succ, branchMap, finalBranchMap);
+                b1.parents.add(b);
+                b.children.add(b1);
+                return b;
+            } else {
+                b.events.add(succ);
             }
 
-        } while (succ != null);
+        } while (true);
     }
 
-    // Merges the common successors of two branches into the parent branch given by a representative <rep>.
-    private void mergeBranches(Representative rep, Event firstBranch, Event secondBranch) {
-        HashSet<Event> commonSucc = new HashSet<>(implicationMap.get(firstBranch));
-        commonSucc.retainAll(implicationMap.get(secondBranch));
-        if(!commonSucc.isEmpty()) {
-            // We expect all common successors to be in the same equivalence class (since we merge bottom-up)
 
-            // NOTE: The representative of the class of common successors may itself not be
-            // in the set of common successors. This can happen due to
-            // early merging if there are more than 2 branches merging at the same event!
+    private static class Branch implements Dependent<Branch> {
+        //Representative representative;
+        final Set<Branch> children = new HashSet<>();
+        final Set<Branch> parents = new HashSet<>();
+        final Set<Branch> mustSucc = new HashSet<>();
+        final Set<Branch> mustPred = new HashSet<>();
+        final List<Event> events = new ArrayList<>();
 
-            implicationMap.keySet().removeAll(commonSucc);
-            addAllToClass(commonSucc, rep);
-            // Add common successors to the implication map of their new branching root
-            implicationMap.get(rep.getRepresentative()).addAll(commonSucc);
+        boolean mustPredComputed = false;
+        boolean mustSuccComputed = false;
 
-            // Note: Do we need to update the representative event of the branches? Probably not, since it
-            // should always be the first event, which does not get lifted to a new class.
-            // And if it does get lifted, the branch class will be empty and gets removed anyway.
+        public Branch(Event root) {
+            mustPred.add(this);
+            mustSucc.add(this);
+            events.add(root);
+        }
+
+
+        @Override
+        public Collection<Branch> getDependencies() {
+            Set<Branch> branches = new HashSet<>(mustSucc);
+            branches.addAll(mustPred);
+            return branches;
+        }
+
+        public Event getRoot() {
+            return events.get(0);
+        }
+
+        @Override
+        public String toString() {
+            return getRoot().toString();
         }
     }
 
