@@ -152,6 +152,9 @@ public class Refinement {
         GraphRefinement refinement = new GraphRefinement(verificationContext);
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+        List<Event> events = program.getEvents();
+        BranchEquivalence eq = new BranchEquivalence(program);
+        BranchEquivalenceNew neq = new BranchEquivalenceNew(program);
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
         program.updateAssertion();

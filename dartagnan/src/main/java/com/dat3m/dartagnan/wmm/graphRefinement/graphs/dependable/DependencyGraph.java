@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 public class DependencyGraph<T extends Dependent<? extends T>> {
     private final Map<T, Node> nodeMap;
     private List<Node> nodeList;
+    private List<Set<Node>> sccs;
 
     public Node get(T item) {
         return nodeMap.get(item);
@@ -30,8 +31,8 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
         return nodeList.get(0).getContent();
     }
 
-    public Set<Set<Node>> getSCCs() {
-        return nodeList.stream().map(Node::getSCC).collect(Collectors.toSet());
+    public Collection<Set<Node>> getSCCs() {
+        return Collections.unmodifiableList(sccs);
     }
 
     private Node getNodeInternal(T item) {
@@ -46,6 +47,7 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
 
     public DependencyGraph(final Collection<T> items) {
         nodeMap = new HashMap<>();
+        sccs = new ArrayList<>();
 
         items.forEach(this::getNodeInternal);
         initializeNodes();
@@ -98,6 +100,8 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
             node.getDependents().sort(cmp);
         }
 
+        Collections.reverse(sccs);
+
     }
 
     private void strongConnect(Node v) {
@@ -119,6 +123,7 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
 
         if (v.lowlink == v.index) {
             Set<Node> scc = new HashSet<>();
+            sccs.add(scc);
             v.topologicalIndex = ++topIndex;
             Node w;
             do {

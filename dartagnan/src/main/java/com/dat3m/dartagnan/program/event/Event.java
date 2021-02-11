@@ -45,6 +45,7 @@ public abstract class Event implements Comparable<Event> {
         this.cLine = other.cLine;
         this.filter = other.filter;
         this.thread = other.thread;
+		this.listeners = other.listeners;
     }
 
 	public int getOId() {

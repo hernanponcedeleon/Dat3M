@@ -20,19 +20,18 @@ import java.util.*;
   (1) Find all branches using
     - Branching nodes (Jumps, ifs)
     - Merging nodes (nodes with at least 1 non-trivial listener)
-   (2) Put all these branches into their own equivalence class (this effectively reduces the graph)
-   (3) Store an implicationMap "Branch -> Must-Succ Branches"
-   (4) Reverse the graph and compute the "Branch -> Must-Pred Branches" map
-        - To reverse the graph, we should construct a parent map
-          while computing the branches
-        - This can automatically solve the problem of dead code
-   (5) Build a branch graph where two branches (b1, b2) are connected if
-        - cid(b1) < cid(b2) and b2 is must-succ of b1
-        - OR cid(b2) < cid(b1) and b2 is must-pred of b1
+   (2) Put all these branches into their own equivalence class
+        - This effectively computes a CFG where each branch is merged into a single node
+   (3) Compute the Must-Successors of each branch
+        - This can be done during step (1)
+   (4) Compute the Must-Predecessors of each branch
+        - Towards this, we compute backward edges during (1)
+        - Essentially, we run the Must-Successor computation on the dual graph
+   (5) Build a branch graph with edges b1 -> b2 IFF
+        - b2 is must-pred or must-succ of b1
    (6) Find all SCCs which will form our equivalence classes
         - Here we use the fact that any cycle must contain a forward edge and a backward edge
          which will give use the implications (b1 => b2 and b2 => b1)
-       Question: Is it possible to get weird cycles that should not be present?
 */
 public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
 
@@ -50,6 +49,8 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
 
     public Set<Event> getInitialClass() { return Collections.unmodifiableSet(initialClass); }
 
+
+    private Map<Thread, Collection<Branch>> threadBranches = new HashMap<>();
     public BranchEquivalenceNew(Program program) {
         this.program = program;
         if (!program.isCompiled())
@@ -58,45 +59,52 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
         for (Thread t : program.getThreads()) {
             // Step (1)-(3)
             Map<Event, Branch> branchMap = new HashMap<>();
-            findBranch(t.getEntry(), branchMap);
+            threadBranches.put(t, branchMap.values());
+            computeBranches(t.getEntry(), branchMap);
             // Step (4)
             for (Branch b : branchMap.values()) {
                 computeMustPredSet(b);
             }
-
-            for(Branch branch : branchMap.values()) {
-                Representative rep = makeNewClass(branch.getRoot(), branch.events.size());
-                addAllToClass(branch.events, rep);
-            }
-
-            /*
             //Step (5)-(6)
-            DependencyGraph<Branch> depGraph = new DependencyGraph<>(branchMap.values());
-            for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
-                Branch minBranch = scc.stream()
-                        .min(Comparator.comparingInt(x -> x.getContent().getRoot().getCId()))
-                        .get().getContent();
-                Representative rep = makeNewClass(minBranch.getRoot(), scc.size());
-                for (DependencyGraph<Branch>.Node node : scc) {
-                    addAllToClass(node.getContent().events, rep);;
-                }
-            }
-             */
+            mergeThreadBranches(branchMap.values());
+
         }
 
         classMap.values().removeIf(Set::isEmpty);
         mergeInitialBranches();
     }
 
-    private void mergeInitialBranches() {
+    private void mergeThreadBranches(Collection<Branch> branches) {
+        DependencyGraph<Branch> depGraph = new DependencyGraph<>(branches);
+        for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
+            /*Branch minBranch = scc.stream()
+                    .min(Comparator.comparingInt(x -> x.getContent().getRoot().getCId()))
+                    .get().getContent();*/
+            Representative rep = null;
+            Event minEvent = null;
+            for (DependencyGraph<Branch>.Node node : scc) {
+                Branch b = node.getContent();
+                Event root = b.getRoot();
+                if (rep == null) {
+                    rep = makeNewClass(root, b.events.size() + scc.size());
+                }
+                if (minEvent == null || root.getCId() < minEvent.getCId()) {
+                    minEvent = root;
+                }
+                addAllToClass(node.getContent().events, rep);;
+            }
+            makeRepresentative(minEvent);
+        }
+    }
 
-        Representative initRep = new Representative(program.getThreads().get(0).getEntry());
-        initialClass = new HashSet<>(100);
-        classMap.put(initRep, initialClass);
-        for (Thread t : program.getThreads()) {
-            Set<Event> initBranch = getEquivalenceClass(t.getEntry());
-            classMap.remove(representativeMap.get(t.getEntry()));
+    private void mergeInitialBranches() {
+        Representative initRep = representativeMap.get(program.getThreads().get(0).getEntry());
+        initialClass = classMap.get(initRep);
+        for (int i = 1; i < program.getThreads().size(); i++) {
+            Event entry = program.getThreads().get(i).getEntry();
+            Set<Event> initBranch = getEquivalenceClass(entry);
             initialClass.addAll(initBranch);
+            classMap.remove(representativeMap.get(entry));
             for (Event e : initBranch)
                 representativeMap.put(e, initRep);
         }
@@ -116,14 +124,14 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
                 commonPred.retainAll(br.mustPred);
             }
         }
+        if (commonPred != null) {
+            b.mustPred.addAll(commonPred);
+        }
         b.mustPredComputed = true;
     }
 
-    // Representative <=> Branch
-    // Maps any event to its containing branch
-    //private final Map<Thread, Map<Event, Branch>> threadBranchMap = new HashMap<>();
 
-    public Branch findBranch(Event start, Map<Event, Branch> branchMap) {
+    public Branch computeBranches(Event start, Map<Event, Branch> branchMap) {
         if ( branchMap.containsKey(start)) {
             // <start> was already visited
             return branchMap.get(start);
@@ -140,8 +148,8 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
                     succ = jump.getLabel();
                 } else {
                     // Split into two branches...
-                    Branch b1 = findBranch(jump.getSuccessor(), branchMap);
-                    Branch b2 = findBranch(jump.getLabel(), branchMap);
+                    Branch b1 = computeBranches(jump.getSuccessor(), branchMap);
+                    Branch b2 = computeBranches(jump.getLabel(), branchMap);
 
                     b1.parents.add(b);
                     b2.parents.add(b);
@@ -161,7 +169,7 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
                 return b;
             } else if (!succ.getListeners().isEmpty()) {
                 // We ran into a merge point
-                Branch b1 = findBranch(succ, branchMap);
+                Branch b1 = computeBranches(succ, branchMap);
                 b1.parents.add(b);
                 b.mustSucc.addAll(b1.mustSucc);
                 return b;
@@ -175,7 +183,7 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
 
 
 
-    private class Branch implements Dependent<Branch> {
+    private static class Branch implements Dependent<Branch> {
         //Representative representative;
         final Set<Branch> parents = new HashSet<>();
         final Set<Branch> mustSucc = new HashSet<>();
@@ -200,6 +208,11 @@ public class BranchEquivalenceNew extends AbstractEquivalence<Event> {
 
         public Event getRoot() {
             return events.get(0);
+        }
+
+        @Override
+        public String toString() {
+            return getRoot().toString();
         }
     }
 
