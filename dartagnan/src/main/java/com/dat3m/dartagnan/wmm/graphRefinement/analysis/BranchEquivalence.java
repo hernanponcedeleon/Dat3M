@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.dependable.Dependent;
+import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 
 import java.util.*;
 
@@ -31,12 +32,15 @@ import java.util.*;
          which will give use the implications (b1 => b2 and b2 => b1)
    (6) Merge all initial classes
    (7) Compute the class of all unreachable events.
+   BONUS: Compute which branches are mutually exclusive
 */
 public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private final Program program;
 
+    private Representative initialClassRep;
     private Set<Event> initialClass;
+    private Representative unreachClassRep;
     private Set<Event> unreachableClass;
 
     public Program getProgram() {
@@ -49,6 +53,14 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     public boolean isUnreachableEvent(Event e) { return unreachableClass.contains(e); }
 
+    public boolean areMutualExclusive(Event e1, Event e2) {
+        return exclusiveMap.get(representativeMap.get(e1)).contains(representativeMap.get(e2));
+    }
+
+    public Set<Event> getExclusiveEvents(Event e) {
+        return new ExclusiveSet(e);
+    }
+
     public Set<Event> getInitialClass() { return Collections.unmodifiableSet(initialClass); }
 
     public Set<Event> getUnreachableClass() { return Collections.unmodifiableSet(unreachableClass); }
@@ -59,10 +71,12 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         if (!program.isCompiled())
             throw new IllegalArgumentException("The program needs to be compiled first.");
 
+        Map<Thread, Map<Event, Branch>> threadBranches = new HashMap<>();
         for (Thread t : program.getThreads()) {
             // Step (1)
             Map<Event, Branch> branchMap = new HashMap<>();
             Map<Event, Branch> finalBranchMap = new HashMap<>();
+            threadBranches.put(t, branchMap);
             computeBranches(t.getEntry(), branchMap, finalBranchMap);
             // Step (2)-(3)
             for (Branch b : branchMap.values()) {
@@ -77,6 +91,60 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         // Step (7)
         computeUnreachableClass();
 
+        //Bonus
+        computeExclusiveClasses(threadBranches);
+    }
+
+    private Map<Representative, Set<Representative>> exclusiveMap;
+    private void computeExclusiveClasses(Map<Thread, Map<Event, Branch>> threadBranches) {
+        for (Thread t : program.getThreads()) {
+            computeReachableBranches(threadBranches.get(t).get(t.getEntry()));
+        }
+        exclusiveMap = new HashMap<>();
+        for (Representative r1 : classMap.keySet()) {
+
+            Set<Representative> excl = new HashSet<>();
+            exclusiveMap.put(r1, excl);
+
+            if (r1 == initialClassRep) {
+                if (unreachClassRep != null) {
+                    excl.add(unreachClassRep);
+                }
+                continue;
+            } else if (r1 == unreachClassRep) {
+                excl.addAll(classMap.keySet());
+                excl.remove(unreachClassRep);
+                continue;
+            }
+
+
+            for (Representative r2 : classMap.keySet()) {
+                if (r2 == unreachClassRep) {
+                    excl.add(unreachClassRep);
+                    continue;
+                } else if (r2 == initialClassRep) {
+                    continue;
+                }
+
+                Event e1 = r1.getRepresentative();
+                Event e2 = r2.getRepresentative();
+                if ( e1.getThread() == e2.getThread()) {
+                    Map<Event, Branch> branchMap = threadBranches.get(e1.getThread());
+                    if (e1.getCId() > e2.getCId()) {
+                        Event temp = e1;
+                        e1 = e2;
+                        e2 = temp;
+                    }
+                    Branch b1 = branchMap.get(e1);
+                    Branch b2 = branchMap.get(e2);
+
+                    if (!b1.reachableBranches.contains(b2)) {
+                        excl.add(r2);
+                    }
+                }
+
+            }
+        }
     }
 
     private void computeUnreachableClass() {
@@ -96,6 +164,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 }
             }
             makeRepresentative(minEvent);
+            unreachClassRep = rep;
         }
     }
 
@@ -124,6 +193,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private void mergeInitialBranches() {
         Representative initRep = representativeMap.get(program.getThreads().get(0).getEntry());
+        initialClassRep = initRep;
         initialClass = classMap.get(initRep);
         for (int i = 1; i < program.getThreads().size(); i++) {
             Event entry = program.getThreads().get(i).getEntry();
@@ -257,6 +327,17 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         } while (true);
     }
 
+    private void computeReachableBranches(Branch b) {
+        if (b.reachableBranchesComputed)
+            return;
+
+        for (Branch child : b.children) {
+            computeReachableBranches(child);
+            b.reachableBranches.addAll(child.reachableBranches);
+        }
+
+        b.reachableBranchesComputed = true;
+    }
 
     private static class Branch implements Dependent<Branch> {
         //Representative representative;
@@ -265,13 +346,16 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         final Set<Branch> mustSucc = new HashSet<>();
         final Set<Branch> mustPred = new HashSet<>();
         final List<Event> events = new ArrayList<>();
+        final Set<Branch> reachableBranches = new HashSet<>();
 
         boolean mustPredComputed = false;
         boolean mustSuccComputed = false;
+        boolean reachableBranchesComputed = false;
 
         public Branch(Event root) {
             mustPred.add(this);
             mustSucc.add(this);
+            reachableBranches.add(this);
             events.add(root);
         }
 
@@ -293,4 +377,68 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         }
     }
 
+
+    private class ExclusiveSet extends AbstractSet<Event> {
+
+        final Set<Representative> reps;
+        final int size;
+
+        @Override
+        public boolean contains(Object o) {
+            if (!(o instanceof Event)) {
+                return false;
+            }
+            Event e = (Event)o;
+            Representative rep = representativeMap.get(e);
+            return reps.contains(rep);
+        }
+
+        public ExclusiveSet(Event e) {
+            reps = exclusiveMap.get(representativeMap.get(e));
+            int size = 0;
+            for (Representative rep : reps) {
+                size += rep.getEquivalenceClass().size();
+            }
+            this.size = size;
+        }
+
+        @Override
+        public Iterator<Event> iterator() {
+            return new Iter();
+        }
+
+        @Override
+        public int size() {
+            return size;
+        }
+
+
+        private class Iter implements Iterator<Event> {
+
+            private final Iterator<Representative> outer;
+            private Iterator<Event> inner;
+
+            public Iter() {
+                outer = reps.iterator();
+                hasNext();
+            }
+
+            @Override
+            public boolean hasNext() {
+                if (inner != null && inner.hasNext()) {
+                    return true;
+                }
+                if (outer.hasNext()) {
+                    inner = outer.next().getEquivalenceClass().iterator();
+                    return true;
+                }
+                return false;
+             }
+
+            @Override
+            public Event next() {
+                return inner.next();
+            }
+        }
+    }
 }

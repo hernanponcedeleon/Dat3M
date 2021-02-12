@@ -91,5 +91,10 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         public Set<T> getEquivalenceClass() {
             return classMap.get(this);
         }
+
+        @Override
+        public String toString() {
+            return representative.toString();
+        }
     }
 }
