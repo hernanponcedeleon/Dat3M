@@ -83,6 +83,12 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
             return changed;
         }
 
+        public void updateClassMap() {
+            for (T x : internalSet) {
+                classMap.put(x, this);
+            }
+        }
+
 
         //====================== Object =============================
 
