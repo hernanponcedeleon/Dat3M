@@ -1,100 +1,162 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.analysis;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
-    //  Maps each object <o> to its class representative
-    protected Map<T, Representative> representativeMap;
-    // Maps each representative <r> to its represented class class(r)
-    protected Map<Representative, Set<T>> classMap;
+    protected Map<T, EqClass> classMap;
+    protected Set<EqClass> classes;
 
-    public void makeRepresentative(T x) {
-        representativeMap.get(x).setRepresentative(x);
-    }
-    public T getRepresentative(T x) {
-        return representativeMap.get(x).getRepresentative();
-    }
-    public Set<T> getEquivalenceClass(T x) {
-        return classMap.get(representativeMap.get(x));
-    }
-    public boolean areEquivalent(T x, T y) {
-        return representativeMap.get(x).equals(representativeMap.get(y));
+    @Override
+    public EquivalenceClass<T> getEquivalenceClass(T x) {
+        return classMap.get(x);
     }
 
     @Override
-    public Collection<Set<T>> getAllEquivalenceClasses() {
-        return classMap.values();
-    }
-
-    @Override
-    public Collection<T> getAllRepresentatives() {
-        return classMap.keySet().stream().map(Representative::getRepresentative).collect(Collectors.toList());
+    public Set<? extends EquivalenceClass<T>> getAllEquivalenceClasses() {
+        return classes;
     }
 
     public AbstractEquivalence() {
-        representativeMap = new HashMap<>();
         classMap = new HashMap<>();
+        classes = new HashSet<>();
     }
 
     protected AbstractEquivalence(int estimatedDataSize, int estimatedNumOfClasses) {
-        representativeMap = new HashMap<>(estimatedDataSize);
-        classMap = new HashMap<>(estimatedNumOfClasses);
+        // We make classMap larger by factor 4/3 to avoid resizing due to HashMap's LoadFactor
+        classMap = new HashMap<>((4 * estimatedDataSize) / 3);
+        classes = new HashSet<>(estimatedNumOfClasses);
     }
 
-    protected Representative makeNewClass(T x, int initialCapacity) {
-        Representative rep = new Representative(x);
-        HashSet<T> classSet = new HashSet<>(initialCapacity);
-        classSet.add(x);
-        Representative oldRep = representativeMap.put(x, rep);
-        if (oldRep != null) {
-            classMap.get(oldRep).remove(x);
+    protected boolean removeEmptyClasses() {
+        return classes.removeIf(Set::isEmpty);
+    }
+
+    protected boolean removeClass(EqClass c) {
+        if (classes.remove(c)) {
+            c.forEach(classMap::remove);
+            return true;
         }
-        classMap.put(rep, classSet);
-        return rep;
+        return false;
     }
 
-    protected void addToClass(T x, Representative classRep) {
-        Representative oldRep = representativeMap.put(x, classRep);
-        if (oldRep != null) {
-            // <x> was in a different class before
-            classMap.get(oldRep).remove(x);
+    protected void mergeClasses(EqClass first, EqClass second) {
+        first.internalSet.addAll(second);
+        second.forEach(x -> classMap.put(x, first));
+        classes.remove(second);
+    }
+
+
+
+    protected class EqClass extends AbstractSet<T> implements EquivalenceClass<T> {
+        public T representative;
+        public Set<T> internalSet;
+
+        public EqClass() {
+            this(-1);
         }
-        classMap.get(classRep).add(x);
-    }
 
-    protected void addAllToClass(Collection<T> col, Representative classRep) {
-        for (T x : col) {
-            Representative oldRep = representativeMap.put(x, classRep);
-            if (oldRep != null && (oldRep != classRep)) {
-                // <x> was in a different class before
-                classMap.get(oldRep).remove(x);
+        public EqClass(int initialCapacity) {
+            internalSet = initialCapacity < 1 ? new HashSet<>() : new HashSet<>(initialCapacity);
+            classes.add(this);
+        }
+
+        public boolean addInternal(T x) {
+            if (internalSet.add(x)) {
+                EqClass oldClass = classMap.put(x, this);
+                if (oldClass != null) {
+                    oldClass.internalSet.remove(x);
+                    if (x.equals(oldClass.representative)) {
+                        oldClass.representative = oldClass.isEmpty() ? null : oldClass.stream().findAny().get();
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public boolean addAllInternal(Collection<T> col) {
+            boolean changed = false;
+            for (T x : col) {
+                changed |= addInternal(x);
+            }
+            return changed;
+        }
+
+
+        //====================== Object =============================
+
+        @Override
+        public boolean equals(Object o) {
+            return this == o;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(this);
+        }
+
+        //====================== Equivalence Class =============================
+
+        @Override
+        public Equivalence<T> getEquivalence() {
+            return AbstractEquivalence.this;
+        }
+
+        @Override
+        public void setRepresentative(T rep) {
+            if (internalSet.contains(rep)) {
+                representative = rep;
             }
         }
-        classMap.get(classRep).addAll(col);
-    }
 
-
-    // NOTE: We intentionally do NOT implement hashCode() and equals()
-    // If we did, we would break the classMap when changing the representative element of a class.
-    protected class Representative {
-        private T representative;
-
-        public T getRepresentative() { return representative; }
-        private void setRepresentative(T representative) { this.representative = representative; }
-
-        public Representative(T representative) {
-            this.representative = representative;
+        @Override
+        public T getRepresentative() {
+            return representative;
         }
 
-        public Set<T> getEquivalenceClass() {
-            return classMap.get(this);
+
+        //====================== Set =============================
+
+
+        @Override
+        public boolean isEmpty() {
+            return internalSet.isEmpty();
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            return internalSet.containsAll(c);
         }
 
         @Override
         public String toString() {
-            return representative.toString();
+            return internalSet.toString();
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return internalSet.contains(o);
+        }
+
+        @Override
+        public Object[] toArray() {
+            return internalSet.toArray();
+        }
+
+        @Override
+        public <T1> T1[] toArray(T1[] a) {
+            return internalSet.toArray(a);
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return internalSet.iterator();
+        }
+
+        @Override
+        public int size() {
+            return internalSet.size();
         }
     }
 }

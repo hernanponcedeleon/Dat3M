@@ -1,17 +1,25 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.analysis;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface Equivalence<T> {
 
-    // CAREFUL: The returned Set shall not be modified!
-    Set<T> getEquivalenceClass(T x);
-    boolean areEquivalent(T a, T b);
-    void makeRepresentative(T x); // Makes <x> the representative of its equivalence class
-    T getRepresentative(T x);
+    EquivalenceClass<T> getEquivalenceClass(T x);
+    Set<? extends EquivalenceClass<T>> getAllEquivalenceClasses();
 
-    Collection<Set<T>> getAllEquivalenceClasses();
-    Collection<T> getAllRepresentatives();
+    default boolean areEquivalent(T a, T b) {
+        return getEquivalenceClass(a).equals(getEquivalenceClass(b));
+    }
+
+    default T getRepresentative(T x) {
+        return getEquivalenceClass(x).getRepresentative();
+    }
+    default Set<T> getAllRepresentatives() {
+        return getAllEquivalenceClasses().stream().map(EquivalenceClass::getRepresentative)
+                .collect(Collectors.toSet());
+    }
+
+
+
 }
