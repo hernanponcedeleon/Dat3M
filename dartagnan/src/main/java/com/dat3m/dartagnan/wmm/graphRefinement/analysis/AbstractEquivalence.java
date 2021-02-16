@@ -46,6 +46,10 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         classes.remove(second);
     }
 
+    protected boolean hasClass(T x) {
+        return classMap.containsKey(x);
+    }
+
 
 
     protected class EqClass extends AbstractSet<T> implements EquivalenceClass<T> {
