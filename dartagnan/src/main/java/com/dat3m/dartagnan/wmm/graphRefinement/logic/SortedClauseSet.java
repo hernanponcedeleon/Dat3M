@@ -113,12 +113,14 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
     }
 
     public void addAll(SortedClauseSet<T> other) {
+        clauses.ensureCapacity(other.getClauseSize(), 10);
         clauses.addAll(other.clauses);
         clauses.sort(comparator);
         checkTriviality();
     }
 
     public void addAll(Collection<Conjunction<T>> col) {
+        clauses.ensureCapacity(col.size(), 10);
         clauses.addAll(col);
         clauses.sort(comparator);
         checkTriviality();

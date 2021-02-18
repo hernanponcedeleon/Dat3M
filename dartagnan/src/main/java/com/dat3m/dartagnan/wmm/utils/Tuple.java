@@ -40,7 +40,7 @@ public class Tuple implements Comparable<Tuple> {
     // To compensate this flaw, Java's hashmap computes its hashcode by
     // (key.hashCode) ^ ((key.hashCode) >>> 16). This effectively translates to
     // hashCode = <first.getCId> ^ <second.getCId> for tables with <= 2^16 entries.
-    // This hashing function is associative (i.e. reversed tuples have the same hashcode)
+    // This hashing function is commutative (i.e. reversed tuples have the same hashcode)
     // and all same-entry tuples get mapped to 0. These are bad properties.
     // Instead, we should multiply <first.getCId> by some prime,
     // ideally a Mersenne Prime p like 31 or 8191 for which multiplication is fast. This also

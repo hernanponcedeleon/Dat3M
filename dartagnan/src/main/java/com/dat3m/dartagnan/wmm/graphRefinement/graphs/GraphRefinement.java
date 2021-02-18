@@ -24,7 +24,6 @@ import com.microsoft.z3.Model;
 import java.util.*;
 
 
-//TODO: Improve resolvent computation (compute only needed resolvents!)
 public class GraphRefinement {
 
     private final VerificationContext context;
@@ -43,7 +42,6 @@ public class GraphRefinement {
 
     private void normalizeMemoryModel() {
         context.addNontransitiveWriteOrder();
-        //context.replaceAcyclicityAxioms(); //TODO: avoid this replacement operation by performing acyclicity checks directly
     }
 
 
@@ -54,91 +52,9 @@ public class GraphRefinement {
 
     private final Map<Long, Set<Edge>> possibleCoEdges = new HashMap<>();
     private final SortedClauseSet<CoreLiteral> coreReasonsSorted = new SortedClauseSet<>();
-   /* public GraphResult search() {
-
-        EventGraph coGraph = execGraph.getCoGraph();
-        GraphResult result = new GraphResult();
-        Timestamp time = Timestamp.ZERO;
-
-        coreReasonsSorted.clear();
-        possibleCoEdges.clear();
-        initSearch();
-
-        if (checkViolations()) {
-            computeViolations();
-            result.setResult(Result.FAIL);
-            result.setViolations(resolveViolations());
-            return result;
-        }
-
-        List<Edge> coSearchList = new ArrayList<>();
-        for (Set<Edge> coEdges : possibleCoEdges.values()) {
-            coSearchList.addAll(coEdges);
-        }
-        sortCoSearchList(coSearchList);
-
-        boolean progress;
-        boolean invalid = false;
-        do {
-            Timestamp curTime = time;
-            progress = false;
-            for (int i = 0; i < coSearchList.size(); i++) {
-                Edge coEdge = coSearchList.get(i);
-                if (coGraph.contains(coEdge) || coGraph.contains(coEdge.getInverse())) {
-                    coSearchList.remove(i);
-                    coSearchList.remove(coEdge.getInverse());
-                    progress = true;
-                    break;
-                }
-                Timestamp nextTime = curTime.next();
-                execGraph.addCoherenceEdge(coEdge.withTimestamp(nextTime));
-                if (checkViolations()) {
-                    computeViolations();
-                    progress = true;
-                    coSearchList.remove(i);
-                    coSearchList.remove(coEdge.getInverse());
-                    backtrackOn(nextTime);
-                    execGraph.addCoherenceEdge(coEdge.getInverse().withTimestamp(curTime));
-                    if (checkViolations()) {
-                        computeViolations();
-                        invalid = true;
-                    }
-                    break;
-                }
-                backtrackOn(nextTime);
-
-                nextTime = curTime.next();
-                execGraph.addCoherenceEdge(coEdge.getInverse().withTimestamp(nextTime));
-                if (checkViolations()) {
-                    computeViolations();
-                    progress = true;
-                    coSearchList.remove(i);
-                    coSearchList.remove(coEdge.getInverse());
-                    backtrackOn(nextTime);
-                    execGraph.addCoherenceEdge(coEdge.withTimestamp(curTime));
-                    break;
-                }
-                nextTime.invalidate();
-                backtrack();
-            }
-        } while(progress && !invalid);
-
-        if (invalid) {
-            result.setResult(Result.FAIL);
-            result.setViolations(resolveViolations());
-        } else if (coSearchList.size() == 0) {
-            result.setResult(Result.PASS);
-        } else {
-            //TODO: Figure out why sometimes violations are not found at all
-            result.setResult(Result.UNKNOWN);
-            System.out.println("Missing edges: " + coSearchList.size());
-        }
-        return result;
-    }
-    */
 
 
-    // Statsistics of the last call to kSearch
+    // Statistics of the last call to kSearch
     private RefinementStats stats;
 
     /*
