@@ -186,16 +186,16 @@ public class Refinement {
 
         while (solver.check() == SATISFIABLE) {
             curTime = System.currentTimeMillis();
-            System.out.println(" ===== Iteration: " + ++vioCount + " =====");
+            //System.out.println(" ===== Iteration: " + ++vioCount + " =====");
             /*System.out.println(solver.getStatistics().get("mk clause"));
             System.out.println(solver.getStatistics().get("mk bool var"));*/
-            System.out.println("Solving time(ms): " + (curTime - lastTime));
+            //System.out.println("Solving time(ms): " + (curTime - lastTime));
             totalSolvingTime += (curTime - lastTime);
 
             RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
             RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
-            System.out.println(stats.toString());
+            //System.out.println(stats.toString());
 
             res = gRes.getResult();
             if (res == Result.FAIL) {
@@ -203,12 +203,12 @@ public class Refinement {
                 foundViolations.add(violations);
                 refine(solver, ctx, violations);
                 // Some statistics
-                for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
+                /*for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
                     System.out.println("Violation size: " + cube.getSize());
                     Conjunction<CoreLiteral> excludedRf = cube.removeIf(x -> !(x instanceof RfLiteral));
                     excludedRfs.add(excludedRf);
                     printStats(excludedRf);
-                }
+                }*/
             } else {
                 // No violations found, we can't refine
                 break;
@@ -216,15 +216,15 @@ public class Refinement {
             lastTime = System.currentTimeMillis();
         }
         curTime = System.currentTimeMillis();
-        System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
-        System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
+        //System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
+        //System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
         totalSolvingTime += (curTime - lastTime);
 
         // Possible outcomes: - check() == SAT && res == UNKNOWN -> Inconclusive
         //                    - check() == SAT && res == PASS -> Unsafe
         //                    - check() == UNSAT -> Safe
 
-        printSummary(statList, totalSolvingTime, excludedRfs);
+        //printSummary(statList, totalSolvingTime, excludedRfs);
 
         if (solver.check() == SATISFIABLE && res == UNKNOWN) {
             // We couldn't verify the found counterexample, nor exclude it.

@@ -95,7 +95,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = 120000)
+    //@Test(timeout = 180000)
     public void testRefinementNoCo() {
         Context ctx = null;
         try {
