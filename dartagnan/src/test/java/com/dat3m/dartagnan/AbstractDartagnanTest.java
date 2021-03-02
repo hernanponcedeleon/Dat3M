@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -73,6 +74,27 @@ public abstract class AbstractDartagnanTest {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 assertEquals(expected, runAnalysis(solver, ctx, program, wmm, target, settings));
+                ctx.close();
+            }
+        } catch (IOException e){
+            fail("Missing resource file");
+        }
+    }
+
+    @Test
+    public void testRefinement() {
+        try {
+            Program program = new ProgramParser().parse(new File(path));
+            if (program.getAss() != null) {
+                if (!program.getAss().getLocs().isEmpty()) {
+                    // We assert true, because Refinement can't handle these assertions
+                    // They need coherence, which Refinement avoids to encode!
+                    assertEquals(0 ,0);
+                    return;
+                }
+                Context ctx = new Context();
+                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
+                assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, program, wmm, target, settings));
                 ctx.close();
             }
         } catch (IOException e){

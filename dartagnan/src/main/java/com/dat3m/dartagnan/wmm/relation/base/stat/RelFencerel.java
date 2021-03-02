@@ -33,6 +33,8 @@ public class RelFencerel extends StaticRelation {
         term = makeTerm(fenceName);
     }
 
+    public String getFenceName() { return fenceName; }
+
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){

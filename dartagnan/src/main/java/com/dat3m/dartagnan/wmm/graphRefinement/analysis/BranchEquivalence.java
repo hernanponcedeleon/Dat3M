@@ -158,7 +158,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         for (Thread t : program.getThreads()) {
             // Add all unreachable nodes
             t.getCache().getEvents(FilterBasic.get(EType.ANY)).stream()
-                    .filter(x -> !hasClass(x)).forEach(unreachableClass.internalSet::add);
+                    .filter(x -> !hasClass(x)).forEach(unreachableClass::addInternal);
         }
 
         if (unreachableClass.isEmpty()) {
@@ -229,7 +229,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
 
 
-    public Branch computeBranches(Event start, Map<Event, Branch> branchMap, Map<Event, Branch> finalBranchMap) {
+    private Branch computeBranches(Event start, Map<Event, Branch> branchMap, Map<Event, Branch> finalBranchMap) {
         if ( branchMap.containsKey(start)) {
             // <start> was already visited
             return branchMap.get(start);

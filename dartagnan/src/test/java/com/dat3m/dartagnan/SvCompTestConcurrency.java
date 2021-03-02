@@ -31,10 +31,12 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         
         List<Object[]> data = new ArrayList<>();
 
+        /*
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl", wmm, s6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-2-O0.bpl", wmm, s6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-1-O0.bpl", wmm, s7});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-2-O0.bpl", wmm, s7});
+        */
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/lazy01-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton_with-uninit-problems-O0.bpl", wmm, s2});
@@ -43,8 +45,10 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longest-1-O0.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-1-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2-O0.bpl", wmm, s1});
+        /*
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-1-O0.bpl", wmm, s6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/triangular-2-O0.bpl", wmm, s6});
+         */
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/qrcu-2-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-1-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/read_write_lock-2-O0.bpl", wmm, s1});

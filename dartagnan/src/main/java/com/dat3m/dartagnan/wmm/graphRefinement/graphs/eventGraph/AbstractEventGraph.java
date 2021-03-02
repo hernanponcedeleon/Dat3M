@@ -28,7 +28,11 @@ public abstract class AbstractEventGraph implements EventGraph {
 
     @Override
     public int size() {
-        return getEstimatedSize();
+        int i = 0;
+        for (Edge e : this) {
+            i++;
+        }
+        return i;
     }
 
     @Override

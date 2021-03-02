@@ -98,9 +98,10 @@ public class Wmm {
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program, ctx, settings);
         }
-        for (Axiom ax : axioms) {
+
+        /*for (Axiom ax : axioms) {
             ax.getRel().getMaxTupleSet();
-        }
+        }*/
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName).getMaxTupleSet();
@@ -118,9 +119,10 @@ public class Wmm {
 
         //TODO: Can be removed if the reworked EdgeSets are used
         // Right now we need may sets/active sets to populate EdgeSetStatic
-        for (Axiom ax : axioms) {
+
+        /*for (Axiom ax : axioms) {
             ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
-        }
+        }*/
 
         // Encode all base relations except co (essentially encodes rf and po)
         BoolExpr enc = ctx.mkTrue();

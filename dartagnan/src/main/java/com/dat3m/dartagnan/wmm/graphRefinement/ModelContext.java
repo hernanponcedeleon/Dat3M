@@ -101,6 +101,7 @@ public class ModelContext {
     public List<EventData> getEventList() {
         return eventListView;
     }
+    public List<Thread> getThreads() { return getProgram().getThreads(); }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
@@ -235,14 +236,14 @@ public class ModelContext {
             }
         } else if (data.isFence()) {
             // ===== Fences =====
-            String name = data.toString();
+            String name = data.getEvent().toString();
             if (!fenceMap.containsKey(name))
                 fenceMap.put(name, new HashSet<>());
             fenceMap.get(name).add(data);
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed iff its condition was true.
-            data.setWasExecuted(((CondJump)e).didJump(model, context));
+            data.setWasExecuted(((CondJump)e).didJump(model, context) && data.wasExecuted());
         } else {
             //TODO: Maybe add some other events.
             // But for now all non-visible events are simply registered without
@@ -266,6 +267,7 @@ public class ModelContext {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
+                        write.setImportance(write.getImportance() + 1);
                         break;
                     }
                 }

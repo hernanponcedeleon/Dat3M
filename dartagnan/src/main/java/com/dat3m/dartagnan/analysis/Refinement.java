@@ -118,8 +118,6 @@ public class Refinement {
         //                    - check() == SAT && res == PASS -> Unsafe
         //                    - check() == UNSAT -> Safe
 
-        printSummary(statList, totalSolvingTime, excludedRfs);
-
         if (solver.check() == SATISFIABLE && res == UNKNOWN) {
             // We couldn't verify the found counterexample, nor exclude it.
             System.out.println("PROCEDURE was inconclusive");
@@ -127,8 +125,11 @@ public class Refinement {
         } else if (solver.check() == SATISFIABLE) {
             // We found a violation, but we still need to test the bounds.
             System.out.println("Violation verified");
+        } else {
+            System.out.println("Safety proven");
         }
 
+        lastTime = System.currentTimeMillis();
         if(solver.check() == SATISFIABLE) {
             solver.add(program.encodeNoBoundEventExec(ctx));
             res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
@@ -138,6 +139,9 @@ public class Refinement {
             solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
             res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
+        long boundCheckTime = System.currentTimeMillis() - lastTime;
+        printSummary(statList, totalSolvingTime, boundCheckTime, excludedRfs);
+
         res = program.getAss().getInvert() ? res.invert() : res;
         return res;
     }
@@ -147,6 +151,7 @@ public class Refinement {
     public static Result runAnalysisGraphRefinement(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
         VerificationContext verificationContext = new VerificationContext(program, wmm, target, settings);
         GraphRefinement refinement = new GraphRefinement(verificationContext);
+        program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
@@ -186,16 +191,16 @@ public class Refinement {
 
         while (solver.check() == SATISFIABLE) {
             curTime = System.currentTimeMillis();
-            //System.out.println(" ===== Iteration: " + ++vioCount + " =====");
+            System.out.println(" ===== Iteration: " + ++vioCount + " =====");
             /*System.out.println(solver.getStatistics().get("mk clause"));
             System.out.println(solver.getStatistics().get("mk bool var"));*/
-            //System.out.println("Solving time(ms): " + (curTime - lastTime));
+            System.out.println("Solving time(ms): " + (curTime - lastTime));
             totalSolvingTime += (curTime - lastTime);
 
             RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
             RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
-            //System.out.println(stats.toString());
+            System.out.println(stats.toString());
 
             res = gRes.getResult();
             if (res == Result.FAIL) {
@@ -203,12 +208,12 @@ public class Refinement {
                 foundViolations.add(violations);
                 refine(solver, ctx, violations);
                 // Some statistics
-                /*for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
+                for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
                     System.out.println("Violation size: " + cube.getSize());
                     Conjunction<CoreLiteral> excludedRf = cube.removeIf(x -> !(x instanceof RfLiteral));
                     excludedRfs.add(excludedRf);
                     printStats(excludedRf);
-                }*/
+                }
             } else {
                 // No violations found, we can't refine
                 break;
@@ -216,15 +221,14 @@ public class Refinement {
             lastTime = System.currentTimeMillis();
         }
         curTime = System.currentTimeMillis();
-        //System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
-        //System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
+        System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
+        System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
         totalSolvingTime += (curTime - lastTime);
 
         // Possible outcomes: - check() == SAT && res == UNKNOWN -> Inconclusive
         //                    - check() == SAT && res == PASS -> Unsafe
         //                    - check() == UNSAT -> Safe
 
-        //printSummary(statList, totalSolvingTime, excludedRfs);
 
         if (solver.check() == SATISFIABLE && res == UNKNOWN) {
             // We couldn't verify the found counterexample, nor exclude it.
@@ -233,8 +237,11 @@ public class Refinement {
         } else if (solver.check() == SATISFIABLE) {
             // We found a violation, but we still need to test the bounds.
             System.out.println("Violation verified");
+        } else {
+            System.out.println("Safety proven");
         }
 
+        lastTime = System.currentTimeMillis();
         if(solver.check() == SATISFIABLE) {
             solver.add(program.encodeNoBoundEventExec(ctx));
             res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
@@ -244,19 +251,22 @@ public class Refinement {
             solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
             res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
+        long boundCheckTime = System.currentTimeMillis() - lastTime;
+        printSummary(statList, totalSolvingTime, boundCheckTime, excludedRfs);
 
         res = program.getAss().getInvert() ? res.invert() : res;
         return res;
     }
 
 
-    private static void printSummary(List<RefinementStats> statList, long totalSolvingTime, List<Conjunction<CoreLiteral>> excludedRfs) {
+    private static void printSummary(List<RefinementStats> statList, long totalSolvingTime, long boundCheckTime, List<Conjunction<CoreLiteral>> excludedRfs) {
         long totalModelTime = 0;
         long totalSearchTime = 0;
         long totalViolationComputationTime = 0;
         long totalResolutionTime = 0;
         long totalNumGuesses = 0;
         long totalNumViolations = 0;
+        int satDepth = 0;
 
         for (RefinementStats stats : statList) {
             totalModelTime += stats.getModelConstructionTime();
@@ -265,6 +275,7 @@ public class Refinement {
             totalResolutionTime += stats.getResolutionTime();
             totalNumGuesses += stats.getNumGuessedCoherences();
             totalNumViolations += stats.getNumComputedViolations();
+            satDepth = Math.max(satDepth, stats.getSaturationDepth());
         }
 
         System.out.println(" ======= Summary ========");
@@ -275,6 +286,8 @@ public class Refinement {
         System.out.println("Total search time(ms): " + totalSearchTime);
         System.out.println("Total guessing: " + totalNumGuesses);
         System.out.println("Total violations: " + totalNumViolations);
+        System.out.println("Max Saturation Depth: " + satDepth);
+        System.out.println("Bound check time(ms): " + boundCheckTime);
 
         System.out.println("-------- Excluded Read-Froms --------");
         excludedRfs.sort(Comparator.comparingInt(Conjunction::getSize));

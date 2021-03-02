@@ -33,6 +33,11 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     }
 
     @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
     public int getMinSize() { return size; }
 
     @Override

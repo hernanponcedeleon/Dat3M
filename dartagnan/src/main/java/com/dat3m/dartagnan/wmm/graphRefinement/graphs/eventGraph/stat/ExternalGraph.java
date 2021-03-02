@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+//TODO: The iteration fails, if there exists a thread without any events!
 public class ExternalGraph extends StaticEventGraph {
     private Map<Thread, List<EventData>> threadEventsMap;
 

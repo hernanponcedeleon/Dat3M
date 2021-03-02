@@ -47,7 +47,7 @@ public class IntersectionGraph extends BinaryEventGraph {
 
     @Override
     public int getMaxSize() {
-        return Math.max(first.getMaxSize(), second.getMaxSize());
+        return Math.min(first.getMaxSize(), second.getMaxSize());
     }
 
     @Override
@@ -57,7 +57,7 @@ public class IntersectionGraph extends BinaryEventGraph {
 
     @Override
     public int getMaxSize(EventData e, EdgeDirection dir) {
-        return Math.max(first.getMaxSize(e, dir), second.getMaxSize(e, dir));
+        return Math.min(first.getMaxSize(e, dir), second.getMaxSize(e, dir));
     }
 
     @Override

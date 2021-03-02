@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.EventData;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.ExternalGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.Literal;
@@ -72,6 +73,13 @@ public class GraphRefinement {
         populateFromModel(model, ctx);
         stats.modelConstructionTime = System.currentTimeMillis() - curTime;
         // =================================
+/*        EventGraph ext = execGraph.getEventGraphs().stream()
+                .filter(x -> x instanceof ExternalGraph).findAny().get();
+
+        int i = 0;
+        for (Edge e : ext) {
+            i++;
+        }*/
 
         // ======= Initialize search =======
         SearchTree sTree = new SearchTree();
@@ -294,7 +302,9 @@ public class GraphRefinement {
     some write that was read from.
      */
     private void sortCoSearchList(List<Edge> list) {
-        int index = 0;
+        list.sort(Comparator.comparingInt(x -> (x.getFirst().getImportance() + x.getSecond().getImportance())));
+
+        /*int index = 0;
         EventGraph rf = execGraph.getRfGraph();
         for (int i = 0; i < list.size(); i++) {
             Edge t = list.get(i);
@@ -304,7 +314,7 @@ public class GraphRefinement {
                 list.set(i, list.get(index));
                 list.set(index++, t);
             }
-        }
+        }*/
     }
 
     private void backtrackOn(Timestamp time) {

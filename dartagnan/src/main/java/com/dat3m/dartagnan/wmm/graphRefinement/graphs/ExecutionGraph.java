@@ -25,6 +25,7 @@ import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelExt;
+import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelPo;
 import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
@@ -184,6 +185,8 @@ public class ExecutionGraph {
                 graph = new RMWGraph();
             } else if (relClass == RelExt.class) {
                 graph = new ExternalGraph();
+            } else if (relClass == RelFencerel.class) {
+                graph = new FenceGraph((RelFencerel) relData.getWrappedRelation());
             } else {
                 //TODO: Add all predefined static graphs (CartesianGraph, ExtGraph, ... etc.)
                 graph = new StaticDefaultEventGraph(relData);
