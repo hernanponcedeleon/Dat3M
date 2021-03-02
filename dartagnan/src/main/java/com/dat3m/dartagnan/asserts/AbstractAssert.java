@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.asserts;
 
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -26,6 +28,8 @@ public abstract class AbstractAssert {
     public boolean getInvert(){
         return type != null && (type.equals(ASSERT_TYPE_NOT_EXISTS) || type.equals(ASSERT_TYPE_FORALL));
     }
+
+    public ImmutableSet<Location> getLocs() { return ImmutableSet.of(); }
 
     public String toStringWithType(){
         if(type != null){

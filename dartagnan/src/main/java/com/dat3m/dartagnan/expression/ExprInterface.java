@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -23,6 +24,8 @@ public interface ExprInterface {
     boolean getBoolValue(Event e, Model model, Context ctx);
 
     ImmutableSet<Register> getRegs();
+
+    default ImmutableSet<Location> getLocs() { return ImmutableSet.of(); }
     
     int getPrecision();
     

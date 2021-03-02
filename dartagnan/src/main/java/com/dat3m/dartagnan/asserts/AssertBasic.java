@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.asserts;
 
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -16,6 +18,11 @@ public class AssertBasic extends AbstractAssert {
         this.e1 = e1;
         this.e2 = e2;
         this.op = op;
+    }
+
+    @Override
+    public ImmutableSet<Location> getLocs() {
+        return new ImmutableSet.Builder<Location>().addAll(e1.getLocs()).addAll(e2.getLocs()).build();
     }
 
     @Override

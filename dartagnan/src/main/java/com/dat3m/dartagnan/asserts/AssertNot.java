@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.asserts;
 
+import com.dat3m.dartagnan.program.memory.Location;
+import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -13,6 +15,11 @@ public class AssertNot extends AbstractAssert {
 
     AbstractAssert getChild(){
         return child;
+    }
+
+    @Override
+    public ImmutableSet<Location> getLocs() {
+        return child.getLocs();
     }
 
     @Override

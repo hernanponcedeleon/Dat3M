@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -33,6 +34,11 @@ public class IExprBin extends IExpr implements ExprInterface {
     @Override
     public ImmutableSet<Register> getRegs() {
         return new ImmutableSet.Builder<Register>().addAll(lhs.getRegs()).addAll(rhs.getRegs()).build();
+    }
+
+    @Override
+    public ImmutableSet<Location> getLocs() {
+        return new ImmutableSet.Builder<Location>().addAll(lhs.getLocs()).addAll(rhs.getLocs()).build();
     }
 
     @Override
