@@ -68,4 +68,12 @@ public class IExprBin extends IExpr implements ExprInterface {
 	public IOpBin getOp() {
 		return op;
 	}
+	
+	public ExprInterface getRHS() {
+		return rhs;
+	}
+
+	public ExprInterface getLHS() {
+		return lhs;
+	}
 }
