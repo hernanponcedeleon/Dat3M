@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.graphRefinement;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
@@ -225,18 +226,17 @@ public class ModelContext {
             // A memory event in the control flow need NOT be executed (e.g. AARCH's StoreExclusive)
             if (data.wasExecuted()) {
                 Long address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
-                // Doesn't work, cause getMemValue().getIntValue gives wrong result
-                //Long value = Long.parseLong(model.getConstInterp(((MemEvent) e).getMemValueExpr()).toString());
                 data.setAccessedAddress(address);
-                //data.setValue(value);
                 if (!addressReadsMap.containsKey(address)) {
                     addressReadsMap.put(address, new HashSet<>());
                     addressWritesMap.put(address, new HashSet<>());
                 }
 
                 if (data.isRead()) {
+                    data.setValue(Long.parseLong(model.getConstInterp(((RegWriter)e).getResultRegisterExpr()).toString()));
                     addressReadsMap.get(address).add(data);
                 } else if (data.isWrite()) {
+                    data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
                     addressWritesMap.get(address).add(data);
                     writeReadsMap.put(data, new HashSet<>());
                     if (data.isInit())
@@ -274,7 +274,7 @@ public class ModelContext {
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
-                    if ((rfInterp != null) && rfInterp.isTrue()) {
+                    if (rfInterp != null && rfInterp.isTrue()) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);

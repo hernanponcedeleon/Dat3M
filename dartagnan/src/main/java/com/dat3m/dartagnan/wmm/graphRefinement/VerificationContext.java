@@ -48,8 +48,12 @@ public class VerificationContext {
     public Collection<AxiomData> getAxioms() { return wmmMap.getAxiomValues(); }
 
 
-    public BranchEquivalence computeBranchEquivalence() {
-        return new BranchEquivalence(program);
+    private BranchEquivalence branchEquivalence;
+    public BranchEquivalence getBranchEquivalence() {
+        if (branchEquivalence == null) {
+            branchEquivalence = new BranchEquivalence(program);
+        }
+        return branchEquivalence;
     }
 
     public DependencyGraph<RelationData> computeRelationDependencyGraph() {

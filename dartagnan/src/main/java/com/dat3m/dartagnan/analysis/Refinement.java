@@ -281,7 +281,22 @@ public class Refinement {
     }
 
 
+    private static void refine(Solver solver, Context ctx, DNF<CoreLiteral> coreViolations) {
+        BoolExpr refinement = ctx.mkTrue();
+        for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
+            BoolExpr clause = ctx.mkFalse();
+            for (CoreLiteral literal : violation.getLiterals()) {
+                clause = ctx.mkOr(clause, ctx.mkNot(literal.getZ3BoolExpr(ctx)));
+            }
+            refinement = ctx.mkAnd(refinement, clause);
+        }
+        solver.add(refinement);
+    }
+
+
     private static void printSummary(List<RefinementStats> statList, long totalSolvingTime, long boundCheckTime, List<Conjunction<CoreLiteral>> excludedRfs) {
+        final boolean PRINT_RFS = false;
+
         long totalModelTime = 0;
         long totalSearchTime = 0;
         long totalViolationComputationTime = 0;
@@ -311,25 +326,14 @@ public class Refinement {
         System.out.println("Max Saturation Depth: " + satDepth);
         System.out.println("Bound check time(ms): " + boundCheckTime);
 
-        System.out.println("-------- Excluded Read-Froms --------");
-        excludedRfs.sort(Comparator.comparingInt(Conjunction::getSize));
-        for (Conjunction<CoreLiteral> cube : excludedRfs) {
-            printStats(cube);
-        }
-
-    }
-
-
-    private static void refine(Solver solver, Context ctx, DNF<CoreLiteral> coreViolations) {
-        BoolExpr refinement = ctx.mkTrue();
-        for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
-            BoolExpr clause = ctx.mkFalse();
-            for (CoreLiteral literal : violation.getLiterals()) {
-                clause = ctx.mkOr(clause, ctx.mkNot(literal.getZ3BoolExpr(ctx)));
+        if (PRINT_RFS) {
+            System.out.println("-------- Excluded Read-Froms --------");
+            excludedRfs.sort(Comparator.comparingInt(Conjunction::getSize));
+            for (Conjunction<CoreLiteral> cube : excludedRfs) {
+                printStats(cube);
             }
-            refinement = ctx.mkAnd(refinement, clause);
         }
-        solver.add(refinement);
+
     }
 
 

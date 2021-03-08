@@ -154,6 +154,7 @@ public class GraphRefinement {
         co(w2, w1).
      */
     private Result kSaturation(SearchNode node, Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
+        searchList = searchList.subList(searchStart, searchList.size());
         if (k == 0) {
             // 0-SAT amounts to a simple violation check
             if (checkViolations()) {
@@ -162,7 +163,7 @@ public class GraphRefinement {
                 node.replaceBy(new LeafNode(computeViolationList()));
                 stats.violationComputationTime += (System.currentTimeMillis() - time);
                 return Result.FAIL;
-            } else if (searchList.subList(searchStart, searchList.size()).stream().allMatch(this::coExists)) {
+            } else if (searchList.stream().allMatch(this::coExists)) {
                 // All remaining edges in the search list are already in the graph (due to transitivity and totality of co)
                 return Result.PASS;
             } else {
@@ -174,7 +175,7 @@ public class GraphRefinement {
         while (progress) {
             progress = false;
 
-            for (int i = searchStart; i < searchList.size(); i++) {
+            for (int i = 0; i < searchList.size(); i++) {
                 Edge coEdge = searchList.get(i);
                 if (coExists(coEdge))
                     continue;
@@ -186,7 +187,7 @@ public class GraphRefinement {
                 execGraph.addCoherenceEdge(coEdge);
                 stats.numGuessedCoherences++;
                 Result r = kSaturation(decNode.getPositive(), nextTime, k - 1, searchList, i + 1);
-                if (r == Result.PASS) {
+                if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
                     return Result.PASS;
                 }
                 backtrackOn(nextTime);
@@ -196,7 +197,9 @@ public class GraphRefinement {
                     node = decNode.getNegative();
                     execGraph.addCoherenceEdge(coEdge.getInverse().withTimestamp(curTime));
                     r = kSaturation(decNode.getNegative(), curTime, k - 1, searchList, i + 1);
-                    if (r != Result.UNKNOWN) {
+                    if (r == Result.FAIL) {
+                        return r;
+                    } else if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
                         return r;
                     }
                     // We made progress
@@ -220,6 +223,7 @@ public class GraphRefinement {
                         execGraph.addCoherenceEdge(coEdge.withTimestamp(curTime));
                     }
                 }
+                searchList.removeIf(this::coExists);
             }
         }
         return Result.UNKNOWN;
@@ -417,6 +421,20 @@ public class GraphRefinement {
                 Edge edge = modelContext.getEdge(new Tuple(e1,e2));
                 if (!execGraph.getCoGraph().contains(edge)) {
                     throw new RuntimeException();
+                }
+            }
+        }
+
+        for (Set<EventData> writes : modelContext.getAddressWritesMap().values()) {
+            for (EventData e1 : writes) {
+                for (EventData e2 : writes) {
+                    if (e1 == e2) {
+                        continue;
+                    }
+
+                    if (!coExists(new Edge(e1,e2))) {
+                        throw new RuntimeException();
+                    }
                 }
             }
         }
