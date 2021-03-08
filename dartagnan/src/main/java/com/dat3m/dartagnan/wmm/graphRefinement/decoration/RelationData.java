@@ -10,9 +10,9 @@ import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import java.util.*;
 
 // This class is a combination of a facade and decorator to wrap and enhance
-// the functionality of the classes Relation and Axiom
+// the functionality of the Relation class
 // The name is temporary
-// We can replace it by letting Relation and Axiom implement a Dependable/Dependency interface
+// We can replace it by letting Relation implement a Dependable/Dependency interface
 public class RelationData implements Dependent<RelationData> {
     private final WmmMap map;
     private final Relation relation;

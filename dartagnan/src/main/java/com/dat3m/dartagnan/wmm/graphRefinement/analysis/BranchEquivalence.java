@@ -170,7 +170,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void mergeThreadBranches(Collection<Branch> branches) {
-        DependencyGraph<Branch> depGraph = new DependencyGraph<>(branches);
+        DependencyGraph<Branch> depGraph = DependencyGraph.from(branches);
         for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
             EqClass eq = new EqClass();
             scc.forEach(b -> eq.addAllInternal(b.getContent().events));

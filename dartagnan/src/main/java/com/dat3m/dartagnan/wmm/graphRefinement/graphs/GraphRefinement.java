@@ -1,14 +1,17 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.graphs;
 
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.graphRefinement.ModelContext;
 import com.dat3m.dartagnan.wmm.graphRefinement.VerificationContext;
 import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.*;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.EventData;
+import com.dat3m.dartagnan.wmm.graphRefinement.decoration.RelationData;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.ExternalGraph;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat.StaticEventGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.wmm.graphRefinement.logic.Literal;
@@ -19,6 +22,8 @@ import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.DecisionNode;
 import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.LeafNode;
 import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.SearchNode;
 import com.dat3m.dartagnan.wmm.graphRefinement.searchTree.SearchTree;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;
 
@@ -49,6 +54,9 @@ public class GraphRefinement {
     private void populateFromModel(Model model, Context ctx) {
         modelContext.initialize(model, ctx);
         execGraph.initializeFromModel(modelContext);
+        // TODO: Remove testint code
+        testIteration();
+        testStaticGraphs();
     }
 
     private final Map<Long, Set<Edge>> possibleCoEdges = new HashMap<>();
@@ -123,8 +131,12 @@ public class GraphRefinement {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
+        if (result.getResult() == Result.PASS) {
+            testCoherence();
+        }
         return result;
     }
+
 
     private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
         SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
@@ -341,10 +353,10 @@ public class GraphRefinement {
                         execGraph.addCoherenceEdge(e);
                         // Test code: add violation for anti initial writes cause we will
                         // never search for them otherwise
-                        DecisionNode decNode = new DecisionNode(e);
+                        /*DecisionNode decNode = new DecisionNode(e);
                         node.replaceBy(decNode);
                         decNode.getNegative().replaceBy(new LeafNode(new Conjunction<>(new CoLiteral(e.getInverse()))));
-                        node = decNode.getPositive();
+                        node = decNode.getPositive();*/
                         //coreReasonsSorted.add( new Conjunction<>(new CoLiteral(new Edge(e2, e1))));
                     } else if (!e1.isInit() && !e2.isInit()) {
                         coEdges.add(new Edge(e1, e2));
@@ -353,6 +365,61 @@ public class GraphRefinement {
             }
         }
         possibleCoEdges.values().removeIf(Collection::isEmpty);
+    }
+
+
+
+    private final static boolean DEBUG = false;
+    private void testIteration() {
+        if (!DEBUG)
+            return;
+        for (EventGraph g : execGraph.getEventGraphs()) {
+            int size = g.size();
+            for (Edge e : g) {
+                size--;
+                if (size < 0) {
+                    throw new RuntimeException();
+                }
+            }
+            if (size > 0) {
+                throw new RuntimeException();
+            }
+        }
+    }
+
+    private void testStaticGraphs() {
+        if (!DEBUG)
+            return;
+        for (RelationData relData : context.getRelations()) {
+            if (relData.isStaticRelation()) {
+                EventGraph g = execGraph.getEventGraph(relData);
+                for (Tuple t : relData.getWrappedRelation().getMaxTupleSet()) {
+                    if (modelContext.eventExists(t.getFirst()) && modelContext.eventExists(t.getSecond())) {
+                        if (!g.contains(modelContext.getEdge(t))) {
+                            throw new RuntimeException();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void testCoherence() {
+        if (!DEBUG)
+            return;
+        TupleSet tSet = new TupleSet();
+        for (Edge e : execGraph.getWoGraph()) {
+            tSet.add(new Tuple(e.getFirst().getEvent(), e.getSecond().getEvent()));
+        }
+        Map<Event, Set<Event>> map = tSet.transMap();
+        for (Event e1 : map.keySet()) {
+            for (Event e2 : map.get(e1)) {
+                Edge edge = modelContext.getEdge(new Tuple(e1,e2));
+                if (!execGraph.getCoGraph().contains(edge)) {
+                    throw new RuntimeException();
+                }
+            }
+        }
     }
 
 }

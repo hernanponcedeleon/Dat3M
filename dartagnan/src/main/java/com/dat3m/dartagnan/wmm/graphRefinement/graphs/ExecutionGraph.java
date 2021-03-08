@@ -107,6 +107,9 @@ public class ExecutionGraph {
         graphHierarchy.backtrack();
     }
 
+
+    //===================== Reading the WMM ========================
+
     private GraphAxiom getGraphAxiomFromAxiom(AxiomData axiom) {
         if (axiomMap.containsKey(axiom))
             return axiomMap.get(axiom);

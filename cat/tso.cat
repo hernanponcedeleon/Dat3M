@@ -17,7 +17,7 @@ let implied = po & W*R & ((M * A) | (A * M))
 let com-tso = (co | fr | rfe)
 
 (* Program order for TSO *)
-let po-tso = ((po \ W*R) | mfence)
+let po-tso = ((po & ((R*M) | (W*W))) | mfence)
 
 (* TSO global-happens-before *)
 let ghb-tso = po-tso | com-tso | implied

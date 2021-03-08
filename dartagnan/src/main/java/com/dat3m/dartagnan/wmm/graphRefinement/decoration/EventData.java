@@ -13,6 +13,7 @@ public class EventData implements Comparable<EventData> {
     private EventData readFrom;
     private int id = -1;
     private int localId = -1;
+    private long value;
     private long accessedAddress;
     private int importance;
     private boolean wasExecuted;
@@ -32,6 +33,9 @@ public class EventData implements Comparable<EventData> {
 
     public long getAccessedAddress() { return accessedAddress; }
     public void setAccessedAddress(long address) { accessedAddress = address; }
+
+    public long getValue() { return value;}
+    public long setValue(long val) { return value = val;}
 
     public EventData getReadFrom() { return readFrom; }
     public void setReadFrom(EventData store) { readFrom = store; }
@@ -96,7 +100,7 @@ public class EventData implements Comparable<EventData> {
 
     @Override
     public String toString() {
-        return "T" + event.getThread().getId() + ":" + localId;
+        return "T" + event.getThread().getId() + ":" + localId + "; " + event.toString();
     }
 
     @Override

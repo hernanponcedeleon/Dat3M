@@ -24,6 +24,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.microsoft.z3.Status.SATISFIABLE;
+import static com.microsoft.z3.Status.UNSATISFIABLE;
 
 public class Refinement {
 
@@ -35,6 +36,9 @@ public class Refinement {
     // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
 
     //TODO(2): Add flags for printing stats (currently the stats always get printed)
+
+    static final boolean PRINT_STATISTICS = true;
+
 
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
     // Then performs graph-based refinement.
@@ -175,7 +179,6 @@ public class Refinement {
         solver.push();
         solver.add(assertionEncoding);
 
-       // globalRefinement = ctx.mkTrue();
 
         Result res = UNKNOWN;
 
@@ -191,16 +194,20 @@ public class Refinement {
 
         while (solver.check() == SATISFIABLE) {
             curTime = System.currentTimeMillis();
-            System.out.println(" ===== Iteration: " + ++vioCount + " =====");
+            if (PRINT_STATISTICS) {
+                System.out.println(" ===== Iteration: " + ++vioCount + " =====");
             /*System.out.println(solver.getStatistics().get("mk clause"));
             System.out.println(solver.getStatistics().get("mk bool var"));*/
-            System.out.println("Solving time(ms): " + (curTime - lastTime));
+                System.out.println("Solving time(ms): " + (curTime - lastTime));
+            }
             totalSolvingTime += (curTime - lastTime);
 
             RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
             RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
-            System.out.println(stats.toString());
+            if (PRINT_STATISTICS) {
+                System.out.println(stats.toString());
+            }
 
             res = gRes.getResult();
             if (res == Result.FAIL) {
@@ -209,10 +216,14 @@ public class Refinement {
                 refine(solver, ctx, violations);
                 // Some statistics
                 for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
-                    System.out.println("Violation size: " + cube.getSize());
+                    if (PRINT_STATISTICS) {
+                        System.out.println("Violation size: " + cube.getSize());
+                    }
                     Conjunction<CoreLiteral> excludedRf = cube.removeIf(x -> !(x instanceof RfLiteral));
                     excludedRfs.add(excludedRf);
-                    printStats(excludedRf);
+                    if (PRINT_STATISTICS) {
+                        printStats(excludedRf);
+                    }
                 }
             } else {
                 // No violations found, we can't refine
@@ -221,8 +232,10 @@ public class Refinement {
             lastTime = System.currentTimeMillis();
         }
         curTime = System.currentTimeMillis();
-        System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
-        System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
+        if (PRINT_STATISTICS) {
+            System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
+            System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
+        }
         totalSolvingTime += (curTime - lastTime);
 
         // Possible outcomes: - check() == SAT && res == UNKNOWN -> Inconclusive
@@ -247,12 +260,21 @@ public class Refinement {
             res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
         } else {
             solver.pop();
-            //solver.add(globalRefinement);
             solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
             res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
+            if (res == UNKNOWN) {
+                //TODO: This is just a temporary fallback
+                // We have to perform a second refinement for the bound checks!
+                for (DNF<CoreLiteral> violation : foundViolations) {
+                    refine(solver, ctx, violation);
+                }
+                res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
+            }
         }
         long boundCheckTime = System.currentTimeMillis() - lastTime;
-        printSummary(statList, totalSolvingTime, boundCheckTime, excludedRfs);
+        if (PRINT_STATISTICS) {
+            printSummary(statList, totalSolvingTime, boundCheckTime, excludedRfs);
+        }
 
         res = program.getAss().getInvert() ? res.invert() : res;
         return res;
@@ -298,7 +320,6 @@ public class Refinement {
     }
 
 
-    //private static BoolExpr globalRefinement;
     private static void refine(Solver solver, Context ctx, DNF<CoreLiteral> coreViolations) {
         BoolExpr refinement = ctx.mkTrue();
         for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
@@ -308,7 +329,6 @@ public class Refinement {
             }
             refinement = ctx.mkAnd(refinement, clause);
         }
-        //globalRefinement = ctx.mkAnd(globalRefinement, refinement);
         solver.add(refinement);
     }
 

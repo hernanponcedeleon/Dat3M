@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.basic;
 import com.dat3m.dartagnan.wmm.graphRefinement.ModelContext;
 import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.CoLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.EventLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.EventData;
 import com.dat3m.dartagnan.wmm.graphRefinement.util.EdgeDirection;
@@ -102,6 +103,13 @@ public class CoherenceGraph extends AbstractEventGraph {
 
     @Override
     public Conjunction<CoreLiteral> computeReason(Edge edge) {
-        return contains(edge) ? new Conjunction<>(new CoLiteral(edge)) : Conjunction.FALSE;
+        if (!contains(edge))
+            return Conjunction.FALSE;
+        if (edge.getFirst().isInit()) {
+            return new Conjunction<>(new EventLiteral(edge.getFirst()), new EventLiteral(edge.getSecond()));
+        } else {
+            return new Conjunction<>(new CoLiteral(edge));
+        }
+        //return contains(edge) ? new Conjunction<>(new CoLiteral(edge)) : Conjunction.FALSE;
     }
 }

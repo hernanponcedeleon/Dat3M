@@ -26,6 +26,8 @@ public class StaticDefaultEventGraph extends StaticEventGraph {
         return graph.contains(edge);
     }
 
+
+
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
         return graph.getMinSize(e, dir);
@@ -65,5 +67,6 @@ public class StaticDefaultEventGraph extends StaticEventGraph {
                 graph.add(context.getEdge(tuple));
             }*/
         }
+        size = graph.size();
     }
 }

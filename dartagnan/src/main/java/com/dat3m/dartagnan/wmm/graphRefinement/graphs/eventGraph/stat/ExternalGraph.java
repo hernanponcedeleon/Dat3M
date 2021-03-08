@@ -52,15 +52,16 @@ public class ExternalGraph extends StaticEventGraph {
     }
 
     // Not sure if this is clever
+    //TODO: Fix this mess
     private class ExtIterator extends EdgeIterator {
 
         // NOTE: We might want to get the threads from elsewhere, in the case that
         // some threads are not in the current context/model
         // because they were empty or something.
-        List<Thread> threads = context.getProgram().getThreads();
-        int tailThreadId, headThreadId;
+        List<Thread> threads = context.getThreads();
+        int tailThreadId = -1, headThreadId = -1;
         List<EventData> tailEvents, headEvents;
-        int iTail, iHead = -1;
+        int iTail = -1, iHead = -1;
 
         public ExtIterator() {
             super(true);
@@ -70,6 +71,7 @@ public class ExternalGraph extends StaticEventGraph {
 
         public ExtIterator(EventData e, EdgeDirection dir) {
             super(e, dir);
+
             if (threads.size() > 1)
                 autoInit();
         }
@@ -98,8 +100,12 @@ public class ExternalGraph extends StaticEventGraph {
                 if (tailThreadId < threads.size()) {
                     tailEvents = threadEventsMap.get(threads.get(tailThreadId));
                     first = tailEvents.get(iTail = 0);
-                } else
+                } else {
                     first = null;
+                    if (iterateFirstThenSecond) {
+                        second = null; // abort
+                    }
+                }
             }
         }
 
@@ -115,8 +121,12 @@ public class ExternalGraph extends StaticEventGraph {
                 if (headThreadId < threads.size()) {
                     headEvents = threadEventsMap.get(threads.get(headThreadId));
                     second = headEvents.get(iHead = 0);
-                } else
+                } else {
                     second = null;
+                    if (!iterateFirstThenSecond) {
+                        first = null; // abort
+                    }
+                }
             }
         }
     }

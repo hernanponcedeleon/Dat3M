@@ -16,16 +16,17 @@ import java.util.*;
 // (2) Backtracking to a previous state
 // (3) Listening to changes in graphs
 
-// Note: Whenever the dependency graph gets recomputed due to added/removed event graphs
-// the topological ordering may change non-deterministically.
 public class GraphHierarchy {
     private final Map<EventGraph, Set<GraphListener>> graphListenersMap;
     private DependencyGraph<EventGraph> dependencyGraph;
     private boolean changed = true;
 
+
+    // Note: Whenever the dependency graph gets recomputed due to added/removed event graphs
+    // the topological ordering may change non-deterministically.
     public DependencyGraph<EventGraph> getDependencyGraph() {
         if (changed) {
-            dependencyGraph = new DependencyGraph<>(graphListenersMap.keySet());
+            dependencyGraph = DependencyGraph.from(graphListenersMap.keySet());
             // This makes sure that dependencies get added properly
             // if they were not added previously (i.e. if a graph was added but not its dependencies)
             dependencyGraph.getNodeContents().forEach(this::addEventGraph);

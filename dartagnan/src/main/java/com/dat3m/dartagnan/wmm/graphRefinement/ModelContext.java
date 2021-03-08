@@ -34,6 +34,7 @@ public class ModelContext {
     private final EventMap eventMap;
     // The event list is sorted lexicographically by (threadID, cID)
     private final ArrayList<EventData> eventList;
+    private final ArrayList<Thread> threadList;
     private final Map<Thread, List<EventData>> threadEventsMap;
     private final Map<EventData, EventData> readWriteMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
@@ -46,6 +47,7 @@ public class ModelContext {
 
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
+    private List<Thread> threadListView;
     private Map<Thread, List<EventData>> threadEventsMapView;
     private Map<EventData, EventData> readWriteMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
@@ -58,7 +60,8 @@ public class ModelContext {
     public ModelContext(VerificationContext verificationContext) {
         this.verificationContext = verificationContext;
         eventList = new ArrayList<>(100);
-        threadEventsMap = new HashMap<>(verificationContext.getProgram().getThreads().size());
+        threadList = new ArrayList<>(getProgram().getThreads().size());
+        threadEventsMap = new HashMap<>(getProgram().getThreads().size());
         readWriteMap = new HashMap<>();
         writeReadsMap = new HashMap<>();
         fenceMap = new HashMap<>();
@@ -71,6 +74,7 @@ public class ModelContext {
 
     private void createViews() {
         eventListView = Collections.unmodifiableList(eventList);
+        threadListView = Collections.unmodifiableList(threadList);
         threadEventsMapView = Collections.unmodifiableMap(threadEventsMap);
         readWriteMapView = Collections.unmodifiableMap(readWriteMap);
         writeReadsMapView = Collections.unmodifiableMap(writeReadsMap);
@@ -101,7 +105,7 @@ public class ModelContext {
     public List<EventData> getEventList() {
         return eventListView;
     }
-    public List<Thread> getThreads() { return getProgram().getThreads(); }
+    public List<Thread> getThreads() { return threadListView; }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
@@ -164,6 +168,7 @@ public class ModelContext {
         // and whether they were violated or not. But they might be compiled away.
         int id = 0;
         eventList.clear();
+        threadList.clear();
         threadEventsMap.clear();
         addressInitMap.clear(); // This one can probably be constant and need not be rebuilt!
         addressWritesMap.clear();
@@ -171,7 +176,7 @@ public class ModelContext {
         fenceMap.clear();
         eventMap.clear();
 
-        List<Thread> threadList = getProgram().getThreads();
+        List<Thread> threadList = new ArrayList<>(getProgram().getThreads());
         List<Integer> threadEndIndexList = new ArrayList<>(threadList.size());
 
         for (Thread thread : threadList) {
@@ -181,7 +186,7 @@ public class ModelContext {
                 if (eventFilter.filter(e)) {
                     addEvent(e, id++, localId++);
                 }
-
+                //TODO: Add support for ifs
                 if (e instanceof CondJump) {
                     CondJump jump = (CondJump) e;
                     if (jump.didJump(model, context)) {
@@ -200,7 +205,10 @@ public class ModelContext {
         for (int i = 0; i < threadList.size(); i++) {
             Thread thread = threadList.get(i);
             int end = threadEndIndexList.get(i);
-            threadEventsMap.put(thread, Collections.unmodifiableList(eventList.subList(start, end)));
+            if (start != end) {
+                this.threadList.add(thread);
+                threadEventsMap.put(thread, Collections.unmodifiableList(eventList.subList(start, end)));
+            }
             start = end;
         }
     }
@@ -217,7 +225,10 @@ public class ModelContext {
             // A memory event in the control flow need NOT be executed (e.g. AARCH's StoreExclusive)
             if (data.wasExecuted()) {
                 Long address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
+                // Doesn't work, cause getMemValue().getIntValue gives wrong result
+                //Long value = Long.parseLong(model.getConstInterp(((MemEvent) e).getMemValueExpr()).toString());
                 data.setAccessedAddress(address);
+                //data.setValue(value);
                 if (!addressReadsMap.containsKey(address)) {
                     addressReadsMap.put(address, new HashSet<>());
                     addressWritesMap.put(address, new HashSet<>());

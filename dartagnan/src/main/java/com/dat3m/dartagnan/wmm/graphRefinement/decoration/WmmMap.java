@@ -75,7 +75,7 @@ public class WmmMap {
     }
 
     public DependencyGraph<RelationData> computeRelationDependencyGraph() {
-        return new DependencyGraph<>(getRelationValues());
+        return DependencyGraph.from(getRelationValues());
     }
 
     public static WmmMap fromMemoryModel(Wmm memoryModel) {

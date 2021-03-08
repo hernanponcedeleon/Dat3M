@@ -64,14 +64,14 @@ public class ProgramOrderGraph extends StaticEventGraph {
 
         public PoIterator() {
             super(true );
-            threads = context.getProgram().getThreads();
+            threads = context.getThreads();
             threadIndex = -1;
             findNextThread();
         }
 
         public PoIterator(EventData e, EdgeDirection dir) {
             super(e, dir);
-            threads = context.getProgram().getThreads();
+            threads = context.getThreads();
             eventList = threadEventsMap.get(e.getThread());
             if (firstIsFixed) {
                 first = eventList.get(i = e.getLocalId());

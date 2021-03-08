@@ -81,6 +81,11 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
 
+    @Override
+    public int size() {
+        return size;
+    }
+
     public int getMinSize() {
         return size;
     }

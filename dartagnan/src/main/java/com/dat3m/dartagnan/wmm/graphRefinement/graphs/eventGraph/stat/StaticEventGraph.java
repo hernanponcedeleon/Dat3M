@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.stat;
 
+import com.dat3m.dartagnan.wmm.graphRefinement.ModelContext;
 import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.EventLiteral;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
@@ -64,6 +65,12 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     }
 
     @Override
+    public void initialize(ModelContext context) {
+        super.initialize(context);
+        size = 0;
+    }
+
+    @Override
     public Conjunction<CoreLiteral> computeReason(Edge edge) {
         if (!contains(edge))
             return Conjunction.FALSE;
@@ -76,4 +83,5 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
         for (EventData e : context.getEventList())
             size += getMinSize(e, EdgeDirection.Outgoing);
     }
+
 }

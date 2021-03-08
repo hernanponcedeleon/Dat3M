@@ -4,12 +4,14 @@ import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.wmm.graphRefinement.util.ListUtil;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class DependencyGraph<T extends Dependent<? extends T>> {
+public class DependencyGraph<T> {
     private final Map<T, Node> nodeMap;
     private List<Node> nodeList;
-    private List<Set<Node>> sccs;
+    private final List<Set<Node>> sccs;
+    private final Function<T, Collection<? extends T>> dependencyMap;
 
     public Node get(T item) {
         return nodeMap.get(item);
@@ -31,8 +33,46 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
         return nodeList.get(0).getContent();
     }
 
-    public Collection<Set<Node>> getSCCs() {
+    public List<Set<Node>> getSCCs() {
         return Collections.unmodifiableList(sccs);
+    }
+
+    // ================= Public construction methods =================
+
+    public static <V> DependencyGraph<V> from(final Collection<V> items, final Function<V, Collection<? extends V>> dependencyMap) {
+        return new DependencyGraph<>(items, dependencyMap);
+    }
+
+    public static <V> DependencyGraph<V> from(final V item, final Function<V, Collection<? extends V>> dependencyMap) {
+        return from(Collections.singletonList(item), dependencyMap);
+    }
+
+    public static <V> DependencyGraph<V> from(final Collection<V> items, final Map<V, Collection<? extends V>> dependencyMap) {
+        return new DependencyGraph<>(items, x -> dependencyMap.getOrDefault(x, Collections.emptyList()));
+    }
+
+    public static <V> DependencyGraph<V> from(final V item, final Map<V, Collection<? extends V>> dependencyMap) {
+        return from(Collections.singletonList(item), dependencyMap);
+    }
+
+    public static <V extends Dependent<? extends V>> DependencyGraph<V> from(final Collection<V> items) {
+        return new DependencyGraph<>(items, Dependent::getDependencies);
+    }
+
+    public static <V extends Dependent<? extends V>> DependencyGraph<V> from(final V item) {
+        return from(Collections.singletonList(item));
+    }
+
+    // ====================================================================
+
+    private DependencyGraph(final Collection<T> items, final Function<T, Collection<? extends T>> dependencyMap) {
+        nodeMap = new HashMap<>();
+        sccs = new ArrayList<>();
+        this.dependencyMap = dependencyMap;
+
+        items.forEach(this::getNodeInternal);
+        initializeNodes();
+        tarjan();
     }
 
     private Node getNodeInternal(T item) {
@@ -45,20 +85,11 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
         return node;
     }
 
-    public DependencyGraph(final Collection<T> items) {
-        nodeMap = new HashMap<>();
-        sccs = new ArrayList<>();
-
-        items.forEach(this::getNodeInternal);
-        initializeNodes();
-        tarjan();
-    }
-
     private void initializeNodes() {
         Queue<Node> workingQueue = new ArrayDeque<>(nodeMap.values());
         while (!workingQueue.isEmpty()) {
             Node node = workingQueue.remove();
-            for (T dependency : node.content.getDependencies()) {
+            for (T dependency : dependencyMap.apply(node.content)) {
                 boolean isNew = !nodeMap.containsKey(dependency);
                 Node depNode = getNodeInternal(dependency);
                 node.dependencies.add(depNode);
@@ -199,3 +230,4 @@ public class DependencyGraph<T extends Dependent<? extends T>> {
         }
     }
 }
+

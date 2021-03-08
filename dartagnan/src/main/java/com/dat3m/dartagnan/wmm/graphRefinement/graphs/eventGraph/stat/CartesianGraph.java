@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.graphRefinement.ModelContext;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.Edge;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.EventData;
 import com.dat3m.dartagnan.wmm.graphRefinement.decoration.RelationData;
+import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.wmm.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.wmm.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
@@ -75,7 +76,11 @@ public class CartesianGraph extends StaticEventGraph {
 
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return new CartesianIterator(e, dir);
+        if (dir == EdgeDirection.Outgoing) {
+            return first.filter(e.getEvent()) ? new CartesianIterator(e, dir) : IteratorUtils.empty();
+        } else {
+            return second.filter(e.getEvent()) ? new CartesianIterator(e, dir) : IteratorUtils.empty();
+        }
     }
 
 
@@ -86,27 +91,29 @@ public class CartesianGraph extends StaticEventGraph {
 
         public CartesianIterator() {
             super(true);
-            firstIt = firstEvents.iterator();
-            secondIt = secondEvents.iterator();
-            autoInit();
+            if (!firstEvents.isEmpty() && !secondEvents.isEmpty()) {
+                autoInit();
+            }
         }
 
         public CartesianIterator(EventData fixed, EdgeDirection dir) {
             super(fixed, dir);
-            firstIt = firstEvents.iterator();
-            secondIt = secondEvents.iterator();
-            autoInit();
+            if (!firstEvents.isEmpty() && !secondEvents.isEmpty()) {
+                autoInit();
+            }
         }
 
 
         @Override
         protected void resetFirst() {
             firstIt = firstEvents.iterator();
+            first = firstIt.next();
         }
 
         @Override
         protected void resetSecond() {
             secondIt = secondEvents.iterator();
+            second = secondIt.next();
         }
 
         @Override

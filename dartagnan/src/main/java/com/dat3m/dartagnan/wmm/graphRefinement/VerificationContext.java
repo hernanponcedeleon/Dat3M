@@ -53,7 +53,7 @@ public class VerificationContext {
     }
 
     public DependencyGraph<RelationData> computeRelationDependencyGraph() {
-        return new DependencyGraph<>(getRelations());
+        return DependencyGraph.from(getRelations());
     }
 
 

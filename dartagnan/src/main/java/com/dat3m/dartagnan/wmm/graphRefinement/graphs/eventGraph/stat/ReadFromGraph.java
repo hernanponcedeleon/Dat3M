@@ -109,7 +109,7 @@ public class ReadFromGraph extends StaticEventGraph {
                 // If a write is fixed, iterate over all reading reads
                 second = readIterator.hasNext() ? readIterator.next() : null;
             } else {
-                // If no write is fixed, instead iterate to the next read and it's sole write
+                // If no write is fixed, instead iterate to the next read and its sole write
                 if (readWriteIterator.hasNext()) {
                     Map.Entry<EventData, EventData> entry = readWriteIterator.next();
                     first = entry.getValue();
