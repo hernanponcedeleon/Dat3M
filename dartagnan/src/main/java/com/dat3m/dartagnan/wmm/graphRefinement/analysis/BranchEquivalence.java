@@ -56,6 +56,14 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return getEquivalenceClass(e1).getExclusiveClasses().contains(getEquivalenceClass(e2));
     }
 
+    public boolean isImplied(Event start, Event implied) {
+        return getEquivalenceClass(start).getImpliedClasses().contains(getEquivalenceClass(implied));
+    }
+
+    public boolean isReachableFrom(Event start, Event target) {
+        return getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
+    }
+
     public Set<Event> getExclusiveEvents(Event e) {
         return new ExclusiveSet(e);
     }
