@@ -43,7 +43,7 @@ public class DependencyGraph<T> {
         return new DependencyGraph<>(items, dependencyMap);
     }
 
-    public static <V> DependencyGraph<V> from(final V item, final Function<V, Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> fromSingleton(final V item, final Function<V, Collection<? extends V>> dependencyMap) {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
@@ -51,7 +51,7 @@ public class DependencyGraph<T> {
         return new DependencyGraph<>(items, x -> dependencyMap.getOrDefault(x, Collections.emptyList()));
     }
 
-    public static <V> DependencyGraph<V> from(final V item, final Map<V, Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> fromSingleton(final V item, final Map<V, Collection<? extends V>> dependencyMap) {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
@@ -59,7 +59,7 @@ public class DependencyGraph<T> {
         return new DependencyGraph<>(items, Dependent::getDependencies);
     }
 
-    public static <V extends Dependent<? extends V>> DependencyGraph<V> from(final V item) {
+    public static <V extends Dependent<? extends V>> DependencyGraph<V> fromSingleton(final V item) {
         return from(Collections.singletonList(item));
     }
 

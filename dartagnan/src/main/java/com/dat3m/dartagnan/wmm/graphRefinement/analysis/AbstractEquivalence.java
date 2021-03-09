@@ -14,7 +14,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
     @Override
     public Set<? extends EquivalenceClass<T>> getAllEquivalenceClasses() {
-        return classes;
+        return Collections.unmodifiableSet(classes);
     }
 
     public AbstractEquivalence() {
@@ -26,6 +26,10 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         // We make classMap larger by factor 4/3 to avoid resizing due to HashMap's LoadFactor
         classMap = new HashMap<>((4 * estimatedDataSize) / 3);
         classes = new HashSet<>(estimatedNumOfClasses);
+    }
+
+    protected <V extends EquivalenceClass<T>> Set<V> getTypedEquivalenceClasses() {
+        return (Set<V>) classes;
     }
 
     protected boolean removeEmptyClasses() {
@@ -60,7 +64,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
             this(-1);
         }
 
-        public EqClass(int initialCapacity) {
+        protected EqClass(int initialCapacity) {
             internalSet = initialCapacity < 1 ? new HashSet<>() : new HashSet<>(initialCapacity);
             classes.add(this);
         }
