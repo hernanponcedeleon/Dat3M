@@ -741,7 +741,22 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
 			if(initMode && !(value instanceof Address)) {
-				programBuilder.initAddrEqConst(address, value.reduce());
+				ExprInterface lhs = address;
+				long rhs = 0;
+				while(lhs instanceof IExprBin) {
+					rhs = rhs + ((IExprBin)lhs).getRHS().reduce().getValue();
+					lhs = ((IExprBin)lhs).getLHS();
+				}
+				String text = ctx.expr(1).getText();				
+				String[] split = text.split("add.ref");
+				if(split.length > 1) {
+					text = split[split.length - 1];
+					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
+				}
+				if(rhs != 0) {
+					text += "(" + rhs + ")";
+				}
+				programBuilder.initLocEqConst(text, value.reduce());
 				return null;
 			}
 			Store child = new Store(address, value, null);
