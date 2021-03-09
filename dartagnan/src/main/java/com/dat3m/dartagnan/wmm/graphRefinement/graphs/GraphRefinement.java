@@ -81,19 +81,12 @@ public class GraphRefinement {
         populateFromModel(model, ctx);
         stats.modelConstructionTime = System.currentTimeMillis() - curTime;
         // =================================
-/*        EventGraph ext = execGraph.getEventGraphs().stream()
-                .filter(x -> x instanceof ExternalGraph).findAny().get();
-
-        int i = 0;
-        for (Edge e : ext) {
-            i++;
-        }*/
 
         // ======= Initialize search =======
         SearchTree sTree = new SearchTree();
         coreReasonsSorted.clear();
         possibleCoEdges.clear();
-        initSearch(sTree.getRoot());
+        initSearch();
 
         List<Edge> coSearchList = new ArrayList<>();
         for (Set<Edge> coEdges : possibleCoEdges.values()) {
@@ -171,6 +164,7 @@ public class GraphRefinement {
             }
         }
 
+        searchList = new ArrayList<>(searchList);
         boolean progress = true;
         while (progress) {
             progress = false;
@@ -221,6 +215,7 @@ public class GraphRefinement {
                         node.replaceBy(decNode);
                         node = decNode.getPositive();
                         execGraph.addCoherenceEdge(coEdge.withTimestamp(curTime));
+                        progress = true;
                     }
                 }
                 searchList.removeIf(this::coExists);
@@ -339,7 +334,7 @@ public class GraphRefinement {
     }
 
 
-    private void initSearch(SearchNode node) {
+    private void initSearch() {
         for (Map.Entry<Long, Set<EventData>> addressedWrites : modelContext.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
             Long address = addressedWrites.getKey();
@@ -353,15 +348,7 @@ public class GraphRefinement {
                         continue;
 
                     if (e1.isInit() && !e2.isInit()) {
-                        Edge e = new Edge(e1, e2);
-                        execGraph.addCoherenceEdge(e);
-                        // Test code: add violation for anti initial writes cause we will
-                        // never search for them otherwise
-                        /*DecisionNode decNode = new DecisionNode(e);
-                        node.replaceBy(decNode);
-                        decNode.getNegative().replaceBy(new LeafNode(new Conjunction<>(new CoLiteral(e.getInverse()))));
-                        node = decNode.getPositive();*/
-                        //coreReasonsSorted.add( new Conjunction<>(new CoLiteral(new Edge(e2, e1))));
+                        execGraph.addCoherenceEdge(new Edge(e1, e2));
                     } else if (!e1.isInit() && !e2.isInit()) {
                         coEdges.add(new Edge(e1, e2));
                     }
