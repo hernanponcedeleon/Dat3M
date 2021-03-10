@@ -45,9 +45,9 @@ public class RelCritTest {
         return data;
     }
 
-    private String path;
-    private Wmm wmm;
-    private int[] expectedEdges;
+    private final String path;
+    private final Wmm wmm;
+    private final int[] expectedEdges;
 
     public RelCritTest(String path, Wmm wmm, int[] expectedEdges) {
         this.path = path;

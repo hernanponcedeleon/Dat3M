@@ -12,9 +12,9 @@ import java.util.Set;
  */
 public class SSAReg {
 
-    private Set<MemEvent> eventsWithAddress = new HashSet<>();
-    private Register register;
-    private int ssaId;
+    private final Set<MemEvent> eventsWithAddress = new HashSet<>();
+    private final Register register;
+    private final int ssaId;
         
     public SSAReg(int SSAId, Register register) {
         this.ssaId = SSAId;

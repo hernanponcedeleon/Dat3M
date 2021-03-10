@@ -14,9 +14,9 @@ import java.util.*;
 
 public class Memory {
 
-    private BiMap<Location, Address> map;
-    private Map<String, Location> locationIndex;
-    private Map<String, List<Address>> arrays;
+    private final BiMap<Location, Address> map;
+    private final Map<String, Location> locationIndex;
+    private final Map<String, List<Address>> arrays;
 
     private int nextIndex = 0;
 

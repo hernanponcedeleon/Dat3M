@@ -7,7 +7,7 @@ import com.microsoft.z3.Context;
 
 public class AssertNot extends AbstractAssert {
 
-    private AbstractAssert child;
+    private final AbstractAssert child;
 
     public AssertNot(AbstractAssert child){
         this.child = child;

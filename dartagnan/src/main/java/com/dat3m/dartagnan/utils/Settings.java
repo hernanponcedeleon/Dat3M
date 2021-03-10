@@ -20,13 +20,13 @@ public class Settings {
     public static final int FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY    = 2;
 
     private Mode mode;
-    private Alias alias;
-    private int bound;
+    private final Alias alias;
+    private final int bound;
 
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
 
-    private Map<Integer, Boolean> flags = new HashMap<Integer, Boolean>(){{
+    private final Map<Integer, Boolean> flags = new HashMap<Integer, Boolean>(){{
             put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, true);
             put(FLAG_USE_SEQ_ENCODING_REL_RF, true);
             put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);

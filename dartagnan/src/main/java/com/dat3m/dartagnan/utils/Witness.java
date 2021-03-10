@@ -42,10 +42,10 @@ import com.microsoft.z3.Solver;
 
 public class Witness {
 	
-	private Program program;
-	private String path;
+	private final Program program;
+	private final String path;
 	
-	private Map<Event, Integer> eventThreadMap = new HashMap<>();
+	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 
 	public Witness(Program program, String path) {
 		this.program = program;

@@ -9,10 +9,10 @@ import com.dat3m.dartagnan.program.Register;
 
 public class PthreadPool {
 
-	private List<Register> threads = new ArrayList<>();
-	private Map<Register, List<String>> mapPtrName = new HashMap<>();
-	private Map<Integer, Register> mapIntPtr = new HashMap<>();
-	private Map<Register, Register> mapRegPtr = new HashMap<>();
+	private final List<Register> threads = new ArrayList<>();
+	private final Map<Register, List<String>> mapPtrName = new HashMap<>();
+	private final Map<Integer, Register> mapIntPtr = new HashMap<>();
+	private final Map<Register, Register> mapRegPtr = new HashMap<>();
 	
 	public void add(Register ptr, String name) {
 		threads.add(ptr);

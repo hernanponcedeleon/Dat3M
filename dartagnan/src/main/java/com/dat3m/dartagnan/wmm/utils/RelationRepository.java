@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelCrit;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
 import com.dat3m.dartagnan.wmm.relation.base.local.RelAddrDirect;
 import com.dat3m.dartagnan.wmm.relation.base.local.RelIdd;
@@ -31,7 +30,7 @@ import java.util.Set;
 
 public class RelationRepository {
 
-    private Map<String, Relation> relationMap = new HashMap<>();
+    private final Map<String, Relation> relationMap = new HashMap<>();
 
     public Set<Relation> getRelations(){
         Set<Relation> set = new HashSet<>();

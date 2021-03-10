@@ -17,8 +17,8 @@ public class If extends Event implements RegReaderData {
     private final ExprInterface expr;
     private Event successorMain;
     private Event successorElse;
-    private Event exitMainBranch;
-    private Event exitElseBranch;
+    private final Event exitMainBranch;
+    private final Event exitElseBranch;
 
     private final ImmutableSet<Register> dataRegs;
 

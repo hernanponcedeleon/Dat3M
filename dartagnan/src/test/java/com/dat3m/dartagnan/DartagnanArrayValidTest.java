@@ -40,9 +40,9 @@ public class DartagnanArrayValidTest {
                 .collect(Collectors.toList());
     }
 
-    private String path;
-    private Wmm wmm;
-    private Settings settings;
+    private final String path;
+    private final Wmm wmm;
+    private final Settings settings;
 
     public DartagnanArrayValidTest(String path, Wmm wmm, Settings settings) {
         this.path = path;

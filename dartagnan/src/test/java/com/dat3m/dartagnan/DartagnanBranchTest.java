@@ -71,10 +71,10 @@ public class DartagnanBranchTest {
         return builder.build();
     }
 
-    private String path;
-    private Wmm wmm;
-    private Settings settings;
-    private Result expected;
+    private final String path;
+    private final Wmm wmm;
+    private final Settings settings;
+    private final Result expected;
 
     public DartagnanBranchTest(String path, Result expected, Wmm wmm, Settings settings) {
         this.path = path;

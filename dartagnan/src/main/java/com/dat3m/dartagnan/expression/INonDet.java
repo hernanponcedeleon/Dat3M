@@ -20,7 +20,7 @@ import com.google.common.primitives.UnsignedLong;
 
 public class INonDet extends IExpr implements ExprInterface {
 	
-	private INonDetTypes type;
+	private final INonDetTypes type;
 	private final int precision;
 	
 	public INonDet(INonDetTypes type, int precision) {

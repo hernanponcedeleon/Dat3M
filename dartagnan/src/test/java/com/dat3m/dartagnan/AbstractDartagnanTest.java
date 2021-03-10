@@ -52,11 +52,11 @@ public abstract class AbstractDartagnanTest {
                         }, ArrayList::addAll);
     }
 
-    private String path;
-    private Result expected;
-    private Arch target;
-    private Wmm wmm;
-    private Settings settings;
+    private final String path;
+    private final Result expected;
+    private final Arch target;
+    private final Wmm wmm;
+    private final Settings settings;
 
     AbstractDartagnanTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         this.path = path;

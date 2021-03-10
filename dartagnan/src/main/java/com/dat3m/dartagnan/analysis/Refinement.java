@@ -5,14 +5,14 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.RefinementResult;
-import com.dat3m.dartagnan.wmm.graphRefinement.VerificationContext;
-import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.wmm.graphRefinement.coreReason.RfLiteral;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.GraphRefinement;
-import com.dat3m.dartagnan.wmm.graphRefinement.graphs.RefinementStats;
-import com.dat3m.dartagnan.wmm.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.wmm.graphRefinement.logic.DNF;
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.RfLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.GraphRefinement;
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementStats;
+import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
+import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -24,7 +24,6 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.microsoft.z3.Status.SATISFIABLE;
-import static com.microsoft.z3.Status.UNSATISFIABLE;
 
 public class Refinement {
 
@@ -43,8 +42,8 @@ public class Refinement {
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
     // Then performs graph-based refinement.
     public static Result runAnalysisGraphRefinementEmptyCoherence(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-        VerificationContext verificationContext = new VerificationContext(program, wmm, target, settings);
-        GraphRefinement refinement = new GraphRefinement(verificationContext);
+        VerificationTask verificationTask = new VerificationTask(program, wmm, target, settings);
+        GraphRefinement refinement = new GraphRefinement(verificationTask);
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         // AssertionInline depends on compiled events (copies)
@@ -96,7 +95,7 @@ public class Refinement {
             System.out.println(stats.toString());
 
             res = gRes.getResult();
-            if (res == Result.FAIL) {
+            if (res == FAIL) {
                 DNF<CoreLiteral> violations = gRes.getViolations();
                 foundViolations.add(violations);
                 refine(solver, ctx, violations);
@@ -153,8 +152,8 @@ public class Refinement {
 
     // Runs graph-based refinement, starting from the empty memory model.
     public static Result runAnalysisGraphRefinement(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-        VerificationContext verificationContext = new VerificationContext(program, wmm, target, settings);
-        GraphRefinement refinement = new GraphRefinement(verificationContext);
+        VerificationTask verificationTask = new VerificationTask(program, wmm, target, settings);
+        GraphRefinement refinement = new GraphRefinement(verificationTask);
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -210,7 +209,7 @@ public class Refinement {
             }
 
             res = gRes.getResult();
-            if (res == Result.FAIL) {
+            if (res == FAIL) {
                 DNF<CoreLiteral> violations = gRes.getViolations();
                 foundViolations.add(violations);
                 refine(solver, ctx, violations);

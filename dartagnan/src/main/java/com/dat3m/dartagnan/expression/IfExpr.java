@@ -11,9 +11,9 @@ import com.microsoft.z3.Model;
 
 public class IfExpr implements ExprInterface {
 
-	private BExpr guard;
-	private ExprInterface tbranch;
-	private ExprInterface fbranch;
+	private final BExpr guard;
+	private final ExprInterface tbranch;
+	private final ExprInterface fbranch;
 	
 	public IfExpr(BExpr guard, ExprInterface tbranch, ExprInterface fbranch) {
 		this.guard =  guard;
@@ -65,7 +65,7 @@ public class IfExpr implements ExprInterface {
 
 	@Override
 	public IConst reduce() {
-		return (IConst)(guard.reduce().getValue() > 0 ? tbranch.reduce() : fbranch.reduce());
+		return guard.reduce().getValue() > 0 ? tbranch.reduce() : fbranch.reduce();
 	}
 	
 	public BExpr getGuard() {

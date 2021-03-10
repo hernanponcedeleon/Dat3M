@@ -7,8 +7,8 @@ import com.microsoft.z3.Context;
 
 public class AssertCompositeAnd extends AbstractAssert {
 
-    private AbstractAssert a1;
-    private AbstractAssert a2;
+    private final AbstractAssert a1;
+    private final AbstractAssert a2;
 
     public AssertCompositeAnd(AbstractAssert a1, AbstractAssert a2){
         this.a1 = a1;

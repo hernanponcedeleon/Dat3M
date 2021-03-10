@@ -28,15 +28,6 @@ public class RelCo extends Relation {
         forceDoEncode = true;
     }
 
-    // This one is a placeholder needed for the graph refinement
-    // It shall not be used anywhere else
-    // In particular, we might want to remove the ability of "_co" to be encoded
-    public RelCo(boolean transitive) {
-        this();
-        if (!transitive)
-            term = "_co";
-    }
-
     // Temporary test code
     private boolean doEncode = true;
     // if set to false, the co-relation will not be encoded
@@ -121,7 +112,7 @@ public class RelCo extends Relation {
                 Expr a2 = w2.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w2.getMemAddressExpr(), false) : w2.getMemAddressExpr();
                 enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
                         ctx.mkAnd(ctx.mkAnd(w1.exec(), w2.exec()), ctx.mkEq(a1, a2)),
-                        ctx.mkLt(Utils.intVar("co", w1, ctx), Utils.intVar("co", w2, ctx))
+                        ctx.mkLt(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
             }
 

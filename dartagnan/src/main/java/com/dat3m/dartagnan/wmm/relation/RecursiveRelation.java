@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  *
  * @author Florian Furbach
@@ -19,6 +22,11 @@ public class RecursiveRelation extends Relation {
 
     public Relation getInner() {
         return r1;
+    }
+
+    @Override
+    public List<Relation> getDependencies() {
+        return Collections.singletonList(r1);
     }
 
     public RecursiveRelation(String name) {

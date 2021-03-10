@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData {
 
     protected ExprInterface cmp;
-    private ImmutableSet<Register> dataRegs;
+    private final ImmutableSet<Register> dataRegs;
 
     BoolExpr z3Cond;
 

@@ -56,12 +56,12 @@ public class ExclusivePairsTest {
         return data;
     }
 
-    private String path;
-    private Wmm wmm;
-    private Result expectedState;
-    private boolean expectedFlag;
-    private int[] expectedEdges;
-    private Settings settings;
+    private final String path;
+    private final Wmm wmm;
+    private final Result expectedState;
+    private final boolean expectedFlag;
+    private final int[] expectedEdges;
+    private final Settings settings;
 
     public ExclusivePairsTest(String path, Wmm wmm, Settings settings, Result expectedState, boolean expectedFlag, int[] expectedEdges) {
         this.path = path;

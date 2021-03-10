@@ -68,7 +68,7 @@ public class Dartagnan {
                 System.out.println("Filter " + (p.getAssFilter()));
             }
             System.out.println("Condition " + p.getAss().toStringWithType());
-            System.out.println(result == Result.FAIL ? "Ok" : "No");        	
+            System.out.println(result == FAIL ? "Ok" : "No");
         } else {
         	System.out.println(result);
         }

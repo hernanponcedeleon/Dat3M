@@ -15,10 +15,10 @@ import java.util.Set;
 
 public class EdgeTestHelper {
 
-    private Program program;
-    private Relation relation;
-    private FilterAbstract filter1;
-    private FilterAbstract filter2;
+    private final Program program;
+    private final Relation relation;
+    private final FilterAbstract filter1;
+    private final FilterAbstract filter2;
 
     public EdgeTestHelper(Program program, Relation relation, FilterAbstract filter1, FilterAbstract filter2){
         this.program = program;

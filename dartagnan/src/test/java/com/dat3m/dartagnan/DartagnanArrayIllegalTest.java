@@ -28,7 +28,7 @@ public class DartagnanArrayIllegalTest {
                 .collect(Collectors.toList());
     }
 
-    private String path;
+    private final String path;
 
     public DartagnanArrayIllegalTest(String path) {
         this.path = path;

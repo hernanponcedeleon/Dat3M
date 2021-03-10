@@ -24,9 +24,9 @@ public class Program {
     private String name;
 	private AbstractAssert ass;
     private AbstractAssert assFilter;
-	private List<Thread> threads;
+	private final List<Thread> threads;
 	private final ImmutableSet<Location> locations;
-	private Memory memory;
+	private final Memory memory;
 	private Arch arch;
     private ThreadCache cache;
     private boolean isUnrolled;

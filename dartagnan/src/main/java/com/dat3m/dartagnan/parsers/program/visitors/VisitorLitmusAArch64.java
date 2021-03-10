@@ -17,7 +17,7 @@ import org.antlr.v4.runtime.misc.Interval;
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         implements LitmusAArch64Visitor<Object> {
 
-    private ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
 

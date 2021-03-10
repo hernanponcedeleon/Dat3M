@@ -24,7 +24,7 @@ public class Graph {
         return new HashSet<>(Arrays.asList("po", "co", "rf"));
     }
 
-    private static Map<String, String> colorMap;
+    private static final Map<String, String> colorMap;
     static
     {
         colorMap = new HashMap<>();
@@ -33,12 +33,12 @@ public class Graph {
         colorMap.put("po", "brown");
     }
 
-    private Model model;
-    private Context ctx;
+    private final Model model;
+    private final Context ctx;
 
     private StringBuilder buffer;
     private Map<Long, Location> mapAddressLocation;
-    private Set<String> relations = new HashSet<>();
+    private final Set<String> relations = new HashSet<>();
 
     private final String L1 = "  ";
     private final String L2 = "    ";

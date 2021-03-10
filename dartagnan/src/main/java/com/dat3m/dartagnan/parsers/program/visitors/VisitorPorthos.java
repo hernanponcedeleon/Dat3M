@@ -15,7 +15,7 @@ import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorPorthos extends PorthosBaseVisitor<Object> implements PorthosVisitor<Object> {
 
-    private ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder;
     private int currentThread;
 
     public VisitorPorthos(ProgramBuilder pb){

@@ -22,7 +22,7 @@ public class VisitorLitmusC
         extends LitmusCBaseVisitor<Object>
         implements LitmusCVisitor<Object> {
 
-    private ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder;
     private int currentThread;
     private int scope;
     private Register returnRegister;

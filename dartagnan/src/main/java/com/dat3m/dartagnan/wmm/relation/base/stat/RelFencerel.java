@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -16,7 +15,7 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelFencerel extends StaticRelation {
 
-    private String fenceName;
+    private final String fenceName;
 
     public static String makeTerm(String fenceName){
         return "fencerel(" + fenceName + ")";

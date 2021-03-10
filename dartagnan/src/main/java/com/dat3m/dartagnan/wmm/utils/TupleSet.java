@@ -6,9 +6,9 @@ import java.util.*;
 
 public class TupleSet implements Set<Tuple>{
 
-    private Set<Tuple> tuples = new HashSet<>();
-    private Map<Event, Set<Tuple>> byFirst = new HashMap<>();
-    private Map<Event, Set<Tuple>> bySecond = new HashMap<>();
+    private final Set<Tuple> tuples = new HashSet<>();
+    private final Map<Event, Set<Tuple>> byFirst = new HashMap<>();
+    private final Map<Event, Set<Tuple>> bySecond = new HashMap<>();
     private boolean isUpdated = false;
 
     @Override

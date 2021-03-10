@@ -27,9 +27,9 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
 
-    private String path;
-    private Wmm wmm;
-    private Settings settings;
+    private final String path;
+    private final Wmm wmm;
+    private final Settings settings;
     private Result expected;
 
     public AbstractSvCompTest(String path, Wmm wmm, Settings settings) {

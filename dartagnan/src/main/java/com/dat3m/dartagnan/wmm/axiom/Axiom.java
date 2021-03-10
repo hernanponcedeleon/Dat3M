@@ -1,17 +1,21 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
  *
  * @author Florian Furbach
  */
-public abstract class Axiom {
+public abstract class Axiom implements Dependent<Relation> {
 
     protected Relation rel;
 
@@ -28,6 +32,11 @@ public abstract class Axiom {
     Axiom(Relation rel, boolean negate) {
         this.rel = rel;
         this.negate = negate;
+    }
+
+    @Override
+    public List<Relation> getDependencies() {
+        return Collections.singletonList(rel);
     }
 
     public Relation getRel() {
@@ -80,4 +89,10 @@ public abstract class Axiom {
         Axiom other = (Axiom)obj;
         return this.rel.equals(other.rel) && this.negate == other.negate;
     }
+
+
+    // ===================== Utility methods ===================
+    public boolean isEmptiness() { return this instanceof Empty; }
+    public boolean isAcyclicity() { return this instanceof Acyclic; }
+    public boolean isIrreflexivity() { return this instanceof Irreflexive; }
 }

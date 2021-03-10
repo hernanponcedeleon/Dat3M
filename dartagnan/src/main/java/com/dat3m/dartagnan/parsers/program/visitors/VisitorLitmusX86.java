@@ -23,7 +23,7 @@ public class VisitorLitmusX86
 
     private final static ImmutableSet<String> fences = ImmutableSet.of("Mfence");
 
-    private ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
 

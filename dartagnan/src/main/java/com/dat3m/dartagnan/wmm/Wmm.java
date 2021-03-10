@@ -24,10 +24,10 @@ public class Wmm {
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
 
-    private List<Axiom> axioms = new ArrayList<>();
-    private Map<String, FilterAbstract> filters = new HashMap<>();
-    private RelationRepository relationRepository;
-    private List<RecursiveGroup> recursiveGroups = new ArrayList<>();
+    private final List<Axiom> axioms = new ArrayList<>();
+    private final Map<String, FilterAbstract> filters = new HashMap<>();
+    private final RelationRepository relationRepository;
+    private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
     private Program program;
 

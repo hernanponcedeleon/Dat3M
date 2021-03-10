@@ -111,26 +111,26 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected int currentLine= -1;
 	
     private Label currentLabel = null;
-    private Map<Label, Label> pairLabels = new HashMap<>();
+    private final Map<Label, Label> pairLabels = new HashMap<>();
     
-    private Map<String, Function> functions = new HashMap<>();
+    private final Map<String, Function> functions = new HashMap<>();
 	private FunctionCall currentCall = null;
 	
 	// Improves performance by initializing Locations rather than creating new write events
 	private boolean initMode = false;
 	
-	private Map<String, Proc_declContext> procedures = new HashMap<>();
+	private final Map<String, Proc_declContext> procedures = new HashMap<>();
 	protected PthreadPool pool = new PthreadPool();
 	protected List<Register> allocationRegs = new ArrayList<Register>();
 	
 	private int nextScopeID = 0;
 	protected Scope currentScope = new Scope(nextScopeID, null);
 	
-	private List<Register> returnRegister = new ArrayList<>();
+	private final List<Register> returnRegister = new ArrayList<>();
 	private String currentReturnName = null;
 	
-	private Map<String, ExprInterface> constantsMap = new HashMap<>();
-	private Map<String, Integer> constantsTypeMap = new HashMap<>();
+	private final Map<String, ExprInterface> constantsMap = new HashMap<>();
+	private final Map<String, Integer> constantsTypeMap = new HashMap<>();
 
 	protected Map<Integer, List<ExprInterface>> threadCallingValues = new HashMap<>();
 	
@@ -138,7 +138,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	protected Call_cmdContext atomicMode = null;
 	 
-	private List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
+	private final List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -284,8 +284,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	currentScope = new Scope(nextScopeID, currentScope);
     	nextScopeID++;
     	
-    	Impl_bodyContext body = ctx.impl_body();;
-    	if(body == null) {
+    	Impl_bodyContext body = ctx.impl_body();
+		if(body == null) {
 			throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
     	}
 
@@ -365,7 +365,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		if(name.equals("$initialize")) {
-			initMode = true;;
+			initMode = true;
 		}
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
@@ -560,7 +560,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
 			Label pairingLabel = null;
-			if(!pairLabels.keySet().contains(currentLabel)) {
+			if(!pairLabels.containsKey(currentLabel)) {
 				// If the current label doesn't have a pairing label, we jump to the end of the program
 	        	pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
 			} else {
@@ -636,7 +636,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitNeg_expr(Neg_exprContext ctx) {
 		ExprInterface v = (ExprInterface)ctx.unary_expr().accept(this);
-		return new BExprUn(BOpUn.NOT, v);
+		return new BExprUn(NOT, v);
 	}
 
 	@Override
@@ -731,7 +731,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Function " + name + " is not defined");
 		}
 		if(name.contains("$load.")) {
-			return (IExpr)ctx.expr(1).accept(this);
+			return ctx.expr(1).accept(this);
 		}
 		if(name.contains("$store.")) {
 			if(smackDummyVariables.contains(ctx.expr(1).getText())) {

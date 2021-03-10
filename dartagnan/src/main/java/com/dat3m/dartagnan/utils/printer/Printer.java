@@ -17,8 +17,8 @@ public class Printer {
     private boolean showInitThreads = false;
     private IDType idType = IDType.AUTO;
 
-    private String paddingBase = "      ";
-    private String paddingStep = "    ";
+    private final String paddingBase = "      ";
+    private final String paddingStep = "    ";
     private int paddingSize;
 
     public String print(Program program){

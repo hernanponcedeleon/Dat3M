@@ -17,7 +17,7 @@ public class Thread {
     private final Event entry;
     private Event exit;
 
-    private Map<String, Register> registers;
+    private final Map<String, Register> registers;
     private ThreadCache cache;
 
     public Thread(String name, int id, Event entry){

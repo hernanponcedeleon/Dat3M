@@ -6,6 +6,9 @@ import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  *
  * @author Florian Furbach
@@ -27,6 +30,10 @@ public abstract class UnaryRelation extends Relation {
         return r1;
     }
 
+    @Override
+    public List<Relation> getDependencies() {
+        return Collections.singletonList(r1);
+    }
 
     @Override
     public int updateRecursiveGroupId(int parentId){

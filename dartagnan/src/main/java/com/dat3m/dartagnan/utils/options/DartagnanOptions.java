@@ -14,8 +14,8 @@ import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
 
-    private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
-    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES));
+    private final Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
+    private final Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES));
     private boolean incremental_solver;
     private String witness;
     private AnalysisTypes analysis = REACHABILITY; 

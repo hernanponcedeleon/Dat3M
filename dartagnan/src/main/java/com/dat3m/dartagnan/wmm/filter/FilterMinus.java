@@ -20,8 +20,8 @@ public class FilterMinus extends FilterAbstract {
                 + " \\ " + ((filter2 instanceof FilterBasic) ? filter2 : "( " + filter2 + " )");
     }
 
-    private FilterAbstract filter1;
-    private FilterAbstract filter2;
+    private final FilterAbstract filter1;
+    private final FilterAbstract filter2;
 
     private FilterMinus(FilterAbstract filterPresent, FilterAbstract filterAbsent){
         this.filter1 = filterPresent;

@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.memory.Location;
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert>
         implements LitmusAssertionsVisitor<AbstractAssert> {
 
-    private ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder;
 
     public VisitorLitmusAssertions(ProgramBuilder programBuilder){
         this.programBuilder = programBuilder;

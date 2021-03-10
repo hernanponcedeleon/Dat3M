@@ -13,7 +13,7 @@ import java.util.ListIterator;
 
 public class RelPo extends StaticRelation {
 
-    private FilterAbstract filter;
+    private final FilterAbstract filter;
 
     public RelPo(){
         this(false);

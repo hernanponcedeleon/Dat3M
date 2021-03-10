@@ -16,15 +16,15 @@ import java.util.*;
 
 public class ProgramBuilder {
 
-    private Map<Integer, Thread> threads = new HashMap<>();
+    private final Map<Integer, Thread> threads = new HashMap<>();
 
-    private Map<String, Location> locations = new HashMap<>();
-    private Map<String, Address> pointers = new HashMap<>();
+    private final Map<String, Location> locations = new HashMap<>();
+    private final Map<String, Address> pointers = new HashMap<>();
 
-    private Map<IExpr, IConst> iValueMap = new HashMap<>();
-    private Memory memory = new Memory();
+    private final Map<IExpr, IConst> iValueMap = new HashMap<>();
+    private final Memory memory = new Memory();
 
-    private Map<String, Label> labels = new HashMap<>();
+    private final Map<String, Label> labels = new HashMap<>();
 
     private AbstractAssert ass;
     private AbstractAssert assFilter;

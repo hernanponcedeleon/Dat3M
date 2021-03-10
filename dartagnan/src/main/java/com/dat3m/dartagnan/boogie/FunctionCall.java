@@ -9,9 +9,9 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 
 public class FunctionCall {
 
-	private Function function;
-	private FunctionCall parent;
-	private List<Object> call;
+	private final Function function;
+	private final FunctionCall parent;
+	private final List<Object> call;
     
 	public FunctionCall(Function function, List<Object> call, FunctionCall caller) {
 		if(!(function.getSignature().size() == call.size())) {

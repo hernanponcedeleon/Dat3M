@@ -10,7 +10,7 @@ import java.util.*;
 public class RecursiveGroup {
 
     private final int id;
-    private List<RecursiveRelation> relations;
+    private final List<RecursiveRelation> relations;
     private int encodeIterations = 0;
 
     public RecursiveGroup(int id, Collection<RecursiveRelation> relations){

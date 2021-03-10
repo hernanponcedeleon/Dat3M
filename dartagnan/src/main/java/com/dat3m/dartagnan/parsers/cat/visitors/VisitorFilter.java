@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.wmm.filter.*;
 
 public class VisitorFilter extends CatBaseVisitor<FilterAbstract> implements CatVisitor<FilterAbstract> {
 
-    private VisitorBase base;
+    private final VisitorBase base;
 
     VisitorFilter(VisitorBase base){
         this.base = base;

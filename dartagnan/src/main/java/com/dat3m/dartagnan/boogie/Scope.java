@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.boogie;
 
 public class Scope {
 
-	private int id;
-	private Scope parent;
+	private final int id;
+	private final Scope parent;
 	
 	public Scope(int id, Scope parent) {
 		this.id = id;

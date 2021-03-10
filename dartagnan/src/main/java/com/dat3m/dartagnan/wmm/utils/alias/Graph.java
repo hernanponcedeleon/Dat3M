@@ -12,10 +12,10 @@ import java.util.Set;
 
 public class Graph {
 
-    private Map<Object, Set<Object>> edges = new HashMap<>();
-    private Map<Object, Set<Address>> addresses = new HashMap<>();
-    private Map<Register, Set<MemEvent>> events = new HashMap<>();
-    private Map<Register, Map<Integer, SSAReg>> ssa = new HashMap<>();
+    private final Map<Object, Set<Object>> edges = new HashMap<>();
+    private final Map<Object, Set<Address>> addresses = new HashMap<>();
+    private final Map<Register, Set<MemEvent>> events = new HashMap<>();
+    private final Map<Register, Map<Integer, SSAReg>> ssa = new HashMap<>();
 
     boolean addEdge(Object v1, Object v2){
         edges.putIfAbsent(v1, new HashSet<>());

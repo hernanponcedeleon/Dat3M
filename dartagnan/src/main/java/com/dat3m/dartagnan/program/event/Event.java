@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;

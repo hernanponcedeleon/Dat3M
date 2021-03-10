@@ -21,7 +21,7 @@ public class VisitorLitmusPPC
 
     private final static ImmutableSet<String> fences = ImmutableSet.of("Sync", "Lwsync", "Isync");
 
-    private ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
 

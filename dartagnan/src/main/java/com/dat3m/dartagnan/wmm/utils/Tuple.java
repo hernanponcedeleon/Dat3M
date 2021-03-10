@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public class Tuple implements Comparable<Tuple> {
 
-    private Event first;
-    private Event second;
+    private final Event first;
+    private final Event second;
 
     public Tuple(Event first, Event second) {
         this.first = first;

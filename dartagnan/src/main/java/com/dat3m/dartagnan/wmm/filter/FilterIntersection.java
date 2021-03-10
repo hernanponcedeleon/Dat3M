@@ -20,8 +20,8 @@ public class FilterIntersection extends FilterAbstract {
                 + " & " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
     }
 
-    private FilterAbstract filter1;
-    private FilterAbstract filter2;
+    private final FilterAbstract filter1;
+    private final FilterAbstract filter2;
 
     private FilterIntersection(FilterAbstract filter1, FilterAbstract filter2){
         this.filter1 = filter1;

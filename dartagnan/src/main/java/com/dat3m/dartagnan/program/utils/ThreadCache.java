@@ -15,7 +15,7 @@ import java.util.*;
 
 public class ThreadCache {
 
-    private Map<FilterAbstract, ImmutableList<Event>> events = new HashMap<>();
+    private final Map<FilterAbstract, ImmutableList<Event>> events = new HashMap<>();
     private ImmutableSet<Register> registers;
     private ImmutableMap<Register, ImmutableList<Event>> regWriterMap;
 

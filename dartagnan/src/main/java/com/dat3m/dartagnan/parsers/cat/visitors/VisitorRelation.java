@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.wmm.relation.unary.*;
 
 public class VisitorRelation extends CatBaseVisitor<Relation> implements CatVisitor<Relation> {
 
-    private VisitorBase base;
+    private final VisitorBase base;
 
     VisitorRelation(VisitorBase base){
         this.base = base;

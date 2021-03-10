@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
+import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
+import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -8,8 +12,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -17,7 +20,7 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
  *
  * @author Florian Furbach
  */
-public abstract class Relation {
+public abstract class Relation implements Dependent<Relation> {
 
     public static boolean PostFixApprox = false;
 
@@ -42,6 +45,11 @@ public abstract class Relation {
 
     public Relation(String name) {
         this.name = name;
+    }
+
+    @Override
+    public List<Relation> getDependencies() {
+        return Collections.emptyList();
     }
 
     public int getRecursiveGroupId(){
@@ -171,4 +179,17 @@ public abstract class Relation {
         }
         return enc;
     }
+
+
+    // ========================== Utility methods =========================
+    public boolean isStaticRelation() { return this instanceof StaticRelation; }
+    public boolean isUnaryRelation() { return this instanceof UnaryRelation; }
+    public boolean isBinaryRelation() { return this instanceof BinaryRelation; }
+    public boolean isRecursiveRelation() { return this instanceof RecursiveRelation; }
+
+    public Relation getInner() {
+        return (isUnaryRelation() || isRecursiveRelation()) ? getDependencies().get(0) : null;
+    }
+    public Relation getFirst() { return isBinaryRelation() ? getDependencies().get(0) : null; }
+    public Relation getSecond() { return isBinaryRelation() ? getDependencies().get(1) : null; }
 }

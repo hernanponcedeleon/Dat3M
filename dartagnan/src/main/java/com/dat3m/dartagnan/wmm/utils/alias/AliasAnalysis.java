@@ -23,11 +23,11 @@ import java.util.*;
  */
 public class AliasAnalysis {
 
-    private List<Object> variables = new LinkedList<>();
+    private final List<Object> variables = new LinkedList<>();
     private ImmutableSet<Address> maxAddressSet;
     private Map<Register, Map<Event, Integer>> ssaMap;
 
-    private Graph graph = new Graph();
+    private final Graph graph = new Graph();
 
     public void calculateLocationSets(Program program, Alias alias) {
         if(alias == Alias.NONE){
@@ -138,7 +138,7 @@ public class AliasAnalysis {
 
                 if (expr instanceof Register) {
                     // r1 = r2 -> add edge r2 --> r1
-                    graph.addEdge((Register) expr, register);
+                    graph.addEdge(expr, register);
 
                 } else if (expr instanceof Address) {
                     // r = &a
@@ -270,7 +270,7 @@ public class AliasAnalysis {
 			if(exp instanceof Address) {
     			bases.put(reg, (Address)exp);
     		} else if(exp instanceof IExprBin) {
-    			IExpr base = ((IExprBin)exp).getBase();
+    			IExpr base = exp.getBase();
     			if(base instanceof Address) {
     				bases.put(reg, (Address)base);	
     			} else if(base instanceof Register && bases.containsKey(base)) {
@@ -286,7 +286,7 @@ public class AliasAnalysis {
             	if(bases.containsKey(address)) {
             		adresses = ImmutableSet.of(bases.get(address));
             	} else {
-                    adresses = graph.getAddresses(((Register) address));            		
+                    adresses = graph.getAddresses(address);
             	}
             } else if (address instanceof Address) {
                     adresses = ImmutableSet.of(((Address) address));
