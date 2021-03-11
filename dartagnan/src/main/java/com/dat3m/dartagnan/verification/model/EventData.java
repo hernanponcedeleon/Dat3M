@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.Thread;
 
 
-//A decoration/facade to enhance Event with additional information for refinement
+//EventData represents all data associated with an event in a concrete model.
 public class EventData implements Comparable<EventData> {
     private final EventMap map; // Not used right now
 
@@ -26,25 +26,25 @@ public class EventData implements Comparable<EventData> {
     public Event getEvent() { return event; }
 
     public int getId() { return id; }
-    public void setId(int newId) { id = newId; }
+    void setId(int newId) { id = newId; }
 
     public int getLocalId() { return localId; }
-    public void setLocalId(int newId) { localId = newId; }
+    void setLocalId(int newId) { localId = newId; }
 
     public long getAccessedAddress() { return accessedAddress; }
-    public void setAccessedAddress(long address) { accessedAddress = address; }
+    void setAccessedAddress(long address) { accessedAddress = address; }
 
     public long getValue() { return value;}
-    public long setValue(long val) { return value = val;}
+    long setValue(long val) { return value = val;}
 
     public EventData getReadFrom() { return readFrom; }
-    public void setReadFrom(EventData store) { readFrom = store; }
+    void setReadFrom(EventData store) { readFrom = store; }
 
     public int getImportance() { return importance; }
-    public void setImportance(int importance) { this.importance = importance; }
+    void setImportance(int importance) { this.importance = importance; }
 
     public boolean wasExecuted() { return wasExecuted; }
-    public void setWasExecuted(boolean flag) { wasExecuted = flag; }
+    void setWasExecuted(boolean flag) { wasExecuted = flag; }
 
     public Thread getThread() { return event.getThread(); }
 

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -47,7 +47,7 @@ public class RMWGraph extends StaticEventGraph {
     }
 
     @Override
-    public void initialize(ModelContext context) {
+    public void initialize(ExecutionModel context) {
         super.initialize(context);
         graph.initialize(context);
 

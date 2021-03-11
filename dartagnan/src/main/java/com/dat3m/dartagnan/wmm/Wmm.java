@@ -93,8 +93,6 @@ public class Wmm {
             filter.initialise();
         }
 
-        //TODO: Can be removed if the reworked EdgeSets are used
-        // Right now we need may sets/active sets to populate EdgeSetStatic
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(program, ctx, settings);
         }

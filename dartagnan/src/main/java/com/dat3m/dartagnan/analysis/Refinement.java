@@ -41,152 +41,46 @@ public class Refinement {
 
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
     // Then performs graph-based refinement.
-    public static Result runAnalysisGraphRefinementEmptyCoherence(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-        VerificationTask verificationTask = new VerificationTask(program, wmm, target, settings);
-        GraphRefinement refinement = new GraphRefinement(verificationTask);
-        program.unroll(settings.getBound(), 0);
-        program.compile(target, 0);
-        // AssertionInline depends on compiled events (copies)
-        // Thus we need to update the assertion after compilation
-        program.updateAssertion();
-        if(program.getAss() instanceof AssertTrue) {
+    public static Result runAnalysisGraphRefinementEmptyCoherence(Solver solver, Context ctx, VerificationTask task) {
+        task.unrollAndCompile();
+        if(task.getProgram().getAss() instanceof AssertTrue) {
             return PASS;
         }
+        solver.add(task.encodeProgram(ctx));
+        solver.add(task.encodeWmmRelationsWithoutCo(ctx));
+        solver.add(task.encodeWmmConsistency(ctx));
 
-        BoolExpr cfEncoding = program.encodeCF(ctx);
-        BoolExpr finalRegValueEncoding = program.encodeFinalRegisterValues(ctx);
-        BoolExpr wmmCoreEncoding = wmm.encodeEmptyCo(program, ctx, settings);
-        BoolExpr wmmConsistency = wmm.consistent(program, ctx);
-        BoolExpr assertionEncoding = program.getAss().encode(ctx);
-        if (program.getAssFilter() != null) {
-            assertionEncoding = ctx.mkAnd(program.getAssFilter().encode(ctx));
-        }
-
-        solver.add(cfEncoding);
-        solver.add(finalRegValueEncoding);
-        solver.add(wmmCoreEncoding);
-        solver.add(wmmConsistency);
-        solver.push();
-        solver.add(assertionEncoding);
-
-        //globalRefinement = ctx.mkTrue();
-
-        Result res = UNKNOWN;
-
-        // Just for statistics
-        List<Conjunction<CoreLiteral>> excludedRfs = new ArrayList<>();
-        List<DNF<CoreLiteral>> foundViolations = new ArrayList<>();
-        List<RefinementStats> statList = new ArrayList<>();
-        int vioCount = 0;
-
-        long lastTime = System.currentTimeMillis();
-        long curTime;
-        long totalSolvingTime = 0;
-
-        while (solver.check() == SATISFIABLE) {
-            curTime = System.currentTimeMillis();
-            System.out.println(" ===== Iteration: " + ++vioCount + " =====");
-            System.out.println("Solving time(ms): " + (curTime - lastTime));
-            totalSolvingTime += (curTime - lastTime);
-
-            RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
-            RefinementStats stats = gRes.getStatistics();
-            statList.add(stats);
-            System.out.println(stats.toString());
-
-            res = gRes.getResult();
-            if (res == FAIL) {
-                DNF<CoreLiteral> violations = gRes.getViolations();
-                foundViolations.add(violations);
-                refine(solver, ctx, violations);
-                // Some statistics
-                for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
-                    System.out.println("Violation size: " + cube.getSize());
-                    Conjunction<CoreLiteral> excludedRf = cube.removeIf(x -> !(x instanceof RfLiteral));
-                    excludedRfs.add(excludedRf);
-                    printStats(excludedRf);
-                }
-            } else {
-                // No violations found, we can't refine
-                break;
-            }
-            lastTime = System.currentTimeMillis();
-        }
-        curTime = System.currentTimeMillis();
-        System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
-        System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
-        totalSolvingTime += (curTime - lastTime);
-
-        // Possible outcomes: - check() == SAT && res == UNKNOWN -> Inconclusive
-        //                    - check() == SAT && res == PASS -> Unsafe
-        //                    - check() == UNSAT -> Safe
-
-        if (solver.check() == SATISFIABLE && res == UNKNOWN) {
-            // We couldn't verify the found counterexample, nor exclude it.
-            System.out.println("PROCEDURE was inconclusive");
-            return res;
-        } else if (solver.check() == SATISFIABLE) {
-            // We found a violation, but we still need to test the bounds.
-            System.out.println("Violation verified");
-        } else {
-            System.out.println("Safety proven");
-        }
-
-        lastTime = System.currentTimeMillis();
-        if(solver.check() == SATISFIABLE) {
-            solver.add(program.encodeNoBoundEventExec(ctx));
-            res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
-        } else {
-            solver.pop();
-            //solver.add(globalRefinement);
-            solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
-            res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
-        }
-        long boundCheckTime = System.currentTimeMillis() - lastTime;
-        printSummary(statList, totalSolvingTime, boundCheckTime, excludedRfs);
-
-        res = program.getAss().getInvert() ? res.invert() : res;
-        return res;
+        return refinementCore(solver, ctx, task);
     }
 
 
     // Runs graph-based refinement, starting from the empty memory model.
-    public static Result runAnalysisGraphRefinement(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-        VerificationTask verificationTask = new VerificationTask(program, wmm, target, settings);
-        GraphRefinement refinement = new GraphRefinement(verificationTask);
-        program.simplify();
-        program.unroll(settings.getBound(), 0);
-        program.compile(target, 0);
-        // AssertionInline depends on compiled events (copies)
-        // Thus we need to update the assertion after compilation
-        program.updateAssertion();
-        if(program.getAss() instanceof AssertTrue) {
+    public static Result runAnalysisGraphRefinement(Solver solver, Context ctx, VerificationTask task) {
+        task.unrollAndCompile();
+        if(task.getProgram().getAss() instanceof AssertTrue) {
             return PASS;
         }
+        solver.add(task.encodeProgram(ctx));
+        solver.add(task.encodeWmmCore(ctx));
 
-        BoolExpr cfEncoding = program.encodeCF(ctx);
-        BoolExpr finalRegValueEncoding = program.encodeFinalRegisterValues(ctx);
-        BoolExpr wmmCoreEncoding = wmm.encodeCore(program, ctx, settings);
-        BoolExpr assertionEncoding = program.getAss().encode(ctx);
-        if (program.getAssFilter() != null) {
-            assertionEncoding = ctx.mkAnd(program.getAssFilter().encode(ctx));
-        }
-
-        solver.add(cfEncoding);
-        solver.add(finalRegValueEncoding);
-        solver.add(wmmCoreEncoding);
-        solver.push();
-        solver.add(assertionEncoding);
+        return refinementCore(solver, ctx, task);
+    }
 
 
+
+    private static Result refinementCore(Solver solver, Context ctx, VerificationTask verificationTask) {
+        Program program = verificationTask.getProgram();
+        GraphRefinement refinement = new GraphRefinement(verificationTask);
         Result res = UNKNOWN;
+
+        solver.push();
+        solver.add(verificationTask.encodeAssertions(ctx));
 
         // Just for statistics
         List<Conjunction<CoreLiteral>> excludedRfs = new ArrayList<>();
         List<DNF<CoreLiteral>> foundViolations = new ArrayList<>();
         List<RefinementStats> statList = new ArrayList<>();
         int vioCount = 0;
-
         long lastTime = System.currentTimeMillis();
         long curTime;
         long totalSolvingTime = 0;

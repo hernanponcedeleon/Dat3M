@@ -5,10 +5,12 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.EdgeTestHelper;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.*;
@@ -66,7 +68,8 @@ public class RelCritTest {
             Program program = new ProgramParser().parse(new File(path));
 
             // Sanity check, can be skipped
-            assertTrue(runAnalysis(solver, ctx, program, wmm, program.getArch(), settings).equals(FAIL));
+            VerificationTask task = new VerificationTask(program, wmm, program.getArch(), settings);
+            assertEquals(runAnalysis(solver, ctx, task), FAIL);
 
             // Test edges
             EdgeTestHelper helper = new EdgeTestHelper(

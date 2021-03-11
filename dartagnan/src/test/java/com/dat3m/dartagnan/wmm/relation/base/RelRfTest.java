@@ -7,8 +7,10 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
@@ -44,16 +46,19 @@ public class RelRfTest {
 
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
+        VerificationTask task1 = new VerificationTask(p1, wmm, p1.getArch(), settings);
+        VerificationTask task2 = new VerificationTask(p2, wmm, p2.getArch(), settings);
+
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);
-        assertTrue(runAnalysis(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertEquals(runAnalysis(solver, ctx, task1), FAIL);
         solver.reset();
-        assertTrue(runAnalysis(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertEquals(runAnalysis(solver, ctx, task2), FAIL);
         solver.reset();
 
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, true);
-        assertTrue(runAnalysis(solver, ctx, p1, wmm, p1.getArch(), settings).equals(FAIL));
+        assertEquals(runAnalysis(solver, ctx, task1), FAIL);
         solver.reset();
-        assertTrue(runAnalysis(solver, ctx, p2, wmm, p2.getArch(), settings).equals(FAIL));
+        assertEquals(runAnalysis(solver, ctx, task2), FAIL);
         ctx.close();
     }
 

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
@@ -37,19 +37,19 @@ public class GraphRefinement {
     private final ExecutionGraph execGraph;
 
     // ====== Data specific for a single refinement =======
-    private final ModelContext modelContext;
+    private final ExecutionModel executionModel;
 
 
     public GraphRefinement(VerificationTask context) {
         this.context = context;
         this.execGraph = new ExecutionGraph(context);
-        modelContext = new ModelContext(context);
+        executionModel = new ExecutionModel(context);
     }
 
 
     private void populateFromModel(Model model, Context ctx) {
-        modelContext.initialize(model, ctx, false);
-        execGraph.initializeFromModel(modelContext);
+        executionModel.initialize(model, ctx, false);
+        execGraph.initializeFromModel(executionModel);
         // TODO: Remove testing code
         testIteration();
         testStaticGraphs();
@@ -331,7 +331,7 @@ public class GraphRefinement {
 
 
     private void initSearch() {
-        for (Map.Entry<Long, Set<EventData>> addressedWrites : modelContext.getAddressWritesMap().entrySet()) {
+        for (Map.Entry<Long, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
             Long address = addressedWrites.getKey();
             Set<Edge> coEdges = new HashSet<>();
@@ -381,8 +381,8 @@ public class GraphRefinement {
             if (relData.isStaticRelation()) {
                 EventGraph g = execGraph.getEventGraph(relData);
                 for (Tuple t : relData.getMaxTupleSet()) {
-                    if (modelContext.eventExists(t.getFirst()) && modelContext.eventExists(t.getSecond())) {
-                        if (!g.contains(modelContext.getEdge(t))) {
+                    if (executionModel.eventExists(t.getFirst()) && executionModel.eventExists(t.getSecond())) {
+                        if (!g.contains(executionModel.getEdge(t))) {
                             throw new RuntimeException();
                         }
                     }
@@ -401,14 +401,14 @@ public class GraphRefinement {
         Map<Event, Set<Event>> map = tSet.transMap();
         for (Event e1 : map.keySet()) {
             for (Event e2 : map.get(e1)) {
-                Edge edge = modelContext.getEdge(new Tuple(e1,e2));
+                Edge edge = executionModel.getEdge(new Tuple(e1,e2));
                 if (!execGraph.getCoGraph().contains(edge)) {
                     throw new RuntimeException();
                 }
             }
         }
 
-        for (Set<EventData> writes : modelContext.getAddressWritesMap().values()) {
+        for (Set<EventData> writes : executionModel.getAddressWritesMap().values()) {
             for (EventData e1 : writes) {
                 for (EventData e2 : writes) {
                     if (e1 == e2) {

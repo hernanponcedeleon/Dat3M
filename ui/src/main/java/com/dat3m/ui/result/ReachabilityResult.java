@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.options.utils.Method;
@@ -43,13 +44,14 @@ public class ReachabilityResult implements Dat3mResult {
 
     private void run(){
         if(validate()){
+            VerificationTask task = new VerificationTask(program, wmm, options.getTarget(), options.getSettings());
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             Result result = null;
             if (options.getMethod() == Method.GRAPH)
-                result = runAnalysisGraphRefinement(solver, ctx, program, wmm, options.getTarget(), options.getSettings());
+                result = runAnalysisGraphRefinement(solver, ctx, task);
             else if (options.getMethod() == Method.INCREMENTAL)
-                result = runAnalysisIncrementalSolver(solver, ctx, program, wmm, options.getTarget(), options.getSettings());
+                result = runAnalysisIncrementalSolver(solver, ctx, task);
             buildVerdict(result);
             if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result == FAIL)){
                 graph = new Graph(solver.getModel(), ctx, program, options.getSettings().getGraphRelations());

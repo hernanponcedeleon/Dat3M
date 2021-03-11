@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 
@@ -35,7 +35,7 @@ public class ProgramOrderGraph extends StaticEventGraph {
     }
 
     @Override
-    public void initialize(ModelContext context) {
+    public void initialize(ExecutionModel context) {
         super.initialize(context);
         this.threadEventsMap = context.getThreadEventsMap();
         size = 0;

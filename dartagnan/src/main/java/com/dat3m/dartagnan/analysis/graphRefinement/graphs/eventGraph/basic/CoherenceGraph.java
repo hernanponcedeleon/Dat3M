@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic;
 
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
@@ -73,7 +73,7 @@ public class CoherenceGraph extends AbstractEventGraph {
 
 
     @Override
-    public void initialize(ModelContext context) {
+    public void initialize(ExecutionModel context) {
         super.initialize(context);
         graph.initialize(context);
     }

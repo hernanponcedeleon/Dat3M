@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
 import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,13 +9,13 @@ import java.util.Iterator;
 
 public abstract class AbstractEventGraph implements EventGraph {
 
-    protected ModelContext context;
+    protected ExecutionModel context;
 
     public AbstractEventGraph() {
     }
 
     @Override
-    public void initialize(ModelContext context) {
+    public void initialize(ExecutionModel context) {
         this.context = context;
     }
 

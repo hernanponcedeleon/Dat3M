@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.microsoft.z3.BoolExpr;
@@ -19,9 +21,9 @@ import com.microsoft.z3.Model;
 import java.util.*;
 
 /*
-The ModelContext wraps a Z3Model and extracts data from it in a more workable manner.
+The ExecutionModel wraps a Z3Model and extracts data from it in a more workable manner.
  */
-public class ModelContext {
+public class ExecutionModel {
 
     private final VerificationTask verificationTask;
 
@@ -51,15 +53,16 @@ public class ModelContext {
     private List<Thread> threadListView;
     private Map<Thread, List<EventData>> threadEventsMapView;
     private Map<EventData, EventData> readWriteMapView;
-    private  Map<EventData, Set<EventData>> coherenceMapView;
+    private Map<EventData, Set<EventData>> coherenceMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
     private Map<String, Set<EventData>> fenceMapView;
     private Map<Long, Set<EventData>> addressReadsMapView;
     private Map<Long, Set<EventData>> addressWritesMapView;
     private Map<Long, EventData> addressInitMapView;
 
+    //========================== Construction =========================
 
-    public ModelContext(VerificationTask verificationTask) {
+    public ExecutionModel(VerificationTask verificationTask) {
         this.verificationTask = verificationTask;
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
@@ -87,6 +90,8 @@ public class ModelContext {
         addressWritesMapView = Collections.unmodifiableMap(addressWritesMap);
         addressInitMapView = Collections.unmodifiableMap(addressInitMap);
     }
+
+    //========================== Public data =========================
 
     // General data
     public VerificationTask getVerificationTask() { return verificationTask; }
@@ -147,6 +152,8 @@ public class ModelContext {
                 new Edge(getData(tuple.getFirst()), getData(tuple.getSecond())) : null;
     }
 
+    //========================== Initialization =========================
+
 
     public void initialize(Model model, Context ctx) {
         initialize(model, ctx, true);
@@ -169,6 +176,8 @@ public class ModelContext {
         extractReadsFrom();
         extractCoherences();
     }
+
+    //========================== Internal methods  =========================
 
     private void extractEventsFromModel() {
         //TODO: We might be able to look at each branch from the last computation
@@ -265,8 +274,8 @@ public class ModelContext {
             fenceMap.get(name).add(data);
         } else if (data.isJump()) {
             // ===== Jumps =====
-            // We override the meaning of execution here. A jump is executed iff its condition was true.
-            data.setWasExecuted(((CondJump)e).didJump(model, context) && data.wasExecuted());
+            // We override the meaning of execution here. A jump is executed IFF its condition was true.
+            data.setWasExecuted(data.wasExecuted() && ((CondJump)e).didJump(model, context));
         } else {
             //TODO: Maybe add some other events.
             // But for now all non-visible events are simply registered without
@@ -274,15 +283,20 @@ public class ModelContext {
         }
     }
 
+    private Relation rf;
     private void extractReadsFrom() {
         readWriteMap.clear();
+
+        if (rf == null) {
+            rf = getMemoryModel().getRelationRepository().getRelation("rf");
+        }
 
         for (Map.Entry<Long, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
             Long address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BoolExpr rf = Utils.edge("rf", write.getEvent(), read.getEvent(), context);
-                    Expr rfInterp = model.getConstInterp(rf);
+                    BoolExpr rfExpr = Utils.edge(rf.getName(), write.getEvent(), read.getEvent(), context);
+                    Expr rfInterp = model.getConstInterp(rfExpr);
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
@@ -298,18 +312,23 @@ public class ModelContext {
         }
     }
 
+    private Relation co;
     private void extractCoherences() {
         coherenceMap.clear();
         if (!extractCoherences)
             return;
+
+        if (co == null) {
+            co = getMemoryModel().getRelationRepository().getRelation("co");
+        }
 
         for (Map.Entry<Long, Set<EventData>> addressedWrites : addressWritesMap.entrySet()) {
             Long address = addressedWrites.getKey();
             for (EventData w1 : addressedWrites.getValue()) {
                 coherenceMap.put(w1, new HashSet<>());
                 for (EventData w2 : addressWritesMap.get(address)) {
-                    BoolExpr co = Utils.edge("co", w1.getEvent(), w2.getEvent(), context);
-                    Expr coInterp = model.getConstInterp(co);
+                    BoolExpr coExpr = Utils.edge(co.getName(), w1.getEvent(), w2.getEvent(), context);
+                    Expr coInterp = model.getConstInterp(coExpr);
                     if (coInterp != null && coInterp.isTrue()) {
                         coherenceMap.get(w1).add(w2);
                         break;

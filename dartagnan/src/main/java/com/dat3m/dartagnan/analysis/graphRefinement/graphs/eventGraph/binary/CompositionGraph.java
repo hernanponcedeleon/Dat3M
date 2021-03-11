@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
@@ -69,7 +69,7 @@ public class CompositionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public void initialize(ModelContext context) {
+    public void initialize(ExecutionModel context) {
         super.initialize(context);
         graph.initialize(context);
         initialPopulation();

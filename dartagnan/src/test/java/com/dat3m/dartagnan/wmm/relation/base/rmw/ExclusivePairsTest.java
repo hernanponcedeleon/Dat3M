@@ -7,10 +7,12 @@ import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
 import com.dat3m.dartagnan.wmm.relation.EdgeTestHelper;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
@@ -78,9 +80,10 @@ public class ExclusivePairsTest {
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             Program program = new ProgramParser().parse(new File(path));
+            VerificationTask task = new VerificationTask(program, wmm, program.getArch(), settings);
 
             // Test final state
-            assertEquals(expectedState, runAnalysis(solver, ctx, program, wmm, program.getArch(), settings));
+            assertEquals(expectedState, runAnalysis(solver, ctx, task));
 
             // Test edges
             if(expectedEdges != null){

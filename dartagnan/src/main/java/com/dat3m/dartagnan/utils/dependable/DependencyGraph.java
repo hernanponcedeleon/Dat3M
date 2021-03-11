@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils.dependable;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -16,11 +18,11 @@ public class DependencyGraph<T> {
     }
 
     public List<Node> getNodes() {
-        return Collections.unmodifiableList(nodeList);
+        return nodeList;
     }
 
     public List<T> getNodeContents() {
-        return Collections.unmodifiableList(Lists.transform(nodeList, x -> x.content));
+        return Lists.transform(nodeList, x -> x.content);
     }
 
     public Node getRootNode() {
@@ -121,9 +123,8 @@ public class DependencyGraph<T> {
 
         // Create sorted list of all nodes
         // and sort their dependencies/dependents as well
-        nodeList = new ArrayList<>(nodeMap.values());
         Comparator<Node> cmp = Comparator.comparingInt(Node::getTopologicalIndex);
-        nodeList.sort(cmp);
+        nodeList = ImmutableList.sortedCopyOf(cmp, nodeMap.values());
         for (Node node : nodeList){
             node.getDependencies().sort(cmp);
             node.getDependents().sort(cmp);

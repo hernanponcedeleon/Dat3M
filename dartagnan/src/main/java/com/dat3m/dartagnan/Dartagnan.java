@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.commons.cli.HelpFormatter;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
@@ -91,9 +92,10 @@ public class Dartagnan {
 			case RACES:
 				return checkForRaces(s, ctx, p, mcm, target, settings);	
 			case REACHABILITY:
+                VerificationTask task = new VerificationTask(p, mcm, target, settings);
 				return options.useISolver() ? 
-						runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings) : 
-						runAnalysis(s, ctx, p, mcm, target, settings); 
+						runAnalysisIncrementalSolver(s, ctx, task) :
+						runAnalysis(s, ctx, task);
 			default:
 				throw new RuntimeException("Unrecognized analysis");
 		}

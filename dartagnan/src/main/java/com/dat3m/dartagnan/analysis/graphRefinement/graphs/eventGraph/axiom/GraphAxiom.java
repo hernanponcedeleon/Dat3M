@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.GraphListener;
@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class GraphAxiom implements GraphListener, Dependent<EventGraph> {
-    protected ModelContext context;
+    protected ExecutionModel context;
     protected final EventGraph inner;
 
     public List<EventGraph> getDependencies() {
@@ -30,7 +30,7 @@ public abstract class GraphAxiom implements GraphListener, Dependent<EventGraph>
     public abstract DNF<CoreLiteral> computeReasons();
     public abstract Conjunction<CoreLiteral> computeSomeReason();
 
-    public void initialize(ModelContext context) {
+    public void initialize(ExecutionModel context) {
         this.context = context;
     }
 

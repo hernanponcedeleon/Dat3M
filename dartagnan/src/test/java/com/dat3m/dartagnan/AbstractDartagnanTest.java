@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
@@ -73,7 +74,8 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-                assertEquals(expected, runAnalysis(solver, ctx, program, wmm, target, settings));
+                VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+                assertEquals(expected, runAnalysis(solver, ctx, task));
                 ctx.close();
             }
         } catch (IOException e){
@@ -94,7 +96,8 @@ public abstract class AbstractDartagnanTest {
                 }
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-                assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, program, wmm, target, settings));
+                VerificationTask task = new VerificationTask(program, wmm, target, settings);
+                assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
                 ctx.close();
             }
         } catch (IOException e){

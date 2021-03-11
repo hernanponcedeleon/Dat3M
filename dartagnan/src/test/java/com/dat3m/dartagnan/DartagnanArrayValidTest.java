@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.Mode;
@@ -23,8 +24,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class DartagnanArrayValidTest {
@@ -56,7 +56,8 @@ public class DartagnanArrayValidTest {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-            assertTrue(runAnalysis(solver, ctx, program, wmm, Arch.NONE, settings).equals(FAIL));
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            assertEquals(runAnalysis(solver, ctx, task), FAIL);
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");

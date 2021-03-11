@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.ModelContext;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.AcyclicityAxiom;
@@ -40,6 +40,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.google.common.collect.ImmutableList;
 
 import java.util.*;
 
@@ -86,7 +87,7 @@ public class ExecutionGraph {
     }
 
     public Collection<EventGraph> getEventGraphs() {
-        return relationGraphMap.values();
+        return graphHierarchy.getGraphList();
     }
 
     public GraphAxiom getGraphAxiom(Axiom axiom) {
@@ -101,13 +102,13 @@ public class ExecutionGraph {
     // We might want to add similar features for rf
     // We also assume, that the non-transitive write order is defined.
     public boolean addCoherenceEdge(Edge coEdge) {
-        graphHierarchy.addEdgesToGraph(woGraph, Collections.singleton(coEdge));
+        graphHierarchy.addEdgesToGraph(woGraph, ImmutableList.of(coEdge));
         return true;
     }
 
-    public void initializeFromModel(ModelContext modelContext) {
-        graphHierarchy.initializeFromModel(modelContext);
-        axiomMap.values().forEach(x -> x.initialize(modelContext));
+    public void initializeFromModel(ExecutionModel executionModel) {
+        graphHierarchy.initializeFromModel(executionModel);
+        axiomMap.values().forEach(x -> x.initialize(executionModel));
     }
 
     public void backtrack() {
@@ -136,12 +137,12 @@ public class ExecutionGraph {
         return graphAxiom;
     }
 
-    private EventGraph getGraphFromRelation(Relation relData) {
-        if (relationGraphMap.containsKey(relData))
-            return relationGraphMap.get(relData);
+    private EventGraph getGraphFromRelation(Relation rel) {
+        if (relationGraphMap.containsKey(rel))
+            return relationGraphMap.get(rel);
 
         EventGraph graph = null;
-        Class relClass = relData.getClass();
+        Class<?> relClass = rel.getClass();
         if (relClass == RelRf.class) {
             graph = rfGraph = new ReadFromGraph();
         } else if (relClass == RelLoc.class) {
@@ -149,32 +150,26 @@ public class ExecutionGraph {
         } else if (relClass == RelPo.class) {
             graph = poGraph = new ProgramOrderGraph();
         } else if (relClass == RelCo.class) {
-            // A little ugly
-            woGraph = new CoherenceGraph();
+            graphHierarchy.addEventGraph(woGraph = new CoherenceGraph());
             graph = coGraph = new TransitiveGraph(woGraph);
-            /*if (relData.getWrappedRelation().getName().equals("_co"))
-                graph = woGraph = new CoherenceGraph();
-            else {
-                graph = coGraph = new TransitiveGraph(woGraph);
-            }*/
-        } else if (relData.isUnaryRelation()) {
-            EventGraph inner = getGraphFromRelation(relData.getInner());
+        } else if (rel.isUnaryRelation() || rel.isRecursiveRelation()) {
+            EventGraph inner = getGraphFromRelation(rel.getInner());
             // A safety check because recursion might compute this edge set
-            if (relationGraphMap.containsKey(relData))
-                return relationGraphMap.get(relData);
+            if (relationGraphMap.containsKey(rel))
+                return relationGraphMap.get(rel);
 
             if (relClass == RelInverse.class) {
                 graph = new InverseGraph(inner);
             } else if (relClass == RelTrans.class) {
                 graph = new TransitiveGraph(inner);
             } //TODO: RelTransRef.class is missing
-        } else if (relData.isBinaryRelation()) {
-            EventGraph first = getGraphFromRelation(relData.getFirst());
-            EventGraph second = getGraphFromRelation(relData.getSecond());
+        } else if (rel.isBinaryRelation()) {
+            EventGraph first = getGraphFromRelation(rel.getFirst());
+            EventGraph second = getGraphFromRelation(rel.getSecond());
 
             // Might be the case when recursion is in play
-            if (relationGraphMap.containsKey(relData))
-                return relationGraphMap.get(relData);
+            if (relationGraphMap.containsKey(rel))
+                return relationGraphMap.get(rel);
 
             if (relClass == RelUnion.class) {
                 graph = new UnionGraph(first, second);
@@ -185,30 +180,30 @@ public class ExecutionGraph {
             } else if (relClass == RelMinus.class) {
                 graph = new DifferenceGraph(first, second);
             }
-        } else if (relData.isRecursiveRelation()) {
+        } else if (rel.isRecursiveRelation()) {
             RecursiveGraph recGraph = new RecursiveGraph();
-            relationGraphMap.put(relData, recGraph);
-            recGraph.setConcreteGraph(getGraphFromRelation(relData.getInner()));
+            relationGraphMap.put(rel, recGraph);
+            recGraph.setConcreteGraph(getGraphFromRelation(rel.getInner()));
             return recGraph;
-        } else if (relData.isStaticRelation()) {
+        } else if (rel.isStaticRelation()) {
             if (relClass == RelCartesian.class) {
-                graph = new CartesianGraph((RelCartesian) relData);
+                graph = new CartesianGraph((RelCartesian) rel);
             } else if (relClass == RelRMW.class) {
                 graph = new RMWGraph();
             } else if (relClass == RelExt.class) {
                 graph = new ExternalGraph();
             } else if (relClass == RelFencerel.class) {
-                graph = new FenceGraph((RelFencerel) relData);
+                graph = new FenceGraph((RelFencerel) rel);
             } else {
                 //TODO: Add all predefined static graphs (CartesianGraph, ExtGraph, ... etc.)
-                graph = new StaticDefaultEventGraph(relData);
+                graph = new StaticDefaultEventGraph(rel);
             }
         } else {
             throw new RuntimeException(new ClassNotFoundException(relClass.toString() + " is no supported relation class"));
         }
 
         graphHierarchy.addEventGraph(graph);
-        relationGraphMap.put(relData, graph);
+        relationGraphMap.put(rel, graph);
         return graph;
     }
 

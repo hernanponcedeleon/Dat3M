@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -43,11 +44,12 @@ public abstract class AbstractSvCompTest {
         Context ctx = null;
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	expected = readExptected(property);
+        	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             ctx = new Context();
             Solver solver = ctx.mkSolver();
-            assertTrue(runAnalysis(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            assertEquals(runAnalysis(solver, ctx, task), expected);
         } catch (IOException e){
             fail("Missing resource file");
         } finally {
@@ -62,11 +64,12 @@ public abstract class AbstractSvCompTest {
         Context ctx = null;
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	expected = readExptected(property);
+        	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             ctx = new Context();
             Solver solver = ctx.mkSolver();
-            assertTrue(runAnalysisIncrementalSolver(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            assertEquals(runAnalysisIncrementalSolver(solver, ctx, task), expected);
         } catch (IOException e){
             fail("Missing resource file");
         }  finally {
@@ -81,11 +84,12 @@ public abstract class AbstractSvCompTest {
         Context ctx = null;
         try {
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-            expected = readExptected(property);
+            expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             ctx = new Context();
             Solver solver = ctx.mkSolver();
-            assertTrue(Refinement.runAnalysisGraphRefinement(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            assertEquals(Refinement.runAnalysisGraphRefinement(solver, ctx, task), expected);
         } catch (IOException e){
             fail("Missing resource file");
         } finally {
@@ -100,11 +104,12 @@ public abstract class AbstractSvCompTest {
         Context ctx = null;
         try {
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-            expected = readExptected(property);
+            expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             ctx = new Context();
             Solver solver = ctx.mkSolver();
-            assertTrue(Refinement.runAnalysisGraphRefinementEmptyCoherence(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+            assertEquals(Refinement.runAnalysisGraphRefinementEmptyCoherence(solver, ctx, task), expected);
         } catch (IOException e){
             fail("Missing resource file");
         } finally {
@@ -114,8 +119,8 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-	private Result readExptected(String property) {
-		try (BufferedReader br = new BufferedReader(new FileReader(new File(property)))) {
+	private Result readExpected(String property) {
+		try (BufferedReader br = new BufferedReader(new FileReader(property))) {
 		    while (!(br.readLine()).contains("unreach-call.prp")) {
 		       continue;
 		    }

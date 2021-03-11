@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -17,14 +18,10 @@ import com.microsoft.z3.Solver;
 
 public class Base {
 
-    public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-    	program.simplify();
-    	program.unroll(settings.getBound(), 0);
-        program.compile(target, 0);
-        // AssertionInline depends on compiled events (copies)
-        // Thus we need to set the assertion after compilation
-        program.updateAssertion();
-       	if(program.getAss() instanceof AssertTrue) {
+    public static Result runAnalysis(Solver s1, Context ctx, VerificationTask task) {
+        Program program = task.getProgram();
+    	task.unrollAndCompile();
+       	if(task.getProgram().getAss() instanceof AssertTrue) {
        		return PASS;
        	}
        	
@@ -32,19 +29,15 @@ public class Base {
         // an incremental solver or check-sat-assuming
         Solver s2 = ctx.mkSolver();
         
-        BoolExpr encodeCF = program.encodeCF(ctx);
+        BoolExpr encodeCF = task.encodeProgram(ctx);
 		s1.add(encodeCF);
         s2.add(encodeCF);
         
-        BoolExpr encodeFinalRegisterValues = program.encodeFinalRegisterValues(ctx);
-		s1.add(encodeFinalRegisterValues);
-        s2.add(encodeFinalRegisterValues);
-        
-        BoolExpr encodeWmm = wmm.encode(program, ctx, settings);
+        BoolExpr encodeWmm = task.encodeWmmRelations(ctx);
 		s1.add(encodeWmm);
         s2.add(encodeWmm);
         
-        BoolExpr encodeConsistency = wmm.consistent(program, ctx);
+        BoolExpr encodeConsistency = task.encodeWmmConsistency(ctx);
 		s1.add(encodeConsistency);
         s2.add(encodeConsistency);
        	
@@ -72,37 +65,28 @@ public class Base {
 		return res;
     }
 	
-    public static Result runAnalysisIncrementalSolver(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-        program.simplify();
-    	program.unroll(settings.getBound(), 0);
-        program.compile(target, 0);
-        // AssertionInline depends on compiled events (copies)
-        // Thus we need to update the assertion after compilation
-        program.updateAssertion();
-       	if(program.getAss() instanceof AssertTrue) {
+    public static Result runAnalysisIncrementalSolver(Solver solver, Context ctx, VerificationTask task) {
+        task.unrollAndCompile();
+       	if(task.getProgram().getAss() instanceof AssertTrue) {
        		return PASS;
        	}
 
-        solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeFinalRegisterValues(ctx));
-        solver.add(wmm.encode(program, ctx, settings));
-        solver.add(wmm.consistent(program, ctx));  
+        solver.add(task.encodeProgram(ctx));
+        solver.add(task.encodeWmmRelations(ctx));
+        solver.add(task.encodeWmmConsistency(ctx));
         solver.push();
-        solver.add(program.getAss().encode(ctx));
-        if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(ctx));
-        }
+        solver.add(task.encodeAssertions(ctx));
 
         Result res = UNKNOWN;
 		if(solver.check() == SATISFIABLE) {
-        	solver.add(program.encodeNoBoundEventExec(ctx));
+        	solver.add(task.getProgram().encodeNoBoundEventExec(ctx));
 			res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
         } else {
         	solver.pop();
-			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
+			solver.add(ctx.mkNot(task.getProgram().encodeNoBoundEventExec(ctx)));
         	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
 
-        return program.getAss().getInvert() ? res.invert() : res;
+        return task.getProgram().getAss().getInvert() ? res.invert() : res;
     }
 }

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.utils.timeable.Timestamp;
 
 // An untyped edge.
 // This is just a decoration for Tuple to use EventData instead of Event
+// Addtionally, it contains timing information used for refinement
 public class Edge implements Comparable<Edge>, Timeable {
 
     private final EventData first;
