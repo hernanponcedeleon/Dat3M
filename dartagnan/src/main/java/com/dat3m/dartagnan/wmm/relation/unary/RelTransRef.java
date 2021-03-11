@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -42,8 +43,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(VerificationTask task){
+        super.initialise(task);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }
@@ -55,7 +56,7 @@ public class RelTransRef extends RelTrans {
             for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
                 entry.getValue().remove(entry.getKey());
             }
-            for(Event e : program.getCache().getEvents(FilterBasic.get(EType.ANY))){
+            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.ANY))){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }
@@ -84,28 +85,29 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
-        return invokeEncode("encodeApprox");
+    protected BoolExpr encodeApprox(Context ctx) {
+        return invokeEncode("encodeApprox", ctx);
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
-        return invokeEncode("encodeIDL");
+    protected BoolExpr encodeIDL(Context ctx) {
+        return invokeEncode("encodeIDL", ctx);
     }
 
     @Override
-    protected BoolExpr encodeLFP() {
-        return invokeEncode("encodeLFP");
+    protected BoolExpr encodeLFP(Context ctx) {
+        return invokeEncode("encodeLFP", ctx);
     }
 
-    private BoolExpr invokeEncode(String methodName){
+    private BoolExpr invokeEncode(String methodName, Context ctx){
         try{
+            //TODO: What is this sorcery? We will fix this later!
             MethodHandle method = MethodHandles.lookup().findSpecial(RelTrans.class, methodName,
-                    MethodType.methodType(BoolExpr.class), RelTransRef.class);
+                    MethodType.methodType(BoolExpr.class, Context.class), RelTransRef.class);
 
             TupleSet temp = encodeTupleSet;
             encodeTupleSet = transEncodeTupleSet;
-            BoolExpr enc = (BoolExpr)method.invoke(this);
+            BoolExpr enc = (BoolExpr)method.invoke(this, ctx);
             encodeTupleSet = temp;
 
             for(Tuple tuple : identityEncodeTupleSet){

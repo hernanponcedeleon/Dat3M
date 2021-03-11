@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
@@ -42,8 +43,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(VerificationTask task){
+        super.initialise(task);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }
@@ -78,7 +79,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : fullEncodeTupleSet){
@@ -108,7 +109,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
+    protected BoolExpr encodeIDL(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : fullEncodeTupleSet){
@@ -160,7 +161,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeLFP() {
+    protected BoolExpr encodeLFP(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         int iteration = 0;
 

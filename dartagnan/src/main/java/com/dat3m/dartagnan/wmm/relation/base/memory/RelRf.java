@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -29,9 +30,9 @@ public class RelRf extends Relation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
 
-            List<Event> eventsLoad = program.getCache().getEvents(FilterBasic.get(EType.READ));
-            List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
-            List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
+            List<Event> eventsLoad = task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ));
+            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(EType.WRITE),
                     FilterBasic.get(EType.INIT)
             ));
@@ -56,13 +57,13 @@ public class RelRf extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         Map<MemEvent, List<BoolExpr>> edgeMap = new HashMap<>();
         Map<MemEvent, BoolExpr> memInitMap = new HashMap<>();
 
-        boolean canAccNonInitMem = settings.getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY);
-        boolean useSeqEncoding = settings.getFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF);
+        boolean canAccNonInitMem = task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY);
+        boolean useSeqEncoding = task.getSettings().getFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF);
 
         for(Tuple tuple : maxTupleSet){
             MemEvent w = (MemEvent) tuple.getFirst();
@@ -87,13 +88,13 @@ public class RelRf extends Relation {
 
         for(MemEvent r : edgeMap.keySet()){
             enc = ctx.mkAnd(enc, useSeqEncoding
-                    ? encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r))
-                    : encodeEdgeNaive(r, memInitMap.get(r), edgeMap.get(r)));
+                    ? encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r), ctx)
+                    : encodeEdgeNaive(r, memInitMap.get(r), edgeMap.get(r), ctx));
         }
         return enc;
     }
 
-    private BoolExpr encodeEdgeNaive(Event read, BoolExpr isMemInit, List<BoolExpr> edges){
+    private BoolExpr encodeEdgeNaive(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
         BoolExpr atMostOne = ctx.mkTrue();
         BoolExpr atLeastOne = ctx.mkFalse();
         for(int i = 0; i < edges.size(); i++){
@@ -103,7 +104,7 @@ public class RelRf extends Relation {
             }
         }
 
-        if(settings.getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
+        if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
             atLeastOne = ctx.mkImplies(ctx.mkAnd(read.exec(), isMemInit), atLeastOne);
         } else {
             atLeastOne = ctx.mkImplies(read.exec(), atLeastOne);
@@ -111,22 +112,22 @@ public class RelRf extends Relation {
         return ctx.mkAnd(atMostOne, atLeastOne);
     }
 
-    private BoolExpr encodeEdgeSeq(Event read, BoolExpr isMemInit, List<BoolExpr> edges){
+    private BoolExpr encodeEdgeSeq(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
         int num = edges.size();
         int readId = read.getCId();
-        BoolExpr lastSeqVar = mkSeqVar(readId, 0);
+        BoolExpr lastSeqVar = mkSeqVar(readId, 0, ctx);
         BoolExpr newSeqVar = lastSeqVar;
         BoolExpr atMostOne = ctx.mkEq(lastSeqVar, edges.get(0));
 
         for(int i = 1; i < num; i++){
-            newSeqVar = mkSeqVar(readId, i);
+            newSeqVar = mkSeqVar(readId, i, ctx);
             atMostOne = ctx.mkAnd(atMostOne, ctx.mkEq(newSeqVar, ctx.mkOr(lastSeqVar, edges.get(i))));
             atMostOne = ctx.mkAnd(atMostOne, ctx.mkNot(ctx.mkAnd(edges.get(i), lastSeqVar)));
             lastSeqVar = newSeqVar;
         }
         BoolExpr atLeastOne = ctx.mkOr(newSeqVar, edges.get(edges.size() - 1));
 
-        if(settings.getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
+        if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
             atLeastOne = ctx.mkImplies(ctx.mkAnd(read.exec(), isMemInit), atLeastOne);
         } else {
             atLeastOne = ctx.mkImplies(read.exec(), atLeastOne);
@@ -134,7 +135,7 @@ public class RelRf extends Relation {
         return ctx.mkAnd(atMostOne, atLeastOne);
     }
 
-    private BoolExpr mkSeqVar(int readId, int i) {
+    private BoolExpr mkSeqVar(int readId, int i, Context ctx) {
         return (BoolExpr) ctx.mkConst("s(" + term + ",E" + readId + "," + i + ")", ctx.mkBoolSort());
     }
 }

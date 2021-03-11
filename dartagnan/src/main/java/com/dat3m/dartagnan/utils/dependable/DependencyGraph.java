@@ -47,15 +47,15 @@ public class DependencyGraph<T> {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
-    public static <V> DependencyGraph<V> from(final Collection<V> items, final Map<V, Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> from(final Collection<V> items, final Map<? extends V, Collection<? extends V>> dependencyMap) {
         return new DependencyGraph<>(items, x -> dependencyMap.getOrDefault(x, Collections.emptyList()));
     }
 
-    public static <V> DependencyGraph<V> fromSingleton(final V item, final Map<V, Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> fromSingleton(final V item, final Map<? extends V, Collection<? extends V>> dependencyMap) {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
-    public static <V extends Dependent<? extends V>> DependencyGraph<V> from(final Collection<V> items) {
+    public static <V extends Dependent<? extends V>> DependencyGraph<V> from(final Collection<? extends V> items) {
         return new DependencyGraph<>(items, Dependent::getDependencies);
     }
 
@@ -65,7 +65,7 @@ public class DependencyGraph<T> {
 
     // ====================================================================
 
-    private DependencyGraph(final Collection<T> items, final Function<T, Collection<? extends T>> dependencyMap) {
+    private DependencyGraph(final Collection<? extends T> items, final Function<T, Collection<? extends T>> dependencyMap) {
         nodeMap = new HashMap<>();
         sccs = new ArrayList<>();
         this.dependencyMap = dependencyMap;

@@ -92,6 +92,7 @@ public class RelRfTest {
     private void doTestDuplicatedEdges(String programPath, Wmm wmm, Settings settings) throws IOException {
 
     	Program program = new ProgramParser().parse(new File(programPath));
+    	VerificationTask task = new VerificationTask(program, wmm, program.getArch(), settings);
         program.unroll(settings.getBound(), 0);
         program.compile(program.getArch(), 0);
 
@@ -102,14 +103,10 @@ public class RelRfTest {
 
         Context ctx = new Context();
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-        
-		solver.add(program.getAss().encode(ctx));
-        if(program.getAssFilter() != null){
-            solver.add(program.getAssFilter().encode(ctx));
-        }
-        solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeFinalRegisterValues(ctx));
-        solver.add(wmm.encode(program, ctx, settings));
+
+        solver.add(task.encodeAssertions(ctx));
+        solver.add(task.encodeProgram(ctx));
+        solver.add(task.encodeWmmRelations(ctx));
         // Don't add constraint of MM, they can also forbid illegal edges
 
         assertEquals(Status.SATISFIABLE, solver.check());

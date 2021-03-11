@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
@@ -41,8 +42,8 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(VerificationTask task){
+        super.initialise(task);
         this.baseMaxTupleSet = null;
     }
 
@@ -53,7 +54,7 @@ public class RelRMW extends StaticRelation {
 
             // RMWLoad -> RMWStore
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
-            for(Event store : program.getCache().getEvents(filter)){
+            for(Event store : task.getProgram().getCache().getEvents(filter)){
             	if(store instanceof RMWStore) {
                     baseMaxTupleSet.add(new Tuple(((RMWStore)store).getLoadEvent(), store));            		
             	}
@@ -61,7 +62,7 @@ public class RelRMW extends StaticRelation {
 
             //Locks: Load -> CondJump -> Store
             filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.LOCK));
-            for(Event e : program.getCache().getEvents(filter)){
+            for(Event e : task.getProgram().getCache().getEvents(filter)){
             	if(e instanceof Load) {
             		Event next = e.getSuccessor();
             		Event nnext = next.getSuccessor();
@@ -75,7 +76,7 @@ public class RelRMW extends StaticRelation {
             maxTupleSet.addAll(baseMaxTupleSet);
 
             // LoadExcl -> StoreExcl
-            for(Thread thread : program.getThreads()){
+            for(Thread thread : task.getProgram().getThreads()){
                 for(Event load : thread.getCache().getEvents(loadFilter)){
                     for(Event store : thread.getCache().getEvents(storeFilter)){
                         if(load.getCId() < store.getCId()){
@@ -89,16 +90,16 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
         encodeTupleSet = baseMaxTupleSet;
-        BoolExpr enc = super.encodeApprox();
+        BoolExpr enc = super.encodeApprox(ctx);
         encodeTupleSet = origEncodeTupleSet;
 
         // Encode RMW for exclusive pairs
         BoolExpr unpredictable = ctx.mkFalse();
-        for(Thread thread : program.getThreads()) {
+        for(Thread thread : task.getProgram().getThreads()) {
             for (Event store : thread.getCache().getEvents(storeFilter)) {
                 BoolExpr storeExec = ctx.mkFalse();
                 for (Event load : thread.getCache().getEvents(loadFilter)) {
@@ -107,7 +108,7 @@ public class RelRMW extends StaticRelation {
                         // Encode if load and store form an exclusive pair
                         BoolExpr isPair = exclPair(load, store, ctx);
                         BoolExpr isExecPair = ctx.mkAnd(isPair, store.exec());
-                        enc = ctx.mkAnd(enc, ctx.mkEq(isPair, pairingCond(thread, load, store)));
+                        enc = ctx.mkAnd(enc, ctx.mkEq(isPair, pairingCond(thread, load, store, ctx)));
 
                         // If load and store have the same address
                         BoolExpr sameAddress = ctx.mkEq(((MemEvent)load).getMemAddressExpr(), (((MemEvent)store).getMemAddressExpr()));
@@ -128,7 +129,7 @@ public class RelRMW extends StaticRelation {
         return ctx.mkAnd(enc, ctx.mkEq(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
     }
 
-    private BoolExpr pairingCond(Thread thread, Event load, Event store){
+    private BoolExpr pairingCond(Thread thread, Event load, Event store, Context ctx){
         BoolExpr pairingCond = ctx.mkAnd(load.exec(), store.cf());
 
         for (Event otherLoad : thread.getCache().getEvents(loadFilter)) {

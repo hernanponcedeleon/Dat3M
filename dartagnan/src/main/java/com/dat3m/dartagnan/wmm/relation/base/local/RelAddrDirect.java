@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 
 import java.util.*;
 
@@ -20,14 +21,14 @@ public class RelAddrDirect extends BasicRegRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            mkMaxTupleSet(program.getCache().getEvents(FilterBasic.get(EType.MEMORY)));
+            mkMaxTupleSet(task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY)));
         }
         return maxTupleSet;
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
-        return doEncodeApprox(program.getCache().getEvents(FilterBasic.get(EType.MEMORY)));
+    protected BoolExpr encodeApprox(Context ctx) {
+        return doEncodeApprox(task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY)), ctx);
     }
 
     @Override

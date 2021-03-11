@@ -33,7 +33,7 @@ public class RelPo extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Thread t : program.getThreads()){
+            for(Thread t : task.getProgram().getThreads()){
                 List<Event> events = t.getCache().getEvents(filter);
 
                 // Note: Also relates events on different branches

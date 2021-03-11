@@ -28,9 +28,7 @@ public abstract class Relation implements Dependent<Relation> {
     protected String name;
     protected String term;
 
-    protected Settings settings;
-    protected Program program;
-    protected Context ctx;
+    protected VerificationTask task;
 
     protected boolean isEncoded;
 
@@ -66,10 +64,8 @@ public abstract class Relation implements Dependent<Relation> {
         return recursiveGroupId;
     }
 
-    public void initialise(Program program, Context ctx, Settings settings){
-        this.program = program;
-        this.ctx = ctx;
-        this.settings = settings;
+    public void initialise(VerificationTask task){
+        this.task = task;
         this.maxTupleSet = null;
         this.isEncoded = false;
         encodeTupleSet = new TupleSet();
@@ -133,42 +129,42 @@ public abstract class Relation implements Dependent<Relation> {
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BoolExpr encode() {
+    public BoolExpr encode(Context ctx) {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return doEncode();
+        return doEncode(ctx);
     }
 
-    protected BoolExpr encodeLFP() {
-        return encodeApprox();
+    protected BoolExpr encodeLFP(Context ctx) {
+        return encodeApprox(ctx);
     }
 
-    protected BoolExpr encodeIDL() {
-        return encodeApprox();
+    protected BoolExpr encodeIDL(Context ctx) {
+        return encodeApprox(ctx);
     }
 
-    protected abstract BoolExpr encodeApprox();
+    protected abstract BoolExpr encodeApprox(Context ctx);
 
-    public BoolExpr encodeIteration(int recGroupId, int iteration){
+    public BoolExpr encodeIteration(int recGroupId, int iteration, Context ctx){
         return ctx.mkTrue();
     }
 
-    protected BoolExpr doEncode(){
-        BoolExpr enc = encodeNegations();
+    protected BoolExpr doEncode(Context ctx){
+        BoolExpr enc = encodeNegations(ctx);
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
-            if(settings.getMode() == Mode.KLEENE) {
-                return ctx.mkAnd(enc, encodeLFP());
-            } else if(settings.getMode() == Mode.IDL) {
-                return ctx.mkAnd(enc, encodeIDL());
+            if(task.getSettings().getMode() == Mode.KLEENE) {
+                return ctx.mkAnd(enc, encodeLFP(ctx));
+            } else if(task.getSettings().getMode() == Mode.IDL) {
+                return ctx.mkAnd(enc, encodeIDL(ctx));
             }
-            return ctx.mkAnd(enc, encodeApprox());
+            return ctx.mkAnd(enc, encodeApprox(ctx));
         }
         return enc;
     }
 
-    private BoolExpr encodeNegations(){
+    private BoolExpr encodeNegations(Context ctx){
         BoolExpr enc = ctx.mkTrue();
         if(!encodeTupleSet.isEmpty()){
             Set<Tuple> negations = new HashSet<>(encodeTupleSet);

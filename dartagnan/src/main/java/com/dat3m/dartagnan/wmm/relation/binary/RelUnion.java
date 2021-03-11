@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.microsoft.z3.Context;
 
 /**
  *
@@ -69,7 +70,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
@@ -88,9 +89,9 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
+    protected BoolExpr encodeIDL(Context ctx) {
         if(recursiveGroupId == 0){
-            return encodeApprox();
+            return encodeApprox(ctx);
         }
 
         BoolExpr enc = ctx.mkTrue();
@@ -118,7 +119,7 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeIteration(int groupId, int iteration){
+    public BoolExpr encodeIteration(int groupId, int iteration, Context ctx){
         BoolExpr enc = ctx.mkTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){
@@ -147,11 +148,11 @@ public class RelUnion extends BinaryRelation {
                 }
 
                 if(recurseInR1){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration));
+                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration, ctx));
                 }
 
                 if(recurseInR2){
-                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, childIteration));
+                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, childIteration, ctx));
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.utils.*;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
@@ -70,10 +71,10 @@ public class Wmm {
     // Encodes the memory models relations as if co was empty (but not the axioms yet)
     // NOTE: The call to <consistent> for encoding the axioms does not see co as empty anymore
     // This is done to get a correct computation for the active set.
-    public BoolExpr encodeEmptyCo(Program program, Context ctx, Settings settings) {
+    public BoolExpr encodeEmptyCo(VerificationTask task, Context ctx) {
         RelCo co = ((RelCo)getRelationRepository().getRelation("co"));
         co.setDoEncode(false);
-        BoolExpr enc = encode(program, ctx, settings);
+        BoolExpr enc = encode(task, ctx);
         //co.setDoEncode(true);
         return enc;
     }
@@ -81,9 +82,9 @@ public class Wmm {
     // Encodes only the base relations of the memory model without co!
     // This should be (almost) equivalent to encoding the empty memory model
     // A call to <consistent> should not be performed afterwards.
-    public BoolExpr encodeCore(Program program, Context ctx, Settings settings) {
-        this.program = program;
-        new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
+    public BoolExpr encodeCore(VerificationTask task, Context ctx) {
+        this.program = task.getProgram();
+        new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName);
@@ -94,7 +95,7 @@ public class Wmm {
         }
 
         for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(program, ctx, settings);
+            relation.initialise(task);
         }
 
         /*for (Axiom ax : axioms) {
@@ -128,7 +129,7 @@ public class Wmm {
             if (relName.equals("co"))
                 continue;
             relationRepository.getRelation(relName).getMaxTupleSet();
-            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
+            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode(ctx));
         }
 
         return enc;
@@ -138,8 +139,9 @@ public class Wmm {
     // and recursive groups (why recursive groups?)
     // It also triggers the computation of may and active sets!
     // It does NOT encode the axioms nor any non-base relation yet!
-    public BoolExpr encodeBase(Program program, Context ctx, Settings settings) {
-        this.program = program;
+    public BoolExpr encodeBase(VerificationTask task, Context ctx) {
+        this.program = task.getProgram();
+        Settings settings = task.getSettings();
         new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
 
         for(String relName : baseRelations){
@@ -159,7 +161,7 @@ public class Wmm {
         }
 
         for(Relation relation : relationRepository.getRelations()){
-            relation.initialise(program, ctx, settings);
+            relation.initialise(task);
         }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
@@ -194,7 +196,7 @@ public class Wmm {
 
         BoolExpr enc = ctx.mkTrue();
         for(String relName : baseRelations){
-            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode());
+            enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode(ctx));
         }
 
         if(settings.getMode() == Mode.KLEENE){
@@ -208,10 +210,10 @@ public class Wmm {
 
     // Initalizes everything just like encodeBase but also encodes all
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
-    public BoolExpr encode(Program program, Context ctx, Settings settings) {
-        BoolExpr enc = encodeBase(program, ctx, settings);
+    public BoolExpr encode(VerificationTask task, Context ctx) {
+        BoolExpr enc = encodeBase(task, ctx);
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode());
+            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx));
         }
         return enc;
     }

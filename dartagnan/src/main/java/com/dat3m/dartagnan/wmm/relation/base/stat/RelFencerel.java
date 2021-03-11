@@ -7,6 +7,7 @@ import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.microsoft.z3.Context;
 
 import java.util.List;
 import java.util.ListIterator;
@@ -38,7 +39,7 @@ public class RelFencerel extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Thread t : program.getThreads()){
+            for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
                 if(!fences.isEmpty()){
                     List<Event> events = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
@@ -64,10 +65,10 @@ public class RelFencerel extends StaticRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
-        List<Event> fences = program.getCache().getEvents(FilterBasic.get(fenceName));
+        List<Event> fences = task.getProgram().getCache().getEvents(FilterBasic.get(fenceName));
 
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();

@@ -11,6 +11,7 @@ import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.microsoft.z3.Context;
 
 import java.util.*;
 
@@ -20,7 +21,7 @@ abstract class BasicRegRelation extends StaticRelation {
 
     void mkMaxTupleSet(Collection<Event> regReaders){
         maxTupleSet = new TupleSet();
-        ImmutableMap<Register, ImmutableList<Event>> regWriterMap = program.getCache().getRegWriterMap();
+        ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();
         for(Event regReader : regReaders){
             for(Register register : getRegisters(regReader)){
                 for(Event regWriter : regWriterMap.getOrDefault(register, ImmutableList.of())){
@@ -33,9 +34,9 @@ abstract class BasicRegRelation extends StaticRelation {
         }
     }
 
-    BoolExpr doEncodeApprox(Collection<Event> regReaders) {
+    BoolExpr doEncodeApprox(Collection<Event> regReaders, Context ctx) {
         BoolExpr enc = ctx.mkTrue();
-        ImmutableMap<Register, ImmutableList<Event>> regWriterMap = program.getCache().getRegWriterMap();
+        ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();
 
         for (Event regReader : regReaders) {
             for (Register register : getRegisters(regReader)) {

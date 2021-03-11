@@ -111,14 +111,14 @@ public class ExclusivePairsTest {
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             
             Program program = new ProgramParser().parse(new File(path));
+            VerificationTask task = new VerificationTask(program, wmm, program.getArch(), settings);
 
             // Add program without assertions
             program.unroll(1, 0);
             program.compile(program.getArch(), 0);
-            solver.add(program.encodeCF(ctx));
-            solver.add(program.encodeFinalRegisterValues(ctx));
-            solver.add(wmm.encode(program, ctx, settings));
-            solver.add(wmm.consistent(program, ctx));
+            solver.add(task.encodeProgram(ctx));
+            solver.add(task.encodeWmmRelations(ctx));
+            solver.add(task.encodeWmmConsistency(ctx));
 
             // Check flag
             solver.add(ctx.mkEq(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), ctx.mkTrue()));

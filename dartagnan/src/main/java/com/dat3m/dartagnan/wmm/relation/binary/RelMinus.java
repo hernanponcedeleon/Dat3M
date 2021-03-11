@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -31,8 +32,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(VerificationTask task){
+        super.initialise(task);
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
         }
@@ -92,7 +93,7 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet){
             Event e1 = tuple.getFirst();
@@ -110,9 +111,9 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeIDL() {
+    protected BoolExpr encodeIDL(Context ctx) {
         if(recursiveGroupId == 0){
-            return encodeApprox();
+            return encodeApprox(ctx);
         }
 
         BoolExpr enc = ctx.mkTrue();
@@ -132,7 +133,7 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeIteration(int groupId, int iteration){
+    public BoolExpr encodeIteration(int groupId, int iteration, Context ctx){
         BoolExpr enc = ctx.mkTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){
@@ -159,7 +160,7 @@ public class RelMinus extends BinaryRelation {
                 }
 
                 if(recurse){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration));
+                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration, ctx));
                 }
             }
         }

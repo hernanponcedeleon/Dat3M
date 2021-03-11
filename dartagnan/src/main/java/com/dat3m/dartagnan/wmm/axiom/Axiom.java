@@ -44,7 +44,7 @@ public abstract class Axiom implements Dependent<Relation> {
     }
 
     public BoolExpr encodeRelAndConsistency(Context ctx) {
-    	return ctx.mkAnd(rel.encode(), consistent(ctx));
+    	return ctx.mkAnd(rel.encode(ctx), consistent(ctx));
     }
     
     public BoolExpr consistent(Context ctx) {

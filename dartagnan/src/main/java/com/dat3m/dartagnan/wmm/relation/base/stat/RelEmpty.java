@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.base.stat;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.microsoft.z3.Context;
 
 public class RelEmpty extends Relation {
 
@@ -20,7 +21,7 @@ public class RelEmpty extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         return ctx.mkTrue();
     }
 }

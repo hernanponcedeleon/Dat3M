@@ -20,7 +20,7 @@ public class RelInt extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Thread t : program.getThreads()) {
+            for(Thread t : task.getProgram().getThreads()) {
                 List<Event> events = t.getCache().getEvents(FilterBasic.get(EType.VISIBLE));
                 ListIterator<Event> it1 = events.listIterator();
                 while (it1.hasNext()) {

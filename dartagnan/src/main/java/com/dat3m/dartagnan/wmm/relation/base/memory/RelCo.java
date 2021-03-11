@@ -3,10 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.microsoft.z3.BitVecExpr;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
+import com.microsoft.z3.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -49,8 +46,8 @@ public class RelCo extends Relation {
 
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
-            List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
+            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
                     FilterBasic.get(EType.WRITE),
                     FilterBasic.get(EType.INIT)
             ));
@@ -75,14 +72,14 @@ public class RelCo extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
         if (!doEncode)
             return enc;
 
-        List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
-        List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
+        List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
+        List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
                 FilterBasic.get(EType.WRITE),
                 FilterBasic.get(EType.INIT)
         ));
@@ -99,7 +96,7 @@ public class RelCo extends Relation {
         }
         enc = ctx.mkAnd(enc, ctx.mkDistinct(intVars.toArray(new IntExpr[0])));
 
-        for(Event w :  program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
+        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(EType.WRITE))){
             MemEvent w1 = (MemEvent)w;
             BoolExpr lastCo = w1.exec();
 

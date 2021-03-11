@@ -16,7 +16,7 @@ public class RelId extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            for(Event e : program.getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
+            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }

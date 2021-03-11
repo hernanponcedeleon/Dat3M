@@ -37,12 +37,12 @@ public class RecursiveGroup {
         for(int i = 0; i < encodeIterations; i++){
             for(RecursiveRelation relation : relations){
                 relation.setDoRecurse();
-                enc = ctx.mkAnd(enc, relation.encodeIteration(id, i));
+                enc = ctx.mkAnd(enc, relation.encodeIteration(id, i, ctx));
             }
         }
 
         for(RecursiveRelation relation : relations){
-            enc = ctx.mkAnd(enc, relation.encodeFinalIteration(encodeIterations - 1));
+            enc = ctx.mkAnd(enc, relation.encodeFinalIteration(encodeIterations - 1, ctx));
         }
 
         return enc;

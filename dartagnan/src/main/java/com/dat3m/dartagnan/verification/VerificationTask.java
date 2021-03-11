@@ -80,15 +80,15 @@ public class VerificationTask {
     }
 
     public BoolExpr encodeWmmCore(Context ctx) {
-        return memoryModel.encodeCore(program, ctx, settings);
+        return memoryModel.encodeCore(this, ctx);
     }
 
     public BoolExpr encodeWmmRelations(Context ctx) {
-        return memoryModel.encode(program, ctx, settings);
+        return memoryModel.encode(this, ctx);
     }
 
     public BoolExpr encodeWmmRelationsWithoutCo(Context ctx) {
-        return memoryModel.encodeEmptyCo(program, ctx, settings);
+        return memoryModel.encodeEmptyCo(this, ctx);
     }
 
     public BoolExpr encodeWmmConsistency(Context ctx) {

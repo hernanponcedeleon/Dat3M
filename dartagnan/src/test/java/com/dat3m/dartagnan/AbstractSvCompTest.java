@@ -49,7 +49,7 @@ public abstract class AbstractSvCompTest {
             ctx = new Context();
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(runAnalysis(solver, ctx, task), expected);
+            assertEquals(expected, runAnalysis(solver, ctx, task));
         } catch (IOException e){
             fail("Missing resource file");
         } finally {
@@ -69,7 +69,7 @@ public abstract class AbstractSvCompTest {
             ctx = new Context();
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(runAnalysisIncrementalSolver(solver, ctx, task), expected);
+            assertEquals(expected, runAnalysisIncrementalSolver(solver, ctx, task));
         } catch (IOException e){
             fail("Missing resource file");
         }  finally {
@@ -89,7 +89,7 @@ public abstract class AbstractSvCompTest {
             ctx = new Context();
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(Refinement.runAnalysisGraphRefinement(solver, ctx, task), expected);
+            assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
         } catch (IOException e){
             fail("Missing resource file");
         } finally {
@@ -109,7 +109,7 @@ public abstract class AbstractSvCompTest {
             ctx = new Context();
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(Refinement.runAnalysisGraphRefinementEmptyCoherence(solver, ctx, task), expected);
+            assertEquals(expected, Refinement.runAnalysisGraphRefinementEmptyCoherence(solver, ctx, task));
         } catch (IOException e){
             fail("Missing resource file");
         } finally {

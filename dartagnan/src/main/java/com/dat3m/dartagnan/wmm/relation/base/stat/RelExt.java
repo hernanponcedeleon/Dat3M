@@ -20,7 +20,7 @@ public class RelExt extends StaticRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            List<Thread> threads = program.getThreads();
+            List<Thread> threads = task.getProgram().getThreads();
             ListIterator<Thread> it1 = threads.listIterator();
             while(it1.hasNext()){
                 Thread t1 = it1.next();

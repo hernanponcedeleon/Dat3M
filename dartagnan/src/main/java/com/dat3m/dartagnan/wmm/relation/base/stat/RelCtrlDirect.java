@@ -26,7 +26,7 @@ public class RelCtrlDirect extends StaticRelation {
             // Relates Ifs with main and else branch, but not with events thereafter
             // This is apparently a discrepancy between linux (which uses If's instead of CondJumps)
             // and other architectures.
-            for(Thread thread : program.getThreads()){
+            for(Thread thread : task.getProgram().getThreads()){
                 for(Event e1 : thread.getCache().getEvents(FilterBasic.get(EType.CMP))){
                     for(Event e2 : ((If) e1).getMainBranchEvents()){
                         maxTupleSet.add(new Tuple(e1, e2));

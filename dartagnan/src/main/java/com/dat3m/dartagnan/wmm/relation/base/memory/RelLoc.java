@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.microsoft.z3.Context;
 
 import java.util.Collection;
 
@@ -23,7 +24,7 @@ public class RelLoc extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> events = program.getCache().getEvents(FilterBasic.get(EType.MEMORY));
+            Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
                     //TODO: loc should be reflexive according to
@@ -38,7 +39,7 @@ public class RelLoc extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox() {
+    protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet) {
             BoolExpr rel = edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx);

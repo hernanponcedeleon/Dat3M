@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -46,19 +47,19 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public void initialise(Program program, Context ctx, Settings settings){
-        super.initialise(program, ctx, settings);
+    public void initialise(VerificationTask task){
+        super.initialise(task);
         if(recursiveGroupId > 0){
             throw new RuntimeException("Recursion is not implemented for " + this.getClass().getName());
         }
     }
 
     @Override
-    public BoolExpr encode() {
+    public BoolExpr encode(Context ctx) {
         if(isEncoded){
             return ctx.mkTrue();
         }
         isEncoded = true;
-        return ctx.mkAnd(r1.encode(), doEncode());
+        return ctx.mkAnd(r1.encode(ctx), doEncode(ctx));
     }
 }

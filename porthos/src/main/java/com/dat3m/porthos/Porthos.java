@@ -2,6 +2,7 @@ package com.dat3m.porthos;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.porthos.utils.options.PorthosOptions;
 import com.microsoft.z3.*;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
@@ -73,6 +74,8 @@ public class Porthos {
 
     public static PorthosResult testProgram(Solver s1, Solver s2, Context ctx, Program pSource, Program pTarget, Arch source, Arch target,
                                      Wmm sourceWmm, Wmm targetWmm, Settings settings){
+        VerificationTask taskSource = new VerificationTask(pSource, sourceWmm, source, settings);
+        VerificationTask taskTarget = new VerificationTask(pTarget, targetWmm, target, settings);
     	pSource.unroll(settings.getBound(), 0);
         pTarget.unroll(settings.getBound(), 0);
 
@@ -81,11 +84,11 @@ public class Porthos {
 
 		BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalRegisterValues(ctx);
-        BoolExpr sourceMM = sourceWmm.encode(pSource, ctx, settings);
+        BoolExpr sourceMM = sourceWmm.encode(taskSource, ctx);
 
         s1.add(pTarget.encodeCF(ctx));
         s1.add(pTarget.encodeFinalRegisterValues(ctx));
-        s1.add(targetWmm.encode(pTarget, ctx, settings));
+        s1.add(targetWmm.encode(taskTarget, ctx));
         s1.add(targetWmm.consistent(pTarget, ctx));
 
         s1.add(sourceCF);

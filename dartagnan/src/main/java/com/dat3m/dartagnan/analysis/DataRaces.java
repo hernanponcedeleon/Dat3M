@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
@@ -29,14 +30,17 @@ public class DataRaces {
 	// relation named hb: it should contain the following axiom "acyclic hb"
 
 	public static Result checkForRaces(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+		VerificationTask task = new VerificationTask(program, wmm, target, settings);
+		task.unrollAndCompile();
+    	/*
+    	// No program.simplify() ???
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
         program.updateAssertion();
-
-        solver.add(program.encodeCF(ctx));
-        solver.add(program.encodeFinalRegisterValues(ctx));
-        solver.add(wmm.encode(program, ctx, settings));
-        solver.add(wmm.consistent(program, ctx));
+        */
+		solver.add(task.encodeProgram(ctx));
+		solver.add(task.encodeWmmRelations(ctx));
+        solver.add(task.encodeWmmConsistency(ctx));
         solver.push();
         solver.add(encodeRaces(program, ctx));
         
