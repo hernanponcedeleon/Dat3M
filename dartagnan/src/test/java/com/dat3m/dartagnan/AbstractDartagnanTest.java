@@ -74,7 +74,7 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-                VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
+                VerificationTask task = new VerificationTask(program, wmm, target, settings);
                 assertEquals(expected, runAnalysis(solver, ctx, task));
                 ctx.close();
             }
