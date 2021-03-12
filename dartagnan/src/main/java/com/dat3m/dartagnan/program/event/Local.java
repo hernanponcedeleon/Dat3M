@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -34,8 +35,8 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public void initialise(Context ctx) {
-		super.initialise(ctx);
+	public void initialise(VerificationTask task, Context ctx) {
+		super.initialise(task, ctx);
 		regResultExpr = register.toZ3IntResult(this, ctx);
 	}
 

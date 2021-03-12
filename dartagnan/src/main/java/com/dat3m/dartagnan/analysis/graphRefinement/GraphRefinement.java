@@ -37,13 +37,14 @@ public class GraphRefinement {
     private final ExecutionGraph execGraph;
 
     // ====== Data specific for a single refinement =======
+    //TODO: We might want to take an external executionModel to perform refinement on!
     private final ExecutionModel executionModel;
 
 
     public GraphRefinement(VerificationTask context) {
         this.context = context;
         this.execGraph = new ExecutionGraph(context);
-        executionModel = new ExecutionModel(context);
+        this.executionModel = new ExecutionModel(context);
     }
 
 

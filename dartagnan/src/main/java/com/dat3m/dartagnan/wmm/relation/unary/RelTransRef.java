@@ -43,8 +43,8 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(VerificationTask task){
-        super.initialise(task);
+    public void initialise(VerificationTask task, Context ctx){
+        super.initialise(task, ctx);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
     }

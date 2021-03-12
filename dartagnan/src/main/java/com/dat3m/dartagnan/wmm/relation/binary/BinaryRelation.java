@@ -59,8 +59,8 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public void initialise(VerificationTask task){
-        super.initialise(task);
+    public void initialise(VerificationTask task, Context ctx){
+        super.initialise(task, ctx);
         lastEncodedIteration = -1;
     }
 

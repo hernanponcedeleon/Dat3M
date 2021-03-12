@@ -45,20 +45,12 @@ public class VerificationTask {
     public List<Axiom> getAxioms() { return memoryModel.getAxioms(); }
 
 
-    private BranchEquivalence branchEquivalence;
     public BranchEquivalence getBranchEquivalence() {
-        if (branchEquivalence == null) {
-            branchEquivalence = new BranchEquivalence(program);
-        }
-        return branchEquivalence;
+        return program.getBranchEquivalence();
     }
 
-    private DependencyGraph<Relation> relationDependencyGraph;
     public DependencyGraph<Relation> getRelationDependencyGraph() {
-        if (relationDependencyGraph == null) {
-            relationDependencyGraph = DependencyGraph.from(getRelations());
-        }
-        return relationDependencyGraph;
+        return memoryModel.getRelationDependencyGraph();
     }
 
 
@@ -73,6 +65,11 @@ public class VerificationTask {
         program.updateAssertion();
     }
 
+    public void initialiseEncoding(Context ctx) {
+        program.initialise(this, ctx);
+        memoryModel.initialise(this, ctx);
+    }
+
     public BoolExpr encodeProgram(Context ctx) {
         BoolExpr cfEncoding = program.encodeCF(ctx);
         BoolExpr finalRegValueEncoding = program.encodeFinalRegisterValues(ctx);
@@ -80,15 +77,15 @@ public class VerificationTask {
     }
 
     public BoolExpr encodeWmmCore(Context ctx) {
-        return memoryModel.encodeCore(this, ctx);
+        return memoryModel.encodeCore(ctx);
     }
 
     public BoolExpr encodeWmmRelations(Context ctx) {
-        return memoryModel.encode(this, ctx);
+        return memoryModel.encode( ctx);
     }
 
     public BoolExpr encodeWmmRelationsWithoutCo(Context ctx) {
-        return memoryModel.encodeEmptyCo(this, ctx);
+        return memoryModel.encodeEmptyCo(ctx);
     }
 
     public BoolExpr encodeWmmConsistency(Context ctx) {

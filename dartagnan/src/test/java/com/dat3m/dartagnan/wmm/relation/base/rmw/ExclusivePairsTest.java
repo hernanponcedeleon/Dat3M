@@ -116,6 +116,7 @@ public class ExclusivePairsTest {
             // Add program without assertions
             program.unroll(1, 0);
             program.compile(program.getArch(), 0);
+            task.initialiseEncoding(ctx);
             solver.add(task.encodeProgram(ctx));
             solver.add(task.encodeWmmRelations(ctx));
             solver.add(task.encodeWmmConsistency(ctx));

@@ -104,6 +104,7 @@ public class RelRfTest {
         Context ctx = new Context();
         Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
 
+        task.initialiseEncoding(ctx);
         solver.add(task.encodeAssertions(ctx));
         solver.add(task.encodeProgram(ctx));
         solver.add(task.encodeWmmRelations(ctx));

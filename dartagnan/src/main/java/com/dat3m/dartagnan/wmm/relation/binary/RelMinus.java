@@ -32,8 +32,8 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task){
-        super.initialise(task);
+    public void initialise(VerificationTask task, Context ctx){
+        super.initialise(task, ctx);
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
         }

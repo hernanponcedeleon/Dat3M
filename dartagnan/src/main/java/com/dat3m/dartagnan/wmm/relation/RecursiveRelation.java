@@ -39,11 +39,11 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initialise(VerificationTask task){
+    public void initialise(VerificationTask task, Context ctx){
         if(doRecurse){
             doRecurse = false;
-            super.initialise(task);
-            r1.initialise(task);
+            super.initialise(task, ctx);
+            r1.initialise(task, ctx);
         }
     }
 

@@ -24,6 +24,8 @@ public class Base {
        	if(task.getProgram().getAss() instanceof AssertTrue) {
        		return PASS;
        	}
+
+        task.initialiseEncoding(ctx);
        	
         // Using two solvers can be faster than using
         // an incremental solver or check-sat-assuming
@@ -70,6 +72,8 @@ public class Base {
        	if(task.getProgram().getAss() instanceof AssertTrue) {
        		return PASS;
        	}
+
+        task.initialiseEncoding(ctx);
 
         solver.add(task.encodeProgram(ctx));
         solver.add(task.encodeWmmRelations(ctx));

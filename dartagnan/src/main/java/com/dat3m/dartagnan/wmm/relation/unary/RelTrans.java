@@ -43,8 +43,8 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task){
-        super.initialise(task);
+    public void initialise(VerificationTask task, Context ctx){
+        super.initialise(task, ctx);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
     }

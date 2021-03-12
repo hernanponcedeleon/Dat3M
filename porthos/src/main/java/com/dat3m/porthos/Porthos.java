@@ -82,13 +82,16 @@ public class Porthos {
         int nextId = pSource.compile(source, 0);
         pTarget.compile(target, nextId);
 
+        taskSource.initialiseEncoding(ctx);
+        taskTarget.initialiseEncoding(ctx);
+
 		BoolExpr sourceCF = pSource.encodeCF(ctx);
         BoolExpr sourceFV = pSource.encodeFinalRegisterValues(ctx);
-        BoolExpr sourceMM = sourceWmm.encode(taskSource, ctx);
+        BoolExpr sourceMM = sourceWmm.encode(ctx);
 
         s1.add(pTarget.encodeCF(ctx));
         s1.add(pTarget.encodeFinalRegisterValues(ctx));
-        s1.add(targetWmm.encode(taskTarget, ctx));
+        s1.add(targetWmm.encode(ctx));
         s1.add(targetWmm.consistent(pTarget, ctx));
 
         s1.add(sourceCF);

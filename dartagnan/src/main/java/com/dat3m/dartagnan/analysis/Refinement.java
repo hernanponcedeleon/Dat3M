@@ -46,6 +46,8 @@ public class Refinement {
         if(task.getProgram().getAss() instanceof AssertTrue) {
             return PASS;
         }
+        task.initialiseEncoding(ctx);
+
         solver.add(task.encodeProgram(ctx));
         solver.add(task.encodeWmmRelationsWithoutCo(ctx));
         solver.add(task.encodeWmmConsistency(ctx));
@@ -60,6 +62,8 @@ public class Refinement {
         if(task.getProgram().getAss() instanceof AssertTrue) {
             return PASS;
         }
+
+        task.initialiseEncoding(ctx);
         solver.add(task.encodeProgram(ctx));
         solver.add(task.encodeWmmCore(ctx));
 

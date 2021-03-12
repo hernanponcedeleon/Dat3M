@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.Context;
 
 public class Init extends MemEvent {
@@ -25,8 +26,8 @@ public class Init extends MemEvent {
 	}
 
 	@Override
-	public void initialise(Context ctx) {
-		super.initialise(ctx);
+	public void initialise(VerificationTask task, Context ctx) {
+		super.initialise(task, ctx);
 		memValueExpr = value.toZ3Int(ctx);
 	}
 

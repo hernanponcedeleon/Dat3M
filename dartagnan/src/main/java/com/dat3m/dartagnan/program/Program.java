@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
@@ -31,6 +33,7 @@ public class Program {
     private ThreadCache cache;
     private boolean isUnrolled;
     private boolean isCompiled;
+    private VerificationTask task;
 
     public Program(Memory memory, ImmutableSet<Location> locations){
         this("", memory, locations);
@@ -120,6 +123,14 @@ public class Program {
 		return events;
 	}
 
+    private BranchEquivalence branchEquivalence;
+    public BranchEquivalence getBranchEquivalence() {
+        if (branchEquivalence == null) {
+            branchEquivalence = new BranchEquivalence(this);
+        }
+        return branchEquivalence;
+    }
+
 	public void updateAssertion() {
 		if(ass != null) {
 			return;
@@ -172,6 +183,10 @@ public class Program {
     // -----------------------------------------------------------------------------------------------------------------
 
     public int compile(Arch target, int nextId) {
+        if (!isUnrolled()) {
+            throw new IllegalStateException("The program needs to be unrolled first.");
+        }
+
         for(Thread thread : threads){
             nextId = thread.compile(target, nextId);
         }
@@ -184,10 +199,21 @@ public class Program {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public BoolExpr encodeCF(Context ctx) {
-        for(Event e : getEvents()){
-            e.initialise(ctx);
+    public void initialise(VerificationTask task, Context ctx) {
+        if (!isCompiled) {
+            throw new IllegalStateException("The program needs to be compiled first.");
         }
+        this.task = task;
+        for(Event e : getEvents()){
+            e.initialise(task, ctx);
+        }
+    }
+
+    public BoolExpr encodeCF(Context ctx) {
+        if (this.task == null) {
+            throw new RuntimeException("The program needs to get initialised first.");
+        }
+
         BoolExpr enc = memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.mkAnd(enc, t.encodeCF(ctx));
@@ -196,6 +222,10 @@ public class Program {
     }
 
     public BoolExpr encodeFinalRegisterValues(Context ctx){
+        if (this.task == null) {
+            throw new RuntimeException("The program needs to get initialised first.");
+        }
+
         Map<Register, List<Event>> eMap = new HashMap<>();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.REG_WRITER))){
             Register reg = ((RegWriter)e).getResultRegister();
@@ -220,6 +250,10 @@ public class Program {
     }
     
     public BoolExpr encodeNoBoundEventExec(Context ctx){
+        if (this.task == null) {
+            throw new RuntimeException("The program needs to get initialised first.");
+        }
+
     	BoolExpr enc = ctx.mkTrue();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.BOUND))){
         	enc = ctx.mkAnd(enc, ctx.mkNot(e.exec()));

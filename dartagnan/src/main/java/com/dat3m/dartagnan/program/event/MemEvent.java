@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.Context;
@@ -35,8 +36,8 @@ public abstract class MemEvent extends Event {
     }
 
     @Override
-    public void initialise(Context ctx) {
-        super.initialise(ctx);
+    public void initialise(VerificationTask task, Context ctx) {
+        super.initialise(task, ctx);
         memAddressExpr = address.toZ3Int(this, ctx);
     }
 

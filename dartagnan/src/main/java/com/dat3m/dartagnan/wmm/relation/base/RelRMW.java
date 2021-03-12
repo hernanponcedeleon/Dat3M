@@ -42,8 +42,8 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task){
-        super.initialise(task);
+    public void initialise(VerificationTask task, Context ctx){
+        super.initialise(task, ctx);
         this.baseMaxTupleSet = null;
     }
 

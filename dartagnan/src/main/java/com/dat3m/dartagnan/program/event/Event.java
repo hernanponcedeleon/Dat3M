@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -31,6 +32,8 @@ public abstract class Event implements Comparable<Event> {
 	protected transient BoolExpr execVar;
 
 	protected Set<Event> listeners = new HashSet<>();
+
+	protected VerificationTask task;
 	
 	protected Event(){
 		filter = new HashSet<>();
@@ -225,10 +228,11 @@ public abstract class Event implements Comparable<Event> {
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initialise(Context ctx){
+	public void initialise(VerificationTask task, Context ctx){
 		if(cId < 0){
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
+		this.task = task;
 		execVar = ctx.mkBoolConst("exec(" + repr() + ")");
 		cfVar = ctx.mkBoolConst("cf(" + repr() + ")");
 	}

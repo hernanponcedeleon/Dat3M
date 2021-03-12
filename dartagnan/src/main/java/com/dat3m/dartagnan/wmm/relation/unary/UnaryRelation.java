@@ -47,8 +47,8 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public void initialise(VerificationTask task){
-        super.initialise(task);
+    public void initialise(VerificationTask task, Context ctx){
+        super.initialise(task, ctx);
         if(recursiveGroupId > 0){
             throw new RuntimeException("Recursion is not implemented for " + this.getClass().getName());
         }

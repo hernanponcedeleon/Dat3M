@@ -32,6 +32,7 @@ public class DataRaces {
 	public static Result checkForRaces(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
 		VerificationTask task = new VerificationTask(program, wmm, target, settings);
 		task.unrollAndCompile();
+		task.initialiseEncoding(ctx);
     	/*
     	// No program.simplify() ???
     	program.unroll(settings.getBound(), 0);

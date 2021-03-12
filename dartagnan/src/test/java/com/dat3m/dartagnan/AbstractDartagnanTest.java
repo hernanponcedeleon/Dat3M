@@ -83,7 +83,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    @Test
+    //@Test
     public void testRefinement() {
         try {
             Program program = new ProgramParser().parse(new File(path));
