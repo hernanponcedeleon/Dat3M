@@ -376,9 +376,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         }
 
         protected BranchClass() {
-            impliedClasses = new HashSet<>();
-            reachableClasses = new HashSet<>();
-            exclusiveClasses = new HashSet<>();
+            impliedClasses = Sets.newIdentityHashSet();
+            reachableClasses = Sets.newIdentityHashSet();
+            exclusiveClasses = Sets.newIdentityHashSet();
 
             impliedClassesView = Collections.unmodifiableSet(impliedClasses);
             reachableClassesView = Collections.unmodifiableSet(reachableClasses);

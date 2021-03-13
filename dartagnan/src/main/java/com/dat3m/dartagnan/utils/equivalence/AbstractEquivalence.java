@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
+import com.google.common.collect.Sets;
+
 import java.util.*;
 
 public abstract class AbstractEquivalence<T> implements Equivalence<T> {
@@ -19,7 +21,7 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
 
     public AbstractEquivalence() {
         classMap = new HashMap<>();
-        classes = Collections.newSetFromMap(new IdentityHashMap<>());
+        classes = Sets.newIdentityHashSet();
     }
 
     protected AbstractEquivalence(int estimatedDataSize, int estimatedNumOfClasses) {
