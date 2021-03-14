@@ -285,8 +285,6 @@ public class AliasAnalysis {
             if (address instanceof Register) {
             	if(bases.containsKey(address) && program.getMemory().isArrayPointer(bases.get(address))) {
             		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
-            		System.out.println(address);
-            		System.out.println(addresses);
             	} else {
                     addresses = graph.getAddresses(((Register) address));            		
             	}
