@@ -281,22 +281,24 @@ public class AliasAnalysis {
 
         for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
-            Set<Address> adresses;
+            Set<Address> addresses;
             if (address instanceof Register) {
-            	if(bases.containsKey(address)) {
-            		adresses = ImmutableSet.of(bases.get(address));
+            	if(bases.containsKey(address) && program.getMemory().isArrayPointer(bases.get(address))) {
+            		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
+            		System.out.println(address);
+            		System.out.println(addresses);
             	} else {
-                    adresses = graph.getAddresses(((Register) address));            		
+                    addresses = graph.getAddresses(((Register) address));            		
             	}
             } else if (address instanceof Address) {
-                    adresses = ImmutableSet.of(((Address) address));
+                    addresses = ImmutableSet.of(((Address) address));
             } else {
-                adresses = maxAddressSet;
+                addresses = maxAddressSet;
             }
-            if (adresses.size() == 0) {
-                adresses = maxAddressSet;
+            if (addresses.size() == 0) {
+                addresses = maxAddressSet;
             }
-            ImmutableSet<Address> addr = ImmutableSet.copyOf(adresses);
+            ImmutableSet<Address> addr = ImmutableSet.copyOf(addresses);
             ((MemEvent) e).setMaxAddressSet(addr);
         }
     }
