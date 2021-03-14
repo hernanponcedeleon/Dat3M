@@ -23,11 +23,11 @@ import java.util.*;
  */
 public class AliasAnalysis {
 
-    private final List<Object> variables = new LinkedList<>();
+    private List<Object> variables = new LinkedList<>();
     private ImmutableSet<Address> maxAddressSet;
     private Map<Register, Map<Event, Integer>> ssaMap;
 
-    private final Graph graph = new Graph();
+    private Graph graph = new Graph();
 
     public void calculateLocationSets(Program program, Alias alias) {
         if(alias == Alias.NONE){
@@ -138,7 +138,7 @@ public class AliasAnalysis {
 
                 if (expr instanceof Register) {
                     // r1 = r2 -> add edge r2 --> r1
-                    graph.addEdge(expr, register);
+                    graph.addEdge((Register) expr, register);
 
                 } else if (expr instanceof Address) {
                     // r = &a
@@ -270,7 +270,7 @@ public class AliasAnalysis {
 			if(exp instanceof Address) {
     			bases.put(reg, (Address)exp);
     		} else if(exp instanceof IExprBin) {
-    			IExpr base = exp.getBase();
+    			IExpr base = ((IExprBin)exp).getBase();
     			if(base instanceof Address) {
     				bases.put(reg, (Address)base);	
     			} else if(base instanceof Register && bases.containsKey(base)) {
@@ -281,22 +281,22 @@ public class AliasAnalysis {
 
         for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
-            Set<Address> adresses;
+            Set<Address> addresses;
             if (address instanceof Register) {
-            	if(bases.containsKey(address)) {
-            		adresses = ImmutableSet.of(bases.get(address));
+            	if(bases.containsKey(address) && program.getMemory().isArrayPointer(bases.get(address))) {
+            		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
             	} else {
-                    adresses = graph.getAddresses(address);
+                    addresses = graph.getAddresses(((Register) address));            		
             	}
             } else if (address instanceof Address) {
-                    adresses = ImmutableSet.of(((Address) address));
+                    addresses = ImmutableSet.of(((Address) address));
             } else {
-                adresses = maxAddressSet;
+                addresses = maxAddressSet;
             }
-            if (adresses.size() == 0) {
-                adresses = maxAddressSet;
+            if (addresses.size() == 0) {
+                addresses = maxAddressSet;
             }
-            ImmutableSet<Address> addr = ImmutableSet.copyOf(adresses);
+            ImmutableSet<Address> addr = ImmutableSet.copyOf(addresses);
             ((MemEvent) e).setMaxAddressSet(addr);
         }
     }

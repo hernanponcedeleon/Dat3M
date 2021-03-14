@@ -74,4 +74,19 @@ public class Memory {
         }
         return ImmutableSet.copyOf(result);
     }
+
+    public boolean isArrayPointer(Address address) {
+    	return arrays.values().stream()
+        	.collect(ArrayList::new, List::addAll, List::addAll).contains(address);
+    }
+    
+    public List<Address> getArrayfromPointer(Address address) {
+    	for(List<Address> array : arrays.values()) {
+    		if(array.contains(address)) {
+    			return array;
+    		}
+    	}
+    	// This method shall be called after isArrayPointer to avoid returning null
+		return null;
+    }
 }
