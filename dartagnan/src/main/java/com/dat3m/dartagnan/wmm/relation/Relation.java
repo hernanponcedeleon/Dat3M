@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -7,6 +8,7 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Mode;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -170,11 +172,20 @@ public abstract class Relation implements Dependent<Relation> {
             Set<Tuple> negations = new HashSet<>(encodeTupleSet);
             negations.removeAll(maxTupleSet);
             for(Tuple tuple : negations){
-                enc = ctx.mkAnd(enc, ctx.mkNot(edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx)));
+                enc = ctx.mkAnd(enc, ctx.mkNot(getSMTVar(tuple, ctx)));
             }
             encodeTupleSet.removeAll(negations);
         }
         return enc;
+    }
+
+    public BoolExpr getSMTVar(Tuple edge, Context ctx) {
+        return getMaxTupleSet().contains(edge) ?
+                edge(getName(), edge.getFirst(), edge.getSecond(), ctx) : ctx.mkFalse();
+    }
+
+    public final BoolExpr getSMTVar(Event e1, Event e2, Context ctx) {
+        return getSMTVar(new Tuple(e1, e2), ctx);
     }
 
 

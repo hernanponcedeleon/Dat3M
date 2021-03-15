@@ -145,7 +145,7 @@ public class RecursiveRelation extends Relation {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet){
             enc = ctx.mkAnd(enc, ctx.mkEq(
-                    Utils.edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
+                    this.getSMTVar(tuple, ctx),
                     Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
             ));
         }

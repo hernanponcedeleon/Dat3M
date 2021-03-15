@@ -60,10 +60,8 @@ public class RelInverse extends UnaryRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-            BoolExpr opt = Utils.edge(r1.getName(), e2, e1, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), opt));
+            BoolExpr opt = r1.getSMTVar(tuple.getInverse(), ctx);
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), opt));
         }
         return enc;
     }

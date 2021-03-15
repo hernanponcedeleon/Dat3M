@@ -115,7 +115,7 @@ public class RelRMW extends StaticRelation {
                         unpredictable = ctx.mkOr(unpredictable, ctx.mkAnd(isExecPair, ctx.mkNot(sameAddress)));
 
                         // Relation between exclusive load and store
-                        enc = ctx.mkAnd(enc, ctx.mkEq(edge("rmw", load, store, ctx), ctx.mkAnd(isExecPair, sameAddress)));
+                        enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(load, store, ctx), ctx.mkAnd(isExecPair, sameAddress)));
 
                         // Can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                         // The implementation does not include all possible unpredictable cases: in case of address

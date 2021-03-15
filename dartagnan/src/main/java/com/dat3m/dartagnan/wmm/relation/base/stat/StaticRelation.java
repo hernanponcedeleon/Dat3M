@@ -21,7 +21,7 @@ public abstract class StaticRelation extends Relation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : encodeTupleSet) {
-            BoolExpr rel = edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
+            BoolExpr rel = this.getSMTVar(tuple, ctx);
             enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(tuple.getFirst().exec(), tuple.getSecond().exec())));
         }
         return enc;

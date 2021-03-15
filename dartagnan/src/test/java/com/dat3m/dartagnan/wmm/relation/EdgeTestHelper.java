@@ -35,7 +35,7 @@ public class EdgeTestHelper {
         BoolExpr enc = ctx.mkFalse();
 
         for(Tuple tuple : all){
-            BoolExpr edge = Utils.edge(relation.getName(), tuple.getFirst(), tuple.getSecond(), ctx);
+            BoolExpr edge = relation.getSMTVar(tuple, ctx);
             if(expected.contains(tuple)){
                 enc = ctx.mkOr(enc, ctx.mkNot(edge));
             } else if(max.contains(tuple)){

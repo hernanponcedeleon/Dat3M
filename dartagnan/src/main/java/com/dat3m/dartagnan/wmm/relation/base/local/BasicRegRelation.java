@@ -64,7 +64,7 @@ abstract class BasicRegRelation extends StaticRelation {
                         Event regWriter = possibleWriters.get(i);
                         // RegReader uses the value of RegWriter if it is executed ..
                         BoolExpr clause = ctx.mkAnd(regWriter.exec(), regReader.exec());
-                        BoolExpr edge = Utils.edge(this.getName(), regWriter, regReader, ctx);
+                        BoolExpr edge = this.getSMTVar(regWriter, regReader, ctx);
                         // .. and no other write to the same register is executed in between
                         for (int j = i + 1; j < possibleWriters.size(); j++) {
                             clause = ctx.mkAnd(clause, ctx.mkNot(possibleWriters.get(j).exec()));

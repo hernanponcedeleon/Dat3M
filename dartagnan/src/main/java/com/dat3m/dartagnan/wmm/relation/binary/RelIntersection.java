@@ -53,12 +53,9 @@ public class RelIntersection extends BinaryRelation {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
-            BoolExpr opt2 = Utils.edge(r2.getName(), e1, e2, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
+            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
+            BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkAnd(opt1, opt2)));
         }
         return enc;
     }
@@ -78,9 +75,9 @@ public class RelIntersection extends BinaryRelation {
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 
-            BoolExpr opt1 = Utils.edge(r1.getName(), e1, e2, ctx);
-            BoolExpr opt2 = Utils.edge(r2.getName(), e1, e2, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
+            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
+            BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkAnd(opt1, opt2)));
 
             if(recurseInR1){
                 opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
@@ -88,7 +85,7 @@ public class RelIntersection extends BinaryRelation {
             if(recurseInR2){
                 opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r2.getName(), e1, e2, ctx)));
             }
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), e1, e2, ctx), ctx.mkAnd(opt1, opt2)));
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkAnd(opt1, opt2)));
         }
         return enc;
     }

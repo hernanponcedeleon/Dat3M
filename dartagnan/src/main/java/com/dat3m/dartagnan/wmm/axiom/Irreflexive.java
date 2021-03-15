@@ -37,7 +37,7 @@ public class Irreflexive extends Axiom {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
-                enc = ctx.mkAnd(enc, ctx.mkNot(Utils.edge(rel.getName(), tuple.getFirst(), tuple.getFirst(), ctx)));
+                enc = ctx.mkAnd(enc, ctx.mkNot(rel.getSMTVar(tuple, ctx)));
             }
         }
         return enc;
@@ -48,7 +48,7 @@ public class Irreflexive extends Axiom {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
-                enc = ctx.mkOr(enc, Utils.edge(rel.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
+                enc = ctx.mkOr(enc, rel.getSMTVar(tuple, ctx));
             }
         }
         return enc;

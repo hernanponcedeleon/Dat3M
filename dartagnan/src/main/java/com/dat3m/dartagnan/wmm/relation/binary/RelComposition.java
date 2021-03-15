@@ -125,14 +125,14 @@ public class RelComposition extends BinaryRelation {
                 int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                 if(exprMap.containsKey(id)){
                     BoolExpr e = exprMap.get(id);
-                    e = ctx.mkOr(e, ctx.mkAnd(Utils.edge(r1.getName(), e1, e3, ctx), Utils.edge(r2.getName(), e3, e2, ctx)));
+                    e = ctx.mkOr(e, ctx.mkAnd(r1.getSMTVar(tuple1, ctx), r2.getSMTVar(tuple2, ctx)));
                     exprMap.put(id, e);
                 }
             }
         }
 
         for(Tuple tuple : encodeTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
         }
 
         return enc;
@@ -171,8 +171,8 @@ public class RelComposition extends BinaryRelation {
                 Event e2 = tuple2.getSecond();
                 int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                 if(orClauseMap.containsKey(id)){
-                    BoolExpr opt1 = Utils.edge(r1.getName(), e1, e3, ctx);
-                    BoolExpr opt2 = Utils.edge(r2.getName(), e3, e2, ctx);
+                    BoolExpr opt1 = r1.getSMTVar(tuple1, ctx);
+                    BoolExpr opt2 = r2.getSMTVar(tuple2, ctx);
                     orClauseMap.put(id, ctx.mkOr(orClauseMap.get(id), ctx.mkAnd(opt1, opt2)));
 
                     if(recurseInR1){
@@ -187,8 +187,8 @@ public class RelComposition extends BinaryRelation {
         }
 
         for(Tuple tuple : encodeTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx), orClauseMap.get(tuple.hashCode())));
-            enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx), idlClauseMap.get(tuple.hashCode())));
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), orClauseMap.get(tuple.hashCode())));
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), idlClauseMap.get(tuple.hashCode())));
         }
 
         return enc;

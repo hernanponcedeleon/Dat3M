@@ -89,19 +89,19 @@ public class RelTrans extends UnaryRelation {
             Event e2 = tuple.getSecond();
 
             if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
-                orClause = ctx.mkOr(orClause, edge(r1.getName(), e1, e2, ctx));
+                orClause = ctx.mkOr(orClause, r1.getSMTVar(tuple, ctx));
             }
 
             for(Event e3 : transitiveReachabilityMap.get(e1)){
                 if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
-                    orClause = ctx.mkOr(orClause, ctx.mkAnd(edge(this.getName(), e1, e3, ctx), edge(this.getName(), e3, e2, ctx)));
+                    orClause = ctx.mkOr(orClause, ctx.mkAnd(this.getSMTVar(e1, e3, ctx), this.getSMTVar(e3, e2, ctx)));
                 }
             }
 
             if(Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, edge(this.getName(), e1, e2, ctx)));
+                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, this.getSMTVar(tuple, ctx)));
             } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), orClause));
+                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), orClause));
             }
         }
 
@@ -122,8 +122,8 @@ public class RelTrans extends UnaryRelation {
                     Event e3 = tuple2.getSecond();
                     if (transitiveReachabilityMap.get(e3).contains(e2)) {
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(
-                                edge(this.getName(), e1, e3, ctx),
-                                edge(this.getName(), e3, e2, ctx),
+                                this.getSMTVar(e1, e3, ctx),
+                                this.getSMTVar(e3, e2, ctx),
                                 ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e1, e3, ctx)),
                                 ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e3, e2, ctx))));
                     }
@@ -138,21 +138,21 @@ public class RelTrans extends UnaryRelation {
                     Event e3 = tuple2.getSecond();
                     if (transitiveReachabilityMap.get(e3).contains(e2)) {
                         orClause = ctx.mkOr(orClause, ctx.mkAnd(
-                                edge(this.getName(), e1, e3, ctx),
-                                edge(this.getName(), e3, e2, ctx)));
+                                this.getSMTVar(e1, e3, ctx),
+                                this.getSMTVar(e3, e2, ctx)));
                     }
                 }
             }
 
             enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
 
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(), e1, e2, ctx), ctx.mkOr(
-                    edge(r1.getName(), e1,e2, ctx),
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(
+                    r1.getSMTVar(tuple, ctx),
                     ctx.mkAnd(edge(this.idlConcatName(), e1, e2, ctx), ctx.mkGt(intCount(this.getName(), e1, e2, ctx), intCount(this.idlConcatName(), e1, e2, ctx)))
             )));
 
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.getName(),e1,e2, ctx), ctx.mkOr(
-                    edge(r1.getName(), e1,e2, ctx),
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(
+                    r1.getSMTVar(tuple, ctx),
                     edge(this.idlConcatName(), e1, e2, ctx)
             )));
         }

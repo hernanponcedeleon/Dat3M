@@ -49,15 +49,15 @@ public class RelCrit extends StaticRelation {
                             BoolExpr relation = ctx.mkAnd(lock.exec(), unlock.exec());
                             for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){
                                 if(otherLock.getCId() > lock.getCId() && otherLock.getCId() < unlock.getCId()){
-                                    relation = ctx.mkAnd(relation, ctx.mkNot(edge("crit", otherLock, unlock, ctx)));
+                                    relation = ctx.mkAnd(relation, ctx.mkNot(this.getSMTVar(otherLock, unlock, ctx)));
                                 }
                             }
                             for(Event otherUnlock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_UNLOCK))){
                                 if(otherUnlock.getCId() > lock.getCId() && otherUnlock.getCId() < unlock.getCId()){
-                                    relation = ctx.mkAnd(relation, ctx.mkNot(edge("crit", lock, otherUnlock, ctx)));
+                                    relation = ctx.mkAnd(relation, ctx.mkNot(this.getSMTVar(lock, otherUnlock, ctx)));
                                 }
                             }
-                            enc = ctx.mkAnd(enc, ctx.mkEq(edge("crit", lock, unlock, ctx), relation));
+                            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), relation));
                         }
                     }
                 }

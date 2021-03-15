@@ -111,7 +111,7 @@ public class RelTransRef extends RelTrans {
             encodeTupleSet = temp;
 
             for(Tuple tuple : identityEncodeTupleSet){
-                enc = ctx.mkAnd(enc, Utils.edge(this.getName(), tuple.getFirst(), tuple.getFirst(), ctx));
+                enc = ctx.mkAnd(enc, this.getSMTVar(tuple, ctx));
             }
             return enc;
         } catch (Throwable e){

@@ -102,8 +102,8 @@ public class RelCo extends Relation {
 
             for(Tuple t : maxTupleSet.getByFirst(w1)){
                 MemEvent w2 = (MemEvent)t.getSecond();
-                BoolExpr relation = edge("co", w1, w2, ctx);
-                lastCo = ctx.mkAnd(lastCo, ctx.mkNot(edge("co", w1, w2, ctx)));
+                BoolExpr relation = getSMTVar(t, ctx);
+                lastCo = ctx.mkAnd(lastCo, ctx.mkNot(relation));
 
                 Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
                 Expr a2 = w2.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w2.getMemAddressExpr(), false) : w2.getMemAddressExpr();
