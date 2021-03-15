@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -14,6 +15,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.microsoft.z3.Context;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 abstract class BasicRegRelation extends StaticRelation {
 
@@ -37,33 +39,35 @@ abstract class BasicRegRelation extends StaticRelation {
     BoolExpr doEncodeApprox(Collection<Event> regReaders, Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();
+        BranchEquivalence eq = task.getBranchEquivalence();
 
         for (Event regReader : regReaders) {
             for (Register register : getRegisters(regReader)) {
                 List<Event> writers = regWriterMap.getOrDefault(register, ImmutableList.of());
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
                     enc = ctx.mkAnd(enc, ctx.mkEq(register.toZ3Int(regReader, ctx), new IConst(0, register.getPrecision()).toZ3Int(ctx)));
-
                 } else {
-                    ListIterator<Event> writerIt = writers.listIterator();
-                    while (writerIt.hasNext()) {
-                        Event regWriter = writerIt.next();
-                        if (regWriter.getCId() >= regReader.getCId()) {
-                            break;
-                        }
 
+                    // =============== Reduce set of writes ==================
+                    //TODO: We assume that any Register-Write is always executed
+                    // if it is contained in the program flow
+                    // This may fail for RMWReadCond!
+                    List<Event> possibleWriters = writers.stream().filter(x -> x.getCId() < regReader.getCId() && !eq.areMutualExclusive(x, regReader)).collect(Collectors.toList());
+                    List<Event> impliedWriters = possibleWriters.stream().filter(x -> eq.isImplied(regReader, x)).collect(Collectors.toList());
+                    if (!impliedWriters.isEmpty()) {
+                        Event lastImplied = impliedWriters.get(impliedWriters.size() - 1);
+                        possibleWriters.removeIf(x -> x.getCId() < lastImplied.getCId());
+                    }
+                    possibleWriters.removeIf(x -> possibleWriters.stream().anyMatch(y -> (x.getCId() < y.getCId()) && eq.isImplied(x ,y)));
+                    // =========================
+                    for (int i = 0; i < possibleWriters.size(); i++) {
+                        Event regWriter = possibleWriters.get(i);
                         // RegReader uses the value of RegWriter if it is executed ..
                         BoolExpr clause = ctx.mkAnd(regWriter.exec(), regReader.exec());
                         BoolExpr edge = Utils.edge(this.getName(), regWriter, regReader, ctx);
-
                         // .. and no other write to the same register is executed in between
-                        ListIterator<Event> otherIt = writers.listIterator(writerIt.nextIndex());
-                        while (otherIt.hasNext()) {
-                            Event other = otherIt.next();
-                            if (other.getCId() >= regReader.getCId()) {
-                                break;
-                            }
-                            clause = ctx.mkAnd(clause, ctx.mkNot(other.exec()));
+                        for (int j = i + 1; j < possibleWriters.size(); j++) {
+                            clause = ctx.mkAnd(clause, ctx.mkNot(possibleWriters.get(j).exec()));
                         }
 
                         // Encode edge and value binding
