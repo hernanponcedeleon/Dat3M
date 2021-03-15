@@ -34,6 +34,7 @@ abstract class BasicRegRelation extends StaticRelation {
                 }
             }
         }
+        removeMutuallyExclusiveTuples(maxTupleSet);
     }
 
     BoolExpr doEncodeApprox(Collection<Event> regReaders, Context ctx) {

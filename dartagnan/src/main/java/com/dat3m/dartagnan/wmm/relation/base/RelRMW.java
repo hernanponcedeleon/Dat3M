@@ -85,6 +85,7 @@ public class RelRMW extends StaticRelation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }       	
         return maxTupleSet;
     }

@@ -46,6 +46,7 @@ public class RelPo extends StaticRelation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

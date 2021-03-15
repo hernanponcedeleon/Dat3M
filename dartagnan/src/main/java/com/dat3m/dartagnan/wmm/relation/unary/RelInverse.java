@@ -44,9 +44,11 @@ public class RelInverse extends UnaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(tuples);
         Set<Tuple> activeSet = new HashSet<>(tuples);
         activeSet.retainAll(maxTupleSet);
+        activeSet.removeAll(encodeTupleSet);
+        encodeTupleSet.addAll(activeSet);
+
         if(!activeSet.isEmpty()){
             TupleSet invSet = new TupleSet();
             for(Tuple pair : activeSet){

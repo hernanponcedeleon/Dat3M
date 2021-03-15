@@ -42,6 +42,7 @@ public class RelCartesian extends StaticRelation {
                     maxTupleSet.add(new Tuple(e1, e2));
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

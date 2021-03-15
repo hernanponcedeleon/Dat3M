@@ -34,6 +34,7 @@ public class RelLoc extends Relation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

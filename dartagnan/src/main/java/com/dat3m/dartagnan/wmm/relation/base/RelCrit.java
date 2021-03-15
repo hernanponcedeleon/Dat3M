@@ -31,6 +31,7 @@ public class RelCrit extends StaticRelation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

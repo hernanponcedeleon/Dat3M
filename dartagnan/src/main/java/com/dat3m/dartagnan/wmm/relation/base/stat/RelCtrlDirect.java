@@ -48,6 +48,7 @@ public class RelCtrlDirect extends StaticRelation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

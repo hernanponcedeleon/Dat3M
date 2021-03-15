@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
@@ -32,8 +33,7 @@ public class RelIntersection extends BinaryRelation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            maxTupleSet.addAll(r1.getMaxTupleSet());
-            maxTupleSet.retainAll(r2.getMaxTupleSet());
+            maxTupleSet.addAll(Sets.intersection(r1.getMaxTupleSet(), r2.getMaxTupleSet()));
         }
         return maxTupleSet;
     }

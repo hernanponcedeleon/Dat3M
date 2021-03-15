@@ -67,9 +67,9 @@ public class RelTrans extends UnaryRelation {
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet();
         activeSet.addAll(tuples);
+        activeSet.retainAll(maxTupleSet);
         activeSet.removeAll(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
-        activeSet.retainAll(maxTupleSet);
 
         TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
         if(fullEncodeTupleSet.addAll(fullActiveSet)){

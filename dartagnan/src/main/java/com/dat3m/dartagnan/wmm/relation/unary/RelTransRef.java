@@ -67,9 +67,9 @@ public class RelTransRef extends RelTrans {
     public void addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet();
         activeSet.addAll(tuples);
+        activeSet.retainAll(maxTupleSet);
         activeSet.removeAll(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
-        activeSet.retainAll(maxTupleSet);
 
         for(Tuple tuple : activeSet){
             if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){

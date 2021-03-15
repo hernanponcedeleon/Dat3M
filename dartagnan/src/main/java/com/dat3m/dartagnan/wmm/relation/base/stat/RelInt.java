@@ -33,6 +33,7 @@ public class RelInt extends StaticRelation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

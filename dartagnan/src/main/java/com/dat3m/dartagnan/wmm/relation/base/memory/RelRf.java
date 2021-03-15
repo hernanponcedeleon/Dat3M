@@ -52,6 +52,7 @@ public class RelRf extends Relation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

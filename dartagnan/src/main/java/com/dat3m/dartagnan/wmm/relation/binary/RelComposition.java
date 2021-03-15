@@ -44,6 +44,7 @@ public class RelComposition extends BinaryRelation {
                     maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }
@@ -67,8 +68,8 @@ public class RelComposition extends BinaryRelation {
     public void addEncodeTupleSet(TupleSet tuples){
         Set<Tuple> activeSet = new HashSet<>(tuples);
         activeSet.removeAll(encodeTupleSet);
-        encodeTupleSet.addAll(tuples); // could be .addAll(activeSet)
         activeSet.retainAll(maxTupleSet);
+        encodeTupleSet.addAll(activeSet);
 
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
@@ -104,13 +105,8 @@ public class RelComposition extends BinaryRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
-        TupleSet r1Set = new TupleSet();
-        r1Set.addAll(r1.getEncodeTupleSet());
-        r1Set.retainAll(r1.getMaxTupleSet());
-
-        TupleSet r2Set = new TupleSet();
-        r2Set.addAll(r2.getEncodeTupleSet());
-        r2Set.retainAll(r2.getMaxTupleSet());
+        TupleSet r1Set = r1.getEncodeTupleSet();
+        TupleSet r2Set = r2.getEncodeTupleSet();
 
         Map<Integer, BoolExpr> exprMap = new HashMap<>();
         for(Tuple tuple : encodeTupleSet){
@@ -149,13 +145,8 @@ public class RelComposition extends BinaryRelation {
         boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
         boolean recurseInR2 = (r2.getRecursiveGroupId() & recursiveGroupId) > 0;
 
-        TupleSet r1Set = new TupleSet();
-        r1Set.addAll(r1.getEncodeTupleSet());
-        r1Set.retainAll(r1.getMaxTupleSet());
-
-        TupleSet r2Set = new TupleSet();
-        r2Set.addAll(r2.getEncodeTupleSet());
-        r2Set.retainAll(r2.getMaxTupleSet());
+        TupleSet r1Set = r1.getEncodeTupleSet();
+        TupleSet r2Set = r2.getEncodeTupleSet();
 
         Map<Integer, BoolExpr> orClauseMap = new HashMap<>();
         Map<Integer, BoolExpr> idlClauseMap = new HashMap<>();

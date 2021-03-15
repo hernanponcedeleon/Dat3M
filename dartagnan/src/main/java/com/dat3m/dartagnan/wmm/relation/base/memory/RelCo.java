@@ -67,6 +67,7 @@ public class RelCo extends Relation {
                     }
                 }
             }
+            removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
     }

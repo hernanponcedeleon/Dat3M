@@ -3,12 +3,14 @@ package com.dat3m.dartagnan.wmm.relation;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -84,7 +86,7 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     public void addEncodeTupleSet(TupleSet tuples){
-        encodeTupleSet.addAll(tuples);
+        encodeTupleSet.addAll(Sets.intersection(tuples, maxTupleSet));
     }
 
     public String getName() {
@@ -154,7 +156,7 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected BoolExpr doEncode(Context ctx){
-        BoolExpr enc = encodeNegations(ctx);
+        BoolExpr enc = ctx.mkTrue();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             if(task.getSettings().getMode() == Mode.KLEENE) {
                 return ctx.mkAnd(enc, encodeLFP(ctx));
@@ -162,19 +164,6 @@ public abstract class Relation implements Dependent<Relation> {
                 return ctx.mkAnd(enc, encodeIDL(ctx));
             }
             return ctx.mkAnd(enc, encodeApprox(ctx));
-        }
-        return enc;
-    }
-
-    private BoolExpr encodeNegations(Context ctx){
-        BoolExpr enc = ctx.mkTrue();
-        if(!encodeTupleSet.isEmpty()){
-            Set<Tuple> negations = new HashSet<>(encodeTupleSet);
-            negations.removeAll(maxTupleSet);
-            for(Tuple tuple : negations){
-                enc = ctx.mkAnd(enc, ctx.mkNot(getSMTVar(tuple, ctx)));
-            }
-            encodeTupleSet.removeAll(negations);
         }
         return enc;
     }
@@ -188,6 +177,11 @@ public abstract class Relation implements Dependent<Relation> {
         return getSMTVar(new Tuple(e1, e2), ctx);
     }
 
+
+    protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
+        BranchEquivalence eq = task.getBranchEquivalence();
+        tupleSet.removeIf(t -> eq.areMutualExclusive(t.getFirst(), t.getSecond()));
+    }
 
     // ========================== Utility methods =========================
     public boolean isStaticRelation() { return this instanceof StaticRelation; }
