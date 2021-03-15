@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -10,6 +11,8 @@ import com.dat3m.dartagnan.program.Thread;
 import java.util.*;
 
 public abstract class Event implements Comparable<Event> {
+
+	public static final boolean MERGE_CF_VARS = true;
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
@@ -29,7 +32,7 @@ public abstract class Event implements Comparable<Event> {
     protected transient BoolExpr cfCond;
 
 	protected transient BoolExpr cfVar;
-	protected transient BoolExpr execVar;
+	//protected transient BoolExpr execVar;
 
 	protected Set<Event> listeners = new HashSet<>();
 
@@ -233,16 +236,25 @@ public abstract class Event implements Comparable<Event> {
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
 		this.task = task;
-		execVar = ctx.mkBoolConst("exec(" + repr() + ")");
-		cfVar = ctx.mkBoolConst("cf(" + repr() + ")");
+		if (MERGE_CF_VARS) {
+			cfVar = ctx.mkBoolConst("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
+		} else {
+			cfVar = ctx.mkBoolConst("cf(" + repr() + ")");
+		}
 	}
 
+	private String repr;
 	public String repr() {
-		return "E" + cId;
+		if (repr == null) {
+			// We cache the result, because this saves string concatenations
+			// for every(!) single edge encoded in the program
+			repr = "E" + cId;
+		}
+		return repr;
 	}
 
 	public BoolExpr exec(){
-		return execVar;
+		return cf();
 	}
 
 	public BoolExpr cf(){
@@ -270,17 +282,17 @@ public abstract class Event implements Comparable<Event> {
 	}
 
 	protected BoolExpr encodeExec(Context ctx){
-		return ctx.mkEq(execVar, cfVar);
+		return ctx.mkTrue();
 	}
 
 
 	//
 
 	public boolean wasExecuted(Model model) {
-		return model.getConstInterp(execVar).isTrue();
+		return model.getConstInterp(exec()).isTrue();
 	}
 
 	public boolean wasInControlFlow(Model model) {
-		return model.getConstInterp(cfVar).isTrue();
+		return model.getConstInterp(cf()).isTrue();
 	}
 }

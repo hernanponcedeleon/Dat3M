@@ -11,7 +11,7 @@ public class DependencyGraph<T> {
     private final Map<T, Node> nodeMap;
     private List<Node> nodeList;
     private final List<Set<Node>> sccs;
-    private final Function<T, Collection<? extends T>> dependencyMap;
+    private final Function<? super T, ? extends Collection<? extends T>> dependencyMap;
 
     public Node get(T item) {
         return nodeMap.get(item);
@@ -39,19 +39,19 @@ public class DependencyGraph<T> {
 
     // ================= Public construction methods =================
 
-    public static <V> DependencyGraph<V> from(final Collection<V> items, final Function<V, Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> from(final Collection<? extends V> items, final Function<? super V, ? extends Collection<? extends V>> dependencyMap) {
         return new DependencyGraph<>(items, dependencyMap);
     }
 
-    public static <V> DependencyGraph<V> fromSingleton(final V item, final Function<V, Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> fromSingleton(final V item, final Function<? super V, ? extends Collection<? extends V>> dependencyMap) {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
-    public static <V> DependencyGraph<V> from(final Collection<V> items, final Map<? extends V, Collection<? extends V>> dependencyMap) {
-        return new DependencyGraph<>(items, x -> dependencyMap.getOrDefault(x, Collections.emptyList()));
+    public static <V> DependencyGraph<V> from(final Collection<? extends V> items, final Map<? super  V, ? extends Collection<? extends V>> dependencyMap) {
+        return new DependencyGraph<>(items, x -> dependencyMap.containsKey(x) ? dependencyMap.get(x) : Collections.emptyList());
     }
 
-    public static <V> DependencyGraph<V> fromSingleton(final V item, final Map<? extends V, Collection<? extends V>> dependencyMap) {
+    public static <V> DependencyGraph<V> fromSingleton(final V item, final Map<? super V, ? extends Collection<? extends V>> dependencyMap) {
         return from(Collections.singletonList(item), dependencyMap);
     }
 
@@ -65,7 +65,7 @@ public class DependencyGraph<T> {
 
     // ====================================================================
 
-    private DependencyGraph(final Collection<? extends T> items, final Function<T, Collection<? extends T>> dependencyMap) {
+    private DependencyGraph(final Collection<? extends T> items, final Function<? super T, ? extends Collection<? extends T>> dependencyMap) {
         nodeMap = new HashMap<>();
         sccs = new ArrayList<>();
         this.dependencyMap = dependencyMap;

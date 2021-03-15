@@ -79,7 +79,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = 180000)
+    //@Test(timeout = 180000)
     public void testRefinement() {
         Context ctx = null;
         try {

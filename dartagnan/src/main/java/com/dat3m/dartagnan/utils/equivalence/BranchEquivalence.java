@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph.Node;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Sets;
@@ -34,6 +33,13 @@ import java.util.*;
    BONUS: Compute which branches are mutually exclusive
 */
 public class BranchEquivalence extends AbstractEquivalence<Event> {
+    //TODO: Make sure that there are no problems when the initial class or the unreacheable class
+    // are empty.
+    // Also allow deletion of unreachable class (it can be deleted after performing dead code elimination)
+
+    public static final boolean MERGE_BRANCHES = true;
+    public static final boolean ALWAYS_SPLIT_ON_JUMP = false;
+
 
     // ============================= State ==============================
 
@@ -84,7 +90,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     @Override
     public Set<Class> getAllEquivalenceClasses() {
-        return super.getTypedEquivalenceClasses();
+        return super.getAllTypedEquivalenceClasses();
     }
 
     public BranchEquivalence(Program program) {
@@ -106,10 +112,16 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 computeReachableBranches(b);
             }
             //Step (4)-(5)
-            mergeThreadBranches(branchMap);
+            if (MERGE_BRANCHES) {
+                createMergedBranchClasses(branchMap);
+            } else {
+                createSimpleBranchClasses(branchMap);
+            }
         }
         // Step (6)
-        mergeInitialClasses();
+        if (MERGE_BRANCHES) {
+            mergeInitialClasses();
+        }
         // Step (7)
         computeUnreachableClass();
         //Bonus
@@ -130,7 +142,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         do {
             if (succ instanceof CondJump) {
                 CondJump jump = (CondJump) succ;
-                if (jump.isGoto()) {
+                if (!ALWAYS_SPLIT_ON_JUMP && jump.isGoto()) {
                     // There is only one branch we can proceed on so we don't need to split the current branch
                     succ = jump.getLabel();
                 } else {
@@ -254,7 +266,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         for (Thread t : program.getThreads()) {
             computeReachableBranches(threadBranches.get(t).get(t.getEntry()));
         }
-        Set<BranchClass> branchClasses = getTypedEquivalenceClasses();
+        Set<BranchClass> branchClasses = getAllTypedEquivalenceClasses();
         for (BranchClass c1 : branchClasses) {
             Set<BranchClass> excl = c1.exclusiveClasses;
 
@@ -309,7 +321,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         }
     }
 
-    private void mergeThreadBranches(Map<Event, Branch> branchMap) {
+    private void createMergedBranchClasses(Map<Event, Branch> branchMap) {
         DependencyGraph<Branch> depGraph = DependencyGraph.from(branchMap.values(), Branch::getImpliedBranches);
         List<BranchClass> newClasses = new ArrayList<>(depGraph.getSCCs().size());
         for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
@@ -323,13 +335,35 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         for (BranchClass branchClass : newClasses) {
             Branch rootBranch = branchMap.get(branchClass.getRepresentative());
             for (Branch reachable : rootBranch.reachableBranches) {
-                branchClass.reachableClasses.add((BranchClass) classMap.get(reachable.getRoot()));
+                branchClass.reachableClasses.add(getTypedEquivalenceClass(reachable.getRoot()));
             }
             for (Branch implied : rootBranch.getImpliedBranches()) {
-                branchClass.impliedClasses.add((BranchClass) classMap.get(implied.getRoot()));
+                branchClass.impliedClasses.add(getTypedEquivalenceClass(implied.getRoot()));
             }
         }
+    }
 
+    private void createSimpleBranchClasses(Map<Event, Branch> branchMap) {
+        List<BranchClass> newClasses = new ArrayList<>();
+        for (Branch b : branchMap.values()) {
+            if (hasClass(b.getRoot())) {
+                continue;
+            }
+            BranchClass eq = new BranchClass();
+            newClasses.add(eq);
+            eq.addAllInternal(b.events);
+            eq.representative = b.getRoot();
+        }
+
+        for (BranchClass branchClass : newClasses) {
+            Branch rootBranch = branchMap.get(branchClass.getRepresentative());
+            for (Branch reachable : rootBranch.reachableBranches) {
+                branchClass.reachableClasses.add(getTypedEquivalenceClass(reachable.getRoot()));
+            }
+            for (Branch implied : rootBranch.getImpliedBranches()) {
+                branchClass.impliedClasses.add(getTypedEquivalenceClass(implied.getRoot()));
+            }
+        }
     }
 
     private void mergeInitialClasses() {
