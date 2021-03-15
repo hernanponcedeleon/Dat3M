@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
@@ -8,9 +9,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -30,31 +29,43 @@ public class Acyclic extends Axiom {
 
     @Override
     public TupleSet getEncodeTupleSet(){
-        //TODO: Instead of computing the transitive closure,
-        // we can get away with computing the set of SCCs using tarjan.
-        // It has FAR better asymptotic performance.
-        Map<Event, Set<Event>> transMap = rel.getMaxTupleSet().transMap();
-        TupleSet result = new TupleSet();
+        // ====== Construct [Event -> Successor] mapping ======
+        Map<Event, Collection<Event>> succMap = new HashMap<>();
+        for (Tuple t : rel.getMaxTupleSet()) {
+            Event e1 = t.getFirst();
+            Event e2 = t.getSecond();
+            if (!succMap.containsKey(e1)) {
+                succMap.put(e1, new ArrayList<>());
+            }
+            succMap.get(e1).add(e2);
+        }
 
-        for(Event e1 : transMap.keySet()){
-            if(transMap.get(e1).contains(e1)){
-                for(Event e2 : transMap.get(e1)){
-                    // Why do we exclude self loops here and add them afterwards?
-                    // Is the transMap incorrect somehow?
-                    if(e2.getCId() != e1.getCId() && transMap.get(e2).contains(e1)){
-                        result.add(new Tuple(e1, e2));
+        // ====== Compute SCCs ======
+        DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
+        TupleSet result = new TupleSet();
+        for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
+            // ====== Singleton SCC ======
+            if (scc.size() == 1) {
+                Event e = scc.stream().findAny().get().getContent();
+                Tuple t = new Tuple(e, e);
+                if (rel.getMaxTupleSet().contains(t)) {
+                    result.add(t);
+                }
+                continue;
+            }
+            // ====== General SCC ======
+            for (DependencyGraph<Event>.Node node1 : scc) {
+                Event e1 = node1.getContent();
+                for (DependencyGraph<Event>.Node node2 : scc) {
+                    Event e2 = node2.getContent();
+                    Tuple t = new Tuple(e1,e2);
+                    if (rel.getMaxTupleSet().contains(t)) {
+                        result.add(t);
                     }
                 }
             }
         }
-        // Why don't we add them in the above loop?
-        for(Tuple tuple : rel.getMaxTupleSet()){
-            if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
-                result.add(tuple);
-            }
-        }
 
-        result.retainAll(rel.getMaxTupleSet());
         return result;
     }
 
