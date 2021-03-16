@@ -205,7 +205,7 @@ public class ExecutionModel {
             Event e = thread.getEntry();
             int localId = 0;
             do {
-                if (eventFilter.filter(e)) {
+                if (e.wasExecuted(model) && eventFilter.filter(e)) {
                     addEvent(e, id++, localId++);
                 }
                 //TODO: Add support for ifs
@@ -241,31 +241,29 @@ public class ExecutionModel {
         data.setLocalId(localId);
         eventList.add(data);
 
-        data.setWasExecuted(e.wasExecuted(model));
+        data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            // A memory event in the control flow need NOT be executed (e.g. AARCH's StoreExclusive)
-            if (data.wasExecuted()) {
-                Long address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
-                data.setAccessedAddress(address);
-                if (!addressReadsMap.containsKey(address)) {
-                    addressReadsMap.put(address, new HashSet<>());
-                    addressWritesMap.put(address, new HashSet<>());
-                }
-
-                if (data.isRead()) {
-                    data.setValue(Long.parseLong(model.getConstInterp(((RegWriter)e).getResultRegisterExpr()).toString()));
-                    addressReadsMap.get(address).add(data);
-                } else if (data.isWrite()) {
-                    data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
-                    addressWritesMap.get(address).add(data);
-                    writeReadsMap.put(data, new HashSet<>());
-                    if (data.isInit())
-                        addressInitMap.put(address, data);
-                } else {
-                    throw new RuntimeException("Unexpected memory event");
-                }
+            Long address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
+            data.setAccessedAddress(address);
+            if (!addressReadsMap.containsKey(address)) {
+                addressReadsMap.put(address, new HashSet<>());
+                addressWritesMap.put(address, new HashSet<>());
             }
+
+            if (data.isRead()) {
+                data.setValue(Long.parseLong(model.getConstInterp(((RegWriter)e).getResultRegisterExpr()).toString()));
+                addressReadsMap.get(address).add(data);
+            } else if (data.isWrite()) {
+                data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
+                addressWritesMap.get(address).add(data);
+                writeReadsMap.put(data, new HashSet<>());
+                if (data.isInit())
+                    addressInitMap.put(address, data);
+            } else {
+                throw new RuntimeException("Unexpected memory event");
+            }
+
         } else if (data.isFence()) {
             // ===== Fences =====
             String name = data.getEvent().toString();
@@ -275,7 +273,7 @@ public class ExecutionModel {
         } else if (data.isJump()) {
             // ===== Jumps =====
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
-            data.setWasExecuted(data.wasExecuted() && ((CondJump)e).didJump(model, context));
+            data.setWasExecuted(((CondJump)e).didJump(model, context));
         } else {
             //TODO: Maybe add some other events.
             // But for now all non-visible events are simply registered without
@@ -295,7 +293,7 @@ public class ExecutionModel {
             Long address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BoolExpr rfExpr = Utils.edge(rf.getName(), write.getEvent(), read.getEvent(), context);
+                    BoolExpr rfExpr = rf.getSMTVar(write.getEvent(), read.getEvent(), context);
                     Expr rfInterp = model.getConstInterp(rfExpr);
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
@@ -327,7 +325,7 @@ public class ExecutionModel {
             for (EventData w1 : addressedWrites.getValue()) {
                 coherenceMap.put(w1, new HashSet<>());
                 for (EventData w2 : addressWritesMap.get(address)) {
-                    BoolExpr coExpr = Utils.edge(co.getName(), w1.getEvent(), w2.getEvent(), context);
+                    BoolExpr coExpr = co.getSMTVar(w1.getEvent(), w2.getEvent(), context);
                     Expr coInterp = model.getConstInterp(coExpr);
                     if (coInterp != null && coInterp.isTrue()) {
                         coherenceMap.get(w1).add(w2);
