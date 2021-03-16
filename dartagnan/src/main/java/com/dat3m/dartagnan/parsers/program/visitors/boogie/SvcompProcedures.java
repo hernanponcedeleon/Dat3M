@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BNonDet;
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.INonDetTypes;
@@ -16,6 +17,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
@@ -24,8 +26,13 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
 
 public class SvcompProcedures {
+	
+	static List<String> FENCES = Arrays.asList("After_atomic", "Before_atomic", "Isync" ," Lwsync" ," Mb", "Mfence", 
+										"Rcu_lock" , "Rcu_unlock", "Rmb", "Sync", "Sync_rcu","Wmb", "Ish");
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
+			"__VERIFIER_assert",
+			"__VERIFIER_fence",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -42,6 +49,14 @@ public class SvcompProcedures {
 
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
+		if(name.contains("__VERIFIER_fence")) {
+			__VERIFIER_fence(visitor, ctx);
+			return;
+		}
+		if(name.contains("__VERIFIER_assert")) {
+			__VERIFIER_assert(visitor, ctx);
+			return;
+		}
 		if(name.contains("__VERIFIER_atomic")) {
 			__VERIFIER_atomic(visitor, name.contains("begin"));
 			return;			
@@ -58,6 +73,26 @@ public class SvcompProcedures {
 			return;
 		}
 		throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
+	}
+
+	private static void __VERIFIER_fence(VisitorBoogie visitor, Call_cmdContext ctx) {
+    	int index = (int)((IConst)ctx.call_params().exprs().accept(visitor)).getValue();
+    	if(index >= FENCES.size()) {
+    		throw new UnsupportedOperationException(ctx.getText() + " cannot be handled");
+    	}
+    	visitor.programBuilder.addChild(visitor.threadCount, new Fence(FENCES.get(index)));
+	}
+
+	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
+    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
+    	visitor.assertionIndex++;
+    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
+    		return;
+    	}
+    	Local event = new Local(ass, expr);
+		event.addFilters(EType.ASSERTION);
+		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
