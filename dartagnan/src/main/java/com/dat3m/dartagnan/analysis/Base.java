@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.analysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.TIMEOUT;
-import static com.microsoft.z3.Status.SATISFIABLE;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
@@ -60,18 +59,37 @@ public class Base {
 		Result res = Result.UNKNOWN;
         switch(s1.check()) {
         case UNKNOWN:
-        	// res will be UNKNOWN
+        	res = s1.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
         	break;
 		case SATISFIABLE:
 			s1.add(encodeNoBoundEventExec);
-			res = s1.check() == SATISFIABLE ? FAIL : Result.UNKNOWN;
+			switch(s1.check()) {
+	        case UNKNOWN:
+	        	res = s1.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
+	        	break;
+			case SATISFIABLE:
+				res = FAIL;
+				break;
+			case UNSATISFIABLE:
+				res = Result.UNKNOWN;
+				break;
+			}
 			break;
 		case UNSATISFIABLE:
 			s2.add(ctx.mkNot(encodeNoBoundEventExec));
-			res = s2.check() == SATISFIABLE ? Result.UNKNOWN : PASS;
+			switch(s2.check()) {
+	        case UNKNOWN:
+	        	res = s2.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
+	        	break;
+			case SATISFIABLE:
+				res = Result.UNKNOWN;
+				break;
+			case UNSATISFIABLE:
+				res = PASS;
+				break;
+			}
 			break;
         }
-        
         return task.getProgram().getAss().getInvert() ? res.invert() : res;
     }
 	
