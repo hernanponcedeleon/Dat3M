@@ -44,6 +44,10 @@ public class CondJump extends Event implements RegReaderData {
     }
 
     public boolean isGoto() {
+        /*try(Context ctx = new Context()) {
+            return expr.toZ3Bool(this, ctx).simplify().isTrue();
+            // NOTE: this seems to be worse, despite giving more accurate branching...
+        }*/
         return expr instanceof BConst && ((BConst)expr).getValue();
     }
     

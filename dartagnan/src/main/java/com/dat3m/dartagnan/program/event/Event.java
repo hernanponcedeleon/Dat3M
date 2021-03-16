@@ -227,6 +227,12 @@ public abstract class Event implements Comparable<Event> {
         return nextId;
     }
 
+	public void delete(Event pred) {
+		if (pred != null) {
+			pred.successor = this.successor;
+		}
+	}
+
 
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
@@ -295,4 +301,5 @@ public abstract class Event implements Comparable<Event> {
 	public boolean wasInControlFlow(Model model) {
 		return model.getConstInterp(cf()).isTrue();
 	}
+
 }

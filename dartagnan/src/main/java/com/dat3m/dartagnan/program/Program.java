@@ -166,6 +166,31 @@ public class Program {
         cache = null;
     }
 
+    public void eliminateDeadCode() {
+        if (!isCompiled) {
+            throw new IllegalStateException("The program needs to be compiled first.");
+        }
+        BranchEquivalence eq = getBranchEquivalence();
+        Set<Event> unreachEvents = eq.getUnreachableClass();
+        if (unreachEvents.isEmpty())
+            return;
+
+        Event pred = null;
+        System.out.println("Before: " + getEvents().size());
+        for (Event e : getEvents()) {
+            if (unreachEvents.contains(e)) {
+                e.delete(pred);
+            } else {
+                pred = e;
+            }
+        }
+        System.out.println("Dead code: " + unreachEvents.size());
+        eq.removeUnreachableClass();
+        this.cache = null;
+        clearCache();
+        System.out.println("After: " + getEvents().size());
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

@@ -54,6 +54,7 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+        program.eliminateDeadCode();
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
         program.updateAssertion();
