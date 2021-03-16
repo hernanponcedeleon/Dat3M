@@ -23,12 +23,12 @@ public class SvCompTestLoops extends AbstractSvCompTest {
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/sc.cat"));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, true);
-        Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2, true);
-        Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3, true);
-        Settings s4 = new Settings(Mode.KNASTER, Alias.CFIS, 4, true);
-        Settings s5 = new Settings(Mode.KNASTER, Alias.CFIS, 5, true);
-        Settings s11 = new Settings(Mode.KNASTER, Alias.CFIS,11, true);
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, TIMEOUT, true);
+        Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2, TIMEOUT, true);
+        Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3, TIMEOUT, true);
+        Settings s4 = new Settings(Mode.KNASTER, Alias.CFIS, 4, TIMEOUT, true);
+        Settings s5 = new Settings(Mode.KNASTER, Alias.CFIS, 5, TIMEOUT, true);
+        Settings s11 = new Settings(Mode.KNASTER, Alias.CFIS,11, TIMEOUT, true);
 
         List<Object[]> data = new ArrayList<>();
 

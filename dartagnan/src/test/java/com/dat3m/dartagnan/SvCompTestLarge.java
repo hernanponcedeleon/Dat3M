@@ -27,11 +27,7 @@ public class SvCompTestLarge extends AbstractSvCompTest {
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat"));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
-        Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2, false);
-        Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3, false);
-        Settings s6 = new Settings(Mode.KNASTER, Alias.CFIS, 6, false);
-        Settings s7 = new Settings(Mode.KNASTER, Alias.CFIS, 7, false);
+        Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2, TIMEOUT, false);
 
         List<Object[]> data = new ArrayList<>();
         String base = TEST_RESOURCE_PATH + "large/";

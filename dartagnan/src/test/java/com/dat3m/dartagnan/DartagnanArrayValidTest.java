@@ -32,7 +32,7 @@ public class DartagnanArrayValidTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, 60, false);
         return Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "arrays/ok/"))
                 .filter(Files::isRegularFile)
                 .filter(f -> (f.toString().endsWith("litmus")))

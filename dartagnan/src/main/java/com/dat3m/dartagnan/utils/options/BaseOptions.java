@@ -37,6 +37,9 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("u", "unroll", true,
                 "Unrolling bound <integer>"));
 
+        addOption(new Option("solver_timeout", true,
+                "Timeout (in secs) for the SMT solver"));
+
         addOption(new Option("draw", true,
                 "Path to save the execution graph if the state is reachable"));
 
@@ -84,6 +87,7 @@ public abstract class BaseOptions extends Options {
         String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
 
         int bound = 1;
+        int solver_timeout = 0;
         if(cmd.hasOption("unroll")){
             try {
                 bound = Math.max(1, Integer.parseInt(cmd.getOptionValue("unroll")));
@@ -91,7 +95,14 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal unroll value");
             }
         }
-        settings = new Settings(mode, alias, bound, draw, relations);
+        if(cmd.hasOption("solver_timeout")){
+            try {
+            	solver_timeout = Math.max(1, Integer.parseInt(cmd.getOptionValue("solver_timeout")));
+            } catch (NumberFormatException e){
+                throw new UnsupportedOperationException("Illegal solver_timeout value");
+            }
+        }
+        settings = new Settings(mode, alias, bound, solver_timeout, draw, relations);
     }
 
     protected void parseGraphFilePath(CommandLine cmd){

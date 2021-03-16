@@ -2,18 +2,15 @@ package com.dat3m.dartagnan.analysis;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.microsoft.z3.Status.SATISFIABLE;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Params;
 import com.microsoft.z3.Solver;
 
 public class Base {
@@ -52,19 +49,29 @@ public class Base {
 
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
-        Result res;
-		if(s1.check() == SATISFIABLE) {
-			s1.add(encodeNoBoundEventExec);
-			res = s1.check() == SATISFIABLE ? FAIL : UNKNOWN;	
-		} else {
-			s2.add(ctx.mkNot(encodeNoBoundEventExec));
-			res = s2.check() == SATISFIABLE ? UNKNOWN : PASS;	
+		if(task.getSettings().hasSolverTimeout()) {
+			Params p = ctx.mkParams();
+			p.add("timeout", 1000*task.getSettings().getSolverTimeout());
+			s1.setParameters(p);
+			s2.setParameters(p);			
 		}
         
-		if(program.getAss().getInvert()) {
-			res = res.invert();
-		}
-		return res;
+		Result res = Result.UNKNOWN;
+        switch(s1.check()) {
+        case UNKNOWN:
+        	// res will be UNKNOWN
+        	break;
+		case SATISFIABLE:
+			s1.add(encodeNoBoundEventExec);
+			res = s1.check() == SATISFIABLE ? FAIL : Result.UNKNOWN;
+			break;
+		case UNSATISFIABLE:
+			s2.add(ctx.mkNot(encodeNoBoundEventExec));
+			res = s2.check() == SATISFIABLE ? Result.UNKNOWN : PASS;
+			break;
+        }
+        
+        return task.getProgram().getAss().getInvert() ? res.invert() : res;
     }
 	
     public static Result runAnalysisIncrementalSolver(Solver solver, Context ctx, VerificationTask task) {
@@ -81,16 +88,28 @@ public class Base {
         solver.push();
         solver.add(task.encodeAssertions(ctx));
 
-        Result res = UNKNOWN;
-		if(solver.check() == SATISFIABLE) {
+		if(task.getSettings().hasSolverTimeout()) {
+			Params p = ctx.mkParams();
+			p.add("timeout", 1000*task.getSettings().getSolverTimeout());
+			solver.setParameters(p);
+		}
+
+        Result res = Result.UNKNOWN;
+        switch(solver.check()) {
+        case UNKNOWN:
+        	// res will be UNKNOWN
+        	break;
+		case SATISFIABLE:
         	solver.add(task.getProgram().encodeNoBoundEventExec(ctx));
-			res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
-        } else {
+			res = solver.check() == SATISFIABLE ? FAIL : Result.UNKNOWN;
+        	break;
+		case UNSATISFIABLE:
         	solver.pop();
 			solver.add(ctx.mkNot(task.getProgram().encodeNoBoundEventExec(ctx)));
-        	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
+			System.out.print("Starting second check ... ");
+        	res = solver.check() == SATISFIABLE ? Result.UNKNOWN : PASS;
+        	break;
         }
-
-        return task.getProgram().getAss().getInvert() ? res.invert() : res;
+		return task.getProgram().getAss().getInvert() ? res.invert() : res;
     }
 }

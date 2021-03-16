@@ -28,6 +28,8 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
 
+	public static final int TIMEOUT = 180000;
+	
     private final String path;
     private final Wmm wmm;
     private final Settings settings;
@@ -39,7 +41,7 @@ public abstract class AbstractSvCompTest {
         this.settings = settings;
     }
 
-    //@Test(timeout = 180000)
+    //@Test(timeout = TIMEOUT)
     public void test() {
         Context ctx = null;
         try {
@@ -59,7 +61,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = 180000)
+    @Test(timeout = TIMEOUT)
     public void testIncremental() {
         Context ctx = null;
         try {
@@ -79,7 +81,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = 180000)
+    //@Test(timeout = TIMEOUT)
     public void testRefinement() {
         Context ctx = null;
         try {
@@ -99,7 +101,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = 180000)
+    //@Test(timeout = TIMEOUT)
     public void testRefinementNoCo() {
         Context ctx = null;
         try {

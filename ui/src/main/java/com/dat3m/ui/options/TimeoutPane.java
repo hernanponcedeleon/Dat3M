@@ -7,10 +7,10 @@ import java.awt.FlowLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-public class BoundPane extends JPanel {
+public class TimeoutPane extends JPanel {
 
-	public BoundPane() {
+	public TimeoutPane() {
         super(new FlowLayout(LEFT));
-        add(new JLabel("Unrolling: "));
+        add(new JLabel("Solver timeout: "));
 	}
 }

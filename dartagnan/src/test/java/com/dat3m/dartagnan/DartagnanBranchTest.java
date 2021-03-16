@@ -38,7 +38,7 @@ public class DartagnanBranchTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         ImmutableMap<String, Result> expected = readExpectedResults();
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, 60, false);
 
         Wmm linuxWmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
         Wmm aarch64Wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));

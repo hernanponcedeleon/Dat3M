@@ -22,6 +22,7 @@ public class Settings {
     private Mode mode;
     private final Alias alias;
     private final int bound;
+    private final int solver_timeout;
 
     private boolean draw = false;
     private ImmutableSet<String> relations = ImmutableSet.of();
@@ -32,14 +33,15 @@ public class Settings {
             put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
     }};
 
-    public Settings(Mode mode, Alias alias, int bound){
+    public Settings(Mode mode, Alias alias, int bound, int solver_timeout){
         this.mode = mode == null ? Mode.KNASTER : mode;
         this.alias = alias == null ? Alias.CFIS : alias;
         this.bound = Math.max(1, bound);
+        this.solver_timeout = solver_timeout;
     }
 
-    public Settings(Mode mode, Alias alias, int bound, boolean draw, Collection<String> relations){
-        this(mode, alias, bound);
+    public Settings(Mode mode, Alias alias, int bound, int solver_timeout, boolean draw, Collection<String> relations){
+        this(mode, alias, bound, solver_timeout);
         if(draw){
             this.draw = true;
             if(flags.get(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS) && mode == Mode.KNASTER){
@@ -54,8 +56,8 @@ public class Settings {
         }
     }
 
-    public Settings(Mode mode, Alias alias, int bound, boolean draw, String... relations){
-        this(mode, alias, bound, draw, Arrays.asList(relations));
+    public Settings(Mode mode, Alias alias, int bound, int solver_timeout, boolean draw, String... relations){
+        this(mode, alias, bound, solver_timeout, draw, Arrays.asList(relations));
     }
 
     public Mode getMode(){
@@ -68,6 +70,14 @@ public class Settings {
 
     public int getBound(){
         return bound;
+    }
+
+    public int getSolverTimeout(){
+        return solver_timeout;
+    }
+
+    public boolean hasSolverTimeout(){
+        return solver_timeout > 0;
     }
 
     public boolean getDrawGraph(){

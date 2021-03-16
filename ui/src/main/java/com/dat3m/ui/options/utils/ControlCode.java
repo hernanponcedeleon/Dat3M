@@ -2,7 +2,7 @@ package com.dat3m.ui.options.utils;
 
 public enum ControlCode {
 
-    TASK, SOURCE, TARGET, MODE, ALIAS, BOUND, TEST, CLEAR, GRAPH, RELS, METHOD;
+    TASK, SOURCE, TARGET, MODE, ALIAS, BOUND, TIMEOUT, TEST, CLEAR, GRAPH, RELS, METHOD;
 
     @Override
     public String toString(){
@@ -19,6 +19,8 @@ public enum ControlCode {
                 return "Alias";
             case BOUND:
                 return "Bound";
+            case TIMEOUT:
+                return "Timeout";
             case TEST:
                 return "Test";
             case CLEAR:
@@ -47,6 +49,8 @@ public enum ControlCode {
                 return "control_command_alias";
             case BOUND:
                 return "control_command_bound";
+            case TIMEOUT:
+                return "control_command_timeout";
             case TEST:
                 return "control_command_test";
             case CLEAR:

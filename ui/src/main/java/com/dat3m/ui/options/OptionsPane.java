@@ -46,6 +46,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     private final Selector<Arch> targetPane;
 
     private final BoundField boundField;
+    private final TimeoutField timeoutField;
 
     private final JButton testButton;
     private final JButton clearButton;
@@ -74,6 +75,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         archManager = new ArchManager(sourcePane, targetPane);
 
         boundField = new BoundField();
+        timeoutField = new TimeoutField();
 
         testButton = new TestButton();
         clearButton = new ClearButton();
@@ -98,6 +100,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 		targetPane.addActionListener(this);
 		sourcePane.addActionListener(this);
 		boundField.addActionListener(this);
+		timeoutField.addActionListener(this);
 		clearButton.addActionListener(this);
 		// Enabling graph options depends on mode
 		modePane.addActionListener(graphButton);
@@ -135,6 +138,7 @@ public class OptionsPane extends JPanel implements ActionListener {
                 (Mode)modePane.getSelectedItem(),
                 (Alias)aliasPane.getSelectedItem(),
                 Integer.parseInt(boundField.getText()),
+                Integer.parseInt(timeoutField.getText()),
                 graphButton.isEnabled() && graphButton.isSelected(),
                 relSelector.getSelection()
         );
@@ -156,8 +160,15 @@ public class OptionsPane extends JPanel implements ActionListener {
         scrollConsole.setMaximumSize(new Dimension(OPTWIDTH, 120));
         scrollConsole.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
+        JSplitPane boundsPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         JPanel boundPane = new BoundPane();
         boundPane.add(boundField);
+        JPanel timeoutPane = new TimeoutPane();
+        timeoutPane.add(timeoutField);
+        boundsPane.setLeftComponent(boundPane);
+        boundsPane.setRightComponent(timeoutPane);
+        boundsPane.setMaximumSize(new Dimension(OPTWIDTH, 50));
+        boundsPane.setDividerSize(0);
 
         JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         archPane.setLeftComponent(sourcePane);
@@ -172,7 +183,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         graphPane.setLeftComponent(graphButton);
         graphPane.setRightComponent(relsButton);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, methodPane, boundPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, methodPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);
