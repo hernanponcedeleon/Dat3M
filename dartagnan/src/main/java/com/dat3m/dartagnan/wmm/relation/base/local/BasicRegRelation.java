@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.relation.base.local;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.ImmutableList;
@@ -53,7 +52,7 @@ abstract class BasicRegRelation extends StaticRelation {
                     //TODO: We assume that any Register-Write is always executed
                     // if it is contained in the program flow
                     // This may fail for RMWReadCond!
-                    List<Event> possibleWriters = writers.stream().filter(x -> x.getCId() < regReader.getCId() && !eq.areMutualExclusive(x, regReader)).collect(Collectors.toList());
+                    List<Event> possibleWriters = writers.stream().filter(x -> x.getCId() < regReader.getCId() && !eq.areMutuallyExclusive(x, regReader)).collect(Collectors.toList());
                     List<Event> impliedWriters = possibleWriters.stream().filter(x -> eq.isImplied(regReader, x)).collect(Collectors.toList());
                     if (!impliedWriters.isEmpty()) {
                         Event lastImplied = impliedWriters.get(impliedWriters.size() - 1);

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -9,11 +8,9 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Mode;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -180,7 +177,7 @@ public abstract class Relation implements Dependent<Relation> {
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
         BranchEquivalence eq = task.getBranchEquivalence();
-        tupleSet.removeIf(t -> eq.areMutualExclusive(t.getFirst(), t.getSecond()));
+        tupleSet.removeIf(t -> eq.areMutuallyExclusive(t.getFirst(), t.getSecond()));
     }
 
     // ========================== Utility methods =========================

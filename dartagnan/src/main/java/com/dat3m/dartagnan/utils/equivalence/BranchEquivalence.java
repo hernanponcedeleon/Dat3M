@@ -33,9 +33,15 @@ import java.util.*;
    BONUS: Compute which branches are mutually exclusive
 */
 public class BranchEquivalence extends AbstractEquivalence<Event> {
-    //TODO: Make sure that there are no problems when the initial class or the unreacheable class
-    // are empty.
-    // Also allow deletion of unreachable class (it can be deleted after performing dead code elimination)
+    /*
+       NOTE: If the initial class or the unreachable class is empty, they will be treated (almost) non-existent:
+        - That means they will not get returned by getAllEquivalenceClasses, nor will they be accessible
+          through otherClass.impliedClasses or otherClass.exclusiveClasses
+        - The classes are still available through getInitialClass/getUnreachbleClass
+          but the returned class will be:
+             - empty and have NULL as representative
+             - the reachable-/impliedClasses will only contain themselves, the exclusiveClasses will be empty
+    */
 
     public static final boolean MERGE_BRANCHES = true;
     public static final boolean ALWAYS_SPLIT_ON_JUMP = false;
@@ -59,7 +65,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     public boolean isUnreachableEvent(Event e) { return unreachableClass.contains(e); }
 
-    public boolean areMutualExclusive(Event e1, Event e2) {
+    public boolean areMutuallyExclusive(Event e1, Event e2) {
         return getEquivalenceClass(e1).getExclusiveClasses().contains(getEquivalenceClass(e2));
     }
 
@@ -76,7 +82,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     public Set<Class> getExclusiveClasses(Event e) {
-        return ((BranchClass) classMap.get(e)).getExclusiveClasses();
+        return (this.<BranchClass>getTypedEqClass(e)).getExclusiveClasses();
     }
 
     public Class getInitialClass() { return initialClass; }
@@ -85,12 +91,12 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     @Override
     public Class getEquivalenceClass(Event x) {
-        return (Class) super.getEquivalenceClass(x);
+        return super.getTypedEqClass(x);
     }
 
     @Override
     public Set<Class> getAllEquivalenceClasses() {
-        return super.getAllTypedEquivalenceClasses();
+        return super.getAllTypedEqClasses();
     }
 
     public BranchEquivalence(Program program) {
@@ -112,20 +118,21 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 computeReachableBranches(b);
             }
             //Step (4)-(5)
-            if (MERGE_BRANCHES) {
-                createMergedBranchClasses(branchMap);
-            } else {
-                createSimpleBranchClasses(branchMap);
-            }
+            createBranchClasses(branchMap);
+
         }
         // Step (6)
-        if (MERGE_BRANCHES) {
-            mergeInitialClasses();
-        }
+        mergeInitialClasses();
         // Step (7)
         computeUnreachableClass();
         //Bonus
         computeExclusiveClasses(threadBranches);
+    }
+
+    public void removeUnreachableClass() {
+        if (removeClass(unreachableClass)) {
+            this.<BranchClass>getAllTypedEqClasses().forEach(x -> x.impliedClasses.remove(unreachableClass));
+        }
     }
 
     //========================== Branching Analysis =========================
@@ -266,12 +273,12 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         for (Thread t : program.getThreads()) {
             computeReachableBranches(threadBranches.get(t).get(t.getEntry()));
         }
-        Set<BranchClass> branchClasses = getAllTypedEquivalenceClasses();
+        Set<BranchClass> branchClasses = getAllTypedEqClasses();
         for (BranchClass c1 : branchClasses) {
             Set<BranchClass> excl = c1.exclusiveClasses;
 
             if (c1 == initialClass) {
-                if (unreachableClass != null) {
+                if (!unreachableClass.isEmpty()) {
                     excl.add(unreachableClass);
                 }
                 continue;
@@ -321,61 +328,57 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         }
     }
 
-    private void createMergedBranchClasses(Map<Event, Branch> branchMap) {
-        DependencyGraph<Branch> depGraph = DependencyGraph.from(branchMap.values(), Branch::getImpliedBranches);
-        List<BranchClass> newClasses = new ArrayList<>(depGraph.getSCCs().size());
-        for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
-            BranchClass eq = new BranchClass();
-            newClasses.add(eq);
-            scc.forEach(b -> eq.addAllInternal(b.getContent().events));
-            eq.representative = eq.stream()
-                    .min(Comparator.comparingInt(Event::getCId)).get();
+    private void createBranchClasses(Map<Event, Branch> branchMap) {
+        List<BranchClass> newClasses;
+        if (MERGE_BRANCHES) {
+            DependencyGraph<Branch> depGraph = DependencyGraph.from(branchMap.values(), Branch::getImpliedBranches);
+            newClasses = new ArrayList<>(depGraph.getSCCs().size());
+            for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
+                BranchClass eq = new BranchClass();
+                newClasses.add(eq);
+                scc.forEach(b -> eq.addAllInternal(b.getContent().events));
+                eq.representative = eq.stream()
+                        .min(Comparator.comparingInt(Event::getCId)).get();
+            }
+        } else {
+            newClasses = new ArrayList<>();
+            for (Branch b : branchMap.values()) {
+                if (hasClass(b.getRoot())) {
+                    continue;
+                }
+                BranchClass eq = new BranchClass();
+                newClasses.add(eq);
+                eq.addAllInternal(b.events);
+                eq.representative = b.getRoot();
+            }
         }
 
         for (BranchClass branchClass : newClasses) {
             Branch rootBranch = branchMap.get(branchClass.getRepresentative());
             for (Branch reachable : rootBranch.reachableBranches) {
-                branchClass.reachableClasses.add(getTypedEquivalenceClass(reachable.getRoot()));
+                branchClass.reachableClasses.add(getTypedEqClass(reachable.getRoot()));
             }
             for (Branch implied : rootBranch.getImpliedBranches()) {
-                branchClass.impliedClasses.add(getTypedEquivalenceClass(implied.getRoot()));
-            }
-        }
-    }
-
-    private void createSimpleBranchClasses(Map<Event, Branch> branchMap) {
-        List<BranchClass> newClasses = new ArrayList<>();
-        for (Branch b : branchMap.values()) {
-            if (hasClass(b.getRoot())) {
-                continue;
-            }
-            BranchClass eq = new BranchClass();
-            newClasses.add(eq);
-            eq.addAllInternal(b.events);
-            eq.representative = b.getRoot();
-        }
-
-        for (BranchClass branchClass : newClasses) {
-            Branch rootBranch = branchMap.get(branchClass.getRepresentative());
-            for (Branch reachable : rootBranch.reachableBranches) {
-                branchClass.reachableClasses.add(getTypedEquivalenceClass(reachable.getRoot()));
-            }
-            for (Branch implied : rootBranch.getImpliedBranches()) {
-                branchClass.impliedClasses.add(getTypedEquivalenceClass(implied.getRoot()));
+                branchClass.impliedClasses.add(getTypedEqClass(implied.getRoot()));
             }
         }
     }
 
     private void mergeInitialClasses() {
-        initialClass = (BranchClass) classMap.get(program.getThreads().get(0).getEntry());
-        for (int i = 1; i < program.getThreads().size(); i++) {
-            BranchClass c = (BranchClass) classMap.get(program.getThreads().get(i).getEntry());
-            mergeClasses(initialClass, c);
-            initialClass.reachableClasses.addAll(c.reachableClasses);
-            initialClass.reachableClasses.remove(c);
+        if (MERGE_BRANCHES) {
+            initialClass = getTypedEqClass(program.getThreads().get(0).getEntry());
+            for (int i = 1; i < program.getThreads().size(); i++) {
+                BranchClass c = getTypedEqClass(program.getThreads().get(i).getEntry());
+                mergeClasses(initialClass, c);
+                initialClass.reachableClasses.addAll(c.reachableClasses);
+                initialClass.reachableClasses.remove(c);
 
-            initialClass.impliedClasses.addAll(c.impliedClasses);
-            initialClass.impliedClasses.remove(c);
+                initialClass.impliedClasses.addAll(c.impliedClasses);
+                initialClass.impliedClasses.remove(c);
+            }
+        } else {
+            initialClass = new BranchClass();
+            removeClass(initialClass);
         }
     }
 

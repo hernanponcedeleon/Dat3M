@@ -31,7 +31,8 @@ public class Acyclic extends Axiom {
     public TupleSet getEncodeTupleSet(){
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
-        for (Tuple t : rel.getMaxTupleSet()) {
+        TupleSet relMaxTuple = rel.getMaxTupleSet();
+        for (Tuple t : relMaxTuple) {
             Event e1 = t.getFirst();
             Event e2 = t.getSecond();
             if (!succMap.containsKey(e1)) {
@@ -48,7 +49,7 @@ public class Acyclic extends Axiom {
             if (scc.size() == 1) {
                 Event e = scc.stream().findAny().get().getContent();
                 Tuple t = new Tuple(e, e);
-                if (rel.getMaxTupleSet().contains(t)) {
+                if (relMaxTuple.contains(t)) {
                     result.add(t);
                 }
                 continue;
@@ -59,7 +60,7 @@ public class Acyclic extends Axiom {
                 for (DependencyGraph<Event>.Node node2 : scc) {
                     Event e2 = node2.getContent();
                     Tuple t = new Tuple(e1,e2);
-                    if (rel.getMaxTupleSet().contains(t)) {
+                    if (relMaxTuple.contains(t)) {
                         result.add(t);
                     }
                 }

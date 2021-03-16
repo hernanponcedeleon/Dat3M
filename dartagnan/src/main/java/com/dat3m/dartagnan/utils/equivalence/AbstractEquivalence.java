@@ -30,11 +30,11 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         classes = Collections.newSetFromMap(new IdentityHashMap<>(estimatedNumOfClasses));
     }
 
-    protected <V extends EquivalenceClass<T>> Set<V> getAllTypedEquivalenceClasses() {
+    protected <V extends EquivalenceClass<T>> Set<V> getAllTypedEqClasses() {
         return (Set<V>) classes;
     }
 
-    protected <V extends EquivalenceClass<T>> V getTypedEquivalenceClass(T key) {
+    protected <V extends EquivalenceClass<T>> V getTypedEqClass(T key) {
         return (V)classMap.get(key);
     }
 
