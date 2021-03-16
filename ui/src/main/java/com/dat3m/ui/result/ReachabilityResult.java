@@ -2,8 +2,11 @@ package com.dat3m.ui.result;
 
 import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinementEmptyCoherence;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.ui.options.utils.Method.GRAPH;
+import static com.dat3m.ui.options.utils.Method.INCREMENTAL;
+import static com.dat3m.ui.options.utils.Method.TWOSOLVERS;
 
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.program.Program;
@@ -12,7 +15,6 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.ui.options.utils.Method;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import com.microsoft.z3.Context;
@@ -48,10 +50,12 @@ public class ReachabilityResult implements Dat3mResult {
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             Result result = null;
-            if (options.getMethod() == Method.GRAPH)
+            if (options.getMethod() == GRAPH)
                 result = runAnalysisGraphRefinement(solver, ctx, task);
-            else if (options.getMethod() == Method.INCREMENTAL)
+            else if (options.getMethod() == INCREMENTAL)
                 result = runAnalysisIncrementalSolver(solver, ctx, task);
+            else if (options.getMethod() == TWOSOLVERS)
+                result = runAnalysis(solver, ctx, task);
             buildVerdict(result);
             if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result == FAIL)){
                 graph = new Graph(solver.getModel(), ctx, program, options.getSettings().getGraphRelations());
