@@ -146,17 +146,21 @@ public class Thread {
 
     public BoolExpr encodeCF(Context ctx){
     	BoolExpr enc = ctx.mkTrue();
-    	If lastIf = null;
+    	Stack<If> ifStack = new Stack<If>();
     	BoolExpr guard = ctx.mkTrue();
     	for(Event e : entry.getSuccessors()) {
-    		if(lastIf != null && e.equals(lastIf.getMainBranchEvents().get(0))) {
-    			guard = ctx.mkAnd(lastIf.cf(), lastIf.getGuard().toZ3Bool(lastIf, ctx));
-    		}
-    		if (lastIf != null && e.equals(lastIf.getElseBranchEvents().get(0))) {
-    			guard = ctx.mkAnd(lastIf.cf(), ctx.mkNot(lastIf.getGuard().toZ3Bool(lastIf, ctx)));
-    		}
-    		if(lastIf != null && e.equals(lastIf.getSuccessor())) {
-    			guard = ctx.mkOr(lastIf.getExitMainBranch().getCfCond(), lastIf.getExitElseBranch().getCfCond());
+    		if(!ifStack.isEmpty()) {
+        		If lastIf = ifStack.peek();
+        		if(e.equals(lastIf.getMainBranchEvents().get(0))) {
+        			guard = ctx.mkAnd(lastIf.cf(), lastIf.getGuard().toZ3Bool(lastIf, ctx));
+        		}
+        		if(e.equals(lastIf.getElseBranchEvents().get(0))) {
+        			guard = ctx.mkAnd(lastIf.cf(), ctx.mkNot(lastIf.getGuard().toZ3Bool(lastIf, ctx)));
+        		}
+        		if(e.equals(lastIf.getSuccessor())) {
+        			guard = ctx.mkOr(lastIf.getExitMainBranch().getCfCond(), lastIf.getExitElseBranch().getCfCond());
+        			ifStack.pop();
+        		}    			
     		}
     		enc = ctx.mkAnd(enc, e.encodeCF(ctx, guard));
     		guard = e.cf();
@@ -164,7 +168,7 @@ public class Thread {
     			guard = ctx.mkAnd(guard, ctx.mkNot(((CondJump)e).getGuard().toZ3Bool(e, ctx)));
     		}
     		if(e instanceof If) {
-    			lastIf = (If)e;
+    			ifStack.add((If)e);
     		}
     	}
         return enc;
