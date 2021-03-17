@@ -43,12 +43,14 @@ public class CondJump extends Event implements RegReaderData {
 		notifier.addListener(this);
     }
 
+    private static Context defaultCtx = new Context();
     public boolean isGoto() {
         /*try(Context ctx = new Context()) {
             return expr.toZ3Bool(this, ctx).simplify().isTrue();
             // NOTE: this seems to be worse, despite giving more accurate branching...
         }*/
-        return expr instanceof BConst && ((BConst)expr).getValue();
+        return expr.toZ3Bool(this, defaultCtx).simplify().isTrue();
+        //return expr instanceof BConst && ((BConst)expr).getValue();
     }
     
     public Label getLabel(){
@@ -107,6 +109,11 @@ public class CondJump extends Event implements RegReaderData {
 		}
     }
 
+    @Override
+    public void delete(Event pred) {
+        super.delete(pred);
+        label.listeners.remove(this);
+    }
 
     public boolean didJump(Model model, Context ctx) {
         return expr.getBoolValue(this, model, ctx);

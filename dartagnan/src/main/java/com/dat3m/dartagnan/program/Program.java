@@ -176,7 +176,6 @@ public class Program {
             return;
 
         Event pred = null;
-        System.out.println("Before: " + getEvents().size());
         for (Event e : getEvents()) {
             if (unreachEvents.contains(e)) {
                 e.delete(pred);
@@ -184,11 +183,9 @@ public class Program {
                 pred = e;
             }
         }
-        System.out.println("Dead code: " + unreachEvents.size());
         eq.removeUnreachableClass();
         this.cache = null;
         clearCache();
-        System.out.println("After: " + getEvents().size());
     }
 
     // Unrolling
