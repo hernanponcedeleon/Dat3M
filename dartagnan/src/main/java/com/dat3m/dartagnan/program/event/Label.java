@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class Label extends Event {
 
@@ -48,5 +49,26 @@ public class Label extends Event {
     		jump.notify(copy);
     	}
     	return copy;
-    }    
+    }
+
+    @Override
+    public void unroll(int bound, Event predecessor) {
+    	super.unroll(bound, predecessor);
+    	for(Event jump : listeners) {
+    		jump.notify(this);
+    	}
+    }
+
+    // Compilation
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public int compile(Arch target, int nextId, Event predecessor) {
+    	nextId = super.compile(target, nextId, predecessor);
+    	for(Event jump : listeners) {
+    		jump.notify(this);
+    	}
+    	return nextId;
+    }
+
 }
