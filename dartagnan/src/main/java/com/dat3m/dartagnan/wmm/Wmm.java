@@ -24,6 +24,13 @@ import java.util.*;
  */
 public class Wmm {
 
+    /*
+    For now, we use this constant flag to determine local consistency.
+    In general, we expect this property to be either automatically detected or
+    taken as additional input (e.g. via Settings).
+     */
+    private final static boolean IS_LOCALLY_CONSISTENT = true;
+
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
 
     private final List<Axiom> axioms = new ArrayList<>();
@@ -60,6 +67,10 @@ public class Wmm {
 
     public RelationRepository getRelationRepository(){
         return relationRepository;
+    }
+
+    public boolean isLocallyConsistent() {
+        return IS_LOCALLY_CONSISTENT;
     }
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){

@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BitVecExpr;
@@ -13,8 +15,10 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.program.Thread;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -53,6 +57,40 @@ public class RelRf extends Relation {
                 }
             }
             removeMutuallyExclusiveTuples(maxTupleSet);
+
+            if (task.getMemoryModel().isLocallyConsistent()) {
+                // Remove future reads
+                maxTupleSet.removeIf(t -> t.getFirst().getThread() == t.getSecond().getThread()
+                                && t.getFirst().getCId() >= t.getSecond().getCId());
+
+                // Remove past reads
+                BranchEquivalence eq = task.getBranchEquivalence();
+                Set<Tuple> deletedTuples = new HashSet<>();
+                for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ))) {
+                    if (((MemEvent)read).getMaxAddressSet().size() != 1)
+                        continue;
+
+                    List<Event> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
+                            .filter(e -> e.getThread() == read.getThread())
+                            .sorted().collect(Collectors.toList());
+                    possibleWrites.removeIf(x -> ((MemEvent)x).getMaxAddressSet().size() != 1);
+                    Set<Event> deletedWrites = new HashSet<>();
+
+                    List<Event> impliedWrites = possibleWrites.stream().filter(x -> eq.isImplied(read, x)).collect(Collectors.toList());
+                    if (!impliedWrites.isEmpty()) {
+                        Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
+                        possibleWrites.stream().filter(x -> x.getCId() < lastImplied.getCId()).forEach(deletedWrites::add);
+                        possibleWrites.removeIf(x -> x.getCId() < lastImplied.getCId());
+                    }
+                    possibleWrites.stream().filter(x ->
+                            possibleWrites.stream().anyMatch(y -> (x.getCId() < y.getCId()) && eq.isImplied(x ,y)))
+                            .forEach(deletedWrites::add);
+                    for (Event w : deletedWrites) {
+                        deletedTuples.add(new Tuple(w, read));
+                    }
+                }
+                maxTupleSet.removeAll(deletedTuples);
+            }
         }
         return maxTupleSet;
     }

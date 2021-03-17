@@ -7,7 +7,6 @@ import com.microsoft.z3.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -15,7 +14,6 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class RelCo extends Relation {
@@ -67,7 +65,16 @@ public class RelCo extends Relation {
                     }
                 }
             }
+
             removeMutuallyExclusiveTuples(maxTupleSet);
+
+            /*if (task.getMemoryModel().isLocallyConsistent()) {
+                int before = maxTupleSet.size();
+                maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT)
+                        || (t.getFirst().getThread() == t.getSecond().getThread()
+                        && t.getFirst().getCId() > t.getSecond().getCId()));
+                System.out.println("Local Consistency CO: " + (before - maxTupleSet.size()));
+            }*/
         }
         return maxTupleSet;
     }
@@ -108,14 +115,26 @@ public class RelCo extends Relation {
 
                 Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
                 Expr a2 = w2.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w2.getMemAddressExpr(), false) : w2.getMemAddressExpr();
-                enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
+                enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkAnd(
                         ctx.mkAnd(ctx.mkAnd(w1.exec(), w2.exec()), ctx.mkEq(a1, a2)),
                         ctx.mkLt(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
+
+                /*BoolExpr invRel = getSMTVar(t.getInverse(), ctx);
+                enc = ctx.mkAnd(enc, ctx.mkImplies(relation, ctx.mkNot(invRel)));*/
+
+                if (task.getMemoryModel().isLocallyConsistent()) {
+                    if (t.getSecond().is(EType.INIT)
+                            || (t.getFirst().getThread() == t.getSecond().getThread()
+                            && t.getFirst().getCId() > t.getSecond().getCId())){
+                        enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkFalse()));
+                    }
+
+                }
             }
 
             BoolExpr lastCoExpr = ctx.mkBoolConst("co_last(" + w1.repr() + ")");
-            enc = ctx.mkAnd(enc, ctx.mkEq(lastCoExpr, lastCo));
+            enc = ctx.mkAnd(enc, ctx.mkIff(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
             	Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
