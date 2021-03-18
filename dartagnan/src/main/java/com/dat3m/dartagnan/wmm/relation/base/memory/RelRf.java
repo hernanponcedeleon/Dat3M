@@ -81,7 +81,6 @@ public class RelRf extends Relation {
                     if (((MemEvent)read).getMaxAddressSet().size() != 1)
                         continue;
 
-                    //TODO: This code might be buggy due to the same reason explained in RelCo.getMinTupleSet
                     List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
                             .filter(e -> e.getThread() == read.getThread() || e.is(EType.INIT))
                             .map(x -> (MemEvent)x)
@@ -207,10 +206,10 @@ public class RelRf extends Relation {
         for(int i = 0; i < num - 1; i++){
             newSeqVar = mkSeqVar(readId, i + 1, ctx);
             enc = ctx.mkAnd(enc, ctx.mkImplies(newSeqVar, lastSeqVar));
-            enc = ctx.mkAnd(enc, ctx.mkIff(edges.get(i), ctx.mkAnd(lastSeqVar, ctx.mkNot(newSeqVar))));
+            enc = ctx.mkAnd(enc, ctx.mkEq(edges.get(i), ctx.mkAnd(lastSeqVar, ctx.mkNot(newSeqVar))));
             lastSeqVar = newSeqVar;
         }
-        enc = ctx.mkAnd(enc, ctx.mkIff(newSeqVar,edges.get(edges.size() - 1)));
+        enc = ctx.mkAnd(enc, ctx.mkEq(newSeqVar,edges.get(edges.size() - 1)));
 
         if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
             enc = ctx.mkImplies(ctx.mkAnd(read.exec(), isMemInit), enc);

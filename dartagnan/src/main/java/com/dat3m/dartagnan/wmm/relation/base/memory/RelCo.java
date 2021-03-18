@@ -141,20 +141,16 @@ public class RelCo extends Relation {
 
                 Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
                 Expr a2 = w2.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w2.getMemAddressExpr(), false) : w2.getMemAddressExpr();
-                enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkAnd(
+                enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
                         ctx.mkAnd(ctx.mkAnd(w1.exec(), w2.exec()), ctx.mkEq(a1, a2)),
                         ctx.mkLt(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
 
                 if (getMinTupleSet().contains(t)) {
-                    //TODO: This is buggy right now
-                   enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkAnd(w1.exec(), w2.exec())));
-                }
-
-
-                if (task.getMemoryModel().isLocallyConsistent()) {
+                   enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(w1.exec(), w2.exec())));
+                } else if (task.getMemoryModel().isLocallyConsistent()) {
                     if (w2.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() > w2.getCId())){
-                        enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkFalse()));
+                        enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkFalse()));
                         //enc = ctx.mkAnd(enc, ctx.mkLt(intVar("co", w2, ctx), intVar("co", w1, ctx)));
                     }
                     if (w1.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() < w2.getCId())) {
@@ -164,7 +160,7 @@ public class RelCo extends Relation {
             }
 
             BoolExpr lastCoExpr = ctx.mkBoolConst("co_last(" + w1.repr() + ")");
-            enc = ctx.mkAnd(enc, ctx.mkIff(lastCoExpr, lastCo));
+            enc = ctx.mkAnd(enc, ctx.mkEq(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
             	Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
