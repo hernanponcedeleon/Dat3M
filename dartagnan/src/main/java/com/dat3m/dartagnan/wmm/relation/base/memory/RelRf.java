@@ -68,9 +68,12 @@ public class RelRf extends Relation {
             removeMutuallyExclusiveTuples(maxTupleSet);
 
             if (task.getMemoryModel().isLocallyConsistent()) {
+                int before = maxTupleSet.size();
+                System.out.println("Read-From before: " + before);
                 // Remove future reads
                 maxTupleSet.removeIf(t -> t.getFirst().getThread() == t.getSecond().getThread()
                                 && t.getFirst().getCId() >= t.getSecond().getCId());
+                System.out.println("Removed future reads: " + (before - maxTupleSet.size()));
 
                 // Remove past reads
                 BranchEquivalence eq = task.getBranchEquivalence();
@@ -102,9 +105,9 @@ public class RelRf extends Relation {
                         deletedTuples.add(new Tuple(w, read));
                     }
                 }
-                System.out.println("Before: " + maxTupleSet.size());
                 maxTupleSet.removeAll(deletedTuples);
-                System.out.println("After: " + maxTupleSet.size());
+                System.out.println("Removed past reads: " + deletedTuples.size());
+                System.out.println("Read-From after: " + maxTupleSet.size());
             }
         }
         return maxTupleSet;
