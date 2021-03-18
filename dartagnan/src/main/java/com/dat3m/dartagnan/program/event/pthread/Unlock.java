@@ -22,25 +22,38 @@ public class Unlock extends Event {
 	private final String name;
 	private final IExpr address;
 	private final Register reg;
-	private final Label label;
+	private Label label;
+    private Label label4Copy;
 
 	public Unlock(String name, IExpr address, Register reg, Label label){
 		this.name = name;
         this.address = address;
         this.reg = reg;
         this.label = label;
+        this.label.addListener(this);
     }
 
 	private Unlock(Unlock other){
 		this.name = other.name;
         this.address = other.address;
         this.reg = other.reg;
-        this.label = other.label;
+		this.label = other.label4Copy;
+		Event notifier = label != null ? label : other.label;
+		notifier.addListener(this);
     }
 
     @Override
     public String toString() {
         return "pthread_mutex_unlock(&" + name + ")";
+    }
+
+    @Override
+    public void notify(Event label) {
+    	if(this.label == null) {
+        	this.label = (Label)label;
+    	} else if (oId > label.getOId()) {
+    		this.label4Copy = (Label)label;
+    	}
     }
 
     // Unrolling

@@ -22,18 +22,22 @@ public class Start extends Event {
 
 	private final Register reg;
 	private final Address address;
-	private final Label label;
+	private Label label;
+    private Label label4Copy;
 
 	public Start(Register reg, Address address, Label label){
         this.reg = reg;
         this.address = address;
         this.label = label;
+        this.label.addListener(this);
     }
 
 	private Start(Start other){
         this.reg = other.reg;
         this.address = other.address;
-        this.label = other.label;
+		this.label = other.label4Copy;
+		Event notifier = label != null ? label : other.label;
+		notifier.addListener(this);
     }
 
     @Override
@@ -41,6 +45,15 @@ public class Start extends Event {
         return "start_thread()";
     }
 	
+    @Override
+    public void notify(Event label) {
+    	if(this.label == null) {
+        	this.label = (Label)label;
+    	} else if (oId > label.getOId()) {
+    		this.label4Copy = (Label)label;
+    	}
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

@@ -23,20 +23,24 @@ public class Join extends Event {
 	private final Register pthread_t;
 	private final Register reg;
 	private final Address address;
-	private final Label label;
+	private Label label;
+    private Label label4Copy;
 
     public Join(Register pthread_t, Register reg, Address address, Label label){
         this.pthread_t = pthread_t;
         this.reg = reg;
         this.address = address;
         this.label = label;
+        this.label.addListener(this);
     }
 
     public Join(Join other){
         this.pthread_t = other.pthread_t;
         this.reg = other.reg;
         this.address = other.address;
-        this.label = other.label;
+		this.label = other.label4Copy;
+		Event notifier = label != null ? label : other.label;
+		notifier.addListener(this);
     }
 
     @Override
@@ -44,6 +48,15 @@ public class Join extends Event {
         return "pthread_join(" + pthread_t + ")";
     }
 	
+    @Override
+    public void notify(Event label) {
+    	if(this.label == null) {
+        	this.label = (Label)label;
+    	} else if (oId > label.getOId()) {
+    		this.label4Copy = (Label)label;
+    	}
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
