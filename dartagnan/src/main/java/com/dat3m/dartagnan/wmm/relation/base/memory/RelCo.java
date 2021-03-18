@@ -45,7 +45,21 @@ public class RelCo extends Relation {
             minTupleSet = new TupleSet();
 
             if (task.getMemoryModel().isLocallyConsistent()) {
-                //TODO
+                //TODO: This is currently wrong since the addressSet condition is
+                // not sufficient to establish guaranteed access to the same address.
+                // This is due to a bug in the pointer analysis
+                for (Tuple t : getMaxTupleSet()) {
+                    MemEvent w1 = (MemEvent) t.getFirst();
+                    MemEvent w2 = (MemEvent) t.getSecond();
+
+                    if (w2.is(EType.INIT))
+                        continue;;
+                    if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
+                        continue;
+
+                    if (w1.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() < w2.getCId()))
+                        minTupleSet.add(t);
+                }
             }
         }
         return minTupleSet;
@@ -132,16 +146,20 @@ public class RelCo extends Relation {
                         ctx.mkLt(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
 
-                /*BoolExpr invRel = getSMTVar(t.getInverse(), ctx);
-                enc = ctx.mkAnd(enc, ctx.mkImplies(relation, ctx.mkNot(invRel)));*/
+                if (getMinTupleSet().contains(t)) {
+                    //TODO: This is buggy right now
+                   // enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkAnd(w1.exec(), w2.exec())));
+                }
+
 
                 if (task.getMemoryModel().isLocallyConsistent()) {
-                    if (t.getSecond().is(EType.INIT)
-                            || (t.getFirst().getThread() == t.getSecond().getThread()
-                            && t.getFirst().getCId() > t.getSecond().getCId())){
+                    if (w2.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() > w2.getCId())){
                         enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkFalse()));
+                        //enc = ctx.mkAnd(enc, ctx.mkLt(intVar("co", w2, ctx), intVar("co", w1, ctx)));
                     }
-
+                    if (w1.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() < w2.getCId())) {
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(getExecPair(t, ctx), ctx.mkEq(a1, a2)), relation));
+                    }
                 }
             }
 

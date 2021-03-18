@@ -170,14 +170,22 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     public BoolExpr getSMTVar(Tuple edge, Context ctx) {
-        return getMaxTupleSet().contains(edge) ?
-                edge(getName(), edge.getFirst(), edge.getSecond(), ctx) : ctx.mkFalse();
+        return !getMaxTupleSet().contains(edge) ? ctx.mkFalse() :
+                //getMinTupleSet().contains(edge) ? getExecPair(edge, ctx) :
+                edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
     }
 
     public final BoolExpr getSMTVar(Event e1, Event e2, Context ctx) {
         return getSMTVar(new Tuple(e1, e2), ctx);
     }
 
+    protected BoolExpr getExecPair(Tuple t, Context ctx) {
+        return getExecPair(t.getFirst(), t.getSecond(), ctx);
+    }
+
+    protected BoolExpr getExecPair(Event e1, Event e2, Context ctx) {
+        return ctx.mkAnd(e1.exec(), e2.exec());
+    }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {
         BranchEquivalence eq = task.getBranchEquivalence();

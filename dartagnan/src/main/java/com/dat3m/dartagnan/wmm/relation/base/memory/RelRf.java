@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.BitVecExpr;
@@ -16,7 +15,6 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.dat3m.dartagnan.program.Thread;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -83,6 +81,7 @@ public class RelRf extends Relation {
                     if (((MemEvent)read).getMaxAddressSet().size() != 1)
                         continue;
 
+                    //TODO: This code might be buggy due to the same reason explained in RelCo.getMinTupleSet
                     List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
                             .filter(e -> e.getThread() == read.getThread() || e.is(EType.INIT))
                             .map(x -> (MemEvent)x)
@@ -194,6 +193,31 @@ public class RelRf extends Relation {
             atLeastOne = ctx.mkImplies(read.exec(), atLeastOne);
         }
         return ctx.mkAnd(atMostOne, atLeastOne);
+    }
+
+    // An alternate/dual version to encodeEdgeSeq
+    private BoolExpr encodeEdgeSeqAlt(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
+        int num = edges.size();
+        int readId = read.getCId();
+
+        BoolExpr lastSeqVar = mkSeqVar(readId, 0, ctx);
+        BoolExpr newSeqVar = lastSeqVar;
+        BoolExpr enc = ctx.mkIff(lastSeqVar, ctx.mkTrue());
+
+        for(int i = 0; i < num - 1; i++){
+            newSeqVar = mkSeqVar(readId, i + 1, ctx);
+            enc = ctx.mkAnd(enc, ctx.mkImplies(newSeqVar, lastSeqVar));
+            enc = ctx.mkAnd(enc, ctx.mkIff(edges.get(i), ctx.mkAnd(lastSeqVar, ctx.mkNot(newSeqVar))));
+            lastSeqVar = newSeqVar;
+        }
+        enc = ctx.mkAnd(enc, ctx.mkIff(newSeqVar,edges.get(edges.size() - 1)));
+
+        if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
+            enc = ctx.mkImplies(ctx.mkAnd(read.exec(), isMemInit), enc);
+        } else {
+            enc = ctx.mkImplies(read.exec(), enc);
+        }
+        return enc;
     }
 
     private BoolExpr mkSeqVar(int readId, int i, Context ctx) {
