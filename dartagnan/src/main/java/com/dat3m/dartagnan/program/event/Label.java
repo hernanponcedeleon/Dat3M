@@ -23,14 +23,14 @@ public class Label extends Event {
 
     @Override
     public String toString(){
-        return name + ":";
+        return name + ": (" + oId + ", " + uId + ", " + cId + ")";
     }
 
     @Override
     public void simplify(Event predecessor) {
     	Event prev = this;
     	Event next = successor;
-    	if(listeners.size() == 0) {
+    	if(listeners.size() == 0 && !name.startsWith("END_OF_T")) {
     		prev = predecessor;
     		predecessor.setSuccessor(successor);
     	}
