@@ -26,6 +26,7 @@ public class AtomicProcedures {
 			"atomic_load",
 			"atomic_fetch",
 			"atomic_exchange",
+			"atomic_compare_exchange",
 			"atomic_thread_fence");
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -46,7 +47,7 @@ public class AtomicProcedures {
 			atomicFetchOp(visitor, ctx);
 			return;
 		}			
-		if(name.contains("atomic_exchange")) {
+		if(name.contains("atomic_exchange") || name.contains("atomic_compare_exchange")) {
 			atomicXchg(visitor, ctx);
 			return;
 		}			
