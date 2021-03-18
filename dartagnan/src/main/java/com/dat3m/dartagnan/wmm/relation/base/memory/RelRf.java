@@ -88,7 +88,6 @@ public class RelRf extends Relation {
                             .map(x -> (MemEvent)x)
                             .sorted((o1, o2) -> o1.is(EType.INIT) == o2.is(EType.INIT) ? (o1.getCId() - o2.getCId()) : o1.is(EType.INIT) ? -1 : 1)
                             .collect(Collectors.toList());
-                    possibleWrites.removeIf(x -> x.getMaxAddressSet().size() != 1);
                     Set<MemEvent> deletedWrites = new HashSet<>();
 
                     if (((MemEvent)read).getMaxAddressSet().size() == 1){
