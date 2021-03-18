@@ -19,6 +19,15 @@ public class RelCrit extends StaticRelation {
     }
 
     @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+            // todo
+        }
+        return minTupleSet;
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();

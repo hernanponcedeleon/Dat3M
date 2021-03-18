@@ -48,6 +48,16 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            getMaxTupleSet();
+            minTupleSet = baseMaxTupleSet;
+
+        }
+        return minTupleSet;
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             baseMaxTupleSet = new TupleSet();

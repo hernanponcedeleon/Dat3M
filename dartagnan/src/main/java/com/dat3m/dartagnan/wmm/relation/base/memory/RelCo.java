@@ -40,6 +40,18 @@ public class RelCo extends Relation {
     }
 
     @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+
+            if (task.getMemoryModel().isLocallyConsistent()) {
+                //TODO
+            }
+        }
+        return minTupleSet;
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
 
         if(maxTupleSet == null){

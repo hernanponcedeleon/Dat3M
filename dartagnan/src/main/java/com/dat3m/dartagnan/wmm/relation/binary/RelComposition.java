@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
@@ -31,6 +32,25 @@ public class RelComposition extends BinaryRelation {
     public RelComposition(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
+    }
+
+    @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+            TupleSet set1 = r1.getMinTupleSet();
+            TupleSet set2 = r2.getMinTupleSet();
+            BranchEquivalence eq = task.getBranchEquivalence();
+            for(Tuple rel1 : set1){
+                for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
+                    if (eq.isImplied(rel1.getFirst(), rel1.getSecond()) || eq.isImplied(rel2.getSecond(), rel1.getSecond())) {
+                        minTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                    }
+                }
+            }
+            removeMutuallyExclusiveTuples(minTupleSet);
+        }
+        return minTupleSet;
     }
 
     @Override

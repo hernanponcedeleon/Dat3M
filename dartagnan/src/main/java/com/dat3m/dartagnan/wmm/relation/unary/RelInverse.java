@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
@@ -8,6 +9,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.Context;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,6 +31,15 @@ public class RelInverse extends UnaryRelation {
     public RelInverse(Relation r1, String name) {
         super(r1, name);
         term = makeTerm(r1);
+    }
+
+    @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+            r1.getMinTupleSet().stream().map(Tuple::getInverse).forEach(minTupleSet::add);
+        }
+        return minTupleSet;
     }
 
     @Override

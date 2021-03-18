@@ -20,6 +20,15 @@ abstract class BasicRegRelation extends StaticRelation {
 
     abstract Collection<Register> getRegisters(Event regReader);
 
+    @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+            //Todo
+        }
+        return minTupleSet;
+    }
+
     void mkMaxTupleSet(Collection<Event> regReaders){
         maxTupleSet = new TupleSet();
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();

@@ -21,6 +21,21 @@ public class RelLoc extends Relation {
     }
 
     @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+            for (Tuple t : getMaxTupleSet()) {
+                MemEvent e1 = (MemEvent) t.getFirst();
+                MemEvent e2 = (MemEvent) t.getSecond();
+                if (e1.getMaxAddressSet().size() == 1 && e2.getMaxAddressSet().size() == 1) {
+                    minTupleSet.add(t);
+                }
+            }
+        }
+        return minTupleSet;
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();

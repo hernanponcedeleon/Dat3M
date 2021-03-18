@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -40,10 +41,19 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+            minTupleSet.addAll(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSet()));
+        }
+        return minTupleSet;
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            maxTupleSet.addAll(r1.getMaxTupleSet());
+            maxTupleSet.addAll(Sets.difference(r1.getMaxTupleSet(), r2.getMinTupleSet()));
             r2.getMaxTupleSet();
         }
         return maxTupleSet;

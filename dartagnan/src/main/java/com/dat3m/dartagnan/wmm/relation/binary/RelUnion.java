@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
@@ -26,6 +27,15 @@ public class RelUnion extends BinaryRelation {
     public RelUnion(Relation r1, Relation r2, String name) {
         super(r1, r2, name);
         term = makeTerm(r1, r2);
+    }
+
+    @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+            minTupleSet.addAll(Sets.union(r1.getMinTupleSet(), r2.getMinTupleSet()));
+        }
+        return minTupleSet;
     }
 
     @Override

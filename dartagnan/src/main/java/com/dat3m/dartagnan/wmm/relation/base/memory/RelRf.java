@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.dat3m.dartagnan.program.Thread;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
@@ -27,6 +28,14 @@ public class RelRf extends Relation {
     public RelRf(){
         term = "rf";
         forceDoEncode = true;
+    }
+
+    @Override
+    public TupleSet getMinTupleSet(){
+        if(minTupleSet == null){
+            minTupleSet = new TupleSet();
+        }
+        return minTupleSet;
     }
 
     @Override
@@ -71,25 +80,31 @@ public class RelRf extends Relation {
                         continue;
 
                     List<Event> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
-                            .filter(e -> e.getThread() == read.getThread())
-                            .sorted().collect(Collectors.toList());
+                            .filter(e -> e.getThread() == read.getThread() || e.is(EType.INIT))
+                            .sorted((o1, o2) -> o1.is(EType.INIT) == o2.is(EType.INIT) ? (o1.getCId() - o2.getCId()) : o1.is(EType.INIT) ? -1 : 1)
+                            .collect(Collectors.toList());
                     possibleWrites.removeIf(x -> ((MemEvent)x).getMaxAddressSet().size() != 1);
                     Set<Event> deletedWrites = new HashSet<>();
 
                     List<Event> impliedWrites = possibleWrites.stream().filter(x -> eq.isImplied(read, x)).collect(Collectors.toList());
                     if (!impliedWrites.isEmpty()) {
                         Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
-                        possibleWrites.stream().filter(x -> x.getCId() < lastImplied.getCId()).forEach(deletedWrites::add);
-                        possibleWrites.removeIf(x -> x.getCId() < lastImplied.getCId());
+                        if(!lastImplied.is(EType.INIT)) {
+                            Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
+                            possibleWrites.stream().filter(pred).forEach(deletedWrites::add);
+                            possibleWrites.removeIf(pred);
+                        }
                     }
                     possibleWrites.stream().filter(x ->
-                            possibleWrites.stream().anyMatch(y -> (x.getCId() < y.getCId()) && eq.isImplied(x ,y)))
+                            possibleWrites.stream().anyMatch(y -> !y.is(EType.INIT) && x.getCId() < y.getCId() && eq.isImplied(x ,y)))
                             .forEach(deletedWrites::add);
                     for (Event w : deletedWrites) {
                         deletedTuples.add(new Tuple(w, read));
                     }
                 }
+                System.out.println("Before: " + maxTupleSet.size());
                 maxTupleSet.removeAll(deletedTuples);
+                System.out.println("After: " + maxTupleSet.size());
             }
         }
         return maxTupleSet;
