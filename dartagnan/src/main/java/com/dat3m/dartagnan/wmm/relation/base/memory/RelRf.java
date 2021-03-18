@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
+import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -82,24 +83,28 @@ public class RelRf extends Relation {
                     if (((MemEvent)read).getMaxAddressSet().size() != 1)
                         continue;
 
-                    List<Event> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
+                    List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
                             .filter(e -> e.getThread() == read.getThread() || e.is(EType.INIT))
+                            .map(x -> (MemEvent)x)
                             .sorted((o1, o2) -> o1.is(EType.INIT) == o2.is(EType.INIT) ? (o1.getCId() - o2.getCId()) : o1.is(EType.INIT) ? -1 : 1)
                             .collect(Collectors.toList());
-                    possibleWrites.removeIf(x -> ((MemEvent)x).getMaxAddressSet().size() != 1);
-                    Set<Event> deletedWrites = new HashSet<>();
+                    possibleWrites.removeIf(x -> x.getMaxAddressSet().size() != 1);
+                    Set<MemEvent> deletedWrites = new HashSet<>();
 
-                    List<Event> impliedWrites = possibleWrites.stream().filter(x -> eq.isImplied(read, x)).collect(Collectors.toList());
-                    if (!impliedWrites.isEmpty()) {
-                        Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
-                        if(!lastImplied.is(EType.INIT)) {
-                            Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
-                            possibleWrites.stream().filter(pred).forEach(deletedWrites::add);
-                            possibleWrites.removeIf(pred);
+                    if (((MemEvent)read).getMaxAddressSet().size() == 1){
+                        List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x)).collect(Collectors.toList());
+                        if (!impliedWrites.isEmpty()) {
+                            Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
+                            if (!lastImplied.is(EType.INIT)) {
+                                Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
+                                possibleWrites.stream().filter(pred).forEach(deletedWrites::add);
+                                possibleWrites.removeIf(pred);
+                            }
                         }
                     }
                     possibleWrites.stream().filter(x ->
-                            possibleWrites.stream().anyMatch(y -> !y.is(EType.INIT) && x.getCId() < y.getCId() && eq.isImplied(x ,y)))
+                            (x.is(EType.INIT) && possibleWrites.stream().anyMatch(y -> !y.is(EType.INIT) && eq.isImplied(x ,y)))
+                             || (!x.is(EType.INIT) && possibleWrites.stream().anyMatch(y -> !y.is(EType.INIT) && x.getCId() < y.getCId() && y.getMaxAddressSet().size() == 1 && eq.isImplied(x ,y))))
                             .forEach(deletedWrites::add);
                     for (Event w : deletedWrites) {
                         deletedTuples.add(new Tuple(w, read));
