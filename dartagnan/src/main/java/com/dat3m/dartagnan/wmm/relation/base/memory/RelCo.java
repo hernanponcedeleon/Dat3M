@@ -148,7 +148,7 @@ public class RelCo extends Relation {
 
                 if (getMinTupleSet().contains(t)) {
                     //TODO: This is buggy right now
-                   // enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkAnd(w1.exec(), w2.exec())));
+                   enc = ctx.mkAnd(enc, ctx.mkIff(relation, ctx.mkAnd(w1.exec(), w2.exec())));
                 }
 
 
