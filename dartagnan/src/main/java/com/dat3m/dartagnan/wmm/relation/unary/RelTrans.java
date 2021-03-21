@@ -52,7 +52,7 @@ public class RelTrans extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
+            minTupleSet = r1.getMinTupleSet();
         }
         return minTupleSet;
     }

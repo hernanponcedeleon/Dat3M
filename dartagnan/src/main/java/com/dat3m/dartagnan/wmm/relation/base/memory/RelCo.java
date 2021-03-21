@@ -45,15 +45,12 @@ public class RelCo extends Relation {
             minTupleSet = new TupleSet();
 
             if (task.getMemoryModel().isLocallyConsistent()) {
-                //TODO: This is currently wrong since the addressSet condition is
-                // not sufficient to establish guaranteed access to the same address.
-                // This is due to a bug in the pointer analysis
                 for (Tuple t : getMaxTupleSet()) {
                     MemEvent w1 = (MemEvent) t.getFirst();
                     MemEvent w2 = (MemEvent) t.getSecond();
 
                     if (w2.is(EType.INIT))
-                        continue;;
+                        continue;
                     if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
                         continue;
 
@@ -94,13 +91,14 @@ public class RelCo extends Relation {
 
             removeMutuallyExclusiveTuples(maxTupleSet);
 
-            /*if (task.getMemoryModel().isLocallyConsistent()) {
+            if (task.getMemoryModel().isLocallyConsistent()) {
+                //TODO: Make sure that this is correct and does not cause any issues with totality of co
                 int before = maxTupleSet.size();
                 maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT)
                         || (t.getFirst().getThread() == t.getSecond().getThread()
                         && t.getFirst().getCId() > t.getSecond().getCId()));
                 System.out.println("Local Consistency CO: " + (before - maxTupleSet.size()));
-            }*/
+            }
         }
         return maxTupleSet;
     }
@@ -146,12 +144,12 @@ public class RelCo extends Relation {
                         ctx.mkLt(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
 
+                // ============ Local consistency optimizations ============
                 if (getMinTupleSet().contains(t)) {
                    enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(w1.exec(), w2.exec())));
                 } else if (task.getMemoryModel().isLocallyConsistent()) {
                     if (w2.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() > w2.getCId())){
                         enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkFalse()));
-                        //enc = ctx.mkAnd(enc, ctx.mkLt(intVar("co", w2, ctx), intVar("co", w1, ctx)));
                     }
                     if (w1.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() < w2.getCId())) {
                         enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(getExecPair(t, ctx), ctx.mkEq(a1, a2)), relation));

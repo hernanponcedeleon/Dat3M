@@ -128,6 +128,7 @@ public class RelComposition extends BinaryRelation {
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
 
+        //TODO: Fix this abuse of hashCode
         Map<Integer, BoolExpr> exprMap = new HashMap<>();
         for(Tuple tuple : encodeTupleSet){
             exprMap.put(tuple.hashCode(), ctx.mkFalse());

@@ -74,6 +74,9 @@ public abstract class Relation implements Dependent<Relation> {
         encodeTupleSet = new TupleSet();
     }
 
+    /*
+    TODO: getMinTupleSet is no yet used
+     */
     public abstract TupleSet getMinTupleSet();
 
     public abstract TupleSet getMaxTupleSet();
@@ -157,16 +160,15 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected BoolExpr doEncode(Context ctx){
-        BoolExpr enc = ctx.mkTrue();
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             if(task.getSettings().getMode() == Mode.KLEENE) {
-                return ctx.mkAnd(enc, encodeLFP(ctx));
+                return encodeLFP(ctx);
             } else if(task.getSettings().getMode() == Mode.IDL) {
-                return ctx.mkAnd(enc, encodeIDL(ctx));
+                return encodeIDL(ctx);
             }
-            return ctx.mkAnd(enc, encodeApprox(ctx));
+            return encodeApprox(ctx);
         }
-        return enc;
+        return ctx.mkTrue();
     }
 
     public BoolExpr getSMTVar(Tuple edge, Context ctx) {
