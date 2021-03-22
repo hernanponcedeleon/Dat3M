@@ -175,15 +175,27 @@ public class Program {
         if (unreachEvents.isEmpty())
             return;
 
+        boolean hasUnreachableAssertion = false;
         Event pred = null;
         for (Event e : getEvents()) {
+            if (e.is(EType.ASSERTION)) {
+                // We don't eliminate assertion because this can accidentally make
+                // tasks "safe" if the assertion is unreachable under a small bound
+                pred = e;
+                hasUnreachableAssertion = true;
+                continue;
+            }
             if (unreachEvents.contains(e)) {
                 e.delete(pred);
             } else {
                 pred = e;
             }
         }
-        eq.removeUnreachableClass();
+        //TODO: In the else-case, we should still reduce the unreachable class
+        // to all assertion events and update the representative
+        if (!hasUnreachableAssertion) {
+            eq.removeUnreachableClass();
+        }
         this.cache = null;
         clearCache();
     }
