@@ -20,6 +20,7 @@ public class End extends Event {
     }
 
     private End(End other){
+    	super(other);
         this.address = other.address;
     }
 

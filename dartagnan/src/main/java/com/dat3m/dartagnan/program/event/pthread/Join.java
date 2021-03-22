@@ -35,6 +35,7 @@ public class Join extends Event {
     }
 
     public Join(Join other){
+    	super(other);
         this.pthread_t = other.pthread_t;
         this.reg = other.reg;
         this.address = other.address;
