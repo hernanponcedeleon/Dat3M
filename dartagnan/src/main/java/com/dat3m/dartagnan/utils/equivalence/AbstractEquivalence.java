@@ -79,10 +79,18 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
             if (internalSet.add(x)) {
                 EqClass oldClass = classMap.put(x, this);
                 if (oldClass != null) {
-                    oldClass.internalSet.remove(x);
-                    if (x.equals(oldClass.representative)) {
-                        oldClass.representative = oldClass.isEmpty() ? null : oldClass.stream().findAny().get();
-                    }
+                    oldClass.removeInternal(x);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public boolean removeInternal(T x) {
+            if (internalSet.remove(x)) {
+                classMap.remove(x);
+                if (x.equals(representative)) {
+                    representative = internalSet.isEmpty() ? null : internalSet.stream().findFirst().get();
                 }
                 return true;
             }

@@ -131,7 +131,16 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     public void removeUnreachableClass() {
         if (removeClass(unreachableClass)) {
+            unreachableClass.internalSet.clear();
+            unreachableClass.representative = null;
             this.<BranchClass>getAllTypedEqClasses().forEach(x -> x.impliedClasses.remove(unreachableClass));
+        }
+    }
+
+    public void removeUnreachableEvent(Event e) {
+        unreachableClass.removeInternal(e);
+        if (unreachableClass.isEmpty()) {
+            removeUnreachableClass();
         }
     }
 
