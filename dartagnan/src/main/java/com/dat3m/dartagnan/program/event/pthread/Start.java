@@ -31,6 +31,7 @@ public class Start extends Event {
     }
 
 	private Start(Start other){
+		super(other);
         this.reg = other.reg;
         this.address = other.address;
         this.label = other.label;
