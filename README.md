@@ -92,10 +92,14 @@ Authors and Contact
 
 * [Hernán Ponce de León](mailto:hernan.ponce@unibw.de)
 
+**Developers:**
+
+* [Thomas Haas](mailto:t.haas@tu-braunschweig.de)
+
 **Former Developers:**
 
-* [Florian Furbach](mailto:f.furbach@tu-braunschweig.de)
-* [Natalia Gavrilenko](mailto:natalia.gavrilenko@aalto.fi)
+* Florian Furbach
+* Natalia Gavrilenko
 
 Please feel free to contact us in case of questions or to send feedback.
 
