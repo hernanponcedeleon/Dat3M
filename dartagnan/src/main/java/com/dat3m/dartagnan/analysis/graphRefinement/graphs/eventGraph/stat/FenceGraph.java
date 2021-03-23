@@ -33,8 +33,8 @@ public class FenceGraph extends StaticEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
 
         threadFencesMap = new HashMap<>();
         for (Thread t : context.getThreads()) {

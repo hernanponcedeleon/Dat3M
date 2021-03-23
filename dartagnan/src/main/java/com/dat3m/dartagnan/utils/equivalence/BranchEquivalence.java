@@ -176,8 +176,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 Branch bSucc = null;
 
                 if (ifElse.getSuccessor() != null) {
-                    // There is this odd case that a final If
-                    // has no successor
+                    // There is this odd case that a final If has no successor
                     bSucc = computeBranches(ifElse.getSuccessor(), branchMap, finalBranchMap);
                 }
                 // Look at if and else branches...
@@ -362,6 +361,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             }
         }
 
+        // Update reachable and implied classes
         for (BranchClass branchClass : newClasses) {
             Branch rootBranch = branchMap.get(branchClass.getRepresentative());
             for (Branch reachable : rootBranch.reachableBranches) {

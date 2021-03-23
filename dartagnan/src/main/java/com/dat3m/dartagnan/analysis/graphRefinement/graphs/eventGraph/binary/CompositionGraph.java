@@ -69,9 +69,9 @@ public class CompositionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
-        graph.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
+        graph.constructFromModel(context);
         initialPopulation();
     }
 

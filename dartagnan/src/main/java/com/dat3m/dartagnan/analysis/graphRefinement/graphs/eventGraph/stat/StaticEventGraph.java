@@ -64,8 +64,8 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
         size = 0;
     }
 

@@ -41,8 +41,8 @@ public class CartesianGraph extends StaticEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
         firstEvents.clear();
         secondEvents.clear();
 

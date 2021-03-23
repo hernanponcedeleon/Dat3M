@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.function.Function;
 
 public class DependencyGraph<T> {
+    //TODO: Maybe add a way to enable Identity-based hashmaps
     private final Map<T, Node> nodeMap;
     private List<Node> nodeList;
     private final List<Set<Node>> sccs;
@@ -30,7 +31,7 @@ public class DependencyGraph<T> {
     }
 
     public T getRootContent() {
-        return nodeList.get(0).getContent();
+        return getRootNode().getContent();
     }
 
     public List<Set<Node>> getSCCs() {

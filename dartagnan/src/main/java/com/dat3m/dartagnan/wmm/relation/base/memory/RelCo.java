@@ -29,7 +29,7 @@ public class RelCo extends Relation {
     // and it will be considered empty for may and active set computations
     public void setDoEncode(Boolean value) {
         doEncode = value;
-        maxTupleSet = value ? null : new TupleSet();
+        maxTupleSet = value ? null : getMinTupleSet();
     }
 
     @Override
@@ -107,8 +107,12 @@ public class RelCo extends Relation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
-        if (!doEncode)
+        if (!doEncode) {
+            for (Tuple t : getMinTupleSet()) {
+                enc = ctx.mkAnd(enc, ctx.mkEq(getSMTVar(t, ctx), getExecPair(t, ctx)));
+            }
             return enc;
+        }
 
         List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
         List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(

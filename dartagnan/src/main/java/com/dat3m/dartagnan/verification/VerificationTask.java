@@ -17,6 +17,9 @@ import java.util.*;
 Represents a verification task.
  */
 public class VerificationTask {
+
+    public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
+
     private final Program program;
     private final Wmm memoryModel;
     private final Arch target;
@@ -54,7 +57,9 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
-        program.eliminateDeadCode();
+        if (PERFORM_DEAD_CODE_ELIMINATION) {
+            program.eliminateDeadCode();
+        }
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
         program.updateAssertion();

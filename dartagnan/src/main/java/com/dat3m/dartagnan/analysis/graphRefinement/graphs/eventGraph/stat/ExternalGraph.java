@@ -41,8 +41,8 @@ public class ExternalGraph extends StaticEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
         threadEventsMap = context.getThreadEventsMap();
         int totalSize = context.getEventList().size();
         for (List<EventData> threadEvents : context.getThreadEventsMap().values()) {

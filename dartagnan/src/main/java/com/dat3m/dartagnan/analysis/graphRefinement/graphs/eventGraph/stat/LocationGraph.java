@@ -33,8 +33,8 @@ public class LocationGraph extends StaticEventGraph {
 
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
         addrEventsMap = new HashMap<>(context.getAddressReadsMap().size());
         for (Long addr : context.getAddressReadsMap().keySet()) {
             Set<EventData> events = new HashSet<>(context.getAddressReadsMap().get(addr));

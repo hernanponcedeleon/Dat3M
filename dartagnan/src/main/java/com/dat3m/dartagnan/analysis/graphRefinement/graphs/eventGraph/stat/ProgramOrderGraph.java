@@ -35,8 +35,8 @@ public class ProgramOrderGraph extends StaticEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
         this.threadEventsMap = context.getThreadEventsMap();
         size = 0;
         for (List<EventData> threadEvents : threadEventsMap.values()) {

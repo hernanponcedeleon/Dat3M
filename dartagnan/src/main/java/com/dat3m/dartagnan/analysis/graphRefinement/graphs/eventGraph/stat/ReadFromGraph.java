@@ -35,8 +35,8 @@ public class ReadFromGraph extends StaticEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
         size = context.getReadWriteMap().size();
     }
 

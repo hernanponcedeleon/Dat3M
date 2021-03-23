@@ -107,7 +107,7 @@ public class ExecutionGraph {
     }
 
     public void initializeFromModel(ExecutionModel executionModel) {
-        graphHierarchy.initializeFromModel(executionModel);
+        graphHierarchy.constructFromModel(executionModel);
         axiomMap.values().forEach(x -> x.initialize(executionModel));
     }
 

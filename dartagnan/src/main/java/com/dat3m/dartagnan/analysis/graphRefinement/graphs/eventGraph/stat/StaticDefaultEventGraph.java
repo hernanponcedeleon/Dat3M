@@ -50,9 +50,9 @@ public class StaticDefaultEventGraph extends StaticEventGraph {
 
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
-        graph.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
+        graph.constructFromModel(context);
         TupleSet maxTupleSet = relation.getMaxTupleSet();
         for (Tuple tuple : relation.getEncodeTupleSet()) {
             // Edges are present IFF the tuple is part of <encodeTupleSet> AND <maxTupleSet>

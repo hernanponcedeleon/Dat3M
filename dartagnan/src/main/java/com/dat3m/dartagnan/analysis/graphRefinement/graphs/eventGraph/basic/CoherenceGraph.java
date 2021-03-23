@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.wmm.relation.Relation;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,12 +21,13 @@ import java.util.stream.Collectors;
 // The fact that it is coherence is only relevant for <computeReason>
 public class CoherenceGraph extends AbstractEventGraph {
 
+    private final SimpleGraph graph;
+    private Relation co;
+
     @Override
     public List<EventGraph> getDependencies() {
         return Collections.emptyList();
     }
-
-    private final SimpleGraph graph;
 
     public CoherenceGraph() {
         graph = new SimpleGraph();
@@ -73,9 +75,10 @@ public class CoherenceGraph extends AbstractEventGraph {
 
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
-        graph.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
+        graph.constructFromModel(context);
+        co = context.getMemoryModel().getRelationRepository().getRelation("co");
     }
 
     @Override
@@ -105,7 +108,9 @@ public class CoherenceGraph extends AbstractEventGraph {
     public Conjunction<CoreLiteral> computeReason(Edge edge) {
         if (!contains(edge))
             return Conjunction.FALSE;
-        if (edge.getFirst().isInit()) {
+
+        // The second condition is test code
+        if (edge.getFirst().isInit() || co.getMinTupleSet().contains(edge.toTuple())) {
             return new Conjunction<>(new EventLiteral(edge.getFirst()), new EventLiteral(edge.getSecond()));
         } else {
             return new Conjunction<>(new CoLiteral(edge));

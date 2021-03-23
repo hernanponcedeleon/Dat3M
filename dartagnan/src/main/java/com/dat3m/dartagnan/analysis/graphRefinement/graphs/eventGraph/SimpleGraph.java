@@ -161,7 +161,7 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
+    public void constructFromModel(ExecutionModel context) {
         size = 0;
         outgoing = new DataItem[context.getEventList().size()];
         ingoing = new DataItem[context.getEventList().size()];

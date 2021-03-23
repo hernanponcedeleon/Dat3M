@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.GraphDerivable;
@@ -19,7 +20,7 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
 
     Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges);
 
-    void initialize(ExecutionModel context);
+    void constructFromModel(ExecutionModel context);
     void backtrack();
 
     int getMinSize();

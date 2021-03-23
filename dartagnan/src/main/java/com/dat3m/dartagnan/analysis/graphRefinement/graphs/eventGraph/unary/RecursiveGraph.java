@@ -40,8 +40,8 @@ public class RecursiveGraph extends DerivedEventGraph {
     public EventGraph getInner() { return inner; }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        materializedGraph.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        materializedGraph.constructFromModel(context);
         //TODO: How to properly initialize?
     }
 

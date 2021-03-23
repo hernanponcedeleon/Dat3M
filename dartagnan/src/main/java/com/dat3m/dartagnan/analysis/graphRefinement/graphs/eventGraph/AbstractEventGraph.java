@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
@@ -10,14 +11,17 @@ import java.util.Iterator;
 public abstract class AbstractEventGraph implements EventGraph {
 
     protected ExecutionModel context;
+    protected VerificationTask task;
 
     public AbstractEventGraph() {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
+    public void constructFromModel(ExecutionModel context) {
         this.context = context;
+        this.task = context.getVerificationTask();
     }
+
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {

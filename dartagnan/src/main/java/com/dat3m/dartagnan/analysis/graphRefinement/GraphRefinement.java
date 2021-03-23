@@ -332,6 +332,7 @@ public class GraphRefinement {
 
 
     private void initSearch() {
+        Relation co = context.getMemoryModel().getRelationRepository().getRelation("co");
         for (Map.Entry<Long, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
             Long address = addressedWrites.getKey();
@@ -340,6 +341,14 @@ public class GraphRefinement {
 
             for (EventData e1 : writes) {
                 for (EventData e2: writes) {
+                    Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
+
+                    if (co.getMinTupleSet().contains(t)) {
+                        // Test code
+                        execGraph.addCoherenceEdge(new Edge(e1,e2));
+                        continue;
+                    }
+
                     // We only add edges in one direction
                     if (e2.getId() >= e1.getId())
                         continue;

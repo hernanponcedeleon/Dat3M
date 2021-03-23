@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs;
 
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -61,9 +62,9 @@ public class GraphHierarchy {
         tasks.add(new Task(from, target, added, priority));
     }
 
-    public void initializeFromModel(ExecutionModel executionModel) {
+    public void constructFromModel(ExecutionModel executionModel) {
         // Initializes in topological order!
-        getGraphList().forEach(x -> x.initialize(executionModel));
+        getGraphList().forEach(x -> x.constructFromModel(executionModel));
     }
 
     public boolean addEventGraph(EventGraph graph) {

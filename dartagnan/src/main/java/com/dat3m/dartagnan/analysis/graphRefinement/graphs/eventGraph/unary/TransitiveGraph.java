@@ -70,9 +70,9 @@ public class TransitiveGraph extends UnaryGraph {
     }
 
     @Override
-    public void initialize(ExecutionModel context) {
-        super.initialize(context);
-        graph.initialize(context);
+    public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
+        graph.constructFromModel(context);
         initialPopulation();
     }
 
