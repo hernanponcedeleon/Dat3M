@@ -76,7 +76,7 @@ public class SVCOMPRunner {
 				System.out.println(e.getMessage());
 				System.exit(0);
 			}
-			bound = bound * 2;
+			bound++;
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
 		output = output.equals("PASS") ? "PASS" : "FAIL";
