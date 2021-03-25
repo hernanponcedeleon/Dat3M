@@ -25,6 +25,7 @@ public class Create extends Event {
     }
 
     private Create(Create other){
+    	super(other);
         this.pthread_t = other.pthread_t;
         this.routine = other.routine;
         this.address = other.address;
