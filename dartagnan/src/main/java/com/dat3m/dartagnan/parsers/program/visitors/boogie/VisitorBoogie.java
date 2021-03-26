@@ -18,10 +18,11 @@ import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.LLVMPREDICAT
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmPredicates.llvmPredicate;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.LLVMUNARY;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
+import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.SMACKPREDICATES;
+import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.smackPredicate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -771,10 +772,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentCall = currentCall.getParent();
 			return llvmUnary(name, callParams);
 		}
-//		if(SMACKPREDICATES.stream().anyMatch(f -> name.equals(f))) {
-//			currentCall = currentCall.getParent();
-//			return smackPredicate(name, callParams);
-//		}
+		if(SMACKPREDICATES.stream().anyMatch(f -> name.equals(f))) {
+			currentCall = currentCall.getParent();
+			return smackPredicate(name, callParams);
+		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
