@@ -17,9 +17,6 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
 
-import static com.dat3m.dartagnan.logger.ConsoleLogger.LOGGER;
-
-import java.lang.System.Logger.Level;
 import java.util.*;
 
 public class Program {
@@ -141,7 +138,6 @@ public class Program {
 	}
 
 	public void simplify() {
-		LOGGER.log(Level.INFO, "Events Before Simplification: " +getEvents().size());
 		// Some simplification are only applicable after others.
 		// Thus we apply them iteratively until we reach a fixpoint.
 		int size = getEvents().size();
@@ -150,7 +146,6 @@ public class Program {
 	    	size = getEvents().size();
 	    	one_step_simplify();    		
 		}
-		LOGGER.log(Level.INFO, "Events After Simplification: " + getEvents().size());
 	}
 	
 	private void one_step_simplify() {
@@ -164,13 +159,11 @@ public class Program {
     // -----------------------------------------------------------------------------------------------------------------
 
     public int unroll(int bound, int nextId) {
-    	LOGGER.log(Level.INFO, "Events Before Unrolling: " + getEvents().size());
         for(Thread thread : threads){
             nextId = thread.unroll(bound, nextId);
         }
         isUnrolled = true;
         cache = null;
-        LOGGER.log(Level.INFO, "Events After Unrolling: " + getEvents().size());
         return nextId;
     }
 

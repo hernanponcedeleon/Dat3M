@@ -13,9 +13,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 
-import static com.dat3m.dartagnan.logger.ConsoleLogger.LOGGER;
-
-import java.lang.System.Logger.Level;
 import java.util.*;
 
 /**
@@ -70,7 +67,6 @@ public class Wmm {
     }
 
     public BoolExpr encode(Program program, Context ctx, Settings settings) {
-        LOGGER.log(Level.DEBUG, "Starting WMM Encoding");
         this.program = program;
         new AliasAnalysis().calculateLocationSets(this.program, settings.getAlias());
 
@@ -116,9 +112,7 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-        	LOGGER.log(Level.DEBUG, "Computing EncodeTupleSet for " + ax.getRel().getName());
             ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
-            LOGGER.log(Level.DEBUG, "Finished EncodeTupleSet for " + ax.getRel().getName());
         }
 
         Collections.reverse(recursiveGroups);
@@ -145,7 +139,6 @@ public class Wmm {
     }
 
     public BoolExpr consistent(Program program, Context ctx) {
-        LOGGER.log(Level.DEBUG, "Starting Consistency Encoding");
         if(this.program != program){
             throw new RuntimeException("Wmm relations must be encoded before consistency predicate");
         }
@@ -153,7 +146,6 @@ public class Wmm {
         for (Axiom ax : axioms) {
             expr = ctx.mkAnd(expr, ax.consistent(ctx));
         }
-        LOGGER.log(Level.DEBUG, "Finished Consistency Encodin");
         return expr;
     }
 

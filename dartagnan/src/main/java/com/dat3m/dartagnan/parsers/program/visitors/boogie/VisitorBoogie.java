@@ -9,6 +9,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProced
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.ATOMIC_AS_LOCK;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
@@ -100,6 +101,8 @@ import com.dat3m.dartagnan.program.event.pthread.End;
 import com.dat3m.dartagnan.program.event.pthread.Start;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
@@ -136,6 +139,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	protected int assertionIndex = 0;
 	
+	protected BeginAtomic currentBeginAtomic = null;
 	protected Call_cmdContext atomicMode = null;
 	 
 	private List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
@@ -403,7 +407,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
-			SvcompProcedures.__VERIFIER_atomic(this, true);
+			if(ATOMIC_AS_LOCK) {
+				SvcompProcedures.__VERIFIER_atomic(this, true);	
+			} else {
+				currentBeginAtomic = new BeginAtomic();
+				programBuilder.addChild(threadCount, currentBeginAtomic);
+			}
 		}
 		// TODO: double check this 
 		// Some procedures might have an empty implementation.
@@ -426,8 +435,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		programBuilder.addChild(threadCount, call);	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
-			SvcompProcedures.__VERIFIER_atomic(this, false);
 			atomicMode = null;
+			if(ATOMIC_AS_LOCK) {
+				SvcompProcedures.__VERIFIER_atomic(this, false);	
+			} else {
+				if(currentBeginAtomic == null) {
+		            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
+				}
+				programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));	
+				currentBeginAtomic = null;				
+			}
+			
 		}
 		Event ret = new FunRet(name);
 		ret.setCLine(call.getCLine());

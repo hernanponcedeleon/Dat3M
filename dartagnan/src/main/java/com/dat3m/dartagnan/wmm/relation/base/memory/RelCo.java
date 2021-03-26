@@ -15,11 +15,9 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dat3m.dartagnan.logger.ConsoleLogger.LOGGER;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
@@ -33,7 +31,6 @@ public class RelCo extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
             List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
             List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
@@ -56,7 +53,6 @@ public class RelCo extends Relation {
                     }
                 }
             }
-            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

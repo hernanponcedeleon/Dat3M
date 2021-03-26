@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
@@ -18,10 +19,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-import static com.dat3m.dartagnan.logger.ConsoleLogger.LOGGER;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-
-import java.lang.System.Logger.Level;
 
 public class RelRMW extends StaticRelation {
 
@@ -52,7 +50,6 @@ public class RelRMW extends StaticRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             baseMaxTupleSet = new TupleSet();
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
             for(Event store : program.getCache().getEvents(filter)){
@@ -72,6 +69,18 @@ public class RelRMW extends StaticRelation {
             	}
             }
 
+            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.ATOMIC));
+            for(Event end : program.getCache().getEvents(filter)){
+            	for(Event b : ((EndAtomic)end).getBlock()) {
+            		Event next = b.getSuccessor();
+            		while(next != null && !(next instanceof EndAtomic)) {
+            			baseMaxTupleSet.add(new Tuple(b, next));
+            			next = next.getSuccessor();
+            		}
+            		baseMaxTupleSet.add(new Tuple(b, end));
+            	}
+            }
+            
             maxTupleSet = new TupleSet();
             maxTupleSet.addAll(baseMaxTupleSet);
 
@@ -84,7 +93,6 @@ public class RelRMW extends StaticRelation {
                     }
                 }
             }
-            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

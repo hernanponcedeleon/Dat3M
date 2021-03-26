@@ -2,10 +2,6 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.microsoft.z3.BoolExpr;
 
-import static com.dat3m.dartagnan.logger.ConsoleLogger.LOGGER;
-
-import java.lang.System.Logger.Level;
-
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -35,11 +31,9 @@ public class RelUnion extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
             maxTupleSet.addAll(r1.getMaxTupleSet());
             maxTupleSet.addAll(r2.getMaxTupleSet());
-            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }
