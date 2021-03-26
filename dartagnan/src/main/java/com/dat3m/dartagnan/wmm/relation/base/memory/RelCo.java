@@ -54,7 +54,7 @@ public class RelCo extends Relation {
                     if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
                         continue;
 
-                    if (w1.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() < w2.getCId()))
+                    if (w1.is(EType.INIT) || t.isForward())
                         minTupleSet.add(t);
                 }
             }
@@ -94,9 +94,7 @@ public class RelCo extends Relation {
             if (task.getMemoryModel().isLocallyConsistent()) {
                 //TODO: Make sure that this is correct and does not cause any issues with totality of co
                 int before = maxTupleSet.size();
-                maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT)
-                        || (t.getFirst().getThread() == t.getSecond().getThread()
-                        && t.getFirst().getCId() > t.getSecond().getCId()));
+                maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT) || t.isBackward());
                 System.out.println("Local Consistency CO: " + (before - maxTupleSet.size()));
             }
         }
@@ -152,10 +150,10 @@ public class RelCo extends Relation {
                 if (getMinTupleSet().contains(t)) {
                    enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(w1.exec(), w2.exec())));
                 } else if (task.getMemoryModel().isLocallyConsistent()) {
-                    if (w2.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() > w2.getCId())){
+                    if (w2.is(EType.INIT) || t.isBackward()){
                         enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkFalse()));
                     }
-                    if (w1.is(EType.INIT) || (w1.getThread() == w2.getThread() && w1.getCId() < w2.getCId())) {
+                    if (w1.is(EType.INIT) || t.isForward()) {
                         enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(getExecPair(t, ctx), ctx.mkEq(a1, a2)), relation));
                     }
                 }

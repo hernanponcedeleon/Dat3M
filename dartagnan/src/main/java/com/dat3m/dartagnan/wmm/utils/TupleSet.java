@@ -6,10 +6,18 @@ import java.util.*;
 
 public class TupleSet implements Set<Tuple>{
 
-    private final Set<Tuple> tuples = new HashSet<>();
+    private final Set<Tuple> tuples;
     private final Map<Event, Set<Tuple>> byFirst = new HashMap<>();
     private final Map<Event, Set<Tuple>> bySecond = new HashMap<>();
     private boolean isUpdated = false;
+
+    public TupleSet() {
+        tuples = new HashSet<>();
+    }
+
+    public TupleSet(Collection<? extends Tuple> c) {
+        tuples = new HashSet<>(c);
+    }
 
     @Override
     public boolean add(Tuple e){

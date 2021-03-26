@@ -26,7 +26,6 @@ public class Tuple implements Comparable<Tuple> {
 
     }
 
-    public Tuple getInverse() { return new Tuple(second, first); }
 
     @Override
     public int hashCode() {
@@ -72,5 +71,29 @@ public class Tuple implements Comparable<Tuple> {
             return second.compareTo(o.second);
         }
         return result;
+    }
+
+
+    // ================== Utility/Convenience methods ================
+    public Tuple getInverse() { return new Tuple(second, first); }
+
+    public boolean isCrossThread() {
+        return !isSameThread();
+    }
+
+    public boolean isSameThread() {
+        return first.getThread() == second.getThread();
+    }
+
+    public boolean isForward() {
+        return isSameThread() && first.getCId() < second.getCId();
+    }
+
+    public boolean isBackward() {
+        return isSameThread() && first.getCId() > second.getCId();
+    }
+
+    public boolean isLoop() {
+        return first.equals(second);
     }
 }

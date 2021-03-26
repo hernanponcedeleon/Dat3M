@@ -70,8 +70,7 @@ public class RelRf extends Relation {
                 int before = maxTupleSet.size();
                 System.out.println("Read-From before: " + before);
                 // Remove future reads
-                maxTupleSet.removeIf(t -> t.getFirst().getThread() == t.getSecond().getThread()
-                                && t.getFirst().getCId() >= t.getSecond().getCId());
+                maxTupleSet.removeIf(Tuple::isBackward);
                 System.out.println("Removed future reads: " + (before - maxTupleSet.size()));
 
                 // Remove past reads
