@@ -86,10 +86,8 @@ import com.dat3m.dartagnan.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
-import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
-import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
 import com.dat3m.dartagnan.program.event.If;
@@ -99,6 +97,8 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.While;
+import com.dat3m.dartagnan.program.event.pthread.End;
+import com.dat3m.dartagnan.program.event.pthread.Start;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -281,8 +281,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-        		programBuilder.addChild(threadCount, new AtomicLoad(reg, loc.getAddress(), SC));
-        		programBuilder.addChild(threadCount, new Assume(new Atom(reg, EQ, new IConst(1, -1)), label));
+               	programBuilder.addChild(threadCount, new Start(reg, loc.getAddress(), label));
             }
     	}
 
@@ -328,7 +327,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
-        		programBuilder.addChild(threadCount, new AtomicStore(loc.getAddress(), new IConst(0, -1), SC));
+        		programBuilder.addChild(threadCount, new End(loc.getAddress()));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
@@ -354,6 +353,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
 	@Override
 	public Object visitCall_cmd(Call_cmdContext ctx) {
+		if(ctx.getText().contains("boogie_si_record") && !ctx.getText().contains("smack")) {
+			Object local = ctx.call_params().exprs().expr(0).accept(this);
+			if(local instanceof Register) {
+				String txt = ctx.attr(0).getText();
+				String cVar;
+				if(ctx.getText().contains("arg:")) {
+					cVar = txt.substring(txt.lastIndexOf(":")+1, txt.lastIndexOf("\""));
+				} else {					
+					cVar = txt.substring(txt.indexOf("\"")+1, txt.lastIndexOf("\""));
+				}
+				((Register)local).setCVar(cVar);	
+			}
+			
+		}
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		if(name.equals("$initialize")) {
 			initMode = true;;
@@ -414,7 +427,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		programBuilder.addChild(threadCount, new FunCall(name));	
+		Event call = new FunCall(name);
+		call.setCLine(currentLine);
+		programBuilder.addChild(threadCount, call);	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			if(currentBeginAtomic == null) {
@@ -424,7 +439,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentBeginAtomic = null;
 			atomicMode = null;
 		}
-		programBuilder.addChild(threadCount, new FunRet(name));
+		Event ret = new FunRet(name);
+		ret.setCLine(call.getCLine());
+		programBuilder.addChild(threadCount, ret);
 		if(name.equals("$initialize")) {
 			initMode = false;
 		}

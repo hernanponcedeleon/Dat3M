@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 import java.util.Arrays;
 import java.util.List;
 
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -12,19 +11,20 @@ import com.dat3m.dartagnan.expression.INonDetTypes;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Assume;
-import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
 public class SvcompProcedures {
+	
+	static List<String> FENCES = Arrays.asList("After_atomic", "Before_atomic", "Isync" ," Lwsync" ," Mb", "Mfence", 
+										"Rcu_lock" , "Rcu_unlock", "Rmb", "Sync", "Sync_rcu","Wmb", "Ish");
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
-			"__VERIFIER_assume", 
-			"__VERIFIER_error", 
 			"__VERIFIER_assert",
+			"__VERIFIER_fence",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -41,13 +41,9 @@ public class SvcompProcedures {
 
 	public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.contains("__VERIFIER_assume")) {
-			__VERIFIER_assume(visitor, ctx);
+		if(name.contains("__VERIFIER_fence")) {
+			__VERIFIER_fence(visitor, ctx);
 			return;
-		}
-		if(name.contains("__VERIFIER_error")) {
-			__VERIFIER_error(visitor);
-			return;			
 		}
 		if(name.contains("__VERIFIER_assert")) {
 			__VERIFIER_assert(visitor, ctx);
@@ -75,40 +71,26 @@ public class SvcompProcedures {
 		throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 	}
 
-	//TODO: seems to be obsolete after SVCOMP 2020
-	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
-       	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	ExprInterface c = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-		if(c != null) {
-			Assume child = new Assume(c, label);
-			child.setCLine(visitor.currentLine);
-			visitor.programBuilder.addChild(visitor.threadCount, child);	
-		}
+	private static void __VERIFIER_fence(VisitorBoogie visitor, Call_cmdContext ctx) {
+    	int index = (int)((IConst)ctx.call_params().exprs().accept(visitor)).getValue();
+    	if(index >= FENCES.size()) {
+    		throw new UnsupportedOperationException(ctx.getText() + " cannot be handled");
+    	}
+    	visitor.programBuilder.addChild(visitor.threadCount, new Fence(FENCES.get(index)));
 	}
 
-	//TODO: seems to be obsolete after SVCOMP 2020
-	private static void __VERIFIER_error(VisitorBoogie visitor) {
+	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
-    	Local event = new Local(ass, new BConst(false));
-		event.addFilters(EType.ASSERTION);
-		event.setCLine(visitor.currentLine);
-		visitor.programBuilder.addChild(visitor.threadCount, event);
-	}
-	
-	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
-    	visitor.assertionIndex++;
     	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
     		return;
     	}
     	Local event = new Local(ass, expr);
 		event.addFilters(EType.ASSERTION);
-		event.setCLine(visitor.currentLine);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}
-	
+
 	private static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
 		visitor.currentBeginAtomic = new BeginAtomic();
 		visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);	
