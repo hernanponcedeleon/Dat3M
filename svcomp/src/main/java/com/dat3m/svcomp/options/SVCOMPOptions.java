@@ -2,7 +2,6 @@ package com.dat3m.svcomp.options;
 
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.TERMINATION;
 import java.util.Arrays;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
@@ -67,9 +66,6 @@ public class SVCOMPOptions extends BaseOptions {
         switch(property) {
 			case "no-data-race":
 				analysis = RACES;
-				break;
-			case "termination":
-				analysis = TERMINATION;
 				break;
 			case "unreach-call":
 				analysis = REACHABILITY;

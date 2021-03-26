@@ -7,7 +7,6 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedur
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.PTHREADPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.I32_BYTES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
@@ -215,10 +214,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
-			if(ctx.getText().contains("{:count")) {
-				int size = Integer.parseInt((ctx.getText().substring(0, ctx.getText().lastIndexOf("}")).split("count")[1]))*I32_BYTES;
-				programBuilder.addDeclarationArray(name, Collections.nCopies(size, new IConst(0, precision)), precision);
-			} else if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
+			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
 				programBuilder.getOrCreateLocation(name, precision);
 			} else {
 				constantsTypeMap.put(name, precision);
@@ -336,7 +332,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
     	}
-    	currentLine = -1;
     }
     
     @Override 
@@ -553,8 +548,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(ctx.getText().contains("sourceloc")) {
 			String line = ctx.getText();
 			currentLine = Integer.parseInt(line.substring(line.indexOf(',') + 1, line.lastIndexOf(',')));
-		} else if(!ctx.proposition().expr().getText().equals("true")) {
-			currentLine = -1;
 		}
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
@@ -739,7 +732,23 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			IExpr address = (IExpr)ctx.expr(1).accept(this);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
-			if(initMode && value instanceof IConst && ((IConst)value).getValue() == 0) {
+			if(initMode && !(value instanceof Address)) {
+				ExprInterface lhs = address;
+				long rhs = 0;
+				while(lhs instanceof IExprBin) {
+					rhs = rhs + ((IExprBin)lhs).getRHS().reduce().getValue();
+					lhs = ((IExprBin)lhs).getLHS();
+				}
+				String text = ctx.expr(1).getText();				
+				String[] split = text.split("add.ref");
+				if(split.length > 1) {
+					text = split[split.length - 1];
+					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
+				}
+				if(rhs != 0) {
+					text += "(" + rhs + ")";
+				}
+				programBuilder.initLocEqConst(text, value.reduce());
 				return null;
 			}
 			Store child = new Store(address, value, null);
@@ -762,6 +771,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			currentCall = currentCall.getParent();
 			return llvmUnary(name, callParams);
 		}
+//		if(SMACKPREDICATES.stream().anyMatch(f -> name.equals(f))) {
+//			currentCall = currentCall.getParent();
+//			return smackPredicate(name, callParams);
+//		}
 		// Some functions do not have a body
 		if(function.getBody() == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
@@ -787,26 +800,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override 
 	public Object visitBv_expr(Bv_exprContext ctx) {
-		int value;
+		String value = ctx.getText().split("bv")[0];
 		int precision = Integer.parseInt(ctx.getText().split("bv")[1]);
-		try {
-			value = Integer.parseInt(ctx.getText().split("bv")[0]);
-		} catch (Exception e) {
-			//TODO: this can be longer for unsigned int
-			value = Integer.MAX_VALUE;
-		}
 		return new IConst(value, precision);
 	}
 
 	@Override
 	public Object visitInt_expr(Int_exprContext ctx) {
-		int value;
-		try {
-			value = Integer.parseInt(ctx.getText());
-		} catch (Exception e) {
-			value = Integer.MAX_VALUE;
-		}
-		return new IConst(value, -1);
+		return new IConst(ctx.getText(), -1);
 	}
 	
 	@Override

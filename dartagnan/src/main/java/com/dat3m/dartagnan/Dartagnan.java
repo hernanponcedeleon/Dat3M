@@ -11,7 +11,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import org.apache.commons.cli.HelpFormatter;
 
-import com.dat3m.dartagnan.analysis.Termination;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -90,8 +89,6 @@ public class Dartagnan {
 		switch(options.getAnalysis()) {
 			case RACES:
 				return checkForRaces(s, ctx, p, mcm, target, settings);	
-			case TERMINATION:
-				return Termination.runAnalysis(s, ctx, p, mcm, target, settings);
 			case REACHABILITY:
 				return options.useISolver() ? 
 						runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings) : 

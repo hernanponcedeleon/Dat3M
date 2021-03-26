@@ -37,7 +37,7 @@ public abstract class AbstractSvCompTest {
         this.settings = settings;
     }
 
-    @Test(timeout = 180000)
+//    @Test(timeout = 180000)
     public void test() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";

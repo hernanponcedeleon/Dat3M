@@ -6,21 +6,20 @@ import java.util.List;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;
+import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
 
 public class StdProcedures {
 	
-	// TODO: find a good way of dealing with allocation of dynamic size
-	private static int MALLOC_ARRAY_SIZE = 100;
-    // TODO: deal with this properly
-    public static int I32_BYTES = 4;
-
 	public static List<String> STDPROCEDURES = Arrays.asList(
+			"WRITE_ONCE",
+			"READ_ONCE",
 			"external_alloc",
 			"$alloc",
 			"__assert_rtn",
@@ -45,6 +44,19 @@ public class StdProcedures {
 	
 	public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
+		if(name.startsWith("WRITE_ONCE")) {
+			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
+			ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr(1).accept(visitor);
+			visitor.programBuilder.addChild(visitor.threadCount, new Store(address, value, "NA"));
+			return;
+		}
+//		if(name.startsWith("READ_ONCE")) {
+//			System.out.println(ctx.getText());
+//			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
+//			ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr(1).accept(visitor);
+//			visitor.programBuilder.addChild(visitor.threadCount, new Store(address, value, "NA"));
+//			return;
+//		}
 		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc") || name.equals("external_alloc") ) {
 			alloc(visitor, ctx);
 			return;
@@ -103,14 +115,14 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = ((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValue()*I32_BYTES;			
+			size = (int)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValue();			
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);
-			size = Integer.parseInt(tmp)*MALLOC_ARRAY_SIZE;			
+			size = Integer.parseInt(tmp);			
 		}
-		List<IConst> values = Collections.nCopies(size, new IConst(0, -1));
+		List<IConst> values = Collections.nCopies(size*4, new IConst(0, -1));
 		String ptr = ctx.call_params().Ident(0).getText();
 		Register start = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
 		// Several threads can use the same pointer name but when using addDeclarationArray, 

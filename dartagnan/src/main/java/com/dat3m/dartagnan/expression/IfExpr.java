@@ -38,7 +38,7 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, Context ctx) {
+	public long getIntValue(Event e, Model model, Context ctx) {
 		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}
 
@@ -59,7 +59,7 @@ public class IfExpr implements ExprInterface {
 
 	@Override
 	public IConst reduce() {
-		throw new UnsupportedOperationException("Reduce not supported for " + this);
+		return (IConst)(guard.reduce().getValue() > 0 ? tbranch.reduce() : fbranch.reduce());
 	}
 	
 	public BExpr getGuard() {
@@ -72,5 +72,10 @@ public class IfExpr implements ExprInterface {
             throw new RuntimeException("The type of " + tbranch + " and " + fbranch + " does not match");
 		}
 		return tbranch.getPrecision();
+	}
+	
+	@Override
+	public IExpr getBase() {
+		throw new UnsupportedOperationException("getBase not supported for " + this);
 	}
 }

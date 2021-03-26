@@ -58,7 +58,7 @@ public enum COpBin {
         throw new UnsupportedOperationException("Encoding of not supported for COpBin " + this);
     }
 
-    public boolean combine(int a, int b){
+    public boolean combine(long a, long b){
         switch(this){
             case EQ:
                 return a == b;

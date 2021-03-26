@@ -37,7 +37,7 @@ public class Graph {
     private Context ctx;
 
     private StringBuilder buffer;
-    private Map<Integer, Location> mapAddressLocation;
+    private Map<Long, Location> mapAddressLocation;
     private Set<String> relations = new HashSet<>();
 
     private final String L1 = "  ";
@@ -124,7 +124,7 @@ public class Graph {
                         String label = e.label();
                         if(e instanceof MemEvent) {
                             Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, model, ctx));
-                            int value = 0;
+                            long value = 0;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
                                 value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());
@@ -167,16 +167,16 @@ public class Graph {
         StringBuilder sb = new StringBuilder();
         String edge = " " + getEdgeDef("co") + ";\n";
 
-        Map<Integer, Set<Event>> mapAddressEvent = new HashMap<>();
+        Map<Long, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.exec()).isTrue()){
-                int address = ((MemEvent)e).getAddress().getIntValue(e, model, ctx);
+                long address = ((MemEvent)e).getAddress().getIntValue(e, model, ctx);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
             }
         }
 
-        for(int address : mapAddressEvent.keySet()){
+        for(long address : mapAddressEvent.keySet()){
             Map<Event, Integer> map = new HashMap<>();
             for(Event e2 : mapAddressEvent.get(address)){
                 map.put(e2, 0);
@@ -243,7 +243,7 @@ public class Graph {
     private void buildAddressLocationMap(Program program){
         mapAddressLocation = new HashMap<>();
         for(Location location : program.getLocations()){
-            mapAddressLocation.put(location.getAddress().getIntValue(null, model, ctx), location);
+        	mapAddressLocation.put(location.getAddress().getIntValue(null, model, ctx), location);
         }
     }
 

@@ -41,14 +41,14 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public int getIntValue(Event e, Model model, Context ctx){
+    public long getIntValue(Event e, Model model, Context ctx){
         return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
     }
     
     @Override
 	public IConst reduce() {
-		int v1 = lhs.reduce().getValue();
-		int v2 = rhs.reduce().getValue();
+		long v1 = lhs.reduce().getValue();
+		long v2 = rhs.reduce().getValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 
@@ -58,5 +58,22 @@ public class IExprBin extends IExpr implements ExprInterface {
             throw new RuntimeException("The type of " + lhs + " and " + rhs + " does not match");
 		}
 		return lhs.getPrecision();
+	}
+	
+	@Override
+	public IExpr getBase() {
+		return lhs.getBase();
+	}
+	
+	public IOpBin getOp() {
+		return op;
+	}
+	
+	public ExprInterface getRHS() {
+		return rhs;
+	}
+
+	public ExprInterface getLHS() {
+		return lhs;
 	}
 }

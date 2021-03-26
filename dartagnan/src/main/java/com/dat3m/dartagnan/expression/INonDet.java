@@ -50,8 +50,8 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public int getIntValue(Event e, Model model, Context ctx) {
-		return Integer.parseInt(model.getConstInterp(toZ3Int(e, ctx)).toString());
+	public long getIntValue(Event e, Model model, Context ctx) {
+		return Long.parseLong(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
 	@Override

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.event.*;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -20,7 +21,7 @@ public class ProgramBuilder {
     private Map<String, Location> locations = new HashMap<>();
     private Map<String, Address> pointers = new HashMap<>();
 
-    private Map<Address, IConst> iValueMap = new HashMap<>();
+    private Map<IExpr, IConst> iValueMap = new HashMap<>();
     private Memory memory = new Memory();
 
     private Map<String, Label> labels = new HashMap<>();
@@ -51,7 +52,7 @@ public class ProgramBuilder {
     }
 
     public void initThread(int id){
-        initThread(null, id);
+        initThread(String.valueOf(id), id);
     }
 
     public Event addChild(int thread, Event child){
@@ -206,7 +207,7 @@ public class ProgramBuilder {
 
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
-        for (Map.Entry<Address, IConst> entry : iValueMap.entrySet()) {
+        for (Map.Entry<IExpr, IConst> entry : iValueMap.entrySet()) {
             Event e = new Init(entry.getKey(), entry.getValue());
             Thread thread = new Thread(nextThreadId, e);
             threads.put(nextThreadId, thread);
