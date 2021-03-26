@@ -25,6 +25,20 @@ public class FunCall extends Event {
     	return funName;
     }
     
+    @Override
+    public void simplify(Event predecessor) {
+    	Event prev = this;
+    	Event next = successor;
+    	if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(funName)) {
+    		prev = predecessor;
+    		next = successor.getSuccessor();
+    		predecessor.setSuccessor(next);
+    	}
+		if(next != null){
+			next.simplify(prev);
+		}
+    }
+
 	// Unrolling
 	// -----------------------------------------------------------------------------------------------------------------
 
