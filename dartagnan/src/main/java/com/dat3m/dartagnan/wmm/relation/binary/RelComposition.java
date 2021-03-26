@@ -7,6 +7,9 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import static com.dat3m.dartagnan.logger.ConsoleLogger.LOGGER;
+
+import java.lang.System.Logger.Level;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,6 +38,7 @@ public class RelComposition extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+        	LOGGER.log(Level.INFO, "Starting Computation of MaxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
             TupleSet set1 = r1.getMaxTupleSet();
             TupleSet set2 = r2.getMaxTupleSet();
@@ -43,6 +47,7 @@ public class RelComposition extends BinaryRelation {
                     maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
                 }
             }
+            LOGGER.log(Level.INFO, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }
@@ -133,7 +138,6 @@ public class RelComposition extends BinaryRelation {
         for(Tuple tuple : encodeTupleSet){
             enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(this.getName(), tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
         }
-
         return enc;
     }
 

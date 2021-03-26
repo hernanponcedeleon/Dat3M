@@ -3,12 +3,15 @@ package com.dat3m.dartagnan;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
+import static com.dat3m.dartagnan.logger.ConsoleLogger.LOGGER;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.System.Logger.Level;
+
 import org.apache.commons.cli.HelpFormatter;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
@@ -56,9 +59,11 @@ public class Dartagnan {
         }
         
         Settings settings = options.getSettings();
+        LOGGER.log(Level.INFO, "Settings: " + settings);
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
 
+        LOGGER.log(Level.INFO, "Starting " + (options.useISolver() ? "Incremental Solver" : "Two solvers"));
         Result result = selectAndRunAnalysis(options, mcm, p, target, settings, ctx, s);
  
         if(options.getProgramFilePath().endsWith(".litmus")) {
