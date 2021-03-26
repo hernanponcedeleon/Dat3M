@@ -38,7 +38,7 @@ public class RelComposition extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.INFO, "Starting Computation of MaxTupleSet for " + getName());
+        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
             TupleSet set1 = r1.getMaxTupleSet();
             TupleSet set2 = r2.getMaxTupleSet();
@@ -47,7 +47,7 @@ public class RelComposition extends BinaryRelation {
                     maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
                 }
             }
-            LOGGER.log(Level.INFO, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
+            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

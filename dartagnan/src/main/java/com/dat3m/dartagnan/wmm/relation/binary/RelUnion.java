@@ -35,11 +35,11 @@ public class RelUnion extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.INFO, "Starting Computation of MaxTupleSet for " + getName());
+        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
             maxTupleSet.addAll(r1.getMaxTupleSet());
             maxTupleSet.addAll(r2.getMaxTupleSet());
-            LOGGER.log(Level.INFO, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
+            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

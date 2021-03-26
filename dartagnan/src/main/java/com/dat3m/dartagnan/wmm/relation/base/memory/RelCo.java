@@ -33,7 +33,7 @@ public class RelCo extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.INFO, "Starting Computation of MaxTupleSet for " + getName());
+        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
             List<Event> eventsInit = program.getCache().getEvents(FilterBasic.get(EType.INIT));
             List<Event> eventsStore = program.getCache().getEvents(FilterMinus.get(
@@ -56,7 +56,7 @@ public class RelCo extends Relation {
                     }
                 }
             }
-            LOGGER.log(Level.INFO, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
+            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

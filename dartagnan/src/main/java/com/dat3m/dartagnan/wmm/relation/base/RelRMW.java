@@ -52,7 +52,7 @@ public class RelRMW extends StaticRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.INFO, "Starting Computation of MaxTupleSet for " + getName());
+        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             baseMaxTupleSet = new TupleSet();
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
             for(Event store : program.getCache().getEvents(filter)){
@@ -84,7 +84,7 @@ public class RelRMW extends StaticRelation {
                     }
                 }
             }
-            LOGGER.log(Level.INFO, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
+            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

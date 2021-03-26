@@ -29,7 +29,7 @@ public class RelRf extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-        	LOGGER.log(Level.INFO, "Starting Computation of MaxTupleSet for " + getName());
+        	LOGGER.log(Level.DEBUG, "Starting Computation of MaxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
 
             List<Event> eventsLoad = program.getCache().getEvents(FilterBasic.get(EType.READ));
@@ -54,7 +54,7 @@ public class RelRf extends Relation {
                     }
                 }
             }
-            LOGGER.log(Level.INFO, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
+            LOGGER.log(Level.DEBUG, "Ended Computation of MaxTupleSet for " + getName() + ". #Tuples: " + maxTupleSet.size());
         }
         return maxTupleSet;
     }
