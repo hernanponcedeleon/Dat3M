@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.program.svcomp.event;
 
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +15,7 @@ public class EndAtomic extends Event {
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
     	this.begin.addListener(this);
-        addFilters(EType.RMW, EType.ATOMIC);
+        addFilters(EType.RMW, SVCOMPATOMIC);
     	Event next = begin.getSuccessor();
     	while(next != null && next != this) {
     		next.addFilters(EType.RMW);

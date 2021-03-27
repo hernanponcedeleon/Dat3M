@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelRMW extends StaticRelation {
@@ -69,7 +70,7 @@ public class RelRMW extends StaticRelation {
             	}
             }
 
-            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.ATOMIC));
+            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
             for(Event end : program.getCache().getEvents(filter)){
             	for(Event b : ((EndAtomic)end).getBlock()) {
             		Event next = b.getSuccessor();
