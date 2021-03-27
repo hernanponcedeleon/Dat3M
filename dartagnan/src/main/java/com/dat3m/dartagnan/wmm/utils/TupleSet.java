@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.wmm.utils;
 import com.dat3m.dartagnan.program.event.Event;
 
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 public class TupleSet implements Set<Tuple>{
 
@@ -120,27 +122,24 @@ public class TupleSet implements Set<Tuple>{
         if(isUpdated){
             updateAuxiliary();
         }
-        byFirst.putIfAbsent(e, new HashSet<>());
-        return byFirst.get(e);
+        return byFirst.computeIfAbsent(e, key -> new HashSet<>());
     }
 
     public Set<Tuple> getBySecond(Event e){
         if(isUpdated){
             updateAuxiliary();
         }
-        bySecond.putIfAbsent(e, new HashSet<>());
-        return bySecond.get(e);
+        return bySecond.computeIfAbsent(e, key -> new HashSet<>());
     }
 
-    //TODO: Reimplemenmt transMap using tarjan and SCCs
+    //TODO: Reimplement transMap using tarjan and SCCs
     public Map<Event, Set<Event>> transMap(){
         Map<Event, Set<Event>> map = new HashMap<>();
 
+        final Function<Event, Set<Event>> newSet = key -> new HashSet<>();
         for(Tuple tuple : tuples){
-            map.putIfAbsent(tuple.getFirst(), new HashSet<>());
-            map.putIfAbsent(tuple.getSecond(), new HashSet<>());
-            Set<Event> events = map.get(tuple.getFirst());
-            events.add(tuple.getSecond());
+            map.computeIfAbsent(tuple.getFirst(), newSet).add(tuple.getSecond());
+            map.computeIfAbsent(tuple.getSecond(), newSet);
         }
 
         boolean changed = true;
@@ -165,12 +164,63 @@ public class TupleSet implements Set<Tuple>{
     private void updateAuxiliary(){
         byFirst.clear();
         bySecond.clear();
+        final Function<Event, Set<Tuple>> newSet = key -> new HashSet<>();
         for(Tuple e : tuples){
-            byFirst.putIfAbsent(e.getFirst(), new HashSet<>());
-            byFirst.get(e.getFirst()).add(e);
-            bySecond.putIfAbsent(e.getSecond(), new HashSet<>());
-            bySecond.get(e.getSecond()).add(e);
+            byFirst.computeIfAbsent(e.getFirst(), newSet).add(e);
+            bySecond.computeIfAbsent(e.getSecond(), newSet).add(e);
         }
         isUpdated = false;
+    }
+
+    // ================ Utility functions ==============
+    public TupleSet inverse() {
+        TupleSet inverse = new TupleSet();
+        this.tuples.forEach(x -> inverse.add(x.getInverse()));
+        return inverse;
+    }
+
+    public TupleSet preComposition(TupleSet tuples) {
+        TupleSet result = new TupleSet();
+        for (Tuple t1 : tuples) {
+            Event e1 = t1.getFirst();
+            Event e2 = t1.getSecond();
+            for (Tuple t2 : this.getByFirst(e2)) {
+                Event e3 = t2.getSecond();
+                result.add(new Tuple(e1 , e3));
+            }
+        }
+        return result;
+    }
+
+    public TupleSet preComposition(TupleSet tuples, BiPredicate<Tuple, Tuple> condition) {
+        TupleSet result = new TupleSet();
+        for (Tuple t1 : tuples) {
+            Event e1 = t1.getFirst();
+            Event e2 = t1.getSecond();
+            for (Tuple t2 : this.getByFirst(e2)) {
+                if (condition.test(t1, t2)) {
+                    Event e3 = t2.getSecond();
+                    result.add(new Tuple(e1, e3));
+                }
+            }
+        }
+        return result;
+    }
+
+    public TupleSet postComposition(TupleSet tuples) {
+        return tuples.preComposition(this);
+    }
+
+    public TupleSet postComposition(TupleSet tuples, BiPredicate<Tuple, Tuple> condition) {
+        return tuples.preComposition(this, condition);
+    }
+
+
+    public TupleSet mapped(Function<Tuple, Tuple> mapping) {
+        TupleSet result = new TupleSet();
+        for (Tuple t : tuples) {
+            result.add(mapping.apply(t));
+        }
+        return result;
     }
 }
