@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -30,10 +31,7 @@ public class RelRangeIdentity extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            for(Tuple tuple : r1.getMinTupleSet()){
-                minTupleSet.add(new Tuple(tuple.getSecond(), tuple.getSecond()));
-            }
+            minTupleSet = r1.getMinTupleSet().mapped(t -> new Tuple(t.getSecond(), t.getSecond()));
         }
         return minTupleSet;
     }
@@ -41,21 +39,17 @@ public class RelRangeIdentity extends UnaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            for(Tuple tuple : r1.getMaxTupleSet()){
-                maxTupleSet.add(new Tuple(tuple.getSecond(), tuple.getSecond()));
-            }
+            maxTupleSet = r1.getMaxTupleSet().mapped(t -> new Tuple(t.getSecond(), t.getSecond()));
         }
         return maxTupleSet;
     }
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        Set<Tuple> activeSet = new HashSet<>(tuples);
-        activeSet.retainAll(maxTupleSet);
-        activeSet.removeAll(encodeTupleSet);
+        Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
+        //TODO: Optimize using minSets
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
             for(Tuple tuple : activeSet){
@@ -68,6 +62,7 @@ public class RelRangeIdentity extends UnaryRelation {
     @Override
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
+        //TODO: Optimize using minSets
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();
             BoolExpr opt = ctx.mkFalse();

@@ -161,12 +161,14 @@ public abstract class Relation implements Dependent<Relation> {
 
     protected BoolExpr doEncode(Context ctx){
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
-            if(task.getSettings().getMode() == Mode.KLEENE) {
-                return encodeLFP(ctx);
-            } else if(task.getSettings().getMode() == Mode.IDL) {
-                return encodeIDL(ctx);
+            switch (task.getSettings().getMode()) {
+                case KLEENE:
+                    return encodeLFP(ctx);
+                case IDL:
+                    return encodeIDL(ctx);
+                default:
+                    return encodeApprox(ctx);
             }
-            return encodeApprox(ctx);
         }
         return ctx.mkTrue();
     }
@@ -181,12 +183,12 @@ public abstract class Relation implements Dependent<Relation> {
         return getSMTVar(new Tuple(e1, e2), ctx);
     }
 
-    protected BoolExpr getExecPair(Tuple t, Context ctx) {
-        return getExecPair(t.getFirst(), t.getSecond(), ctx);
-    }
-
     protected BoolExpr getExecPair(Event e1, Event e2, Context ctx) {
         return ctx.mkAnd(e1.exec(), e2.exec());
+    }
+
+    protected final BoolExpr getExecPair(Tuple t, Context ctx) {
+        return getExecPair(t.getFirst(), t.getSecond(), ctx);
     }
 
     protected void removeMutuallyExclusiveTuples(Set<Tuple> tupleSet) {

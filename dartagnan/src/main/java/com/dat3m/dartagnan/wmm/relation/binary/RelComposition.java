@@ -37,17 +37,9 @@ public class RelComposition extends BinaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            TupleSet set1 = r1.getMinTupleSet();
-            TupleSet set2 = r2.getMinTupleSet();
             BranchEquivalence eq = task.getBranchEquivalence();
-            for(Tuple rel1 : set1){
-                for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
-                    if (eq.isImplied(rel1.getFirst(), rel1.getSecond()) || eq.isImplied(rel2.getSecond(), rel1.getSecond())) {
-                        minTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
-                    }
-                }
-            }
+            minTupleSet = r1.getMinTupleSet().postComposition(r2.getMinTupleSet(),
+                    (t1, t2) -> eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
             removeMutuallyExclusiveTuples(minTupleSet);
         }
         return minTupleSet;
@@ -56,14 +48,7 @@ public class RelComposition extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            TupleSet set1 = r1.getMaxTupleSet();
-            TupleSet set2 = r2.getMaxTupleSet();
-            for(Tuple rel1 : set1){
-                for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
-                    maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
-                }
-            }
+            maxTupleSet = r1.getMaxTupleSet().postComposition(r2.getMaxTupleSet());
             removeMutuallyExclusiveTuples(maxTupleSet);
         }
         return maxTupleSet;
@@ -127,11 +112,16 @@ public class RelComposition extends BinaryRelation {
 
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
+        TupleSet minSet = getMinTupleSet();
 
         //TODO: Fix this abuse of hashCode
         Map<Integer, BoolExpr> exprMap = new HashMap<>();
         for(Tuple tuple : encodeTupleSet){
-            exprMap.put(tuple.hashCode(), ctx.mkFalse());
+            if (minSet.contains(tuple)) {
+                exprMap.put(tuple.hashCode(), getExecPair(tuple, ctx));
+            } else {
+                exprMap.put(tuple.hashCode(), ctx.mkFalse());
+            }
         }
 
         for(Tuple tuple1 : r1Set){
@@ -139,6 +129,10 @@ public class RelComposition extends BinaryRelation {
             Event e3 = tuple1.getSecond();
             for(Tuple tuple2 : r2Set.getByFirst(e3)){
                 Event e2 = tuple2.getSecond();
+                if (minSet.contains(new Tuple(e1, e2))) {
+                    continue;
+                }
+
                 int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                 if(exprMap.containsKey(id)){
                     BoolExpr e = exprMap.get(id);
@@ -148,7 +142,7 @@ public class RelComposition extends BinaryRelation {
             }
         }
 
-        for(Tuple tuple : encodeTupleSet){
+        for(Tuple tuple : encodeTupleSet) {
             enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
         }
 

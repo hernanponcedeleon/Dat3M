@@ -2,7 +2,9 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
@@ -52,7 +54,19 @@ public class RelTrans extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = r1.getMinTupleSet();
+            //TODO: complete this
+            BranchEquivalence eq = task.getBranchEquivalence();
+            minTupleSet = new TupleSet(r1.getMinTupleSet());
+            boolean changed;
+            int size = minTupleSet.size();
+            do {
+                minTupleSet.addAll(minTupleSet.postComposition(r1.getMinTupleSet(),
+                        (t1, t2) -> eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
+                changed = minTupleSet.size() != size;
+                size = minTupleSet.size();
+
+            } while (changed);
+
         }
         return minTupleSet;
     }
@@ -73,10 +87,7 @@ public class RelTrans extends UnaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet();
-        activeSet.addAll(tuples);
-        activeSet.retainAll(maxTupleSet);
-        activeSet.removeAll(encodeTupleSet);
+        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
         TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
@@ -90,21 +101,37 @@ public class RelTrans extends UnaryRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
+        getMinTupleSet();
         for(Tuple tuple : fullEncodeTupleSet){
             BoolExpr orClause = ctx.mkFalse();
+
+            if (minTupleSet.contains(tuple)) {
+                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                continue;
+            }
 
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 
-            if(r1.getMaxTupleSet().contains(new Tuple(e1, e2))){
+            if(r1.getMaxTupleSet().contains(tuple)){
                 orClause = ctx.mkOr(orClause, r1.getSMTVar(tuple, ctx));
             }
 
-            for(Event e3 : transitiveReachabilityMap.get(e1)){
+            //TODO: This can be improved by encoding transitivity as "r1(e1,e2) && r1+(e2,e3) => r1+(e1,e3)"
+            // Instead of "r1+(e1,e2) && r1+(e2,e3) => r1+(e1,e3)"
+            // The difference is in formulating transitivity as R+ = R + (R;R+) or as R+ = R + (R+;R+)
+
+            for(Tuple t : r1.getMaxTupleSet().getByFirst(e1)){
+                Event e3 = t.getSecond();
+                if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
+                    orClause = ctx.mkOr(orClause, ctx.mkAnd(r1.getSMTVar(t, ctx), this.getSMTVar(e3, e2, ctx)));
+                }
+            }
+            /*for(Event e3 : transitiveReachabilityMap.get(e1)){
                 if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
                     orClause = ctx.mkOr(orClause, ctx.mkAnd(this.getSMTVar(e1, e3, ctx), this.getSMTVar(e3, e2, ctx)));
                 }
-            }
+            }*/
 
             if(Relation.PostFixApprox) {
                 enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, this.getSMTVar(tuple, ctx)));
@@ -245,9 +272,9 @@ public class RelTrans extends UnaryRelation {
     }
 
     private TupleSet getFullEncodeTupleSet(TupleSet tuples){
-        TupleSet processNow = new TupleSet();
-        processNow.addAll(tuples);
-        processNow.retainAll(getMaxTupleSet());
+        TupleSet processNow = new TupleSet(Sets.intersection(tuples, getMaxTupleSet()));
+        //processNow.addAll(tuples);
+        //processNow.retainAll(getMaxTupleSet());
 
         TupleSet result = new TupleSet();
 
@@ -258,6 +285,13 @@ public class RelTrans extends UnaryRelation {
             for (Tuple tuple : processNow) {
                 Event e1 = tuple.getFirst();
                 Event e2 = tuple.getSecond();
+                /*for (Tuple t : r1.getMaxTupleSet().getByFirst(e1)) {
+                    Event e3 = t.getSecond();
+                    if (e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() &&
+                            transitiveReachabilityMap.get(e3).contains(e2)) {
+                        processNext.add(new Tuple(e3, e2));
+                    }
+                }*/
                 for (Event e3 : transitiveReachabilityMap.get(e1)) {
                     if (e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId()
                             && transitiveReachabilityMap.get(e3).contains(e2)) {

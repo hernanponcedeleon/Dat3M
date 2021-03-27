@@ -257,17 +257,39 @@ public class Program {
             eMap.get(reg).add(e);
         }
 
+        BranchEquivalence eq = getBranchEquivalence();
         BoolExpr enc = ctx.mkTrue();
         for (Register reg : eMap.keySet()) {
+            Thread thread = threads.get(reg.getThreadId());
+
             List<Event> events = eMap.get(reg);
             events.sort(Collections.reverseOrder());
+
+            // =======================================================
+            // Optimizations that remove registers which are guaranteed to get overwritten
+            //TODO: Make sure that this is correct even for EXCL events
+            for (int i = 0; i < events.size(); i++) {
+                if (eq.isImplied(thread.getExit(), events.get(i))) {
+                    events = events.subList(0, i + 1);
+                    break;
+                }
+            }
+            final List<Event> events2 = events;
+            events.removeIf(x -> events2.stream().anyMatch(y -> y.getCId() > x.getCId() && eq.isImplied(x, y)));
+            // ========================================================
+
+
             for(int i = 0; i <  events.size(); i++){
-                BoolExpr lastModReg = eMap.get(reg).get(i).exec();
+                Event w1 = events.get(i);
+                BoolExpr lastModReg = w1.exec();
                 for(int j = 0; j < i; j++){
-                    lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(events.get(j).exec()));
+                    Event w2 = events.get(j);
+                    if (!eq.areMutuallyExclusive(w1, w2)) {
+                        lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(w2.exec()));
+                    }
                 }
                 enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
-                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)events.get(i)).getResultRegisterExpr())));
+                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)w1).getResultRegisterExpr())));
             }
         }
         return enc;

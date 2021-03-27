@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.Program;
@@ -52,8 +53,7 @@ public class RelTransRef extends RelTrans {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-
+            super.getMinTupleSet();
             for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.ANY))){
                 minTupleSet.add(new Tuple(e, e));
             }
@@ -78,14 +78,11 @@ public class RelTransRef extends RelTrans {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet();
-        activeSet.addAll(tuples);
-        activeSet.retainAll(maxTupleSet);
-        activeSet.removeAll(encodeTupleSet);
+        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
         for(Tuple tuple : activeSet){
-            if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
+            if(tuple.isLoop()){
                 identityEncodeTupleSet.add(tuple);
             }
         }

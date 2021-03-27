@@ -200,7 +200,7 @@ public class RelRf extends Relation {
 
         BoolExpr lastSeqVar = mkSeqVar(readId, 0, ctx);
         BoolExpr newSeqVar = lastSeqVar;
-        BoolExpr enc = ctx.mkIff(lastSeqVar, ctx.mkTrue());
+        BoolExpr enc = ctx.mkEq(lastSeqVar, ctx.mkTrue());
 
         for(int i = 0; i < num - 1; i++){
             newSeqVar = mkSeqVar(readId, i + 1, ctx);

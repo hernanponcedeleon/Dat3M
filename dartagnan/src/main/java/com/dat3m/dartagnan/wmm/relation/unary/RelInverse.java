@@ -36,8 +36,7 @@ public class RelInverse extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            r1.getMinTupleSet().stream().map(Tuple::getInverse).forEach(minTupleSet::add);
+            minTupleSet = r1.getMinTupleSet().inverse();
         }
         return minTupleSet;
     }
@@ -45,27 +44,19 @@ public class RelInverse extends UnaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            for(Tuple pair : r1.getMaxTupleSet()){
-                maxTupleSet.add(new Tuple(pair.getSecond(), pair.getFirst()));
-            }
+            maxTupleSet = r1.getMaxTupleSet().inverse();
         }
         return maxTupleSet;
     }
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        Set<Tuple> activeSet = new HashSet<>(tuples);
-        activeSet.retainAll(maxTupleSet);
+        TupleSet activeSet = new TupleSet(Sets.intersection(tuples, maxTupleSet));
         activeSet.removeAll(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
 
         if(!activeSet.isEmpty()){
-            TupleSet invSet = new TupleSet();
-            for(Tuple pair : activeSet){
-                invSet.add(new Tuple(pair.getSecond(), pair.getFirst()));
-            }
-            r1.addEncodeTupleSet(invSet);
+            r1.addEncodeTupleSet(activeSet.inverse());
         }
     }
 

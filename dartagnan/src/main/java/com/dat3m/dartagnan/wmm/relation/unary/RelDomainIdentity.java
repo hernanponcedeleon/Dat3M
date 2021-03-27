@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -30,10 +31,7 @@ public class RelDomainIdentity extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            for(Tuple tuple : r1.getMinTupleSet()){
-                minTupleSet.add(new Tuple(tuple.getFirst(), tuple.getFirst()));
-            }
+            minTupleSet = r1.getMinTupleSet().mapped(t -> new Tuple(t.getFirst(), t.getFirst()));
         }
         return minTupleSet;
     }
@@ -41,25 +39,23 @@ public class RelDomainIdentity extends UnaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            for(Tuple tuple : r1.getMaxTupleSet()){
-                maxTupleSet.add(new Tuple(tuple.getFirst(), tuple.getFirst()));
-            }
+            maxTupleSet = r1.getMaxTupleSet().mapped(t -> new Tuple(t.getFirst(), t.getFirst()));
         }
         return maxTupleSet;
     }
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        Set<Tuple> activeSet = new HashSet<>(tuples);
-        activeSet.retainAll(maxTupleSet);
+        Set<Tuple> activeSet = new HashSet<>(Sets.intersection(tuples, maxTupleSet));
         activeSet.removeAll(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
 
+        //TODO: Optimize this using minTupleSets
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
             for(Tuple tuple : activeSet){
                 r1Set.addAll(r1.getMaxTupleSet().getByFirst(tuple.getFirst()));
+
             }
             r1.addEncodeTupleSet(r1Set);
         }
@@ -71,6 +67,7 @@ public class RelDomainIdentity extends UnaryRelation {
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();
             BoolExpr opt = ctx.mkFalse();
+            //TODO: Optimize this using minTupleSets
             for(Tuple tuple2 : r1.getMaxTupleSet().getByFirst(e)){
                 opt = ctx.mkOr(r1.getSMTVar(e, tuple2.getSecond(), ctx));
             }
