@@ -52,8 +52,12 @@ public class Base {
 		if(task.getSettings().hasSolverTimeout()) {
 			Params p = ctx.mkParams();
 			p.add("timeout", 1000*task.getSettings().getSolverTimeout());
-			s1.setParameters(p);
-			s2.setParameters(p);			
+			try {
+				s1.setParameters(p);
+				s2.setParameters(p);
+			} catch (Exception ignored) {
+
+			}
 		}
         
 		Result res = Result.UNKNOWN;
@@ -110,7 +114,9 @@ public class Base {
 		if(task.getSettings().hasSolverTimeout()) {
 			Params p = ctx.mkParams();
 			p.add("timeout", 1000*task.getSettings().getSolverTimeout());
-			solver.setParameters(p);
+			try {
+				solver.setParameters(p);
+			} catch(Exception ignored) { }
 		}
 
         Result res = Result.UNKNOWN;
