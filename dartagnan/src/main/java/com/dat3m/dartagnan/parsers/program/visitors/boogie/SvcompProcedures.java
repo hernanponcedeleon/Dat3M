@@ -165,9 +165,7 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-	    	Local child = new Local(register, new INonDet(type, register.getPrecision()));
-	    	child.setCLine(visitor.currentLine);
-			visitor.programBuilder.addChild(visitor.threadCount, child);
+			visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new INonDet(type, register.getPrecision()), visitor.currentLine));
 	    }
 	}
 
@@ -175,9 +173,7 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-	    	Local child = new Local(register, new BNonDet(register.getPrecision()));
-	    	child.setCLine(visitor.currentLine);
-			visitor.programBuilder.addChild(visitor.threadCount, child);
+			visitor.programBuilder.addChild(visitor.threadCount, new Local(register, new BNonDet(register.getPrecision()), visitor.currentLine));
 	    }
 	}
 }

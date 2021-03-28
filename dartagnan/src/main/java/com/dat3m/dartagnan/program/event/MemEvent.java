@@ -17,7 +17,8 @@ public abstract class MemEvent extends Event {
     protected Expr memValueExpr;
     private ImmutableSet<Address> maxAddressSet;
 
-    public MemEvent(IExpr address, String mo){
+    public MemEvent(IExpr address, String mo, int cLine){
+    	super(cLine);
         this.address = address;
         this.mo = mo;
         if(mo != null){
@@ -25,6 +26,10 @@ public abstract class MemEvent extends Event {
         }
     }
 
+    public MemEvent(IExpr address, String mo){
+    	this(address, mo, -1);
+    }
+    
     protected MemEvent(MemEvent other){
         super(other);
         this.address = other.address;

@@ -18,13 +18,18 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	private final ImmutableSet<Register> dataRegs;
 	private Expr regResultExpr;
 	
-	public Local(Register register, ExprInterface expr) {
+	public Local(Register register, ExprInterface expr, int cLine) {
+		super(cLine);
 		this.register = register;
 		this.expr = expr;
 		this.dataRegs = expr.getRegs();
 		addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER, EType.REG_READER);
 	}
 
+	public Local(Register register, ExprInterface expr) {
+		this(register, expr, -1);
+	}
+	
 	protected Local(Local other){
 		super(other);
 		this.register = other.register;

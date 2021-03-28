@@ -18,7 +18,8 @@ public class Create extends Event {
 	private final String routine;
 	private final Address address;
 	
-    public Create(Register pthread_t, String routine, Address address){
+    public Create(Register pthread_t, String routine, Address address, int cLine){
+    	super(cLine);
         this.pthread_t = pthread_t;
         this.routine = routine;
         this.address = address;
@@ -50,8 +51,7 @@ public class Create extends Event {
     @Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
-        Store store = new Store(address, new IConst(1, -1), SC);
-        store.setCLine(cLine);
+        Store store = new Store(address, new IConst(1, -1), SC, cLine);
 		events.add(store);
 
         switch (target){

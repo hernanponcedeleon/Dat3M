@@ -27,6 +27,11 @@ public abstract class Event implements Comparable<Event> {
 	protected transient BoolExpr execVar;
 
 	protected Set<Event> listeners = new HashSet<>();
+
+	protected Event(int cLine) {
+		filter = new HashSet<>();
+		this.cLine = cLine;
+	}
 	
 	protected Event(){
 		filter = new HashSet<>();
@@ -58,10 +63,6 @@ public abstract class Event implements Comparable<Event> {
 
 	public int getCLine() {
 		return cLine;
-	}
-
-	public void setCLine(int line) {
-		this.cLine = line;
 	}
 
 	public Event getSuccessor(){

@@ -13,13 +13,17 @@ public class Store extends MemEvent implements RegReaderData {
     protected final ExprInterface value;
     private final ImmutableSet<Register> dataRegs;
 
-    public Store(IExpr address, ExprInterface value, String mo){
-    	super(address, mo);
+    public Store(IExpr address, ExprInterface value, String mo, int cLine){
+    	super(address, mo, cLine);
         this.value = value;
         dataRegs = value.getRegs();
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.WRITE, EType.REG_READER);
     }
 
+    public Store(IExpr address, ExprInterface value, String mo){
+    	this(address, value, mo, -1);
+    }
+    
     protected Store(Store other){
         super(other);
         this.value = other.value;
