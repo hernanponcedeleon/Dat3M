@@ -49,7 +49,7 @@ public class RelCo extends Relation {
                     MemEvent w1 = (MemEvent) t.getFirst();
                     MemEvent w2 = (MemEvent) t.getSecond();
 
-                    if (w2.is(EType.INIT))
+                    if (w2.is(EType.INIT) || !w1.cfImpliesExec() || ! w2.cfImpliesExec())
                         continue;
                     if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
                         continue;

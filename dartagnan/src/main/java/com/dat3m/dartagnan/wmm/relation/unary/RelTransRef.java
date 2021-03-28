@@ -54,7 +54,7 @@ public class RelTransRef extends RelTrans {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             super.getMinTupleSet();
-            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.ANY))){
+            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
                 minTupleSet.add(new Tuple(e, e));
             }
 
@@ -69,7 +69,7 @@ public class RelTransRef extends RelTrans {
             for (Map.Entry<Event, Set<Event>> entry : transitiveReachabilityMap.entrySet()) {
                 entry.getValue().remove(entry.getKey());
             }
-            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.ANY))){
+            for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
                 maxTupleSet.add(new Tuple(e, e));
             }
         }
@@ -121,7 +121,7 @@ public class RelTransRef extends RelTrans {
             encodeTupleSet = temp;
 
             for(Tuple tuple : identityEncodeTupleSet){
-                enc = ctx.mkAnd(enc, this.getSMTVar(tuple, ctx));
+                enc = ctx.mkAnd(enc, ctx.mkEq(tuple.getFirst().exec(), this.getSMTVar(tuple, ctx)));
             }
             return enc;
         } catch (Throwable e){

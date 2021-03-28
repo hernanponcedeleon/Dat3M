@@ -60,14 +60,16 @@ abstract class BasicRegRelation extends StaticRelation {
                     // =============== Reduce set of writes ==================
                     //TODO: We assume that any Register-Write is always executed
                     // if it is contained in the program flow
-                    // This may fail for RMWReadCond!
+                    // This may fail for RMWReadCond?! It seems to work fine for the litmus tests though.
                     List<Event> possibleWriters = writers.stream().filter(x -> x.getCId() < regReader.getCId() && !eq.areMutuallyExclusive(x, regReader)).collect(Collectors.toList());
+
                     List<Event> impliedWriters = possibleWriters.stream().filter(x -> eq.isImplied(regReader, x)).collect(Collectors.toList());
                     if (!impliedWriters.isEmpty()) {
                         Event lastImplied = impliedWriters.get(impliedWriters.size() - 1);
                         possibleWriters.removeIf(x -> x.getCId() < lastImplied.getCId());
                     }
                     possibleWriters.removeIf(x -> possibleWriters.stream().anyMatch(y -> (x.getCId() < y.getCId()) && eq.isImplied(x ,y)));
+
                     // =========================
                     for (int i = 0; i < possibleWriters.size(); i++) {
                         Event regWriter = possibleWriters.get(i);

@@ -292,7 +292,7 @@ public abstract class Event implements Comparable<Event> {
 	}
 
 
-	//
+	// =============== Utility methods ==================
 
 	public boolean wasExecuted(Model model) {
 		return model.getConstInterp(exec()).isTrue();
@@ -300,6 +300,10 @@ public abstract class Event implements Comparable<Event> {
 
 	public boolean wasInControlFlow(Model model) {
 		return model.getConstInterp(cf()).isTrue();
+	}
+
+	public boolean cfImpliesExec() {
+		return cf() == exec();
 	}
 
 }

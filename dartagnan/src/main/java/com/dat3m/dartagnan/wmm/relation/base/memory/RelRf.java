@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.utils.EType;
+//import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -81,14 +81,14 @@ public class RelRf extends Relation {
                         continue;
 
                     List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
-                            .filter(e -> e.getThread() == read.getThread() || e.is(EType.INIT))
+                            .filter(e -> (e.getThread() == read.getThread() || e.is(EType.INIT)))
                             .map(x -> (MemEvent)x)
                             .sorted((o1, o2) -> o1.is(EType.INIT) == o2.is(EType.INIT) ? (o1.getCId() - o2.getCId()) : o1.is(EType.INIT) ? -1 : 1)
                             .collect(Collectors.toList());
                     Set<MemEvent> deletedWrites = new HashSet<>();
 
                     if (((MemEvent)read).getMaxAddressSet().size() == 1){
-                        List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x)).collect(Collectors.toList());
+                        List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
                         if (!impliedWrites.isEmpty()) {
                             Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
                             if (!lastImplied.is(EType.INIT)) {
@@ -98,20 +98,28 @@ public class RelRf extends Relation {
                             }
                         }
                     }
+                    //TODO: If a read can read from multiple addresses, we have to make sure that
+                    // we don't let writes of different addresses override each other
+                    List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(EType.INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());;
                     possibleWrites.stream().filter(x ->
-                            (x.is(EType.INIT) && possibleWrites.stream().anyMatch(y -> !y.is(EType.INIT) && eq.isImplied(x ,y)))
-                             || (!x.is(EType.INIT) && possibleWrites.stream().anyMatch(y -> !y.is(EType.INIT) && x.getCId() < y.getCId() && y.getMaxAddressSet().size() == 1 && eq.isImplied(x ,y))))
+                            (x.is(EType.INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
+                             || (!x.is(EType.INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))
                             .forEach(deletedWrites::add);
                     for (Event w : deletedWrites) {
                         deletedTuples.add(new Tuple(w, read));
                     }
                 }
+
                 maxTupleSet.removeAll(deletedTuples);
                 System.out.println("Removed past reads: " + deletedTuples.size());
                 System.out.println("Read-From after: " + maxTupleSet.size());
             }
         }
         return maxTupleSet;
+    }
+
+    private boolean isExcl(Event e) {
+        return e.cf() != e.exec();
     }
 
     @Override
