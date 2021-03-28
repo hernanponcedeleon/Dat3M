@@ -63,9 +63,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         Load load = new Load(resultRegister, address, mo);
-        load.setCLine(cLine);
 		events.add(load);
-
 
         switch (target) {
             case NONE: case TSO:

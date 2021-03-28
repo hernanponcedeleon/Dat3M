@@ -106,9 +106,7 @@ public class PthreadsProcedures {
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 		visitor.pool.add(threadPtr, threadName);
 		Location loc = visitor.programBuilder.getOrCreateLocation(threadPtr + "_active", -1);
-		Create child = new Create(threadPtr, threadName, loc.getAddress());
-		child.setCLine(visitor.currentLine);
-		visitor.programBuilder.addChild(visitor.threadCount, child);
+		visitor.programBuilder.addChild(visitor.threadCount, new Create(threadPtr, threadName, loc.getAddress(), visitor.currentLine));
 	}
 	
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {

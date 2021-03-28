@@ -156,7 +156,7 @@ public class Program {
 		while(getEvents().size() != size) {
 	    	size = getEvents().size();
 	    	one_step_simplify();    		
-		}		
+		}
 	}
 	
 	private void one_step_simplify() {

@@ -44,7 +44,6 @@ public class End extends Event {
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         Store store = new Store(address, new IConst(0, -1), SC);
-        store.setCLine(cLine);
 		events.add(store);
 
         switch (target){

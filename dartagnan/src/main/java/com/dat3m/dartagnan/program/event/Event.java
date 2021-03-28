@@ -36,8 +36,13 @@ public abstract class Event implements Comparable<Event> {
 
 	protected Set<Event> listeners = new HashSet<>();
 
+	protected Event(int cLine) {
+		filter = new HashSet<>();
+		this.cLine = cLine;
+	}
+
 	protected VerificationTask task;
-	
+
 	protected Event(){
 		filter = new HashSet<>();
 	}
@@ -269,8 +274,8 @@ public abstract class Event implements Comparable<Event> {
 
 	public BoolExpr getCfCond(){
 		return cfCond;
-	}	
-	
+	}
+
 	public void addCfCond(Context ctx, BoolExpr cond){
 		cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
 	}

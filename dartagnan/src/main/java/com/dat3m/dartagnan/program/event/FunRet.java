@@ -6,7 +6,8 @@ public class FunRet extends Event {
 
 	String funName;
 	
-	public FunRet(String funName) {
+	public FunRet(String funName, int cLine) {
+		super(cLine);
 		this.funName = funName;
         addFilters(EType.ANY);
 	}

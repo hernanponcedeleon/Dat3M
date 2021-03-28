@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -19,6 +20,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelRMW extends StaticRelation {
@@ -82,6 +84,18 @@ public class RelRMW extends StaticRelation {
             	}
             }
 
+            filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
+            for(Event end : program.getCache().getEvents(filter)){
+            	for(Event b : ((EndAtomic)end).getBlock()) {
+            		Event next = b.getSuccessor();
+            		while(next != null && !(next instanceof EndAtomic)) {
+            			baseMaxTupleSet.add(new Tuple(b, next));
+            			next = next.getSuccessor();
+            		}
+            		baseMaxTupleSet.add(new Tuple(b, end));
+            	}
+            }
+
             maxTupleSet = new TupleSet();
             maxTupleSet.addAll(baseMaxTupleSet);
 
@@ -96,7 +110,7 @@ public class RelRMW extends StaticRelation {
                 }
             }
             removeMutuallyExclusiveTuples(maxTupleSet);
-        }       	
+        }
         return maxTupleSet;
     }
 

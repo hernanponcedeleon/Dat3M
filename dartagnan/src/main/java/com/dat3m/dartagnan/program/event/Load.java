@@ -13,12 +13,16 @@ public class Load extends MemEvent implements RegWriter {
 
     protected final Register resultRegister;
 
-    public Load(Register register, IExpr address, String mo) {
-        super(address, mo);
+    public Load(Register register, IExpr address, String mo, int cLine) {
+        super(address, mo, cLine);
         this.resultRegister = register;
         addFilters(EType.ANY, EType.VISIBLE, EType.MEMORY, EType.READ, EType.REG_WRITER);
     }
 
+    public Load(Register register, IExpr address, String mo) {
+    	this(register, address, mo, -1);
+    }
+    
     protected Load(Load other){
         super(other);
         this.resultRegister = other.resultRegister;

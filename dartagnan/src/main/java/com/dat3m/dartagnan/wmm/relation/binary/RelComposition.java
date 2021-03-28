@@ -146,7 +146,6 @@ public class RelComposition extends BinaryRelation {
         for(Tuple tuple : encodeTupleSet) {
             enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
         }
-
         return enc;
     }
 

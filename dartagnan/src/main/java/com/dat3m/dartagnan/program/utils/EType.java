@@ -18,6 +18,6 @@ public class EType {
     public static final String REG_READER   = "rR";
     public static final String ASSERTION    = "ASS";
     public static final String BOUND   		= "BOUND";
-    public static final String ATOMIC    	= "A";
+    public static final String SVCOMPATOMIC	= "A-SVCOMP";
     public static final String LOCK    		= "L";
 }
