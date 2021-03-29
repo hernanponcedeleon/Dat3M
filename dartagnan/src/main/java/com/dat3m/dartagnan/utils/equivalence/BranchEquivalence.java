@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
+import com.dat3m.dartagnan.GlobalFlags;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
@@ -43,8 +44,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
              - the reachable-/impliedClasses will only contain themselves, the exclusiveClasses will be empty
     */
 
-    public static final boolean MERGE_BRANCHES = true;
-    public static final boolean ALWAYS_SPLIT_ON_JUMP = false;
+    public static final boolean MERGE_BRANCHES = GlobalFlags.MERGE_BRANCHES;
+    public static final boolean ALWAYS_SPLIT_ON_JUMP = GlobalFlags.ALWAYS_SPLIT_ON_JUMP;
 
 
     // ============================= State ==============================

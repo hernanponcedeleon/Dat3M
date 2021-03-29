@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.GlobalFlags;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -12,7 +13,7 @@ import java.util.*;
 
 public abstract class Event implements Comparable<Event> {
 
-	public static final boolean MERGE_CF_VARS = true;
+	public static final boolean MERGE_CF_VARS = GlobalFlags.MERGE_CF_VARS;
 
 	public static final int PRINT_PAD_EXTRA = 50;
 

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
+import com.dat3m.dartagnan.GlobalFlags;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -24,12 +25,6 @@ import java.util.*;
  */
 public class Wmm {
 
-    /*
-    For now, we use this constant flag to determine local consistency.
-    In general, we expect this property to be either automatically detected or
-    taken as additional input (e.g. via Settings).
-     */
-    private final static boolean IS_LOCALLY_CONSISTENT = true;
 
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
 
@@ -70,7 +65,7 @@ public class Wmm {
     }
 
     public boolean isLocallyConsistent() {
-        return IS_LOCALLY_CONSISTENT;
+        return GlobalFlags.ASSUME_LOCAL_CONSISTENCY;
     }
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){
