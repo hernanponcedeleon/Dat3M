@@ -84,15 +84,21 @@ public class RelRMW extends StaticRelation {
             	}
             }
 
+            // Atomics blocks: BeginAtomic -> EndAtomic
             filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
-            for(Event end : program.getCache().getEvents(filter)){
+            for(Event end : task.getProgram().getCache().getEvents(filter)){
             	for(Event b : ((EndAtomic)end).getBlock()) {
+            	    if (!b.is(EType.VISIBLE)) {
+            	        continue;
+                    }
             		Event next = b.getSuccessor();
             		while(next != null && !(next instanceof EndAtomic)) {
-            			baseMaxTupleSet.add(new Tuple(b, next));
+                        if (next.is(EType.VISIBLE)) {
+                            baseMaxTupleSet.add(new Tuple(b, next));
+                        }
             			next = next.getSuccessor();
             		}
-            		baseMaxTupleSet.add(new Tuple(b, end));
+            		//baseMaxTupleSet.add(new Tuple(b, end));
             	}
             }
 
@@ -118,7 +124,7 @@ public class RelRMW extends StaticRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
-        encodeTupleSet = baseMaxTupleSet;
+        encodeTupleSet = baseMaxTupleSet; //TODO: fix this to baseEncodeTupleSet
         BoolExpr enc = super.encodeApprox(ctx);
         encodeTupleSet = origEncodeTupleSet;
 

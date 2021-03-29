@@ -102,7 +102,7 @@ public class RelTrans extends UnaryRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
-        TupleSet minSet = getMinTupleSet();
+        TupleSet minSet = /*new TupleSet();*/ getMinTupleSet();
         TupleSet r1Max = r1.getMaxTupleSet();
         for(Tuple tuple : fullEncodeTupleSet){
             if (minSet.contains(tuple)) {

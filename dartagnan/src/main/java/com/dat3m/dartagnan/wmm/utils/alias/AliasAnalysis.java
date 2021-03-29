@@ -44,7 +44,7 @@ public class AliasAnalysis {
             processLocs(program);
             //TODO this is broken because it assumes that if e1:r1 <- &mem1 and e3:r2 <- r1, then r2 points to mem1.
             // But we can have later r2 <- &mem2 with a back jump to e2 (between e1 and e3) and thus r2 points to mem1 or mem2
-            processRegs(program);
+            //processRegs(program);
             algorithm(program);
             processResults(program);
         }

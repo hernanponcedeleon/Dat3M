@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,7 +22,7 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-    	String cat_file = com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat"; 
+    	String cat_file = SvcompProcedures.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, TIMEOUT, false);
@@ -32,7 +33,7 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         
         List<Object[]> data = new ArrayList<>();
 
-        /**/
+        /*
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl", wmm, s6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-2-O0.bpl", wmm, s6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench_longer-1-O0.bpl", wmm, s7});
@@ -41,11 +42,11 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/lazy01-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/singleton_with-uninit-problems-O0.bpl", wmm, s2});
-        /*
+        /**/
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-2-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1-O0.bpl", wmm, s6});
+        /*data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1-O0.bpl", wmm, s6});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longer-1-O0.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longest-1-O0.bpl", wmm, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack_longest-1-O0.bpl", wmm, s2});*/
         /**/
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-1-O0.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stateful01-2-O0.bpl", wmm, s1});
