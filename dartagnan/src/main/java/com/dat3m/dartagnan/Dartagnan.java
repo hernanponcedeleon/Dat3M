@@ -36,7 +36,6 @@ public class Dartagnan {
     public static void main(String[] args) throws IOException {
 
     	BasicConfigurator.configure();
-    	  
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);
@@ -50,8 +49,8 @@ public class Dartagnan {
             return;
         }
 
-        logger.info("Program Path " + options.getProgramFilePath());
-        logger.info("CAT File Path " + options.getTargetModelFilePath());
+        logger.info("Program path " + options.getProgramFilePath());
+        logger.info("CAT file path " + options.getTargetModelFilePath());
         logger.info("Settings " + options.getSettings());
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
@@ -70,8 +69,6 @@ public class Dartagnan {
         Settings settings = options.getSettings();
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
-
-        logger.info("Starting Dartagnan with " + (options.useISolver() ? "Incremental Solver" : "Two Solvers"));
         Result result = selectAndRunAnalysis(options, mcm, p, target, settings, ctx, s);
  
         if(options.getProgramFilePath().endsWith(".litmus")) {

@@ -15,10 +15,15 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.*;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelRf extends Relation {
 
+	private static final Logger logger = LogManager.getLogger(RelRf.class);
+	
     public RelRf(){
         term = "rf";
         forceDoEncode = true;
@@ -27,6 +32,7 @@ public class RelRf extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+        	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
 
             List<Event> eventsLoad = program.getCache().getEvents(FilterBasic.get(EType.READ));
@@ -51,6 +57,7 @@ public class RelRf extends Relation {
                     }
                 }
             }
+            logger.info("maxTupleSet size " + maxTupleSet.size());
         }
         return maxTupleSet;
     }
