@@ -57,7 +57,7 @@ public class RelRf extends Relation {
                     }
                 }
             }
-            logger.info("maxTupleSet size " + maxTupleSet.size());
+            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

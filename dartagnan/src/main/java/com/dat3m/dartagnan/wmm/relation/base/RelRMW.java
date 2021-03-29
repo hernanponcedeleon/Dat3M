@@ -80,6 +80,9 @@ public class RelRMW extends StaticRelation {
             for(Event end : program.getCache().getEvents(filter)){
             	for(Event b : ((EndAtomic)end).getBlock()) {
             		Event next = b.getSuccessor();
+            		if(!next.hasFilter(EType.VISIBLE)) {
+            			continue;
+            		}
             		while(next != null && !(next instanceof EndAtomic)) {
             			baseMaxTupleSet.add(new Tuple(b, next));
             			next = next.getSuccessor();
@@ -100,7 +103,7 @@ public class RelRMW extends StaticRelation {
                     }
                 }
             }
-            logger.info("maxTupleSet size " + maxTupleSet.size());
+            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
     }
