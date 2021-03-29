@@ -39,60 +39,32 @@ public class PthreadsProcedures {
 
 	public static void handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.contains("pthread_create")) {
+		switch(name) {
+		case "pthread_create":
 			pthread_create(visitor, ctx);
-			return;			
-		}
-		if(name.contains("pthread_cond_init")) {
-			// TODO: Implement this
-			return;			
-		}
-		if(name.contains("pthread_cond_wait")) {
-			// TODO: Implement this
-			return;			
-		}
-		if(name.contains("pthread_cond_signal")) {
-			// TODO: Implement this
-			return;			
-		}
-		if(name.contains("pthread_cond_broadcast")) {
-			// TODO: Implement this
-			return;			
-		}
-		if(name.contains("pthread_exit")) {
-			// TODO: Implement this
-			return;			
-		}
-		if(name.contains("pthread_getspecific")) {
-			throw new ParsingException(name + " cannot be handled");
-		}
-		if(name.contains("pthread_join")) {
+			break;
+		case "pthread_join":
 			pthread_join(visitor, ctx);
-			return;			
-		}
-		if(name.contains("pthread_key_create")) {
-			throw new ParsingException(name + " cannot be handled");
-		}
-		if(name.contains("pthread_mutex_init")) {
+			break;
+		case "pthread_cond_init":
+		case "pthread_cond_wait":
+		case "pthread_cond_signal":
+		case "pthread_cond_broadcast":
+		case "pthread_exit":
+		case "pthread_mutex_destroy":
+			break;
+		case "pthread_mutex_init":
 			mutexInit(visitor, ctx);
-			return;
-		}
-		if(name.contains("pthread_mutex_destroy")) {
-			// TODO: Implement this
-			return;			
-		}
-		if(name.contains("pthread_mutex_lock")) {
+			break;
+		case "pthread_mutex_lock":
 			mutexLock(visitor, ctx);
-			return;
-		}
-		if(name.contains("pthread_mutex_unlock")) {
+			break;
+		case "pthread_mutex_unlock":
 			mutexUnlock(visitor, ctx);
-			return;
-		}
-		if(name.contains("pthread_setspecific")) {
+			break;
+		default:
 			throw new ParsingException(name + " cannot be handled");
 		}
-    	throw new UnsupportedOperationException(name + " procedure is not part of PTHREADPROCEDURES");
 	}
 	
 	private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
