@@ -122,7 +122,7 @@ public class StdProcedures {
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);
 			size = Integer.parseInt(tmp);			
 		}
-		List<IConst> values = Collections.nCopies(size*4, new IConst(0, -1));
+		List<IConst> values = Collections.nCopies(size, new IConst(0, -1));
 		String ptr = ctx.call_params().Ident(0).getText();
 		Register start = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
