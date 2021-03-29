@@ -11,6 +11,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -28,8 +31,12 @@ import com.microsoft.z3.Solver;
 
 public class Dartagnan {
 
+	private static final Logger logger = LogManager.getLogger(Dartagnan.class);  
+	
     public static void main(String[] args) throws IOException {
 
+    	BasicConfigurator.configure();
+    	  
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);
@@ -43,6 +50,10 @@ public class Dartagnan {
             return;
         }
 
+        logger.info("Program Path " + options.getProgramFilePath());
+        logger.info("CAT File Path " + options.getTargetModelFilePath());
+        logger.info("Settings " + options.getSettings());
+        
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
 		
@@ -60,6 +71,7 @@ public class Dartagnan {
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
 
+        logger.info("Starting Dartagnan with " + (options.useISolver() ? "Incremental Solver" : "Two Solvers"));
         Result result = selectAndRunAnalysis(options, mcm, p, target, settings, ctx, s);
  
         if(options.getProgramFilePath().endsWith(".litmus")) {
