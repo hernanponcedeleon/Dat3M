@@ -30,6 +30,7 @@ public class Tuple implements Comparable<Tuple> {
     @Override
     public int hashCode() {
         return (first.getCId() << 16) + second.getCId();
+        //return first.getCId()*8191 + second.getCId();
     }
     // Notes on hashCode: Java's hashtable uses powers of two as capacity
     // for which modulo operations can be replaced by efficient bit masking.

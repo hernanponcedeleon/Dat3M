@@ -101,6 +101,7 @@ public class RelRMW extends StaticRelation {
             		//baseMaxTupleSet.add(new Tuple(b, end));
             	}
             }
+            removeMutuallyExclusiveTuples(baseMaxTupleSet);
 
             maxTupleSet = new TupleSet();
             maxTupleSet.addAll(baseMaxTupleSet);

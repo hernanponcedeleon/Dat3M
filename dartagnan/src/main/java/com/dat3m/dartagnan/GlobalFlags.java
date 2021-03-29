@@ -2,7 +2,7 @@ package com.dat3m.dartagnan;
 
 public class GlobalFlags {
     // === Parsing ===
-    public static final boolean ATOMIC_AS_LOCK = true;
+    public static final boolean ATOMIC_AS_LOCK = false;
 
     // === WMM Assumptions ===
     public static final boolean ASSUME_LOCAL_CONSISTENCY = true;
