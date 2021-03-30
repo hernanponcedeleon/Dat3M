@@ -47,9 +47,9 @@ public class Dartagnan {
             return;
         }
 
-        logger.info("Program path " + options.getProgramFilePath());
-        logger.info("CAT file path " + options.getTargetModelFilePath());
-        logger.info("Settings " + options.getSettings());
+        logger.info("Program path: " + options.getProgramFilePath());
+        logger.info("CAT file path: " + options.getTargetModelFilePath());
+        logger.info("Bound: " + options.getSettings().getBound());
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
