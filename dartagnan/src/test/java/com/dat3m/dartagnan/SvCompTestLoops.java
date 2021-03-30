@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 
+import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -21,6 +22,10 @@ public class SvCompTestLoops extends AbstractSvCompTest {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
+    	
+    	//DOMConfigurator is used to configure logger from xml configuration file
+        DOMConfigurator.configure("../log4j.xml");
+    	
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/sc.cat"));
 
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, true);
