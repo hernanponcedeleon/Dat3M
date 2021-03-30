@@ -22,7 +22,12 @@ import com.microsoft.z3.Context;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 public class RelRMW extends StaticRelation {
+
+	private static final Logger logger = LogManager.getLogger(RelRMW.class);
 
     private final FilterAbstract loadFilter  = FilterIntersection.get(
             FilterBasic.get(EType.EXCL),
@@ -51,6 +56,7 @@ public class RelRMW extends StaticRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+        	logger.info("Computing maxTupleSet for " + getName());
             baseMaxTupleSet = new TupleSet();
             FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.WRITE));
             for(Event store : program.getCache().getEvents(filter)){
@@ -74,6 +80,9 @@ public class RelRMW extends StaticRelation {
             for(Event end : program.getCache().getEvents(filter)){
             	for(Event b : ((EndAtomic)end).getBlock()) {
             		Event next = b.getSuccessor();
+            		if(!next.hasFilter(EType.VISIBLE)) {
+            			continue;
+            		}
             		while(next != null && !(next instanceof EndAtomic)) {
             			baseMaxTupleSet.add(new Tuple(b, next));
             			next = next.getSuccessor();
@@ -94,6 +103,7 @@ public class RelRMW extends StaticRelation {
                     }
                 }
             }
+            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

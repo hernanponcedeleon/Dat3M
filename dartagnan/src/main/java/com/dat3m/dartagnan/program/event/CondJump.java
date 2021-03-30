@@ -44,6 +44,10 @@ public class CondJump extends Event implements RegReaderData {
         return label;
     }
 
+    public BExpr getGuard(){
+        return expr;
+    }
+
     @Override
     public ImmutableSet<Register> getDataRegs(){
         return dataRegs;
@@ -138,7 +142,7 @@ public class CondJump extends Event implements RegReaderData {
             BoolExpr ifCond = expr.toZ3Bool(this, ctx);
             label.addCfCond(ctx, ctx.mkAnd(ifCond, cfVar));
             cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx));
-            cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
+//            cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
         }
         return cfEnc;
     }
