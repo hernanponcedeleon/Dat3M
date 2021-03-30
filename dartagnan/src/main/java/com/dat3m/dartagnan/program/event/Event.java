@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.GlobalFlags;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -151,22 +152,49 @@ public abstract class Event implements Comparable<Event> {
     	throw new UnsupportedOperationException("notify is not allowed for " + getClass().getSimpleName());
     }
     
-    public void simplify(Event predecessor) {
-		if(successor != null){
+    public final void simplify(Event predecessor) {
+		/*if(successor != null){
 			successor.simplify(this);
-		}
+		}*/
+		RecursiveAction.execute(() -> simplifyRecursive(predecessor, GlobalFlags.MAX_RECURSION_DEPTH));
     }
+
+    protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
+		if (successor != null) {
+			if (depth > 0) {
+				return successor.simplifyRecursive(this, depth - 1);
+			} else {
+				return RecursiveAction.call(() -> successor.simplifyRecursive(this, GlobalFlags.MAX_RECURSION_DEPTH));
+			}
+		}
+		return RecursiveAction.done();
+	}
 
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    public int setUId(int nextId) {
-    	uId = nextId++;
+    public final int setUId(int nextId) {
+    	/*uId = nextId++;
     	if(successor != null) {
     		nextId = successor.setUId(nextId);
     	}
-	    return nextId;
+	    return nextId;*/
+		return RecursiveFunction.execute(() -> setUIdRecursive(nextId, GlobalFlags.MAX_RECURSION_DEPTH));
     }
+
+	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
+		uId = nextId;
+		if (successor != null) {
+			if (depth > 0) {
+				return successor.setUIdRecursive(nextId + 1, depth - 1);
+			} else {
+				return RecursiveFunction.call(() -> successor.setUIdRecursive(nextId + 1, GlobalFlags.MAX_RECURSION_DEPTH));
+			}
+		}
+		return RecursiveFunction.done(nextId + 1);
+	}
+
+	// --------------------------------
 
     public void unroll(int bound, Event predecessor) {
     	Event copy = this;
@@ -181,7 +209,6 @@ public abstract class Event implements Comparable<Event> {
     	if(successor != null) {
     		successor.unroll(bound, copy);
     	}
-	    return;
     }
 
 	public Event getCopy(){

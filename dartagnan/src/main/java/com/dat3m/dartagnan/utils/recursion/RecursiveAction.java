@@ -33,6 +33,10 @@ public abstract class RecursiveAction {
         });
     }
 
+    public static void execute(Supplier<RecursiveAction> call) {
+        call(call).execute();
+    }
+
 
     // ===================== Inner classes =====================
 

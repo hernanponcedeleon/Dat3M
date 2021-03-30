@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.GlobalFlags;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -90,7 +92,7 @@ public class CondJump extends Event implements RegReaderData {
     	}
     }
     
-    @Override
+    /*@Override
     public void simplify(Event predecessor) {
     	Event prev = this;
     	Event next = successor;
@@ -107,6 +109,32 @@ public class CondJump extends Event implements RegReaderData {
 		if(next != null){
 			next.simplify(prev);
 		}
+    }*/
+
+    @Override
+    protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
+        Event prev = this;
+        Event next = successor;
+        // If the label immediately follows and the condition is either true or false we can remove the jump
+        // (in both cases the next executed event is the successor)
+        if(label.equals(successor) && expr instanceof BConst) {
+            prev = predecessor;
+            // If the label is only the target of the removed jump, we can also remove the label
+            if(label.listeners.size() == 1) {
+                next = successor.getSuccessor();
+            }
+            predecessor.setSuccessor(next);
+        }
+        if(next != null){
+            if (depth > 0) {
+                return next.simplifyRecursive(prev, depth - 1);
+            } else {
+                Event finalNext = next;
+                Event finalPrev = prev;
+                return RecursiveAction.call(() -> finalNext.simplifyRecursive(finalPrev, GlobalFlags.MAX_RECURSION_DEPTH));
+            }
+        }
+        return RecursiveAction.done();
     }
 
     @Override
