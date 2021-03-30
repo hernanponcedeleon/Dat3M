@@ -11,9 +11,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.xml.DOMConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -35,9 +34,6 @@ public class Dartagnan {
 	
     public static void main(String[] args) throws IOException {
 
-    	//DOMConfigurator is used to configure logger from xml configuration file
-        DOMConfigurator.configure("log4j.xml");
- 
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);

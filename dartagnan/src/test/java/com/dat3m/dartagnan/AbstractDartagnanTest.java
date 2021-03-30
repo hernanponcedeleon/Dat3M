@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 
-import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Test;
 
 import java.io.File;
@@ -31,10 +30,6 @@ import static org.junit.Assert.fail;
 public abstract class AbstractDartagnanTest {
 
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
-    	
-    	//DOMConfigurator is used to configure logger from xml configuration file
-        DOMConfigurator.configure("../log4j.xml");
-    	
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));

@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 
-import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -22,10 +21,6 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-    	
-    	//DOMConfigurator is used to configure logger from xml configuration file
-        DOMConfigurator.configure("../log4j.xml");
-    	
     	String cat_file = com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat"; 
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 

@@ -42,7 +42,10 @@ public class SVCOMPRunner {
 	        tmp.delete();
 
 	    	ArrayList<String> cmd = new ArrayList<String>();
-	    	cmd.addAll(asList("java", "-DLOGNAME=" + file.getName(), "-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
+	    	cmd.add("java");
+	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
+	    	cmd.add("-DLOGNAME=" + file.getName());
+	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
 	    	cmd.addAll(asList("-i", System.getenv().get("DAT3M_HOME") + "/output/" +
 				file.getName().substring(0, file.getName().lastIndexOf('.')) +
 				"-" + options.getOptimization() + ".bpl"));

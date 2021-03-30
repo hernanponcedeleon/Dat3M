@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;

@@ -5,8 +5,8 @@ import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.microsoft.z3.Status.SATISFIABLE;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
@@ -20,7 +20,7 @@ import com.microsoft.z3.Solver;
 
 public class Base {
 	
-	private static final Logger logger = LogManager.getLogger(Base.class);  
+    private static final Logger logger = LogManager.getLogger(Base.class);
 	
     public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
     	program.simplify();
