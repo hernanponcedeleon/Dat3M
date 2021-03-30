@@ -25,7 +25,7 @@ public class Irreflexive extends Axiom {
     public TupleSet getEncodeTupleSet(){
         TupleSet set = new TupleSet();
         for(Tuple tuple : rel.getMaxTupleSet()){
-            if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
+            if(tuple.isLoop()){
                 set.add(tuple);
             }
         }

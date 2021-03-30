@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.Context;
 
+import java.util.Set;
+
 /**
  *
  * @author Florian Furbach
@@ -41,8 +43,7 @@ public class RelIntersection extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            maxTupleSet.addAll(Sets.intersection(r1.getMaxTupleSet(), r2.getMaxTupleSet()));
+            maxTupleSet = new TupleSet(Sets.intersection(r1.getMaxTupleSet(), r2.getMaxTupleSet()));
         }
         return maxTupleSet;
     }

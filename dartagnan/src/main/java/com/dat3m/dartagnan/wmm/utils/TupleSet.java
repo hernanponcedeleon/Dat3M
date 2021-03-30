@@ -19,6 +19,7 @@ public class TupleSet implements Set<Tuple>{
 
     public TupleSet(Collection<? extends Tuple> c) {
         tuples = new HashSet<>(c);
+        isUpdated = !tuples.isEmpty();
     }
 
     @Override

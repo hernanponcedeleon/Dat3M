@@ -33,12 +33,7 @@ public class Acyclic extends Axiom {
         Map<Event, Collection<Event>> succMap = new HashMap<>();
         TupleSet relMaxTuple = rel.getMaxTupleSet();
         for (Tuple t : relMaxTuple) {
-            Event e1 = t.getFirst();
-            Event e2 = t.getSecond();
-            if (!succMap.containsKey(e1)) {
-                succMap.put(e1, new ArrayList<>());
-            }
-            succMap.get(e1).add(e2);
+            succMap.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t.getSecond());
         }
 
         // ====== Compute SCCs ======

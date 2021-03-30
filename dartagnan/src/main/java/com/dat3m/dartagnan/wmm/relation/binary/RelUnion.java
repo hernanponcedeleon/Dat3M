@@ -42,9 +42,7 @@ public class RelUnion extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            maxTupleSet.addAll(r1.getMaxTupleSet());
-            maxTupleSet.addAll(r2.getMaxTupleSet());
+            maxTupleSet = new TupleSet(Sets.union(r1.getMaxTupleSet(), r2.getMaxTupleSet()));
         }
         return maxTupleSet;
     }

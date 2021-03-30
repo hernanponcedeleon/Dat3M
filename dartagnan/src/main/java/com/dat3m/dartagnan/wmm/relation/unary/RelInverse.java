@@ -51,8 +51,7 @@ public class RelInverse extends UnaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        TupleSet activeSet = new TupleSet(Sets.intersection(tuples, maxTupleSet));
-        activeSet.removeAll(encodeTupleSet);
+        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
         if(!activeSet.isEmpty()){

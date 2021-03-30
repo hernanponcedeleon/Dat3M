@@ -46,8 +46,7 @@ public class RelDomainIdentity extends UnaryRelation {
 
     @Override
     public void addEncodeTupleSet(TupleSet tuples){
-        Set<Tuple> activeSet = new HashSet<>(Sets.intersection(tuples, maxTupleSet));
-        activeSet.removeAll(encodeTupleSet);
+        TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
         //TODO: Optimize this using minTupleSets

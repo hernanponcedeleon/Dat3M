@@ -43,8 +43,7 @@ public class RelMinus extends BinaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            minTupleSet.addAll(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSet()));
+            minTupleSet = new TupleSet(Sets.difference(r1.getMinTupleSet(), r2.getMaxTupleSet()));
         }
         return minTupleSet;
     }
@@ -52,8 +51,7 @@ public class RelMinus extends BinaryRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            maxTupleSet = new TupleSet();
-            maxTupleSet.addAll(Sets.difference(r1.getMaxTupleSet(), r2.getMinTupleSet()));
+            maxTupleSet = new TupleSet(Sets.difference(r1.getMaxTupleSet(), r2.getMinTupleSet()));
             r2.getMaxTupleSet();
         }
         return maxTupleSet;
