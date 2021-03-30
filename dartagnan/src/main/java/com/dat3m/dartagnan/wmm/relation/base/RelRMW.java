@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
@@ -125,7 +126,8 @@ public class RelRMW extends StaticRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
-        encodeTupleSet = baseMaxTupleSet; //TODO: fix this to baseEncodeTupleSet
+        TupleSet baseEncodeTupleSet = new TupleSet(Sets.intersection(encodeTupleSet, baseMaxTupleSet));
+        encodeTupleSet = baseEncodeTupleSet;
         BoolExpr enc = super.encodeApprox(ctx);
         encodeTupleSet = origEncodeTupleSet;
 
