@@ -7,7 +7,11 @@
       <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
     </Console>
 	
+	<!--
+	This is the one we need to use for SVCOMP
 	<File name="File" fileName="output/logs/${sys:LOGNAME}.log">
+	-->
+	<File name="File" fileName="output/logs/dartagnan.log">
 	  <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
     </File>
     
