@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
+import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
@@ -33,7 +34,8 @@ public class Dartagnan {
 	private static final Logger logger = LogManager.getLogger(Dartagnan.class);  
 	
     public static void main(String[] args) throws IOException {
-
+    	
+    	CreateGitInfo();
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);
