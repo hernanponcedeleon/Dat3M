@@ -72,12 +72,21 @@ public class Label extends Event {
     	return copy;
     }
 
-    @Override
+    /*@Override
     public void unroll(int bound, Event predecessor) {
     	super.unroll(bound, predecessor);
     	for(Event jump : listeners) {
     		jump.notify(this);
     	}
+    }*/
+
+    @Override
+    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
+        return super.unrollRecursive(bound, predecessor, depth).then( () -> {
+            for (Event jump : listeners) {
+                jump.notify(this);
+            }
+        });
     }
 
     // Compilation

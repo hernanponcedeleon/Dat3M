@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.arch.aarch64.event;
 
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -47,8 +48,13 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public void unroll(int bound, Event predecessor) {
+        throw new RuntimeException("RMWStoreExclusive cannot be unrolled: event must be generated during compilation");
+    }*/
+
+    @Override
+    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         throw new RuntimeException("RMWStoreExclusive cannot be unrolled: event must be generated during compilation");
     }
 }

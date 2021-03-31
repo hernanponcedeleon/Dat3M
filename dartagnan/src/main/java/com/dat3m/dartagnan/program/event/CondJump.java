@@ -150,7 +150,7 @@ public class CondJump extends Event implements RegReaderData {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public void unroll(int bound, Event predecessor) {
         if(label.getOId() < oId){
         	if(bound > 1) {
@@ -167,6 +167,29 @@ public class CondJump extends Event implements RegReaderData {
     	    return;
         }
         super.unroll(bound, predecessor);
+    }*/
+
+    @Override
+    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
+        if(label.getOId() < oId){
+            if(bound > 1) {
+                predecessor = copyPath(label, successor, predecessor);
+            }
+            Event next = predecessor;
+            if(bound == 1) {
+                next = new BoundEvent();
+                predecessor.setSuccessor(next);
+            }
+            if(successor != null) {
+                if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+                    return successor.unrollRecursive(bound, next, depth + 1);
+                } else {
+                    Event finalNext = next;
+                    return RecursiveAction.call(() -> successor.unrollRecursive(bound, finalNext, 0));
+                }
+            }
+        }
+        return super.unrollRecursive(bound, predecessor, depth);
     }
 
 

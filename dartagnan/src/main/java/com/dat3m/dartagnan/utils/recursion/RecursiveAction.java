@@ -18,6 +18,14 @@ public abstract class RecursiveAction {
         return new Then(this, then);
     }
 
+    public RecursiveAction then(Supplier<RecursiveAction> call) {
+        return new Then(this, call(call));
+    }
+
+    public RecursiveAction then(Runnable call) {
+        return new Then(this, call(call));
+    }
+
     public static RecursiveAction done() {
         return DONE;
     }

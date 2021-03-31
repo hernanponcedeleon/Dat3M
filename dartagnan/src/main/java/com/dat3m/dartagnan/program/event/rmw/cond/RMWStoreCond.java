@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.rmw.cond;
 
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -41,8 +42,13 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public void unroll(int bound, Event predecessor) {
+        throw new RuntimeException("RMWStoreCond cannot be unrolled: event must be generated during compilation");
+    }*/
+
+    @Override
+    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         throw new RuntimeException("RMWStoreCond cannot be unrolled: event must be generated during compilation");
     }
 }

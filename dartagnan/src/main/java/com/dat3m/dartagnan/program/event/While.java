@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -51,7 +52,7 @@ public class While extends Event implements RegReaderData {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
+	/*@Override
 	public void unroll(int bound, Event predecessor) {
 		if(successor != null){
 			int currentBound = bound;
@@ -79,6 +80,41 @@ public class While extends Event implements RegReaderData {
 			return;
 		}
 
+		throw new RuntimeException("Malformed While event");
+	}*/
+
+	@Override
+	public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
+		// Note: For ease of implementation, the depth-parameter is not used (i.e. the call stack is always cleared)
+		// But it can be incorporated if needed!
+		if(successor != null){
+			int currentBound = bound;
+
+			RecursiveAction action = RecursiveAction.done();
+			while(currentBound > 0){
+				Skip exitMainBranch = exitEvent.getCopy();
+				Skip exitElseBranch = exitEvent.getCopy();
+				If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+				ifEvent.oId = oId;
+
+				predecessor.setSuccessor(ifEvent);
+				predecessor = copyPath(successor, exitEvent, ifEvent);
+				predecessor.setSuccessor(exitMainBranch);
+				exitMainBranch.setSuccessor(exitElseBranch);
+				predecessor = exitElseBranch;
+
+				int finalCurrentBound = currentBound;
+				action = action.then(() -> ifEvent.successor.unrollRecursive(finalCurrentBound, ifEvent, 0));
+				currentBound--;
+			}
+
+			predecessor.setSuccessor(exitEvent.getSuccessor());
+			if(predecessor.getSuccessor() != null){
+				Event finalPredecessor = predecessor;
+				action = action.then(() -> finalPredecessor.getSuccessor().unrollRecursive(bound, finalPredecessor, 0));
+			}
+			return action;
+		}
 		throw new RuntimeException("Malformed While event");
 	}
 
