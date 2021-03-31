@@ -14,6 +14,9 @@ public class GlobalSettings {
     public static final boolean MERGE_BRANCHES = true;
     public static final boolean ALWAYS_SPLIT_ON_JUMP = false;
 
+    // === Static analysis ===
+    public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
+
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;
 

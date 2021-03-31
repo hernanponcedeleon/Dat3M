@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Global;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Thread;
 
@@ -98,16 +99,32 @@ public abstract class Event implements Comparable<Event> {
 		if (thread != null && !thread.equals(this.thread)) {
 			this.thread = thread;
 			if (successor != null)
+				//TODO: Get rid of this recursion completely
 				successor.setThread(thread);
 		}
 	}
 
-	public LinkedList<Event> getSuccessors(){
-		LinkedList<Event> result = successor != null
+	public final List<Event> getSuccessors(){
+		/*LinkedList<Event> result = successor != null
 				? successor.getSuccessors()
 				: new LinkedList<>();
 		result.addFirst(this);
-		return result;
+		return result;*/
+		List<Event> events = new ArrayList<>();
+		getSuccessorsRecursive(events, 0).execute();
+		return events;
+	}
+
+	protected RecursiveAction getSuccessorsRecursive(List<Event> list, int depth) {
+		list.add(this);
+		if (successor != null) {
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+				return successor.getSuccessorsRecursive(list, depth + 1);
+			} else {
+				return RecursiveAction.call(() -> successor.getSuccessorsRecursive(list, 0));
+			}
+		}
+		return RecursiveAction.done();
 	}
 
 	public String label(){
@@ -249,15 +266,29 @@ public abstract class Event implements Comparable<Event> {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    public int compile(Arch target, int nextId, Event predecessor) {
-		cId = nextId++;
+    public final int compile(Arch target, int nextId, Event predecessor) {
+		/*cId = nextId++;
 		if(successor != null){
 			return successor.compile(target, nextId, this);
 		}
-        return nextId;
+        return nextId;*/
+		return compileRecursive(target, nextId, predecessor, 0).execute();
     }
 
-    protected int compileSequence(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence){
+	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+		cId = nextId++;
+		if(successor != null){
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+				return successor.compileRecursive(target, nextId, this, depth + 1);
+			} else {
+				int finalNextId = nextId;
+				return RecursiveFunction.call(() -> successor.compileRecursive(target, finalNextId, this, 0));
+			}
+		}
+		return RecursiveFunction.done(nextId);
+	}
+
+    protected final int compileSequence(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence){
         for(Event e : sequence){
         	e.oId = oId;
 			e.uId = uId;
@@ -271,6 +302,27 @@ public abstract class Event implements Comparable<Event> {
         }
         return nextId;
     }
+
+	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence, int depth){
+		for(Event e : sequence){
+			e.oId = oId;
+			e.uId = uId;
+			e.cId = nextId++;
+			predecessor.setSuccessor(e);
+			predecessor = e;
+		}
+		if(successor != null){
+			predecessor.successor = successor;
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+				return successor.compileRecursive(target, nextId, predecessor, depth + 1);
+			} else {
+				Event finalPredecessor = predecessor;
+				int finalNextId = nextId;
+				return RecursiveFunction.call(() -> successor.compileRecursive(target, finalNextId, finalPredecessor, 0));
+			}
+		}
+		return RecursiveFunction.done(nextId);
+	}
 
 	public void delete(Event pred) {
 		if (pred != null) {

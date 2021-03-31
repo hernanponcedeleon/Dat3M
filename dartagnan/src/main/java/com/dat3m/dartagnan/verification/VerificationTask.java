@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.verification;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -17,8 +18,6 @@ import java.util.*;
 Represents a verification task.
  */
 public class VerificationTask {
-
-    public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
 
     private final Program program;
     private final Wmm memoryModel;
@@ -57,7 +56,7 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
-        if (PERFORM_DEAD_CODE_ELIMINATION) {
+        if (GlobalSettings.PERFORM_DEAD_CODE_ELIMINATION) {
             program.eliminateDeadCode();
         }
         // AssertionInline depends on compiled events (copies)

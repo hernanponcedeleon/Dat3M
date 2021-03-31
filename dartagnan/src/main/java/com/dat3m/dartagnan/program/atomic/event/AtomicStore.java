@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -59,7 +60,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         Store store = new Store(address, value, mo);
@@ -92,5 +93,40 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
         return compileSequence(target, nextId, predecessor, events);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        LinkedList<Event> events = new LinkedList<>();
+        Store store = new Store(address, value, mo);
+        events.add(store);
+
+        switch (target){
+            case NONE:
+                break;
+            case TSO:
+                if(SC.equals(mo)){
+                    events.addLast(new Fence("Mfence"));
+                }
+                break;
+            case POWER:
+                if(RELEASE.equals(mo)){
+                    events.addFirst(new Fence("Lwsync"));
+                } else if(SC.equals(mo)){
+                    events.addFirst(new Fence("Sync"));
+                }
+                break;
+            case ARM: case ARM8:
+                if(RELEASE.equals(mo) || SC.equals(mo)){
+                    events.addFirst(new Fence("Ish"));
+                    if(SC.equals(mo)){
+                        events.addLast(new Fence("Ish"));
+                    }
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+        }
+        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

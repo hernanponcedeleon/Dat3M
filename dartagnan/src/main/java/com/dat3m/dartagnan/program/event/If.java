@@ -1,7 +1,10 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -86,7 +89,7 @@ public class If extends Event implements RegReaderData {
         return dataRegs;
     }
 
-    @Override
+    /*@Override
     public LinkedList<Event> getSuccessors(){
         if(cId > -1){
             LinkedList<Event> result = successorMain.getSuccessors();
@@ -98,6 +101,23 @@ public class If extends Event implements RegReaderData {
             return result;
         }
         return super.getSuccessors();
+    }*/
+
+    @Override
+    public RecursiveAction getSuccessorsRecursive(List<Event> list, int depth){
+        if(cId > -1){
+            list.add(this);
+            //Note: For ease of implementation, we clear the call stack no matter the depth
+            return RecursiveAction
+                    .call(() -> successorMain.getSuccessorsRecursive(list, 0))
+                    .then(() -> successorElse.getSuccessorsRecursive(list, 0))
+                    .then(() -> {
+                        if(successor != null) {
+                            successor.getSuccessorsRecursive(list, 0);
+                        }
+                    });
+        }
+        return super.getSuccessorsRecursive(list, depth);
     }
 
     @Override
@@ -129,7 +149,7 @@ public class If extends Event implements RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         cId = nextId++;
         if(successor == null){
@@ -144,6 +164,25 @@ public class If extends Event implements RegReaderData {
         exitElseBranch.successor = null;
 
         return nextId;
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        cId = nextId++;
+        if(successor == null){
+            throw new RuntimeException("Malformed If event");
+        }
+        int finalNextId = nextId;
+        return RecursiveFunction
+                .call(() -> successor.compileRecursive(target, finalNextId, predecessor, 0))
+                .then( retVal ->  {
+                    successorMain = successor;
+                    successorElse = exitMainBranch.successor;
+                    successor = exitElseBranch.successor;
+                    exitMainBranch.successor = null;
+                    exitElseBranch.successor = null;
+                    return RecursiveFunction.done(retVal);
+                });
     }
 
 

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.arch.pts.event;
 
 import com.dat3m.dartagnan.program.arch.pts.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -59,7 +60,7 @@ public class Write extends MemEvent implements RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         events.add(new Store(address, value, mo));
@@ -92,5 +93,40 @@ public class Write extends MemEvent implements RegReaderData {
         }
 
         return compileSequence(target, nextId, predecessor, events);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        LinkedList<Event> events = new LinkedList<>();
+        events.add(new Store(address, value, mo));
+
+        switch (target){
+            case NONE:
+                break;
+            case TSO:
+                if(Mo.SC.equals(mo)){
+                    events.addLast(new Fence("Mfence"));
+                }
+                break;
+            case POWER:
+                if(Mo.RELEASE.equals(mo)){
+                    events.addFirst(new Fence("Lwsync"));
+                } else if(Mo.SC.equals(mo)){
+                    events.addFirst(new Fence("Sync"));
+                }
+                break;
+            case ARM: case ARM8:
+                if(Mo.RELEASE.equals(mo) || Mo.SC.equals(mo)){
+                    events.addFirst(new Fence("Ish"));
+                    if(Mo.SC.equals(mo)){
+                        events.addLast(new Fence("Ish"));
+                    }
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+        }
+
+        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

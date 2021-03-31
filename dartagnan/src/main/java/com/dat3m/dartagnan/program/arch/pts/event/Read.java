@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.LinkedList;
@@ -54,7 +55,7 @@ public class Read extends MemEvent implements RegWriter {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         events.add(new Load(resultRegister, address, mo));
@@ -80,5 +81,33 @@ public class Read extends MemEvent implements RegWriter {
         }
 
         return compileSequence(target, nextId, predecessor, events);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        LinkedList<Event> events = new LinkedList<>();
+        events.add(new Load(resultRegister, address, mo));
+
+        switch (target) {
+            case NONE: case TSO:
+                break;
+            case POWER:
+                if(Mo.SC.equals(mo) || Mo.ACQUIRE.equals(mo) || Mo.CONSUME.equals(mo)){
+                    events.addLast(new Fence("Lwsync"));
+                    if(Mo.SC.equals(mo)){
+                        events.addFirst(new Fence("Sync"));
+                    }
+                }
+                break;
+            case ARM: case ARM8:
+                if(Mo.SC.equals(mo) || Mo.ACQUIRE.equals(mo) || Mo.CONSUME.equals(mo)) {
+                    events.addLast(new Fence("Ish"));
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+        }
+
+        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

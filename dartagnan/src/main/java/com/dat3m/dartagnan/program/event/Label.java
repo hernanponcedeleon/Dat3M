@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class Label extends Event {
@@ -92,13 +93,23 @@ public class Label extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
     	nextId = super.compile(target, nextId, predecessor);
     	for(Event jump : listeners) {
     		jump.notify(this);
     	}
     	return nextId;
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        return super.compileRecursive(target, nextId, predecessor, depth).then(retVal ->  {
+            for(Event jump : listeners) {
+                jump.notify(this);
+            }
+            return RecursiveFunction.done(retVal);
+        });
     }
 
 }

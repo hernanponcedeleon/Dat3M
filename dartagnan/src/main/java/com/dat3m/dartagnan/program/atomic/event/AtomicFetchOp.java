@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -48,7 +49,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
     	switch(target) {
     		case NONE: case TSO:
@@ -63,5 +64,22 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     	        String tag = mo != null ? "_explicit" : "";
     	        throw new RuntimeException("Compilation of atomic_fetch_" + op.toLinuxName() + tag + " is not implemented for " + target);    			
     	}
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        switch(target) {
+            case NONE: case TSO:
+                RMWLoad load = new RMWLoad(resultRegister, address, mo);
+                Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+                Local add = new Local(dummyReg, new IExprBin(resultRegister, op, value));
+                RMWStore store = new RMWStore(load, address, dummyReg, mo);
+
+                LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, add, store));
+                return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+            default:
+                String tag = mo != null ? "_explicit" : "";
+                throw new RuntimeException("Compilation of atomic_fetch_" + op.toLinuxName() + tag + " is not implemented for " + target);
+        }
     }
 }

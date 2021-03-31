@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class InitLock extends Event {
@@ -43,10 +44,17 @@ public class InitLock extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         events.add(new Store(address, value, SC));
         return compileSequence(target, nextId, predecessor, events);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        LinkedList<Event> events = new LinkedList<>();
+        events.add(new Store(address, value, SC));
+        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -26,7 +27,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
                 EType.RMW, EType.REG_WRITER, EType.REG_READER);
     }
 
-    AtomicAbstract(AtomicAbstract other){
+    AtomicAbstract(AtomicAbstract other) {
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;
@@ -39,7 +40,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs(){
+    public ImmutableSet<Register> getDataRegs() {
         return dataRegs;
     }
 
@@ -47,8 +48,13 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
+        throw new RuntimeException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         throw new RuntimeException("Compilation to " + target + " is not supported for " + getClass().getName() + " " + mo);
     }
 }

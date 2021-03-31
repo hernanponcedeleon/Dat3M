@@ -9,7 +9,6 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProced
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.ATOMIC_AS_LOCK;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmFunctions.LLVMFUNCTIONS;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +43,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.IfExpr;
-import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser.And_exprContext;
@@ -155,7 +154,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
     @Override
     public Object visitMain(MainContext ctx) {
-        logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
+        logger.info("ATOMIC_AS_LOCK: " + GlobalSettings.ATOMIC_AS_LOCK);
     	for(Func_declContext funDecContext : ctx.func_decl()) {
     		visitFunc_decl(funDecContext);
     	}
@@ -410,7 +409,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
-			if(ATOMIC_AS_LOCK) {
+			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				SvcompProcedures.__VERIFIER_atomic(this, true);	
 			} else {
 				currentBeginAtomic = new BeginAtomic();
@@ -438,7 +437,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
-			if(ATOMIC_AS_LOCK) {
+			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				SvcompProcedures.__VERIFIER_atomic(this, false);	
 			} else {
 				if(currentBeginAtomic == null) {

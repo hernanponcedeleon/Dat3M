@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class Unlock extends Event {
@@ -67,7 +68,7 @@ public class Unlock extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         events.add(new Load(reg, address, SC));
@@ -77,5 +78,17 @@ public class Unlock extends Event {
         	e.addFilters(EType.LOCK, EType.RMW);
         }
         return compileSequence(target, nextId, predecessor, events);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        LinkedList<Event> events = new LinkedList<>();
+        events.add(new Load(reg, address, SC));
+        events.add(new CondJump(new Atom(reg, NEQ, new IConst(1, -1)),label));
+        events.add(new Store(address, new IConst(0, -1), SC));
+        for(Event e : events) {
+            e.addFilters(EType.LOCK, EType.RMW);
+        }
+        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

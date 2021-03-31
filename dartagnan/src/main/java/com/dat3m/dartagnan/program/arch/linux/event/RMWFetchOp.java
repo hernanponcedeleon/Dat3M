@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.Arrays;
@@ -49,7 +50,7 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         if(target == Arch.NONE) {
             Register dummy = resultRegister;
@@ -71,5 +72,29 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
             return compileSequence(target, nextId, predecessor, events);
         }
         return super.compile(target, nextId, predecessor);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        if(target == Arch.NONE) {
+            Register dummy = resultRegister;
+            if(resultRegister == value){
+                dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            }
+
+            RMWLoad load = new RMWLoad(dummy, address, Mo.loadMO(mo));
+            RMWStore store = new RMWStore(load, address, new IExprBin(dummy, op, value), Mo.storeMO(mo));
+
+            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
+            if (dummy != resultRegister) {
+                events.addLast(new Local(resultRegister, dummy));
+            }
+            if (Mo.MB.equals(mo)) {
+                events.addFirst(new Fence("Mb"));
+                events.addLast(new Fence("Mb"));
+            }
+            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+        }
+        return super.compileRecursive(target, nextId, predecessor, depth + 1);
     }
 }

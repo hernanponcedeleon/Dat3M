@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 public class End extends Event {
@@ -40,7 +41,7 @@ public class End extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         Store store = new Store(address, new IConst(0, -1), SC);
@@ -63,6 +64,31 @@ public class End extends Event {
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
         return compileSequence(target, nextId, predecessor, events);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        LinkedList<Event> events = new LinkedList<>();
+        Store store = new Store(address, new IConst(0, -1), SC);
+        events.add(store);
+
+        switch (target){
+            case NONE:
+                break;
+            case TSO:
+                events.addLast(new Fence("Mfence"));
+                break;
+            case POWER:
+                events.addFirst(new Fence("Sync"));
+                break;
+            case ARM: case ARM8:
+                events.addFirst(new Fence("Ish"));
+                events.addLast(new Fence("Ish"));
+                break;
+            default:
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+        }
+        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 
 }

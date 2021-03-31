@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -52,13 +53,24 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         if(target == Arch.ARM || target == Arch.ARM8) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo);
             RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(register, store);
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(store, status));
             return compileSequence(target, nextId, predecessor, events);
+        }
+        throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        if(target == Arch.ARM || target == Arch.ARM8) {
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo);
+            RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(register, store);
+            LinkedList<Event> events = new LinkedList<>(Arrays.asList(store, status));
+            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);
     }

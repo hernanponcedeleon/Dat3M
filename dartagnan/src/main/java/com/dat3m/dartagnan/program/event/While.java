@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -131,10 +132,15 @@ public class While extends Event implements RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         throw new RuntimeException("Event 'while' must be unrolled before compilation");
-    }
+    }*/
+
+	@Override
+	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+		throw new RuntimeException("Event 'while' must be unrolled before compilation");
+	}
 
 
 	// Encoding

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.arch.tso.event;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.program.Register;
@@ -61,7 +62,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    @Override
+    /*@Override
     public int compile(Arch target, int nextId, Event predecessor) {
         if(target == Arch.TSO) {
             Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
@@ -75,6 +76,24 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
             return compileSequence(target, nextId, predecessor, events);
+        }
+        throw new RuntimeException("Compilation of xchg is not implemented for " + target);
+    }*/
+
+    @Override
+    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        if(target == Arch.TSO) {
+            Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
+            RMWLoad load = new RMWLoad(dummyReg, address, null);
+            load.addFilters(EType.ATOM);
+
+            RMWStore store = new RMWStore(load, address, resultRegister, null);
+            store.addFilters(EType.ATOM);
+
+            Local local = new Local(resultRegister, dummyReg);
+
+            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
+            return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         throw new RuntimeException("Compilation of xchg is not implemented for " + target);
     }
