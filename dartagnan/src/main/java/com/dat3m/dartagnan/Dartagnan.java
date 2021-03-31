@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
+import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
@@ -12,6 +13,8 @@ import java.io.IOException;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
@@ -29,8 +32,11 @@ import com.microsoft.z3.Solver;
 
 public class Dartagnan {
 
+	private static final Logger logger = LogManager.getLogger(Dartagnan.class);  
+	
     public static void main(String[] args) throws IOException {
-
+    	
+    	CreateGitInfo();
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);
@@ -44,6 +50,10 @@ public class Dartagnan {
             return;
         }
 
+        logger.info("Program path: " + options.getProgramFilePath());
+        logger.info("CAT file path: " + options.getTargetModelFilePath());
+        logger.info("Bound: " + options.getSettings().getBound());
+        
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
 
@@ -60,7 +70,6 @@ public class Dartagnan {
         Settings settings = options.getSettings();
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
-
         Result result = selectAndRunAnalysis(options, mcm, p, target, settings, ctx, s);
  
         if(options.getProgramFilePath().endsWith(".litmus")) {

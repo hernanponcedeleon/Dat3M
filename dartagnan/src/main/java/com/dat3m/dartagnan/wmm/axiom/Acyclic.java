@@ -11,6 +11,9 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
@@ -18,6 +21,8 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
  * @author Florian Furbach
  */
 public class Acyclic extends Axiom {
+
+	private static final Logger logger = LogManager.getLogger(Acyclic.class);
 
     public Acyclic(Relation rel) {
         super(rel);
@@ -29,6 +34,7 @@ public class Acyclic extends Axiom {
 
     @Override
     public TupleSet getEncodeTupleSet(){
+        logger.info("Computing encodeTupleSet for " + this);
         // ====== Construct [Event -> Successor] mapping ======
         Map<Event, Collection<Event>> succMap = new HashMap<>();
         TupleSet relMaxTuple = rel.getMaxTupleSet();
@@ -61,7 +67,7 @@ public class Acyclic extends Axiom {
                 }
             }
         }
-
+        logger.info("encodeTupleSet size " + result.size());
         return result;
     }
 

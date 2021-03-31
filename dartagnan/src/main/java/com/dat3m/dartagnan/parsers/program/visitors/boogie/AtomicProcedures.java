@@ -31,31 +31,29 @@ public class AtomicProcedures {
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.contains("atomic_init")) {
+		switch(name) {
+		case "atomic_init":
 			atomicInit(visitor, ctx);
-			return;
-		}
-		if(name.contains("atomic_store")) {
+			break;
+		case "atomic_store":
 			atomicStore(visitor, ctx);
-			return;
-		}
-		if(name.contains("atomic_load")) {
+			break;
+		case "atomic_load":
 			atomicLoad(visitor, ctx);
-			return;
-		}			
-		if(name.contains("atomic_fetch")) {
+			break;
+		case "atomic_fetch":
 			atomicFetchOp(visitor, ctx);
-			return;
-		}			
-		if(name.contains("atomic_exchange") || name.contains("atomic_compare_exchange")) {
+			break;
+		case "atomic_exchange":
+		case "atomic_compare_exchange":
 			atomicXchg(visitor, ctx);
-			return;
-		}			
-		if(name.contains("atomic_thread_fence")) {
+			break;
+		case "atomic_thread_fence":
 			atomicThreadFence(visitor, ctx);
-			return;
-		}	
-        throw new UnsupportedOperationException(name + " procedure is not part of ATOMICPROCEDURES");
+			break;
+		default:
+			throw new UnsupportedOperationException(name + " procedure is not part of ATOMICPROCEDURES");		
+		}
 	}
 	
 	private static void atomicInit(VisitorBoogie visitor, Call_cmdContext ctx) {

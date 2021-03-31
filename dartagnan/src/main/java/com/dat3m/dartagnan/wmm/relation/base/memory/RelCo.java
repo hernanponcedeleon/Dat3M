@@ -14,9 +14,15 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class RelCo extends Relation {
+
+	private static final Logger logger = LogManager.getLogger(RelCo.class);
 
     public RelCo(){
         term = "co";
@@ -64,8 +70,8 @@ public class RelCo extends Relation {
 
     @Override
     public TupleSet getMaxTupleSet(){
-
         if(maxTupleSet == null){
+        	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
             List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
             List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
@@ -97,6 +103,7 @@ public class RelCo extends Relation {
                 maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT) || t.isBackward());
                 System.out.println("Local Consistency CO: " + (before - maxTupleSet.size()));
             }
+            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

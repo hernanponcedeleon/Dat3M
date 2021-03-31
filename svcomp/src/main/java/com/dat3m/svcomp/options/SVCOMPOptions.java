@@ -16,10 +16,16 @@ import com.google.common.io.Files;
 
 public class SVCOMPOptions extends BaseOptions {
 
+	private static final String PROPERTY_OPTION = "property";
+	private static final String INCREMENTAL_SOLVER_OPTION = "incremental_solver";
+	private static final String WITNESS_OPTION = "witness";
+	private static final String OPTIMIZATION_OPTION = "optimization";
+	private static final String INTERGER_ENCODING_OPTION = "integer_encoding";
+	
     private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
     private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
-    private String encoding = "unbounded-integer";
-    private String optimization = "O0";
+    private String encoding;
+    private String optimization;
     private boolean witness;
     private boolean incremental_solver;
     private AnalysisTypes analysis; 
@@ -31,7 +37,7 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        Option propOption = new Option("p", "property", true,
+        Option propOption = new Option("p", PROPERTY_OPTION, true,
                 "The path to the property to be checked");
         propOption.setRequired(true);
         addOption(propOption);
@@ -39,13 +45,13 @@ public class SVCOMPOptions extends BaseOptions {
         addOption(new Option("incremental_solver", false,
         		"Use an incremental solver"));
 
-        addOption(new Option("w", "witness", false,
+        addOption(new Option("w", WITNESS_OPTION, false,
                 "Creates a machine readable witness"));
         
-        addOption(new Option("o", "optimization", true,
+        addOption(new Option("o", OPTIMIZATION_OPTION, true,
                 "Optimization flag for LLVM compiler"));
 
-        addOption(new Option("e", "integer_encoding", true,
+        addOption(new Option("e", INTERGER_ENCODING_OPTION, true,
                 "bit-vector=use SMT bit-vector theory, " + 
                 "unbounded-integer=use SMT integer theory, " +
                 "wrapped-integer=use SMT integer theory but model wrap-around behavior" + 
@@ -59,19 +65,15 @@ public class SVCOMPOptions extends BaseOptions {
         }
 
     	CommandLine cmd = new DefaultParser().parse(this, args);
-        if(cmd.hasOption("optimization")) {
-        	optimization = cmd.getOptionValue("optimization");
+        optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
+        witness = cmd.hasOption(WITNESS_OPTION);
+        incremental_solver = cmd.hasOption(INCREMENTAL_SOLVER_OPTION);
+        encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
+        if(!supported_integer_encoding.contains(encoding)) {
+            throw new UnsupportedOperationException("Unrecognized encoding " + encoding);        		
         }
-        if(cmd.hasOption("integer_encoding")) {
-        	encoding = cmd.getOptionValue("integer_encoding");
-        	if(!supported_integer_encoding.contains(encoding)) {
-            	throw new UnsupportedOperationException("Unrecognized encoding " + encoding);        		
-        	}
-        }
-        witness = cmd.hasOption("witness");
-        incremental_solver = cmd.hasOption("incrementalSolver");
         
-        String property = Files.getNameWithoutExtension(cmd.getOptionValue("property"));
+        String property = Files.getNameWithoutExtension(cmd.getOptionValue(PROPERTY_OPTION));
         switch(property) {
 			case "no-data-race":
 				analysis = RACES;

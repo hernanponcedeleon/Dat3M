@@ -24,7 +24,12 @@ import com.microsoft.z3.Context;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class RelRMW extends StaticRelation {
+
+	private static final Logger logger = LogManager.getLogger(RelRMW.class);
 
     private final FilterAbstract loadFilter  = FilterIntersection.get(
             FilterBasic.get(EType.EXCL),
@@ -63,6 +68,7 @@ public class RelRMW extends StaticRelation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+        	logger.info("Computing maxTupleSet for " + getName());
             baseMaxTupleSet = new TupleSet();
 
             // RMWLoad -> RMWStore
@@ -118,6 +124,7 @@ public class RelRMW extends StaticRelation {
                 }
             }
             removeMutuallyExclusiveTuples(maxTupleSet);
+            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

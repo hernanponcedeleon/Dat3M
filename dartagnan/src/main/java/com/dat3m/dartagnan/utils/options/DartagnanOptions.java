@@ -14,8 +14,12 @@ import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
 
-    private final Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
-    private final Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES));
+	public static final String ANALYSIS_OPTION = "analysis";
+	public static final String INCREMENTAL_SOLVER_OPTION = "incremental_solver";
+	public static final String WITNESS_OPTION = "witness";
+
+    private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
+    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES));
     private boolean incremental_solver;
     private String witness;
     private AnalysisTypes analysis = REACHABILITY; 
@@ -27,13 +31,13 @@ public class DartagnanOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        addOption(new Option("incremental_solver", false,
+        addOption(new Option(INCREMENTAL_SOLVER_OPTION, false,
         		"Use an incremental solver"));
         
-        addOption(new Option("w", "witness", true,
+        addOption(new Option("w", WITNESS_OPTION, true,
                 "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
 
-        addOption(new Option("a", "analysis", true,
+        addOption(new Option("a", ANALYSIS_OPTION, true,
         		"The analysis to be performed: reachability (default), data-race detection"));
         }
     
@@ -43,15 +47,11 @@ public class DartagnanOptions extends BaseOptions {
             throw new RuntimeException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
-        incremental_solver = cmd.hasOption("incremental_solver");
-        if(cmd.hasOption("analysis")) {
-        	analysis = fromString(cmd.getOptionValue("analysis"));
-        	if(!analyses.contains(analysis)) {
-        		throw new RuntimeException("Unrecognized analysis");
-        	}
-        }
-        if(cmd.hasOption("witness")) {
-        	witness = cmd.getOptionValue("witness");
+        incremental_solver = cmd.hasOption(INCREMENTAL_SOLVER_OPTION);
+        analysis = cmd.hasOption(ANALYSIS_OPTION) ? fromString(cmd.getOptionValue(ANALYSIS_OPTION)) : REACHABILITY;
+        witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
+        if(!analyses.contains(analysis)) {
+        	throw new RuntimeException("Unrecognized analysis");
         }
     }
     

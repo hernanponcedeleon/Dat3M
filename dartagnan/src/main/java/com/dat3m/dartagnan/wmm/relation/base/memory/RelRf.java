@@ -20,9 +20,14 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelRf extends Relation {
+
+	private static final Logger logger = LogManager.getLogger(RelRf.class);
 
     public RelRf(){
         term = "rf";
@@ -40,6 +45,7 @@ public class RelRf extends Relation {
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
+        	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
 
             List<Event> eventsLoad = task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ));
@@ -114,6 +120,7 @@ public class RelRf extends Relation {
                 System.out.println("Removed past reads: " + deletedTuples.size());
                 System.out.println("Read-From after: " + maxTupleSet.size());
             }
+            logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
     }

@@ -1,5 +1,8 @@
 package com.dat3m.svcomp;
 
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.INCREMENTAL_SOLVER_OPTION;
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
 import static com.dat3m.svcomp.utils.Compilation.compile;
 import static java.util.Arrays.asList;
 
@@ -42,19 +45,22 @@ public class SVCOMPRunner {
 	        tmp.delete();
 
 	    	ArrayList<String> cmd = new ArrayList<String>();
-	    	cmd.addAll(asList("java", "-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
+	    	cmd.add("java");
+	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
+	    	cmd.add("-DLOGNAME=" + file.getName());
+	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
 	    	cmd.addAll(asList("-i", System.getenv().get("DAT3M_HOME") + "/output/" +
 				file.getName().substring(0, file.getName().lastIndexOf('.')) +
 				"-" + options.getOptimization() + ".bpl"));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", "none"));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
-	    	cmd.addAll(asList("-analysis", options.getAnalysis().toString()));
+	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
 	    	if(options.useISolver()) {
-	    		cmd.add("-incremental_solver");
+	    		cmd.add("-" + INCREMENTAL_SOLVER_OPTION);
 	    	}
 	    	if(options.createWitness()) {
-	    		cmd.addAll(asList("-w", options.getProgramFilePath()));
+	    		cmd.addAll(asList("-" + WITNESS_OPTION, options.getProgramFilePath()));
 	    	}
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
