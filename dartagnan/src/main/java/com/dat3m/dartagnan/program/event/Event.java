@@ -216,10 +216,10 @@ public abstract class Event implements Comparable<Event> {
 		}
 		if(successor != null) {
 			if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
-				successor.unrollRecursive(bound, copy, depth + 1);
+				return successor.unrollRecursive(bound, copy, depth + 1);
 			} else {
 				Event finalCopy = copy;
-				RecursiveAction.call(() -> successor.unrollRecursive(bound, finalCopy, 0));
+				return RecursiveAction.call(() -> successor.unrollRecursive(bound, finalCopy, 0));
 			}
 		}
 		return RecursiveAction.done();
