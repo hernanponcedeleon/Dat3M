@@ -99,9 +99,7 @@ public class RelCo extends Relation {
 
             if (task.getMemoryModel().isLocallyConsistent()) {
                 //TODO: Make sure that this is correct and does not cause any issues with totality of co
-                int before = maxTupleSet.size();
                 maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT) || t.isBackward());
-                System.out.println("Local Consistency CO: " + (before - maxTupleSet.size()));
             }
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
