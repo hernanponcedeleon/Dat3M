@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
-import com.dat3m.dartagnan.GlobalFlags;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -65,7 +65,7 @@ public class Wmm {
     }
 
     public boolean isLocallyConsistent() {
-        return GlobalFlags.ASSUME_LOCAL_CONSISTENCY;
+        return GlobalSettings.ASSUME_LOCAL_CONSISTENCY;
     }
 
     public void addRecursiveGroup(Set<RecursiveRelation> recursiveGroup){

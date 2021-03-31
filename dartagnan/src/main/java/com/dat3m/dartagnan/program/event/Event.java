@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.GlobalFlags;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -13,8 +13,6 @@ import com.dat3m.dartagnan.program.Thread;
 import java.util.*;
 
 public abstract class Event implements Comparable<Event> {
-
-	public static final boolean MERGE_CF_VARS = GlobalFlags.MERGE_CF_VARS;
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
@@ -158,7 +156,7 @@ public abstract class Event implements Comparable<Event> {
 
     protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
 		if (successor != null) {
-			if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
 				return successor.simplifyRecursive(this, depth + 1);
 			} else {
 				return RecursiveAction.call(() -> successor.simplifyRecursive(this, 0));
@@ -177,7 +175,7 @@ public abstract class Event implements Comparable<Event> {
 	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
 		uId = nextId;
 		if (successor != null) {
-			if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
 				return successor.setUIdRecursive(nextId + 1, depth + 1);
 			} else {
 				return RecursiveFunction.call(() -> successor.setUIdRecursive(nextId + 1, 0));
@@ -215,7 +213,7 @@ public abstract class Event implements Comparable<Event> {
 			predecessor.setSuccessor(copy);
 		}
 		if(successor != null) {
-			if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
 				return successor.unrollRecursive(bound, copy, depth + 1);
 			} else {
 				Event finalCopy = copy;
@@ -289,7 +287,7 @@ public abstract class Event implements Comparable<Event> {
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
 		this.task = task;
-		if (MERGE_CF_VARS) {
+		if (GlobalSettings.MERGE_CF_VARS) {
 			cfVar = ctx.mkBoolConst("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
 		} else {
 			cfVar = ctx.mkBoolConst("cf(" + repr() + ")");

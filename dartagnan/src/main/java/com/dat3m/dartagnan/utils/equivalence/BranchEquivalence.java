@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
-import com.dat3m.dartagnan.GlobalFlags;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
@@ -43,9 +43,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
              - empty and have NULL as representative
              - the reachable-/impliedClasses will only contain themselves, the exclusiveClasses will be empty
     */
-
-    public static final boolean MERGE_BRANCHES = GlobalFlags.MERGE_BRANCHES;
-    public static final boolean ALWAYS_SPLIT_ON_JUMP = GlobalFlags.ALWAYS_SPLIT_ON_JUMP;
 
 
     // ============================= State ==============================
@@ -159,7 +156,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         do {
             if (succ instanceof CondJump) {
                 CondJump jump = (CondJump) succ;
-                if (!ALWAYS_SPLIT_ON_JUMP && jump.isGoto()) {
+                if (!GlobalSettings.ALWAYS_SPLIT_ON_JUMP && jump.isGoto()) {
                     // There is only one branch we can proceed on so we don't need to split the current branch
                     succ = jump.getLabel();
                 } else {
@@ -339,7 +336,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private void createBranchClasses(Map<Event, Branch> branchMap) {
         List<BranchClass> newClasses;
-        if (MERGE_BRANCHES) {
+        if (GlobalSettings.MERGE_BRANCHES) {
             DependencyGraph<Branch> depGraph = DependencyGraph.from(branchMap.values(), Branch::getImpliedBranches);
             newClasses = new ArrayList<>(depGraph.getSCCs().size());
             for (Set<DependencyGraph<Branch>.Node> scc : depGraph.getSCCs()) {
@@ -375,7 +372,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void mergeInitialClasses() {
-        if (MERGE_BRANCHES) {
+        if (GlobalSettings.MERGE_BRANCHES) {
             initialClass = getTypedEqClass(program.getThreads().get(0).getEntry());
             for (int i = 1; i < program.getThreads().size(); i++) {
                 BranchClass c = getTypedEqClass(program.getThreads().get(i).getEntry());

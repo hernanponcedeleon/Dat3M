@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.dat3m.dartagnan.GlobalFlags;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -29,8 +29,6 @@ import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
 public class SvcompProcedures {
-	
-	public static final boolean ATOMIC_AS_LOCK = GlobalFlags.ATOMIC_AS_LOCK;
 
 	static List<String> FENCES = Arrays.asList("After_atomic", "Before_atomic", "Isync" ," Lwsync" ," Mb", "Mfence", 
 										"Rcu_lock" , "Rcu_unlock", "Rmb", "Sync", "Sync_rcu","Wmb", "Ish");
@@ -62,14 +60,14 @@ public class SvcompProcedures {
 			__VERIFIER_fence(visitor, ctx);
 			break;
 		case "__VERIFIER_atomic_begin":
-			if(ATOMIC_AS_LOCK) {
+			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				__VERIFIER_atomic(visitor, true);
 			} else {
 				__VERIFIER_atomic_begin(visitor);	
 			}
 			break;
 		case "__VERIFIER_atomic_end":
-			if(ATOMIC_AS_LOCK) {
+			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				__VERIFIER_atomic(visitor, false);
 			} else {
 				__VERIFIER_atomic_end(visitor);

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.GlobalFlags;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Register;
@@ -126,7 +126,7 @@ public class CondJump extends Event implements RegReaderData {
             predecessor.setSuccessor(next);
         }
         if(next != null){
-            if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+            if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
                 return next.simplifyRecursive(prev, depth + 1);
             } else {
                 Event finalNext = next;
@@ -181,7 +181,7 @@ public class CondJump extends Event implements RegReaderData {
                 predecessor.setSuccessor(next);
             }
             if(successor != null) {
-                if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+                if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
                     return successor.unrollRecursive(bound, next, depth + 1);
                 } else {
                     Event finalNext = next;

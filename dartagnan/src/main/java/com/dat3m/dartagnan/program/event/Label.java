@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.GlobalFlags;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -50,7 +50,7 @@ public class Label extends Event {
             predecessor.setSuccessor(successor);
         }
         if(next != null){
-            if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+            if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
                 return next.simplifyRecursive(prev, depth + 1);
             } else {
                 Event finalPrev = prev;

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan;
 
-public class GlobalFlags {
+public class GlobalSettings {
     // === Parsing ===
     public static final boolean ATOMIC_AS_LOCK = false;
 
@@ -17,5 +17,5 @@ public class GlobalFlags {
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;
 
-    private GlobalFlags() {}
+    private GlobalSettings() {}
 }
