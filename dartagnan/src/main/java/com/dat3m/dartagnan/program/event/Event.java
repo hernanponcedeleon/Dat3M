@@ -153,18 +153,15 @@ public abstract class Event implements Comparable<Event> {
     }
     
     public final void simplify(Event predecessor) {
-		/*if(successor != null){
-			successor.simplify(this);
-		}*/
-		RecursiveAction.execute(() -> simplifyRecursive(predecessor, GlobalFlags.MAX_RECURSION_DEPTH));
+		simplifyRecursive(predecessor, 0).execute();
     }
 
     protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
 		if (successor != null) {
-			if (depth > 0) {
-				return successor.simplifyRecursive(this, depth - 1);
+			if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+				return successor.simplifyRecursive(this, depth + 1);
 			} else {
-				return RecursiveAction.call(() -> successor.simplifyRecursive(this, GlobalFlags.MAX_RECURSION_DEPTH));
+				return RecursiveAction.call(() -> successor.simplifyRecursive(this, 0));
 			}
 		}
 		return RecursiveAction.done();
@@ -174,21 +171,16 @@ public abstract class Event implements Comparable<Event> {
     // -----------------------------------------------------------------------------------------------------------------
 
     public final int setUId(int nextId) {
-    	/*uId = nextId++;
-    	if(successor != null) {
-    		nextId = successor.setUId(nextId);
-    	}
-	    return nextId;*/
-		return RecursiveFunction.execute(() -> setUIdRecursive(nextId, GlobalFlags.MAX_RECURSION_DEPTH));
+		return setUIdRecursive(nextId, 0).execute();
     }
 
 	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
 		uId = nextId;
 		if (successor != null) {
-			if (depth > 0) {
-				return successor.setUIdRecursive(nextId + 1, depth - 1);
+			if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+				return successor.setUIdRecursive(nextId + 1, depth + 1);
 			} else {
-				return RecursiveFunction.call(() -> successor.setUIdRecursive(nextId + 1, GlobalFlags.MAX_RECURSION_DEPTH));
+				return RecursiveFunction.call(() -> successor.setUIdRecursive(nextId + 1, 0));
 			}
 		}
 		return RecursiveFunction.done(nextId + 1);

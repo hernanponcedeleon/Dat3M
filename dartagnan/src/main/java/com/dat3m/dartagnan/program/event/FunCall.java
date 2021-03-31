@@ -52,12 +52,12 @@ public class FunCall extends Event {
 			predecessor.setSuccessor(next);
 		}
 		if(next != null){
-			if (depth > 0) {
-				return next.simplifyRecursive(prev, depth - 1);
+			if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+				return next.simplifyRecursive(prev, depth + 1);
 			} else {
 				Event finalNext = next;
 				Event finalPrev = prev;
-				return RecursiveAction.call(() -> finalNext.simplifyRecursive(finalPrev, GlobalFlags.MAX_RECURSION_DEPTH));
+				return RecursiveAction.call(() -> finalNext.simplifyRecursive(finalPrev, 0));
 			}
 		}
 		return RecursiveAction.done();

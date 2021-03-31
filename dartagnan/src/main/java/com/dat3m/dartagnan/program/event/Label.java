@@ -50,11 +50,11 @@ public class Label extends Event {
             predecessor.setSuccessor(successor);
         }
         if(next != null){
-            if (depth > 0) {
-                return next.simplifyRecursive(prev, depth - 1);
+            if (depth < GlobalFlags.MAX_RECURSION_DEPTH) {
+                return next.simplifyRecursive(prev, depth + 1);
             } else {
                 Event finalPrev = prev;
-                return RecursiveAction.call(() -> next.simplifyRecursive(finalPrev, GlobalFlags.MAX_RECURSION_DEPTH));
+                return RecursiveAction.call(() -> next.simplifyRecursive(finalPrev, 0));
             }
         }
         return RecursiveAction.done();
