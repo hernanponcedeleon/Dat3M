@@ -111,11 +111,9 @@ public class If extends Event implements RegReaderData {
             return RecursiveAction
                     .call(() -> successorMain.getSuccessorsRecursive(list, 0))
                     .then(() -> successorElse.getSuccessorsRecursive(list, 0))
-                    .then(() -> {
-                        if(successor != null) {
-                            successor.getSuccessorsRecursive(list, 0);
-                        }
-                    });
+                    .then(() -> successor != null
+                            ? successor.getSuccessorsRecursive(list, 0)
+                            : RecursiveAction.done());
         }
         return super.getSuccessorsRecursive(list, depth);
     }
