@@ -24,7 +24,7 @@ public class Base {
         Program program = task.getProgram();
     	task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
-            logger.info("Verification finished: assertion trivialy holds");
+            logger.info("Verification finished: assertion trivially holds");
        		return PASS;
        	}
 
@@ -176,4 +176,72 @@ public class Base {
         logger.info("Verification finished with result " + res);
 		return res;
     }
+
+
+
+	public static Result runAnalysisIncrementalAssumptionSolver(Solver solver, Context ctx, VerificationTask task) {
+		task.unrollAndCompile();
+		if(task.getProgram().getAss() instanceof AssertTrue) {
+			logger.info("Verification finished: assertion trivialy holds");
+			return PASS;
+		}
+
+		task.initialiseEncoding(ctx);
+
+		logger.info("Starting encoding");
+		solver.add(task.encodeProgram(ctx));
+		solver.add(task.encodeWmmRelations(ctx));
+		solver.add(task.encodeWmmConsistency(ctx));
+		BoolExpr assumption = ctx.mkBoolConst("ass");
+		solver.add(ctx.mkImplies(assumption, task.encodeAssertions(ctx)));
+
+		if(task.getSettings().hasSolverTimeout()) {
+			Params p = ctx.mkParams();
+			p.add("timeout", 1000*task.getSettings().getSolverTimeout());
+			try {
+				solver.setParameters(p);
+			} catch(Exception ignored) { }
+		}
+
+		Result res = Result.UNKNOWN;
+		logger.info("Starting first solver.check()");
+		switch(solver.check(assumption)) {
+			case UNKNOWN:
+				res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
+				break;
+			case SATISFIABLE:
+				solver.add(task.getProgram().encodeNoBoundEventExec(ctx));
+				logger.info("Starting second solver.check()");
+				switch(solver.check()) {
+					case UNKNOWN:
+						res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
+						break;
+					case SATISFIABLE:
+						res = FAIL;
+						break;
+					case UNSATISFIABLE:
+						res = Result.UNKNOWN;
+						break;
+				}
+				break;
+			case UNSATISFIABLE:
+				solver.add(ctx.mkNot(task.getProgram().encodeNoBoundEventExec(ctx)));
+				logger.info("Starting second solver.check()");
+				switch(solver.check()) {
+					case UNKNOWN:
+						res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
+						break;
+					case SATISFIABLE:
+						res = Result.UNKNOWN;
+						break;
+					case UNSATISFIABLE:
+						res = PASS;
+						break;
+				}
+				break;
+		}
+		res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+		logger.info("Verification finished with result " + res);
+		return res;
+	}
 }
