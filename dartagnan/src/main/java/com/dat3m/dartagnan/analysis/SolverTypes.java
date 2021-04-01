@@ -19,7 +19,6 @@ public enum SolverTypes {
 	}
 	
 	public String toString() {
-		this.toString().toLowerCase();
         switch(this) {
             case TWO:
                 return "two";

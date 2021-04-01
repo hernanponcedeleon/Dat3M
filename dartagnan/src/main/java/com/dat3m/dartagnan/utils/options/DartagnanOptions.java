@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.utils.options;
 
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
 import static com.dat3m.dartagnan.analysis.SolverTypes.TWO;
-
 import java.util.Arrays;
 import java.util.Set;
 
@@ -20,11 +18,12 @@ public class DartagnanOptions extends BaseOptions {
 	public static final String WITNESS_OPTION = "witness";
 
     private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
-    private Set<AnalysisTypes> analyses = ImmutableSet.copyOf(Arrays.asList(REACHABILITY, RACES));
-    private SolverTypes solver;
-    private String witness;
+    private Set<AnalysisTypes> supportedAnalyses = ImmutableSet.copyOf(AnalysisTypes.values());
+    private Set<SolverTypes> supportedSolvers = ImmutableSet.copyOf(SolverTypes.values());
     private AnalysisTypes analysis; 
-	
+	private SolverTypes solver;
+    private String witness;
+    
     public DartagnanOptions(){
         super();
         Option catOption = new Option("cat", true,
@@ -32,8 +31,8 @@ public class DartagnanOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
-        addOption(new Option(SOLVER_OPTION, false,
-        		"Use an incremental solver"));
+        addOption(new Option(SOLVER_OPTION, true,
+        		"The solver method to be used: two (default), incremental, assume"));
         
         addOption(new Option("w", WITNESS_OPTION, true,
                 "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
@@ -48,12 +47,18 @@ public class DartagnanOptions extends BaseOptions {
             throw new RuntimeException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
+
         solver = cmd.hasOption(SOLVER_OPTION) ? SolverTypes.fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
+        if(!supportedSolvers.contains(solver)) {
+        	throw new RuntimeException("Unrecognized solver method");
+        }
+        
         analysis = cmd.hasOption(ANALYSIS_OPTION) ? AnalysisTypes.fromString(cmd.getOptionValue(ANALYSIS_OPTION)) : REACHABILITY; 
-        witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
-        if(!analyses.contains(analysis)) {
+        if(!supportedAnalyses.contains(analysis)) {
         	throw new RuntimeException("Unrecognized analysis");
         }
+        
+        witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
     }
     
     public SolverTypes solver(){

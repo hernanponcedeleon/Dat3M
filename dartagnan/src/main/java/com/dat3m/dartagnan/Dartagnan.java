@@ -103,7 +103,7 @@ public class Dartagnan {
 			case REACHABILITY:
 				switch(options.solver()) {
 					case TWO:
-						runAnalysis(s, ctx, p, mcm, target, settings);
+						return runAnalysis(s, ctx, p, mcm, target, settings);
 					case INCREMENTAL:
 						return runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings);
 					case ASSUME:

@@ -56,7 +56,7 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-t", "none"));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
-	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getAnalysis().toString()));
+	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getSolver().toString()));
 	    	if(options.createWitness()) {
 	    		cmd.addAll(asList("-" + WITNESS_OPTION, options.getProgramFilePath()));
 	    	}

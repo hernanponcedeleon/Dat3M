@@ -2,6 +2,9 @@ package com.dat3m.svcomp.options;
 
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.SolverTypes.TWO;
+import static com.dat3m.dartagnan.analysis.SolverTypes.fromString;
+
 import java.util.Arrays;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
@@ -10,6 +13,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
 import com.dat3m.dartagnan.analysis.AnalysisTypes;
+import com.dat3m.dartagnan.analysis.SolverTypes;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
@@ -17,17 +21,18 @@ import com.google.common.io.Files;
 public class SVCOMPOptions extends BaseOptions {
 
 	private static final String PROPERTY_OPTION = "property";
-	private static final String INCREMENTAL_SOLVER_OPTION = "incremental_solver";
+	private static final String SOLVER_OPTION = "solver";
 	private static final String WITNESS_OPTION = "witness";
 	private static final String OPTIMIZATION_OPTION = "optimization";
 	private static final String INTERGER_ENCODING_OPTION = "integer_encoding";
 	
     private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
     private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
+    private Set<SolverTypes> supported_solvers = ImmutableSet.copyOf(Arrays.asList(SolverTypes.values()));
     private String encoding;
     private String optimization;
     private boolean witness;
-    private boolean incremental_solver;
+    private SolverTypes solver;
     private AnalysisTypes analysis; 
     
     public SVCOMPOptions(){
@@ -42,8 +47,8 @@ public class SVCOMPOptions extends BaseOptions {
         propOption.setRequired(true);
         addOption(propOption);
 
-        addOption(new Option("incremental_solver", false,
-        		"Use an incremental solver"));
+        addOption(new Option(SOLVER_OPTION, true,
+        		"The solver method to be used: two (default), incremental, assume"));
 
         addOption(new Option("w", WITNESS_OPTION, false,
                 "Creates a machine readable witness"));
@@ -65,9 +70,15 @@ public class SVCOMPOptions extends BaseOptions {
         }
 
     	CommandLine cmd = new DefaultParser().parse(this, args);
-        optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
+        
+    	optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
         witness = cmd.hasOption(WITNESS_OPTION);
-        incremental_solver = cmd.hasOption(INCREMENTAL_SOLVER_OPTION);
+        
+        solver = cmd.hasOption(SOLVER_OPTION) ? fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
+        if(!supported_solvers.contains(solver)) {
+            throw new UnsupportedOperationException("Unrecognized solver method " + solver);        		
+        }
+        
         encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
         if(!supported_integer_encoding.contains(encoding)) {
             throw new UnsupportedOperationException("Unrecognized encoding " + encoding);        		
@@ -94,8 +105,8 @@ public class SVCOMPOptions extends BaseOptions {
         return encoding;
     }
 
-    public boolean useISolver(){
-        return incremental_solver;
+    public SolverTypes getSolver(){
+        return solver;
     }
 
     public boolean createWitness(){
