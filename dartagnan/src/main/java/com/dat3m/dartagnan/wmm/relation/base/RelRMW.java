@@ -79,15 +79,16 @@ public class RelRMW extends StaticRelation {
             filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
             for(Event end : program.getCache().getEvents(filter)){
             	for(Event b : ((EndAtomic)end).getBlock()) {
+            	    if (!b.is(EType.VISIBLE)) {
+            	        continue;
+                    }
             		Event next = b.getSuccessor();
-            		if(!next.hasFilter(EType.VISIBLE)) {
-            			continue;
-            		}
             		while(next != null && !(next instanceof EndAtomic)) {
-            			baseMaxTupleSet.add(new Tuple(b, next));
+                        if (next.is(EType.VISIBLE)) {
+                            baseMaxTupleSet.add(new Tuple(b, next));
+                        }
             			next = next.getSuccessor();
             		}
-            		baseMaxTupleSet.add(new Tuple(b, end));
             	}
             }
             
