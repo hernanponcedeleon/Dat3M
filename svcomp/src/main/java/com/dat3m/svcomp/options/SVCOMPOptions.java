@@ -76,12 +76,12 @@ public class SVCOMPOptions extends BaseOptions {
         
         solver = cmd.hasOption(SOLVER_OPTION) ? fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
         if(!supported_solvers.contains(solver)) {
-            throw new UnsupportedOperationException("Unrecognized solver method " + solver);        		
+            throw new UnsupportedOperationException("Unrecognized solver method: " + solver);        		
         }
         
         encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
         if(!supported_integer_encoding.contains(encoding)) {
-            throw new UnsupportedOperationException("Unrecognized encoding " + encoding);        		
+            throw new UnsupportedOperationException("Unrecognized encoding: " + encoding);        		
         }
         
         String property = Files.getNameWithoutExtension(cmd.getOptionValue(PROPERTY_OPTION));
@@ -93,7 +93,7 @@ public class SVCOMPOptions extends BaseOptions {
 				analysis = REACHABILITY;
 				break;
 			default:
-				throw new UnsupportedOperationException("Unrecognized property " + property);
+				throw new UnsupportedOperationException("Unrecognized property: " + property);
         }
     }
 

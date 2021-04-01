@@ -108,11 +108,11 @@ public class Dartagnan {
 						return runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings);
 					case ASSUME:
 						return runAnalysisAssumeSolver(s, ctx, p, mcm, target, settings);
-				default:
-					throw new RuntimeException("Unrecognized solver mode");
+					default:
+						throw new RuntimeException("Unrecognized solver mode: " + options.solver());
 				}
 			default:
-				throw new RuntimeException("Unrecognized analysis");
+				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
 		}
 	}
 

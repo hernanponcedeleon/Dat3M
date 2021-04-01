@@ -50,12 +50,12 @@ public class DartagnanOptions extends BaseOptions {
 
         solver = cmd.hasOption(SOLVER_OPTION) ? SolverTypes.fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
         if(!supportedSolvers.contains(solver)) {
-        	throw new RuntimeException("Unrecognized solver method");
+        	throw new RuntimeException("Unrecognized solver method: " + solver);
         }
         
         analysis = cmd.hasOption(ANALYSIS_OPTION) ? AnalysisTypes.fromString(cmd.getOptionValue(ANALYSIS_OPTION)) : REACHABILITY; 
         if(!supportedAnalyses.contains(analysis)) {
-        	throw new RuntimeException("Unrecognized analysis");
+        	throw new RuntimeException("Unrecognized analysis: " + analysis);
         }
         
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
