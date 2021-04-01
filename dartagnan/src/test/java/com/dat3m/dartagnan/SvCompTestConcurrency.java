@@ -14,8 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.ATOMIC_AS_LOCK;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 
 @RunWith(Parameterized.class)
@@ -23,7 +21,7 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
-    	String cat_file = ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat"; 
+    	String cat_file = com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat"; 
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
         Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, false);
