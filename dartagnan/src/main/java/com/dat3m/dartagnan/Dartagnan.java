@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -100,9 +101,16 @@ public class Dartagnan {
 			case RACES:
 				return checkForRaces(s, ctx, p, mcm, target, settings);	
 			case REACHABILITY:
-				return options.useISolver() ? 
-						runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings) : 
-						runAnalysis(s, ctx, p, mcm, target, settings); 
+				switch(options.solver()) {
+					case TWO:
+						runAnalysis(s, ctx, p, mcm, target, settings);
+					case INCREMENTAL:
+						return runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings);
+					case ASSUME:
+						return runAnalysisAssumeSolver(s, ctx, p, mcm, target, settings);
+				default:
+					throw new RuntimeException("Unrecognized solver mode");
+				}
 			default:
 				throw new RuntimeException("Unrecognized analysis");
 		}

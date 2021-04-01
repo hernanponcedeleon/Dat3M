@@ -120,4 +120,41 @@ public class Base {
 		logger.info("Verification finished with result " + res);
 		return res;
     }
+    
+    public static Result runAnalysisAssumeSolver(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    	program.simplify();
+    	program.unroll(settings.getBound(), 0);
+        program.compile(target, 0);
+        // AssertionInline depends on compiled events (copies)
+        // Thus we need to update the assertion after compilation
+        program.updateAssertion();
+       	if(program.getAss() instanceof AssertTrue) {
+       		logger.info("Verification finished: assertion trivialy holds");
+       		return PASS;
+       	}
+
+       	logger.info("Starting encoding");
+        solver.add(program.encodeCF(ctx));
+        solver.add(program.encodeFinalRegisterValues(ctx));
+        solver.add(wmm.encode(program, ctx, settings));
+        solver.add(wmm.consistent(program, ctx));
+        if(program.getAssFilter() != null){
+            solver.add(program.getAssFilter().encode(ctx));
+        }
+
+        Result res = UNKNOWN;
+        logger.info("Starting first solver.check()");
+		if(solver.check(program.getAss().encode(ctx)) == SATISFIABLE) {
+        	solver.add(program.encodeNoBoundEventExec(ctx));
+        	logger.info("Starting second solver.check()");
+			res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
+        } else {
+			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
+			logger.info("Starting second solver.check()");
+        	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
+        }
+		res = program.getAss().getInvert() ? res.invert() : res;  
+		logger.info("Verification finished with result " + res);
+		return res;
+    }
 }

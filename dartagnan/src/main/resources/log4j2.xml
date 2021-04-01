@@ -8,10 +8,6 @@
     </Console>
 	
 	<File name="File" fileName="output/logs/${sys:LOGNAME}.log">
-	<!--
-	This is the one we need to use for SVCOMP
-	<File name="File" fileName="output/logs/dartagnan.log">
-	-->
 	  <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
     </File>
     
@@ -20,8 +16,10 @@
   <Loggers>
     
     <Root level="info">
-      <AppenderRef ref="Console"/>
-      <AppenderRef ref="File"/>
+	<!--  
+	  <AppenderRef ref="Console"/>
+      <AppenderRef ref="File"/> 
+      -->
     </Root>
     
   </Loggers>

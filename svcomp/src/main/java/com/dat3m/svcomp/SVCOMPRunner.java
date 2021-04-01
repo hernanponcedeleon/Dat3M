@@ -1,7 +1,7 @@
 package com.dat3m.svcomp;
 
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.INCREMENTAL_SOLVER_OPTION;
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
 import static com.dat3m.svcomp.utils.Compilation.compile;
 import static java.util.Arrays.asList;
@@ -56,9 +56,7 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-t", "none"));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
-	    	if(options.useISolver()) {
-	    		cmd.add("-" + INCREMENTAL_SOLVER_OPTION);
-	    	}
+	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getAnalysis().toString()));
 	    	if(options.createWitness()) {
 	    		cmd.addAll(asList("-" + WITNESS_OPTION, options.getProgramFilePath()));
 	    	}
