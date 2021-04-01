@@ -201,6 +201,8 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveFunction.done(nextId + 1);
 	}
 
+
+
 	// --------------------------------
 
     public final void unroll(int bound, Event predecessor) {
@@ -348,6 +350,9 @@ public abstract class Event implements Comparable<Event> {
 
 	private String repr;
 	public String repr() {
+		if (cId == -1) {
+			return "E" + cId;
+		}
 		if (repr == null) {
 			// We cache the result, because this saves string concatenations
 			// for every(!) single edge encoded in the program

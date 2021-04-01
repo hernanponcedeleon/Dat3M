@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.analysis.Base;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -11,6 +12,8 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
@@ -18,6 +21,8 @@ import java.util.*;
 Represents a verification task.
  */
 public class VerificationTask {
+
+    private static final Logger logger = LogManager.getLogger(VerificationTask.class);
 
     private final Program program;
     private final Wmm memoryModel;
@@ -56,8 +61,10 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+        logger.info("Event before DCE: " + program.getEvents().size());
         if (GlobalSettings.PERFORM_DEAD_CODE_ELIMINATION) {
             program.eliminateDeadCode();
+            logger.info("Event after DCE: " + program.getEvents().size());
         }
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
