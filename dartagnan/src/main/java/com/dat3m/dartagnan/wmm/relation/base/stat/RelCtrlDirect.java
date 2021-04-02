@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.List;
 
+//TODO: Can we restrict to visible events?
 public class RelCtrlDirect extends StaticRelation {
 
     public RelCtrlDirect(){
@@ -22,11 +23,8 @@ public class RelCtrlDirect extends StaticRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
 
-            //TODO: Is If and CondJump different from a semantic point of view?
-            // Compiling If's to CondJumps changes the Control-Dependency.
-            // Relates Ifs with main and else branch, but not with events thereafter
-            // This is apparently a discrepancy between linux (which uses If's instead of CondJumps)
-            // and other architectures.
+            //NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
+            // In particular, transforming If's to CondJump's is invalid under Linux
             for(Thread thread : task.getProgram().getThreads()){
                 for(Event e1 : thread.getCache().getEvents(FilterBasic.get(EType.CMP))){
                     for(Event e2 : ((If) e1).getMainBranchEvents()){

@@ -75,7 +75,7 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     /*
-    TODO: getMinTupleSet is no yet used
+    TODO: getMinTupleSet is no yet used extensively
      */
     public abstract TupleSet getMinTupleSet();
 
@@ -94,10 +94,7 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     public String getName() {
-        if(name != null){
-            return name;
-        }
-        return term;
+        return name != null ? name : term;
     }
 
     public Relation setName(String name){

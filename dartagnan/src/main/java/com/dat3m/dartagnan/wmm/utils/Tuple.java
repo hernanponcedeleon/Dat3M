@@ -23,7 +23,6 @@ public class Tuple implements Comparable<Tuple> {
     public String toString() {
         return "(" + first + ", " + second + ")";
         //return "(" + first.getCId() + ", " + second.getCId() + ")";
-
     }
 
 
@@ -38,7 +37,7 @@ public class Tuple implements Comparable<Tuple> {
     // the above hashCode function would be really bad since the entry <first> gets ignored
     // for all hashtables with size <= 2^16.
     // To compensate this flaw, Java's hashmap computes its hashcode by
-    // (key.hashCode) ^ ((key.hashCode) >>> 16). This effectively translates to
+    // (key.hashCode) ^ (key.hashCode >>> 16). This effectively translates to
     // hashCode = <first.getCId> ^ <second.getCId> for tables with <= 2^16 entries.
     // This hashing function is commutative (i.e. reversed tuples have the same hashcode)
     // and all same-entry tuples get mapped to 0. These are bad properties.
@@ -68,10 +67,7 @@ public class Tuple implements Comparable<Tuple> {
     @Override
     public int compareTo(Tuple o) {
         int result = first.compareTo(o.first);
-        if(result == 0){
-            return second.compareTo(o.second);
-        }
-        return result;
+        return result != 0 ? result : second.compareTo(o.second);
     }
 
 

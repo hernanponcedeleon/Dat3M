@@ -50,20 +50,7 @@ public class RelCo extends Relation {
         if(minTupleSet == null){
             minTupleSet = new TupleSet();
 
-            if (task.getMemoryModel().isLocallyConsistent()) {
-                for (Tuple t : getMaxTupleSet()) {
-                    MemEvent w1 = (MemEvent) t.getFirst();
-                    MemEvent w2 = (MemEvent) t.getSecond();
-
-                    if (w2.is(EType.INIT) || !w1.cfImpliesExec() || ! w2.cfImpliesExec())
-                        continue;
-                    if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
-                        continue;
-
-                    if (w1.is(EType.INIT) || t.isForward())
-                        minTupleSet.add(t);
-                }
-            }
+            applyLocalConsistencyMinSet();
         }
         return minTupleSet;
     }
@@ -96,11 +83,8 @@ public class RelCo extends Relation {
             }
 
             removeMutuallyExclusiveTuples(maxTupleSet);
+            applyLocalConsistencyMaxSet();
 
-            if (task.getMemoryModel().isLocallyConsistent()) {
-                //TODO: Make sure that this is correct and does not cause any issues with totality of co
-                maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT) || t.isBackward());
-            }
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
@@ -176,5 +160,29 @@ public class RelCo extends Relation {
             }
         }
         return enc;
+    }
+
+    private void applyLocalConsistencyMinSet() {
+        if (task.getMemoryModel().isLocallyConsistent()) {
+            for (Tuple t : getMaxTupleSet()) {
+                MemEvent w1 = (MemEvent) t.getFirst();
+                MemEvent w2 = (MemEvent) t.getSecond();
+
+                if (w2.is(EType.INIT) || !w1.cfImpliesExec() || ! w2.cfImpliesExec())
+                    continue;
+                if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
+                    continue;
+
+                if (w1.is(EType.INIT) || t.isForward())
+                    minTupleSet.add(t);
+            }
+        }
+    }
+
+    private void applyLocalConsistencyMaxSet() {
+        if (task.getMemoryModel().isLocallyConsistent()) {
+            //TODO: Make sure that this is correct and does not cause any issues with totality of co
+            maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT) || t.isBackward());
+        }
     }
 }

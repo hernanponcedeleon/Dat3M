@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -18,8 +19,9 @@ import java.util.Objects;
 public abstract class Axiom implements Dependent<Relation> {
 
     protected Relation rel;
-
     private boolean negate = false;
+
+    protected VerificationTask task;
 
     public boolean isNegated() {
         return negate;
@@ -34,12 +36,16 @@ public abstract class Axiom implements Dependent<Relation> {
         this.negate = negate;
     }
 
+    public void initialise(VerificationTask task, Context ctx) {
+        this.task = task;
+    }
+
     @Override
     public List<Relation> getDependencies() {
         return Collections.singletonList(rel);
     }
 
-    public Relation getRel() {
+    public Relation getRelation() {
         return rel;
     }
 

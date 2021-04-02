@@ -99,7 +99,7 @@ public class VerificationTask {
     }
 
     public BoolExpr encodeWmmConsistency(Context ctx) {
-        return memoryModel.consistent(program, ctx);
+        return memoryModel.consistent(ctx);
     }
 
     public BoolExpr encodeAssertions(Context ctx) {

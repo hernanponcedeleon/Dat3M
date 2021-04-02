@@ -55,7 +55,7 @@ public class RelTrans extends UnaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            //TODO: complete this
+            //TODO: Make sure this is correct and efficient
             BranchEquivalence eq = task.getBranchEquivalence();
             minTupleSet = new TupleSet(r1.getMinTupleSet());
             boolean changed;
@@ -65,7 +65,6 @@ public class RelTrans extends UnaryRelation {
                         (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
                 changed = minTupleSet.size() != size;
                 size = minTupleSet.size();
-
             } while (changed);
             removeMutuallyExclusiveTuples(minTupleSet);
         }
@@ -102,7 +101,7 @@ public class RelTrans extends UnaryRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
-        TupleSet minSet = /*new TupleSet();*/ getMinTupleSet();
+        TupleSet minSet = getMinTupleSet();
         TupleSet r1Max = r1.getMaxTupleSet();
         for(Tuple tuple : fullEncodeTupleSet){
             if (minSet.contains(tuple)) {

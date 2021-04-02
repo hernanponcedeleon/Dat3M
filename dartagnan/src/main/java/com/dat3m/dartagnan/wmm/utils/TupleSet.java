@@ -175,11 +175,12 @@ public class TupleSet implements Set<Tuple>{
 
     // ================ Utility functions ==============
     public TupleSet inverse() {
-        TupleSet inverse = new TupleSet();
-        this.tuples.forEach(x -> inverse.add(x.getInverse()));
-        return inverse;
+        return this.mapped(Tuple::getInverse);
     }
 
+    //TODO: Make clear through which tuple set is iterated first/second
+    // This can make a big difference because getByFirst/Second needs to be recomputed
+    // if the corresponding tuple set is changed (e.g. by repeated composition)
     public TupleSet preComposition(TupleSet tuples) {
         TupleSet result = new TupleSet();
         for (Tuple t1 : tuples) {
@@ -215,7 +216,6 @@ public class TupleSet implements Set<Tuple>{
     public TupleSet postComposition(TupleSet tuples, BiPredicate<Tuple, Tuple> condition) {
         return tuples.preComposition(this, condition);
     }
-
 
     public TupleSet mapped(Function<Tuple, Tuple> mapping) {
         TupleSet result = new TupleSet();

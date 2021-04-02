@@ -18,6 +18,8 @@ import java.util.Set;
  * @author Florian Furbach
  */
 public class RelInverse extends UnaryRelation {
+    //TODO/Note: We can forward getSMTVar calls
+    // to avoid encoding this completely!
 
     public static String makeTerm(Relation r1){
         return r1.getName() + "^-1";

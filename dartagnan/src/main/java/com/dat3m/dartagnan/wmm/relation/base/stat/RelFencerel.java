@@ -84,6 +84,7 @@ public class RelFencerel extends StaticRelation {
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 
+            //TODO: We can use branching analysis to simplify this
             BoolExpr orClause = ctx.mkFalse();
             for(Event fence : fences){
                 if(fence.getCId() > e1.getCId() && fence.getCId() < e2.getCId()){

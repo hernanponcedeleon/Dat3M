@@ -49,7 +49,7 @@ public class RelRangeIdentity extends UnaryRelation {
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
-        //TODO: Optimize using minSets
+        //TODO: Optimize using minSets (but no CAT uses this anyway)
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
             for(Tuple tuple : activeSet){
@@ -62,7 +62,7 @@ public class RelRangeIdentity extends UnaryRelation {
     @Override
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
-        //TODO: Optimize using minSets
+        //TODO: Optimize using minSets (but no CAT uses this anyway)
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();
             BoolExpr opt = ctx.mkFalse();

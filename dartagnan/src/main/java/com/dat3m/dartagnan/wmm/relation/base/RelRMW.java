@@ -83,11 +83,8 @@ public class RelRMW extends StaticRelation {
             filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(EType.LOCK));
             for(Event e : task.getProgram().getCache().getEvents(filter)){
             	if(e instanceof Load) {
-            		Event next = e.getSuccessor();
-            		Event nnext = next.getSuccessor();
-            		baseMaxTupleSet.add(new Tuple(e, next));
-            		baseMaxTupleSet.add(new Tuple(e, nnext));
-            		baseMaxTupleSet.add(new Tuple(next, nnext));
+            	    // Connect Load to Store
+            		baseMaxTupleSet.add(new Tuple(e, e.getSuccessor().getSuccessor()));
             	}
             }
 
@@ -114,6 +111,8 @@ public class RelRMW extends StaticRelation {
             maxTupleSet.addAll(baseMaxTupleSet);
 
             // LoadExcl -> StoreExcl
+            //TODO: This can be improved using branching analysis
+            // to find guaranteed pairs (the encoding can then also be improved)
             for(Thread thread : task.getProgram().getThreads()){
                 for(Event load : thread.getCache().getEvents(loadFilter)){
                     for(Event store : thread.getCache().getEvents(storeFilter)){
@@ -133,8 +132,7 @@ public class RelRMW extends StaticRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
-        TupleSet baseEncodeTupleSet = new TupleSet(Sets.intersection(encodeTupleSet, baseMaxTupleSet));
-        encodeTupleSet = baseEncodeTupleSet;
+        encodeTupleSet = new TupleSet(Sets.intersection(encodeTupleSet, baseMaxTupleSet));
         BoolExpr enc = super.encodeApprox(ctx);
         encodeTupleSet = origEncodeTupleSet;
 

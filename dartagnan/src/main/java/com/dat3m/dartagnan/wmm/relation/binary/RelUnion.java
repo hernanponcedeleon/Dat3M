@@ -15,6 +15,11 @@ import com.microsoft.z3.Context;
  * @author Florian Furbach
  */
 public class RelUnion extends BinaryRelation {
+    //TODO: We can make use of minTupleSet when propagating active sets
+    // If (e1,e2) is in min(r1), then we don't need to propagate it to r2
+    // Actually, we might not need to propagate at all if it is in the unions minSet.
+    // CARE 1: If it is in the minSet of both, we need to propagate to at least one of them
+    // Care 2: When encoding, we need to make use of this fact
 
     public static String makeTerm(Relation r1, Relation r2){
         return "(" + r1.getName() + "+" + r2.getName() + ")";
@@ -33,8 +38,7 @@ public class RelUnion extends BinaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            minTupleSet.addAll(Sets.union(r1.getMinTupleSet(), r2.getMinTupleSet()));
+            minTupleSet = new TupleSet(Sets.union(r1.getMinTupleSet(), r2.getMinTupleSet()));
         }
         return minTupleSet;
     }

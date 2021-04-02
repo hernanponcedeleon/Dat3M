@@ -19,6 +19,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  *
@@ -57,7 +59,6 @@ public class RelTransRef extends RelTrans {
             for(Event e : task.getProgram().getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
                 minTupleSet.add(new Tuple(e, e));
             }
-
         }
         return minTupleSet;
     }
@@ -95,38 +96,23 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        return invokeEncode("encodeApprox", ctx);
-    }
+    protected BoolExpr encodeApprox(Context ctx) { return invokeEncode(super::encodeApprox, ctx); }
 
     @Override
-    protected BoolExpr encodeIDL(Context ctx) {
-        return invokeEncode("encodeIDL", ctx);
-    }
+    protected BoolExpr encodeIDL(Context ctx) { return invokeEncode(super::encodeIDL, ctx); }
 
     @Override
-    protected BoolExpr encodeLFP(Context ctx) {
-        return invokeEncode("encodeLFP", ctx);
-    }
+    protected BoolExpr encodeLFP(Context ctx) { return invokeEncode(super::encodeLFP, ctx); }
 
-    private BoolExpr invokeEncode(String methodName, Context ctx){
-        try{
-            //TODO: What is this sorcery? We will fix this later!
-            MethodHandle method = MethodHandles.lookup().findSpecial(RelTrans.class, methodName,
-                    MethodType.methodType(BoolExpr.class, Context.class), RelTransRef.class);
-
+    private BoolExpr invokeEncode(Function<Context, BoolExpr> originalMethod, Context ctx) {
             TupleSet temp = encodeTupleSet;
             encodeTupleSet = transEncodeTupleSet;
-            BoolExpr enc = (BoolExpr)method.invoke(this, ctx);
+            BoolExpr enc = originalMethod.apply(ctx);
             encodeTupleSet = temp;
 
             for(Tuple tuple : identityEncodeTupleSet){
                 enc = ctx.mkAnd(enc, ctx.mkEq(tuple.getFirst().exec(), this.getSMTVar(tuple, ctx)));
             }
             return enc;
-        } catch (Throwable e){
-            e.printStackTrace();
-            throw new RuntimeException("Failed to encode relation " + this.getName());
-        }
     }
 }

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+//TODO: This relation may contain non-visible events. Is this reasonable?
 public class RelSetIdentity extends StaticRelation {
 
     protected FilterAbstract filter;

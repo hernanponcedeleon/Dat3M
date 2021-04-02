@@ -13,6 +13,7 @@ import com.microsoft.z3.Context;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelCrit extends StaticRelation {
+    //TODO: We can optimize this a lot by using branching analysis
 
     public RelCrit(){
         term = "crit";
@@ -22,7 +23,7 @@ public class RelCrit extends StaticRelation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet();
-            // todo
+            // Todo
         }
         return minTupleSet;
     }

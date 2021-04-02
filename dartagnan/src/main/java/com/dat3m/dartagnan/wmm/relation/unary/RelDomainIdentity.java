@@ -49,7 +49,7 @@ public class RelDomainIdentity extends UnaryRelation {
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
-        //TODO: Optimize this using minTupleSets
+        //TODO: Optimize using minSets (but no CAT uses this anyway)
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
             for(Tuple tuple : activeSet){
@@ -66,7 +66,7 @@ public class RelDomainIdentity extends UnaryRelation {
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();
             BoolExpr opt = ctx.mkFalse();
-            //TODO: Optimize this using minTupleSets
+            //TODO: Optimize using minSets (but no CAT uses this anyway)
             for(Tuple tuple2 : r1.getMaxTupleSet().getByFirst(e)){
                 opt = ctx.mkOr(r1.getSMTVar(e, tuple2.getSecond(), ctx));
             }

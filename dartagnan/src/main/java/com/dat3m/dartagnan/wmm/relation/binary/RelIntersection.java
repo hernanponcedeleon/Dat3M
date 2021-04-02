@@ -34,8 +34,7 @@ public class RelIntersection extends BinaryRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            minTupleSet.addAll(Sets.intersection(r1.getMinTupleSet(), r2.getMinTupleSet()));
+            minTupleSet = new TupleSet(Sets.intersection(r1.getMinTupleSet(), r2.getMinTupleSet()));
         }
         return minTupleSet;
     }

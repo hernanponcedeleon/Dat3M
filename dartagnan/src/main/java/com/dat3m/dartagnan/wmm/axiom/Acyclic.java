@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
@@ -67,6 +69,14 @@ public class Acyclic extends Axiom {
                 }
             }
         }
+        for (Tuple t : result) {
+            Event e1 = t.getFirst();
+            Event e2 = t.getSecond();
+            if (!e1.is(EType.VISIBLE) || !e2.is(EType.VISIBLE)) {
+                System.out.println(t);
+            }
+        }
+
         logger.info("encodeTupleSet size " + result.size());
         return result;
     }

@@ -92,19 +92,19 @@ public class Porthos {
         s1.add(pTarget.encodeCF(ctx));
         s1.add(pTarget.encodeFinalRegisterValues(ctx));
         s1.add(targetWmm.encode(ctx));
-        s1.add(targetWmm.consistent(pTarget, ctx));
+        s1.add(targetWmm.consistent(ctx));
 
         s1.add(sourceCF);
         s1.add(sourceFV);
         s1.add(sourceMM);
-        s1.add(sourceWmm.inconsistent(pSource, ctx));
+        s1.add(sourceWmm.inconsistent(ctx));
 
         s1.add(encodeCommonExecutions(pTarget, pSource, ctx));
 
         s2.add(sourceCF);
         s2.add(sourceFV);
         s2.add(sourceMM);
-        s2.add(sourceWmm.consistent(pSource, ctx));
+        s2.add(sourceWmm.consistent(ctx));
 
         boolean isPortable = true;
         int iterations = 1;

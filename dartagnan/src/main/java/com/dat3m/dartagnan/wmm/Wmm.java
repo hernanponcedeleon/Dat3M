@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -33,8 +32,8 @@ public class Wmm {
     private final RelationRepository relationRepository;
     private final List<RecursiveGroup> recursiveGroups = new ArrayList<>();
 
-    private Program program;
     private VerificationTask task;
+    private boolean relationsAreEncoded = false;
 
     public Wmm() {
         relationRepository = new RelationRepository();
@@ -78,7 +77,6 @@ public class Wmm {
 
     public void initialise(VerificationTask task, Context ctx) {
         this.task = task;
-        this.program = task.getProgram();
         new AliasAnalysis().calculateLocationSets(task.getProgram(), task.getSettings().getAlias());
 
         for(String relName : baseRelations){
@@ -90,7 +88,7 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().updateRecursiveGroupId(ax.getRel().getRecursiveGroupId());
+            ax.getRelation().updateRecursiveGroupId(ax.getRelation().getRecursiveGroupId());
         }
 
         for(RecursiveGroup recursiveGroup : recursiveGroups){
@@ -99,6 +97,10 @@ public class Wmm {
 
         for(Relation relation : relationRepository.getRelations()){
             relation.initialise(task, ctx);
+        }
+
+        for (Axiom axiom : axioms) {
+            axiom.initialise(task, ctx);
         }
     }
 
@@ -148,7 +150,7 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().getMaxTupleSet();
+            ax.getRelation().getMaxTupleSet();
         }
 
         for(String relName : baseRelations){
@@ -165,7 +167,7 @@ public class Wmm {
         }
 
         for (Axiom ax : axioms) {
-            ax.getRel().addEncodeTupleSet(ax.getEncodeTupleSet());
+            ax.getRelation().addEncodeTupleSet(ax.getEncodeTupleSet());
         }
 
         Collections.reverse(recursiveGroups);
@@ -192,15 +194,15 @@ public class Wmm {
     public BoolExpr encode(Context ctx) {
         BoolExpr enc = encodeBase(ctx);
         for (Axiom ax : axioms) {
-            enc = ctx.mkAnd(enc, ax.getRel().encode(ctx));
+            enc = ctx.mkAnd(enc, ax.getRelation().encode(ctx));
         }
+        relationsAreEncoded = true;
         return enc;
     }
 
     // Encodes all axioms. This should be called after <encode>
-    public BoolExpr consistent(Program program, Context ctx) {
-        if(this.program != program){
-            //TODO: Change this (this check doesn't show that the relations are already encoded)
+    public BoolExpr consistent(Context ctx) {
+        if(!relationsAreEncoded){
             throw new IllegalStateException("Wmm relations must be encoded before consistency predicate");
         }
         BoolExpr expr = ctx.mkTrue();
@@ -210,9 +212,8 @@ public class Wmm {
         return expr;
     }
 
-    public BoolExpr inconsistent(Program program, Context ctx) {
-        if(this.program != program){
-            //TODO: Change this (this check doesn't show that the relations are already encoded)
+    public BoolExpr inconsistent(Context ctx) {
+        if(relationsAreEncoded){
             throw new IllegalStateException("Wmm relations must be encoded before inconsistency predicate");
         }
         BoolExpr expr = ctx.mkFalse();

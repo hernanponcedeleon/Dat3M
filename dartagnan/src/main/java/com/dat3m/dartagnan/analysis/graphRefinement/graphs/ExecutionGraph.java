@@ -123,7 +123,7 @@ public class ExecutionGraph {
             return axiomMap.get(axiom);
 
         GraphAxiom graphAxiom = null;
-        EventGraph innerGraph = getGraphFromRelation(axiom.getRel());
+        EventGraph innerGraph = getGraphFromRelation(axiom.getRelation());
         if (axiom.isAcyclicity()) {
             graphAxiom = new AcyclicityAxiom(innerGraph);
         } else if (axiom.isEmptiness()) {

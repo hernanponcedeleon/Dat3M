@@ -112,7 +112,7 @@ public class RelComposition extends BinaryRelation {
 
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
-        TupleSet minSet = /*new TupleSet();*/ getMinTupleSet();
+        TupleSet minSet = getMinTupleSet();
 
         //TODO: Fix this abuse of hashCode
         Map<Integer, BoolExpr> exprMap = new HashMap<>();

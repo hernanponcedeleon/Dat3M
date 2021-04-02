@@ -71,57 +71,11 @@ public class RelRf extends Relation {
                 }
             }
             removeMutuallyExclusiveTuples(maxTupleSet);
+            applyLocalConsistency();
 
-            if (task.getMemoryModel().isLocallyConsistent()) {
-                // Remove future reads
-                maxTupleSet.removeIf(Tuple::isBackward);
-
-                // Remove past reads
-                BranchEquivalence eq = task.getBranchEquivalence();
-                Set<Tuple> deletedTuples = new HashSet<>();
-                for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ))) {
-                    if (((MemEvent)read).getMaxAddressSet().size() != 1)
-                        continue;
-
-                    List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
-                            .filter(e -> (e.getThread() == read.getThread() || e.is(EType.INIT)))
-                            .map(x -> (MemEvent)x)
-                            .sorted((o1, o2) -> o1.is(EType.INIT) == o2.is(EType.INIT) ? (o1.getCId() - o2.getCId()) : o1.is(EType.INIT) ? -1 : 1)
-                            .collect(Collectors.toList());
-                    Set<MemEvent> deletedWrites = new HashSet<>();
-
-                    if (((MemEvent)read).getMaxAddressSet().size() == 1){
-                        List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
-                        if (!impliedWrites.isEmpty()) {
-                            Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
-                            if (!lastImplied.is(EType.INIT)) {
-                                Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
-                                possibleWrites.stream().filter(pred).forEach(deletedWrites::add);
-                                possibleWrites.removeIf(pred);
-                            }
-                        }
-                    }
-                    //TODO: If a read can read from multiple addresses, we have to make sure that
-                    // we don't let writes of different addresses override each other
-                    List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(EType.INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());;
-                    possibleWrites.stream().filter(x ->
-                            (x.is(EType.INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
-                             || (!x.is(EType.INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))
-                            .forEach(deletedWrites::add);
-                    for (Event w : deletedWrites) {
-                        deletedTuples.add(new Tuple(w, read));
-                    }
-                }
-
-                maxTupleSet.removeAll(deletedTuples);
-            }
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
         return maxTupleSet;
-    }
-
-    private boolean isExcl(Event e) {
-        return e.cf() != e.exec();
     }
 
     @Override
@@ -231,4 +185,50 @@ public class RelRf extends Relation {
     private BoolExpr mkSeqVar(int readId, int i, Context ctx) {
         return (BoolExpr) ctx.mkConst("s(" + term + ",E" + readId + "," + i + ")", ctx.mkBoolSort());
     }
+
+    private void applyLocalConsistency() {
+        if (task.getMemoryModel().isLocallyConsistent()) {
+            // Remove future reads
+            maxTupleSet.removeIf(Tuple::isBackward);
+
+            // Remove past reads
+            BranchEquivalence eq = task.getBranchEquivalence();
+            Set<Tuple> deletedTuples = new HashSet<>();
+            for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ))) {
+                if (((MemEvent)read).getMaxAddressSet().size() != 1)
+                    continue;
+
+                List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
+                        .filter(e -> (e.getThread() == read.getThread() || e.is(EType.INIT)))
+                        .map(x -> (MemEvent)x)
+                        .sorted((o1, o2) -> o1.is(EType.INIT) == o2.is(EType.INIT) ? (o1.getCId() - o2.getCId()) : o1.is(EType.INIT) ? -1 : 1)
+                        .collect(Collectors.toList());
+                Set<MemEvent> deletedWrites = new HashSet<>();
+
+                if (((MemEvent)read).getMaxAddressSet().size() == 1){
+                    List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
+                    if (!impliedWrites.isEmpty()) {
+                        Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
+                        if (!lastImplied.is(EType.INIT)) {
+                            Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
+                            possibleWrites.stream().filter(pred).forEach(deletedWrites::add);
+                            possibleWrites.removeIf(pred);
+                        }
+                    }
+                }
+                //TODO: If a read can read from multiple addresses, we have to make sure that
+                // we don't let writes of different addresses override each other
+                List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(EType.INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());;
+                possibleWrites.stream().filter(x ->
+                        (x.is(EType.INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
+                                || (!x.is(EType.INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))
+                        .forEach(deletedWrites::add);
+                for (Event w : deletedWrites) {
+                    deletedTuples.add(new Tuple(w, read));
+                }
+            }
+            maxTupleSet.removeAll(deletedTuples);
+        }
+    }
+
 }
