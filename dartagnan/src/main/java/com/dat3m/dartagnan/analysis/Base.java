@@ -179,7 +179,7 @@ public class Base {
 
 
 
-	public static Result runAnalysisIncrementalAssumptionSolver(Solver solver, Context ctx, VerificationTask task) {
+	public static Result runAnalysisAssumeSolver(Solver solver, Context ctx, VerificationTask task) {
 		task.unrollAndCompile();
 		if(task.getProgram().getAss() instanceof AssertTrue) {
 			logger.info("Verification finished: assertion trivialy holds");
