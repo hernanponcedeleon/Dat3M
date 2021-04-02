@@ -2,7 +2,7 @@ package com.dat3m.dartagnan;
 
 public class GlobalSettings {
     // === Parsing ===
-    public static final boolean ATOMIC_AS_LOCK = true;
+    public static final boolean ATOMIC_AS_LOCK = false;
 
     // === WMM Assumptions ===
     public static final boolean ASSUME_LOCAL_CONSISTENCY = true;
@@ -16,6 +16,7 @@ public class GlobalSettings {
 
     // === Static analysis ===
     public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
+    public static final boolean PERFORM_REORDERING = true;
 
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;

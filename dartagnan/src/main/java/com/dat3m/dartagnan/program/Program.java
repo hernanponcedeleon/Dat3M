@@ -110,6 +110,7 @@ public class Program {
     	for(Thread t : threads){
     		t.clearCache();
     	}
+    	cache = null;
     }
 
     public List<Thread> getThreads() {
@@ -153,47 +154,6 @@ public class Program {
     	}
 	}
 
-	public void simplify() {
-		// Some simplification are only applicable after others.
-		// Thus we apply them iteratively until we reach a fixpoint.
-		int size = getEvents().size();
-		one_step_simplify();
-		while(getEvents().size() != size) {
-	    	size = getEvents().size();
-	    	one_step_simplify();    		
-		}
-	}
-	
-	private void one_step_simplify() {
-        for(Thread thread : threads){
-            thread.simplify();
-        }
-        cache = null;
-    }
-
-    public void eliminateDeadCode() {
-        if (!isCompiled) {
-            throw new IllegalStateException("The program needs to be compiled first.");
-        }
-        BranchEquivalence eq = getBranchEquivalence();
-        Set<Event> unreachEvents = eq.getUnreachableClass();
-        if (unreachEvents.isEmpty())
-            return;
-
-        Event pred = null;
-        for (Event e : getEvents()) {
-            // NOTE: We don't eliminate assertions because this can accidentally make
-            // tasks "safe" if the assertion is unreachable under a small bound
-            if (!e.is(EType.ASSERTION) && unreachEvents.contains(e)) {
-                e.delete(pred);
-                eq.removeUnreachableEvent(e);
-            } else {
-                pred = e;
-            }
-        }
-        this.cache = null;
-        clearCache();
-    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
@@ -314,117 +274,68 @@ public class Program {
 
 
 
-    // ------------------------- Preprocessing --------------------
+    // ----------------------------- Preprocessing -----------------------------------
 
     public void reorder() {
+        if (isUnrolled) {
+            throw new IllegalStateException("Reordering should be performed before unrolling.");
+        }
+
+        for (Thread t : getThreads()) {
+            t.reorderBranches();
+        }
+    }
+
+    public void eliminateDeadCode() {
+        if (isUnrolled) {
+            throw new IllegalStateException("Dead code elimination should be performed before unrolling.");
+        }
         int id = 0;
         for (Thread t : getThreads()) {
-            System.out.println("-----------" + t.getId() + "-----------");
-            eliminateDeadCode(t);
-            id = computeMoveables(t.getEntry(), t.getExit(), id);
-            //id = reorder(t, id);
+            id = t.eliminateDeadCode(id);
         }
-    }
+        cache = null;
 
-    private int computeMoveables(Event begin, Event end, int id) {
-        List<MoveableBranch> moveables = new ArrayList<>();
-        Map<Event, MoveableBranch> map = new HashMap<>();
-
-        MoveableBranch cur = new MoveableBranch();
-        moveables.add(cur);
-        Event e = begin;
-        while (e != null) {
-            cur.events.add(e);
-            map.put(e, cur);
-
-            if (e.equals(end)) {
-                break;
-            }
-
-            if (e instanceof CondJump && ((CondJump)e).isGoto()) {
-                cur = new MoveableBranch();
-                moveables.add(cur);
-            }
-            e = e.getSuccessor();
+        /*if (!isCompiled) {
+            throw new IllegalStateException("The program needs to be compiled first.");
         }
-
-        for (MoveableBranch br : moveables) {
-            for (Event ev : br.events.stream().filter(x -> x instanceof CondJump).collect(Collectors.toList())) {
-                CondJump jump = (CondJump) ev;
-                br.successors.add(map.get(jump.getLabel()));
-            }
-        }
-
-        DependencyGraph<MoveableBranch> cfGraph = DependencyGraph.fromSingleton(moveables.get(0), x -> x.successors);
-
-        Event pred = null;
-        List<Set<DependencyGraph<MoveableBranch>.Node>> sccs = Lists.reverse(cfGraph.getSCCs());
-        for (Set<DependencyGraph<MoveableBranch>.Node> scc : sccs) {
-            List<MoveableBranch> branches = scc.stream().map(DependencyGraph.Node::getContent)
-                    .sorted(Comparator.comparingInt(x -> x.events.get(0).getOId())).collect(Collectors.toList());
-            for (MoveableBranch br : branches) {
-                for (Event ev : br.events) {
-                    int oId = ev.getOId();
-                    ev.setOId(id++);
-                    if (pred != null) {
-                        pred.setSuccessor(ev);
-                    }
-                    pred = ev;
-                    System.out.println(ev.toString() + " (" + ev.getOId() + ", " + oId + ")");
-                    if (ev instanceof CondJump) {
-                        CondJump jump = (CondJump) ev;
-                        int jumpIndex = cfGraph.get(br).getTopologicalIndex();
-                        int labelIndex = cfGraph.get(map.get(jump.getLabel())).getTopologicalIndex();
-                        if (jump.getLabel().getOId() < jump.getOId() && labelIndex < jumpIndex) {
-                            System.out.println("=== Fake Loop ===");
-                        }
-
-                    }
-                }
-
-            }
-        }
-        return id;
-    }
-
-    private void computeReachable(Event e, Set<Event> reachable) {
-        if (reachable.contains(e))
+        BranchEquivalence eq = getBranchEquivalence();
+        Set<Event> unreachEvents = eq.getUnreachableClass();
+        if (unreachEvents.isEmpty())
             return;
 
-        while (e != null && reachable.add(e)) {
-            if (e instanceof CondJump) {
-                CondJump j = (CondJump) e;
-                if (j.isGoto()) {
-                    e = j.getLabel();
-                    continue;
-                }
-                else {
-                    computeReachable(j.getLabel(), reachable);
-                }
+        Event pred = null;
+        for (Event e : getEvents()) {
+            // NOTE: We don't eliminate assertions because this can accidentally make
+            // tasks "safe" if the assertion is unreachable under a small bound
+            if (!e.is(EType.ASSERTION) && unreachEvents.contains(e)) {
+                e.delete(pred);
+                eq.removeUnreachableEvent(e);
+            } else {
+                pred = e;
             }
-            e = e.getSuccessor();
+        }
+        this.cache = null;
+        clearCache();*/
+    }
+
+    public void simplify() {
+        // Some simplification are only applicable after others.
+        // Thus we apply them iteratively until we reach a fixpoint.
+        int size = getEvents().size();
+        one_step_simplify();
+        while(getEvents().size() != size) {
+            size = getEvents().size();
+            one_step_simplify();
         }
     }
 
-    private void eliminateDeadCode(Thread t) {
-        Set<Event> reachableEvents = new HashSet<>();
-        computeReachable(t.getEntry(), reachableEvents);
-
-        Event p = null;
-        Event cur = t.getEntry();
-        while (cur != null) {
-            if (!reachableEvents.contains(cur)) {
-                cur.delete(p);
-                cur = p;
-            }
-            p = cur;
-            cur = cur.getSuccessor();
+    private void one_step_simplify() {
+        for(Thread thread : threads){
+            thread.simplify();
         }
+        cache = null;
     }
 
-    private static class MoveableBranch {
-        List<Event> events = new ArrayList<>();
-        Set<MoveableBranch> successors = new HashSet<>();
-    }
 
 }

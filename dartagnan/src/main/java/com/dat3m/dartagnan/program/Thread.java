@@ -3,12 +3,16 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.Lists;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Thread {
 
@@ -176,4 +180,134 @@ public class Thread {
     	}
         return enc;
     }
+
+
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------- Preprocessing -----------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public int eliminateDeadCode(int startId) {
+        if (entry.is(EType.INIT)) {
+            return startId;
+        }
+
+        Set<Event> reachableEvents = new HashSet<>();
+        computeReachableEvents(getEntry(), reachableEvents);
+
+        Event pred = null;
+        Event cur = getEntry();
+        int id = startId;
+        while (cur != null) {
+            if (!reachableEvents.contains(cur) && cur != getExit()) {
+                cur.delete(pred);
+                cur = pred;
+            } else {
+                //System.out.println(cur.toString() + " (" + id + " <- " + cur.getOId() + ")");
+                cur.setOId(id++);
+            }
+            pred = cur;
+            cur = cur.getSuccessor();
+        }
+
+        clearCache();
+        return id;
+    }
+
+    private void computeReachableEvents(Event e, Set<Event> reachable) {
+        if (reachable.contains(e))
+            return;
+
+        while (e != null && reachable.add(e)) {
+            if (e instanceof CondJump) {
+                CondJump j = (CondJump) e;
+                if (j.isGoto()) {
+                    e = j.getLabel();
+                    continue;
+                }
+                else {
+                    computeReachableEvents(j.getLabel(), reachable);
+                }
+            }
+            e = e.getSuccessor();
+        }
+    }
+
+
+
+    public void reorderBranches() {
+        List<MoveableBranch> moveables = new ArrayList<>();
+        Map<Event, MoveableBranch> map = new HashMap<>();
+
+        // =========== Compute all moveable branches ===========
+        MoveableBranch cur = new MoveableBranch();
+        moveables.add(cur);
+        Event e = entry;
+
+        while (e != null) {
+            cur.events.add(e);
+            map.put(e, cur);
+
+            if (e.equals(exit)) {
+                break;
+            } else if (e instanceof CondJump && ((CondJump)e).isGoto()) {
+                moveables.add(cur = new MoveableBranch());
+            }
+
+            e = e.getSuccessor();
+        }
+        // =====================================================================
+
+        // =================== Build Successor Graph on Branches ===============
+        MoveableBranch finalBranch = map.get(exit);
+        for (MoveableBranch br : moveables) {
+            for (Event ev : br.events.stream().filter(x -> x instanceof CondJump).collect(Collectors.toList())) {
+                CondJump jump = (CondJump) ev;
+                br.successors.add(map.get(jump.getLabel()));
+                br.successors.add(finalBranch);
+            }
+        }
+        DependencyGraph<MoveableBranch> cfGraph = DependencyGraph.fromSingleton(moveables.get(0), x -> x.successors);
+
+        // ======================= Traverse the graph and reorder the branches ===================
+        Event pred = null;
+        int id = getEntry().getOId();
+        List<Set<DependencyGraph<MoveableBranch>.Node>> sccs = Lists.reverse(cfGraph.getSCCs());
+        for (Set<DependencyGraph<MoveableBranch>.Node> scc : sccs) {
+            List<MoveableBranch> branches = scc.stream().map(DependencyGraph.Node::getContent)
+                    .sorted(Comparator.comparingInt(x -> x.events.get(0).getOId())).collect(Collectors.toList());
+            for (MoveableBranch br : branches) {
+                for (Event ev : br.events) {
+                    if (pred != null) {
+                        pred.setSuccessor(ev);
+                    }
+                    ev.setOId(id++);
+                    pred = ev;
+
+                    /*if (ev instanceof CondJump) {
+                        CondJump jump = (CondJump) ev;
+                        int jumpIndex = cfGraph.get(br).getTopologicalIndex();
+                        int labelIndex = cfGraph.get(map.get(jump.getLabel())).getTopologicalIndex();
+                        if (jump.getLabel().getOId() < jump.getOId() && labelIndex < jumpIndex) {
+                            System.out.println("=== Fake Loop ===");
+                        }
+
+                    }*/
+                }
+
+            }
+        }
+    }
+
+    private static class MoveableBranch {
+        List<Event> events = new ArrayList<>();
+        Set<MoveableBranch> successors = new HashSet<>();
+    }
+
+
+
+
+
+
 }

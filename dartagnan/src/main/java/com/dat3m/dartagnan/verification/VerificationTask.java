@@ -58,14 +58,18 @@ public class VerificationTask {
     // ===================== Utility Methods ====================
 
     public void unrollAndCompile() {
+        logger.info("#Events: " + program.getEvents().size());
+        if (GlobalSettings.PERFORM_DEAD_CODE_ELIMINATION) {
+            program.eliminateDeadCode();
+            logger.info("#Events after DCE: " + program.getEvents().size());
+        }
+        if (GlobalSettings.PERFORM_REORDERING) {
+            program.reorder();
+            logger.info("Events reordered");
+        }
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
-        logger.info("Event before DCE: " + program.getEvents().size());
-        if (GlobalSettings.PERFORM_DEAD_CODE_ELIMINATION) {
-            program.eliminateDeadCode();
-            logger.info("Event after DCE: " + program.getEvents().size());
-        }
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
         program.updateAssertion();
