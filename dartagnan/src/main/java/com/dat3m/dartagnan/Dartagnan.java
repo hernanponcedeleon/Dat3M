@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -56,7 +57,7 @@ public class Dartagnan {
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
-
+		
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();
@@ -102,11 +103,18 @@ public class Dartagnan {
 				return checkForRaces(s, ctx, p, mcm, target, settings);	
 			case REACHABILITY:
                 VerificationTask task = new VerificationTask(p, mcm, target, settings);
-				return options.useISolver() ? 
-						runAnalysisIncrementalSolver(s, ctx, task) :
-						runAnalysis(s, ctx, task);
+				switch(options.solver()) {
+					case TWO:
+						return runAnalysis(s, ctx, task);
+					case INCREMENTAL:
+						return runAnalysisIncrementalSolver(s, ctx, task);
+					case ASSUME:
+						return runAnalysisAssumeSolver(s, ctx, task);
+					default:
+						throw new RuntimeException("Unrecognized solver mode: " + options.solver());
+				}
 			default:
-				throw new RuntimeException("Unrecognized analysis");
+				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
 		}
 	}
 

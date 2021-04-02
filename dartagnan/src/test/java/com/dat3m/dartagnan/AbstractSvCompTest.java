@@ -19,6 +19,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -28,7 +31,7 @@ import static org.junit.Assert.*;
 public abstract class AbstractSvCompTest {
 
 	public static final int TIMEOUT = 180000;
-	
+
     private final String path;
     private final Wmm wmm;
     private final Settings settings;
@@ -138,6 +141,21 @@ public abstract class AbstractSvCompTest {
             if(ctx != null) {
                 ctx.close();
             }
+        }
+    }
+
+    @Test(timeout = 180000)
+    public void testAssume() {
+        try {
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	expected = readExpected(property);
+            Program program = new ProgramParser().parse(new File(path));
+            Context ctx = new Context();
+            Solver solver = ctx.mkSolver();
+            assertTrue(runAnalysisAssumeSolver(solver, ctx, program, wmm, Arch.NONE, settings).equals(expected));
+            ctx.close();
+        } catch (IOException e){
+            fail("Missing resource file");
         }
     }
 

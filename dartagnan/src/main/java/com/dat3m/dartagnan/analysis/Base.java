@@ -243,5 +243,5 @@ public class Base {
 		res = task.getProgram().getAss().getInvert() ? res.invert() : res;
 		logger.info("Verification finished with result " + res);
 		return res;
-	}
+    }
 }
