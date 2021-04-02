@@ -1,0 +1,12 @@
+format_version: '2.0'
+
+# old file name: mix000_rmo.opt_false-unreach-call.i
+input_files: 'mix000_rmo.opt.i'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: false
+
+options:
+  language: C
+  data_model: ILP32
