@@ -53,8 +53,7 @@ public class Thread {
 
     public ThreadCache getCache(){
         if(cache == null){
-            List<Event> events = new ArrayList<>(entry.getSuccessors());
-            cache = new ThreadCache(events);
+            cache = new ThreadCache(entry.getSuccessors());
         }
         return cache;
     }

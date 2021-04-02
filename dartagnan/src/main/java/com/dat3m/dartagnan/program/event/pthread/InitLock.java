@@ -44,12 +44,6 @@ public class InitLock extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        LinkedList<Event> events = new LinkedList<>();
-        events.add(new Store(address, value, SC));
-        return compileSequence(target, nextId, predecessor, events);
-    }*/
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {

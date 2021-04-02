@@ -60,38 +60,6 @@ public class AtomicLoad extends MemEvent implements RegWriter {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        LinkedList<Event> events = new LinkedList<>();
-        Load load = new Load(resultRegister, address, mo);
-		events.add(load);
-
-        switch (target) {
-            case NONE: case TSO:
-                break;
-            case POWER:
-                if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)){
-                	Label label = new Label("Jump_" + oId);
-                	CondJump jump = new CondJump(new Atom(resultRegister, EQ, resultRegister), label);
-                	events.addLast(jump);
-                	events.addLast(label);
-                	events.addLast(new Fence("Isync"));
-                    if(SC.equals(mo)){
-                        events.addFirst(new Fence("Sync"));
-                    }
-                }
-                break;
-            case ARM: case ARM8:
-                if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)) {
-                    events.addLast(new Fence("Ish"));
-                }
-                break;
-            default:
-            	throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-        }
-        return compileSequence(target, nextId, predecessor, events);
-    }*/
-
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();

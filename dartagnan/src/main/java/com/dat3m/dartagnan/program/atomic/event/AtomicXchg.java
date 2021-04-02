@@ -42,21 +42,6 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-    	switch(target) {
-    		case NONE: case TSO:
-    			RMWLoad load = new RMWLoad(resultRegister, address, mo);                
-                RMWStore store = new RMWStore(load, address, value, mo);
-
-                LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
-                return compileSequence(target, nextId, predecessor, events);
-    		default:
-    	        String tag = mo != null ? "_explicit" : "";
-    	        throw new RuntimeException("Compilation of atomic_exchange" + tag + " is not implemented for " + target);    			
-    	}
-    }*/
-
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         switch(target) {

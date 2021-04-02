@@ -122,6 +122,7 @@ public class Program {
     }
 
 	public List<Event> getEvents(){
+        // TODO: Why don't we use the cache if available?
         List<Event> events = new ArrayList<>();
 		for(Thread t : threads){
 			events.addAll(t.getCache().getEvents(FilterBasic.get(EType.ANY)));
@@ -295,28 +296,6 @@ public class Program {
             id = t.eliminateDeadCode(id);
         }
         cache = null;
-
-        /*if (!isCompiled) {
-            throw new IllegalStateException("The program needs to be compiled first.");
-        }
-        BranchEquivalence eq = getBranchEquivalence();
-        Set<Event> unreachEvents = eq.getUnreachableClass();
-        if (unreachEvents.isEmpty())
-            return;
-
-        Event pred = null;
-        for (Event e : getEvents()) {
-            // NOTE: We don't eliminate assertions because this can accidentally make
-            // tasks "safe" if the assertion is unreachable under a small bound
-            if (!e.is(EType.ASSERTION) && unreachEvents.contains(e)) {
-                e.delete(pred);
-                eq.removeUnreachableEvent(e);
-            } else {
-                pred = e;
-            }
-        }
-        this.cache = null;
-        clearCache();*/
     }
 
     public void simplify() {

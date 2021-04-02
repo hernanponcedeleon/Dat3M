@@ -46,14 +46,9 @@ public class CondJump extends Event implements RegReaderData {
 		notifier.addListener(this);
     }
 
-    private static Context defaultCtx = new Context();
+    private static final Context defaultCtx = new Context();
     public boolean isGoto() {
-        /*try(Context ctx = new Context()) {
-            return expr.toZ3Bool(this, ctx).simplify().isTrue();
-            // NOTE: this seems to be worse, despite giving more accurate branching...
-        }*/
         return expr.toZ3Bool(this, defaultCtx).simplify().isTrue();
-        //return expr instanceof BConst && ((BConst)expr).getValue();
     }
     
     public Label getLabel(){
@@ -92,25 +87,6 @@ public class CondJump extends Event implements RegReaderData {
     		this.label4Copy = (Label)label;
     	}
     }
-    
-    /*@Override
-    public void simplify(Event predecessor) {
-    	Event prev = this;
-    	Event next = successor;
-    	// If the label immediately follows and the condition is either true or false we can remove the jump
-    	// (in both cases the next executed event is the successor)
-    	if(label.equals(successor) && expr instanceof BConst) {
-    		prev = predecessor;
-    		// If the label is only the target of the removed jump, we can also remove the label
-    		if(label.listeners.size() == 1) {
-    			next = successor.getSuccessor();
-    		}
-    		predecessor.setSuccessor(next);
-    	}
-		if(next != null){
-			next.simplify(prev);
-		}
-    }*/
 
     @Override
     protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
@@ -151,24 +127,6 @@ public class CondJump extends Event implements RegReaderData {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public void unroll(int bound, Event predecessor) {
-        if(label.getOId() < oId){
-        	if(bound > 1) {
-        		predecessor = copyPath(label, successor, predecessor);
-        	}
-        	Event next = predecessor;
-        	if(bound == 1) {
-            	next = new BoundEvent();
-        		predecessor.setSuccessor(next);        		
-        	}
-        	if(successor != null) {
-        		successor.unroll(bound, next);
-        	}
-    	    return;
-        }
-        super.unroll(bound, predecessor);
-    }*/
 
     @Override
     public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
@@ -202,15 +160,6 @@ public class CondJump extends Event implements RegReaderData {
     
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
-
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        cId = nextId++;
-        if(successor == null){
-            throw new RuntimeException("Malformed CondJump event");
-        }
-        return successor.compile(target, nextId, this);
-    }*/
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {

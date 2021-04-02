@@ -50,18 +50,6 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        if(target == Arch.NONE) {
-            RMWLoad load = new RMWLoad(resultRegister, address, Mo.RELAXED);
-            RMWStore store = new RMWStore(load, address, new IExprBin(resultRegister, op, value), Mo.RELAXED);
-            load.addFilters(EType.NORETURN);
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
-            return compileSequence(target, nextId, predecessor, events);
-        }
-        return super.compile(target, nextId, predecessor);
-    }*/
-
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {

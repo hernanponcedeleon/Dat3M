@@ -105,11 +105,6 @@ public abstract class Event implements Comparable<Event> {
 	}
 
 	public final List<Event> getSuccessors(){
-		/*LinkedList<Event> result = successor != null
-				? successor.getSuccessors()
-				: new LinkedList<>();
-		result.addFirst(this);
-		return result;*/
 		List<Event> events = new ArrayList<>();
 		getSuccessorsRecursive(events, 0).execute();
 		return events;
@@ -206,18 +201,6 @@ public abstract class Event implements Comparable<Event> {
 	// --------------------------------
 
     public final void unroll(int bound, Event predecessor) {
-    	/*Event copy = this;
-    	if(predecessor != null) {
-    		// This check must be done inside this if
-    		// Needed for the current implementation of copy in If events
-    		if(bound != 1) {
-        		copy = getCopy();    			
-    		}
-    		predecessor.setSuccessor(copy);
-    	}
-    	if(successor != null) {
-    		successor.unroll(bound, copy);
-    	}*/
 		unrollRecursive(bound, predecessor, 0).execute();
     }
 
@@ -269,11 +252,6 @@ public abstract class Event implements Comparable<Event> {
     // -----------------------------------------------------------------------------------------------------------------
 
     public final int compile(Arch target, int nextId, Event predecessor) {
-		/*cId = nextId++;
-		if(successor != null){
-			return successor.compile(target, nextId, this);
-		}
-        return nextId;*/
 		return compileRecursive(target, nextId, predecessor, 0).execute();
     }
 
@@ -351,7 +329,8 @@ public abstract class Event implements Comparable<Event> {
 	private String repr;
 	public String repr() {
 		if (cId == -1) {
-			return "E" + cId;
+			// We have not yet compiled
+			return "E" + oId;
 		}
 		if (repr == null) {
 			// We cache the result, because this saves string concatenations

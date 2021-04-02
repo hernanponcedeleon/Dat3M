@@ -53,17 +53,6 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        if(target == Arch.ARM || target == Arch.ARM8) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo);
-            RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(register, store);
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(store, status));
-            return compileSequence(target, nextId, predecessor, events);
-        }
-        throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);
-    }*/
-
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.ARM || target == Arch.ARM8) {

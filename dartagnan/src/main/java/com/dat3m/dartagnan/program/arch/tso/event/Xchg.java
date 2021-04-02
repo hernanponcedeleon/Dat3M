@@ -62,24 +62,6 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        if(target == Arch.TSO) {
-            Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            RMWLoad load = new RMWLoad(dummyReg, address, null);
-            load.addFilters(EType.ATOM);
-
-            RMWStore store = new RMWStore(load, address, resultRegister, null);
-            store.addFilters(EType.ATOM);
-
-            Local local = new Local(resultRegister, dummyReg);
-
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
-            return compileSequence(target, nextId, predecessor, events);
-        }
-        throw new RuntimeException("Compilation of xchg is not implemented for " + target);
-    }*/
-
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.TSO) {

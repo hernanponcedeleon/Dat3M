@@ -70,33 +70,6 @@ public class Join extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-   /* @Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        LinkedList<Event> events = new LinkedList<>();
-        Load load = new Load(reg, address, SC);
-		events.add(load);
-
-        switch (target) {
-            case NONE: case TSO:
-                break;
-            case POWER:
-                Label label = new Label("Jump_" + oId);
-                CondJump jump = new CondJump(new Atom(reg, EQ, reg), label);
-                events.addLast(jump);
-                events.addLast(label);
-                events.addLast(new Fence("Isync"));
-                break;
-            case ARM: case ARM8:
-            	events.addLast(new Fence("Ish"));
-                break;
-            default:
-            	throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-        }
-        
-        events.add(new CondJump(new BExprUn(NOT, new Atom(reg, EQ, new IConst(0, -1))), label));
-        return compileSequence(target, nextId, predecessor, events);
-    }*/
-
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();

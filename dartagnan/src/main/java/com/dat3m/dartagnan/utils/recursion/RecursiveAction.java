@@ -75,7 +75,7 @@ public abstract class RecursiveAction {
 
         @Override
         public RecursiveAction process() {
-            first = first.process();
+            first = first.process(); // Note: This can lead to deep recursion if there are many successive Then's
             return first.isDone() ? then : this;
         }
     }

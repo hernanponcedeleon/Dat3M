@@ -44,30 +44,6 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        if(target == Arch.NONE) {
-            Register dummy = resultRegister;
-            if(resultRegister == value){
-                dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            }
-
-            RMWLoad load = new RMWLoad(dummy, address, Mo.loadMO(mo));
-            RMWStore store = new RMWStore(load, address, value, Mo.storeMO(mo));
-
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
-            if (dummy != resultRegister) {
-                events.addLast(new Local(resultRegister, dummy));
-            }
-            if (Mo.MB.equals(mo)) {
-                events.addFirst(new Fence("Mb"));
-                events.addLast(new Fence("Mb"));
-            }
-            return compileSequence(target, nextId, predecessor, events);
-        }
-        return super.compile(target, nextId, predecessor);
-    }*/
-
     @Override
     public RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {

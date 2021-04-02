@@ -48,11 +48,6 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public void unroll(int bound, Event predecessor) {
-        throw new RuntimeException("RMWStoreExclusive cannot be unrolled: event must be generated during compilation");
-    }*/
-
     @Override
     public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         throw new RuntimeException("RMWStoreExclusive cannot be unrolled: event must be generated during compilation");

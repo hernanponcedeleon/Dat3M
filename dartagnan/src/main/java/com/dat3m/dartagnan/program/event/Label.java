@@ -29,19 +29,6 @@ public class Label extends Event {
         return name + ":";
     }
 
-    /*@Override
-    public void simplify(Event predecessor) {
-    	Event prev = this;
-    	Event next = successor;
-    	if(listeners.size() == 0 && !name.startsWith("END_OF_T")) {
-    		prev = predecessor;
-    		predecessor.setSuccessor(successor);
-    	}
-    	if(next != null){
-			next.simplify(prev);
-		}
-    }*/
-
     @Override
     protected RecursiveAction simplifyRecursive(Event predecessor, int depth) {
         Event prev = this;
@@ -73,14 +60,6 @@ public class Label extends Event {
     	return copy;
     }
 
-    /*@Override
-    public void unroll(int bound, Event predecessor) {
-    	super.unroll(bound, predecessor);
-    	for(Event jump : listeners) {
-    		jump.notify(this);
-    	}
-    }*/
-
     @Override
     public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         return super.unrollRecursive(bound, predecessor, depth).then( () -> {
@@ -93,14 +72,6 @@ public class Label extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-    	nextId = super.compile(target, nextId, predecessor);
-    	for(Event jump : listeners) {
-    		jump.notify(this);
-    	}
-    	return nextId;
-    }*/
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {

@@ -35,7 +35,7 @@ public class EventData implements Comparable<EventData> {
     void setAccessedAddress(long address) { accessedAddress = address; }
 
     public long getValue() { return value;}
-    long setValue(long val) { return value = val;}
+    void setValue(long val) { value = val;}
 
     public EventData getReadFrom() { return readFrom; }
     void setReadFrom(EventData store) { readFrom = store; }

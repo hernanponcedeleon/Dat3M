@@ -49,30 +49,6 @@ public class Create extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        LinkedList<Event> events = new LinkedList<>();
-        Store store = new Store(address, new IConst(1, -1), SC, cLine);
-		events.add(store);
-
-        switch (target){
-            case NONE:
-                break;
-            case TSO:
-            	events.addLast(new Fence("Mfence"));
-                break;
-            case POWER:
-            	events.addFirst(new Fence("Sync"));
-                break;
-            case ARM: case ARM8:
-            	events.addFirst(new Fence("Ish"));
-            	events.addLast(new Fence("Ish"));
-                break;
-            default:
-                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-        }
-        return compileSequence(target, nextId, predecessor, events);
-    }*/
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {

@@ -50,30 +50,6 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        if(target == Arch.NONE) {
-            Register dummy = resultRegister;
-            if(resultRegister == value || resultRegister == cmp){
-                dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            }
-
-            RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
-            RMWStoreCond store = new RMWStoreCond(load, address, value, Mo.storeMO(mo));
-
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
-            if (dummy != resultRegister) {
-                events.addLast(new Local(resultRegister, dummy));
-            }
-            if (Mo.MB.equals(mo)) {
-                events.addFirst(new FenceCond(load, "Mb"));
-                events.addLast(new FenceCond(load, "Mb"));
-            }
-            return compileSequence(target, nextId, predecessor, events);
-        }
-        return super.compile(target, nextId, predecessor);
-    }*/
-
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {

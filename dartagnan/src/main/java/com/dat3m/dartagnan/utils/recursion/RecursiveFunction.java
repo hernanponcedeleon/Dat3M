@@ -68,7 +68,7 @@ public abstract class RecursiveFunction<T> {
 
         @Override
         public RecursiveFunction<V> process() {
-            first = first.process();
+            first = first.process(); // Note: This can lead to deep recursion if there are many successive Then's
             return first.isDone() ? then.apply(first.getFinalValue()) : this;
         }
     }

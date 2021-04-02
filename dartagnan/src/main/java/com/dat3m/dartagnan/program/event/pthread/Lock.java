@@ -68,18 +68,6 @@ public class Lock extends Event {
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        LinkedList<Event> events = new LinkedList<>();
-        events.add(new Load(reg, address, SC));
-        events.add(new CondJump(new Atom(reg, NEQ, new IConst(0, -1)),label));
-        events.add(new Store(address, new IConst(1, -1), SC));
-        for(Event e : events) {
-        	e.addFilters(EType.LOCK, EType.RMW);
-        }
-        return compileSequence(target, nextId, predecessor, events);
-    }*/
-
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
         events.add(new Load(reg, address, SC));
