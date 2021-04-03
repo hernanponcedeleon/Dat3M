@@ -61,7 +61,12 @@ public class RelIntersection extends BinaryRelation {
     public BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
+        TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
+            if (min.contains(tuple)) {
+                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                continue;
+            }
             BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
             BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
             enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkAnd(opt1, opt2)));

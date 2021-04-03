@@ -126,24 +126,25 @@ public class RelCo extends Relation {
             for(Tuple t : maxTupleSet.getByFirst(w1)){
                 MemEvent w2 = (MemEvent)t.getSecond();
                 BoolExpr relation = getSMTVar(t, ctx);
+                BoolExpr execPair = ctx.mkAnd(w1.exec(), w2.exec()); //getExecPair(t, ctx);
                 lastCo = ctx.mkAnd(lastCo, ctx.mkNot(relation));
 
                 Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
                 Expr a2 = w2.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w2.getMemAddressExpr(), false) : w2.getMemAddressExpr();
                 enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
-                        ctx.mkAnd(ctx.mkAnd(w1.exec(), w2.exec()), ctx.mkEq(a1, a2)),
+                        ctx.mkAnd(ctx.mkAnd(execPair), ctx.mkEq(a1, a2)),
                         ctx.mkLt(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
 
                 // ============ Local consistency optimizations ============
                 if (getMinTupleSet().contains(t)) {
-                   enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(w1.exec(), w2.exec())));
+                   enc = ctx.mkAnd(enc, ctx.mkEq(relation, execPair));
                 } else if (task.getMemoryModel().isLocallyConsistent()) {
                     if (w2.is(EType.INIT) || t.isBackward()){
                         enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkFalse()));
                     }
                     if (w1.is(EType.INIT) || t.isForward()) {
-                        enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(getExecPair(t, ctx), ctx.mkEq(a1, a2)), relation));
+                        enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(execPair, ctx.mkEq(a1, a2)), relation));
                     }
                 }
             }

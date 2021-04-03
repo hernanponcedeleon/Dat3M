@@ -2,10 +2,18 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 //import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
+import com.dat3m.dartagnan.program.arch.pts.event.Write;
+import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -22,7 +30,9 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.filter.AbstractFilter;
 
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 public class RelRf extends Relation {
@@ -72,6 +82,7 @@ public class RelRf extends Relation {
             }
             removeMutuallyExclusiveTuples(maxTupleSet);
             applyLocalConsistency();
+            atomicBlockOptimization();
 
             logger.info("maxTupleSet size for " + getName() + ": " + maxTupleSet.size());
         }
@@ -229,6 +240,50 @@ public class RelRf extends Relation {
             }
             maxTupleSet.removeAll(deletedTuples);
         }
+    }
+
+    private void atomicBlockOptimization() {
+        logger.info("Atomic block optimization before "  + maxTupleSet.size());
+        // Atomics blocks: BeginAtomic -> EndAtomic
+        BranchEquivalence eq = task.getBranchEquivalence();
+        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
+        for(Event end : task.getProgram().getCache().getEvents(filter)){
+            List<Store> writes = new ArrayList<>();
+            List<Load> reads = new ArrayList<>();
+            EndAtomic endAtomic = (EndAtomic) end;
+            for(Event b : endAtomic.getBlock()) {
+                if (b instanceof Load) {
+                    reads.add((Load)b);
+                } else if (b instanceof Store) {
+                    writes.add((Store)b);
+                }
+            }
+
+            for (Load read : reads) {
+                if (read.getMaxAddressSet().size() != 1) {
+                    continue;
+                }
+
+                List<Store> ownWrites = writes.stream()
+                        .filter(x -> x.getCId() < read.getCId() && x.getMaxAddressSet().size() == 1 && x.getMaxAddressSet().equals(read.getMaxAddressSet()))
+                        .collect(Collectors.toList());
+                List<Event> impliedWrites = ownWrites.stream().filter(x -> eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
+                if (!impliedWrites.isEmpty()) {
+                    Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
+                    if (!lastImplied.is(EType.INIT)) {
+                        Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
+                        ownWrites.removeIf(pred);
+                    }
+                }
+
+                if (!impliedWrites.isEmpty()) {
+                    maxTupleSet.removeIf(t -> t.getSecond() == read && t.isCrossThread());
+                }
+            }
+
+
+        }
+        logger.info("Atomic block optimization after "  + maxTupleSet.size());
     }
 
 }

@@ -75,6 +75,7 @@ public class RelComposition extends BinaryRelation {
     public void addEncodeTupleSet(TupleSet tuples){
         Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
+        activeSet.removeAll(getMinTupleSet());
 
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();

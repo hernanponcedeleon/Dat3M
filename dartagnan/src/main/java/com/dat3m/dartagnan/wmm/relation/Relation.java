@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -157,6 +158,7 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected BoolExpr doEncode(Context ctx){
+        //System.out.println(getName() + " encodeSet: " + encodeTupleSet.size());
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             switch (task.getSettings().getMode()) {
                 case KLEENE:
@@ -181,6 +183,17 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected BoolExpr getExecPair(Event e1, Event e2, Context ctx) {
+        if (e1.getCId() > e2.getCId()) {
+            Event temp = e1;
+            e1 = e2;
+            e2 = temp;
+        }
+        BranchEquivalence eq = task.getBranchEquivalence();
+        if (eq.isImplied(e1, e2)) {
+            return e1.exec();
+        } else if (eq.isImplied(e2 ,e1)) {
+            return e2.exec();
+        }
         return ctx.mkAnd(e1.exec(), e2.exec());
     }
 

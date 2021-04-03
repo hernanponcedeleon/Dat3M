@@ -182,7 +182,7 @@ public class Base {
 	public static Result runAnalysisAssumeSolver(Solver solver, Context ctx, VerificationTask task) {
 		task.unrollAndCompile();
 		if(task.getProgram().getAss() instanceof AssertTrue) {
-			logger.info("Verification finished: assertion trivialy holds");
+			logger.info("Verification finished: assertion trivially holds");
 			return PASS;
 		}
 
@@ -192,8 +192,6 @@ public class Base {
 		solver.add(task.encodeProgram(ctx));
 		solver.add(task.encodeWmmRelations(ctx));
 		solver.add(task.encodeWmmConsistency(ctx));
-		BoolExpr assumption = ctx.mkBoolConst("ass");
-		solver.add(ctx.mkImplies(assumption, task.encodeAssertions(ctx)));
 
 		if(task.getSettings().hasSolverTimeout()) {
 			Params p = ctx.mkParams();
@@ -205,7 +203,7 @@ public class Base {
 
 		Result res = Result.UNKNOWN;
 		logger.info("Starting first solver.check()");
-		switch(solver.check(assumption)) {
+		switch(solver.check(task.encodeAssertions(ctx))) {
 			case UNKNOWN:
 				res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
 				break;

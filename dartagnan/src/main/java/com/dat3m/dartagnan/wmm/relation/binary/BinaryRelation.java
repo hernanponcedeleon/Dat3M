@@ -69,6 +69,7 @@ public abstract class BinaryRelation extends Relation {
     public void addEncodeTupleSet(TupleSet tuples){ // Not valid for composition
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
+        activeSet.removeAll(getMinTupleSet());
 
         if(!activeSet.isEmpty()){
             r1.addEncodeTupleSet(activeSet);

@@ -65,7 +65,12 @@ public class RelUnion extends BinaryRelation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
+        TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
+            if (min.contains(tuple)) {
+                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                continue;
+            }
             BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
             BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
             if (Relation.PostFixApprox) {
