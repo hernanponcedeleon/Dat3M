@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
@@ -16,6 +19,7 @@ import java.util.List;
 
 public abstract class StaticEventGraph extends AbstractEventGraph {
     protected int size;
+    private VerificationTask task;
 
     @Override
     public List<EventGraph> getDependencies() {
@@ -66,6 +70,7 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
+        this.task = context.getVerificationTask();
         size = 0;
     }
 
@@ -73,7 +78,19 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     public Conjunction<CoreLiteral> computeReason(Edge edge) {
         if (!contains(edge))
             return Conjunction.FALSE;
-        return new Conjunction<>(new EventLiteral(edge.getFirst()), new EventLiteral(edge.getSecond()));
+
+        BranchEquivalence eq = task.getBranchEquivalence();
+        Event e1 = eq.getRepresentative(edge.getFirst().getEvent());
+        Event e2 = eq.getRepresentative(edge.getSecond().getEvent());
+        if (eq.isImplied(e1, e2)) {
+            return new Conjunction<>(new EventLiteral(context.getData(e1)));
+        } else if (eq.isImplied(e2, e1)) {
+            return new Conjunction<>(new EventLiteral(context.getData(e2)));
+        } else {
+            return new Conjunction<>(new EventLiteral(context.getData(e1)), new EventLiteral(context.getData(e2)));
+        }
+
+        //return new Conjunction<>(new EventLiteral(edge.getFirst()), new EventLiteral(edge.getSecond()));
     }
 
 

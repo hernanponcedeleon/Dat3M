@@ -2,8 +2,11 @@ package com.dat3m.dartagnan.analysis;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -14,9 +17,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.RefinementStats;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
+import com.microsoft.z3.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -73,6 +74,20 @@ public class Refinement {
 
 
     private static Result refinementCore(Solver solver, Context ctx, VerificationTask verificationTask) {
+
+        // ======= Some preprocessing to use a visible representative for each branch ========
+        for (BranchEquivalence.Class c : verificationTask.getBranchEquivalence().getAllEquivalenceClasses()) {
+            ArrayList<Event> events = new ArrayList<>(c);
+            events.sort(Comparator.naturalOrder());
+            for (Event e : events) {
+                if (e.is(EType.VISIBLE)) {
+                    c.setRepresentative(e);
+                    break;
+                }
+            }
+        }
+        // =====================================================================================
+
         Program program = verificationTask.getProgram();
         GraphRefinement refinement = new GraphRefinement(verificationTask);
         Result res = UNKNOWN;
@@ -115,6 +130,7 @@ public class Refinement {
                 for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
                     if (PRINT_STATISTICS) {
                         System.out.println("Violation size: " + cube.getSize());
+                        //System.out.println(cube);
                     }
                     Conjunction<CoreLiteral> excludedRf = cube.removeIf(x -> !(x instanceof RfLiteral));
                     excludedRfs.add(excludedRf);

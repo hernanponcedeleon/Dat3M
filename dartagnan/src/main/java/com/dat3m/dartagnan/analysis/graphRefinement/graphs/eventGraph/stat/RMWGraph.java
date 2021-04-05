@@ -62,6 +62,7 @@ public class RMWGraph extends StaticEventGraph {
      (3) ExclAccess : ExclLoad -> ExclStore (dependent on control flow)
     */
     private void populate() {
+        //TODO: Add atomic blocks
         //TODO: We still need to encode parts of RMW to give correct semantics to exclusive Load/Store on AARCH64
         for (List<EventData> events : context.getThreadEventsMap().values()) {
             EventData lastExclLoad = null;

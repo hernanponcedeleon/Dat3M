@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
@@ -283,13 +284,17 @@ public class GraphRefinement {
     private boolean canBeRemoved(CoreLiteral literal, Conjunction<CoreLiteral> clause) {
         if (!(literal instanceof EventLiteral))
             return false;
+        BranchEquivalence eq = context.getBranchEquivalence();
+
         EventLiteral eventLit = (EventLiteral)literal;
         return clause.getLiterals().stream().anyMatch(x -> {
             if (!(x instanceof AbstractEdgeLiteral) || x.hasOpposite())
                 return false;
             AbstractEdgeLiteral edgeLiteral = (AbstractEdgeLiteral)x;
-            return edgeLiteral.getEdge().getFirst().equals(eventLit.getEvent())
-                    || edgeLiteral.getEdge().getSecond().equals(eventLit.getEvent());
+            /*return edgeLiteral.getEdge().getFirst().equals(eventLit.getEvent())
+                    || edgeLiteral.getEdge().getSecond().equals(eventLit.getEvent());*/
+            return eq.isImplied(edgeLiteral.getEdge().getFirst().getEvent(), eventLit.getEvent().getEvent())
+                    || eq.isImplied(edgeLiteral.getEdge().getSecond().getEvent(), eventLit.getEvent().getEvent());
         });
     }
 
@@ -344,7 +349,7 @@ public class GraphRefinement {
                     Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
 
                     if (co.getMinTupleSet().contains(t)) {
-                        // Test code
+                        //TODO: Test code
                         execGraph.addCoherenceEdge(new Edge(e1,e2));
                         continue;
                     }
