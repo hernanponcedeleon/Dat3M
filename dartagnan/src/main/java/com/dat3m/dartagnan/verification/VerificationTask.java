@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.verification;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.analysis.Base;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
@@ -70,6 +71,15 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+
+        if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {
+            for (Thread t : program.getThreads()) {
+                System.out.println("========== Thread " + t.getId() + " ==============");
+                for (Event e : t.getEntry().getSuccessors()) {
+                    System.out.println(e.getCId() + ": " + e.toString());
+                }
+            }
+        }
         // AssertionInline depends on compiled events (copies)
         // Thus we need to update the assertion after compilation
         program.updateAssertion();

@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.microsoft.z3.Global;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Thread;
 
@@ -31,9 +30,9 @@ public abstract class Event implements Comparable<Event> {
 
     protected transient BoolExpr cfEnc;
     protected transient BoolExpr cfCond;
-
 	protected transient BoolExpr cfVar;
-	//protected transient BoolExpr execVar;
+
+	protected VerificationTask task;
 
 	protected Set<Event> listeners = new HashSet<>();
 
@@ -42,7 +41,6 @@ public abstract class Event implements Comparable<Event> {
 		this.cLine = cLine;
 	}
 
-	protected VerificationTask task;
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -98,9 +96,10 @@ public abstract class Event implements Comparable<Event> {
 	public void setThread(Thread thread) {
 		if (thread != null && !thread.equals(this.thread)) {
 			this.thread = thread;
-			if (successor != null)
+			if (successor != null) {
 				//TODO: Get rid of this recursion completely
 				successor.setThread(thread);
+			}
 		}
 	}
 
@@ -268,21 +267,6 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveFunction.done(nextId);
 	}
 
-    protected final int compileSequence(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence){
-        for(Event e : sequence){
-        	e.oId = oId;
-			e.uId = uId;
-            e.cId = nextId++;
-            predecessor.setSuccessor(e);
-            predecessor = e;
-        }
-        if(successor != null){
-            predecessor.successor = successor;
-            return successor.compile(target, nextId, predecessor);
-        }
-        return nextId;
-    }
-
 	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence, int depth){
 		for(Event e : sequence){
 			e.oId = oId;
@@ -324,6 +308,7 @@ public abstract class Event implements Comparable<Event> {
 		} else {
 			cfVar = ctx.mkBoolConst("cf(" + repr() + ")");
 		}
+		//listeners.removeIf(x -> x.getCId() < 0);
 	}
 
 	private String repr;

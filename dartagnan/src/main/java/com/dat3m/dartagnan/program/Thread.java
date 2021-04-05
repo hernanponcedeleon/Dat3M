@@ -272,11 +272,16 @@ public class Thread {
         // ======================= Traverse the graph and reorder the branches ===================
         Event pred = null;
         int id = getEntry().getOId();
+        //int branch = 0;
         List<Set<DependencyGraph<MoveableBranch>.Node>> sccs = Lists.reverse(cfGraph.getSCCs());
         for (Set<DependencyGraph<MoveableBranch>.Node> scc : sccs) {
+            /*if (scc.size() > 1) {
+                System.out.println("============== SCC START =============");
+            }*/
             List<MoveableBranch> branches = scc.stream().map(DependencyGraph.Node::getContent)
                     .sorted(Comparator.comparingInt(x -> x.events.get(0).getOId())).collect(Collectors.toList());
             for (MoveableBranch br : branches) {
+                //System.out.println("----- Branch " + branch++ + " ------");
                 for (Event ev : br.events) {
                     if (pred != null) {
                         pred.setSuccessor(ev);
@@ -284,18 +289,12 @@ public class Thread {
                     ev.setOId(id++);
                     pred = ev;
 
-                    /*if (ev instanceof CondJump) {
-                        CondJump jump = (CondJump) ev;
-                        int jumpIndex = cfGraph.get(br).getTopologicalIndex();
-                        int labelIndex = cfGraph.get(map.get(jump.getLabel())).getTopologicalIndex();
-                        if (jump.getLabel().getOId() < jump.getOId() && labelIndex < jumpIndex) {
-                            System.out.println("=== Fake Loop ===");
-                        }
-
-                    }*/
+                    //System.out.println(ev);
                 }
-
             }
+            /*if (scc.size() > 1) {
+                System.out.println("============== SCC END =============");
+            }*/
         }
     }
 

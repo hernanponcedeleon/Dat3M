@@ -27,6 +27,9 @@ import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class RelRMW extends StaticRelation {
 
 	private static final Logger logger = LogManager.getLogger(RelRMW.class);
@@ -91,19 +94,13 @@ public class RelRMW extends StaticRelation {
             // Atomics blocks: BeginAtomic -> EndAtomic
             filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
             for(Event end : task.getProgram().getCache().getEvents(filter)){
-            	for(Event b : ((EndAtomic)end).getBlock()) {
-            	    if (!b.is(EType.VISIBLE)) {
-            	        continue;
+                List<Event> block = ((EndAtomic)end).getBlock().stream().filter(x -> x.is(EType.VISIBLE)).collect(Collectors.toList());
+                for (int i = 0; i < block.size(); i++) {
+                    for (int j = i + 1; j < block.size(); j++) {
+                        baseMaxTupleSet.add(new Tuple(block.get(i), block.get(j)));
                     }
-            		Event next = b.getSuccessor();
-            		while(next != null && !(next instanceof EndAtomic)) {
-                        if (next.is(EType.VISIBLE)) {
-                            baseMaxTupleSet.add(new Tuple(b, next));
-                        }
-            			next = next.getSuccessor();
-            		}
-            		//baseMaxTupleSet.add(new Tuple(b, end));
-            	}
+
+                }
             }
             removeMutuallyExclusiveTuples(baseMaxTupleSet);
 

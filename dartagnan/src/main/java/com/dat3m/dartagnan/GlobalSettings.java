@@ -6,6 +6,7 @@ public class GlobalSettings {
 
     // === WMM Assumptions ===
     public static final boolean ASSUME_LOCAL_CONSISTENCY = true;
+    public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
 
     // === Encoding ===
     public static final boolean MERGE_CF_VARS = true;
@@ -20,6 +21,9 @@ public class GlobalSettings {
 
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;
+
+    // === Debug ===
+    public static final boolean ENABLE_DEBUG_OUTPUT = true;
 
     private GlobalSettings() {}
 }

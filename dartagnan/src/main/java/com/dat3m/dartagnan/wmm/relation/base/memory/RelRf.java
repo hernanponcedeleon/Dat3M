@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 //import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.arch.pts.event.Write;
 import com.dat3m.dartagnan.program.event.Load;
@@ -243,7 +244,12 @@ public class RelRf extends Relation {
     }
 
     private void atomicBlockOptimization() {
-        logger.info("Atomic block optimization before "  + maxTupleSet.size());
+        if (!GlobalSettings.PERFORM_ATOMIC_BLOCK_OPTIMIZATION) {
+            return;
+        }
+
+        int sizeBefore = maxTupleSet.size();
+
         // Atomics blocks: BeginAtomic -> EndAtomic
         BranchEquivalence eq = task.getBranchEquivalence();
         FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
@@ -283,7 +289,7 @@ public class RelRf extends Relation {
 
 
         }
-        logger.info("Atomic block optimization after "  + maxTupleSet.size());
+        logger.info("Atomic block optimization eliminated "  + (sizeBefore - maxTupleSet.size()) + " reads");
     }
 
 }

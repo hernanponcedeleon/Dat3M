@@ -22,7 +22,6 @@ public class ProgramParser {
         Program program = parser.parse(charStream);
         stream.close();
         program.setName(file.getName());
-        program.reorder(); // TEST
         return program;
     }
 
