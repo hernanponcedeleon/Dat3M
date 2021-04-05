@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
+import com.dat3m.dartagnan.program.utils.BranchReordering;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -187,6 +188,8 @@ public class Thread {
     // -------------------------------- Preprocessing -----------------------------------
     // -----------------------------------------------------------------------------------------------------------------
 
+    //TODO: Support Linux IFs
+
     public int eliminateDeadCode(int startId) {
         if (entry.is(EType.INIT)) {
             return startId;
@@ -234,78 +237,8 @@ public class Thread {
     }
 
 
-
     public void reorderBranches() {
-        List<MoveableBranch> moveables = new ArrayList<>();
-        Map<Event, MoveableBranch> map = new HashMap<>();
-
-        // =========== Compute all moveable branches ===========
-        MoveableBranch cur = new MoveableBranch();
-        moveables.add(cur);
-        Event e = entry;
-
-        while (e != null) {
-            cur.events.add(e);
-            map.put(e, cur);
-
-            if (e.equals(exit)) {
-                break;
-            } else if (e instanceof CondJump && ((CondJump)e).isGoto()) {
-                moveables.add(cur = new MoveableBranch());
-            }
-
-            e = e.getSuccessor();
-        }
-        // =====================================================================
-
-        // =================== Build Successor Graph on Branches ===============
-        MoveableBranch finalBranch = map.get(exit);
-        for (MoveableBranch br : moveables) {
-            for (Event ev : br.events.stream().filter(x -> x instanceof CondJump).collect(Collectors.toList())) {
-                CondJump jump = (CondJump) ev;
-                br.successors.add(map.get(jump.getLabel()));
-                br.successors.add(finalBranch);
-            }
-        }
-        DependencyGraph<MoveableBranch> cfGraph = DependencyGraph.fromSingleton(moveables.get(0), x -> x.successors);
-
-        // ======================= Traverse the graph and reorder the branches ===================
-        Event pred = null;
-        int id = getEntry().getOId();
-        //int branch = 0;
-        List<Set<DependencyGraph<MoveableBranch>.Node>> sccs = Lists.reverse(cfGraph.getSCCs());
-        for (Set<DependencyGraph<MoveableBranch>.Node> scc : sccs) {
-            /*if (scc.size() > 1) {
-                System.out.println("============== SCC START =============");
-            }*/
-            List<MoveableBranch> branches = scc.stream().map(DependencyGraph.Node::getContent)
-                    .sorted(Comparator.comparingInt(x -> x.events.get(0).getOId())).collect(Collectors.toList());
-            for (MoveableBranch br : branches) {
-                //System.out.println("----- Branch " + branch++ + " ------");
-                for (Event ev : br.events) {
-                    if (pred != null) {
-                        pred.setSuccessor(ev);
-                    }
-                    ev.setOId(id++);
-                    pred = ev;
-
-                    //System.out.println(ev);
-                }
-            }
-            /*if (scc.size() > 1) {
-                System.out.println("============== SCC END =============");
-            }*/
-        }
+        new BranchReordering(this).apply();
     }
-
-    private static class MoveableBranch {
-        List<Event> events = new ArrayList<>();
-        Set<MoveableBranch> successors = new HashSet<>();
-    }
-
-
-
-
-
 
 }

@@ -23,7 +23,7 @@ public class GlobalSettings {
     public static final int MAX_RECURSION_DEPTH = 200;
 
     // === Debug ===
-    public static final boolean ENABLE_DEBUG_OUTPUT = true;
+    public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
     private GlobalSettings() {}
 }

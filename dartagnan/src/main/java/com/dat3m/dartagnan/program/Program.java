@@ -1,16 +1,13 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Label;
+
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
@@ -22,11 +19,14 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Program {
+
+    private static Logger logger = LogManager.getLogger(Program.class);
 
     private String name;
 	private AbstractAssert ass;
@@ -302,11 +302,13 @@ public class Program {
         // Some simplification are only applicable after others.
         // Thus we apply them iteratively until we reach a fixpoint.
         int size = getEvents().size();
+        logger.info("pre-simplification: " + size + " events");
         one_step_simplify();
         while(getEvents().size() != size) {
             size = getEvents().size();
             one_step_simplify();
         }
+        logger.info("post-simplification: " + size + " events");
     }
 
     private void one_step_simplify() {

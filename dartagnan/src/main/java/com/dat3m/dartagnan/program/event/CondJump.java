@@ -96,8 +96,9 @@ public class CondJump extends Event implements RegReaderData {
         // (in both cases the next executed event is the successor)
         if(label.equals(successor) && expr instanceof BConst) {
             prev = predecessor;
+            label.listeners.remove(this);
             // If the label is only the target of the removed jump, we can also remove the label
-            if(label.listeners.size() == 1) {
+            if(label.listeners.isEmpty()) {
                 next = successor.getSuccessor();
             }
             predecessor.setSuccessor(next);
