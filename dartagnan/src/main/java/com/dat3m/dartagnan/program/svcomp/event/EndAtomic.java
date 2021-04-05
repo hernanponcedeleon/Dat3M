@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 public class EndAtomic extends Event {
 
 	protected BeginAtomic begin;
+	protected BeginAtomic begin4Copy;
 
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
@@ -25,8 +26,9 @@ public class EndAtomic extends Event {
 
     protected EndAtomic(EndAtomic other){
 		super(other);
-		this.begin = other.getBegin();
-		this.begin.addListener(this);
+		this.begin = other.begin4Copy;
+		Event notifier = begin != null ? begin : other.begin;
+		notifier.addListener(this);
 	}
 
     public BeginAtomic getBegin(){
@@ -50,7 +52,12 @@ public class EndAtomic extends Event {
     
     @Override
     public void notify(Event begin) {
-    	this.begin = (BeginAtomic)begin;
+    	//TODO: create an interface for easy maintenance of the listeners logic
+    	if(this.begin == null) {
+    		this.begin = (BeginAtomic)begin;
+    	} else if (oId > begin.getOId()) {
+    		this.begin4Copy = (BeginAtomic)begin;
+    	}
     }
 
     // Unrolling
