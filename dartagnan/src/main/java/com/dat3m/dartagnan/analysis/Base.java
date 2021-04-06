@@ -64,13 +64,15 @@ public class Base {
 
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
-        Result res;
+        Result res = UNKNOWN;
         logger.info("Starting first solver.check()");
 		if(s1.check() == SATISFIABLE) {
+			logger.info("SAT");
 			s1.add(encodeNoBoundEventExec);
 			logger.info("Starting second solver.check()");
 			res = s1.check() == SATISFIABLE ? FAIL : UNKNOWN;	
 		} else {
+			logger.info("UNSAT");
 			s2.add(ctx.mkNot(encodeNoBoundEventExec));
 			logger.info("Starting second solver.check()");
 			res = s2.check() == SATISFIABLE ? UNKNOWN : PASS;	
@@ -107,10 +109,12 @@ public class Base {
         Result res = UNKNOWN;
         logger.info("Starting first solver.check()");
 		if(solver.check() == SATISFIABLE) {
+			logger.info("SAT");
         	solver.add(program.encodeNoBoundEventExec(ctx));
         	logger.info("Starting second solver.check()");
 			res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
         } else {
+        	logger.info("UNSAT");
         	solver.pop();
 			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
 			logger.info("Starting second solver.check()");
@@ -145,10 +149,12 @@ public class Base {
         Result res = UNKNOWN;
         logger.info("Starting first solver.check()");
 		if(solver.check(program.getAss().encode(ctx)) == SATISFIABLE) {
+			logger.info("SAT");
         	solver.add(program.encodeNoBoundEventExec(ctx));
         	logger.info("Starting second solver.check()");
 			res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
         } else {
+        	logger.info("UNSAT");
 			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
 			logger.info("Starting second solver.check()");
         	res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
