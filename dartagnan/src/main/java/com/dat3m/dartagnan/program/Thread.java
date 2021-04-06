@@ -3,17 +3,15 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
-import com.dat3m.dartagnan.program.utils.BranchReordering;
+import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.Lists;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Thread {
 
@@ -188,55 +186,11 @@ public class Thread {
     // -------------------------------- Preprocessing -----------------------------------
     // -----------------------------------------------------------------------------------------------------------------
 
-    //TODO: Support Linux IFs
-
     public int eliminateDeadCode(int startId) {
-        if (entry.is(EType.INIT)) {
-            return startId;
-        }
-
-        Set<Event> reachableEvents = new HashSet<>();
-        computeReachableEvents(getEntry(), reachableEvents);
-
-        Event pred = null;
-        Event cur = getEntry();
-        int id = startId;
-        while (cur != null) {
-            if (!reachableEvents.contains(cur) && cur != getExit()) {
-                cur.delete(pred);
-                cur = pred;
-            } else {
-                //System.out.println(cur.toString() + " (" + id + " <- " + cur.getOId() + ")");
-                cur.setOId(id++);
-            }
-            pred = cur;
-            cur = cur.getSuccessor();
-        }
-
+        new DeadCodeElimination(this).apply(startId);
         clearCache();
-        return id;
+        return getExit().getOId() + 1;
     }
-
-    private void computeReachableEvents(Event e, Set<Event> reachable) {
-        if (reachable.contains(e))
-            return;
-
-        while (e != null && reachable.add(e)) {
-            if (e instanceof CondJump) {
-                CondJump j = (CondJump) e;
-                if (j.isGoto()) {
-                    e = j.getLabel();
-                    continue;
-                }
-                else {
-                    computeReachableEvents(j.getLabel(), reachable);
-                }
-            }
-            e = e.getSuccessor();
-        }
-    }
-
-
     public void reorderBranches() {
         new BranchReordering(this).apply();
     }

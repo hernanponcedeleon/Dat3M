@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.utils;
+package com.dat3m.dartagnan.program.utils.preprocessing;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
