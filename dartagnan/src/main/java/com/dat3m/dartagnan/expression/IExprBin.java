@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
@@ -82,4 +83,25 @@ public class IExprBin extends IExpr implements ExprInterface {
 	public ExprInterface getLHS() {
 		return lhs;
 	}
+
+    @Override
+    public <T> T visit(ExpressionVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    public int hashCode() {
+        return (int)(op.combine(lhs.hashCode(), rhs.hashCode()));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != getClass())
+            return false;
+        IExprBin expr = (IExprBin) obj;
+        return expr.op == op && expr.lhs.equals(lhs) && expr.rhs.equals(rhs);
+    }
 }

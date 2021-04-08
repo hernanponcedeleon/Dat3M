@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -19,6 +21,14 @@ public class BExprUn extends BExpr {
     public BExprUn(BOpUn op, ExprInterface b) {
         this.b = b;
         this.op = op;
+    }
+
+    public BOpUn getOp() {
+        return op;
+    }
+
+    public ExprInterface getInner() {
+        return b;
     }
 
     @Override
@@ -56,4 +66,25 @@ public class BExprUn extends BExpr {
 	public IConst reduce() {
 		return new IConst(b.reduce().getValue(), -1);
 	}
+
+    @Override
+    public <T> T visit(ExpressionVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    public int hashCode() {
+        return op.hashCode() ^ b.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != getClass())
+            return false;
+        BExprUn expr = (BExprUn) obj;
+        return expr.op == op && expr.b.equals(b);
+    }
 }

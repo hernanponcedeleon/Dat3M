@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -90,6 +91,11 @@ public class Register extends IExpr implements ExprInterface {
 	@Override
 	public long getIntValue(Event e, Model model, Context ctx){
 		return Long.parseLong(model.getConstInterp(toZ3Int(e, ctx)).toString());
+	}
+
+	@Override
+	public <T> T visit(ExpressionVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	@Override

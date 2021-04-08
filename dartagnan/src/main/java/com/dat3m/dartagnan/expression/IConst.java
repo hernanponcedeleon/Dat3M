@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -67,4 +68,25 @@ public class IConst extends IExpr implements ExprInterface {
 	public int getPrecision() {
     	return precision;
     }
+
+	@Override
+	public <T> T visit(ExpressionVisitor<T> visitor) {
+		return visitor.visit(this);
+	}
+
+	@Override
+	public int hashCode() {
+		return precision > 0 ? value.hashCode() : value.hashCode() + precision;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		}
+		if (obj == null || obj.getClass() != getClass())
+			return false;
+		IConst expr = (IConst) obj;
+		return expr.value.equals(value) && expr.precision == precision;
+	}
 }

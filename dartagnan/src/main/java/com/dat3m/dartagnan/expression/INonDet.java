@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -57,6 +58,11 @@ public class INonDet extends IExpr implements ExprInterface {
 	@Override
 	public ImmutableSet<Register> getRegs() {
 		return ImmutableSet.of();
+	}
+
+	@Override
+	public <T> T visit(ExpressionVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 	
 	@Override

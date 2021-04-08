@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.BoolExpr;
@@ -22,6 +23,10 @@ public class BExprBin extends BExpr {
         this.b2 = b2;
         this.op = op;
     }
+
+    public ExprInterface getLHS() { return b1; }
+    public ExprInterface getRHS() { return b2; }
+    public BOpBin getOp() { return op; }
 
     @Override
     public BoolExpr toZ3Bool(Event e, Context ctx) {
@@ -67,4 +72,25 @@ public class BExprBin extends BExpr {
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
+
+    @Override
+    public <T> T visit(ExpressionVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    public int hashCode() {
+        return b1.hashCode() + b2.hashCode() + op.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != getClass())
+            return false;
+        BExprBin expr = (BExprBin) obj;
+        return expr.op == op && expr.b1.equals(b1) && expr.b2.equals(b2);
+    }
 }
