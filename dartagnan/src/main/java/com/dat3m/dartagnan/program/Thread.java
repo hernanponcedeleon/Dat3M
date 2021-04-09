@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -55,6 +56,10 @@ public class Thread {
             cache = new ThreadCache(entry.getSuccessors());
         }
         return cache;
+    }
+
+    public List<Event> getEvents() {
+        return getCache().getEvents(FilterBasic.get(EType.ANY));
     }
 
     public void clearCache(){

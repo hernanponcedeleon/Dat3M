@@ -72,7 +72,18 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     public boolean isReachableFrom(Event start, Event target) {
-        return getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
+        return start.getThread() == target.getThread() && start.getCId() <= target.getCId() && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
+    }
+
+    public boolean isAfter(Event a, Event b) {
+        if (a.is(EType.INIT)) {
+            return !b.is(EType.INIT);
+        }
+        return a.getThread() == b.getThread() && a.getCId() > b.getCId() && isImplied(b, a);
+    }
+
+    public boolean isBefore(Event a, Event b) {
+        return isAfter(b, a);
     }
 
     public Set<Event> getExclusiveEvents(Event e) {
@@ -131,7 +142,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         if (removeClass(unreachableClass)) {
             unreachableClass.internalSet.clear();
             unreachableClass.representative = null;
-            this.<BranchClass>getAllTypedEqClasses().forEach(x -> x.impliedClasses.remove(unreachableClass));
+            this.<BranchClass>getAllTypedEqClasses().forEach(x -> x.exclusiveClasses.remove(unreachableClass));
         }
     }
 

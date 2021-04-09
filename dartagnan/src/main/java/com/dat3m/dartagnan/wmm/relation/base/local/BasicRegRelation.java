@@ -63,7 +63,7 @@ abstract class BasicRegRelation extends StaticRelation {
                     // This may fail for RMWReadCond?! It seems to work fine for the litmus tests though.
                     List<Event> possibleWriters = writers.stream().filter(x -> x.getCId() < regReader.getCId() && !eq.areMutuallyExclusive(x, regReader)).collect(Collectors.toList());
 
-                    List<Event> impliedWriters = possibleWriters.stream().filter(x -> eq.isImplied(regReader, x)).collect(Collectors.toList());
+                    List<Event> impliedWriters = possibleWriters.stream().filter(x -> eq.isImplied(regReader, x) && x.cfImpliesExec()).collect(Collectors.toList());
                     if (!impliedWriters.isEmpty()) {
                         Event lastImplied = impliedWriters.get(impliedWriters.size() - 1);
                         possibleWriters.removeIf(x -> x.getCId() < lastImplied.getCId());

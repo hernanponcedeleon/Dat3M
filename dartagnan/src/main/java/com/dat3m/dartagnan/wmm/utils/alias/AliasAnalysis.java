@@ -288,7 +288,9 @@ public class AliasAnalysis {
             	if(bases.containsKey(address) && program.getMemory().isArrayPointer(bases.get(address))) {
             		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
             	} else {
-                    addresses = graph.getAddresses(((Register) address));            		
+            	    addresses = maxAddressSet;
+            	    //TODO: This line of code is buggy. It causes many WMM benchmarks to fail
+                    //addresses = graph.getAddresses(((Register) address));
             	}
             } else if (address instanceof Address) {
                     addresses = ImmutableSet.of(((Address) address));

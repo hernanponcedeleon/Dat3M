@@ -51,8 +51,8 @@ public class EndAtomic extends Event {
 		super.initialise(task, ctx);
 		//===== Temporary fix to rematch atomic blocks correctly =====
 		BranchEquivalence eq = task.getBranchEquivalence();
-		List<Event> begins = this.thread.getEntry().getSuccessors()
-				.stream().filter( x -> x instanceof BeginAtomic && x.getCId() < this.getCId() && eq.isReachableFrom(x, this))
+		List<Event> begins = this.thread.getEvents()
+				.stream().filter( x -> x instanceof BeginAtomic && eq.isReachableFrom(x, this))
 				.collect(Collectors.toList());
 		this.begin = (BeginAtomic) begins.get(begins.size() - 1);
 		// =======================================================

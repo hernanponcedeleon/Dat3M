@@ -207,8 +207,10 @@ public class RelRf extends Relation {
             BranchEquivalence eq = task.getBranchEquivalence();
             Set<Tuple> deletedTuples = new HashSet<>();
             for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ))) {
-                if (((MemEvent)read).getMaxAddressSet().size() != 1)
+                // TODO: remove this restriction?
+                if (((MemEvent)read).getMaxAddressSet().size() != 1) {
                     continue;
+                }
 
                 List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
                         .filter(e -> (e.getThread() == read.getThread() || e.is(EType.INIT)))
@@ -271,16 +273,16 @@ public class RelRf extends Relation {
                 }
 
                 List<Store> ownWrites = writes.stream()
-                        .filter(x -> x.getCId() < read.getCId() && x.getMaxAddressSet().size() == 1 && x.getMaxAddressSet().equals(read.getMaxAddressSet()))
+                        .filter(x -> x.getCId() < read.getCId() && x.getMaxAddressSet().equals(read.getMaxAddressSet()))
                         .collect(Collectors.toList());
                 List<Event> impliedWrites = ownWrites.stream().filter(x -> eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
-                if (!impliedWrites.isEmpty()) {
+                /*if (!impliedWrites.isEmpty()) {
                     Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
                     if (!lastImplied.is(EType.INIT)) {
                         Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
                         ownWrites.removeIf(pred);
                     }
-                }
+                }*/
 
                 if (!impliedWrites.isEmpty()) {
                     maxTupleSet.removeIf(t -> t.getSecond() == read && t.isCrossThread());
