@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Settings;
@@ -29,7 +28,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
 
-	public static final int TIMEOUT = 600000;
+	public static final int TIMEOUT = 180000;
 
     private final String path;
     private final Wmm wmm;
@@ -103,45 +102,6 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = TIMEOUT)
-    public void testRefinement() {
-        Context ctx = null;
-        try {
-            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-            expected = readExpected(property);
-            Program program = new ProgramParser().parse(new File(path));
-            ctx = new Context();
-            Solver solver = ctx.mkSolver();
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
-        } catch (IOException e){
-            fail("Missing resource file");
-        } finally {
-            if(ctx != null) {
-                ctx.close();
-            }
-        }
-    }
-
-    //@Test(timeout = TIMEOUT)
-    public void testRefinementNoCo() {
-        Context ctx = null;
-        try {
-            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-            expected = readExpected(property);
-            Program program = new ProgramParser().parse(new File(path));
-            ctx = new Context();
-            Solver solver = ctx.mkSolver();
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinementEmptyCoherence(solver, ctx, task));
-        } catch (IOException e){
-            fail("Missing resource file");
-        } finally {
-            if(ctx != null) {
-                ctx.close();
-            }
-        }
-    }
 
 	private Result readExpected(String property) {
 		try (BufferedReader br = new BufferedReader(new FileReader(property))) {

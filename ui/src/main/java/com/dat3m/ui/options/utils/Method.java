@@ -2,8 +2,7 @@ package com.dat3m.ui.options.utils;
 
 public enum Method {
 	TWOSOLVERS,
-    INCREMENTAL,
-    GRAPH;
+    INCREMENTAL;
 
     @Override
     public String toString() {
@@ -12,8 +11,6 @@ public enum Method {
         		return "Two-solvers";
         	case INCREMENTAL:
         		return "Incremental";
-            case GRAPH:
-                return "Graph-based";
         }
         return super.toString();
     }

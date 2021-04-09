@@ -1,10 +1,8 @@
 package com.dat3m.ui.result;
 
-import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.ui.options.utils.Method.GRAPH;
 import static com.dat3m.ui.options.utils.Method.INCREMENTAL;
 import static com.dat3m.ui.options.utils.Method.TWOSOLVERS;
 
@@ -50,9 +48,7 @@ public class ReachabilityResult implements Dat3mResult {
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             Result result = null;
-            if (options.getMethod() == GRAPH)
-                result = runAnalysisGraphRefinement(solver, ctx, task);
-            else if (options.getMethod() == INCREMENTAL)
+            if (options.getMethod() == INCREMENTAL)
                 result = runAnalysisIncrementalSolver(solver, ctx, task);
             else if (options.getMethod() == TWOSOLVERS)
                 result = runAnalysis(solver, ctx, task);
