@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
         - True loops are retained in form of backjumps while fake loops are removed by rearranging branches
     (3) In the case of loops, this procedure is repeated recursively within each loop
  */
+
+//TODO: Add support for Ifs
 public class BranchReordering {
     private final Thread thread;
     private final List<MoveableBranch> branches;

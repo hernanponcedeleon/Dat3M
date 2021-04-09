@@ -35,6 +35,6 @@ public interface ExprInterface {
 
     <T> T visit(ExpressionVisitor<T> visitor);
 
-    default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }
+    //default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }
     
 }

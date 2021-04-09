@@ -89,20 +89,6 @@ public class If extends Event implements RegReaderData {
         return dataRegs;
     }
 
-    /*@Override
-    public LinkedList<Event> getSuccessors(){
-        if(cId > -1){
-            LinkedList<Event> result = successorMain.getSuccessors();
-            result.addAll(successorElse.getSuccessors());
-            if(successor != null){
-                result.addAll(successor.getSuccessors());
-            }
-            result.addFirst(this);
-            return result;
-        }
-        return super.getSuccessors();
-    }*/
-
     @Override
     public RecursiveAction getSuccessorsRecursive(List<Event> list, int depth){
         if(cId > -1){
@@ -146,23 +132,6 @@ public class If extends Event implements RegReaderData {
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
-
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        cId = nextId++;
-        if(successor == null){
-            throw new RuntimeException("Malformed If event");
-        }
-        nextId = successor.compile(target, nextId, this);
-
-        successorMain = successor;
-        successorElse = exitMainBranch.successor;
-        successor = exitElseBranch.successor;
-        exitMainBranch.successor = null;
-        exitElseBranch.successor = null;
-
-        return nextId;
-    }*/
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {

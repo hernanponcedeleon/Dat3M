@@ -2,12 +2,15 @@ package com.dat3m.dartagnan.program.utils.preprocessing;
 
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.Thread;
 
 import java.util.HashSet;
 import java.util.Set;
 
+
+//TODO: Add support for Ifs
 public class DeadCodeElimination {
 
     private final Thread thread;
@@ -57,6 +60,9 @@ public class DeadCodeElimination {
                 else {
                     computeReachableEvents(j.getLabel(), reachable);
                 }
+            } else if (e instanceof If) {
+                If ifThen = (If)e;
+
             }
             e = e.getSuccessor();
         }

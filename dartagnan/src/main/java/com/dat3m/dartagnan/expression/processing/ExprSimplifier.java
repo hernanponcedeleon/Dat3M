@@ -7,9 +7,9 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 
-public class ExprSimplifier extends ExprTransformer {
 
-    public final static ExprSimplifier SIMPLIFIER = new ExprSimplifier();
+//TODO: This is buggy for now, because Addresses are treated as IConst
+public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public ExprInterface visit(Atom atom) {
