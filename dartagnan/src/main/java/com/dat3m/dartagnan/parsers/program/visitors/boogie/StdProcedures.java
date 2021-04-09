@@ -115,7 +115,7 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = (int)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValue();			
+			size = (int)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getIntValue();
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
@@ -137,7 +137,7 @@ public class StdProcedures {
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
+    	if(expr instanceof IConst && ((IConst)expr).getIntValue() == 1) {
     		return;
     	}
     	Local event = new Local(ass, expr);

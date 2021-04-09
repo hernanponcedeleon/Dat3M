@@ -9,26 +9,31 @@ import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
+import java.math.BigInteger;
+
 public class IConst extends IExpr implements ExprInterface {
+
+	public static IConst ZERO = new IConst(0,0 );
+	public static IConst ONE = new IConst(1, 0);
 
 	// The theory of integers supports numbers which do not  fit 
 	// in int or long types, thus we represent them as strings
-	private final String value;
+	private final BigInteger value;
 	protected final int precision;
 	
 	public IConst(long value, int precision) {
-		this.value = Long.toString(value);
+		this.value = BigInteger.valueOf(value);
 		this.precision = precision;
 	}
 
 	public IConst(String value, int precision) {
-		this.value = value;
+		this.value = new BigInteger(value);
 		this.precision = precision;
 	}
 
 	@Override
 	public Expr toZ3Int(Event e, Context ctx) {
-		return precision > 0 ? ctx.mkBV(value, precision) : ctx.mkInt(value);
+		return precision > 0 ? ctx.mkBV(value.toString(), precision) : ctx.mkInt(value.toString());
 	}
 
 	@Override
@@ -38,21 +43,25 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	public String toString() {
-		return value;
+		return value.toString();
 	}
 
 	@Override
 	public Expr getLastValueExpr(Context ctx){
-		return precision > 0 ? ctx.mkBV(value, precision) : ctx.mkInt(value);
+		return precision > 0 ? ctx.mkBV(value.toString(), precision) : ctx.mkInt(value.toString());
 	}
 
 	@Override
 	public long getIntValue(Event e, Model model, Context ctx){
-		return Long.parseLong(value);
+		return value.longValue();
+	}
+
+	public long getIntValue() {
+		return value.longValue();
 	}
 
     public Expr toZ3Int(Context ctx) {
-		return precision > 0 ? ctx.mkBV(value, precision) : ctx.mkInt(value);
+		return precision > 0 ? ctx.mkBV(value.toString(), precision) : ctx.mkInt(value.toString());
     }
 
 	@Override
@@ -60,9 +69,10 @@ public class IConst extends IExpr implements ExprInterface {
 		return this;
 	}
 	
-	public long getValue() {
-		return Long.parseLong(value);
+	public BigInteger getValue() {
+		return value;
 	}
+
     
 	@Override
 	public int getPrecision() {

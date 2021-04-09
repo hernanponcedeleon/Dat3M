@@ -12,6 +12,9 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public class BConst extends BExpr implements ExprInterface {
 
+	public final static BConst TRUE = new BConst(true);
+	public final static BConst FALSE = new BConst(false);
+
 	private final boolean value;
 	
 	public BConst(boolean value) {

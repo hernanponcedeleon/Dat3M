@@ -1,15 +1,26 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 
+public class ExprSimplifier extends ExprTransformer {
 
-public abstract class ExprSimplifier implements ExpressionVisitor<ExprInterface> {
+    public final static ExprSimplifier SIMPLIFIER = new ExprSimplifier();
 
     @Override
     public ExprInterface visit(Atom atom) {
-        return new Atom(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
+        ExprInterface lhs = atom.getLHS().visit(this);
+        ExprInterface rhs = atom.getRHS().visit(this);
+        if (lhs instanceof IConst && rhs instanceof  IConst) {
+            IConst lc = (IConst) lhs;
+            IConst rc = (IConst) rhs;
+            return new BConst(atom.getOp().combine(lc.getIntValue(), rc.getIntValue()));
+        }
+        return new Atom(lhs, atom.getOp(), rhs);
     }
 
     @Override
@@ -19,12 +30,41 @@ public abstract class ExprSimplifier implements ExpressionVisitor<ExprInterface>
 
     @Override
     public BExpr visit(BExprBin bBin) {
-        return new BExprBin(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
+        BExpr lhs = (BExpr) bBin.getLHS().visit(this);
+        BExpr rhs = (BExpr) bBin.getRHS().visit(this);
+        switch (bBin.getOp()) {
+            case OR:
+                if (lhs.isTrue() || rhs.isTrue()) {
+                    return BConst.TRUE;
+                } else if (lhs.isFalse()) {
+                    return rhs;
+                } else if (rhs.isFalse()) {
+                    return lhs;
+                }
+                break;
+            case AND:
+                if (lhs.isFalse() || rhs.isFalse()) {
+                    return BConst.FALSE;
+                } else if (lhs.isTrue()) {
+                    return rhs;
+                } else if (rhs.isTrue()) {
+                    return lhs;
+                }
+                break;
+        }
+        return new BExprBin(lhs, bBin.getOp(), rhs);
     }
 
     @Override
     public BExpr visit(BExprUn bUn) {
-        return new BExprUn(bUn.getOp(), bUn.getInner().visit(this));
+        BExpr inner = (BExpr) bUn.getInner().visit(this);
+        if (inner instanceof BConst) {
+            return inner.isTrue() ? BConst.FALSE : BConst.TRUE;
+        }
+        if (inner instanceof BExprUn && bUn.getOp() == BOpUn.NOT) {
+            return (BExpr) ((BExprUn)inner).getInner();
+        }
+        return new BExprUn(bUn.getOp(), inner);
     }
 
     @Override
@@ -39,17 +79,65 @@ public abstract class ExprSimplifier implements ExpressionVisitor<ExprInterface>
 
     @Override
     public IExpr visit(IExprBin iBin) {
-        return new IExprBin(iBin.getLHS().visit(this), iBin.getOp(), iBin.getRHS().visit(this));
+        IExpr lhs = (IExpr)iBin.getLHS().visit(this);
+        IExpr rhs = (IExpr)iBin.getRHS().visit(this);
+        IOpBin op = iBin.getOp();
+        if (! (lhs instanceof IConst || rhs instanceof IConst)) {
+            return new IExprBin(lhs, iBin.getOp(), rhs);
+        } else if (lhs instanceof IConst && rhs instanceof IConst) {
+            return new IExprBin(lhs, iBin.getOp(), rhs).reduce();
+        }
+
+        if (lhs instanceof IConst) {
+            IConst lc = (IConst)lhs;
+            long val = lc.getIntValue();
+            switch (op) {
+                case MULT -> {
+                    return val == 0 ? IConst.ZERO : val == 1 ? rhs : new IExprBin(lhs, op, rhs);
+                }
+                case PLUS -> {
+                    return val == 0 ? rhs : new IExprBin(lhs, op, rhs);
+                }
+                default -> {
+                    return new IExprBin(lhs, op, rhs);
+                }
+            }
+        }
+
+        IConst rc = (IConst)rhs;
+        long val = rc.getIntValue();
+        switch (op) {
+            case MULT -> {
+                return val == 0 ? IConst.ZERO : val == 1 ? lhs : new IExprBin(lhs, op, rhs);
+            }
+            case PLUS, MINUS -> {
+                return val == 0 ? lhs : new IExprBin(lhs, op, rhs);
+            }
+            default -> {
+                return new IExprBin(lhs, op, rhs);
+            }
+        }
     }
 
     @Override
     public IExpr visit(IExprUn iUn) {
-        return new IExprUn(iUn.getOp(), iUn.getInner().visit(this));
+        return new IExprUn(iUn.getOp(), iUn.getInner());
     }
 
     @Override
     public ExprInterface visit(IfExpr ifExpr) {
-        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), ifExpr.getTrueBranch().visit(this), ifExpr.getFalseBranch().visit(this));
+        BExpr cond = (BExpr) ifExpr.getGuard().visit(this);
+        IExpr t = (IExpr) ifExpr.getTrueBranch().visit(this);
+        IExpr f = (IExpr) ifExpr.getFalseBranch().visit(this);
+
+        if (cond.isTrue()) {
+            return t;
+        } else if (cond.isFalse()) {
+            return f;
+        } else if (t.equals(f)) {
+            return t;
+        }
+        return new IfExpr(cond, t, f);
     }
 
     @Override
@@ -65,5 +153,10 @@ public abstract class ExprSimplifier implements ExpressionVisitor<ExprInterface>
     @Override
     public ExprInterface visit(Register reg) {
         return reg;
+    }
+
+    @Override
+    public ExprInterface visit(Address address) {
+        return address;
     }
 }

@@ -94,7 +94,7 @@ public class SvcompProcedures {
 	}
 
 	private static void __VERIFIER_fence(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	int index = (int)((IConst)ctx.call_params().exprs().accept(visitor)).getValue();
+    	int index = (int)((IConst)ctx.call_params().exprs().accept(visitor)).getIntValue();
     	if(index >= FENCES.size()) {
     		throw new UnsupportedOperationException(ctx.getText() + " cannot be handled");
     	}
@@ -105,7 +105,7 @@ public class SvcompProcedures {
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	if(expr instanceof IConst && ((IConst)expr).getValue() == 1) {
+    	if(expr instanceof IConst && ((IConst)expr).getIntValue() == 1) {
     		return;
     	}
     	Local event = new Local(ass, expr);

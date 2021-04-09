@@ -26,4 +26,8 @@ public abstract class BExpr implements ExprInterface {
 	public IExpr getBase() {
 		return null;
 	}
+
+	public boolean isTrue() { return (this instanceof BConst) && ((BConst)this).getValue(); }
+
+    public boolean isFalse() { return (this instanceof BConst) && !((BConst)this).getValue(); }
 }
