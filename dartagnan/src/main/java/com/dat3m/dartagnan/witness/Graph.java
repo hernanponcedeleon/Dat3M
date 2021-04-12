@@ -1,0 +1,41 @@
+package com.dat3m.dartagnan.witness;
+
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+public class Graph extends ElemWithAttributes {
+
+	private SortedSet<Node> nodes = new TreeSet<Node>();
+	private SortedSet<Edge> edges = new TreeSet<Edge>();
+	
+	public void addNode(Integer id) {
+		nodes.add(new Node(id));
+	}
+	
+	public Node getNode(Integer id) {
+		return nodes.stream().filter(n -> n.getId().equals(id)).findFirst().get();
+	}
+	
+	public void addEdge(Edge e) {
+		nodes.add(e.getSource());
+		nodes.add(e.getTarget());
+		edges.add(e);
+	}
+
+	public String toXML() {
+		StringBuilder str = new StringBuilder();
+		str.append("<graph edgedefault=\"directed\">\n");
+		for(String attr : attributes.keySet()) {
+			str.append("  <data key=\"" + attr + "\">" + attributes.get(attr) + "</data>\n");
+		}
+		for(Node n : nodes) {
+			str.append(n.toXML());
+		}
+		for(Edge e : edges) {
+			str.append(e.toXML());
+		}
+		str.append("</graph>");
+		return str.toString();
+	}
+	
+}

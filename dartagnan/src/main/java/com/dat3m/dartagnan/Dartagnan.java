@@ -23,8 +23,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.Witness;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.witness.Witness;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -84,7 +84,7 @@ public class Dartagnan {
         }
 
         if(options.createWitness() != null) {
-        	new Witness(p, options.createWitness()).write(ctx, s, result);
+        	new Witness(p, ctx, s, result, options.createWitness()).write();
         }
         
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {

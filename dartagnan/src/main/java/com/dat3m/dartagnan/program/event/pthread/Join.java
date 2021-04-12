@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.pthread;
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 
 import java.util.LinkedList;
 
@@ -60,6 +61,7 @@ public class Join extends Event {
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         Load load = new Load(reg, address, SC);
+        load.addFilters(PTHREAD);
 		events.add(load);
 
         switch (target) {

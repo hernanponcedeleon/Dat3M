@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.pthread;
 
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 
 import java.util.LinkedList;
 
@@ -52,6 +53,7 @@ public class Create extends Event {
     public int compile(Arch target, int nextId, Event predecessor) {
         LinkedList<Event> events = new LinkedList<>();
         Store store = new Store(address, new IConst(1, -1), SC, cLine);
+        store.addFilters(PTHREAD);
 		events.add(store);
 
         switch (target){
