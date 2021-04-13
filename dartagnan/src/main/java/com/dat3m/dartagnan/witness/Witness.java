@@ -119,13 +119,17 @@ public class Witness {
 		Node v0 = new Node(0);
 		v0.addAttribute("entry", "true");
 		Node v1 = new Node(1);
+		Node v2 = new Node(2);
 		
 		Edge edge = new Edge(v0, v1); 
+		edge.addAttribute("createThread", "0");
+		graph.addEdge(edge);
+		edge = new Edge(v1, v2); 
 		edge.addAttribute("threadId", "0");
 		edge.addAttribute("enterFunction", "main");
 		graph.addEdge(edge);
 		
-		int nextNode = 1;
+		int nextNode = 2;
 		int threads = 1;
 		
 		if(type.equals("correctness")) {
