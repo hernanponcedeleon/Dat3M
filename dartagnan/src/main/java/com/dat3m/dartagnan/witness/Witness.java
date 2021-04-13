@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness;
 
+import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -23,6 +24,9 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -31,6 +35,9 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.google.common.collect.Lists;
+import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
@@ -38,6 +45,8 @@ import com.microsoft.z3.Solver;
 
 public class Witness {
 	
+	private static final Logger logger = LogManager.getLogger(WitnessGraph.class);  
+
 	private WitnessGraph graph;
 	private Program program;
 	private Context ctx;
@@ -78,21 +87,13 @@ public class Witness {
 	}
 	
 	public void write() {
-        File newTextFile = new File(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");
-        FileWriter fw;
 		try {
-			fw = new FileWriter(newTextFile);
+			FileWriter fw = new FileWriter(new File(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml"));
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
-			for(String attr : graphAttr) {
-				fw.write("<key attr.name=\"" + attr + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");
-			}
-			for(String attr : nodeAttr) {
-				fw.write("<key attr.name=\"" + attr + "\" attr.type=\"boolean\" for=\"node\" id=\"" + attr + "\"/>\n");
-			}
-			for(String attr : edgeAttr) {
-				fw.write("<key attr.name=\"" + attr + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");
-			}
+			for(String attr : graphAttr) {fw.write("<key attr.name=\"" + attr + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
+			for(String attr : nodeAttr) {fw.write("<key attr.name=\"" + attr + "\" attr.type=\"boolean\" for=\"node\" id=\"" + attr + "\"/>\n");}
+			for(String attr : edgeAttr) {fw.write("<key attr.name=\"" + attr + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");}
 			fw.write(graph.toXML());
 			fw.write("</graphml>\n");
 			fw.close();
@@ -102,6 +103,26 @@ public class Witness {
 		}		
 	}
 
+	public BoolExpr encode(Program program, Context ctx) {
+		logger.info("Encoding witness graph for program " + graph.getProgram());
+		BoolExpr enc = ctx.mkTrue();
+		List<Event> previous = new ArrayList<Event>();
+		int count = 0;
+		for(Edge e : graph.getEdges()) {
+			if(e.hasCline()) {
+				List<Event> events = program.getEvents().stream().filter(f -> f.hasFilter(MEMORY) && f.getCLine() == e.getCline()).collect(Collectors.toList());
+				if(!previous.isEmpty() && !events.isEmpty() && previous.get(0).getCLine() != e.getCline()) {
+					count++;
+					logger.info("Adding hb edge from line " + previous.get(0).getCLine() + " to line " + e.getCline());
+					enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> Utils.edge("hb", p.get(0), p.get(1), ctx)).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
+				}
+				previous = events;
+			}
+		}
+        logger.info("Number of hb edges added: " + count);
+		return enc;
+	}
+	
 	private void buildGraph() {
 		populateMap();
 		graph.addAttribute("witness-type", type + "_witness");
