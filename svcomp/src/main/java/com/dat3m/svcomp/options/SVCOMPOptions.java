@@ -2,6 +2,7 @@ package com.dat3m.svcomp.options;
 
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.VALIDATION;
 import static com.dat3m.dartagnan.analysis.SolverTypes.TWO;
 import static com.dat3m.dartagnan.analysis.SolverTypes.fromString;
 
@@ -21,6 +22,7 @@ import com.google.common.io.Files;
 public class SVCOMPOptions extends BaseOptions {
 
 	private static final String PROPERTY_OPTION = "property";
+	private static final String VALIDATION_OPTION = "validate";
 	private static final String SOLVER_OPTION = "solver";
 	private static final String WITNESS_OPTION = "witness";
 	private static final String OPTIMIZATION_OPTION = "optimization";
@@ -33,7 +35,8 @@ public class SVCOMPOptions extends BaseOptions {
     private String optimization;
     private boolean witness;
     private SolverTypes solver;
-    private AnalysisTypes analysis; 
+    private AnalysisTypes analysis;
+    private String witnessFilePath;
     
     public SVCOMPOptions(){
         super();
@@ -46,6 +49,9 @@ public class SVCOMPOptions extends BaseOptions {
                 "The path to the property to be checked");
         propOption.setRequired(true);
         addOption(propOption);
+
+        addOption(new Option("v", VALIDATION_OPTION, true,
+                "Run Dartagnan as a violation witness validator. Argument is the path to the witness file"));
 
         addOption(new Option(SOLVER_OPTION, true,
         		"The solver method to be used: two (default), incremental, assume"));
@@ -95,6 +101,12 @@ public class SVCOMPOptions extends BaseOptions {
 			default:
 				throw new UnsupportedOperationException("Unrecognized property: " + property);
         }
+        
+        // This needs to come her to overwrite analysis variable
+        if(cmd.hasOption(VALIDATION_OPTION)) {
+        	analysis = VALIDATION;
+        	witnessFilePath = cmd.getOptionValue(VALIDATION_OPTION);	
+        }
     }
 
     public String getOptimization(){
@@ -103,6 +115,10 @@ public class SVCOMPOptions extends BaseOptions {
 
     public String getEncoding(){
         return encoding;
+    }
+
+    public String getWitnessPath(){
+        return witnessFilePath;
     }
 
     public SolverTypes getSolver(){

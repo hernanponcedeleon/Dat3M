@@ -3,6 +3,7 @@ package com.dat3m.svcomp;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_PATH_OPTION;
 import static com.dat3m.svcomp.utils.Compilation.compile;
 import static java.util.Arrays.asList;
 
@@ -59,6 +60,9 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getSolver().toString()));
 	    	if(options.createWitness()) {
 	    		cmd.addAll(asList("-" + WITNESS_OPTION, options.getProgramFilePath()));
+	    	}
+	    	if(options.getWitnessPath() != null) {
+	    		cmd.addAll(asList("-" + WITNESS_PATH_OPTION, options.getWitnessPath()));
 	    	}
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
