@@ -1,5 +1,6 @@
 package com.dat3m.svcomp;
 
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.VALIDATION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
@@ -9,11 +10,16 @@ import static java.util.Arrays.asList;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import org.apache.commons.cli.HelpFormatter;
 
+import com.dat3m.dartagnan.parsers.witness.ParserWitness;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.options.SVCOMPOptions;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
 
@@ -33,6 +39,20 @@ public class SVCOMPRunner {
             return;
         }
 
+        WitnessGraph witness;
+        if(options.getAnalysis().equals(VALIDATION)) {
+            try {
+    			witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+				Path pp = Paths.get(options.getProgramFilePath());
+				Path pw = Paths.get(witness.getProgram());
+				if(!pp.getFileName().toString().equals(pw.getFileName().toString())) {
+					throw new RuntimeException("The witness was generated from a different program than " + options.getProgramFilePath());
+				}
+    		} catch (IOException e1) {
+    			throw new RuntimeException("The witness cannot be parsed: " + e1.getMessage());
+    		}        	
+        }
+        
         File file = new File(options.getProgramFilePath());
         File tmp = new SVCOMPSanitizer(file).run(1);
 

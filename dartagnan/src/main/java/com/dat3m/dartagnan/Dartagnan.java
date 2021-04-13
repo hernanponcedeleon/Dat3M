@@ -12,7 +12,6 @@ import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FU
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -117,12 +116,9 @@ public class Dartagnan {
 			case VALIDATION:
 			try {
 				WitnessGraph witness = new ParserWitness().parse(new File(options.getWitnessPath()));
-				if(options.getProgramFilePath() != witness.getProgram()) {
-					throw new RuntimeException("The witness was generated from a different program than " + options.getProgramFilePath());
-				}
 				return runValidation(s, ctx, p, mcm, witness, target, settings);
 			} catch (IOException e) {
-				throw new RuntimeException("The witness graph from path " + options.getWitnessPath() + " cannot be parsed");
+    			throw new RuntimeException("The witness cannot be parsed: " + e.getMessage());
 			}
 			default:
 				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
