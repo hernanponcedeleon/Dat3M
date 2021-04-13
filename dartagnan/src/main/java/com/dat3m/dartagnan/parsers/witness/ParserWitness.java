@@ -4,13 +4,13 @@ import com.dat3m.dartagnan.parsers.XMLLexer;
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.witness.Graph;
 
 import org.antlr.v4.runtime.*;
 
-class ParserWitness {
+public class ParserWitness {
 
-    public Program parse(CharStream charStream) {
+    public Graph parse(CharStream charStream) {
     	XMLLexer lexer = new XMLLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
@@ -19,7 +19,11 @@ class ParserWitness {
         ParserRuleContext parserEntryPoint = parser.document();
         VisitorXML visitor = new VisitorXML();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
+        Graph graph = (Graph) parserEntryPoint.accept(visitor);
+        return graph;
+    }
+    
+    public Graph parse(String raw) {
+    	return parse(CharStreams.fromString(raw));
     }
 }

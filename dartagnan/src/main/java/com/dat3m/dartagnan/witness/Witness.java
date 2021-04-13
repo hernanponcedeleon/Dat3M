@@ -116,10 +116,10 @@ public class Witness {
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
 		graph.addAttribute("creationtime", df.format(new Date()));
 
-		Node v0 = new Node(0);
+		Node v0 = new Node("N0");
 		v0.addAttribute("entry", "true");
-		Node v1 = new Node(1);
-		Node v2 = new Node(2);
+		Node v1 = new Node("N1");
+		Node v2 = new Node("N2");
 		
 		Edge edge = new Edge(v0, v1); 
 		edge.addAttribute("createThread", "0");
@@ -143,7 +143,7 @@ public class Witness {
 				continue;
 			}
 			
-			edge = new Edge(new Node(nextNode), new Node(nextNode+1));
+			edge = new Edge(new Node("N" + nextNode), new Node("N" + nextNode+1));
 			edge.addAttribute("threadId", String.valueOf(eventThreadMap.get(e)));
 			edge.addAttribute("startline", String.valueOf(e.getCLine()));
 			
@@ -159,7 +159,7 @@ public class Witness {
 				break;
 			}
 		}
-		graph.getNode(nextNode).addAttribute("violation", "true");
+		graph.getNode("N" + nextNode).addAttribute("violation", "true");
 	}
 	
 	private void populateMap() {

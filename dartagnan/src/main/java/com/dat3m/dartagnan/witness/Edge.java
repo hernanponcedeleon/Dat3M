@@ -20,7 +20,7 @@ public class Edge extends ElemWithAttributes implements Comparable<Edge> {
 	
 	public String toXML() {
 		StringBuilder str = new StringBuilder();
-		str.append("  <edge source=\"" + source.toString() + "\" target=\"" + target.toString() + "\">\n");
+		str.append("  <edge source=\"" + source.getId() + "\" target=\"" + target.getId() + "\">\n");
 		for(String attr : attributes.keySet()) {
 			str.append("    <data key=\"" + attr + "\">" + attributes.get(attr) + "</data>\n");
 		}

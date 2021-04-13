@@ -8,11 +8,15 @@ public class Graph extends ElemWithAttributes {
 	private SortedSet<Node> nodes = new TreeSet<Node>();
 	private SortedSet<Edge> edges = new TreeSet<Edge>();
 	
-	public void addNode(Integer id) {
+	public void addNode(String id) {
 		nodes.add(new Node(id));
 	}
 	
-	public Node getNode(Integer id) {
+	public boolean hasNode(String id) {
+		return nodes.stream().anyMatch(n -> n.getId().equals(id));
+	}
+	
+	public Node getNode(String id) {
 		return nodes.stream().filter(n -> n.getId().equals(id)).findFirst().get();
 	}
 	

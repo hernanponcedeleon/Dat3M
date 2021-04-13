@@ -2,24 +2,19 @@ package com.dat3m.dartagnan.witness;
 
 public class Node extends ElemWithAttributes implements Comparable<Node> {
 
-	private Integer id;
+	private String id;
 	
-	public Node(Integer id) {
+	public Node(String id) {
 		this.id = id;
 	}
 	
-	public Integer getId() {
+	public String getId() {
 		return id;
-	}
-	
-	@Override
-	public String toString() {
-		return "N" + id;
 	}
 	
 	public String toXML() {
 		StringBuilder str = new StringBuilder();
-		str.append("  <node id=\"" + toString() + "\">\n");
+		str.append("  <node id=\"" + id + "\">\n");
 		for(String attr : attributes.keySet()) {
 			str.append("    <data key=\"" + attr + "\">" + attributes.get(attr) + "</data>\n");
 		}
