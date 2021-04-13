@@ -5,15 +5,15 @@ import com.dat3m.dartagnan.parsers.XMLParser.ElementContext;
 import com.dat3m.dartagnan.parsers.XMLParserBaseVisitor;
 import com.dat3m.dartagnan.parsers.XMLParserVisitor;
 import com.dat3m.dartagnan.witness.Edge;
-import com.dat3m.dartagnan.witness.Graph;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.witness.Node;
 
 public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParserVisitor<Object> {
 	
-	private Graph graph = new Graph();
+	private WitnessGraph graph = new WitnessGraph();
 	
 	@Override
-	public Graph visitDocument(XMLParser.DocumentContext ctx) {
+	public WitnessGraph visitDocument(XMLParser.DocumentContext ctx) {
 		visitChildren(ctx);
 		return graph;
 	}

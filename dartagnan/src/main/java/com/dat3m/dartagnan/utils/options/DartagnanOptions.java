@@ -16,6 +16,7 @@ public class DartagnanOptions extends BaseOptions {
 	public static final String ANALYSIS_OPTION = "analysis";
 	public static final String SOLVER_OPTION = "solver";
 	public static final String WITNESS_OPTION = "witness";
+	public static final String WITNESS_PATH_OPTION = "witness_path";
 
     private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
     private Set<AnalysisTypes> supportedAnalyses = ImmutableSet.copyOf(AnalysisTypes.values());
@@ -23,6 +24,7 @@ public class DartagnanOptions extends BaseOptions {
     private AnalysisTypes analysis; 
 	private SolverTypes solver;
     private String witness;
+    private String witnessFilePath;
     
     public DartagnanOptions(){
         super();
@@ -38,7 +40,10 @@ public class DartagnanOptions extends BaseOptions {
                 "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
 
         addOption(new Option("a", ANALYSIS_OPTION, true,
-        		"The analysis to be performed: reachability (default), data-race detection"));
+        		"The analysis to be performed: reachability (default), data-race detection, validation"));
+        
+        addOption(new Option(WITNESS_PATH_OPTION, true,
+        		"Path to the machine readable witness file"));
         }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -59,17 +64,22 @@ public class DartagnanOptions extends BaseOptions {
         }
         
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
+        witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
     }
     
-    public SolverTypes solver(){
+    public SolverTypes solver() {
         return solver;
     }
 
-    public AnalysisTypes getAnalysis(){
+    public AnalysisTypes getAnalysis() {
 		return analysis;
     }
 
-    public String createWitness(){
+    public String createWitness() {
         return witness;
+    }
+
+    public String getWitnessPath() {
+        return witnessFilePath;
     }
 }

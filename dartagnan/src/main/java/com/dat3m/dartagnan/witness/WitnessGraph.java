@@ -13,7 +13,7 @@ import com.google.common.collect.Lists;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-public class Graph extends ElemWithAttributes {
+public class WitnessGraph extends ElemWithAttributes {
 
 	private SortedSet<Node> nodes = new TreeSet<Node>();
 	private SortedSet<Edge> edges = new TreeSet<Edge>();

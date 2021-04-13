@@ -4,6 +4,7 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
+import static com.dat3m.dartagnan.analysis.Validation.runValidation;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
@@ -19,12 +20,14 @@ import org.apache.logging.log4j.Logger;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.witness.Witness;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.Context;
@@ -56,7 +59,7 @@ public class Dartagnan {
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
-		
+
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();
@@ -111,6 +114,13 @@ public class Dartagnan {
 					default:
 						throw new RuntimeException("Unrecognized solver mode: " + options.solver());
 				}
+			case VALIDATION:
+			try {
+				WitnessGraph witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+				return runValidation(s, ctx, p, mcm, witness, target, settings);
+			} catch (Exception e) {
+				throw new RuntimeException("The witness graph from path " + options.getWitnessPath() + " cannot be parsed");
+			}
 			default:
 				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
 		}

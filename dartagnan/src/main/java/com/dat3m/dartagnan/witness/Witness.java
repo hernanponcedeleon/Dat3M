@@ -38,7 +38,7 @@ import com.microsoft.z3.Solver;
 
 public class Witness {
 	
-	private Graph graph;
+	private WitnessGraph graph;
 	private Program program;
 	private Context ctx;
 	private Solver solver;
@@ -68,7 +68,7 @@ public class Witness {
 			"createThread");
 
 	public Witness(Program program, Context ctx, Solver solver, Result result, String path) {
-		this.graph = new Graph();
+		this.graph = new WitnessGraph();
 		this.program = program;
 		this.ctx = ctx;
 		this.solver = solver;
