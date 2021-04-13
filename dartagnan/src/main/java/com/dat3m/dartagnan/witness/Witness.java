@@ -102,7 +102,7 @@ public class Witness {
 		}		
 	}
 
-	public void buildGraph() {
+	private void buildGraph() {
 		populateMap();
 		graph.addAttribute("witness-type", type + "_witness");
 		graph.addAttribute("sourcecodelang", "C");
@@ -143,7 +143,7 @@ public class Witness {
 				continue;
 			}
 			
-			edge = new Edge(new Node("N" + nextNode), new Node("N" + nextNode+1));
+			edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode+1)));
 			edge.addAttribute("threadId", String.valueOf(eventThreadMap.get(e)));
 			edge.addAttribute("startline", String.valueOf(e.getCLine()));
 			

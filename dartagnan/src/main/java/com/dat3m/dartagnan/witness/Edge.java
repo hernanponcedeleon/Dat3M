@@ -18,6 +18,19 @@ public class Edge extends ElemWithAttributes implements Comparable<Edge> {
 		return target;
 	}
 	
+	public boolean hasCline() {
+		return attributes.keySet().contains("startline");
+	}
+	
+	public Integer getCline() {
+		return Integer.parseInt(attributes.get("startline"));
+	}
+	
+	@Override
+	public String toString() {
+		return source.getId() + " -> " + target.getId();
+	}
+	
 	public String toXML() {
 		StringBuilder str = new StringBuilder();
 		str.append("  <edge source=\"" + source.getId() + "\" target=\"" + target.getId() + "\">\n");
