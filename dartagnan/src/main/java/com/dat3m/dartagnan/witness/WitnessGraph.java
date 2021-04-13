@@ -1,10 +1,15 @@
 package com.dat3m.dartagnan.witness;
 
+import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
@@ -14,6 +19,8 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 public class WitnessGraph extends ElemWithAttributes {
+
+	private static final Logger logger = LogManager.getLogger(WitnessGraph.class);  
 
 	private SortedSet<Node> nodes = new TreeSet<Node>();
 	private SortedSet<Edge> edges = new TreeSet<Edge>();
@@ -36,6 +43,10 @@ public class WitnessGraph extends ElemWithAttributes {
 		edges.add(e);
 	}
 
+	public String getProgram() {
+		return attributes.get("programfile");
+	}
+	
 	public String toXML() {
 		StringBuilder str = new StringBuilder();
 		str.append("<graph edgedefault=\"directed\">\n");
@@ -53,17 +64,22 @@ public class WitnessGraph extends ElemWithAttributes {
 	}
 	
 	public BoolExpr encode(Program program, Context ctx) {
+		logger.info("Encoding witness graph for program " + getProgram());
 		BoolExpr enc = ctx.mkTrue();
 		List<Event> previous = new ArrayList<Event>();
+		int count = 0;
 		for(Edge e : edges) {
 			if(e.hasCline()) {
-				List<Event> events = program.getEvents().stream().filter(f -> f.getCLine() == e.getCline()).collect(Collectors.toList());
-				if(!previous.isEmpty()) {
+				List<Event> events = program.getEvents().stream().filter(f -> f.hasFilter(MEMORY) && f.getCLine() == e.getCline()).collect(Collectors.toList());
+				if(!previous.isEmpty() && !events.isEmpty() && previous.get(0).getCLine() != e.getCline()) {
+					count++;
+					logger.info("Adding hb edge from line " + previous.get(0).getCLine() + " to line " + e.getCline());
 					enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> Utils.edge("hb", p.get(0), p.get(1), ctx)).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
 				}
 				previous = events;
 			}
 		}
+        logger.info("Number of hb edges added: " + count);
 		return enc;
 	}
 }

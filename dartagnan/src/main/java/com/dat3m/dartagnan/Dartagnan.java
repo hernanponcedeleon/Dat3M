@@ -117,8 +117,11 @@ public class Dartagnan {
 			case VALIDATION:
 			try {
 				WitnessGraph witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+				if(options.getProgramFilePath() != witness.getProgram()) {
+					throw new RuntimeException("The witness was generated from a different program than " + options.getProgramFilePath());
+				}
 				return runValidation(s, ctx, p, mcm, witness, target, settings);
-			} catch (Exception e) {
+			} catch (IOException e) {
 				throw new RuntimeException("The witness graph from path " + options.getWitnessPath() + " cannot be parsed");
 			}
 			default:

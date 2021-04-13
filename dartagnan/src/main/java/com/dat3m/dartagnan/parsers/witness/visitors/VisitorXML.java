@@ -21,6 +21,16 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParse
 	@Override 
 	public Object visitElement(XMLParser.ElementContext ctx) {
 		if(ctx.content() != null) {
+			if(ctx.Name(0).getText().equals("data")) {
+				if(ctx.content() != null) {
+					String key = ctx.attribute(0).STRING().getText();
+					key = key.substring(1, key.length()-1);
+					String value = ctx.content().getText();
+					if(key.equals("programfile")) {
+						graph.addAttribute(key, value);	
+					}
+				}
+			}
 			if(ctx.Name(0).getText().equals("node")) {
 				String name = ctx.attribute(0).STRING().toString();
 				name = name.substring(1, name.length()-1);
