@@ -19,7 +19,8 @@ import com.microsoft.z3.Context;
 public class WitnessGraph extends ElemWithAttributes {
 
 	private SortedSet<Node> nodes = new TreeSet<Node>();
-	private SortedSet<Edge> edges = new TreeSet<Edge>();
+	// The order in which we add / traverse edges is important, thus a List
+	private List<Edge> edges = new ArrayList<Edge>();
 	
 	public void addNode(String id) {
 		nodes.add(new Node(id));
@@ -39,7 +40,11 @@ public class WitnessGraph extends ElemWithAttributes {
 		edges.add(e);
 	}
 
-	public Set<Edge> getEdges() {
+	public Set<Node> getNodes() {
+		return nodes;
+	}
+	
+	public List<Edge> getEdges() {
 		return edges;
 	}
 	
@@ -70,7 +75,9 @@ public class WitnessGraph extends ElemWithAttributes {
 			List<Event> events = program.getEvents().stream().filter(f -> f.hasFilter(MEMORY) && f.getCLine() == e.getCline()).collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty() && previous.get(0).getCLine() != e.getCline()) {
 				enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> Utils.edge("hb", p.get(0), p.get(1), ctx)).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
-			previous = events;
+			}
+			if(!events.isEmpty()) {
+				previous = events;				
 			}
 		}
 		return enc;

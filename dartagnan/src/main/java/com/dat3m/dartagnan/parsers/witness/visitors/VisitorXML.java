@@ -29,6 +29,9 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParse
 					if(key.equals("programfile")) {
 						graph.addAttribute(key, value);	
 					}
+					if(key.equals("producer")) {
+						graph.addAttribute(key, value);	
+					}
 					if(key.equals("unroll-bound")) {
 						graph.addAttribute(key, value);	
 					}

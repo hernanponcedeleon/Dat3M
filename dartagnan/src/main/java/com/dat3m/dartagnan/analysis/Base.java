@@ -68,7 +68,6 @@ public class Base {
         }
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        logger.info("Encoding " + graph.getEdges().size() + " graph edges");
         s1.add(graph.encode(program, ctx));
 
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
@@ -120,7 +119,6 @@ public class Base {
         }
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        logger.info("Encoding " + graph.getEdges().size() + " graph edges");
         solver.add(graph.encode(program, ctx));
         
         Result res = UNKNOWN;
@@ -168,7 +166,6 @@ public class Base {
         }
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        logger.info("Encoding " + graph.getEdges().size() + " graph edges");
         solver.add(graph.encode(program, ctx));
 
         Result res = UNKNOWN;

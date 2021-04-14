@@ -21,6 +21,14 @@ public class Node extends ElemWithAttributes implements Comparable<Node> {
 		str.append("  </node>\n");
 		return str.toString();
 	}
+
+	@Override
+    public boolean equals(Object o) {
+		if(o instanceof Node) {
+			getId().equals(((Node)o).getId());
+		}
+		return false;
+	}
 	
 	@Override
 	public int compareTo(Node other) {

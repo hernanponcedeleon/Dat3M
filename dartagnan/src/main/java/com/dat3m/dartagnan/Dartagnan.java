@@ -51,16 +51,24 @@ public class Dartagnan {
             return;
         }
 
+        WitnessGraph witness = new WitnessGraph();
+        
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
+        if(options.getWitnessPath() != null) {
+        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+        	logger.info("Witness path: " + options.getWitnessPath());
+    		if(witness.hasAttributed("producer")) {
+    			logger.info("Witness graph produced by " + witness.getAttributed("producer"));
+    		}
+    		logger.info("Witness graph stats: #nodes " + witness.getNodes().size());
+    		logger.info("Witness graph stats: #edges " + witness.getEdges().size());
+        }        
         logger.info("Bound: " + options.getSettings().getBound());
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
-        WitnessGraph witness = options.getWitnessPath() != null ? 
-        		new ParserWitness().parse(new File(options.getWitnessPath())) :
-        		new WitnessGraph();
-        		
+
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();
