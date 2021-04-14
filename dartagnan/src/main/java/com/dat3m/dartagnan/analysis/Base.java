@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -23,6 +24,10 @@ public class Base {
     private static final Logger logger = LogManager.getLogger(Base.class);
 	
     public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    	return runAnalysis(s1, ctx, program, wmm, new WitnessGraph(), target, settings);
+    }
+    
+    public static Result runAnalysis(Solver s1, Context ctx, Program program, Wmm wmm, WitnessGraph graph, Arch target, Settings settings) {
     	program.simplify();
     	program.unroll(settings.getBound(), 0);
     	program.compile(target, 0);
@@ -61,6 +66,10 @@ public class Base {
 			s1.add(encodeFilter);
             s2.add(encodeFilter);
         }
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
+        logger.info("Encoding " + graph.getEdges().size() + " graph edges");
+        s1.add(graph.encode(program, ctx));
 
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
@@ -83,6 +92,10 @@ public class Base {
     }
 	
     public static Result runAnalysisIncrementalSolver(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    	return runAnalysisIncrementalSolver(solver, ctx, program, wmm, new WitnessGraph(), target, settings);
+    }
+    
+    public static Result runAnalysisIncrementalSolver(Solver solver, Context ctx, Program program, Wmm wmm, WitnessGraph graph, Arch target, Settings settings) {
     	program.simplify();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -105,7 +118,11 @@ public class Base {
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
-
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
+        logger.info("Encoding " + graph.getEdges().size() + " graph edges");
+        solver.add(graph.encode(program, ctx));
+        
         Result res = UNKNOWN;
         logger.info("Starting first solver.check()");
 		if(solver.check() == SATISFIABLE) {
@@ -126,6 +143,10 @@ public class Base {
     }
     
     public static Result runAnalysisAssumeSolver(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
+    	return runAnalysisAssumeSolver(solver, ctx, program, wmm, new WitnessGraph(), target, settings);
+    }
+    
+    public static Result runAnalysisAssumeSolver(Solver solver, Context ctx, Program program, Wmm wmm, WitnessGraph graph, Arch target, Settings settings) {
     	program.simplify();
     	program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
@@ -145,6 +166,10 @@ public class Base {
         if(program.getAssFilter() != null){
             solver.add(program.getAssFilter().encode(ctx));
         }
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
+        logger.info("Encoding " + graph.getEdges().size() + " graph edges");
+        solver.add(graph.encode(program, ctx));
 
         Result res = UNKNOWN;
         logger.info("Starting first solver.check()");

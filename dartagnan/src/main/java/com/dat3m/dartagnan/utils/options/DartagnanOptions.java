@@ -15,8 +15,8 @@ public class DartagnanOptions extends BaseOptions {
 
 	public static final String ANALYSIS_OPTION = "analysis";
 	public static final String SOLVER_OPTION = "solver";
-	public static final String WITNESS_OPTION = "witness";
-	public static final String WITNESS_PATH_OPTION = "witness_path";
+	public static final String WITNESS_OPTION = "create_witness";
+	public static final String WITNESS_PATH_OPTION = "witness";
 
     private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
     private Set<AnalysisTypes> supportedAnalyses = ImmutableSet.copyOf(AnalysisTypes.values());

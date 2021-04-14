@@ -11,6 +11,10 @@ public class ElemWithAttributes {
 		attributes.put(key, value);
 	}
 	
+	public boolean hasAttributed(String key) {
+		return attributes.containsKey(key);
+	}
+
 	public String getAttributed(String key) {
 		return attributes.get(key);
 	}

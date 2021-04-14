@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis;
 
 public enum AnalysisTypes {
-	REACHABILITY, RACES, VALIDATION;
+	REACHABILITY, RACES;
 	
 	public static AnalysisTypes fromString(String s) {
         if(s != null){
@@ -11,8 +11,6 @@ public enum AnalysisTypes {
                     return REACHABILITY;
                 case "races":
                     return RACES;
-                case "validation":
-                    return VALIDATION;
             }
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + s);
@@ -24,8 +22,6 @@ public enum AnalysisTypes {
                 return "reachability";
             case RACES:
                 return "races";
-            case VALIDATION:
-                return "validation";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
 	}

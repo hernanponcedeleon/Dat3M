@@ -30,13 +30,14 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.microsoft.z3.Solver;
 
-public class Witness {
+public class WitnessBuilder {
 	
 	private WitnessGraph graph;
 	private Program program;
@@ -67,13 +68,14 @@ public class Witness {
 			"threadId",
 			"createThread");
 
-	public Witness(Program program, Context ctx, Solver solver, Result result, String path) {
+	public WitnessBuilder(Program program, Context ctx, Solver solver, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
+		this.graph.addAttribute("unroll-bound", String.valueOf(options.getSettings().getBound()));
 		this.program = program;
 		this.ctx = ctx;
 		this.solver = solver;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
-		this.path = path;
+		this.path = options.createWitness();
 		buildGraph();
 	}
 	

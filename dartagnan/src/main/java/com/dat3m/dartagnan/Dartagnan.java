@@ -4,7 +4,6 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
-import static com.dat3m.dartagnan.analysis.Validation.runValidation;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
@@ -25,7 +24,7 @@ import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
-import com.dat3m.dartagnan.witness.Witness;
+import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -58,7 +57,10 @@ public class Dartagnan {
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
-
+        WitnessGraph witness = options.getWitnessPath() != null ? 
+        		new ParserWitness().parse(new File(options.getWitnessPath())) :
+        		new WitnessGraph();
+        		
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();
@@ -72,7 +74,7 @@ public class Dartagnan {
         Settings settings = options.getSettings();
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
-        Result result = selectAndRunAnalysis(options, mcm, p, target, settings, ctx, s);
+        Result result = selectAndRunAnalysis(options, mcm, p, witness, target, settings, ctx, s);
  
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -86,7 +88,7 @@ public class Dartagnan {
         }
 
         if(options.createWitness() != null) {
-        	new Witness(p, ctx, s, result, options.createWitness()).write();
+        	new WitnessBuilder(p, ctx, s, result, options).write();
         }
         
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
@@ -98,28 +100,21 @@ public class Dartagnan {
         ctx.close();
     }
 
-	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Program p, Arch target, Settings settings, Context ctx, Solver s) {
+	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Program p, WitnessGraph graph, Arch target, Settings settings, Context ctx, Solver s) {
 		switch(options.getAnalysis()) {
 			case RACES:
 				return checkForRaces(s, ctx, p, mcm, target, settings);	
 			case REACHABILITY:
 				switch(options.solver()) {
 					case TWO:
-						return runAnalysis(s, ctx, p, mcm, target, settings);
+						return runAnalysis(s, ctx, p, mcm, graph, target, settings);
 					case INCREMENTAL:
-						return runAnalysisIncrementalSolver(s, ctx, p, mcm, target, settings);
+						return runAnalysisIncrementalSolver(s, ctx, p, mcm, graph, target, settings);
 					case ASSUME:
-						return runAnalysisAssumeSolver(s, ctx, p, mcm, target, settings);
+						return runAnalysisAssumeSolver(s, ctx, p, mcm, graph, target, settings);
 					default:
 						throw new RuntimeException("Unrecognized solver mode: " + options.solver());
 				}
-			case VALIDATION:
-			try {
-				WitnessGraph witness = new ParserWitness().parse(new File(options.getWitnessPath()));
-				return runValidation(s, ctx, p, mcm, witness, target, settings);
-			} catch (IOException e) {
-    			throw new RuntimeException("The witness cannot be parsed: " + e.getMessage());
-			}
 			default:
 				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
 		}
