@@ -92,30 +92,25 @@ public class ExprSimplifier extends ExprTransformer {
             IConst lc = (IConst)lhs;
             long val = lc.getIntValue();
             switch (op) {
-                case MULT -> {
+                case MULT:
                     return val == 0 ? IConst.ZERO : val == 1 ? rhs : new IExprBin(lhs, op, rhs);
-                }
-                case PLUS -> {
+                case PLUS:
                     return val == 0 ? rhs : new IExprBin(lhs, op, rhs);
-                }
-                default -> {
+                default:
                     return new IExprBin(lhs, op, rhs);
-                }
             }
         }
 
         IConst rc = (IConst)rhs;
         long val = rc.getIntValue();
         switch (op) {
-            case MULT -> {
+            case MULT:
                 return val == 0 ? IConst.ZERO : val == 1 ? lhs : new IExprBin(lhs, op, rhs);
-            }
-            case PLUS, MINUS -> {
+            case PLUS:
+            case MINUS:
                 return val == 0 ? lhs : new IExprBin(lhs, op, rhs);
-            }
-            default -> {
+            default:
                 return new IExprBin(lhs, op, rhs);
-            }
         }
     }
 
