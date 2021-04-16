@@ -28,60 +28,60 @@ public class SvCompTestLarge extends AbstractSvCompTest {
         String cat_file = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
-        Settings s2 = new Settings(Mode.KNASTER, Alias.CFIS, 2, TIMEOUT, false);
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, TIMEOUT, false);
 
         List<Object[]> data = new ArrayList<>();
         String base = TEST_RESOURCE_PATH + "large/";
         // mixXXX examples
-        data.add(new Object[]{base + "mix000_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "mix000_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "mix000_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "mix000_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "mix000_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "mix000_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "mix000_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "mix000_tso.opt-O0.bpl", wmm, s1});
 
-        data.add(new Object[]{base + "mix003_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "mix003_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "mix003_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "mix003_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "mix003_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "mix003_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "mix003_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "mix003_tso.opt-O0.bpl", wmm, s1});
 
         // podwrXXX examples
-        data.add(new Object[]{base + "podwr000_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "podwr000_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "podwr000_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "podwr000_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "podwr000_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "podwr000_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "podwr000_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "podwr000_tso.opt-O0.bpl", wmm, s1});
 
-        data.add(new Object[]{base + "podwr001_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "podwr001_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "podwr001_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "podwr001_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "podwr001_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "podwr001_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "podwr001_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "podwr001_tso.opt-O0.bpl", wmm, s1});
 
 
         // safeXXX examples
-        data.add(new Object[]{base + "safe000_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "safe000_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "safe000_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "safe000_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "safe000_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "safe000_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "safe000_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "safe000_tso.opt-O0.bpl", wmm, s1});
 
-        data.add(new Object[]{base + "safe030_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "safe030_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "safe030_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "safe030_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "safe030_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "safe030_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "safe030_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "safe030_tso.opt-O0.bpl", wmm, s1});
 
         // rfiXXX examples
-        data.add(new Object[]{base + "rfi000_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "rfi000_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "rfi000_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "rfi000_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "rfi000_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "rfi000_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "rfi000_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "rfi000_tso.opt-O0.bpl", wmm, s1});
 
-        data.add(new Object[]{base + "rfi009_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "rfi009_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "rfi009_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "rfi009_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "rfi009_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "rfi009_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "rfi009_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "rfi009_tso.opt-O0.bpl", wmm, s1});
 
         // thinXXX examples
-        data.add(new Object[]{base + "thin000_power.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "thin000_pso.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "thin000_rmo.opt-O0.bpl", wmm, s2});
-        data.add(new Object[]{base + "thin000_tso.opt-O0.bpl", wmm, s2});
+        data.add(new Object[]{base + "thin000_power.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "thin000_pso.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "thin000_rmo.opt-O0.bpl", wmm, s1});
+        data.add(new Object[]{base + "thin000_tso.opt-O0.bpl", wmm, s1});
 
         return data;
     }
