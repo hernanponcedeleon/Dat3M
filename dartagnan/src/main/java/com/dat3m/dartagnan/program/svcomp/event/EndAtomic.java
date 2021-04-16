@@ -75,6 +75,7 @@ public class EndAtomic extends Event {
 			for (Event e : c) {
 				if (begin.getCId() <= e.getCId() && e.getCId() <= this.getCId()) {
 					if (!eq.isImplied(e, begin)) {
+						//TODO(TH): put it in an exception?
 						System.out.println(e.toString() + " is inside atomic block but can be reached from the outside");
 					}
 					enclosedEvents.add(e);
