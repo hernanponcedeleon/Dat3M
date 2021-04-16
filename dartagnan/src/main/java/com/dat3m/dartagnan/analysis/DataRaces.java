@@ -14,12 +14,9 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
@@ -29,28 +26,24 @@ public class DataRaces {
 	// This analysis assumes that CAT file defining the memory model has a happens-before 
 	// relation named hb: it should contain the following axiom "acyclic hb"
 
-	public static Result checkForRaces(Solver solver, Context ctx, Program program, Wmm wmm, Arch target, Settings settings) {
-		VerificationTask task = new VerificationTask(program, wmm, target, settings);
+	public static Result checkForRaces(Solver solver, Context ctx, VerificationTask task) {
+		// TODO(HP): No program.simplify() ???
 		task.unrollAndCompile();
 		task.initialiseEncoding(ctx);
-    	/*
-    	// No program.simplify() ???
-    	program.unroll(settings.getBound(), 0);
-        program.compile(target, 0);
-        program.updateAssertion();
-        */
 		solver.add(task.encodeProgram(ctx));
 		solver.add(task.encodeWmmRelations(ctx));
         solver.add(task.encodeWmmConsistency(ctx));
         solver.push();
-        solver.add(encodeRaces(program, ctx));
+        solver.add(encodeRaces(task.getProgram(), ctx));
         
+		BoolExpr noBoundEventExec = task.getProgram().encodeNoBoundEventExec(ctx);
+		
 		if(solver.check() == SATISFIABLE) {
-        	solver.add(program.encodeNoBoundEventExec(ctx));
+        	solver.add(noBoundEventExec);
 			return solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
         } else {
         	solver.pop();
-			solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
+			solver.add(ctx.mkNot(noBoundEventExec));
         	return solver.check() == SATISFIABLE ? UNKNOWN : PASS;
         }
     }

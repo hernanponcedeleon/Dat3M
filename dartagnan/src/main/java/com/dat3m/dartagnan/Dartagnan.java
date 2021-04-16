@@ -83,9 +83,11 @@ public class Dartagnan {
         }
         
         Settings settings = options.getSettings();
+        VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
+
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
-        Result result = selectAndRunAnalysis(options, mcm, p, witness, target, settings, ctx, s);
+        Result result = selectAndRunAnalysis(options, task, ctx, s);
  
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -111,12 +113,11 @@ public class Dartagnan {
         ctx.close();
     }
 
-	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Program p, WitnessGraph witness, Arch target, Settings settings, Context ctx, Solver s) {
+	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, Context ctx, Solver s) {
 		switch(options.getAnalysis()) {
 			case RACES:
-				return checkForRaces(s, ctx, p, mcm, target, settings);	
+				return checkForRaces(s, ctx, task);	
 			case REACHABILITY:
-                VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 				switch(options.solver()) {
 					case TWO:
 						return runAnalysis(s, ctx, task);
