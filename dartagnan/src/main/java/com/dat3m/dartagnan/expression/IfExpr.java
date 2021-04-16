@@ -73,9 +73,13 @@ public class IfExpr implements ExprInterface {
 		return guard;
 	}
 
-	public ExprInterface getTrueBranch() { return tbranch; }
+	public ExprInterface getTrueBranch() {
+		return tbranch;
+	}
 
-	public ExprInterface getFalseBranch() { return fbranch; }
+	public ExprInterface getFalseBranch() {
+		return fbranch;
+	}
 
 	@Override
 	public int getPrecision() {

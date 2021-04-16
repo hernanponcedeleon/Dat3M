@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
@@ -28,7 +27,6 @@ public class IExprUn extends IExpr {
 	public ExprInterface getInner() {
 		return b;
 	}
-
 
 	@Override
 	public Expr toZ3Int(Event e, Context ctx) {

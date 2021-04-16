@@ -55,6 +55,7 @@ public class BConst extends BExpr implements ExprInterface {
 		return value;
 	}
 
+	//TODO(TH): This method seems to be the same for all BExpr. Why not defining it only once there?
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);

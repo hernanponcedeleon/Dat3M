@@ -67,5 +67,4 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
         }
         return super.compileRecursive(target, nextId, predecessor, depth + 1);
     }
-
 }

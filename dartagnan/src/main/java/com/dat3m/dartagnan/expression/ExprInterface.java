@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
@@ -27,7 +26,9 @@ public interface ExprInterface {
 
     ImmutableSet<Register> getRegs();
 
-    default ImmutableSet<Location> getLocs() { return ImmutableSet.of(); }
+    default ImmutableSet<Location> getLocs() {
+    	return ImmutableSet.of();
+    }
     
     int getPrecision();
     

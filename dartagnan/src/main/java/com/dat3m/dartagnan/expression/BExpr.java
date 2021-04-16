@@ -27,7 +27,13 @@ public abstract class BExpr implements ExprInterface {
 		return null;
 	}
 
-	public boolean isTrue() { return (this instanceof BConst) && ((BConst)this).getValue(); }
+	public boolean isTrue() {
+		//TODO(TH): can't you use the constants defined in BConst?
+		return (this instanceof BConst) && ((BConst)this).getValue();
+	}
 
-    public boolean isFalse() { return (this instanceof BConst) && !((BConst)this).getValue(); }
+    public boolean isFalse() {
+    	//TODO(TH): can't you use the constants defined in BConst?
+    	return (this instanceof BConst) && !((BConst)this).getValue();
+    }
 }

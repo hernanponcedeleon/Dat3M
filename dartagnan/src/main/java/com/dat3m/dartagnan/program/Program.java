@@ -39,6 +39,7 @@ public class Program {
     private boolean isUnrolled;
     private boolean isCompiled;
     private VerificationTask task;
+    private BranchEquivalence branchEquivalence;
 
     public Program(Memory memory, ImmutableSet<Location> locations){
         this("", memory, locations);
@@ -130,7 +131,6 @@ public class Program {
 		return events;
 	}
 
-    private BranchEquivalence branchEquivalence;
     public BranchEquivalence getBranchEquivalence() {
         if (branchEquivalence == null) {
             branchEquivalence = new BranchEquivalence(this);

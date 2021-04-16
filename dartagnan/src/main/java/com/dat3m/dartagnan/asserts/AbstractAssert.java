@@ -29,7 +29,9 @@ public abstract class AbstractAssert {
         return type != null && (type.equals(ASSERT_TYPE_NOT_EXISTS) || type.equals(ASSERT_TYPE_FORALL));
     }
 
-    public ImmutableSet<Location> getLocs() { return ImmutableSet.of(); }
+    public ImmutableSet<Location> getLocs() {
+    	return ImmutableSet.of();
+    }
 
     public String toStringWithType(){
         if(type != null){

@@ -57,7 +57,6 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
     public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         throw new RuntimeException("RMWStoreExclusiveStatus cannot be unrolled: event must be generated during compilation");

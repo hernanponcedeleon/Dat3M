@@ -24,9 +24,17 @@ public class BExprBin extends BExpr {
         this.op = op;
     }
 
-    public ExprInterface getLHS() { return b1; }
-    public ExprInterface getRHS() { return b2; }
-    public BOpBin getOp() { return op; }
+    public ExprInterface getLHS() {
+    	return b1;
+    }
+    
+    public ExprInterface getRHS() {
+    	return b2;
+    }
+    
+    public BOpBin getOp() {
+    	return op;
+    }
 
     @Override
     public BoolExpr toZ3Bool(Event e, Context ctx) {

@@ -36,11 +36,12 @@ public abstract class Event implements Comparable<Event> {
 
 	protected Set<Event> listeners = new HashSet<>();
 
+	private String repr;
+
 	protected Event(int cLine) {
 		filter = new HashSet<>();
 		this.cLine = cLine;
 	}
-
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -91,7 +92,9 @@ public abstract class Event implements Comparable<Event> {
 		}
 	}
 
-	public Thread getThread() { return thread; }
+	public Thread getThread() {
+		return thread;
+	}
 
 	public void setThread(Thread thread) {
 		if (thread != null && !thread.equals(this.thread)) {
@@ -183,6 +186,7 @@ public abstract class Event implements Comparable<Event> {
 		return setUIdRecursive(nextId, 0).execute();
     }
 
+    //TODO(TH): do we need both or did you do it this way until you know it works correctly?
 	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
 		uId = nextId;
 		if (successor != null) {
@@ -203,6 +207,7 @@ public abstract class Event implements Comparable<Event> {
 		unrollRecursive(bound, predecessor, 0).execute();
     }
 
+    //TODO(TH): do we need both or did you do it this way until you know it works correctly?
     protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
 		Event copy = this;
 		if(predecessor != null) {
@@ -254,6 +259,7 @@ public abstract class Event implements Comparable<Event> {
 		return compileRecursive(target, nextId, predecessor, 0).execute();
     }
 
+    //TODO(TH): do we need both or did you do it this way until you know it works correctly?
 	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
 		cId = nextId++;
 		if(successor != null){
@@ -311,7 +317,6 @@ public abstract class Event implements Comparable<Event> {
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}
 
-	private String repr;
 	public String repr() {
 		if (cId == -1) {
 			// We have not yet compiled
@@ -346,9 +351,6 @@ public abstract class Event implements Comparable<Event> {
 			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
 			cfEnc = ctx.mkEq(cfVar, cfCond);
 			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
-//			if(successor != null){
-//				cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, cfVar));
-//			}
 		}
 		return cfEnc;
 	}

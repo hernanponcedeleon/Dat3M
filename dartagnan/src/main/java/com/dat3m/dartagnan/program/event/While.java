@@ -53,36 +53,6 @@ public class While extends Event implements RegReaderData {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-	/*@Override
-	public void unroll(int bound, Event predecessor) {
-		if(successor != null){
-			int currentBound = bound;
-
-			while(currentBound > 0){
-				Skip exitMainBranch = exitEvent.getCopy();
-				Skip exitElseBranch = exitEvent.getCopy();
-				If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
-				ifEvent.oId = oId;
-
-				predecessor.setSuccessor(ifEvent);
-				predecessor = copyPath(successor, exitEvent, ifEvent);
-				predecessor.setSuccessor(exitMainBranch);
-				exitMainBranch.setSuccessor(exitElseBranch);
-				predecessor = exitElseBranch;
-
-				ifEvent.successor.unroll(currentBound, ifEvent);
-				currentBound--;
-			}
-
-			predecessor.setSuccessor(exitEvent.getSuccessor());
-			if(predecessor.getSuccessor() != null){
-				predecessor.getSuccessor().unroll(bound, predecessor);
-			}
-			return;
-		}
-
-		throw new RuntimeException("Malformed While event");
-	}*/
 
 	@Override
 	public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
@@ -131,11 +101,6 @@ public class While extends Event implements RegReaderData {
 
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
-
-    /*@Override
-    public int compile(Arch target, int nextId, Event predecessor) {
-        throw new RuntimeException("Event 'while' must be unrolled before compilation");
-    }*/
 
 	@Override
 	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {

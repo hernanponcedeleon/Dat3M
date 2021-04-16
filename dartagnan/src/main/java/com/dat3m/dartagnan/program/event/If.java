@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
@@ -55,9 +54,13 @@ public class If extends Event implements RegReaderData {
         return exitElseBranch;
     }
 
-    public Event getSuccessorMainBranch() { return successorMain; }
+    public Event getSuccessorMainBranch() {
+    	return successorMain;
+    }
 
-    public Event getSuccessorElseBranch() { return successorElse; }
+    public Event getSuccessorElseBranch() {
+    	return successorElse;
+    }
 
     public List<Event> getMainBranchEvents(){
         if(cId > -1){
@@ -120,7 +123,6 @@ public class If extends Event implements RegReaderData {
         If copy = new If(expr, copyExitMainBranch, copyExitElseBranch);
         copy.setOId(oId);
 
-
         Event ptr = copyPath(successor, exitMainBranch, copy);
         ptr.successor = copyExitMainBranch;
         ptr = copyPath(exitMainBranch.successor, exitElseBranch, copyExitMainBranch);
@@ -160,15 +162,7 @@ public class If extends Event implements RegReaderData {
     public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
         if(cfEnc == null){
             cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-            BoolExpr ifCond = expr.toZ3Bool(this, ctx);
             cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx));
-
-//            cfEnc = ctx.mkAnd(cfEnc, successorMain.encodeCF(ctx, ctx.mkAnd(ifCond, cfVar)));
-//            cfEnc = ctx.mkAnd(cfEnc, successorElse.encodeCF(ctx, ctx.mkAnd(ctx.mkNot(ifCond), cfVar)));
-
-//            if(successor != null){
-//                cfEnc = ctx.mkAnd(cfEnc, successor.encodeCF(ctx, ctx.mkOr(exitMainBranch.cfCond, exitElseBranch.cfCond)));
-//            }
         }
         return cfEnc;
     }
