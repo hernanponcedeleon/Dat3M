@@ -22,7 +22,7 @@ public class SVCOMPOptions extends BaseOptions {
 
 	private static final String PROPERTY_OPTION = "property";
 	private static final String SOLVER_OPTION = "solver";
-	private static final String WITNESS_OPTION = "witness";
+	private static final String WITNESS_PATH_OPTION = "witness";
 	private static final String OPTIMIZATION_OPTION = "optimization";
 	private static final String INTERGER_ENCODING_OPTION = "integer_encoding";
 	
@@ -31,9 +31,9 @@ public class SVCOMPOptions extends BaseOptions {
     private Set<SolverTypes> supported_solvers = ImmutableSet.copyOf(Arrays.asList(SolverTypes.values()));
     private String encoding;
     private String optimization;
-    private boolean witness;
     private SolverTypes solver;
-    private AnalysisTypes analysis; 
+    private AnalysisTypes analysis;
+    private String witnessFilePath;
     
     public SVCOMPOptions(){
         super();
@@ -47,12 +47,12 @@ public class SVCOMPOptions extends BaseOptions {
         propOption.setRequired(true);
         addOption(propOption);
 
+        addOption(new Option(WITNESS_PATH_OPTION, true,
+                "Run Dartagnan as a violation witness validator. Argument is the path to the witness file"));
+
         addOption(new Option(SOLVER_OPTION, true,
         		"The solver method to be used: two (default), incremental, assume"));
 
-        addOption(new Option("w", WITNESS_OPTION, false,
-                "Creates a machine readable witness"));
-        
         addOption(new Option("o", OPTIMIZATION_OPTION, true,
                 "Optimization flag for LLVM compiler"));
 
@@ -72,7 +72,7 @@ public class SVCOMPOptions extends BaseOptions {
     	CommandLine cmd = new DefaultParser().parse(this, args);
         
     	optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
-        witness = cmd.hasOption(WITNESS_OPTION);
+        witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
         
         solver = cmd.hasOption(SOLVER_OPTION) ? fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
         if(!supported_solvers.contains(solver)) {
@@ -105,12 +105,12 @@ public class SVCOMPOptions extends BaseOptions {
         return encoding;
     }
 
-    public SolverTypes getSolver(){
-        return solver;
+    public String getWitnessPath(){
+        return witnessFilePath;
     }
 
-    public boolean createWitness(){
-        return witness;
+    public SolverTypes getSolver(){
+        return solver;
     }
 
     public AnalysisTypes getAnalysis(){

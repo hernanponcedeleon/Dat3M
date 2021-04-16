@@ -20,4 +20,5 @@ public class EType {
     public static final String BOUND   		= "BOUND";
     public static final String SVCOMPATOMIC	= "A-SVCOMP";
     public static final String LOCK    		= "L";
+    public static final String PTHREAD    	= "PTHREAD";
 }

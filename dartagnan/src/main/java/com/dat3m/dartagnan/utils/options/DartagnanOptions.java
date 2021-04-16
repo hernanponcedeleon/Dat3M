@@ -15,7 +15,8 @@ public class DartagnanOptions extends BaseOptions {
 
 	public static final String ANALYSIS_OPTION = "analysis";
 	public static final String SOLVER_OPTION = "solver";
-	public static final String WITNESS_OPTION = "witness";
+	public static final String WITNESS_OPTION = "create_witness";
+	public static final String WITNESS_PATH_OPTION = "witness";
 
     private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl"));
     private Set<AnalysisTypes> supportedAnalyses = ImmutableSet.copyOf(AnalysisTypes.values());
@@ -23,6 +24,7 @@ public class DartagnanOptions extends BaseOptions {
     private AnalysisTypes analysis;
 	private SolverTypes solver;
     private String witness;
+    private String witnessFilePath;
 
     public DartagnanOptions(){
         super();
@@ -39,6 +41,9 @@ public class DartagnanOptions extends BaseOptions {
 
         addOption(new Option("a", ANALYSIS_OPTION, true,
         		"The analysis to be performed: reachability (default), data-race detection"));
+        
+        addOption(new Option(WITNESS_PATH_OPTION, true,
+        		"Path to the machine readable witness file"));
         }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -59,6 +64,7 @@ public class DartagnanOptions extends BaseOptions {
         }
 
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
+        witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
     }
     
     public SolverTypes solver(){
@@ -71,5 +77,9 @@ public class DartagnanOptions extends BaseOptions {
 
     public String createWitness(){
         return witness;
+    }
+
+    public String getWitnessPath() {
+        return witnessFilePath;
     }
 }

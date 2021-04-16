@@ -13,6 +13,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.witness.WitnessBuilder;
+import com.dat3m.dartagnan.witness.WitnessGraph;
+
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,11 +23,11 @@ import org.apache.logging.log4j.Logger;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.Witness;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -51,8 +54,19 @@ public class Dartagnan {
             return;
         }
 
+        WitnessGraph witness = new WitnessGraph();
+        
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
+        if(options.getWitnessPath() != null) {
+        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+        	logger.info("Witness path: " + options.getWitnessPath());
+    		if(witness.hasAttributed("producer")) {
+    			logger.info("Witness graph produced by " + witness.getAttributed("producer"));
+    		}
+    		logger.info("Witness graph stats: #nodes " + witness.getNodes().size());
+    		logger.info("Witness graph stats: #edges " + witness.getEdges().size());
+        }        
         logger.info("Bound: " + options.getSettings().getBound());
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
@@ -71,7 +85,7 @@ public class Dartagnan {
         Settings settings = options.getSettings();
         Context ctx = new Context();
         Solver s = ctx.mkSolver();
-        Result result = selectAndRunAnalysis(options, mcm, p, target, settings, ctx, s);
+        Result result = selectAndRunAnalysis(options, mcm, p, witness, target, settings, ctx, s);
  
         if(options.getProgramFilePath().endsWith(".litmus")) {
             System.out.println("Settings: " + options.getSettings());
@@ -85,7 +99,7 @@ public class Dartagnan {
         }
 
         if(options.createWitness() != null) {
-        	new Witness(p, options.createWitness()).write(ctx, s, result);
+        	new WitnessBuilder(p, ctx, s, result, options).write();
         }
         
         if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
@@ -97,12 +111,12 @@ public class Dartagnan {
         ctx.close();
     }
 
-	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Program p, Arch target, Settings settings, Context ctx, Solver s) {
+	private static Result selectAndRunAnalysis(DartagnanOptions options, Wmm mcm, Program p, WitnessGraph witness, Arch target, Settings settings, Context ctx, Solver s) {
 		switch(options.getAnalysis()) {
 			case RACES:
 				return checkForRaces(s, ctx, p, mcm, target, settings);	
 			case REACHABILITY:
-                VerificationTask task = new VerificationTask(p, mcm, target, settings);
+                VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 				switch(options.solver()) {
 					case TWO:
 						return runAnalysis(s, ctx, task);

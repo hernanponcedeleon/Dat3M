@@ -3,22 +3,28 @@ package com.dat3m.svcomp;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_PATH_OPTION;
 import static com.dat3m.svcomp.utils.Compilation.compile;
+import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import org.apache.commons.cli.HelpFormatter;
 
+import com.dat3m.dartagnan.parsers.witness.ParserWitness;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.options.SVCOMPOptions;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
 
 public class SVCOMPRunner {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
     	SVCOMPOptions options = new SVCOMPOptions();
         try {
             options.parse(args);
@@ -31,11 +37,20 @@ public class SVCOMPRunner {
             System.exit(1);
             return;
         }
-
+        
+        WitnessGraph witness = new WitnessGraph(); 
+        if(options.getWitnessPath() != null) {
+        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+			if(!Paths.get(options.getProgramFilePath()).getFileName().toString().
+					equals(Paths.get(witness.getProgram()).getFileName().toString())) {
+				throw new RuntimeException("The witness was generated from a different program than " + options.getProgramFilePath());
+			}
+        }
+        
         File file = new File(options.getProgramFilePath());
         File tmp = new SVCOMPSanitizer(file).run(1);
 
-        int bound = 1;
+        int bound = witness.hasAttributed("unroll-bound") ?  parseInt(witness.getAttributed("unroll-bound")) : 1;
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
 			compile(tmp, options);
@@ -57,8 +72,12 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
 	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getSolver().toString()));
-	    	if(options.createWitness()) {
-	    		cmd.addAll(asList("-" + WITNESS_OPTION, options.getProgramFilePath()));
+	    	if(options.getWitnessPath() != null) {
+	    		// In validation mode we do not create witnesses.
+	    		cmd.addAll(asList("-" + WITNESS_PATH_OPTION, options.getWitnessPath()));
+	    	} else {
+	    		// In verification mode we always create a witness.
+	    		cmd.addAll(asList("-" + WITNESS_OPTION, options.getProgramFilePath()));	
 	    	}
 
 	    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
@@ -83,7 +102,6 @@ public class SVCOMPRunner {
 			bound++;
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
-		output = output.equals("PASS") ? "PASS" : "FAIL";
 		System.out.println(output);
 
         tmp.delete();

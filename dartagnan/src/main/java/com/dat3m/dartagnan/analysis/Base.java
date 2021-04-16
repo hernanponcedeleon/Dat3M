@@ -53,6 +53,9 @@ public class Base {
 			s1.add(encodeFilter);
             s2.add(encodeFilter);
         }
+        // For validation this contains information.
+        // For verification graph.encode() just returns ctx.mkTrue()
+        s1.add(task.encodeWitness(ctx));
 
         BoolExpr encodeNoBoundEventExec = program.encodeNoBoundEventExec(ctx);
 
@@ -125,7 +128,8 @@ public class Base {
         logger.info("Starting push()");
         solver.push();
         solver.add(task.encodeAssertions(ctx));
-
+        solver.add(task.encodeWitness(ctx));
+        
 		if(task.getSettings().hasSolverTimeout()) {
 			Params p = ctx.mkParams();
 			p.add("timeout", 1000*task.getSettings().getSolverTimeout());
@@ -177,8 +181,6 @@ public class Base {
 		return res;
     }
 
-
-
 	public static Result runAnalysisAssumeSolver(Solver solver, Context ctx, VerificationTask task) {
 		task.unrollAndCompile();
 		if(task.getProgram().getAss() instanceof AssertTrue) {
@@ -192,6 +194,7 @@ public class Base {
 		solver.add(task.encodeProgram(ctx));
 		solver.add(task.encodeWmmRelations(ctx));
 		solver.add(task.encodeWmmConsistency(ctx));
+        solver.add(task.encodeWitness(ctx));
 
 		if(task.getSettings().hasSolverTimeout()) {
 			Params p = ctx.mkParams();

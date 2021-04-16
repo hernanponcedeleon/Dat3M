@@ -1,19 +1,16 @@
 package com.dat3m.dartagnan.program.svcomp.event;
 
+import static com.dat3m.dartagnan.program.utils.EType.RMW;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableList;
 import com.microsoft.z3.Context;
@@ -21,18 +18,20 @@ import com.microsoft.z3.Context;
 public class EndAtomic extends Event {
 
 	protected BeginAtomic begin;
+	protected BeginAtomic begin4Copy;
 	protected List<Event> enclosedEvents;
 
 	public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
     	this.begin.addListener(this);
-        addFilters(EType.RMW, SVCOMPATOMIC);
+        addFilters(RMW, SVCOMPATOMIC);
     }
 
     protected EndAtomic(EndAtomic other){
 		super(other);
-		this.begin = other.getBegin();
-		this.begin.addListener(this);
+		this.begin = other.begin4Copy;
+		Event notifier = begin != null ? begin : other.begin;
+		notifier.addListener(this);
 	}
 
     public BeginAtomic getBegin(){
@@ -94,9 +93,12 @@ public class EndAtomic extends Event {
     
     @Override
     public void notify(Event begin) {
-		if (this.oId > begin.getOId()) {
-			this.begin = (BeginAtomic) begin;
-		}
+    	//TODO: create an interface for easy maintenance of the listeners logic
+    	if(this.begin == null) {
+    		this.begin = (BeginAtomic)begin;
+    	} else if (oId > begin.getOId()) {
+    		this.begin4Copy = (BeginAtomic)begin;
+    	}
     }
 
     // Unrolling
