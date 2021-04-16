@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -49,8 +48,8 @@ public abstract class AbstractDartagnanTest {
                 .collect(ArrayList::new,
                         (l, f) -> {
                             l.add(new Object[]{f[0], f[1], target, wmm, s1});
-                            //l.add(new Object[]{f[0], f[1], target, wmm, s2});
-                            //l.add(new Object[]{f[0], f[1], target, wmm, s3});
+                            l.add(new Object[]{f[0], f[1], target, wmm, s2});
+                            l.add(new Object[]{f[0], f[1], target, wmm, s3});
                         }, ArrayList::addAll);
     }
 
