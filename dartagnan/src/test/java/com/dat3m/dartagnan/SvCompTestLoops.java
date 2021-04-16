@@ -104,7 +104,6 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_vardep_1-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/simple_vardep_2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/NetBSD_loop-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/id_build.i.p+sep-reducer-O3.bpl", wmm, s3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/id_trans-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/large_const-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/cggmp2005-O3.bpl", wmm, s4});
@@ -140,13 +139,11 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/in-de62-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/loopv2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/loopv3-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mono-crafted_13-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nested3-2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nested5-1-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/nested5-2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum_by_3-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sum_natnum-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/vnew1-O3.bpl", wmm, s3});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/watermelon-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/eq2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/even-O3.bpl", wmm, s1});
@@ -154,14 +151,11 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mod4-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd2-O3.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd3-O3.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/hard-O3.bpl", wmm, s2});        
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mannadiv-O3.bpl", wmm, s2});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/hard-O3.bpl", wmm, s3});        
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/ps2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/ps3-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/sqrt1-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/bresenham-O3.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/cohendiv-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/const-O3.bpl", wmm, s1});
         
         return data;
