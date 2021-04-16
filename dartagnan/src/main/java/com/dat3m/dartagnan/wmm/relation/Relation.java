@@ -1,14 +1,12 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -158,7 +156,6 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected BoolExpr doEncode(Context ctx){
-        //System.out.println(getName() + " encodeSet: " + encodeTupleSet.size());
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
             switch (task.getSettings().getMode()) {
                 case KLEENE:
@@ -174,6 +171,7 @@ public abstract class Relation implements Dependent<Relation> {
 
     public BoolExpr getSMTVar(Tuple edge, Context ctx) {
         return !getMaxTupleSet().contains(edge) ? ctx.mkFalse() :
+        		//TODO(TH): can we remove this?
                 //getMinTupleSet().contains(edge) ? getExecPair(edge, ctx) :
                 edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
     }
@@ -207,14 +205,32 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     // ========================== Utility methods =========================
-    public boolean isStaticRelation() { return this instanceof StaticRelation; }
-    public boolean isUnaryRelation() { return this instanceof UnaryRelation; }
-    public boolean isBinaryRelation() { return this instanceof BinaryRelation; }
-    public boolean isRecursiveRelation() { return this instanceof RecursiveRelation; }
+    
+    public boolean isStaticRelation() {
+    	return this instanceof StaticRelation;
+    }
+    
+    public boolean isUnaryRelation() {
+    	return this instanceof UnaryRelation;
+    }
+    
+    public boolean isBinaryRelation() {
+    	return this instanceof BinaryRelation;
+    }
+    
+    public boolean isRecursiveRelation() {
+    	return this instanceof RecursiveRelation;
+    }
 
     public Relation getInner() {
         return (isUnaryRelation() || isRecursiveRelation()) ? getDependencies().get(0) : null;
     }
-    public Relation getFirst() { return isBinaryRelation() ? getDependencies().get(0) : null; }
-    public Relation getSecond() { return isBinaryRelation() ? getDependencies().get(1) : null; }
+    
+    public Relation getFirst() {
+    	return isBinaryRelation() ? getDependencies().get(0) : null;
+    }
+    
+    public Relation getSecond() {
+    	return isBinaryRelation() ? getDependencies().get(1) : null;
+    }
 }

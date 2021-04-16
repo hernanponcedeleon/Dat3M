@@ -61,6 +61,7 @@ public class DeadCodeElimination {
                     computeReachableEvents(j.getLabel(), reachable);
                 }
             } else if (e instanceof If) {
+            	//TODO(TH): this is never used
                 If ifThen = (If)e;
 
             }

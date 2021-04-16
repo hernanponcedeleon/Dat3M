@@ -1,26 +1,19 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  *
@@ -96,13 +89,19 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) { return invokeEncode(super::encodeApprox, ctx); }
+    protected BoolExpr encodeApprox(Context ctx) {
+    	return invokeEncode(super::encodeApprox, ctx);
+    }
 
     @Override
-    protected BoolExpr encodeIDL(Context ctx) { return invokeEncode(super::encodeIDL, ctx); }
+    protected BoolExpr encodeIDL(Context ctx) {
+    	return invokeEncode(super::encodeIDL, ctx);
+    }
 
     @Override
-    protected BoolExpr encodeLFP(Context ctx) { return invokeEncode(super::encodeLFP, ctx); }
+    protected BoolExpr encodeLFP(Context ctx) {
+    	return invokeEncode(super::encodeLFP, ctx);
+    }
 
     private BoolExpr invokeEncode(Function<Context, BoolExpr> originalMethod, Context ctx) {
             TupleSet temp = encodeTupleSet;

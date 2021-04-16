@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableList;
@@ -66,6 +65,7 @@ public class EndAtomic extends Event {
 		BranchEquivalence.Class startClass = eq.getEquivalenceClass(begin);
 		BranchEquivalence.Class endClass = eq.getEquivalenceClass(this);
 		if (!startClass.getReachableClasses().contains(endClass)) {
+			//TODO(TH): put back the exception?
 			//throw new IllegalStateException("BeginAtomic can't reach EndAtomic");
 			System.out.println("==== EndAtomic " + this.getCId() + " unreachable by BeginAtomic " + begin.getCId() + " ====");
 			return;
@@ -78,7 +78,7 @@ public class EndAtomic extends Event {
 						System.out.println(e.toString() + " is inside atomic block but can be reached from the outside");
 					}
 					enclosedEvents.add(e);
-					e.addFilters(EType.RMW);
+					e.addFilters(RMW);
 				}
 			}
 		}
@@ -93,7 +93,7 @@ public class EndAtomic extends Event {
     
     @Override
     public void notify(Event begin) {
-    	//TODO: create an interface for easy maintenance of the listeners logic
+    	//TODO(HP): create an interface for easy maintenance of the listeners logic
     	if(this.begin == null) {
     		this.begin = (BeginAtomic)begin;
     	} else if (oId > begin.getOId()) {

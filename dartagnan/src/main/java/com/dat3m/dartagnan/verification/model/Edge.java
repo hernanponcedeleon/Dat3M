@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 // An untyped edge.
 // This is just a decoration for Tuple to use EventData instead of Event
 // Addtionally, it contains timing information used for refinement
+
 public class Edge implements Comparable<Edge>, Timeable {
 
     private final EventData first;
@@ -32,7 +33,6 @@ public class Edge implements Comparable<Edge>, Timeable {
     }
 
     public String toString() {
-        //return "(" + first + ", " + second + ")";
         return "(" + first.toString() + ", " + second.toString() + ")";
     }
 

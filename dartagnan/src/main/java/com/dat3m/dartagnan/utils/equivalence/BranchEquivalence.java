@@ -33,6 +33,7 @@ import java.util.*;
    (7) Compute the class of all unreachable events.
    BONUS: Compute which branches are mutually exclusive
 */
+
 public class BranchEquivalence extends AbstractEquivalence<Event> {
     /*
        NOTE: If the initial class or the unreachable class is empty, they will be treated (almost) non-existent:
@@ -128,7 +129,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             }
             //Step (4)-(5)
             createBranchClasses(branchMap);
-
         }
         // Step (6)
         mergeInitialClasses();
@@ -209,10 +209,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                     bSucc.parents.add(bElseFinal);
                     bElseFinal.children.add(bSucc);
                 }
-
-
                 return b;
-
             } else {
                 // No branching happened, thus we stay on the current branch
                 succ = succ.getSuccessor();
@@ -230,7 +227,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             } else {
                 b.events.add(succ);
             }
-
         } while (true);
     }
 
@@ -341,7 +337,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             unreachableClass.representative = unreachableClass.stream()
                     .min(Comparator.comparingInt(Event::getCId)).get();
             // TODO: Shall we add all other classes to the implied set?
-
         }
     }
 

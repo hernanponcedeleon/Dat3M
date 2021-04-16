@@ -24,7 +24,6 @@ import java.util.*;
  */
 public class Wmm {
 
-
     private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
 
     private final List<Axiom> axioms = new ArrayList<>();
@@ -111,6 +110,7 @@ public class Wmm {
         RelCo co = ((RelCo)getRelationRepository().getRelation("co"));
         co.setDoEncode(false);
         BoolExpr enc = encode(ctx);
+        //TODO(TH): can we remove this?
         //co.setDoEncode(true);
         return enc;
     }
@@ -245,7 +245,9 @@ public class Wmm {
 
 
     // ====================== Utility Methods ====================
+    
     private DependencyGraph<Relation> relationDependencyGraph;
+    
     public DependencyGraph<Relation> getRelationDependencyGraph() {
         if (relationDependencyGraph == null) {
             relationDependencyGraph = DependencyGraph.from(relationRepository.getRelations());

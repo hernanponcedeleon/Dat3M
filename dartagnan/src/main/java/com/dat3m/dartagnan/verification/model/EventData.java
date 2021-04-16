@@ -1,12 +1,18 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.*;
+
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.EType.EXCL;
+import static com.dat3m.dartagnan.program.utils.EType.LOCK;
+import static com.dat3m.dartagnan.program.utils.EType.RMW;
+
 import com.dat3m.dartagnan.program.Thread;
 
 
 //EventData represents all data associated with an event in a concrete model.
+
 public class EventData implements Comparable<EventData> {
+	//TODO(TH): is there a reason to keep it then?
     private final EventMap map; // Not used right now
 
     private final Event event;
@@ -23,36 +29,76 @@ public class EventData implements Comparable<EventData> {
         this.map = eventMap;
     }
 
-    public Event getEvent() { return event; }
+    public Event getEvent() {
+    	return event;
+    }
 
-    public int getId() { return id; }
-    void setId(int newId) { id = newId; }
+    public int getId() {
+    	return id;
+    }
+    
+    void setId(int newId) {
+    	id = newId;
+    }
 
-    public int getLocalId() { return localId; }
-    void setLocalId(int newId) { localId = newId; }
+    public int getLocalId() {
+    	return localId;
+    }
+    
+    void setLocalId(int newId) {
+    	localId = newId;
+    }
 
-    public long getAccessedAddress() { return accessedAddress; }
-    void setAccessedAddress(long address) { accessedAddress = address; }
+    public long getAccessedAddress() {
+    	return accessedAddress;
+    }
+    
+    void setAccessedAddress(long address) {
+    	accessedAddress = address;
+    }
 
-    public long getValue() { return value;}
-    void setValue(long val) { value = val;}
+    public long getValue() {
+    	return value;
+    }
+    
+    void setValue(long val) {
+    	value = val;
+    }
 
-    public EventData getReadFrom() { return readFrom; }
-    void setReadFrom(EventData store) { readFrom = store; }
+    public EventData getReadFrom() {
+    	return readFrom;
+    }
+    
+    void setReadFrom(EventData store) {
+    	readFrom = store;
+    }
 
-    public int getImportance() { return importance; }
-    void setImportance(int importance) { this.importance = importance; }
+    public int getImportance() {
+    	return importance;
+    }
+    
+    void setImportance(int importance) {
+    	this.importance = importance;
+    }
 
-    public boolean wasExecuted() { return wasExecuted; }
-    void setWasExecuted(boolean flag) { wasExecuted = flag; }
+    public boolean wasExecuted() {
+    	return wasExecuted;
+    }
 
-    public Thread getThread() { return event.getThread(); }
+    void setWasExecuted(boolean flag) {
+    	wasExecuted = flag;
+    }
+
+    public Thread getThread() {
+    	return event.getThread();
+    }
 
     public boolean isMemoryEvent() {
         return event instanceof MemEvent;
     }
 
     public boolean isWrite() {
+    	//TODO(TH): why not the commented implementation? 
         return event instanceof Store || event instanceof Init; //event.is(EType.WRITE);
     }
 
@@ -61,6 +107,7 @@ public class EventData implements Comparable<EventData> {
     }
 
     public boolean isRead() {
+    	//TODO(TH): why not the commented implementation?
         return event instanceof Load; // event.is(EType.READ)
     }
 
@@ -76,13 +123,21 @@ public class EventData implements Comparable<EventData> {
         return event instanceof If;
     }
 
-    public boolean isExclusive() { return event.is(EType.EXCL); }
+    public boolean isExclusive() {
+    	return event.is(EXCL);
+    }
 
-    public boolean isLock() { return event.is(EType.LOCK); }
+    public boolean isLock() {
+    	return event.is(LOCK);
+    }
 
-    public boolean isRMW() { return event.is(EType.RMW); }
+    public boolean isRMW() {
+    	return event.is(RMW);
+    }
 
-    public boolean is(String type) { return event.is(type); }
+    public boolean is(String type) {
+    	return event.is(type);
+    }
 
     @Override
     public int hashCode() {

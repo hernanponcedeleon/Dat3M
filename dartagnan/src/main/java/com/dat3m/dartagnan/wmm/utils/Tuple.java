@@ -22,15 +22,14 @@ public class Tuple implements Comparable<Tuple> {
 
     public String toString() {
         return "(" + first + ", " + second + ")";
-        //return "(" + first.getCId() + ", " + second.getCId() + ")";
     }
 
 
     @Override
     public int hashCode() {
         return (first.getCId() << 16) + second.getCId();
-        //return first.getCId()*8191 + second.getCId();
     }
+
     // Notes on hashCode: Java's hashtable uses powers of two as capacity
     // for which modulo operations can be replaced by efficient bit masking.
     // Since this only ever looks into the lower bits of the hash code,
@@ -72,7 +71,9 @@ public class Tuple implements Comparable<Tuple> {
 
 
     // ================== Utility/Convenience methods ================
-    public Tuple getInverse() { return new Tuple(second, first); }
+    public Tuple getInverse() {
+    	return new Tuple(second, first);
+    }
 
     public boolean isCrossThread() {
         return !isSameThread();

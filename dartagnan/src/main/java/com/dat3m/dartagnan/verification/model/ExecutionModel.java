@@ -10,9 +10,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -23,6 +21,7 @@ import java.util.*;
 /*
 The ExecutionModel wraps a Z3Model and extracts data from it in a more workable manner.
  */
+
 public class ExecutionModel {
 
     private final VerificationTask verificationTask;
@@ -94,14 +93,17 @@ public class ExecutionModel {
     //========================== Public data =========================
 
     // General data
-    public VerificationTask getVerificationTask() { return verificationTask; }
+    public VerificationTask getVerificationTask() {
+    	return verificationTask;
+    }
+    
     public Wmm getMemoryModel() {
         return verificationTask.getMemoryModel();
     }
+
     public Program getProgram() {
         return verificationTask.getProgram();
     }
-
 
     // Model specific data
     public Model getZ3Model() {
@@ -110,32 +112,49 @@ public class ExecutionModel {
     public Context getZ3Context() {
         return context;
     }
-    public FilterAbstract getEventFilter() { return eventFilter; }
-    public boolean hasCoherences() { return extractCoherences; }
+    public FilterAbstract getEventFilter() {
+    	return eventFilter;
+    }
+    
+    public boolean hasCoherences() {
+    	return extractCoherences;
+    }
 
     public List<EventData> getEventList() {
         return eventListView;
     }
-    public List<Thread> getThreads() { return threadListView; }
+
+    public List<Thread> getThreads() {
+    	return threadListView;
+    }
+    
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
+
     public Map<EventData, EventData> getReadWriteMap() {
         return readWriteMapView;
     }
-    public Map<EventData, Set<EventData>> getCoherenceMap() { return coherenceMapView; };
+    
+    public Map<EventData, Set<EventData>> getCoherenceMap() {
+    	return coherenceMapView;
+    };
+    
     public Map<EventData, Set<EventData>> getWriteReadsMap() {
         return writeReadsMapView;
     }
     public Map<String, Set<EventData>> getFenceMap() {
         return fenceMapView;
     }
+    
     public Map<Long, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
     }
+    
     public Map<Long, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
+    
     public Map<Long, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
@@ -147,6 +166,7 @@ public class ExecutionModel {
     public EventData getData(Event e) {
         return eventExists(e) ? eventMap.get(e) : null;
     }
+
     public Edge getEdge(Tuple tuple) {
         return (eventExists(tuple.getFirst()) && eventExists(tuple.getSecond())) ?
                 new Edge(getData(tuple.getFirst()), getData(tuple.getSecond())) : null;
@@ -336,4 +356,3 @@ public class ExecutionModel {
         }
     }
 }
-

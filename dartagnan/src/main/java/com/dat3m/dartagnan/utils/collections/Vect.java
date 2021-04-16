@@ -10,8 +10,10 @@ import java.util.function.UnaryOperator;
 // it allows more fine-grained control over all operations.
 // Most operations come in 2 variants, standard and unsafe
 // Unsafe operations generally do not perform index out of range or capacity checks
+
 public final class Vect<T> extends AbstractList<T> {
-    private T[] array;
+    
+	private T[] array;
     private int numElements;
 
     private Vect(T[] array, int numElements) {
@@ -22,7 +24,6 @@ public final class Vect<T> extends AbstractList<T> {
     public Vect(Collection<T> c) {
         this((T[])c.toArray(), c.size());
     }
-
 
     public Vect(int capacity) {
         this((T[])new Object[capacity], 0);
@@ -251,7 +252,6 @@ public final class Vect<T> extends AbstractList<T> {
         insertBulkUnsafe(c, index);
     }
 
-
     public void appendUnsafe(T value) {
         array[numElements++] = value;
     }
@@ -268,6 +268,7 @@ public final class Vect<T> extends AbstractList<T> {
         this.addAll(other);
         sort(cmp);
 
+        //TODO(TH): can we remove this?
         /*
         int i,j = 0;
         int start = binarySearch(other.getFirstUnsafe());
@@ -575,7 +576,6 @@ public final class Vect<T> extends AbstractList<T> {
         return removeIf(0, numElements, filter);
     }
 
-
     @Override
     public boolean containsAll(Collection<?> c) {
         return containsAllLinear((Collection<T>) c);
@@ -691,6 +691,4 @@ public final class Vect<T> extends AbstractList<T> {
             insert(t, index++);
         }
     }
-
-
 }

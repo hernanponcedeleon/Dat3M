@@ -12,8 +12,6 @@ import com.microsoft.z3.Context;
 import java.util.List;
 import java.util.ListIterator;
 
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-
 public class RelFencerel extends StaticRelation {
 
     private final String fenceName;

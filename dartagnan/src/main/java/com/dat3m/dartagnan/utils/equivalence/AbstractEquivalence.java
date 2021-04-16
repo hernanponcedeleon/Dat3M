@@ -60,8 +60,6 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
         return classMap.containsKey(x);
     }
 
-
-
     protected class EqClass extends AbstractSet<T> implements EquivalenceClass<T> {
         public T representative;
         public Set<T> internalSet;

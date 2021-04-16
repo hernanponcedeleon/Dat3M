@@ -9,8 +9,6 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.Context;
 
-import java.util.Set;
-
 /**
  *
  * @author Florian Furbach
@@ -142,7 +140,6 @@ public class RelIntersection extends BinaryRelation {
                 }
             }
         }
-
         return enc;
     }
 }

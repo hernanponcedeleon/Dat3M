@@ -3,7 +3,8 @@ package com.dat3m.dartagnan.utils.recursion;
 import java.util.function.Supplier;
 
 public abstract class RecursiveAction {
-    private static final Done DONE = new Done();
+
+	private static final Done DONE = new Done();
 
     protected boolean isDone() { return false; }
     protected abstract RecursiveAction process();
@@ -80,12 +81,3 @@ public abstract class RecursiveAction {
         }
     }
 }
-
-
-
-
-
-
-
-
-

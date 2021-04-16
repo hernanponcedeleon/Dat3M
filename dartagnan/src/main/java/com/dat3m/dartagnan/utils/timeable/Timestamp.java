@@ -2,16 +2,29 @@ package com.dat3m.dartagnan.utils.timeable;
 
 // Timestamps are intentionally mutable and should NOT be used as
 // keys in a hashtable. They will most likely NOT give expected results.
+
 public class Timestamp implements Comparable<Timestamp> {
-    public static final Timestamp ZERO = new Timestamp(0);
+    
+	public static final Timestamp ZERO = new Timestamp(0);
     public static final Timestamp INVALID = new Timestamp(Integer.MAX_VALUE);
 
     private int time;
 
-    public int getTime() { return time; }
-    public boolean isValid() { return time < Integer.MAX_VALUE; }
-    public boolean isInvalid() { return time == Integer.MAX_VALUE; }
-    public boolean isInitial() { return time == 0;}
+    public int getTime() {
+    	return time;
+    }
+    
+    public boolean isValid() {
+    	return time < Integer.MAX_VALUE;
+    }
+    
+    public boolean isInvalid() {
+    	return time == Integer.MAX_VALUE;
+    }
+    
+    public boolean isInitial() {
+    	return time == 0;
+    }
 
     public Timestamp(int time) {
         this.time = time;

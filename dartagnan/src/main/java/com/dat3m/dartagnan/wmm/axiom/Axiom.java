@@ -7,7 +7,6 @@ import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -98,7 +97,16 @@ public abstract class Axiom implements Dependent<Relation> {
 
 
     // ===================== Utility methods ===================
-    public boolean isEmptiness() { return this instanceof Empty; }
-    public boolean isAcyclicity() { return this instanceof Acyclic; }
-    public boolean isIrreflexivity() { return this instanceof Irreflexive; }
+    
+    public boolean isEmptiness() {
+    	return this instanceof Empty;
+    }
+    
+    public boolean isAcyclicity() {
+    	return this instanceof Acyclic;
+    }
+    
+    public boolean isIrreflexivity() {
+    	return this instanceof Irreflexive;
+    }
 }

@@ -150,7 +150,6 @@ public class RelUnion extends BinaryRelation {
                 }
             }
         }
-
         return enc;
     }
 }

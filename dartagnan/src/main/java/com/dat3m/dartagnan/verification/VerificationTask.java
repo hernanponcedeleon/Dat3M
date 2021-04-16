@@ -23,6 +23,7 @@ import java.util.*;
 /*
 Represents a verification task.
  */
+
 public class VerificationTask {
 
     private static final Logger logger = LogManager.getLogger(VerificationTask.class);
@@ -103,6 +104,7 @@ public class VerificationTask {
                 System.out.println("========== Thread " + t.getId() + " ==============");
                 for (Event e : t.getEntry().getSuccessors()) {
                     String indent = ((e instanceof Label) ? "" : "   ");
+                    //TODO(TH): why this print?
                     System.out.printf("%4d: %s%s%n", e.getCId(), indent, e);
                 }
             }
@@ -150,5 +152,4 @@ public class VerificationTask {
     public BoolExpr encodeWitness(Context ctx) {
     	return witness.encode(program, ctx);
     }
-
 }

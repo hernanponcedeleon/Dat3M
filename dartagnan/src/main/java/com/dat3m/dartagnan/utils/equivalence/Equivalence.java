@@ -19,7 +19,4 @@ public interface Equivalence<T> {
         return getAllEquivalenceClasses().stream().map(EquivalenceClass::getRepresentative)
                 .collect(Collectors.toSet());
     }
-
-
-
 }

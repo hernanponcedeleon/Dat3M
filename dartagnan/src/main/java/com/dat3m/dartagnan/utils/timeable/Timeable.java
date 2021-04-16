@@ -1,9 +1,18 @@
 package com.dat3m.dartagnan.utils.timeable;
 
 public interface Timeable {
-    Timestamp getTime();
+    
+	Timestamp getTime();
 
-    default boolean isValid() { return getTime().isValid();}
-    default boolean isInvalid() { return getTime().isInvalid();}
-    default boolean isInitial() { return getTime().isInitial();}
+    default boolean isValid() {
+    	return getTime().isValid();
+    }
+    
+    default boolean isInvalid() {
+    	return getTime().isInvalid();
+    }
+    
+    default boolean isInitial() {
+    	return getTime().isInitial();
+    }
 }

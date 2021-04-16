@@ -30,9 +30,11 @@ import static org.junit.Assert.*;
 
 public class RelRfTest {
 
+	static int TIMEOUT = 60;
+	
     @Test
     public void testUninitializedMemory() throws IOException {
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, 60, false);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, TIMEOUT, false);
         settings.setFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, true);
 
         String programPath = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rf/";
@@ -69,7 +71,7 @@ public class RelRfTest {
         String wmmPath = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat";
         Wmm wmm = new ParserCat().parse(new File(wmmPath));
 
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, 60, false);
+        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, TIMEOUT, false);
 
         settings.setFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
         settings.setFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF, false);

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.utils.dependable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -167,7 +166,6 @@ public class DependencyGraph<T> {
         }
     }
 
-
     public class Node implements Dependent<Node> {
         final T content;
         final List<Node> dependents;
@@ -220,6 +218,7 @@ public class DependencyGraph<T> {
                 return true;
             if (obj == null || obj.getClass() != getClass())
                 return false;
+            //TODO(TH): is this cast always safe?
             Node node = (Node)obj;
             return node.content.equals(this.content);
         }
@@ -230,4 +229,3 @@ public class DependencyGraph<T> {
         }
     }
 }
-

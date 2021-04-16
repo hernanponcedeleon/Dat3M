@@ -5,8 +5,14 @@ import java.util.function.Supplier;
 
 public abstract class RecursiveFunction<T> {
 
-    protected boolean isDone() { return false; }
-    protected T getFinalValue() { return null; }
+    protected boolean isDone() {
+    	return false;
+    }
+    
+    protected T getFinalValue() {
+    	return null;
+    }
+    
     protected abstract RecursiveFunction<T> process();
 
     public T execute() {
@@ -73,8 +79,3 @@ public abstract class RecursiveFunction<T> {
         }
     }
 }
-
-
-
-
-

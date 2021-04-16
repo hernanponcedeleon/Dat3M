@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.microsoft.z3.BoolExpr;
@@ -12,7 +11,7 @@ import com.microsoft.z3.Context;
 
 import java.util.Collection;
 
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
+import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
 
 public class RelLoc extends Relation {
 
@@ -39,7 +38,7 @@ public class RelLoc extends Relation {
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
-            Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(EType.MEMORY));
+            Collection<Event> events = task.getProgram().getCache().getEvents(FilterBasic.get(MEMORY));
             for(Event e1 : events){
                 for(Event e2 : events){
                     //TODO: loc should be reflexive according to

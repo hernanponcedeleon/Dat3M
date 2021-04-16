@@ -10,7 +10,6 @@ public class SetUtil {
         return new FakeSet<>();
     }
 
-
     /*
     Like an empty set, but does silently ignore all attempts to modify it without throwing exceptions.
      */

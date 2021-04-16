@@ -17,7 +17,6 @@ public class RelCtrlDirect extends StaticRelation {
         term = "ctrlDirect";
     }
 
-
     @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){

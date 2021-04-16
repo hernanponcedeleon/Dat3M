@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
@@ -261,7 +260,6 @@ public class RelComposition extends BinaryRelation {
                 }
             }
         }
-
         return enc;
     }
 }

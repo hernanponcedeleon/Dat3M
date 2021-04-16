@@ -24,7 +24,7 @@ abstract class BasicRegRelation extends StaticRelation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet();
-            //Todo
+            //TODO
         }
         return minTupleSet;
     }

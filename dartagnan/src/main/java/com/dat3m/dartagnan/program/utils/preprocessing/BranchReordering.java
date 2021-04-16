@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -24,7 +23,8 @@ import java.util.stream.Collectors;
 
 //TODO: Add support for Ifs
 public class BranchReordering {
-    private final Thread thread;
+
+	private final Thread thread;
     private final List<MoveableBranch> branches;
     private final Map<Event, MoveableBranch> branchMap;
 
@@ -53,9 +53,7 @@ public class BranchReordering {
             }
             e = e.getSuccessor();
         }
-
     }
-
 
     private List<MoveableBranch> computeReordering(List<MoveableBranch> moveables) {
         if (moveables.size() < 3) {
@@ -114,14 +112,8 @@ public class BranchReordering {
         assert pred == thread.getExit();
     }
 
-
     private static class MoveableBranch {
         int id = 0;
         List<Event> events = new ArrayList<>();
     }
 }
-
-
-
-
-

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.microsoft.z3.*;
@@ -17,7 +16,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
+import static com.dat3m.dartagnan.program.utils.EType.INIT;
+import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class RelCo extends Relation {
@@ -29,6 +29,7 @@ public class RelCo extends Relation {
         forceDoEncode = true;
     }
 
+    //TODO(TH): shall we move this to the global settings?
     // Temporary test code
     private boolean doEncode = true;
     // if set to false, the co-relation will not be encoded
@@ -49,7 +50,6 @@ public class RelCo extends Relation {
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
             minTupleSet = new TupleSet();
-
             applyLocalConsistencyMinSet();
         }
         return minTupleSet;
@@ -60,10 +60,10 @@ public class RelCo extends Relation {
         if(maxTupleSet == null){
         	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
-            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
             List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
-                    FilterBasic.get(EType.WRITE),
-                    FilterBasic.get(EType.INIT)
+                    FilterBasic.get(WRITE),
+                    FilterBasic.get(INIT)
             ));
 
             for(Event e1 : eventsInit){
@@ -101,10 +101,10 @@ public class RelCo extends Relation {
             return enc;
         }
 
-        List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
+        List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
         List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
-                FilterBasic.get(EType.WRITE),
-                FilterBasic.get(EType.INIT)
+                FilterBasic.get(WRITE),
+                FilterBasic.get(INIT)
         ));
 
         for(Event e : eventsInit) {
@@ -119,7 +119,7 @@ public class RelCo extends Relation {
         }
         enc = ctx.mkAnd(enc, ctx.mkDistinct(intVars.toArray(new IntExpr[0])));
 
-        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(EType.WRITE))){
+        for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))){
             MemEvent w1 = (MemEvent)w;
             BoolExpr lastCo = w1.exec();
 
@@ -140,10 +140,10 @@ public class RelCo extends Relation {
                 if (getMinTupleSet().contains(t)) {
                    enc = ctx.mkAnd(enc, ctx.mkEq(relation, execPair));
                 } else if (task.getMemoryModel().isLocallyConsistent()) {
-                    if (w2.is(EType.INIT) || t.isBackward()){
+                    if (w2.is(INIT) || t.isBackward()){
                         enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkFalse()));
                     }
-                    if (w1.is(EType.INIT) || t.isForward()) {
+                    if (w1.is(INIT) || t.isForward()) {
                         enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(execPair, ctx.mkEq(a1, a2)), relation));
                     }
                 }
@@ -169,12 +169,12 @@ public class RelCo extends Relation {
                 MemEvent w1 = (MemEvent) t.getFirst();
                 MemEvent w2 = (MemEvent) t.getSecond();
 
-                if (w2.is(EType.INIT))
+                if (w2.is(INIT))
                     continue;
                 if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
                     continue;
 
-                if (w1.is(EType.INIT) || t.isForward())
+                if (w1.is(INIT) || t.isForward())
                     minTupleSet.add(t);
             }
         }
@@ -183,7 +183,7 @@ public class RelCo extends Relation {
     private void applyLocalConsistencyMaxSet() {
         if (task.getMemoryModel().isLocallyConsistent()) {
             //TODO: Make sure that this is correct and does not cause any issues with totality of co
-            maxTupleSet.removeIf(t -> t.getSecond().is(EType.INIT) || t.isBackward());
+            maxTupleSet.removeIf(t -> t.getSecond().is(INIT) || t.isBackward());
         }
     }
 }

@@ -1,12 +1,8 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-//import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
-import com.dat3m.dartagnan.program.arch.pts.event.Write;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -14,7 +10,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.google.common.collect.Sets;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -31,10 +26,12 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.filter.AbstractFilter;
 
+import static com.dat3m.dartagnan.program.utils.EType.INIT;
+import static com.dat3m.dartagnan.program.utils.EType.READ;
+import static com.dat3m.dartagnan.program.utils.EType.RMW;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
+import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 
 public class RelRf extends Relation {
 
@@ -59,11 +56,11 @@ public class RelRf extends Relation {
         	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
 
-            List<Event> eventsLoad = task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ));
-            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(EType.INIT));
+            List<Event> eventsLoad = task.getProgram().getCache().getEvents(FilterBasic.get(READ));
+            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
             List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
-                    FilterBasic.get(EType.WRITE),
-                    FilterBasic.get(EType.INIT)
+                    FilterBasic.get(WRITE),
+                    FilterBasic.get(INIT)
             ));
 
             for(Event e1 : eventsInit){
@@ -114,7 +111,7 @@ public class RelRf extends Relation {
 
             edgeMap.putIfAbsent(r, new ArrayList<>());
             edgeMap.get(r).add(edge);
-            if(canAccNonInitMem && w.is(EType.INIT)){
+            if(canAccNonInitMem && w.is(INIT)){
                 memInitMap.put(r, ctx.mkOr(memInitMap.getOrDefault(r, ctx.mkFalse()), sameAddress));
             }
             enc = ctx.mkAnd(enc, ctx.mkImplies(edge, ctx.mkAnd(w.exec(), r.exec(), sameAddress, sameValue)));
@@ -170,6 +167,7 @@ public class RelRf extends Relation {
     }
 
     // An alternate/dual version to encodeEdgeSeq
+    //TODO(TH): do we plan to use this somewhere?
     private BoolExpr encodeEdgeSeqAlt(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
         int num = edges.size();
         int readId = read.getCId();
@@ -206,16 +204,16 @@ public class RelRf extends Relation {
             // Remove past reads
             BranchEquivalence eq = task.getBranchEquivalence();
             Set<Tuple> deletedTuples = new HashSet<>();
-            for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(EType.READ))) {
+            for (Event read: task.getProgram().getCache().getEvents(FilterBasic.get(READ))) {
                 // TODO: remove this restriction?
                 if (((MemEvent)read).getMaxAddressSet().size() != 1) {
                     continue;
                 }
 
                 List<MemEvent> possibleWrites = maxTupleSet.getBySecond(read).stream().map(Tuple::getFirst)
-                        .filter(e -> (e.getThread() == read.getThread() || e.is(EType.INIT)))
+                        .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
                         .map(x -> (MemEvent)x)
-                        .sorted((o1, o2) -> o1.is(EType.INIT) == o2.is(EType.INIT) ? (o1.getCId() - o2.getCId()) : o1.is(EType.INIT) ? -1 : 1)
+                        .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getCId() - o2.getCId()) : o1.is(INIT) ? -1 : 1)
                         .collect(Collectors.toList());
                 Set<MemEvent> deletedWrites = new HashSet<>();
 
@@ -223,8 +221,8 @@ public class RelRf extends Relation {
                     List<Event> impliedWrites = possibleWrites.stream().filter(x -> x.getMaxAddressSet().size() == 1 && eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
                     if (!impliedWrites.isEmpty()) {
                         Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
-                        if (!lastImplied.is(EType.INIT)) {
-                            Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
+                        if (!lastImplied.is(INIT)) {
+                            Predicate<Event> pred = x -> x.is(INIT) || x.getCId() < lastImplied.getCId();
                             possibleWrites.stream().filter(pred).forEach(deletedWrites::add);
                             possibleWrites.removeIf(pred);
                         }
@@ -232,10 +230,10 @@ public class RelRf extends Relation {
                 }
                 //TODO: If a read can read from multiple addresses, we have to make sure that
                 // we don't let writes of different addresses override each other
-                List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(EType.INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());;
+                List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());;
                 possibleWrites.stream().filter(x ->
-                        (x.is(EType.INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
-                                || (!x.is(EType.INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))
+                        (x.is(INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
+                                || (!x.is(INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))
                         .forEach(deletedWrites::add);
                 for (Event w : deletedWrites) {
                     deletedTuples.add(new Tuple(w, read));
@@ -254,7 +252,7 @@ public class RelRf extends Relation {
 
         // Atomics blocks: BeginAtomic -> EndAtomic
         BranchEquivalence eq = task.getBranchEquivalence();
-        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(EType.RMW), FilterBasic.get(SVCOMPATOMIC));
+        FilterAbstract filter = FilterIntersection.get(FilterBasic.get(RMW), FilterBasic.get(SVCOMPATOMIC));
         for(Event end : task.getProgram().getCache().getEvents(filter)){
             List<Store> writes = new ArrayList<>();
             List<Load> reads = new ArrayList<>();
@@ -276,6 +274,7 @@ public class RelRf extends Relation {
                         .filter(x -> x.getCId() < read.getCId() && x.getMaxAddressSet().equals(read.getMaxAddressSet()))
                         .collect(Collectors.toList());
                 List<Event> impliedWrites = ownWrites.stream().filter(x -> eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
+              //TODO(TH): can we remove this?
                 /*if (!impliedWrites.isEmpty()) {
                     Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
                     if (!lastImplied.is(EType.INIT)) {

@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
@@ -11,12 +9,12 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import static com.dat3m.dartagnan.program.utils.EType.VISIBLE;
+
 import java.util.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
 /**
  *
@@ -72,7 +70,7 @@ public class Acyclic extends Axiom {
         for (Tuple t : result) {
             Event e1 = t.getFirst();
             Event e2 = t.getSecond();
-            if (!e1.is(EType.VISIBLE) || !e2.is(EType.VISIBLE)) {
+            if (!e1.is(VISIBLE) || !e2.is(VISIBLE)) {
                 System.out.println(t);
             }
         }
@@ -88,10 +86,7 @@ public class Acyclic extends Axiom {
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
-            //enc = ctx.mkAnd(enc, ctx.mkImplies(e1.exec(), ctx.mkGt(Utils.intVar(rel.getName(), e1, ctx), ctx.mkInt(0))));
             enc = ctx.mkAnd(enc, ctx.mkImplies(rel.getSMTVar(tuple, ctx), ctx.mkLt(Utils.intVar(rel.getName(), e1, ctx), Utils.intVar(rel.getName(), e2, ctx))));
-            //enc = ctx.mkAnd(enc, ctx.mkImplies(e2.exec(), ctx.mkGt(Utils.intVar(rel.getName(), e2, ctx), ctx.mkInt(0))));
-
         }
         return enc;
     }

@@ -18,7 +18,6 @@ public class RMWLoad extends Load implements RegWriter {
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
-
     @Override
     public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         throw new RuntimeException("RMWLoad cannot be unrolled: event must be generated during compilation");

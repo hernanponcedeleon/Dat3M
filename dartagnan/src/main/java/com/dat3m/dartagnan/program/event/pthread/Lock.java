@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.event.pthread;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.utils.EType.LOCK;
+import static com.dat3m.dartagnan.program.utils.EType.RMW;
 
 import java.util.LinkedList;
 
@@ -14,7 +16,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
@@ -74,7 +75,7 @@ public class Lock extends Event {
         events.add(new CondJump(new Atom(reg, NEQ, new IConst(0, -1)),label));
         events.add(new Store(address, new IConst(1, -1), SC));
         for(Event e : events) {
-            e.addFilters(EType.LOCK, EType.RMW);
+            e.addFilters(LOCK, RMW);
         }
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }

@@ -18,8 +18,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
 
     protected ExprInterface cmp;
     private final ImmutableSet<Register> dataRegs;
-
-    BoolExpr z3Cond;
+    protected BoolExpr z3Cond;
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);

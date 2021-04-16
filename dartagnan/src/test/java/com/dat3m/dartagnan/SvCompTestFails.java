@@ -19,6 +19,7 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 /*
 NOTE: Currently we fail on pretty much all of the following tasks
  */
+//TODO(TH): now these ones should pass, right?
 
 @RunWith(Parameterized.class)
 public class SvCompTestFails extends AbstractSvCompTest {

@@ -35,7 +35,9 @@ public class UiOptions {
 		return target;
 	}
 
-	public Method getMethod() { return method; }
+	public Method getMethod() {
+		return method;
+	}
 
 	public Settings getSettings(){
 		return settings;

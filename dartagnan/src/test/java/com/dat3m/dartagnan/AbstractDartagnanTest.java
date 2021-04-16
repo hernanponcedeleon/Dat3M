@@ -30,14 +30,16 @@ import static org.junit.Assert.fail;
 
 public abstract class AbstractDartagnanTest {
 
+	static int SOLVER_TIMEOUT = 60;
+	
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, 60, false);
-        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1, 60, false);
-        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1, 60, false);
+        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, SOLVER_TIMEOUT, false);
+        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1, SOLVER_TIMEOUT, false);
+        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1, SOLVER_TIMEOUT, false);
 
         return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
@@ -8,7 +7,6 @@ import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -22,8 +20,6 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
