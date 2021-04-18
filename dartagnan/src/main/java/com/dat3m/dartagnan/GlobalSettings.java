@@ -17,7 +17,9 @@ public class GlobalSettings {
 
     // === Static analysis ===
     public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
+
     public static final boolean PERFORM_REORDERING = true;
+    public static final boolean DETERMINISTIC_REORDERING = false;
 
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;

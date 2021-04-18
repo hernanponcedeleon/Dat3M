@@ -1,4 +1,5 @@
 package com.dat3m.dartagnan.program.utils.preprocessing;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
@@ -24,9 +25,11 @@ import java.util.stream.Collectors;
 
 //TODO: Add support for Ifs
 public class BranchReordering {
+
     private final Thread thread;
     private final List<MoveableBranch> branches;
     private final Map<Event, MoveableBranch> branchMap;
+
 
     public BranchReordering(Thread t) {
         this.thread = t;
@@ -118,6 +121,25 @@ public class BranchReordering {
     private static class MoveableBranch {
         int id = 0;
         List<Event> events = new ArrayList<>();
+
+        @Override
+        public int hashCode() {
+            return GlobalSettings.DETERMINISTIC_REORDERING ? id : super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!GlobalSettings.DETERMINISTIC_REORDERING) {
+                return super.equals(obj);
+            }
+            if (obj == this) {
+                return true;
+            }else if (obj == null || obj.getClass() != getClass()) {
+                return false;
+            }
+
+            return id == ((MoveableBranch)obj).id;
+        }
     }
 }
 
