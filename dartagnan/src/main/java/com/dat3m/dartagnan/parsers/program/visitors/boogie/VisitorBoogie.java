@@ -29,9 +29,6 @@ import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
@@ -109,8 +106,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 	
-	private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
-	
 	protected ProgramBuilder programBuilder;
 	protected int threadCount = 0;
 	protected int currentThread = 0;
@@ -154,7 +149,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
     @Override
     public Object visitMain(MainContext ctx) {
-        logger.info("ATOMIC_AS_LOCK: " + GlobalSettings.ATOMIC_AS_LOCK);
     	for(Func_declContext funDecContext : ctx.func_decl()) {
     		visitFunc_decl(funDecContext);
     	}

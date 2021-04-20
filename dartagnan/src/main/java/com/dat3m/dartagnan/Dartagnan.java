@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
@@ -41,6 +42,8 @@ public class Dartagnan {
     public static void main(String[] args) throws IOException {
     	
     	CreateGitInfo();
+    	LogGlobalSettings();
+    	
         DartagnanOptions options = new DartagnanOptions();
         try {
             options.parse(args);

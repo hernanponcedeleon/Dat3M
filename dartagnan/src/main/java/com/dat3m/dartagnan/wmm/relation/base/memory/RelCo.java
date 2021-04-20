@@ -16,8 +16,10 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class RelCo extends Relation {
@@ -185,5 +187,22 @@ public class RelCo extends Relation {
             //TODO: Make sure that this is correct and does not cause any issues with totality of co
             maxTupleSet.removeIf(t -> t.getSecond().is(INIT) || t.isBackward());
         }
+    }
+    
+    @Override
+    public BoolExpr getSMTVar(Tuple edge, Context ctx) {
+    	if(!ANTISYMM_CO) {
+    		return super.getSMTVar(edge, ctx);
+    	}
+        MemEvent first = (MemEvent) edge.getFirst();
+        MemEvent second = (MemEvent) edge.getSecond();
+        // Doing the check at the java level seems to slightly improve  performance
+        BoolExpr eqAdd = first.getAddress().equals(second.getAddress()) ? ctx.mkTrue() : ctx.mkEq(first.getMemAddressExpr(), second.getMemAddressExpr());
+        return !getMaxTupleSet().contains(edge) ? ctx.mkFalse() :
+    		first.getUId() <= second.getUId() ?
+    				edge(getName(), first, second, ctx) :
+    					(BoolExpr) ctx.mkITE(ctx.mkAnd(getExecPair(edge, ctx), eqAdd), 
+    							ctx.mkNot(getSMTVar(edge.getInverse(), ctx)), 
+    							ctx.mkFalse());
     }
 }
