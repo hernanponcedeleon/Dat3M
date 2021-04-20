@@ -16,7 +16,7 @@ public class GlobalSettings {
 
     // === Encoding ===
     public static final boolean MERGE_CF_VARS = true;
-    public static final boolean ANTISYMM_CO = true;
+    public static final boolean ANTISYMM_CO = false;
 
     // === BranchEquivalence ===
     public static final boolean MERGE_BRANCHES = true;
@@ -25,6 +25,7 @@ public class GlobalSettings {
     // === Static analysis ===
     public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
     public static final boolean PERFORM_REORDERING = true;
+    public static final boolean DETERMINISTIC_REORDERING = true;
 
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;
