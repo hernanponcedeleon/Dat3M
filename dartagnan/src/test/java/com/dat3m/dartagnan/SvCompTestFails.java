@@ -19,10 +19,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 /*
 NOTE: Currently we fail on pretty much all of the following tasks
  */
-//TODO(TH): now these ones should pass, right?
-// Yes, we pass on them. But we still should maintain a list of benchmarks where
-// we give wrong results (or just timeout?)
-// For now, we could add stack-1 here.
 
 @RunWith(Parameterized.class)
 public class SvCompTestFails extends AbstractSvCompTest {

@@ -65,6 +65,7 @@ public class EndAtomic extends Event {
 		BranchEquivalence.Class startClass = eq.getEquivalenceClass(begin);
 		BranchEquivalence.Class endClass = eq.getEquivalenceClass(this);
 		if (!startClass.getReachableClasses().contains(endClass)) {
+			//TODO(TH): do we wan't it as an exception of maybe as a warning in the logger? 
 			throw new IllegalStateException("BeginAtomic" + begin.getCId() + "can't reach EndAtomic " + this.getCId());
 		}
 
@@ -75,6 +76,7 @@ public class EndAtomic extends Event {
 						//TODO(TH): put it in an exception?
 						// TH: With our current semantics of bound-events, we can't produce an exception without
 						// breaking a lot of benchmarks.
+						// HP: maybe as a warning in the logger?
 						System.out.println(e + " is inside atomic block but can be reached from the outside");
 					}
 					enclosedEvents.add(e);

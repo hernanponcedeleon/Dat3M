@@ -17,6 +17,7 @@ public class IConst extends IExpr implements ExprInterface {
 	// TH: This was a temporary try for integer logic only
 	// However, it is impossible to define general constants, we need a function that produces
 	// a constant for each precision degree
+	// HP: agree. I assume you wanted this to improve code readability, but having one constant per precition won't help.
 	public static IConst ZERO = new IConst(0,0 );
 	public static IConst ONE = new IConst(1, 0);
 
@@ -85,8 +86,6 @@ public class IConst extends IExpr implements ExprInterface {
     }
 
 	@Override
-	//TODO(TH): This method seems to be the same for all IExpr. Why not defining it only once there?
-	// Answer(TH): We need to this to call the correct override of visit (visit(IConst) instead of visit(IExpr))
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
 	}
