@@ -18,7 +18,7 @@ public class EndAtomic extends Event {
 
 	protected BeginAtomic begin;
 	protected BeginAtomic begin4Copy;
-	protected List<Event> enclosedEvents;
+	protected transient List<Event> enclosedEvents;
 
 	public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
@@ -65,10 +65,7 @@ public class EndAtomic extends Event {
 		BranchEquivalence.Class startClass = eq.getEquivalenceClass(begin);
 		BranchEquivalence.Class endClass = eq.getEquivalenceClass(this);
 		if (!startClass.getReachableClasses().contains(endClass)) {
-			//TODO(TH): put back the exception?
-			//throw new IllegalStateException("BeginAtomic can't reach EndAtomic");
-			System.out.println("==== EndAtomic " + this.getCId() + " unreachable by BeginAtomic " + begin.getCId() + " ====");
-			return;
+			throw new IllegalStateException("BeginAtomic" + begin.getCId() + "can't reach EndAtomic " + this.getCId());
 		}
 
 		for (BranchEquivalence.Class c : startClass.getReachableClasses()) {
@@ -76,7 +73,9 @@ public class EndAtomic extends Event {
 				if (begin.getCId() <= e.getCId() && e.getCId() <= this.getCId()) {
 					if (!eq.isImplied(e, begin)) {
 						//TODO(TH): put it in an exception?
-						System.out.println(e.toString() + " is inside atomic block but can be reached from the outside");
+						// TH: With our current semantics of bound-events, we can't produce an exception without
+						// breaking a lot of benchmarks.
+						System.out.println(e + " is inside atomic block but can be reached from the outside");
 					}
 					enclosedEvents.add(e);
 					e.addFilters(RMW);

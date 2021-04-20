@@ -156,7 +156,7 @@ public class Thread {
 
     public BoolExpr encodeCF(Context ctx){
     	BoolExpr enc = ctx.mkTrue();
-    	Stack<If> ifStack = new Stack<If>();
+    	Stack<If> ifStack = new Stack<>();
     	BoolExpr guard = ctx.mkTrue();
     	for(Event e : entry.getSuccessors()) {
     		if(!ifStack.isEmpty()) {

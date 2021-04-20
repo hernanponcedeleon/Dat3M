@@ -171,8 +171,6 @@ public abstract class Relation implements Dependent<Relation> {
 
     public BoolExpr getSMTVar(Tuple edge, Context ctx) {
         return !getMaxTupleSet().contains(edge) ? ctx.mkFalse() :
-        		//TODO(TH): can we remove this?
-                //getMinTupleSet().contains(edge) ? getExecPair(edge, ctx) :
                 edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
     }
 

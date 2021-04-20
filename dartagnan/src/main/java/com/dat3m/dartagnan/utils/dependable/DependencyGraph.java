@@ -213,12 +213,12 @@ public class DependencyGraph<T> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public boolean equals(Object obj) {
             if (obj == this)
                 return true;
             if (obj == null || obj.getClass() != getClass())
                 return false;
-            //TODO(TH): is this cast always safe?
             Node node = (Node)obj;
             return node.content.equals(this.content);
         }

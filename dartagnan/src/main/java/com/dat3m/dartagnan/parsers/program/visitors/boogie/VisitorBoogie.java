@@ -123,7 +123,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
 	private final Map<String, Proc_declContext> procedures = new HashMap<>();
 	protected PthreadPool pool = new PthreadPool();
-	protected List<Register> allocationRegs = new ArrayList<Register>();
+	protected List<Register> allocationRegs = new ArrayList<>();
 	
 	private int nextScopeID = 0;
 	protected Scope currentScope = new Scope(nextScopeID, null);
@@ -382,22 +382,22 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			return null;
 		}
 
-		if(DUMMYPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+		if(DUMMYPROCEDURES.stream().anyMatch(name::startsWith)) {
 			return null;
 		}
-		if(PTHREADPROCEDURES.stream().anyMatch(e -> name.contains(e))) {
+		if(PTHREADPROCEDURES.stream().anyMatch(name::contains)) {
 			handlePthreadsFunctions(this, ctx);
 			return null;
 		}
-		if(SVCOMPPROCEDURES.stream().anyMatch(e -> name.contains(e))) {
+		if(SVCOMPPROCEDURES.stream().anyMatch(name::contains)) {
 			handleSvcompFunction(this, ctx);
 			return null;
 		}
-		if(ATOMICPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+		if(ATOMICPROCEDURES.stream().anyMatch(name::startsWith)) {
 			handleAtomicFunction(this, ctx);
 			return null;
 		}
-		if(STDPROCEDURES.stream().anyMatch(e -> name.startsWith(e))) {
+		if(STDPROCEDURES.stream().anyMatch(name::startsWith)) {
 			handleStdFunction(this, ctx);
 			return null;
 		}
@@ -568,7 +568,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		// We can get rid of all the "assume true" statements
 		if(!ctx.proposition().expr().getText().equals("true")) {
-			Label pairingLabel = null;
+			Label pairingLabel;
 			if(!pairLabels.containsKey(currentLabel)) {
 				// If the current label doesn't have a pairing label, we jump to the end of the program
 	        	pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
@@ -651,7 +651,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitAnd_expr(And_exprContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.rel_expr(0).accept(this);
-		ExprInterface v2 = null;
+		ExprInterface v2;
 		for(int i = 0; i < ctx.rel_expr().size()-1; i++) {
 			v2 = (ExprInterface)ctx.rel_expr(i+1).accept(this);
 			v1 = new BExprBin(v1, ctx.and_op(i).op, v2);
@@ -662,7 +662,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitOr_expr(Or_exprContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.rel_expr(0).accept(this);
-		ExprInterface v2 = null;
+		ExprInterface v2;
 		for(int i = 0; i < ctx.rel_expr().size()-1; i++) {
 			v2 = (ExprInterface)ctx.rel_expr(i+1).accept(this);
 			v1 = new BExprBin(v1, ctx.or_op(i).op, v2);
@@ -673,7 +673,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitRel_expr(Rel_exprContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.bv_term(0).accept(this);
-		ExprInterface v2 = null;
+		ExprInterface v2;
 		for(int i = 0; i < ctx.bv_term().size()-1; i++) {
 			v2 = (ExprInterface)ctx.bv_term(i+1).accept(this);
 			v1 = new Atom(v1, ctx.rel_op(i).op, v2);
@@ -684,7 +684,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitTerm(TermContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.factor(0).accept(this);
-		ExprInterface v2 = null;
+		ExprInterface v2;
 		for(int i = 0; i < ctx.factor().size()-1; i++) {
 			v2 = (ExprInterface)ctx.factor(i+1).accept(this);
 			v1 = new IExprBin(v1, ctx.add_op(i).op, v2);
@@ -695,7 +695,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitFactor(FactorContext ctx) {
 		ExprInterface v1 = (ExprInterface)ctx.power(0).accept(this);
-		ExprInterface v2 = null;
+		ExprInterface v2 ;
 		for(int i = 0; i < ctx.power().size()-1; i++) {
 			v2 = (ExprInterface)ctx.power(i+1).accept(this);
 			v1 = new IExprBin(v1, ctx.mul_op(i).op, v2);
@@ -775,19 +775,19 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// push currentCall to the call stack
 		List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
 		currentCall = new FunctionCall(function, callParams, currentCall);
-		if(LLVMFUNCTIONS.stream().anyMatch(f -> name.startsWith(f))) {
+		if(LLVMFUNCTIONS.stream().anyMatch(name::startsWith)) {
 			currentCall = currentCall.getParent();
 			return llvmFunction(name, callParams);
 		}
-		if(LLVMPREDICATES.stream().anyMatch(f -> name.equals(f))) {
+		if(LLVMPREDICATES.stream().anyMatch(name::equals)) {
 			currentCall = currentCall.getParent();
 			return llvmPredicate(name, callParams);
 		}
-		if(LLVMUNARY.stream().anyMatch(f -> name.startsWith(f))) {
+		if(LLVMUNARY.stream().anyMatch(name::startsWith)) {
 			currentCall = currentCall.getParent();
 			return llvmUnary(name, callParams);
 		}
-		if(SMACKPREDICATES.stream().anyMatch(f -> name.equals(f))) {
+		if(SMACKPREDICATES.stream().anyMatch(name::equals)) {
 			currentCall = currentCall.getParent();
 			return smackPredicate(name, callParams);
 		}

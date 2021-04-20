@@ -20,6 +20,9 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 NOTE: Currently we fail on pretty much all of the following tasks
  */
 //TODO(TH): now these ones should pass, right?
+// Yes, we pass on them. But we still should maintain a list of benchmarks where
+// we give wrong results (or just timeout?)
+// For now, we could add stack-1 here.
 
 @RunWith(Parameterized.class)
 public class SvCompTestFails extends AbstractSvCompTest {
@@ -27,21 +30,12 @@ public class SvCompTestFails extends AbstractSvCompTest {
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
         String cat_file = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
-        //String cat_file = "cat/sc.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, TIMEOUT, false);
-        Settings s3 = new Settings(Mode.KNASTER, Alias.CFIS, 3, TIMEOUT, false);
+        Settings s6 = new Settings(Mode.KNASTER, Alias.CFIS, 6, TIMEOUT, false);
 
         List<Object[]> data = new ArrayList<>();
-        String base = TEST_RESOURCE_PATH + "fails/";
-
-        // Should be FAIL under SVCOMP, but we get PASS.
-        // Additionally, we get FAIL under SC
-        //data.add(new Object[]{base + "rfi006_power.oepc-O0.bpl", wmm, s1});
-
-        data.add(new Object[]{base + "02_inc_cas-O0.bpl", wmm, s3});
-        data.add(new Object[]{base + "03_incdec-O0.bpl", wmm, s3});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1-O0.bpl", wmm, s6});
 
         return data;
     }

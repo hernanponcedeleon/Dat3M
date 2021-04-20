@@ -35,7 +35,7 @@ public class Edge extends ElemWithAttributes implements Comparable<Edge> {
 		StringBuilder str = new StringBuilder();
 		str.append("  <edge source=\"" + source.getId() + "\" target=\"" + target.getId() + "\">\n");
 		for(String attr : attributes.keySet()) {
-			str.append("    <data key=\"" + attr + "\">" + attributes.get(attr) + "</data>\n");
+			str.append("    <data key=\"").append(attr).append("\">").append(attributes.get(attr)).append("</data>\n");
 		}
 		str.append("  </edge>\n");
 		return str.toString();

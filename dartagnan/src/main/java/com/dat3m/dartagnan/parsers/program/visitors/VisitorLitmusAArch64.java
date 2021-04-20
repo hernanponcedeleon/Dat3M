@@ -95,7 +95,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
 
     @Override
     public Object visitInstructionRow(LitmusAArch64Parser.InstructionRowContext ctx) {
-        for(Integer i = 0; i < threadCount; i++){
+        for(int i = 0; i < threadCount; i++){
             mainThread = i;
             visitInstruction(ctx.instruction(i));
         }

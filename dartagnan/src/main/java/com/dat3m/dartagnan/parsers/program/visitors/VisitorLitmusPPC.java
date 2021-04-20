@@ -99,7 +99,7 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitInstructionRow(LitmusPPCParser.InstructionRowContext ctx) {
-        for(Integer i = 0; i < threadCount; i++){
+        for(int i = 0; i < threadCount; i++){
             mainThread = i;
             visitInstruction(ctx.instruction(i));
         }

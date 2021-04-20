@@ -140,7 +140,7 @@ public class AliasAnalysis {
 
                 if (expr instanceof Register) {
                     // r1 = r2 -> add edge r2 --> r1
-                    graph.addEdge((Register) expr, register);
+                    graph.addEdge(expr, register);
 
                 } else if (expr instanceof Address) {
                     // r = &a
@@ -260,7 +260,7 @@ public class AliasAnalysis {
 
     private void processResults(Program program) {
     	// Used to have pointer analysis when having arrays and structures
-    	Map<Register, Address> bases = new HashMap<Register, Address>();
+    	Map<Register, Address> bases = new HashMap<>();
     	for (Event ev : program.getCache().getEvents(FilterBasic.get(EType.LOCAL))) {
     		// Not only Local events have EType.LOCAL tag
     		if(!(ev instanceof Local)) {
@@ -272,7 +272,7 @@ public class AliasAnalysis {
 			if(exp instanceof Address) {
     			bases.put(reg, (Address)exp);
     		} else if(exp instanceof IExprBin) {
-    			IExpr base = ((IExprBin)exp).getBase();
+    			IExpr base = exp.getBase();
     			if(base instanceof Address) {
     				bases.put(reg, (Address)base);	
     			} else if(base instanceof Register && bases.containsKey(base)) {

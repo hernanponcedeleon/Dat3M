@@ -35,7 +35,7 @@ public class EventMap {
     public EventData get(Event e) {
         EventData data = eventMap.get(e);
         if (data == null) {
-            data = new EventData(e, this);
+            data = new EventData(e);
             eventMap.put(e, data);
         }
         return data;

@@ -3,18 +3,15 @@ package com.dat3m.dartagnan.verification.model;
 import com.dat3m.dartagnan.program.event.*;
 
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.EType.EXCL;
-import static com.dat3m.dartagnan.program.utils.EType.LOCK;
-import static com.dat3m.dartagnan.program.utils.EType.RMW;
+import static com.dat3m.dartagnan.program.utils.EType.*;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.utils.EType;
 
 
 //EventData represents all data associated with an event in a concrete model.
 
 public class EventData implements Comparable<EventData> {
-	//TODO(TH): is there a reason to keep it then?
-    private final EventMap map; // Not used right now
-
     private final Event event;
     private EventData readFrom;
     private int id = -1;
@@ -24,9 +21,8 @@ public class EventData implements Comparable<EventData> {
     private int importance;
     private boolean wasExecuted;
 
-    EventData(Event e, EventMap eventMap) {
+    EventData(Event e) {
         this.event = e;
-        this.map = eventMap;
     }
 
     public Event getEvent() {
@@ -97,26 +93,20 @@ public class EventData implements Comparable<EventData> {
         return event instanceof MemEvent;
     }
 
-    public boolean isWrite() {
-    	//TODO(TH): why not the commented implementation? 
-        return event instanceof Store || event instanceof Init; //event.is(EType.WRITE);
-    }
+    public boolean isWrite() { return event.is(WRITE); }
 
     public boolean isInit() {
-        return event instanceof Init;
+        return event.is(INIT);
     }
 
-    public boolean isRead() {
-    	//TODO(TH): why not the commented implementation?
-        return event instanceof Load; // event.is(EType.READ)
-    }
+    public boolean isRead() { return event.is(READ); }
 
     public boolean isFence() {
-        return event instanceof Fence;
+        return event.is(FENCE);
     }
 
     public boolean isJump() {
-        return event instanceof CondJump;
+        return event.is(JUMP);
     }
 
     public boolean isIfElse() {

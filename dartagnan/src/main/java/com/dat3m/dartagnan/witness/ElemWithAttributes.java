@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class ElemWithAttributes {
 
-	protected Map<String, String> attributes = new HashMap<String, String>(); 
+	protected Map<String, String> attributes = new HashMap<>();
 	
 	public void addAttribute(String key, String value) {
 		attributes.put(key, value);

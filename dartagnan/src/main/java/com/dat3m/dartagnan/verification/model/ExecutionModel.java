@@ -138,7 +138,7 @@ public class ExecutionModel {
     
     public Map<EventData, Set<EventData>> getCoherenceMap() {
     	return coherenceMapView;
-    };
+    }
     
     public Map<EventData, Set<EventData>> getWriteReadsMap() {
         return writeReadsMapView;
@@ -200,14 +200,8 @@ public class ExecutionModel {
     //========================== Internal methods  =========================
 
     private void extractEventsFromModel() {
-        //TODO: We might be able to look at each branch from the last computation
-        // and check if they are part of the current model
-        // If so, we might be able to skip some recomputations and only update
-        // the reads and writes (i.e. their value/address and rf-connections)
-        // We could even skip updating constant writes (e.g. init writes)
-
-        //TODO 2: We might also want to extract events such as inline assertions
-        // and whether they were violated or not. But they might be compiled away.
+        //TODO(TH): We might also want to extract events such as inline assertions
+        // and whether they were violated or not.
         int id = 0;
         eventList.clear();
         threadList.clear();
@@ -295,7 +289,7 @@ public class ExecutionModel {
             // We override the meaning of execution here. A jump is executed IFF its condition was true.
             data.setWasExecuted(((CondJump)e).didJump(model, context));
         } else {
-            //TODO: Maybe add some other events.
+            //TODO: Maybe add some other events (e.g. assertions)
             // But for now all non-visible events are simply registered without
             // having any data extracted
         }

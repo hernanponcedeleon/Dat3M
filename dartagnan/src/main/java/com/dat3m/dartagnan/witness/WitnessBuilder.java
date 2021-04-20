@@ -12,15 +12,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.expression.BConst;
@@ -81,7 +73,7 @@ public class WitnessBuilder {
 	
 	public void write() {
 		try {
-			FileWriter fw = new FileWriter(new File(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml"));
+			FileWriter fw = new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
 			for(String attr : graphAttr) {fw.write("<key attr.name=\"" + attr + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
@@ -165,11 +157,11 @@ public class WitnessBuilder {
 	}
 	
 	private List<Event> getSCExecutionOrder(Context ctx, Model model) {
-		List<Event> execEvents = new ArrayList<Event>();
+		List<Event> execEvents = new ArrayList<>();
 		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList()));
 		execEvents.addAll(program.getEvents().stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList()));
 		
-		Map<Integer, List<Event>> map = new HashMap<Integer, List<Event>>();
+		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements
 			if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
@@ -179,9 +171,9 @@ public class WitnessBuilder {
         	if(var != null) {
         		int key = Integer.parseInt(var.toString());
 				if(!map.containsKey(key)) {
-					map.put(key, new ArrayList<Event>());
+					map.put(key, new ArrayList<>());
 				}
-				List<Event> lst = new ArrayList<Event>(Arrays.asList(e));
+				List<Event> lst = new ArrayList<>(Collections.singletonList(e));
 				Event next = e.getSuccessor();
 				// This collects all the successors not accessing global variables
 				while(next != null && execEvents.contains(next) && model.getConstInterp(intVar("hb", next, ctx)) == null) {
@@ -192,7 +184,7 @@ public class WitnessBuilder {
         	}
         }
         
-        List<Event> exec = new ArrayList<Event>();
+        List<Event> exec = new ArrayList<>();
         SortedSet<Integer> keys = new TreeSet<>(map.keySet());
         for (Integer key : keys) {
         	exec.addAll(map.get(key));

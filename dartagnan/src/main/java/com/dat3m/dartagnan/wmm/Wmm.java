@@ -103,18 +103,6 @@ public class Wmm {
         }
     }
 
-    // Encodes the memory models relations as if co was empty (but not the axioms yet)
-    // NOTE: The call to <consistent> for encoding the axioms does not see co as empty anymore
-    // This is done to get a correct computation for the active set.
-    public BoolExpr encodeEmptyCo(Context ctx) {
-        RelCo co = ((RelCo)getRelationRepository().getRelation("co"));
-        co.setDoEncode(false);
-        BoolExpr enc = encode(ctx);
-        //TODO(TH): can we remove this?
-        //co.setDoEncode(true);
-        return enc;
-    }
-
     // Encodes only the base relations of the memory model without co!
     // This should be (almost) equivalent to encoding the empty memory model
     // A call to <consistent> should not be performed afterwards.

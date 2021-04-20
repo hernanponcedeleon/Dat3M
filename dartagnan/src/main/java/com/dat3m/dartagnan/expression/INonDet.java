@@ -89,14 +89,17 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	public long getMin() {
+		//TODO(HP): For all unsigned types, we can return 0 in a single case
         switch(type){
         case INT:
             return Integer.MIN_VALUE;
         case UINT:
+			//TODO(HP): This is always just 0
             return UnsignedInteger.ZERO.longValue();
 		case LONG:
             return Long.MIN_VALUE;
 		case ULONG:
+			//TODO(HP): This is always just 0
             return UnsignedLong.ZERO.longValue();
 		case SHORT:
             return Short.MIN_VALUE;

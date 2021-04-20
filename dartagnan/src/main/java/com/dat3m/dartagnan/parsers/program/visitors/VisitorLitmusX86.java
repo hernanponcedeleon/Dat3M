@@ -101,7 +101,7 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitInstructionRow(LitmusX86Parser.InstructionRowContext ctx) {
-        for(Integer i = 0; i < threadCount; i++){
+        for(int i = 0; i < threadCount; i++){
             mainThread = i;
             visitInstruction(ctx.instruction(i));
         }

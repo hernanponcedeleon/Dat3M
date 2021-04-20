@@ -14,11 +14,15 @@ import java.math.BigInteger;
 public class IConst extends IExpr implements ExprInterface {
 
 	// TODO(TH): not sure where this are used, but why do you set the precision to 0?
+	// TH: This was a temporary try for integer logic only
+	// However, it is impossible to define general constants, we need a function that produces
+	// a constant for each precision degree
 	public static IConst ZERO = new IConst(0,0 );
 	public static IConst ONE = new IConst(1, 0);
 
 	// The theory of integers supports numbers which do not  fit in int
-	// TODO(TH): We should use BigInteger everywhere now then, e.g. as the return value of getIntValue  
+	//TODO(TH): We should use BigInteger everywhere now then, e.g. as the return value of getIntValue
+	// TH: Yes we should.
 	private final BigInteger value;
 	protected final int precision;
 	
@@ -82,6 +86,7 @@ public class IConst extends IExpr implements ExprInterface {
 
 	@Override
 	//TODO(TH): This method seems to be the same for all IExpr. Why not defining it only once there?
+	// Answer(TH): We need to this to call the correct override of visit (visit(IConst) instead of visit(IExpr))
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
 	}

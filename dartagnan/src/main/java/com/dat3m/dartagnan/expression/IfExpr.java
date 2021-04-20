@@ -36,7 +36,7 @@ public class IfExpr implements ExprInterface {
 	public Expr getLastValueExpr(Context ctx) {
 		// In principle this method is only called by assertions 
 		// and thus it should never be called for this class
-        throw new RuntimeException("Problem with getLastValueExpr in " + this.toString());
+        throw new RuntimeException("Problem with getLastValueExpr in " + this);
 	}
 
 	@Override

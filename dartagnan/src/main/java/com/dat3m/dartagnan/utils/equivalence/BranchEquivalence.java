@@ -336,7 +336,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         } else {
             unreachableClass.representative = unreachableClass.stream()
                     .min(Comparator.comparingInt(Event::getCId)).get();
-            // TODO: Shall we add all other classes to the implied set?
         }
     }
 

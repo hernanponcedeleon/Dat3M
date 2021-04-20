@@ -26,7 +26,7 @@ import java.util.*;
 
 public class Program {
 
-    private static Logger logger = LogManager.getLogger(Program.class);
+    private final static Logger logger = LogManager.getLogger(Program.class);
 
     private String name;
 	private AbstractAssert ass;

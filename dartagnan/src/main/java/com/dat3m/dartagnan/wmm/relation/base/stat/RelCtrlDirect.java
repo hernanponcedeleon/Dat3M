@@ -10,7 +10,8 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.List;
 
-//TODO: Can we restrict to visible events?
+//TODO(TH/HP): Can we restrict to visible events?
+// What is even the use, if none of the edges are visible?
 public class RelCtrlDirect extends StaticRelation {
 
     public RelCtrlDirect(){

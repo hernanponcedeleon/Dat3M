@@ -124,7 +124,7 @@ public class Graph {
                         String label = e.label();
                         if(e instanceof MemEvent) {
                             Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, model, ctx));
-                            long value = 0;
+                            long value;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
                                 value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());

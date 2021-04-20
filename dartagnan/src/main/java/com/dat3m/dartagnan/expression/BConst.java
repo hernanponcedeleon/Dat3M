@@ -56,6 +56,8 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	//TODO(TH): This method seems to be the same for all BExpr. Why not defining it only once there?
+	// Answer(TH): We use this to call the correct visit method based on the current type
+	// (e.g. visit(BConst) instead of visit(BExpr))
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);

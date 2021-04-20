@@ -17,9 +17,9 @@ public class Node extends ElemWithAttributes implements Comparable<Node> {
 	
 	public String toXML() {
 		StringBuilder str = new StringBuilder();
-		str.append("  <node id=\"" + getId() + "\">\n");
+		str.append("  <node id=\"").append(getId()).append("\">\n");
 		for(String attr : attributes.keySet()) {
-			str.append("    <data key=\"" + attr + "\">" + attributes.get(attr) + "</data>\n");
+			str.append("    <data key=\"").append(attr).append("\">").append(attributes.get(attr)).append("</data>\n");
 		}
 		str.append("  </node>\n");
 		return str.toString();
@@ -28,7 +28,7 @@ public class Node extends ElemWithAttributes implements Comparable<Node> {
 	@Override
     public boolean equals(Object o) {
 		if(o instanceof Node) {
-			getId().equals(((Node)o).getId());
+			return getId().equals(((Node)o).getId());
 		}
 		return false;
 	}

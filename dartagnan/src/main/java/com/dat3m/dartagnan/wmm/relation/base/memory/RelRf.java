@@ -168,6 +168,9 @@ public class RelRf extends Relation {
 
     // An alternate/dual version to encodeEdgeSeq
     //TODO(TH): do we plan to use this somewhere?
+    // Answer(TH): it was just an alternative version for testing.
+    // There is practically no performance difference between this and <encodeEdgeSeq>
+    // We can use the nicer looking one and delete the other
     private BoolExpr encodeEdgeSeqAlt(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
         int num = edges.size();
         int readId = read.getCId();
@@ -230,7 +233,7 @@ public class RelRf extends Relation {
                 }
                 //TODO: If a read can read from multiple addresses, we have to make sure that
                 // we don't let writes of different addresses override each other
-                List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());;
+                List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());
                 possibleWrites.stream().filter(x ->
                         (x.is(INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
                                 || (!x.is(INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))
@@ -273,17 +276,8 @@ public class RelRf extends Relation {
                 List<Store> ownWrites = writes.stream()
                         .filter(x -> x.getCId() < read.getCId() && x.getMaxAddressSet().equals(read.getMaxAddressSet()))
                         .collect(Collectors.toList());
-                List<Event> impliedWrites = ownWrites.stream().filter(x -> eq.isImplied(read, x) && x.cfImpliesExec()).collect(Collectors.toList());
-              //TODO(TH): can we remove this?
-                /*if (!impliedWrites.isEmpty()) {
-                    Event lastImplied = impliedWrites.get(impliedWrites.size() - 1);
-                    if (!lastImplied.is(EType.INIT)) {
-                        Predicate<Event> pred = x -> x.is(EType.INIT) || x.getCId() < lastImplied.getCId();
-                        ownWrites.removeIf(pred);
-                    }
-                }*/
-
-                if (!impliedWrites.isEmpty()) {
+                boolean hasImpliedWrites = ownWrites.stream().anyMatch(x -> eq.isImplied(read, x) && x.cfImpliesExec());
+                if (hasImpliedWrites) {
                     maxTupleSet.removeIf(t -> t.getSecond() == read && t.isCrossThread());
                 }
             }

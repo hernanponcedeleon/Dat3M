@@ -187,6 +187,8 @@ public abstract class Event implements Comparable<Event> {
     }
 
     //TODO(TH): do we need both or did you do it this way until you know it works correctly?
+	// Answer(TH): We need both for ease of usage. The basic one hides the ugly return-type as well as
+	// the added <depth> parameter
 	protected RecursiveFunction<Integer> setUIdRecursive(int nextId, int depth) {
 		uId = nextId;
 		if (successor != null) {
@@ -208,6 +210,8 @@ public abstract class Event implements Comparable<Event> {
     }
 
     //TODO(TH): do we need both or did you do it this way until you know it works correctly?
+	// Answer(TH): We need both for ease of usage. The basic one hides the ugly return-type as well as
+	// the added <depth> parameter
     protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
 		Event copy = this;
 		if(predecessor != null) {
@@ -260,6 +264,8 @@ public abstract class Event implements Comparable<Event> {
     }
 
     //TODO(TH): do we need both or did you do it this way until you know it works correctly?
+	// Answer(TH): We need both for ease of usage. The basic one hides the ugly return-type as well as
+	// the added <depth> parameter
 	protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
 		cId = nextId++;
 		if(successor != null){

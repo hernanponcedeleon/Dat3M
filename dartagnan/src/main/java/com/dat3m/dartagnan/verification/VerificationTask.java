@@ -105,6 +105,7 @@ public class VerificationTask {
                 for (Event e : t.getEntry().getSuccessors()) {
                     String indent = ((e instanceof Label) ? "" : "   ");
                     //TODO(TH): why this print?
+                    // Answer(TH): why not? I use it for inspecting the final program (after all transformations)
                     System.out.printf("%4d: %s%s%n", e.getCId(), indent, e);
                 }
             }
@@ -131,10 +132,6 @@ public class VerificationTask {
 
     public BoolExpr encodeWmmRelations(Context ctx) {
         return memoryModel.encode( ctx);
-    }
-
-    public BoolExpr encodeWmmRelationsWithoutCo(Context ctx) {
-        return memoryModel.encodeEmptyCo(ctx);
     }
 
     public BoolExpr encodeWmmConsistency(Context ctx) {

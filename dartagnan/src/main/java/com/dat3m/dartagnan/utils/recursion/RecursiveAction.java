@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 public abstract class RecursiveAction {
 
+    @SuppressWarnings("all")
 	private static final Done DONE = new Done();
 
     protected boolean isDone() { return false; }

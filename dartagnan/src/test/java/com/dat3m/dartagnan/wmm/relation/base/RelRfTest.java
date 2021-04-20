@@ -97,7 +97,7 @@ public class RelRfTest {
         program.unroll(settings.getBound(), 0);
         program.compile(program.getArch(), 0);
 
-        Map<Integer, Event> events = new HashMap<Integer, Event>(){{
+        Map<Integer, Event> events = new HashMap<>(){{
             put(2, null); put(5, null); put(8, null);
         }};
         extractEvents(program, events);
