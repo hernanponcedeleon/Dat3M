@@ -137,7 +137,6 @@ public class CondJump extends Event implements RegReaderData {
             }
             Event next = predecessor;
             if(bound == 1) {
-                //next = new BoundEvent();
                 Label target = (Label)getThread().getExit();
                 next = new CondJump(BConst.TRUE, target);
                 next.addFilters(EType.BOUND);
