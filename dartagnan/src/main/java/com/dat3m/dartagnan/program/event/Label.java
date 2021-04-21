@@ -54,33 +54,17 @@ public class Label extends Event {
     @Override
     public Label getCopy(){
     	Label copy = new Label(this);
+    	if (this.equals(getThread().getExit())) {
+    	    getThread().updateExit(copy);
+        }
     	for(Event jump : listeners) {
     		jump.notify(copy);
     	}
     	return copy;
     }
 
-    @Override
-    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        return super.unrollRecursive(bound, predecessor, depth).then( () -> {
-            for (Event jump : listeners) {
-                jump.notify(this);
-            }
-        });
-    }
-
     // Compilation
     // -----------------------------------------------------------------------------------------------------------------
 
-
-    @Override
-    protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        return super.compileRecursive(target, nextId, predecessor, depth).then(retVal ->  {
-            for(Event jump : listeners) {
-                jump.notify(this);
-            }
-            return RecursiveFunction.done(retVal);
-        });
-    }
 
 }

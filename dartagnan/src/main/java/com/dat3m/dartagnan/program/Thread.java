@@ -95,7 +95,7 @@ public class Thread {
         cache = null;
     }
 
-    private void updateExit(Event event){
+    public void updateExit(Event event){
         exit = event;
         Event next = exit.getSuccessor();
         while(next != null){
