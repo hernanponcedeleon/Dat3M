@@ -379,14 +379,27 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     private void mergeInitialClasses() {
         if (GlobalSettings.MERGE_BRANCHES) {
             initialClass = getTypedEqClass(program.getThreads().get(0).getEntry());
+            Set<BranchClass> mergedClasses = new HashSet<>();
             for (int i = 1; i < program.getThreads().size(); i++) {
                 BranchClass c = getTypedEqClass(program.getThreads().get(i).getEntry());
                 mergeClasses(initialClass, c);
+                mergedClasses.add(c);
                 initialClass.reachableClasses.addAll(c.reachableClasses);
                 initialClass.reachableClasses.remove(c);
 
                 initialClass.impliedClasses.addAll(c.impliedClasses);
                 initialClass.impliedClasses.remove(c);
+            }
+
+            for (BranchClass c : this.<BranchClass>getAllTypedEqClasses()) {
+                if (c != initialClass) {
+                    if (c.reachableClasses.removeAll(mergedClasses)) {
+                        c.reachableClasses.add(initialClass);
+                    }
+                    if (c.impliedClasses.removeAll(mergedClasses)) {
+                        c.impliedClasses.add(initialClass);
+                    }
+                }
             }
         } else {
             initialClass = new BranchClass();
