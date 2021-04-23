@@ -3,10 +3,16 @@ package com.dat3m.dartagnan.witness;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.CREATETHREAD;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.ENTERFUNCTION;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.STARTLINE;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.THREADID;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static java.lang.String.valueOf;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -108,11 +114,11 @@ public class WitnessBuilder {
 		Node v2 = new Node("N2");
 		
 		Edge edge = new Edge(v0, v1); 
-		edge.addAttribute("createThread", "0");
+		edge.addAttribute(CREATETHREAD.toString(), "0");
 		graph.addEdge(edge);
 		edge = new Edge(v1, v2); 
-		edge.addAttribute("threadId", "0");
-		edge.addAttribute("enterFunction", "main");
+		edge.addAttribute(THREADID.toString(), "0");
+		edge.addAttribute(ENTERFUNCTION.toString(), "main");
 		graph.addEdge(edge);
 		
 		int nextNode = 2;
@@ -130,11 +136,15 @@ public class WitnessBuilder {
 			}
 			
 			edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode+1)));
-			edge.addAttribute("threadId", String.valueOf(eventThreadMap.get(e)));
-			edge.addAttribute("startline", String.valueOf(e.getCLine()));
+			edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
+			edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
+			if(solver.getModel().getConstInterp(intVar("hb", e, ctx)) != null) {
+				edge.addAttribute(EVENTID.toString(), valueOf(e.getCId()));
+				edge.addAttribute(HBPOS.toString(), valueOf(solver.getModel().getConstInterp(intVar("hb", e, ctx))));				
+			}
 			
 			if(e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
-				edge.addAttribute("createThread", String.valueOf(threads));
+				edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 				threads++;
 			}
 
