@@ -4,6 +4,7 @@ import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
+import java.math.BigInteger;
 import java.util.LinkedList;
 
 import com.dat3m.dartagnan.expression.Atom;
@@ -90,7 +91,7 @@ public class Start extends Event {
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        events.add(new CondJump(new BExprUn(NOT, new Atom(reg, EQ, new IConst(1, -1))), label));
+        events.add(new CondJump(new BExprUn(NOT, new Atom(reg, EQ, new IConst(BigInteger.ONE, -1))), label));
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 

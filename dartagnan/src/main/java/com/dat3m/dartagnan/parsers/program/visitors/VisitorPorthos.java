@@ -11,6 +11,9 @@ import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.arch.pts.event.Read;
 import com.dat3m.dartagnan.program.arch.pts.event.Write;
 import com.dat3m.dartagnan.program.memory.Location;
+
+import java.math.BigInteger;
+
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorPorthos extends PorthosBaseVisitor<Object> implements PorthosVisitor<Object> {
@@ -137,7 +140,7 @@ public class VisitorPorthos extends PorthosBaseVisitor<Object> implements Portho
 
     @Override
     public IConst visitArithExprConst(PorthosParser.ArithExprConstContext ctx) {
-        return new IConst(Integer.parseInt(ctx.getText()), -1);
+        return new IConst(new BigInteger(ctx.getText()), -1);
     }
 
     @Override

@@ -5,6 +5,7 @@ import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.utils.EType.LOCK;
 import static com.dat3m.dartagnan.program.utils.EType.RMW;
 
+import java.math.BigInteger;
 import java.util.LinkedList;
 
 import com.dat3m.dartagnan.expression.Atom;
@@ -72,8 +73,8 @@ public class Lock extends Event {
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
         events.add(new Load(reg, address, SC));
-        events.add(new CondJump(new Atom(reg, NEQ, new IConst(0, -1)),label));
-        events.add(new Store(address, new IConst(1, -1), SC));
+        events.add(new CondJump(new Atom(reg, NEQ, new IConst(BigInteger.ZERO, -1)),label));
+        events.add(new Store(address, new IConst(BigInteger.ONE, -1), SC));
         for(Event e : events) {
             e.addFilters(LOCK, RMW);
         }

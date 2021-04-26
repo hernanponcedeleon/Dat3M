@@ -6,6 +6,9 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
+
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -48,8 +51,8 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     protected BoolExpr encodeExec(Context ctx){
         int precision = register.getPrecision();
 		BoolExpr enc = ctx.mkAnd(
-                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(0, precision).toZ3Int(this, ctx))),
-                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(1, precision).toZ3Int(this, ctx)))
+                ctx.mkImplies(storeEvent.exec(), ctx.mkEq(regResultExpr, new IConst(BigInteger.ZERO, precision).toZ3Int(this, ctx))),
+                ctx.mkImplies(ctx.mkNot(storeEvent.exec()), ctx.mkEq(regResultExpr, new IConst(BigInteger.ONE, precision).toZ3Int(this, ctx)))
         );
         return ctx.mkAnd(super.encodeExec(ctx), enc);
     }

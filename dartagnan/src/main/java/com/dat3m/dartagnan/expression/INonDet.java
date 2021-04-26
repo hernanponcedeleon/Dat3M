@@ -13,6 +13,8 @@ import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
 import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
 import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
 
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -51,8 +53,8 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public long getIntValue(Event e, Model model, Context ctx) {
-		return Long.parseLong(model.getConstInterp(toZ3Int(e, ctx)).toString());
+	public BigInteger getIntValue(Event e, Model model, Context ctx) {
+		return new BigInteger(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
 	@Override
@@ -89,26 +91,20 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	public long getMin() {
-		//TODO(HP): For all unsigned types, we can return 0 in a single case
         switch(type){
-        case INT:
-            return Integer.MIN_VALUE;
         case UINT:
-			//TODO(HP): This is always just 0
-            return UnsignedInteger.ZERO.longValue();
-		case LONG:
-            return Long.MIN_VALUE;
 		case ULONG:
-			//TODO(HP): This is always just 0
-            return UnsignedLong.ZERO.longValue();
-		case SHORT:
-            return Short.MIN_VALUE;
 		case USHORT:
-            return 0;
-		case CHAR:
-            return -128;
 		case UCHAR:
             return 0;
+        case INT:
+            return Integer.MIN_VALUE;
+		case LONG:
+            return Long.MIN_VALUE;
+		case SHORT:
+            return Short.MIN_VALUE;
+		case CHAR:
+            return -128;
         }
         throw new UnsupportedOperationException("getMin() not supported for " + this);
 	}

@@ -7,6 +7,9 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -19,7 +22,7 @@ import com.dat3m.dartagnan.program.event.Store;
 
 public class Location implements ExprInterface {
 
-	public static final int DEFAULT_INIT_VALUE = 0;
+	public static final BigInteger DEFAULT_INIT_VALUE = BigInteger.ZERO;
 
 	private final String name;
 	private final Address address;
@@ -90,7 +93,7 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public long getIntValue(Event e, Model model, Context ctx){
+	public BigInteger getIntValue(Event e, Model model, Context ctx){
 		if(e instanceof Store){
 			return ((Store) e).getMemValue().getIntValue(e, model, ctx);
 		}
@@ -99,7 +102,7 @@ public class Location implements ExprInterface {
 		}
 		if(e instanceof Load){
 			Register reg = ((Load) e).getResultRegister();
-			return Integer.parseInt(model.getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
+			return new BigInteger(model.getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
 
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");

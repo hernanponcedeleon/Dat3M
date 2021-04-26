@@ -6,6 +6,9 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -48,14 +51,14 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public long getIntValue(Event e, Model model, Context ctx){
+    public BigInteger getIntValue(Event e, Model model, Context ctx){
         return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
     }
     
     @Override
 	public IConst reduce() {
-		long v1 = lhs.reduce().getIntValue();
-		long v2 = rhs.reduce().getIntValue();
+    	BigInteger v1 = lhs.reduce().getIntValue();
+    	BigInteger v2 = rhs.reduce().getIntValue();
 		return new IConst(op.combine(v1, v2), lhs.getPrecision());
 	}
 
@@ -91,7 +94,7 @@ public class IExprBin extends IExpr implements ExprInterface {
 
     @Override
     public int hashCode() {
-        return (int)(op.combine(lhs.hashCode(), rhs.hashCode()));
+        return (op.combine(BigInteger.valueOf(lhs.hashCode()), BigInteger.valueOf(rhs.hashCode()))).intValue();
     }
 
     @Override

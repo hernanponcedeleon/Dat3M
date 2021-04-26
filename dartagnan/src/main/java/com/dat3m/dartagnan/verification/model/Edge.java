@@ -1,27 +1,19 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.utils.timeable.Timeable;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 // An untyped edge.
 // This is just a decoration for Tuple to use EventData instead of Event
 // Addtionally, it contains timing information used for refinement
 
-public class Edge implements Comparable<Edge>, Timeable {
+public class Edge implements Comparable<Edge> {
 
     private final EventData first;
     private final EventData second;
-    private Timestamp time;
-
-    public Edge(EventData first, EventData second, Timestamp time) {
-        this.first = first;
-        this.second = second;
-        this.time = time;
-    }
 
     public Edge(EventData first, EventData second) {
-        this (first, second, Timestamp.ZERO);
+        this.first = first;
+        this.second = second;
     }
 
     public EventData getFirst(){
@@ -40,11 +32,7 @@ public class Edge implements Comparable<Edge>, Timeable {
         return new Tuple(first.getEvent(), second.getEvent());
     }
 
-    public Timestamp getTime() {
-        return time;
-    }
-
-    public Edge getInverse() { return new Edge(second, first, time); }
+    public Edge getInverse() { return new Edge(second, first); }
 
     public boolean isCrossEdge() {
         return !first.getThread().equals(second.getThread());
@@ -63,18 +51,8 @@ public class Edge implements Comparable<Edge>, Timeable {
     }
 
     public boolean isLocEdge()  { return first.isMemoryEvent() && second.isMemoryEvent()
-            && first.getAccessedAddress() == second.getAccessedAddress(); }
+            && first.getAccessedAddress().compareTo(second.getAccessedAddress()) == 0; }
 
-    public void normalizeTime() {
-        if (time.isInitial())
-            time = Timestamp.ZERO;
-        else if (time.isInvalid())
-            time = Timestamp.INVALID;
-    }
-
-    public Edge withTimestamp(Timestamp t) {
-        return new Edge(first, second, t);
-    }
 
     @Override
     public int hashCode() {

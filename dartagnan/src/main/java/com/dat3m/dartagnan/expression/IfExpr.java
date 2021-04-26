@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -40,7 +42,7 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public long getIntValue(Event e, Model model, Context ctx) {
+	public BigInteger getIntValue(Event e, Model model, Context ctx) {
 		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}
 
@@ -66,7 +68,7 @@ public class IfExpr implements ExprInterface {
 
 	@Override
 	public IConst reduce() {
-		return guard.reduce().getIntValue() > 0 ? tbranch.reduce() : fbranch.reduce();
+		return guard.reduce().getIntValue().signum() == 1 ? tbranch.reduce() : fbranch.reduce();
 	}
 	
 	public BExpr getGuard() {

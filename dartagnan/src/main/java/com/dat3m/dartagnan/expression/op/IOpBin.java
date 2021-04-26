@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression.op;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -94,33 +95,34 @@ public enum IOpBin {
         throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
     }
 
-    public long combine(long a, long b){
+    public BigInteger combine(BigInteger a, BigInteger b){
         switch(this){
             case PLUS:
-                return a + b;
+                return a.add(b);
             case MINUS:
-                return a - b;
+                return a.subtract(b);
             case MULT:
-                return a * b;
+                return a.multiply(b);
             case DIV:
             case UDIV:
-                return a / b;
+                return a.divide(b);
             case MOD:
             case SREM:
             case UREM:
-                return a % b;
+                return a.mod(b);
             case AND:
-                return a & b;
+                return a.and(b);
             case OR:
-                return a | b;
+                return a.or(b);
             case XOR:
-                return a ^ b;
+                return a.xor(b);
             case L_SHIFT:
-                return a << b;
+                return a.shiftLeft(b.intValue());
             case R_SHIFT:
-                return a >>> b;
+            	// BigInteger do not support logical shift
+                throw new UnsupportedOperationException("Illegal operator " + this + " in IOpBin");
             case AR_SHIFT:
-                return a >> b;
+                return a.shiftRight(b.intValue());
         }
         throw new UnsupportedOperationException("Illegal operator " + this + " in IOpBin");
     }

@@ -8,6 +8,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -15,6 +18,8 @@ import com.google.common.collect.ImmutableList;
 import com.microsoft.z3.Context;
 
 public class EndAtomic extends Event {
+
+	private static final Logger logger = LogManager.getLogger(EndAtomic.class);
 
 	protected BeginAtomic begin;
 	protected BeginAtomic begin4Copy;
@@ -65,19 +70,14 @@ public class EndAtomic extends Event {
 		BranchEquivalence.Class startClass = eq.getEquivalenceClass(begin);
 		BranchEquivalence.Class endClass = eq.getEquivalenceClass(this);
 		if (!startClass.getReachableClasses().contains(endClass)) {
-			//TODO(TH): do we wan't it as an exception of maybe as a warning in the logger? 
-			throw new IllegalStateException("BeginAtomic" + begin.getCId() + "can't reach EndAtomic " + this.getCId());
+			logger.warn("BeginAtomic" + begin.getCId() + "can't reach EndAtomic " + this.getCId());
 		}
 
 		for (BranchEquivalence.Class c : startClass.getReachableClasses()) {
 			for (Event e : c) {
 				if (begin.getCId() <= e.getCId() && e.getCId() <= this.getCId()) {
 					if (!eq.isImplied(e, begin)) {
-						//TODO(TH): put it in an exception?
-						// TH: With our current semantics of bound-events, we can't produce an exception without
-						// breaking a lot of benchmarks.
-						// HP: maybe as a warning in the logger?
-						System.out.println(e + " is inside atomic block but can be reached from the outside");
+						logger.warn(e + " is inside atomic block but can be reached from the outside");
 					}
 					enclosedEvents.add(e);
 					e.addFilters(RMW);

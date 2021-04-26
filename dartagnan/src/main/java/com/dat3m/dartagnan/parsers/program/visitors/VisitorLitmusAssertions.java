@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.asserts.*;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -74,7 +76,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     private ExprInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx){
         if(ctx.constant() != null){
-            return new IConst(Integer.parseInt(ctx.constant().getText()), -1);
+            return new IConst(new BigInteger(ctx.constant().getText()), -1);
         }
         if(ctx.threadId() != null){
             return programBuilder.getOrErrorRegister(ctx.threadId().id, ctx.varName().getText());

@@ -46,16 +46,6 @@ public class Acyclic extends Axiom {
         DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
         TupleSet result = new TupleSet();
         for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
-            // ====== Singleton SCC ======
-            if (scc.size() == 1) {
-                Event e = scc.stream().findAny().get().getContent();
-                Tuple t = new Tuple(e, e);
-                if (relMaxTuple.contains(t)) {
-                    result.add(t);
-                }
-                continue;
-            }
-            // ====== General SCC ======
             for (DependencyGraph<Event>.Node node1 : scc) {
                 Event e1 = node1.getContent();
                 for (DependencyGraph<Event>.Node node2 : scc) {

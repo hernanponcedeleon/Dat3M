@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.pthread;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
 
+import java.math.BigInteger;
 import java.util.LinkedList;
 
 import com.dat3m.dartagnan.expression.IConst;
@@ -54,7 +55,7 @@ public class Create extends Event {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
-        Store store = new Store(address, new IConst(1, -1), SC, cLine);
+        Store store = new Store(address, new IConst(BigInteger.ONE, -1), SC, cLine);
         store.addFilters(PTHREAD);
         events.add(store);
 

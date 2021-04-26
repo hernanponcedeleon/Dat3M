@@ -74,7 +74,6 @@ public class Base {
         logger.info("Starting first solver.check()");
         switch(s1.check()) {
         case UNKNOWN:
-        	//TODO(HP): "canceled" or "timeout"?
         	res = s1.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
         	break;
 		case SATISFIABLE:
@@ -82,7 +81,6 @@ public class Base {
             logger.info("Starting second solver.check()");
 			switch(s1.check()) {
 	        case UNKNOWN:
-	        	//TODO(HP): "canceled" or "timeout"?
 	        	res = s1.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
 	        	break;
 			case SATISFIABLE:
@@ -144,25 +142,10 @@ public class Base {
         logger.info("Starting first solver.check()");
         switch(solver.check()) {
         case UNKNOWN:
-        	//TODO(HP): "canceled" or "timeout"?
         	res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
         	break;
 		case SATISFIABLE:
 			res = FAIL;
-        	/*solver.add(task.getProgram().encodeNoBoundEventExec(ctx));
-            logger.info("Starting second solver.check()");
-        	switch(solver.check()) {
-            case UNKNOWN:
-            	//TODO(HP): "canceled" or "timeout"?
-            	res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
-            	break;
-    		case SATISFIABLE:
-    			res = FAIL;
-            	break;
-    		case UNSATISFIABLE:
-    			res = Result.UNKNOWN;
-            	break;
-        	}*/
         	break;
 		case UNSATISFIABLE:
         	solver.pop();
@@ -213,7 +196,6 @@ public class Base {
 		logger.info("Starting first solver.check()");
 		switch(solver.check(task.encodeAssertions(ctx))) {
 			case UNKNOWN:
-				//TODO(HP): "canceled" or "timeout"?
 				res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
 				break;
 			case SATISFIABLE:
@@ -221,7 +203,6 @@ public class Base {
 				logger.info("Starting second solver.check()");
 				switch(solver.check()) {
 					case UNKNOWN:
-						//TODO(HP): "canceled" or "timeout"?
 						res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
 						break;
 					case SATISFIABLE:

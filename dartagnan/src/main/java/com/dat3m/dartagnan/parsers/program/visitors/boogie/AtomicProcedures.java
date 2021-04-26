@@ -67,7 +67,7 @@ public class AtomicProcedures {
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 2) {
-			mo = intToMo((int)((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicStore(add, value, mo));
 	}
@@ -77,7 +77,7 @@ public class AtomicProcedures {
 		IExpr add = (IExpr)ctx.call_params().exprs().expr().get(0).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 1) {
-			mo = intToMo((int)((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getIntValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(1).accept(visitor)).getIntValue().intValue());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicLoad(reg, add, mo));
 	}
@@ -102,7 +102,7 @@ public class AtomicProcedures {
 			throw new RuntimeException("AtomicFetchOp operation cannot be handled");
 		}
 		if(ctx.call_params().exprs().expr().size() > 2) {
-			mo = intToMo((int)((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicFetchOp(reg, add, value, op, mo));
 	}
@@ -113,13 +113,13 @@ public class AtomicProcedures {
 		ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr().get(1).accept(visitor);
 		String mo = null;
 		if(ctx.call_params().exprs().expr().size() > 2) {
-			mo = intToMo((int)((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue());
+			mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(2).accept(visitor)).getIntValue().intValue());
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicXchg(reg, add, value, mo));
 	}
 
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {
-		String mo = intToMo((int)((IConst)ctx.call_params().exprs().expr().get(0).accept(visitor)).getIntValue());
+		String mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(0).accept(visitor)).getIntValue().intValue());
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicThreadFence(mo));
 	}
 }

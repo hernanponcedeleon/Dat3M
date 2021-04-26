@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -56,7 +57,7 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
             RMWLoad load = new RMWLoad(dummy, address, Mo.RELAXED);
             Local local1 = new Local(dummy, new IExprBin(dummy, op, value));
             RMWStore store = new RMWStore(load, address, dummy, Mo.RELAXED);
-            Local local2 = new Local(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(0, resultRegister.getPrecision())));
+            Local local2 = new Local(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(BigInteger.ZERO, resultRegister.getPrecision())));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, local1, store, local2));
             events.addFirst(new Fence("Mb"));

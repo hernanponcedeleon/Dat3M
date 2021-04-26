@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -115,14 +116,14 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = (int)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getIntValue();
+			size = ((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getIntValue().intValue();
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 
 			tmp = tmp.substring(tmp.lastIndexOf('(')+1);
 			size = Integer.parseInt(tmp);			
 		}
-		List<IConst> values = Collections.nCopies(size, new IConst(0, -1));
+		List<IConst> values = Collections.nCopies(size, new IConst(BigInteger.ZERO, -1));
 		String ptr = ctx.call_params().Ident(0).getText();
 		Register start = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ptr);
 		// Several threads can use the same pointer name but when using addDeclarationArray, 
@@ -137,7 +138,7 @@ public class StdProcedures {
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, -1);
     	visitor.assertionIndex++;
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue() == 1) {
+    	if(expr instanceof IConst && ((IConst)expr).getIntValue().compareTo(BigInteger.ONE) == 0) {
     		return;
     	}
     	Local event = new Local(ass, expr);

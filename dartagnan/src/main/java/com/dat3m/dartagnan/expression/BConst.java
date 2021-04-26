@@ -48,7 +48,7 @@ public class BConst extends BExpr implements ExprInterface {
 
 	@Override
 	public IConst reduce() {
-		return new IConst(value ? 1 : 0, -1);
+		return value ? IConst.ONE : IConst.ZERO;
 	}
 	
 	public boolean getValue() {

@@ -20,6 +20,7 @@ import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
 import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.SMACKPREDICATES;
 import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.smackPredicate;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -751,9 +752,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			// This improves the blow-up
 			if(initMode && !(value instanceof Address)) {
 				ExprInterface lhs = address;
-				long rhs = 0;
+				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs + ((IExprBin)lhs).getRHS().reduce().getIntValue();
+					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				
@@ -762,7 +763,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 					text = split[split.length - 1];
 					text = text.substring(text.indexOf("(")+1, text.indexOf(","));
 				}
-				if(rhs != 0) {
+				if(!rhs.equals(BigInteger.ZERO)) {
 					text += "(" + rhs + ")";
 				}
 				programBuilder.initLocEqConst(text, value.reduce());

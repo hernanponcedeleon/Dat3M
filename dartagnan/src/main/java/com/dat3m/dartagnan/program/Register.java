@@ -5,6 +5,9 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -89,8 +92,8 @@ public class Register extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public long getIntValue(Event e, Model model, Context ctx){
-		return Long.parseLong(model.getConstInterp(toZ3Int(e, ctx)).toString());
+	public BigInteger getIntValue(Event e, Model model, Context ctx){
+		return new BigInteger(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
 	@Override

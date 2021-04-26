@@ -18,17 +18,14 @@ public class IConst extends IExpr implements ExprInterface {
 	// However, it is impossible to define general constants, we need a function that produces
 	// a constant for each precision degree
 	// HP: agree. I assume you wanted this to improve code readability, but having one constant per precition won't help.
-	public static IConst ZERO = new IConst(0,0 );
-	public static IConst ONE = new IConst(1, 0);
+	public static IConst ZERO = new IConst(BigInteger.ZERO, -1);
+	public static IConst ONE = new IConst(BigInteger.ONE, -1);
 
-	// The theory of integers supports numbers which do not  fit in int
-	//TODO(TH): We should use BigInteger everywhere now then, e.g. as the return value of getIntValue
-	// TH: Yes we should.
 	private final BigInteger value;
 	protected final int precision;
 	
-	public IConst(long value, int precision) {
-		this.value = BigInteger.valueOf(value);
+	public IConst(BigInteger value, int precision) {
+		this.value = value;
 		this.precision = precision;
 	}
 
@@ -58,12 +55,12 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public long getIntValue(Event e, Model model, Context ctx){
-		return value.longValue();
+	public BigInteger getIntValue(Event e, Model model, Context ctx){
+		return value;
 	}
 
-	public long getIntValue() {
-		return value.longValue();
+	public BigInteger getIntValue() {
+		return value;
 	}
 
     public Expr toZ3Int(Context ctx) {

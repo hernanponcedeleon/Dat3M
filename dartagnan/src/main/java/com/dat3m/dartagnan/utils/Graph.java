@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.Init;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Location;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,7 +38,7 @@ public class Graph {
     private final Context ctx;
 
     private StringBuilder buffer;
-    private Map<Long, Location> mapAddressLocation;
+    private Map<BigInteger, Location> mapAddressLocation;
     private final Set<String> relations = new HashSet<>();
 
     private final String L1 = "  ";
@@ -124,10 +125,10 @@ public class Graph {
                         String label = e.label();
                         if(e instanceof MemEvent) {
                             Location location = mapAddressLocation.get(((MemEvent) e).getAddress().getIntValue(e, model, ctx));
-                            long value;
+                            BigInteger value;
                             if(e instanceof Load){
                                 Register r = ((Load) e).getResultRegister();
-                                value = Integer.parseInt(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());
+                                value = new BigInteger(model.getConstInterp(r.toZ3IntResult(e, ctx)).toString());
                             } else {
                                 value = ((MemEvent) e).getMemValue().getIntValue(e, model, ctx);
                             }
@@ -167,16 +168,16 @@ public class Graph {
         StringBuilder sb = new StringBuilder();
         String edge = " " + getEdgeDef("co") + ";\n";
 
-        Map<Long, Set<Event>> mapAddressEvent = new HashMap<>();
+        Map<BigInteger, Set<Event>> mapAddressEvent = new HashMap<>();
         for(Event e : program.getCache().getEvents(FilterBasic.get(EType.WRITE))){
             if(model.getConstInterp(e.exec()).isTrue()){
-                long address = ((MemEvent)e).getAddress().getIntValue(e, model, ctx);
+            	BigInteger address = ((MemEvent)e).getAddress().getIntValue(e, model, ctx);
                 mapAddressEvent.putIfAbsent(address, new HashSet<>());
                 mapAddressEvent.get(address).add(e);
             }
         }
 
-        for(long address : mapAddressEvent.keySet()){
+        for(BigInteger address : mapAddressEvent.keySet()){
             Map<Event, Integer> map = new HashMap<>();
             for(Event e2 : mapAddressEvent.get(address)){
                 map.put(e2, 0);
