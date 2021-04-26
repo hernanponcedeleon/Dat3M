@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.witness;
 import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static java.lang.Integer.parseInt;
 
@@ -76,7 +77,7 @@ public class WitnessGraph extends ElemWithAttributes {
 		BoolExpr enc = ctx.mkTrue();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(HBPOS.toString())) {
+			if(hasAttributed(PRODUCER.toString()) && edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(HBPOS.toString())) {
 				Event ev = program.getEvents().stream().filter(e -> e.getCId() == parseInt(edge.getAttributed(EVENTID.toString()))).findFirst().get();
 				enc = ctx.mkAnd(enc, ctx.mkEq(intVar("hb", ev, ctx), ctx.mkInt(parseInt(edge.getAttributed(HBPOS.toString())))));
 			}

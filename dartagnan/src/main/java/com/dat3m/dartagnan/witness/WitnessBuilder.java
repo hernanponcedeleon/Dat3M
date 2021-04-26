@@ -47,24 +47,27 @@ public class WitnessBuilder {
 	private Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
 	private static List<String> graphAttr = Arrays.asList(
-			"witness-type",
-			"sourcecodelang",
+			"architecture",
+			"creationtime",
 			"producer",
-			"specification",
 			"programfile",
 			"programhash",
-			"architecture",
-			"creationtime");
+			"sourcecodelang",
+			"specification",
+			"unroll-bound",
+			"witness-type");
 
 	private static List<String> nodeAttr = Arrays.asList(
 			"entry",
 			"violation");
 
 	private static List<String> edgeAttr = Arrays.asList(
-			"startline",
+			"createThread",
 			"enterFunction",
+			"eventId",
+			"hbPos",
 			"threadId",
-			"createThread");
+			"startline");
 
 	public WitnessBuilder(Program program, Context ctx, Solver solver, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
@@ -131,7 +134,7 @@ public class WitnessBuilder {
 		List<Event> execution = getSCExecutionOrder(ctx, solver.getModel());
 		for(int i = 0; i < execution.size(); i++) {
 			Event e = execution.get(i);
-			if(i+1 < execution.size() && e.getCLine() == execution.get(i+1).getCLine()) {
+			if(i+1 < execution.size() && e.getCLine() == execution.get(i+1).getCLine() && e.getThread().equals(execution.get(i+1).getThread())) {
 				continue;
 			}
 			
