@@ -6,6 +6,9 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -39,8 +42,8 @@ public class IExprUn extends IExpr {
 	}
 
 	@Override
-	public long getIntValue(Event e, Model model, Context ctx) {
-        return -(b.getIntValue(e, model, ctx));
+	public BigInteger getIntValue(Event e, Model model, Context ctx) {
+        return b.getIntValue(e, model, ctx).negate();
 	}
 
 	@Override
@@ -61,7 +64,7 @@ public class IExprUn extends IExpr {
 	public IConst reduce() {
         switch(op){
 			case MINUS:
-				return new IConst(-b.reduce().getIntValue(), b.getPrecision());
+				return new IConst(b.reduce().getIntValue().negate(), b.getPrecision());
 			case BV2UINT:
 			case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
 			case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:

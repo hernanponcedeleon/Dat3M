@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression.op;
 
+import java.math.BigInteger;
+
 import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
@@ -58,24 +60,24 @@ public enum COpBin {
         throw new UnsupportedOperationException("Encoding of not supported for COpBin " + this);
     }
 
-    public boolean combine(long a, long b){
+    public boolean combine(BigInteger a, BigInteger b){
         switch(this){
             case EQ:
-                return a == b;
+                return a.compareTo(b) == 0;
             case NEQ:
-                return a != b;
+                return a.compareTo(b) != 0;
             case LT:
             case ULT:
-                return a < b;
+                return a.compareTo(b) == -1;
             case LTE:
             case ULTE:
-                return a <= b;
+                return a.compareTo(b) <= 0;
             case GT:
             case UGT:
-                return a > b;
+                return a.compareTo(b) == 1;
             case GTE:
             case UGTE:
-                return a >= b;
+                return a.compareTo(b) >= 0;
         }
         throw new UnsupportedOperationException("Illegal operator " + this + " in COpBin");
     }

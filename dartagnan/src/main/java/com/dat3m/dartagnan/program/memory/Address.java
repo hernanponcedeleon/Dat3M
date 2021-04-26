@@ -6,6 +6,9 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
+
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
@@ -16,7 +19,7 @@ public class Address extends IConst implements ExprInterface {
     private final int index;
 
     Address(int index, int precision){
-        super(index, precision);
+        super(BigInteger.valueOf(index), precision);
         this.index = index;
     }
 
@@ -71,8 +74,8 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public long getIntValue(Event e, Model model, Context ctx){
-        return Integer.parseInt(model.getConstInterp(toZ3Int(ctx)).toString());
+    public BigInteger getIntValue(Event e, Model model, Context ctx){
+        return new BigInteger(model.getConstInterp(toZ3Int(ctx)).toString());
     }
 
     @Override

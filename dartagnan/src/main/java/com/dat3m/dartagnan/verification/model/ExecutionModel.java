@@ -16,6 +16,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
+import java.math.BigInteger;
 import java.util.*;
 
 /*
@@ -41,9 +42,9 @@ public class ExecutionModel {
     private final Map<EventData, Set<EventData>> coherenceMap;
     private final Map<EventData, Set<EventData>> writeReadsMap;
     private final Map<String, Set<EventData>> fenceMap;
-    private final Map<Long, Set<EventData>> addressReadsMap;
-    private final Map<Long, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
-    private final Map<Long, EventData> addressInitMap;
+    private final Map<BigInteger, Set<EventData>> addressReadsMap;
+    private final Map<BigInteger, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
+    private final Map<BigInteger, EventData> addressInitMap;
     //TODO: Note, we could merge the
     // three above maps into a single one that holds writes, reads and init writes.
 
@@ -55,9 +56,9 @@ public class ExecutionModel {
     private Map<EventData, Set<EventData>> coherenceMapView;
     private Map<EventData, Set<EventData>> writeReadsMapView;
     private Map<String, Set<EventData>> fenceMapView;
-    private Map<Long, Set<EventData>> addressReadsMapView;
-    private Map<Long, Set<EventData>> addressWritesMapView;
-    private Map<Long, EventData> addressInitMapView;
+    private Map<BigInteger, Set<EventData>> addressReadsMapView;
+    private Map<BigInteger, Set<EventData>> addressWritesMapView;
+    private Map<BigInteger, EventData> addressInitMapView;
 
     //========================== Construction =========================
 
@@ -147,15 +148,15 @@ public class ExecutionModel {
         return fenceMapView;
     }
     
-    public Map<Long, Set<EventData>> getAddressReadsMap() {
+    public Map<BigInteger, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
     }
     
-    public Map<Long, Set<EventData>> getAddressWritesMap() {
+    public Map<BigInteger, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
     
-    public Map<Long, EventData> getAddressInitMap() {
+    public Map<BigInteger, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
 
@@ -258,7 +259,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Long address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
+        	BigInteger address = ((MemEvent) e).getAddress().getIntValue(e, model, context);
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
                 addressReadsMap.put(address, new HashSet<>());
@@ -266,7 +267,7 @@ public class ExecutionModel {
             }
 
             if (data.isRead()) {
-                data.setValue(Long.parseLong(model.getConstInterp(((RegWriter)e).getResultRegisterExpr()).toString()));
+                data.setValue(new BigInteger(model.getConstInterp(((RegWriter)e).getResultRegisterExpr()).toString()));
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
                 data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
@@ -303,8 +304,8 @@ public class ExecutionModel {
             rf = getMemoryModel().getRelationRepository().getRelation("rf");
         }
 
-        for (Map.Entry<Long, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
-            Long address = addressedReads.getKey();
+        for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
+        	BigInteger address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
                     BoolExpr rfExpr = rf.getSMTVar(write.getEvent(), read.getEvent(), context);
@@ -334,8 +335,8 @@ public class ExecutionModel {
             co = getMemoryModel().getRelationRepository().getRelation("co");
         }
 
-        for (Map.Entry<Long, Set<EventData>> addressedWrites : addressWritesMap.entrySet()) {
-            Long address = addressedWrites.getKey();
+        for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : addressWritesMap.entrySet()) {
+        	BigInteger address = addressedWrites.getKey();
             for (EventData w1 : addressedWrites.getValue()) {
                 coherenceMap.put(w1, new HashSet<>());
                 for (EventData w2 : addressWritesMap.get(address)) {

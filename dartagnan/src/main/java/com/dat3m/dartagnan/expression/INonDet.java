@@ -13,6 +13,8 @@ import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
 import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
 import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
 
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -51,8 +53,8 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public long getIntValue(Event e, Model model, Context ctx) {
-		return Long.parseLong(model.getConstInterp(toZ3Int(e, ctx)).toString());
+	public BigInteger getIntValue(Event e, Model model, Context ctx) {
+		return new BigInteger(model.getConstInterp(toZ3Int(e, ctx)).toString());
 	}
 
 	@Override

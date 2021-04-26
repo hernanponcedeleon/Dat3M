@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -94,7 +95,7 @@ public class SvcompProcedures {
 	}
 
 	private static void __VERIFIER_fence(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	int index = (int)((IConst)ctx.call_params().exprs().accept(visitor)).getIntValue();
+    	int index = ((IConst)ctx.call_params().exprs().accept(visitor)).getIntValue().intValue();
     	if(index >= FENCES.size()) {
     		throw new UnsupportedOperationException(ctx.getText() + " cannot be handled");
     	}
@@ -105,7 +106,7 @@ public class SvcompProcedures {
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
     	Register ass = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, "assert_" + visitor.assertionIndex, expr.getPrecision());
     	visitor.assertionIndex++;
-    	if(expr instanceof IConst && ((IConst)expr).getIntValue() == 1) {
+    	if(expr instanceof IConst && ((IConst)expr).getIntValue().equals(BigInteger.ONE)) {
     		return;
     	}
     	Local event = new Local(ass, expr);
@@ -119,8 +120,8 @@ public class SvcompProcedures {
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		LinkedList<Event> events = new LinkedList<>();
         events.add(new Load(register, lockAddress, null));
-        events.add(new CondJump(new Atom(register, NEQ, new IConst(begin ? 0 : 1, -1)), label));
-        events.add(new Store(lockAddress, new IConst(begin ? 1 : 0, -1), null));
+        events.add(new CondJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
+        events.add(new Store(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
         for(Event e : events) {
         	e.addFilters(EType.LOCK, EType.RMW);
         	visitor.programBuilder.addChild(visitor.threadCount, e);

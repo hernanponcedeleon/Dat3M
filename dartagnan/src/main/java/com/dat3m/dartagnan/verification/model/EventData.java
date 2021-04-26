@@ -5,8 +5,9 @@ import com.dat3m.dartagnan.program.event.*;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.EType.EXCL;
 import static com.dat3m.dartagnan.program.utils.EType.*;
 
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.utils.EType;
 
 
 //EventData represents all data associated with an event in a concrete model.
@@ -16,8 +17,8 @@ public class EventData implements Comparable<EventData> {
     private EventData readFrom;
     private int id = -1;
     private int localId = -1;
-    private long value;
-    private long accessedAddress;
+    private BigInteger value;
+    private BigInteger accessedAddress;
     private int importance;
     private boolean wasExecuted;
 
@@ -45,19 +46,19 @@ public class EventData implements Comparable<EventData> {
     	localId = newId;
     }
 
-    public long getAccessedAddress() {
+    public BigInteger getAccessedAddress() {
     	return accessedAddress;
     }
     
-    void setAccessedAddress(long address) {
+    void setAccessedAddress(BigInteger address) {
     	accessedAddress = address;
     }
 
-    public long getValue() {
+    public BigInteger getValue() {
     	return value;
     }
     
-    void setValue(long val) {
+    void setValue(BigInteger val) {
     	value = val;
     }
 

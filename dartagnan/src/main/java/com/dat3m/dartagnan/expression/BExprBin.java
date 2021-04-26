@@ -8,6 +8,9 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Model;
+
+import java.math.BigInteger;
+
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -70,13 +73,13 @@ public class BExprBin extends BExpr {
 
     @Override
 	public IConst reduce() {
-		long v1 = b1.reduce().getIntValue();
-		long v2 = b2.reduce().getIntValue();
+    	BigInteger v1 = b1.reduce().getIntValue();
+    	BigInteger v2 = b2.reduce().getIntValue();
 		switch(op) {
         case AND:
-        	return new IConst(v1 == 1 ? v2 : 0, -1);
+        	return new IConst(v1.compareTo(BigInteger.ONE) == 0 ? v2 : BigInteger.ZERO, -1);
         case OR:
-        	return new IConst(v1 == 1 ? 1 : v2, -1);
+        	return new IConst(v1.compareTo(BigInteger.ONE) == 0 ? BigInteger.ONE : v2, -1);
         }
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}

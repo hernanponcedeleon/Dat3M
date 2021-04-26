@@ -15,6 +15,9 @@ import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.arch.tso.event.Xchg;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
+
+import java.math.BigInteger;
+
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusX86
@@ -60,13 +63,13 @@ public class VisitorLitmusX86
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
@@ -111,7 +114,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
+        IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
@@ -125,7 +128,7 @@ public class VisitorLitmusX86
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         Location location = programBuilder.getOrCreateLocation(ctx.location().getText(), -1);
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
+        IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Store(location.getAddress(), constant, "_rx"));
     }
 

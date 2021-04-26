@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.pthread;
 
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
+import java.math.BigInteger;
 import java.util.LinkedList;
 
 import com.dat3m.dartagnan.expression.IConst;
@@ -44,7 +45,7 @@ public class End extends Event {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
-        Store store = new Store(address, new IConst(0, -1), SC);
+        Store store = new Store(address, new IConst(BigInteger.ZERO, -1), SC);
         events.add(store);
 
         switch (target){

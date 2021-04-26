@@ -13,6 +13,9 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.google.common.collect.ImmutableSet;
+
+import java.math.BigInteger;
+
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusPPC
@@ -58,13 +61,13 @@ public class VisitorLitmusPPC
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPPCParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
+        programBuilder.initLocEqConst(ctx.location().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPPCParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(Integer.parseInt(ctx.constant().getText()), -1));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IConst(new BigInteger(ctx.constant().getText()), -1));
         return null;
     }
 
@@ -109,7 +112,7 @@ public class VisitorLitmusPPC
     @Override
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
+        IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Local(register, constant));
     }
 
@@ -150,7 +153,7 @@ public class VisitorLitmusPPC
     public Object visitAddi(LitmusPPCParser.AddiContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        IConst constant = new IConst(Integer.parseInt(ctx.constant().getText()), -1);
+        IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
         return programBuilder.addChild(mainThread, new Local(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
     }
 
