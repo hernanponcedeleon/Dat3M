@@ -149,20 +149,6 @@ public class Base {
         	break;
 		case SATISFIABLE:
 			res = FAIL;
-        	/*solver.add(task.getProgram().encodeNoBoundEventExec(ctx));
-            logger.info("Starting second solver.check()");
-        	switch(solver.check()) {
-            case UNKNOWN:
-            	//TODO(HP): "canceled" or "timeout"?
-            	res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
-            	break;
-    		case SATISFIABLE:
-    			res = FAIL;
-            	break;
-    		case UNSATISFIABLE:
-    			res = Result.UNKNOWN;
-            	break;
-        	}*/
         	break;
 		case UNSATISFIABLE:
         	solver.pop();

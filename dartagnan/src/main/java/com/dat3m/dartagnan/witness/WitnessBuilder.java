@@ -6,7 +6,6 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;

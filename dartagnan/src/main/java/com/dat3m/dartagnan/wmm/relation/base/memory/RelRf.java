@@ -166,35 +166,6 @@ public class RelRf extends Relation {
         return ctx.mkAnd(atMostOne, atLeastOne);
     }
 
-    // An alternate/dual version to encodeEdgeSeq
-    //TODO(TH): do we plan to use this somewhere?
-    // Answer(TH): it was just an alternative version for testing.
-    // There is practically no performance difference between this and <encodeEdgeSeq>
-    // We can use the nicer looking one and delete the other
-    private BoolExpr encodeEdgeSeqAlt(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
-        int num = edges.size();
-        int readId = read.getCId();
-
-        BoolExpr lastSeqVar = mkSeqVar(readId, 0, ctx);
-        BoolExpr newSeqVar = lastSeqVar;
-        BoolExpr enc = ctx.mkEq(lastSeqVar, ctx.mkTrue());
-
-        for(int i = 0; i < num - 1; i++){
-            newSeqVar = mkSeqVar(readId, i + 1, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkImplies(newSeqVar, lastSeqVar));
-            enc = ctx.mkAnd(enc, ctx.mkEq(edges.get(i), ctx.mkAnd(lastSeqVar, ctx.mkNot(newSeqVar))));
-            lastSeqVar = newSeqVar;
-        }
-        enc = ctx.mkAnd(enc, ctx.mkEq(newSeqVar,edges.get(edges.size() - 1)));
-
-        if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
-            enc = ctx.mkImplies(ctx.mkAnd(read.exec(), isMemInit), enc);
-        } else {
-            enc = ctx.mkImplies(read.exec(), enc);
-        }
-        return enc;
-    }
-
     private BoolExpr mkSeqVar(int readId, int i, Context ctx) {
         return (BoolExpr) ctx.mkConst("s(" + term + ",E" + readId + "," + i + ")", ctx.mkBoolSort());
     }
