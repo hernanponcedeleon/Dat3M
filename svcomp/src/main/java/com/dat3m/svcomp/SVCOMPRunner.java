@@ -87,6 +87,7 @@ public class SVCOMPRunner {
 				proc.waitFor();
 				while(read.ready()) {
 					output = read.readLine();
+					System.out.println(output);
 				}
 				if(proc.exitValue() == 1) {
 					BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
@@ -102,7 +103,6 @@ public class SVCOMPRunner {
 			bound++;
 	        tmp = new SVCOMPSanitizer(file).run(bound);
 		}
-		System.out.println(output);
 
         tmp.delete();
         return;

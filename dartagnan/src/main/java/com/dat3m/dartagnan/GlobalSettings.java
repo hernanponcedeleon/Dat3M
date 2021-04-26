@@ -3,6 +3,8 @@ package com.dat3m.dartagnan;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.microsoft.z3.Version;
+
 public class GlobalSettings {
 	
 	private static final Logger logger = LogManager.getLogger(GlobalSettings.class);
@@ -34,6 +36,7 @@ public class GlobalSettings {
     public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
     public static void LogGlobalSettings() {
+    	logger.info("Z3 version: " + Version.getFullVersion());
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
     	logger.info("ASSUME_LOCAL_CONSISTENCY: " + ASSUME_LOCAL_CONSISTENCY);
     	logger.info("PERFORM_ATOMIC_BLOCK_OPTIMIZATION: " + PERFORM_ATOMIC_BLOCK_OPTIMIZATION);
