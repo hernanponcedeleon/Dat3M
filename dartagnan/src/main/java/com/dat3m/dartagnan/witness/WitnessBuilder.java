@@ -9,6 +9,15 @@ import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.STARTLINE;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.THREADID;
+import static com.dat3m.dartagnan.witness.GraphAttributes.ARCHITECTURE;
+import static com.dat3m.dartagnan.witness.GraphAttributes.CREATIONTIME;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMHASH;
+import static com.dat3m.dartagnan.witness.GraphAttributes.SOURCECODELANG;
+import static com.dat3m.dartagnan.witness.GraphAttributes.SPECIFICATION;
+import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
+import static com.dat3m.dartagnan.witness.GraphAttributes.WITNESSTYPE;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static java.lang.String.valueOf;
 
@@ -46,32 +55,9 @@ public class WitnessBuilder {
 	
 	private Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
-	private static List<String> graphAttr = Arrays.asList(
-			"architecture",
-			"creationtime",
-			"producer",
-			"programfile",
-			"programhash",
-			"sourcecodelang",
-			"specification",
-			"unroll-bound",
-			"witness-type");
-
-	private static List<String> nodeAttr = Arrays.asList(
-			"entry",
-			"violation");
-
-	private static List<String> edgeAttr = Arrays.asList(
-			"createThread",
-			"enterFunction",
-			"eventId",
-			"hbPos",
-			"threadId",
-			"startline");
-
 	public WitnessBuilder(Program program, Context ctx, Solver solver, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
-		this.graph.addAttribute("unroll-bound", String.valueOf(options.getSettings().getBound()));
+		this.graph.addAttribute(UNROLLBOUND.toString(), String.valueOf(options.getSettings().getBound()));
 		this.program = program;
 		this.ctx = ctx;
 		this.solver = solver;
@@ -85,9 +71,9 @@ public class WitnessBuilder {
 			FileWriter fw = new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
-			for(String attr : graphAttr) {fw.write("<key attr.name=\"" + attr + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
-			for(String attr : nodeAttr) {fw.write("<key attr.name=\"" + attr + "\" attr.type=\"boolean\" for=\"node\" id=\"" + attr + "\"/>\n");}
-			for(String attr : edgeAttr) {fw.write("<key attr.name=\"" + attr + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");}
+			for(GraphAttributes attr : GraphAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
+			for(NodeAttributes attr : NodeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"boolean\" for=\"node\" id=\"" + attr + "\"/>\n");}
+			for(EdgeAttributes attr : EdgeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");}
 			fw.write(graph.toXML());
 			fw.write("</graphml>\n");
 			fw.close();
@@ -99,17 +85,17 @@ public class WitnessBuilder {
 
 	private void buildGraph() {
 		populateMap();
-		graph.addAttribute("witness-type", type + "_witness");
-		graph.addAttribute("sourcecodelang", "C");
-		graph.addAttribute("producer", "Dartagnan");
-		graph.addAttribute("specification", "CHECK( init(main()), LTL(G ! call(reach_error())))");
-		graph.addAttribute("programfile", path);
-		graph.addAttribute("architecture", "32bit");
-		graph.addAttribute("programhash", checksum());
+		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
+		graph.addAttribute(SOURCECODELANG.toString(), "C");
+		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
+		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
+		graph.addAttribute(PROGRAMFILE.toString(), path);
+		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
+		graph.addAttribute(PROGRAMHASH.toString(), checksum());
 		
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
-		graph.addAttribute("creationtime", df.format(new Date()));
+		graph.addAttribute(CREATIONTIME.toString(), df.format(new Date()));
 
 		Node v0 = new Node("N0");
 		v0.addAttribute("entry", "true");

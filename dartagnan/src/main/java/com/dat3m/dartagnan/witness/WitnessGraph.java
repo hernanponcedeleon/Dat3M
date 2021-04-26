@@ -77,16 +77,20 @@ public class WitnessGraph extends ElemWithAttributes {
 		BoolExpr enc = ctx.mkTrue();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			if(hasAttributed(PRODUCER.toString()) && edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(HBPOS.toString())) {
+			if(getAttributed(PRODUCER.toString()).equals("Dartagnan") 
+					&& edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(HBPOS.toString())) {
 				Event ev = program.getEvents().stream().filter(e -> e.getCId() == parseInt(edge.getAttributed(EVENTID.toString()))).findFirst().get();
 				enc = ctx.mkAnd(enc, ctx.mkEq(intVar("hb", ev, ctx), ctx.mkInt(parseInt(edge.getAttributed(HBPOS.toString())))));
-			}
-			List<Event> events = program.getEvents().stream().filter(e -> e.hasFilter(MEMORY) && e.getCLine() == edge.getCline()).collect(Collectors.toList());				
-			if(!previous.isEmpty() && !events.isEmpty() && previous.get(0).getCLine() != edge.getCline()) {
-				enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> Utils.edge("hb", p.get(0), p.get(1), ctx)).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
-			}
-			if(!events.isEmpty()) {
-				previous = events;				
+			} 
+			if(!getAttributed(PRODUCER.toString()).equals("Dartagnan")) {
+				//TODO(HP): there seem to be problems with this in e.g. race-2-2
+				List<Event> events = program.getEvents().stream().filter(e -> e.hasFilter(MEMORY) && e.getCLine() == edge.getCline()).collect(Collectors.toList());				
+				if(!previous.isEmpty() && !events.isEmpty() && previous.get(0).getCLine() != edge.getCline()) {
+					enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> Utils.edge("hb", p.get(0), p.get(1), ctx)).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
+				}
+				if(!events.isEmpty()) {
+					previous = events;				
+				}				
 			}
 		}
 		return enc;
