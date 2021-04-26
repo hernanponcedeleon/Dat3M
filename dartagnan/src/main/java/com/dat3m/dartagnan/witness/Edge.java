@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.witness;
 
 public class Edge extends ElemWithAttributes implements Comparable<Edge> {
 
-	private Node source;
-	private Node target;
+	private final Node source;
+	private final Node target;
 	
 	public Edge(Node s, Node t) {
 		this.source = s;
@@ -19,7 +19,7 @@ public class Edge extends ElemWithAttributes implements Comparable<Edge> {
 	}
 	
 	public boolean hasCline() {
-		return attributes.keySet().contains("startline");
+		return attributes.containsKey("startline");
 	}
 	
 	public Integer getCline() {
@@ -33,7 +33,7 @@ public class Edge extends ElemWithAttributes implements Comparable<Edge> {
 	
 	public String toXML() {
 		StringBuilder str = new StringBuilder();
-		str.append("  <edge source=\"" + source.getId() + "\" target=\"" + target.getId() + "\">\n");
+		str.append("  <edge source=\"").append(source.getId()).append("\" target=\"").append(target.getId()).append("\">\n");
 		for(String attr : attributes.keySet()) {
 			str.append("    <data key=\"").append(attr).append("\">").append(attributes.get(attr)).append("</data>\n");
 		}

@@ -85,13 +85,13 @@ public class Atom extends BExpr implements ExprInterface {
             return new IConst(v1.compareTo(v2) != 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
         case LT:
         case ULT:
-            return new IConst(v1.compareTo(v2) == -1 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+            return new IConst(v1.compareTo(v2) < 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
         case LTE:
         case ULTE:
             return new IConst(v1.compareTo(v2) <= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
         case GT:
         case UGT:
-            return new IConst(v1.compareTo(v2) == 1 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+            return new IConst(v1.compareTo(v2) > 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
         case GTE:
         case UGTE:
             return new IConst(v1.compareTo(v2) >= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());

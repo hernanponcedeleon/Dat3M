@@ -68,13 +68,13 @@ public enum COpBin {
                 return a.compareTo(b) != 0;
             case LT:
             case ULT:
-                return a.compareTo(b) == -1;
+                return a.compareTo(b) < 0;
             case LTE:
             case ULTE:
                 return a.compareTo(b) <= 0;
             case GT:
             case UGT:
-                return a.compareTo(b) == 1;
+                return a.compareTo(b) > 0;
             case GTE:
             case UGTE:
                 return a.compareTo(b) >= 0;
