@@ -41,7 +41,6 @@ public class Memory {
                 e1 = e2;
             }
         }
-        enc = ctx.mkAnd(enc, ctx.mkAnd(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkGt(ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false), ctx.mkInt(0)) : ctx.mkGt((IntExpr)a.toZ3Int(ctx), ctx.mkInt(0))).toArray(BoolExpr[]::new)));
         return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false) : a.toZ3Int(ctx)).toArray(Expr[]::new)));
     }
 
