@@ -4,6 +4,7 @@ import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_PATH_OPTION;
+import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
 import static com.dat3m.svcomp.utils.Compilation.compile;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
@@ -50,7 +51,7 @@ public class SVCOMPRunner {
         File file = new File(options.getProgramFilePath());
         File tmp = new SVCOMPSanitizer(file).run(1);
 
-        int bound = witness.hasAttributed("unroll-bound") ?  parseInt(witness.getAttributed("unroll-bound")) : 1;
+        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
 			compile(tmp, options);
