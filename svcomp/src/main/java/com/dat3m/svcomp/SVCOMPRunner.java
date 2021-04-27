@@ -69,6 +69,7 @@ public class SVCOMPRunner {
 				"-" + options.getOptimization() + ".bpl"));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", "none"));
+	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().toString()));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
 	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getSolver().toString()));

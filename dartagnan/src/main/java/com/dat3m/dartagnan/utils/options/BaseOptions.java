@@ -31,7 +31,7 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("m", "mode", true,
                 "Encoding mode {knastertarski|idl|kleene}"));
 
-        addOption(new Option("a", "alias", true,
+        addOption(new Option("alias", true,
                 "Type of alias analysis {none|andersen|cfs}"));
 
         addOption(new Option("u", "unroll", true,
