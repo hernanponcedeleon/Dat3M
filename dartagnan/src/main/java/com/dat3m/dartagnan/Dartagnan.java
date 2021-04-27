@@ -71,6 +71,7 @@ public class Dartagnan {
     		logger.info("Witness graph stats: #edges " + witness.getEdges().size());
         }        
         logger.info("Bound: " + options.getSettings().getBound());
+        logger.info("Alias Analysis: " + options.getSettings().getAlias());
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));
