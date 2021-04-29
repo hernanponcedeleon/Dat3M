@@ -7,6 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y software-properties-common && \
+    add-apt-repository ppa:sosy-lab/benchmarking && \
     apt-get install -y git && \
     apt-get install -y lsb-release && \
     apt-get install -y sudo && \
@@ -16,7 +17,9 @@ RUN apt-get update && \
     apt-get install -y curl && \
     apt-get install -y build-essential && \
     apt-get install -y libcap-dev && \
-    apt-get install -y cmake
+    apt-get install -y cmake && \
+    apt-get install -y udev && \
+    apt-get install --no-install-recommends -y benchexec
 
 # Install SMACK
 RUN cd home && \
