@@ -32,6 +32,7 @@ RUN cd home && \
 RUN cd home && \
     git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
     cd Dat3M && \
+    chmod 755 Dartagnan-SVCOMP.sh && \
     mvn install:install-file -Dfile=lib/z3-4.8.10.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.10 -Dpackaging=jar && \
     mvn clean install -DskipTests
 
