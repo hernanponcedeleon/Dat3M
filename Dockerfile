@@ -30,9 +30,9 @@ RUN cd home && \
 
 # Install Dat3M
 RUN cd home && \
-    git clone https://github.com/hernanponcedeleon/Dat3M.git && \
+    git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
     cd Dat3M && \
-    mvn install:install-file -Dfile=lib/z3-4.8.6.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.6 -Dpackaging=jar && \
+    mvn install:install-file -Dfile=lib/z3-4.8.10.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.10 -Dpackaging=jar && \
     mvn clean install -DskipTests
 
 # Clone SVCOMP benchmarks
