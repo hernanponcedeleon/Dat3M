@@ -12,8 +12,8 @@ This tool suite is currently composed of two tools
 Requirements
 ======
 * [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
-* [Java 16](https://openjdk.java.net/projects/jdk/16/) (if you want to compile the source)
-* [SMACK 2.5.0](https://github.com/smackers/smack) (only to verify C programs)
+* [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile the source)
+* [SMACK 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
 
 Installation
 ======
