@@ -110,6 +110,7 @@ The docker container includes the [benchexec](https://github.com/sosy-lab/benche
 ```
 benchexec dartagnan.xml --no-container
 ```
+The `dartagnan.xml` file instructs benchexec to use 4 CPUs, so either be sure your docker configuration has access to 4 CPUs or change the entry `cpuCores="4"` to match you CPUs limit.
 
 Authors and Contact
 ======
