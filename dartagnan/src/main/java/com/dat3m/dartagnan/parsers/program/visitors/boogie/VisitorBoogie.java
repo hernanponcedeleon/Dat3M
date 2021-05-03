@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.GlobalSettings;
@@ -137,11 +136,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	private int nextScopeID = 0;
 	protected Scope currentScope = new Scope(nextScopeID, null);
 	
-	//TODO: shouldn't this also be a stack? 
-	//now it works because the return variable is always called $r
+	private final List<Register> returnRegister = new ArrayList<>();
 	private String currentReturnName = null;
-	private Stack<String> parsingFunction = new Stack<>();
-	private Stack<Local> pendingRet = new Stack<>();
 	
 	private final Map<String, ExprInterface> constantsMap = new HashMap<>();
 	private final Map<String, Integer> constantsTypeMap = new HashMap<>();
@@ -290,8 +286,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	}
 
     	if(create) {
-    		parsingFunction = new Stack<>();
-    		pendingRet = new Stack<>();
          	threadCount ++;
     		String name = ctx.proc_sign().Ident().getText();
             programBuilder.initThread(name, threadCount);
@@ -435,8 +429,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		// There will be no return for them.
 		if(ctx.call_params().Define() != null && procedures.get(name).impl_body() != null) {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
-        	Register retReg = programBuilder.getOrCreateRegister(threadCount, "$r_" + name, -1);
-        	pendingRet.push(new Local(register, retReg));
+	        if(register != null){
+	            returnRegister.add(register);
+	        }
 		}
 	    List<ExprInterface> callingValues = new ArrayList<>();
 		if(ctx.call_params().exprs() != null) {
@@ -446,7 +441,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
 		Event call = new FunCall(name, currentLine);
-		parsingFunction.push(name);
 		programBuilder.addChild(threadCount, call);	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
@@ -463,10 +457,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			
 		}
 		Event ret = new FunRet(name, call.getCLine());
-		if(!pendingRet.isEmpty()) {			
-			programBuilder.addChild(threadCount, pendingRet.pop());
-		}
-		parsingFunction.pop();
 		programBuilder.addChild(threadCount, ret);
 		if(name.equals("$initialize")) {
 			initMode = false;
@@ -565,10 +555,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	            continue;
 	        }
 	        if(currentReturnName.equals(name)) {
-	        	if(!parsingFunction.isEmpty()) {
-	        		Register retReg = programBuilder.getOrCreateRegister(threadCount, "$r_" + parsingFunction.peek(), -1);
-	        		Local child = new Local(retReg, value, currentLine);
-	        		programBuilder.addChild(threadCount, child);
+	        	if(!returnRegister.isEmpty()) {
+	        		Register ret = returnRegister.remove(returnRegister.size() - 1);
+					Local child = new Local(ret, value, currentLine);
+					programBuilder.addChild(threadCount, child);
 	        	}
 	        	continue;
 	        }
