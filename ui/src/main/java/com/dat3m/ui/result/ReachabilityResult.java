@@ -44,7 +44,7 @@ public class ReachabilityResult implements Dat3mResult {
 
     private void run(){
         if(validate()){
-            VerificationTask task = new VerificationTask(program, wmm, options.getTarget(), options.getSettings());
+            VerificationTask task = new VerificationTask(program, wmm, program.getArch() != null ? program.getArch() : options.getTarget(), options.getSettings());
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             Result result = null;
