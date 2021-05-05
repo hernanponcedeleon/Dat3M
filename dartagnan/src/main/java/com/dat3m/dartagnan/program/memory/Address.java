@@ -24,6 +24,14 @@ public class Address extends IConst implements ExprInterface {
         this.index = index;
     }
 
+    public boolean hasConstantValue() {
+     	return this.constantValue != null;
+     }
+
+    public BigInteger getConstantValue() {
+     	return this.constantValue;
+     }
+
     public void setConstantValue(BigInteger value) {
      	this.constantValue = value;
      }
