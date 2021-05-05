@@ -13,6 +13,9 @@ import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELAXED;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
@@ -82,13 +85,30 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                     events.addFirst(new Fence("Sync"));
                 }
                 break;
-            case ARM: case ARM8:
+            case ARM:
                 if(RELEASE.equals(mo) || SC.equals(mo)){
                     events.addFirst(new Fence("Ish"));
                     if(SC.equals(mo)){
                         events.addLast(new Fence("Ish"));
                     }
                 }
+                break;
+            case ARM8:
+            	String storeMo;
+            	switch (mo) {
+					case SC:
+					case RELEASE:
+						storeMo = REL;
+						break;
+					case RELAXED:
+						storeMo = RX;
+						break;
+					default:
+	                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+					}
+                events = new LinkedList<>();
+                store = new Store(address, value, storeMo);
+                events.add(store);
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

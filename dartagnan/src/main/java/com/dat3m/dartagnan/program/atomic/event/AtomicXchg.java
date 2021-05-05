@@ -1,15 +1,27 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
+import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQUIRE;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELAXED;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -44,16 +56,47 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+    	Load load;
+    	Store store;
+    	LinkedList<Event> events;
         switch(target) {
             case NONE: case TSO:
-                RMWLoad load = new RMWLoad(resultRegister, address, mo);
-                RMWStore store = new RMWStore(load, address, value, mo);
+                load = new RMWLoad(resultRegister, address, mo);
+                store = new RMWStore((RMWLoad)load, address, value, mo);
 
-                LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
+                events = new LinkedList<>(Arrays.asList(load, store));
                 return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+            case ARM8:
+            	String loadMo;
+            	String storeMo;
+            	switch(mo) {
+            		case SC:
+            			loadMo = ACQ;
+            			storeMo = REL;
+            			break;
+            		case ACQUIRE:
+            			loadMo = ACQ;
+            			storeMo = RX;
+            			break;
+            		case RELEASE:
+            			loadMo = RX;
+            			storeMo = REL;
+            			break;
+            		case RELAXED:
+            			loadMo = RX;
+            			storeMo = RX;
+            			break;
+            		default:
+            			throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+            	}
+            	load = new RMWLoadExclusive(resultRegister, address, loadMo);
+            	store = new RMWStoreExclusive(address, value, storeMo);
+
+                events = new LinkedList<>(Arrays.asList(load, store));
+                return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+
             default:
-                String tag = mo != null ? "_explicit" : "";
-                throw new RuntimeException("Compilation of atomic_exchange" + tag + " is not implemented for " + target);
+                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
     }
 }

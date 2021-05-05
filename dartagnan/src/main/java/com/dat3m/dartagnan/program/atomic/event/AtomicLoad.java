@@ -15,8 +15,11 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQUIRE;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.CONSUME;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELAXED;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
 import java.util.LinkedList;
@@ -81,10 +84,27 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                     }
                 }
                 break;
-            case ARM: case ARM8:
+            case ARM:
                 if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)) {
                     events.addLast(new Fence("Ish"));
                 }
+                break;
+            case ARM8:
+            	String loadMo;
+            	switch (mo) {
+					case SC:
+					case ACQUIRE:
+						loadMo = ACQ;
+						break;
+					case RELAXED:
+						loadMo = RX;
+						break;
+					default:
+		                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
+					}
+		        events = new LinkedList<>();
+		        load = new Load(resultRegister, address, loadMo);
+		        events.add(load);
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

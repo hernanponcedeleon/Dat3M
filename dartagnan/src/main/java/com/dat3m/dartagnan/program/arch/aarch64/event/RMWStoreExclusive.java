@@ -15,7 +15,7 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     protected transient BoolExpr execVar;
 
-    RMWStoreExclusive(IExpr address, ExprInterface value, String mo){
+    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo){
         super(address, value, mo);
         addFilters(EType.EXCL);
     }
