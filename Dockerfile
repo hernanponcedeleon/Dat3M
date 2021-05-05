@@ -7,6 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y software-properties-common && \
+    add-apt-repository ppa:sosy-lab/benchmarking && \
     apt-get install -y git && \
     apt-get install -y lsb-release && \
     apt-get install -y sudo && \
@@ -16,7 +17,9 @@ RUN apt-get update && \
     apt-get install -y curl && \
     apt-get install -y build-essential && \
     apt-get install -y libcap-dev && \
-    apt-get install -y cmake
+    apt-get install -y cmake && \
+    apt-get install -y udev && \
+    apt-get install --no-install-recommends -y benchexec
 
 # Install SMACK
 RUN cd home && \
@@ -27,9 +30,10 @@ RUN cd home && \
 
 # Install Dat3M
 RUN cd home && \
-    git clone https://github.com/hernanponcedeleon/Dat3M.git && \
+    git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
     cd Dat3M && \
-    mvn install:install-file -Dfile=lib/z3-4.8.6.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.6 -Dpackaging=jar && \
+    chmod 755 Dartagnan-SVCOMP.sh && \
+    mvn install:install-file -Dfile=lib/z3-4.8.10.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.10 -Dpackaging=jar && \
     mvn clean install -DskipTests
 
 # Clone SVCOMP benchmarks

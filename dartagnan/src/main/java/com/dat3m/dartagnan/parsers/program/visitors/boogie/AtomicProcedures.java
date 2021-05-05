@@ -31,29 +31,33 @@ public class AtomicProcedures {
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		switch(name) {
-		case "atomic_init":
+		// In the way we compile the code, smack generated empty functions for atomic operations with 
+		// prefixes like ".i32" thus we need to check "startswith" and we cannot pattern match by name
+		if(name.startsWith("atomic_init")) {
 			atomicInit(visitor, ctx);
-			break;
-		case "atomic_store":
-			atomicStore(visitor, ctx);
-			break;
-		case "atomic_load":
-			atomicLoad(visitor, ctx);
-			break;
-		case "atomic_fetch":
-			atomicFetchOp(visitor, ctx);
-			break;
-		case "atomic_exchange":
-		case "atomic_compare_exchange":
-			atomicXchg(visitor, ctx);
-			break;
-		case "atomic_thread_fence":
-			atomicThreadFence(visitor, ctx);
-			break;
-		default:
-			throw new UnsupportedOperationException(name + " procedure is not part of ATOMICPROCEDURES");		
+			return;
 		}
+		if(name.startsWith("atomic_store")) {
+			atomicStore(visitor, ctx);
+			return;
+		}
+		if(name.startsWith("atomic_load")) {
+			atomicLoad(visitor, ctx);
+			return;
+		}
+		if(name.startsWith("atomic_fetch")) {
+			atomicFetchOp(visitor, ctx);
+			return;
+		}
+		if(name.startsWith("atomic_exchange") || name.startsWith("atomic_compare_exchange")) {
+			atomicXchg(visitor, ctx);
+			return;
+		}
+		if(name.startsWith("atomic_thread_fence")) {
+			atomicThreadFence(visitor, ctx);
+			return;
+		}
+		throw new UnsupportedOperationException(name + " procedure is not part of ATOMICPROCEDURES");		
 	}
 	
 	private static void atomicInit(VisitorBoogie visitor, Call_cmdContext ctx) {

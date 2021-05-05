@@ -19,7 +19,7 @@ public class FunRet extends Event {
 
     @Override
     public String toString(){
-        return "=== Returning from " + funName + "===";
+        return "=== Returning from " + funName + " ===";
     }
 
     public String getFunctionName() {

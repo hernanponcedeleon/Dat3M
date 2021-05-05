@@ -12,14 +12,31 @@ This tool suite is currently composed of two tools
 Requirements
 ======
 * [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
-* [Java 16](https://openjdk.java.net/projects/jdk/16/) (if you want to compile the source)
-* [SMACK 2.5.0](https://github.com/smackers/smack) (only to verify C programs)
+* [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile the source)
+* [SMACK 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
 
 Installation
 ======
+
+**Docker**
+
+The docker contains everything pre-installed to run the tool.
+
+1. Build the container:
+```
+docker build . -t dartagnan
+```
+
+2. Run the container:
+```
+docker run -w /home/Dat3M -v /sys/fs/cgroup:/sys/fs/cgroup:rw -it dartagnan /bin/bash
+```
+
+**From Sources**
+
 Download the z3 dependency
 ```
-mvn install:install-file -Dfile=lib/z3-4.8.6.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.6 -Dpackaging=jar
+mvn install:install-file -Dfile=lib/z3-4.8.10.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.10 -Dpackaging=jar
 ```
 Set Dat3M's home, the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
 ```
@@ -33,8 +50,8 @@ To build the tools run
 mvn clean install -DskipTests
 ```
 
-Unit Tests
-======
+**Unit Tests**
+
 We provide a set of unit tests that can be run by
 ```
 mvn test
@@ -43,8 +60,8 @@ mvn test
 
 Usage
 ======
-Dat3M comes with a user interface (UI) where it is easy to select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
-You can start the UI by running
+Dat3M comes with a user interface (not available from the docker container) where it is easy to select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+You can start the user interface by running
 ```
 java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 ```
@@ -86,6 +103,14 @@ Other optional arguments include:
 - `-unroll`: unrolling bound for the BMC.
 
 Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
+
+**SV-COMP Experiments**
+
+The docker container includes the [benchexec](https://github.com/sosy-lab/benchexec) framework to run all [SV-COMP](https://sv-comp.sosy-lab.org/) experiments, just run (this can take a couple of hs)
+```
+benchexec dartagnan.xml --no-container
+```
+The `dartagnan.xml` file instructs benchexec to use 4 CPUs, so either be sure your docker configuration has access to 4 CPUs or change the entry `cpuCores="4"` to match you CPUs limit.
 
 Authors and Contact
 ======
