@@ -1,19 +1,26 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
+import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
 
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
@@ -90,9 +97,14 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             			throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
             	}
             	load = new RMWLoadExclusive(resultRegister, address, loadMo);
-            	store = new RMWStoreExclusive(address, value, storeMo);
+                store = new RMWStoreExclusive(address, value, storeMo);
+            	Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
+                RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
+                Label end = (Label)getThread().getExit();
+                Event jump = new CondJump(new Atom(statusReg, COpBin.EQ, IConst.ONE), end);
+                jump.addFilters(EType.BOUND);
 
-                events = new LinkedList<>(Arrays.asList(load, store));
+                events = new LinkedList<>(Arrays.asList(load, store, status, jump));
                 return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
 
             default:
