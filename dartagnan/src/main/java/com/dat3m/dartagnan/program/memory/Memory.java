@@ -41,7 +41,14 @@ public class Memory {
                 e1 = e2;
             }
         }
-        enc = ctx.mkAnd(enc, ctx.mkAnd(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkGt(ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false), ctx.mkInt(0)) : ctx.mkGt((IntExpr)a.toZ3Int(ctx), ctx.mkInt(0))).toArray(BoolExpr[]::new)));
+
+        // Following SMACK, only address with constant values can have negative values.
+        for(Address add : getAllAddresses()) {
+        	if(!add.hasConstantValue()) {
+        		enc = ctx.mkAnd(enc, add.toZ3Int(ctx).isBV() ? ctx.mkGt(ctx.mkBV2Int((BitVecExpr) add.toZ3Int(ctx), false), ctx.mkInt(0)) : ctx.mkGt((IntExpr)add.toZ3Int(ctx), ctx.mkInt(0)));
+        	}
+        }
+        
         return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false) : a.toZ3Int(ctx)).toArray(Expr[]::new)));
     }
 

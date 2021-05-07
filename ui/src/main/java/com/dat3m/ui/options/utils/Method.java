@@ -1,8 +1,8 @@
 package com.dat3m.ui.options.utils;
 
 public enum Method {
-	TWOSOLVERS,
-    INCREMENTAL;
+    INCREMENTAL,
+	TWOSOLVERS;
 
     @Override
     public String toString() {
