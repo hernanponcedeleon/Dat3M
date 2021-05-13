@@ -7,6 +7,8 @@
 extern void abort(void);
 
 #define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_ACQ_REL, __ATOMIC_SEQ_CST))
+#define load(loc) (atomic_load_explicit(loc, __ATOMIC_ACQUIRE))
+#define store(loc, val) (atomic_store_explicit(loc, val, __ATOMIC_RELEASE))
 
 /*
 extern void retire(Node* ptr);
@@ -27,9 +29,12 @@ void reach_error() { assert(0); }
 void __VERIFIER_assert(int expression) { if (!expression) { ERROR: {reach_error();abort();}}; return; }
 
 void init() {
-	Head = malloc(sizeof (Node));
-	Head->next = NULL;
-	Tail = Head;
+	//Head = malloc(sizeof (Node));
+	store(&Head, malloc(sizeof (Node)));
+	//Head->next = NULL;
+	store(&Head->next, NULL);
+	//Tail = Head;
+	store(&Tail, load(&Head));
 }
 
 void enqueue(int value) {
@@ -43,10 +48,10 @@ void enqueue(int value) {
 	node->next = NULL;
 
 	while (true) {
-		tail = Tail;
+		tail = load(&Tail);
 		next = tail->next;
 
-		if (tail == Tail) {
+		if (tail == load(&Tail)) {
 			if (next != NULL) {
 				//CAS(&Tail, &tail, next); 
 				CAS(&Tail, tail, next);
@@ -72,11 +77,11 @@ int dequeue() {
 	//leaveQ();
 
 	while (true) {
-		head = Head;
-		tail = Tail;
+		head = load(&Head);
+		tail = load(&Tail);
 		next = head->next;
 
-		if (head == Head) {
+		if (head == load(&Head)) {
 			if (next == NULL) {
 				result = -1;
 				break;
