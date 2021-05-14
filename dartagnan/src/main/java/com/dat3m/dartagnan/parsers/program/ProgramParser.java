@@ -27,8 +27,6 @@ public class ProgramParser {
 
     public Program parse(String raw, String format) {
         switch (format) {
-            case "pts":
-                return new ParserPorthos().parse(CharStreams.fromString(raw));
             case "bpl":
                 return new ParserBoogie().parse(CharStreams.fromString(raw));
             case "litmus":
@@ -41,8 +39,6 @@ public class ProgramParser {
         String name = file.getName();
         String format = name.substring(name.lastIndexOf(".") + 1);
         switch (format) {
-            case "pts":
-                return new ParserPorthos();
             case "bpl":
                 return new ParserBoogie();
             case "litmus":
