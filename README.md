@@ -4,15 +4,12 @@
 <img src="ui/src/main/resources/dat3m.png">
 </p>
 
-This tool suite is currently composed of two tools
-
-* **Dartagnan:** a tool to check state reachability under weak memory models, and
-* **Porthos:** a tool to check state inclusion under weak memory models.
+**Dartagnan** is a tool to check state reachability under weak memory models.
 
 Requirements
 ======
 * [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
-* [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile the source)
+* [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile from source)
 * [SMACK 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
 
 Installation
@@ -45,7 +42,7 @@ export PATH=$DAT3M_HOME/:$PATH
 export LD_LIBRARY_PATH=$DAT3M_HOME/lib/:$LD_LIBRARY_PATH
 ```
 
-To build the tools run
+To build the tool run
 ```
 mvn clean install -DskipTests
 ```
@@ -60,7 +57,7 @@ mvn test
 
 Usage
 ======
-Dat3M comes with a user interface (not available from the docker container) where it is easy to select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+Dat3M comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
 java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
@@ -69,33 +66,28 @@ java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 <img src="ui/src/main/resources/ui.jpg">
 </p>
 
-Dartagnan supports programs written in the `.litmus` or `.bpl` (Boogie) formats. For Porthos, programs shall be written in the `.pts` format which is explained [here](porthos/pts.md).
+Dartagnan supports programs written in the `.litmus` or `.bpl` (Boogie) formats.
 
 If SMACK was correctly installed, C programs can be converted to Boogie using the following command:
 ```
 smack -t -bpl <new Boogie file> <C file> [--integer-encoding bit-vector] --no-memory-splitting --clang-options="-DCUSTOM_VERIFIER_ASSERT -I\$DAT3M_HOME/include/"
 ```
 
-You can also run Dartagnan and Porthos from the console.
+You can also run Dartagnan from the console:
 
-For checking reachability (Dartagnan):
 ```
 java -jar dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar -cat <CAT file> [-t <target>] -i <program file> [options]
 ```
-For checking state inclusion (Porthos):
-```
-java -jar porthos/target/porthos-2.0.7-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
-```
-The `-cat`,`-scat`,`-tcat` options specify the paths to the CAT files.
+The `-cat` option specifies the path to the CAT file.
 
-For programs written in the `.bpl` (if the original c program uses the `std::atomic` library) or `.pts` format, `\<source>` and `\<target>` specify the architectures to which the program will be compiled. They must be one of the following: 
+For programs written in the `.bpl`, `\<target>` specify the architectures to which the program will be compiled. It must be one of the following: 
 - none
 - tso
 - power
 - arm
 - arm8
 
-Program written in `.litmus` format do not require such options.
+Program written in `.litmus` format do not require such option.
 
 Other optional arguments include:
 - `-a, --alias {none, andersen, cfs}`: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
