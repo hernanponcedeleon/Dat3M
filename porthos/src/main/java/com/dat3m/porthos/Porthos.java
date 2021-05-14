@@ -1,15 +1,12 @@
 package com.dat3m.porthos;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.porthos.utils.options.PorthosOptions;
 import com.microsoft.z3.*;
-import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.apache.commons.cli.*;
