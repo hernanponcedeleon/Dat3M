@@ -6,7 +6,7 @@
 
 extern void abort(void);
 
-#define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_ACQ_REL, __ATOMIC_SEQ_CST))
+#define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED))
 #define load(loc) (atomic_load_explicit(loc, __ATOMIC_ACQUIRE))
 #define store(loc, val) (atomic_store_explicit(loc, val, __ATOMIC_RELEASE))
 
