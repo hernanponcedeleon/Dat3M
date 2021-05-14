@@ -42,7 +42,6 @@ void enqueue(int value) {
 
 	//leaveQ();
 
-	//node = malloc;
     node = malloc(sizeof (Node));
 	node->val = value;
 	node->next = NULL;
@@ -53,14 +52,11 @@ void enqueue(int value) {
 
 		if (tail == load(&Tail)) {
 			if (next != NULL) {
-				//CAS(&Tail, &tail, next); 
-				CAS(&Tail, tail, next);
+				CAS(&Tail, &tail, next);
 
 			} else {
-				//if (CAS(&tail->next, &next, node)) {
-				if (CAS(&tail->next, next, node)) {
-					//CAS(&Tail, &tail, node); 
-				    CAS(&Tail, tail, node);
+				if (CAS(&tail->next, &next, node)) {
+				    CAS(&Tail, &tail, node);
 					break;
 				}
 			}
@@ -88,13 +84,11 @@ int dequeue() {
 
 			} else {
 				if (head == tail) {
-					// CAS(&Tail, &tail, next); 
-					CAS(&Tail, tail, next);
+					CAS(&Tail, &tail, next);
 
 				} else {
 					result = next->val;
-                    //if (CAS(&Head, &head, next)) {  
-					if (CAS(&Head, head, next)) {
+					if (CAS(&Head, &head, next)) {
                         //retire(head);
                         break;
                     }
@@ -126,10 +120,10 @@ void *worker_2(void *unused)
 {
 	int r;
 
-	enqueue(42);
+	enqueue(41);
     r = dequeue();
 
-	__VERIFIER_assert(r == 42);
+	__VERIFIER_assert(r == 41);
 
 	return NULL;
 }
