@@ -16,10 +16,6 @@ public class Irreflexive extends Axiom {
         super(rel);
     }
 
-    public Irreflexive(Relation rel, boolean negate) {
-        super(rel, negate);
-    }
-
     @Override
     public TupleSet getEncodeTupleSet(){
         TupleSet set = new TupleSet();
@@ -32,22 +28,11 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    protected BoolExpr _consistent(Context ctx) {
+    public BoolExpr consistent(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
                 enc = ctx.mkAnd(enc, ctx.mkNot(rel.getSMTVar(tuple, ctx)));
-            }
-        }
-        return enc;
-    }
-
-    @Override
-    protected BoolExpr _inconsistent(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
-        for(Tuple tuple : rel.getEncodeTupleSet()){
-            if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
-                enc = ctx.mkOr(enc, rel.getSMTVar(tuple, ctx));
             }
         }
         return enc;

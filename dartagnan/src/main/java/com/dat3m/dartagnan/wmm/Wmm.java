@@ -182,17 +182,6 @@ public class Wmm {
         return expr;
     }
 
-    public BoolExpr inconsistent(Context ctx) {
-        if(relationsAreEncoded){
-            throw new IllegalStateException("Wmm relations must be encoded before inconsistency predicate");
-        }
-        BoolExpr expr = ctx.mkFalse();
-        for (Axiom ax : axioms) {
-            expr = ctx.mkOr(expr, ax.inconsistent(ctx));
-        }
-        return expr;
-    }
-
     public String toString() {
         StringBuilder sb = new StringBuilder();
 

@@ -28,10 +28,6 @@ public class Acyclic extends Axiom {
         super(rel);
     }
 
-    public Acyclic(Relation rel, boolean negate) {
-        super(rel, negate);
-    }
-
     @Override
     public TupleSet getEncodeTupleSet(){
         logger.info("Computing encodeTupleSet for " + this);
@@ -70,7 +66,7 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    protected BoolExpr _consistent(Context ctx) {
+	public BoolExpr consistent(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
         for(Tuple tuple : rel.getEncodeTupleSet()){
@@ -82,85 +78,7 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-    protected BoolExpr _inconsistent(Context ctx) {
-        return ctx.mkAnd(satCycleDef(ctx), satCycle(ctx));
-    }
-
-    @Override
     protected String _toString() {
         return "acyclic " + rel.getName();
-    }
-
-    private BoolExpr satCycle(Context ctx) {
-        Set<Event> cycleEvents = new HashSet<>();
-        for(Tuple tuple : rel.getEncodeTupleSet()){
-            cycleEvents.add(tuple.getFirst());
-        }
-
-        BoolExpr cycle = ctx.mkFalse();
-        for(Event e : cycleEvents){
-            cycle = ctx.mkOr(cycle, cycleVar(rel.getName(), e, ctx));
-        }
-
-        return cycle;
-    }
-
-    private BoolExpr satCycleDef(Context ctx){
-        BoolExpr enc = ctx.mkTrue();
-        Set<Event> encoded = new HashSet<>();
-        String name = rel.getName();
-
-        for(Tuple t : rel.getEncodeTupleSet()){
-            Event e1 = t.getFirst();
-            Event e2 = t.getSecond();
-
-            enc = ctx.mkAnd(enc, ctx.mkImplies(
-                    cycleEdge(name, e1, e2, ctx),
-                    ctx.mkAnd(
-                            e1.exec(),
-                            e2.exec(),
-                            rel.getSMTVar(t, ctx),
-                            cycleVar(name, e1, ctx),
-                            cycleVar(name, e2, ctx)
-            )));
-
-            if(!encoded.contains(e1)){
-                encoded.add(e1);
-
-                BoolExpr source = ctx.mkFalse();
-                for(Tuple tuple1 : rel.getEncodeTupleSet().getByFirst(e1)){
-                    BoolExpr opt = cycleEdge(name, e1, tuple1.getSecond(), ctx);
-                    for(Tuple tuple2 : rel.getEncodeTupleSet().getByFirst(e1)){
-                        if(tuple1.getSecond().getCId() != tuple2.getSecond().getCId()){
-                            opt = ctx.mkAnd(opt, ctx.mkNot(cycleEdge(name, e1, tuple2.getSecond(), ctx)));
-                        }
-                    }
-                    source = ctx.mkOr(source, opt);
-                }
-
-                BoolExpr target = ctx.mkFalse();
-                for(Tuple tuple1 : rel.getEncodeTupleSet().getBySecond(e1)){
-                    BoolExpr opt = cycleEdge(name, tuple1.getFirst(), e1, ctx);
-                    for(Tuple tuple2 : rel.getEncodeTupleSet().getBySecond(e1)){
-                        if(tuple1.getFirst().getCId() != tuple2.getFirst().getCId()){
-                            opt = ctx.mkAnd(opt, ctx.mkNot(cycleEdge(name, tuple2.getFirst(), e1, ctx)));
-                        }
-                    }
-                    target = ctx.mkOr(target, opt);
-                }
-
-                enc = ctx.mkAnd(enc, ctx.mkImplies(cycleVar(name, e1, ctx), ctx.mkAnd(source, target)));
-            }
-        }
-
-        return enc;
-    }
-
-    private BoolExpr cycleVar(String relName, Event e, Context ctx) {
-        return ctx.mkBoolConst("Cycle(" + e.repr() + ")(" + relName + ")");
-    }
-
-    private BoolExpr cycleEdge(String relName, Event e1, Event e2, Context ctx) {
-        return ctx.mkBoolConst("Cycle:" + relName + "(" + e1.repr() + "," + e2.repr() + ")");
     }
 }

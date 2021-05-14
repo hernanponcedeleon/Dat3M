@@ -18,21 +18,11 @@ import java.util.Objects;
 public abstract class Axiom implements Dependent<Relation> {
 
     protected Relation rel;
-    private boolean negate = false;
 
     protected VerificationTask task;
 
-    public boolean isNegated() {
-        return negate;
-    }
-
     Axiom(Relation rel) {
         this.rel = rel;
-    }
-
-    Axiom(Relation rel, boolean negate) {
-        this.rel = rel;
-        this.negate = negate;
     }
 
     public void initialise(VerificationTask task, Context ctx) {
@@ -52,39 +42,20 @@ public abstract class Axiom implements Dependent<Relation> {
     	return ctx.mkAnd(rel.encode(ctx), consistent(ctx));
     }
     
-    public BoolExpr consistent(Context ctx) {
-        if(negate){
-            return _inconsistent(ctx);
-        }
-        return _consistent(ctx);
-    }
-
-    public BoolExpr inconsistent(Context ctx) {
-        if(negate){
-            return _consistent(ctx);
-        }
-        return _inconsistent(ctx);
-    }
-
     @Override
     public String toString(){
-        if(negate){
-            return "~" + _toString();
-        }
         return _toString();
     }
 
     public abstract TupleSet getEncodeTupleSet();
 
-    protected abstract BoolExpr _consistent(Context ctx);
-
-    protected abstract BoolExpr _inconsistent(Context ctx);
+    public abstract BoolExpr consistent(Context ctx);
 
     protected abstract String _toString();
 
     @Override
     public int hashCode() {
-        return Objects.hash(rel, negate);
+        return Objects.hash(rel);
     }
 
     @Override
@@ -92,7 +63,7 @@ public abstract class Axiom implements Dependent<Relation> {
         if (obj == null || obj.getClass() != this.getClass())
             return false;
         Axiom other = (Axiom)obj;
-        return this.rel.equals(other.rel) && this.negate == other.negate;
+        return this.rel.equals(other.rel);
     }
 
 
