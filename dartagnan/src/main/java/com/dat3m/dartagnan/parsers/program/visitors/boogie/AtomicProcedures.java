@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.atomic.event.*;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 
 public class AtomicProcedures {
@@ -127,13 +128,15 @@ public class AtomicProcedures {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 		IExpr add = (IExpr) params.get(0).accept(visitor);
-		Register expected = (Register) params.get(1).accept(visitor); // NOTE: We assume a register here
+		Register expectedAdd = (Register) params.get(1).accept(visitor); // NOTE: We assume a register here
+		Register expected = new Register(null, reg.getThreadId(), reg.getPrecision());
 		ExprInterface desired = (ExprInterface) params.get(2).accept(visitor);
 		String mo = null;
 		if(params.size() > 3) {
 			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
 			// NOTE: We forget about the 5th parameter (MO on fail) for now!
 		}
+		visitor.programBuilder.addChild(visitor.threadCount, new Load(expected, expectedAdd, mo));
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicCmpXchg(reg, add, expected, desired, mo));
 	}
 

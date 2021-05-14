@@ -25,10 +25,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQUIRE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELAXED;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -78,6 +75,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             	String storeMo;
             	switch(mo) {
             		case SC:
+                    case ACQ_REL:
             			loadMo = ACQ;
             			storeMo = REL;
             			break;
