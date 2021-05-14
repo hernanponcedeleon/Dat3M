@@ -98,7 +98,6 @@ For programs written in the `.bpl` (if the original c program uses the `std::ato
 Program written in `.litmus` format do not require such options.
 
 Other optional arguments include:
-- `-m, --mode {knastertarski, idl, kleene}`: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
 - `-a, --alias {none, andersen, cfs}`: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - `-unroll`: unrolling bound for the BMC.
 
