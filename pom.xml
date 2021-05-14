@@ -82,6 +82,5 @@
     <module>porthos</module>
     <module>ui</module>
     <module>svcomp</module>
-    <module>boogiesan</module>
   </modules>
 </project>
