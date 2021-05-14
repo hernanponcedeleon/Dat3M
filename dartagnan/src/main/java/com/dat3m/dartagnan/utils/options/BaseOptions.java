@@ -25,9 +25,6 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("t", "target", true,
                 "Target architecture {none|arm|arm8|power|tso}"));
 
-        addOption(new Option("m", "mode", true,
-                "Encoding mode {knastertarski|idl|kleene}"));
-
         addOption(new Option("alias", true,
                 "Type of alias analysis {none|andersen|cfs}"));
 

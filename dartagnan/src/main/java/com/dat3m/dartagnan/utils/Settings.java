@@ -9,7 +9,6 @@ public class Settings {
     public static final String TACTIC = "qfbv";
     
     // TODO: UI and console options to set these flags
-    public static final int FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS      = 0;
     public static final int FLAG_USE_SEQ_ENCODING_REL_RF            = 1;
     public static final int FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY    = 2;
 
@@ -18,7 +17,6 @@ public class Settings {
     private final int solver_timeout;
 
     private final Map<Integer, Boolean> flags = new HashMap<>(){{
-            put(FLAG_FORCE_PRECISE_EDGES_IN_GRAPHS, true);
             put(FLAG_USE_SEQ_ENCODING_REL_RF, true);
             put(FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, false);
     }};
