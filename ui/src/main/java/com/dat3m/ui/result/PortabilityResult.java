@@ -1,7 +1,6 @@
 package com.dat3m.ui.result;
 
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.porthos.Porthos;
@@ -19,7 +18,6 @@ public class PortabilityResult implements Dat3mResult {
     private final Wmm targetWmm;
     private final UiOptions options;
 
-    private Graph graph;
     private String verdict;
 
     public PortabilityResult(Program sourceProgram, Program targetProgram, Wmm sourceWmm, Wmm targetWmm, UiOptions options){
@@ -31,10 +29,6 @@ public class PortabilityResult implements Dat3mResult {
         run();
     }
     
-    public Graph getGraph(){
-        return graph;
-    }
-
     public String getVerdict(){
         return verdict;
     }
@@ -52,9 +46,6 @@ public class PortabilityResult implements Dat3mResult {
                     + "The program is" + (result.getIsPortable() ? " " : " not ") + "state-portable\n"
                     + "Iterations: " + result.getIterations();
 
-            if(!result.getIsPortable()){
-                graph = new Graph(s1.getModel(), ctx, sourceProgram, targetProgram, options.getSettings().getGraphRelations());
-            }
             ctx.close();
         }
     }

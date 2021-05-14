@@ -2,13 +2,10 @@ package com.dat3m.ui.result;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.ui.options.utils.Method.INCREMENTAL;
 import static com.dat3m.ui.options.utils.Method.TWOSOLVERS;
 
-import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -24,7 +21,6 @@ public class ReachabilityResult implements Dat3mResult {
     private final Wmm wmm;
     private final UiOptions options;
 
-    private Graph graph;
     private String verdict;
 
     public ReachabilityResult(Program program, Wmm wmm, UiOptions options){
@@ -34,10 +30,6 @@ public class ReachabilityResult implements Dat3mResult {
         run();
     }
     
-    public Graph getGraph(){
-        return graph;
-    }
-
     public String getVerdict(){
         return verdict;
     }
@@ -53,9 +45,6 @@ public class ReachabilityResult implements Dat3mResult {
             else if (options.getMethod() == TWOSOLVERS)
                 result = runAnalysis(solver, ctx, task);
             buildVerdict(result);
-            if(options.getSettings().getDrawGraph() && Dartagnan.canDrawGraph(program.getAss(), result == FAIL)){
-                graph = new Graph(solver.getModel(), ctx, program, options.getSettings().getGraphRelations());
-            }
             ctx.close();
         }
     }

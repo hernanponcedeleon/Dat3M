@@ -7,7 +7,6 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -108,12 +107,6 @@ public class Dartagnan {
         	new WitnessBuilder(p, ctx, s, result, options).write();
         }
         
-        if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
-        	ctx.setPrintMode(Z3_PRINT_SMTLIB_FULL);
-            drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
-            System.out.println("Execution graph is written to " + options.getGraphFilePath());
-        }
-
         ctx.close();
     }
 

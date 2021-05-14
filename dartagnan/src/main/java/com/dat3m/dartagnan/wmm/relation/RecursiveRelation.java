@@ -124,16 +124,6 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeLFP(Context ctx) {
-        return r1.encodeLFP(ctx);
-    }
-
-    @Override
-    protected BoolExpr encodeIDL(Context ctx) {
-        return r1.encodeIDL(ctx);
-    }
-
-    @Override
     protected BoolExpr encodeApprox(Context ctx) {
         return r1.encodeApprox(ctx);
     }

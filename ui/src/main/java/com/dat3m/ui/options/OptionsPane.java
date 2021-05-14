@@ -3,10 +3,7 @@ package com.dat3m.ui.options;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.ui.button.ClearButton;
-import com.dat3m.ui.button.GraphButton;
-import com.dat3m.ui.button.RelsButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.options.utils.ArchManager;
@@ -37,7 +34,6 @@ public class OptionsPane extends JPanel implements ActionListener {
     private final IconPane iconPane;
 
     private final Selector<Task> taskPane;
-    private final Selector<Mode> modePane;
     private final Selector<Alias> aliasPane;
     private final Selector<Method> methodPane;
 
@@ -50,12 +46,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     private final JButton testButton;
     private final JButton clearButton;
-    private final GraphButton graphButton;
-    private final RelsButton relsButton;
 
     private final JTextPane consolePane;
-
-    private final RelSelector relSelector;
 
     public OptionsPane(){
         super(new GridLayout(1,0));
@@ -64,7 +56,6 @@ public class OptionsPane extends JPanel implements ActionListener {
         iconPane = new IconPane(IconCode.DARTAGNAN, height, JLabel.CENTER);
 
         taskPane = new Selector<>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
-        modePane = new Selector<>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
         aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
         methodPane = new Selector<>(EnumSet.allOf(Method.class).toArray(new Method[0]), ControlCode.METHOD);
 
@@ -79,10 +70,6 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         testButton = new TestButton();
         clearButton = new ClearButton();
-        graphButton = new GraphButton();
-
-        relSelector = new RelSelector(taskPane);
-        relsButton = new RelsButton(relSelector);
 
         consolePane = new JTextPane();
         consolePane.setEditable(false);
@@ -102,11 +89,6 @@ public class OptionsPane extends JPanel implements ActionListener {
 		boundField.addActionListener(this);
 		timeoutField.addActionListener(this);
 		clearButton.addActionListener(this);
-		// Enabling graph options depends on mode
-		modePane.addActionListener(graphButton);
-		// Enabling rel selector depends on mode and graph button 
-		modePane.addActionListener(relsButton);
-		graphButton.addActionListener(relsButton);
     }
 
     public Selector<Task> getTaskPane(){
@@ -121,26 +103,15 @@ public class OptionsPane extends JPanel implements ActionListener {
         return testButton;
     }
 
-    public GraphButton getGraphButton(){
-        return graphButton;
-    }
-
     public JTextPane getConsolePane(){
         return consolePane;
     }
 
-    public RelSelector getRelSelector(){
-        return relSelector;
-    }
-
     public UiOptions getOptions(){
         Settings settings = new Settings(
-                (Mode)modePane.getSelectedItem(),
                 (Alias)aliasPane.getSelectedItem(),
                 Integer.parseInt(boundField.getText()),
-                Integer.parseInt(timeoutField.getText()),
-                graphButton.isEnabled() && graphButton.isSelected(),
-                relSelector.getSelection()
+                Integer.parseInt(timeoutField.getText())
         );
 
         Task task = (Task)taskPane.getSelectedItem();
@@ -180,10 +151,8 @@ public class OptionsPane extends JPanel implements ActionListener {
         Border emptyBorder = BorderFactory.createEmptyBorder();
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        graphPane.setLeftComponent(graphButton);
-        graphPane.setRightComponent(relsButton);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, methodPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { taskPane, archPane, aliasPane, methodPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);

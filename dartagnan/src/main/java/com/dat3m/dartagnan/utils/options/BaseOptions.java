@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.utils.options;
 
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import java.util.Set;
 
@@ -15,8 +14,6 @@ public abstract class BaseOptions extends Options {
     protected Set<String> supportedFormats; 
     protected Settings settings;
     protected Arch target;
-
-    private String graphFilePath = "out.dot";
 
     public BaseOptions(){
         super();
@@ -39,18 +36,11 @@ public abstract class BaseOptions extends Options {
 
         addOption(new Option("solver_timeout", true,
                 "Timeout (in secs) for the SMT solver"));
-
-        addOption(new Option("draw", true,
-                "Path to save the execution graph if the state is reachable"));
-
-        addOption(new Option("rels", true,
-                "Relations to be drawn in the graph"));
     }
 
     public void parse(String[] args) throws ParseException, RuntimeException {
         CommandLine cmd = new DefaultParser().parse(this, args);
         parseSettings(cmd);
-        parseGraphFilePath(cmd);
 
         programFilePath = cmd.getOptionValue("input");
         targetModelFilePath = cmd.getOptionValue("cat");
@@ -68,10 +58,6 @@ public abstract class BaseOptions extends Options {
         return targetModelFilePath;
     }
 
-    public String getGraphFilePath(){
-        return graphFilePath;
-    }
-
     public Settings getSettings(){
         return settings;
     }
@@ -81,10 +67,7 @@ public abstract class BaseOptions extends Options {
     }
 
     protected void parseSettings(CommandLine cmd){
-        Mode mode = cmd.hasOption("mode") ? Mode.get(cmd.getOptionValue("mode")) : null;
         Alias alias = cmd.hasOption("alias") ? Alias.get(cmd.getOptionValue("alias")) : null;
-        boolean draw = cmd.hasOption("draw");
-        String[] relations = cmd.hasOption("rels") ? cmd.getOptionValue("rels").split(",") : new String[0];
 
         int bound = 1;
         int solver_timeout = 0;
@@ -102,15 +85,6 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal solver_timeout value");
             }
         }
-        settings = new Settings(mode, alias, bound, solver_timeout, draw, relations);
-    }
-
-    protected void parseGraphFilePath(CommandLine cmd){
-        if(cmd.hasOption("draw")){
-            String path = cmd.getOptionValue("draw");
-            if(!path.isEmpty()){
-                graphFilePath = path;
-            }
-        }
+        settings = new Settings(alias, bound, solver_timeout);
     }
 }

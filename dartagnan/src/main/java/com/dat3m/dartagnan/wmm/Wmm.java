@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.*;
@@ -130,7 +129,6 @@ public class Wmm {
         if (this.task == null) {
             throw new IllegalStateException("The WMM needs to get initialised first.");
         }
-        Settings settings = task.getSettings();
 
         for (RecursiveGroup recursiveGroup : recursiveGroups) {
             recursiveGroup.initMaxTupleSets();
@@ -142,15 +140,6 @@ public class Wmm {
 
         for(String relName : baseRelations){
             relationRepository.getRelation(relName).getMaxTupleSet();
-        }
-
-        if(settings.getDrawGraph()){
-            for(String relName : settings.getGraphRelations()){
-                Relation relation = relationRepository.getRelation(relName);
-                if(relation != null){
-                    relation.addEncodeTupleSet(relation.getMaxTupleSet());
-                }
-            }
         }
 
         for (Axiom ax : axioms) {
@@ -165,12 +154,6 @@ public class Wmm {
         BoolExpr enc = ctx.mkTrue();
         for(String relName : baseRelations){
             enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode(ctx));
-        }
-
-        if(settings.getMode() == Mode.KLEENE){
-            for(RecursiveGroup group : recursiveGroups){
-                enc = ctx.mkAnd(enc, group.encode(ctx));
-            }
         }
 
         return enc;

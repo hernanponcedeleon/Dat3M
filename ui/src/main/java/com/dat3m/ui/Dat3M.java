@@ -10,7 +10,6 @@ import com.dat3m.ui.editor.EditorCode;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.listener.EditorListener;
-import com.dat3m.ui.utils.GraphUtils;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.options.OptionsPane;
 import com.dat3m.ui.options.utils.ControlCode;
@@ -78,9 +77,6 @@ public class Dat3M extends JFrame implements ActionListener {
     	editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().addKeyListener(listener);
     	editorsPane.getEditor(EditorCode.SOURCE_MM).getEditorPane().addKeyListener(listener);
 
-        optionsPane.getRelSelector().setSourceWmmEditor(editorsPane.getEditor(EditorCode.SOURCE_MM));
-        optionsPane.getRelSelector().setTargetWmmEditor(editorsPane.getEditor(EditorCode.TARGET_MM));
-
 		pack();
 	}
 
@@ -98,9 +94,6 @@ public class Dat3M extends JFrame implements ActionListener {
             runTest();
             if(testResult != null){
                 optionsPane.getConsolePane().setText(testResult.getVerdict());
-                if(testResult.getGraph() != null && optionsPane.getGraphButton().isSelected() && optionsPane.getGraphButton().isEnabled()) {
-					GraphUtils.showGraph(testResult.getGraph());
-                }
             }
         }
 	}
