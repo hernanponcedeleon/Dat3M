@@ -20,6 +20,7 @@ import org.apache.commons.cli.HelpFormatter;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.svcomp.options.SVCOMPOptions;
+import com.dat3m.svcomp.utils.BoogieSan;
 import com.dat3m.svcomp.utils.SVCOMPSanitizer;
 
 public class SVCOMPRunner {
@@ -59,14 +60,20 @@ public class SVCOMPRunner {
 	        // (it not the original C file) and we already created the Boogie file
 	        tmp.delete();
 
+	        String boogieName = System.getenv().get("DAT3M_HOME") + "/output/" +
+					file.getName().substring(0, file.getName().lastIndexOf('.')) +
+					"-" + options.getOptimization() + ".bpl";
+	        
+	        if(options.getBoogieSan()) {
+	        	BoogieSan.write(boogieName);
+	        }
+	        
 	    	ArrayList<String> cmd = new ArrayList<String>();
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + file.getName());
 	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
-	    	cmd.addAll(asList("-i", System.getenv().get("DAT3M_HOME") + "/output/" +
-				file.getName().substring(0, file.getName().lastIndexOf('.')) +
-				"-" + options.getOptimization() + ".bpl"));
+	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", options.getTarget() != null ? options.getTarget().toString() : "none"));
 	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().toString()));
