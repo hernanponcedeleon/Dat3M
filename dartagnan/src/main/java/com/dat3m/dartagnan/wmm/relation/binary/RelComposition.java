@@ -56,13 +56,37 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
+    public TupleSet getMinTupleSetRecursive(){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
+            BranchEquivalence eq = task.getBranchEquivalence();
+            minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
+                    (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+            removeMutuallyExclusiveTuples(minTupleSet);
+            /*TupleSet set1 = r1.getMinTupleSetRecursive();
+            TupleSet set2 = r2.getMinTupleSetRecursive();
+            for(Tuple rel1 : set1){
+                for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
+                    if (!eq.areMutuallyExclusive(rel1.getFirst(), rel2.getSecond())) {
+                        minTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                    }
+                }
+            }*/
+            return minTupleSet;
+        }
+        return getMinTupleSet();
+    }
+
+    @Override
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
+            BranchEquivalence eq = task.getBranchEquivalence();
             TupleSet set1 = r1.getMaxTupleSetRecursive();
             TupleSet set2 = r2.getMaxTupleSetRecursive();
             for(Tuple rel1 : set1){
                 for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
-                    maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                    if (!eq.areMutuallyExclusive(rel1.getFirst(), rel2.getSecond())) {
+                        maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                    }
                 }
             }
             return maxTupleSet;
