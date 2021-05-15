@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.EdgeTestHelper;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.*;
 import org.junit.Test;
@@ -60,7 +59,7 @@ public class RelCritTest {
     public void test() {
         try{
             // Force encoding all possible "crit" relations
-            Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, 60, true, "crit");
+            Settings settings = new Settings(Alias.CFIS, 1, 60);
 
             Context ctx = new Context();
             Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));

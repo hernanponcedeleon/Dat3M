@@ -93,16 +93,6 @@ public class RelTransRef extends RelTrans {
     	return invokeEncode(super::encodeApprox, ctx);
     }
 
-    @Override
-    protected BoolExpr encodeIDL(Context ctx) {
-    	return invokeEncode(super::encodeIDL, ctx);
-    }
-
-    @Override
-    protected BoolExpr encodeLFP(Context ctx) {
-    	return invokeEncode(super::encodeLFP, ctx);
-    }
-
     private BoolExpr invokeEncode(Function<Context, BoolExpr> originalMethod, Context ctx) {
             TupleSet temp = encodeTupleSet;
             encodeTupleSet = transEncodeTupleSet;

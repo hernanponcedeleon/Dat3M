@@ -82,12 +82,4 @@ public abstract class BinaryRelation extends Relation {
         isEncoded = true;
         return ctx.mkAnd(r1.encode(ctx), r2.encode(ctx), doEncode(ctx));
     }
-
-    @Override
-    protected BoolExpr encodeLFP(Context ctx) {
-        if(recursiveGroupId > 0){
-            return ctx.mkTrue();
-        }
-        return encodeApprox(ctx);
-    }
 }

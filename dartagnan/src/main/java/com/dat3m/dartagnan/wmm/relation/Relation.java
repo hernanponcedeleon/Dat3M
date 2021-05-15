@@ -80,6 +80,10 @@ public abstract class Relation implements Dependent<Relation> {
 
     public abstract TupleSet getMaxTupleSet();
 
+    public TupleSet getMinTupleSetRecursive(){
+        return getMinTupleSet();
+    }
+
     public TupleSet getMaxTupleSetRecursive(){
         return getMaxTupleSet();
     }
@@ -141,14 +145,6 @@ public abstract class Relation implements Dependent<Relation> {
         return doEncode(ctx);
     }
 
-    protected BoolExpr encodeLFP(Context ctx) {
-        return encodeApprox(ctx);
-    }
-
-    protected BoolExpr encodeIDL(Context ctx) {
-        return encodeApprox(ctx);
-    }
-
     protected abstract BoolExpr encodeApprox(Context ctx);
 
     public BoolExpr encodeIteration(int recGroupId, int iteration, Context ctx){
@@ -157,14 +153,7 @@ public abstract class Relation implements Dependent<Relation> {
 
     protected BoolExpr doEncode(Context ctx){
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
-            switch (task.getSettings().getMode()) {
-                case KLEENE:
-                    return encodeLFP(ctx);
-                case IDL:
-                    return encodeIDL(ctx);
-                default:
-                    return encodeApprox(ctx);
-            }
+        	return encodeApprox(ctx);
         }
         return ctx.mkTrue();
     }

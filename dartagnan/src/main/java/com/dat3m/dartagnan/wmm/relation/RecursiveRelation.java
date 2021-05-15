@@ -74,6 +74,16 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
+    public TupleSet getMinTupleSetRecursive(){
+        if(doRecurse){
+            doRecurse = false;
+            minTupleSet = r1.getMinTupleSetRecursive();
+            return minTupleSet;
+        }
+        return getMinTupleSet();
+    }
+
+    @Override
     public TupleSet getMaxTupleSetRecursive(){
         if(doRecurse){
             doRecurse = false;
@@ -121,16 +131,6 @@ public class RecursiveRelation extends Relation {
         }
         isEncoded = true;
         return r1.encode(ctx);
-    }
-
-    @Override
-    protected BoolExpr encodeLFP(Context ctx) {
-        return r1.encodeLFP(ctx);
-    }
-
-    @Override
-    protected BoolExpr encodeIDL(Context ctx) {
-        return r1.encodeIDL(ctx);
     }
 
     @Override

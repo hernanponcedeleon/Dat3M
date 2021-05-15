@@ -3,7 +3,6 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
@@ -37,9 +36,7 @@ public abstract class AbstractDartagnanTest {
         Map<String, Result> expectationMap = ResourceHelper.getExpectedResults();
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, SOLVER_TIMEOUT, false);
-        Settings s2 = new Settings(Mode.IDL, Alias.CFIS, 1, SOLVER_TIMEOUT, false);
-        Settings s3 = new Settings(Mode.KLEENE, Alias.CFIS, 1, SOLVER_TIMEOUT, false);
+        Settings s1 = new Settings(Alias.CFIS, 1, SOLVER_TIMEOUT);
 
         return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
                 .filter(Files::isRegularFile)
@@ -50,8 +47,6 @@ public abstract class AbstractDartagnanTest {
                 .collect(ArrayList::new,
                         (l, f) -> {
                             l.add(new Object[]{f[0], f[1], target, wmm, s1});
-                            l.add(new Object[]{f[0], f[1], target, wmm, s2});
-                            l.add(new Object[]{f[0], f[1], target, wmm, s3});
                         }, ArrayList::addAll);
     }
 
