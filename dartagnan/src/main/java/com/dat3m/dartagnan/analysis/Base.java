@@ -134,19 +134,7 @@ public class Base {
         	res = s1.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
         	break;
 		case SATISFIABLE:
-			s1.add(encodeNoBoundEventExec);
-            logger.info("Starting second solver.check()");
-			switch(s1.check()) {
-	        case UNKNOWN:
-	        	res = s1.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
-	        	break;
-			case SATISFIABLE:
-				res = FAIL;
-				break;
-			case UNSATISFIABLE:
-				res = Result.UNKNOWN;
-				break;
-			}
+			res = FAIL;
 			break;
 		case UNSATISFIABLE:
 			s2.add(ctx.mkNot(encodeNoBoundEventExec));
@@ -199,19 +187,7 @@ public class Base {
 				res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
 				break;
 			case SATISFIABLE:
-				solver.add(task.getProgram().encodeNoBoundEventExec(ctx));
-				logger.info("Starting second solver.check()");
-				switch(solver.check()) {
-					case UNKNOWN:
-						res = solver.getReasonUnknown().equals("canceled") ? TIMEOUT : Result.UNKNOWN;
-						break;
-					case SATISFIABLE:
-						res = FAIL;
-						break;
-					case UNSATISFIABLE:
-						res = Result.UNKNOWN;
-						break;
-				}
+				res = FAIL;
 				break;
 			case UNSATISFIABLE:
 				solver.add(ctx.mkNot(task.getProgram().encodeNoBoundEventExec(ctx)));
