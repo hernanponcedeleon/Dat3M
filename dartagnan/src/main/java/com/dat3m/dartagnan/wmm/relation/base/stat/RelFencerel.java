@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
@@ -36,8 +37,32 @@ public class RelFencerel extends StaticRelation {
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
+            BranchEquivalence eq = task.getBranchEquivalence();
             minTupleSet = new TupleSet();
-            //TODO
+            for(Thread t : task.getProgram().getThreads()){
+                List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
+                if(!fences.isEmpty()){
+                    List<Event> events = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
+                    ListIterator<Event> it1 = events.listIterator();
+
+                    while(it1.hasNext()){
+                        Event e1 = it1.next();
+                        ListIterator<Event> it2 = events.listIterator(it1.nextIndex());
+                        while(it2.hasNext()){
+                            Event e2 = it2.next();
+                            for(Event f : fences) {
+                                if(f.getCId() > e1.getCId() && f.getCId() < e2.getCId()){
+                                    if (eq.isImplied(e1, f) || eq.isImplied(e2, f) && f.cfImpliesExec()) {
+                                        minTupleSet.add(new Tuple(e1, e2));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            removeMutuallyExclusiveTuples(minTupleSet);
         }
         return minTupleSet;
     }
@@ -82,16 +107,19 @@ public class RelFencerel extends StaticRelation {
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 
-            //TODO: We can use branching analysis to simplify this
             BoolExpr orClause = ctx.mkFalse();
-            for(Event fence : fences){
-                if(fence.getCId() > e1.getCId() && fence.getCId() < e2.getCId()){
-                    orClause = ctx.mkOr(orClause, fence.exec());
+            if(minTupleSet.contains(tuple)) {
+                orClause = ctx.mkTrue();
+            } else {
+                for (Event fence : fences) {
+                    if (fence.getCId() > e1.getCId() && fence.getCId() < e2.getCId()) {
+                        orClause = ctx.mkOr(orClause, fence.exec());
+                    }
                 }
             }
 
             BoolExpr rel = this.getSMTVar(tuple, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(e1.exec(), e2.exec(), orClause)));
+            enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(getExecPair(tuple, ctx), orClause)));
         }
 
         return enc;
