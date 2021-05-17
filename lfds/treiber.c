@@ -28,74 +28,51 @@ typedef struct Node {
 	_Atomic(struct Node*) next;
 } Node;
 
-_Atomic(Node *) Tail;
-_Atomic(Node *) Head;
+struct {
+    _Atomic(Node*) node;
+} TOP;
+
+//NodePtr TOP;
 
 
 void init() {
-	Node* node = malloc(sizeof (Node));
-	rx_store(&node->next, NULL);
-	atomic_init(&Head, node); 
-	atomic_init(&Head, node);
+    //NodePtr* top = malloc(sizeof (Node));
+    //rx_store(top->node, NULL);
+    atomic_init(&TOP.node, NULL);
 }
 
-void enqueue(int value) {
-	Node *tail, *next, *node;
+void push(int e) {
+    Node *y, *n;
+    y = malloc(sizeof (Node));
+    y->val = e;
 
-    node = malloc(sizeof (Node));
-	node->val = value;
-	atomic_init(&node->next, NULL);
+    while(true) {
+        n = load(&TOP.node);
+        rx_store(&y->next, n);
 
-	while (true) {
-		tail = load(&Tail);
-		next = load(&tail->next);
-
-		if (tail == load(&Tail)) {
-			if (next != NULL) {
-				CAS(&Tail, &tail, next);
-
-			} else {
-				if (CAS(&tail->next, &next, node)) {
-				    CAS(&Tail, &tail, node);
-					break;
-				}
-			}
-		}
-	}
+        if (CAS(&TOP.node, &n, y)) {
+            break;
+        }
+    }
 }
 
-int dequeue() {
-	Node *head, *next, *tail;
-	int result;
+int pop() {
+    Node *y, *z;
 
-	while (true) {
-		head = load(&Head);
-		tail = load(&Tail);
-		next = rx_load(&head->next);
-
-		if (head == load(&Head)) {
-			if (next == NULL) {
-				result = EMPTY;
-				break;
-
-			} else {
-				if (head == tail) {
-					CAS(&Tail, &tail, next);
-
-				} else {
-					result = next->val;
-					if (CAS(&Head, &head, next)) {
-                        //retire(head);
-                        break;
-                    }
-				}
-			}
-		}
-	}
-
-	return result;
+    while (true) {
+        y = load(&TOP.node);
+        if (y == NULL) {
+            return EMPTY;
+        } else {
+            z = load(&y->next);
+            if (CAS(&TOP.node, &y, z)) {
+                // retire(y)
+                break;
+            }
+        }
+    }
+    return y->val;
 }
-
 
 // =========== Worker threads ==============
 
@@ -103,8 +80,8 @@ void *worker_1(void *unused)
 {
 	int r;
 
-	enqueue(42);
-    r = dequeue();
+	push(42);
+    r = pop();
 
 	__VERIFIER_assert(r == 42);
 
@@ -115,8 +92,8 @@ void *worker_2(void *unused)
 {
 	int r;
 
-	enqueue(41);
-    r = dequeue();
+	push(41);
+    r = pop();
 
 	__VERIFIER_assert(r == 41);
 
@@ -139,7 +116,7 @@ int main()
   if (pthread_join(t2, NULL))
 	abort();
 
-  int r = dequeue();
+  int r = pop();
   __VERIFIER_assert(r == EMPTY);
 
 

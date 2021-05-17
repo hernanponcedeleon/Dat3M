@@ -41,6 +41,7 @@ void init() {
 
 void enqueue(int value) {
 	Node *tail, *next, *node;
+    bool b1;
 
     node = malloc(sizeof (Node));
 	node->val = value;
@@ -49,18 +50,19 @@ void enqueue(int value) {
 	while (true) {
 		tail = load(&Tail);
 		next = load(&tail->next);
+        b1 = (tail == load(&Tail));
 
-		if (tail == load(&Tail)) {
-			if (next != NULL) {
-				CAS(&Tail, &tail, next);
-
-			} else {
+        if (b1) {
+            if (next == NULL) {
 				if (CAS(&tail->next, &next, node)) {
 				    CAS(&Tail, &tail, node);
 					break;
-				}
-			}
-		}
+                }
+            } else {
+				CAS(&Tail, &tail, next);
+            }
+			
+        }
 	}
 }
 
@@ -70,7 +72,6 @@ int dequeue() {
 
 	while (true) {
 		head = load(&Head);
-		tail = load(&Tail);
 		next = rx_load(&head->next);
 
 		if (head == load(&Head)) {
@@ -79,16 +80,14 @@ int dequeue() {
 				break;
 
 			} else {
-				if (head == tail) {
-					CAS(&Tail, &tail, next);
-
-				} else {
-					result = next->val;
-					if (CAS(&Head, &head, next)) {
-                        //retire(head);
-                        break;
+                result = next->val; //make atomic?
+                if (CAS(&Head, &head, next)) {
+                    tail = load(&Tail);
+                    if (head == tail) {
+                        CAS(&Tail, &tail, next);
                     }
-				}
+                    break;
+                }
 			}
 		}
 	}
