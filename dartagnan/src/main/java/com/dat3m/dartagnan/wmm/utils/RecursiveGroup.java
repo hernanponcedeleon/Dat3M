@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.utils;
 
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
@@ -58,6 +59,25 @@ public class RecursiveGroup {
                 relation.setDoRecurse();
                 int oldSize = relation.getMaxTupleSet().size();
                 if(oldSize != relation.getMaxTupleSetRecursive().size()){
+                    changed = true;
+                }
+            }
+            iterationCounter++;
+        }
+        // iterationCounter + zero iteration + 1
+        encodeIterations = iterationCounter + 2;
+    }
+
+    public void initMinTupleSets(){
+        int iterationCounter = 0;
+        boolean changed = true;
+
+        while(changed){
+            changed = false;
+            for(RecursiveRelation relation : relations){
+                relation.setDoRecurse();
+                int oldSize = relation.getMinTupleSet().size();
+                if(oldSize != relation.getMinTupleSetRecursive().size()){
                     changed = true;
                 }
             }

@@ -97,6 +97,8 @@ public class RecursiveRelation extends Relation {
     public void addEncodeTupleSet(TupleSet tuples){
         if(encodeTupleSet != tuples){
             encodeTupleSet.addAll(tuples);
+            //TODO: This encodeTupleSet is never used except to stop this recursion
+            // Can it get larger than r1's encodeTupleSet???
         }
         if(doRecurse){
             doRecurse = false;
