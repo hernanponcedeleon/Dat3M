@@ -132,6 +132,7 @@ public class Wmm {
 
         for (RecursiveGroup recursiveGroup : recursiveGroups) {
             recursiveGroup.initMaxTupleSets();
+            recursiveGroup.initMinTupleSets();
         }
 
         for (Axiom ax : axioms) {

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -53,11 +54,13 @@ public class Acyclic extends Axiom {
                 }
             }
         }
-        for (Tuple t : result) {
-            Event e1 = t.getFirst();
-            Event e2 = t.getSecond();
-            if (!e1.is(VISIBLE) || !e2.is(VISIBLE)) {
-                System.out.println(t);
+        if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {
+            for (Tuple t : result) {
+                Event e1 = t.getFirst();
+                Event e2 = t.getSecond();
+                if (!e1.is(VISIBLE) || !e2.is(VISIBLE)) {
+                    System.out.println(t + " is non-visible");
+                }
             }
         }
 

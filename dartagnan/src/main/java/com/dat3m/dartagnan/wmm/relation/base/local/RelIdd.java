@@ -19,9 +19,17 @@ public class RelIdd extends BasicRegRelation {
     }
 
     @Override
+    public TupleSet getMinTupleSet() {
+        if(minTupleSet == null){
+            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.REG_READER)));
+        }
+        return minTupleSet;
+    }
+
+    @Override
     public TupleSet getMaxTupleSet(){
         if(maxTupleSet == null){
-            mkMaxTupleSet(task.getProgram().getCache().getEvents(FilterBasic.get(EType.REG_READER)));
+            mkTupleSets(task.getProgram().getCache().getEvents(FilterBasic.get(EType.REG_READER)));
         }
         return maxTupleSet;
     }
