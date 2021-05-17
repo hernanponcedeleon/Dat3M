@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;

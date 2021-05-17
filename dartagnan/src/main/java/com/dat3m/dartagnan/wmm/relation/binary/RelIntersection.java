@@ -57,7 +57,6 @@ public class RelIntersection extends BinaryRelation {
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
             maxTupleSet.addAll(Sets.intersection(r1.getMaxTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
-            //maxTupleSet.retainAll(r2.getMaxTupleSetRecursive());
             return maxTupleSet;
         }
         return getMaxTupleSet();

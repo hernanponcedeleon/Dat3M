@@ -62,15 +62,6 @@ public class RelComposition extends BinaryRelation {
             minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
                     (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
             removeMutuallyExclusiveTuples(minTupleSet);
-            /*TupleSet set1 = r1.getMinTupleSetRecursive();
-            TupleSet set2 = r2.getMinTupleSetRecursive();
-            for(Tuple rel1 : set1){
-                for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
-                    if (!eq.areMutuallyExclusive(rel1.getFirst(), rel2.getSecond())) {
-                        minTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
-                    }
-                }
-            }*/
             return minTupleSet;
         }
         return getMinTupleSet();
