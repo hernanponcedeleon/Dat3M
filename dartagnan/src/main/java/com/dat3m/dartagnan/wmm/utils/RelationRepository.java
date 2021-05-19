@@ -154,7 +154,10 @@ public class RelationRepository {
                                 getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))
                         ), getRelation("(R*M)")).setName("addr");
             case "ctrl":
-                return getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")).setName("ctrl");
+                return getRelation(RelIntersection.class,
+                        getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")),
+                        getRelation("(R*M)")).setName("ctrl");
+
             case "po-loc":
                 return getRelation(RelIntersection.class, getRelation("po"), getRelation("loc")).setName("po-loc");
             case "rfe":
