@@ -36,7 +36,7 @@ void init() {
 	Node* node = malloc(sizeof (Node));
 	rx_store(&node->next, NULL);
 	atomic_init(&Head, node); 
-	atomic_init(&Head, node);
+	atomic_init(&Tail, node);
 }
 
 void enqueue(int value) {
