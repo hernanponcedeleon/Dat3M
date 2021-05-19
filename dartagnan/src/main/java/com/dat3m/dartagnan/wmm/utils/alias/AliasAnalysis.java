@@ -273,7 +273,8 @@ public class AliasAnalysis {
     		Register reg = l.getResultRegister();
 			if(exp instanceof Address) {
     			bases.put(reg, (Address)exp);
-    		} else if(exp instanceof IExprBin) {
+                offsets.put(reg, 0);
+            } else if(exp instanceof IExprBin) {
     			IExpr base = exp.getBase();
     			if(base instanceof Address) {
     				bases.put(reg, (Address)base);

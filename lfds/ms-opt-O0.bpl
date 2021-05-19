@@ -1563,8 +1563,8 @@ procedure  init()
   var $node.next: ref;
   var $ign: i32;
 $bb0:
-  call $node := malloc(16);
-  $node.next := $node + 8;
+  call $node := malloc(2);
+  $node.next := $node + 1;
   call $ign := atomic_store_explicit.ref.ref.i32($node.next, $0.ref, 0);
   call $ign := atomic_init.ref.ref(Head, $node);
   call $ign := atomic_init.ref.ref(Tail, $node);
