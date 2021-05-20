@@ -149,7 +149,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected BeginAtomic currentBeginAtomic = null;
 	protected Call_cmdContext atomicMode = null;
 	 
-	private final List<String> smackDummyVariables = Arrays.asList("$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
+	private final List<String> smackDummyVariables = Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -251,7 +251,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     			 String name = ident.getText();
     			 String type = atiwC.typed_idents_where().typed_idents().type().getText();
     			 int precision = type.contains("bv") && !name.equals("$M.0") ? Integer.parseInt(type.split("bv")[1]) : -1;
-    			 programBuilder.getOrCreateLocation(name, precision);
+    			 if(!smackDummyVariables.contains(name)) {
+        			 programBuilder.getOrCreateLocation(name, precision);
+    			 }
     		 }
     	 }
     	 return null;
