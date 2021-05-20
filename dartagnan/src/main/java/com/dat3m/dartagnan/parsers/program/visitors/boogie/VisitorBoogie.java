@@ -228,7 +228,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
-			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name)) {
+			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && !ATOMICPROCEDURES.stream().anyMatch(name::startsWith)) {
 				programBuilder.getOrCreateLocation(name, precision);
 			} else {
 				constantsTypeMap.put(name, precision);
