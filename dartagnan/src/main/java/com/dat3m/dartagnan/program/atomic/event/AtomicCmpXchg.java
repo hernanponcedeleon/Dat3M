@@ -168,15 +168,15 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 events = new LinkedList<>();
                 // --- Add Fence before ---
                 if (mo.equals(SC)) {
-                    events.addFirst(new Fence("sync"));
+                    events.addFirst(new Fence("Sync"));
                 } else if (storeMo.equals(REL)) {
-                    events.addFirst(new Fence("lwsync"));
+                    events.addFirst(new Fence("Lwsync"));
                 }
                 // --- Add success events ---
                 events.addAll(Arrays.asList(load, casResult, branch, succStore, status, jumpStoreFail));
                 // --- Add Fence after success ---
                 if (loadMo.equals(ACQ)) {
-                    events.addLast(new Fence("isync"));
+                    events.addLast(new Fence("Isync"));
                 }
                 // --- Add fail events + exit ---
                 events.addAll(Arrays.asList(jumpToEndCas, fail, updateReg, endCas));

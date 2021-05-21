@@ -1487,12 +1487,18 @@ function {:inline} $store.float(M: [ref] float, p: ref, f: float) returns ([ref]
 function {:inline} $load.unsafe.float(M: [ref] i8, p: ref) returns (float) { $bitcast.i8.float(M[p]) }
 function {:inline} $store.unsafe.float(M: [ref] i8, p: ref, f: float) returns ([ref] i8) { M[p := $bitcast.float.i8(f)] }
 function $extractvalue.float(p: ref, i: int) returns (float);
+
+
+// ============================= Global variables ===========================
+
 const Head: ref;
 axiom (Head == $sub.ref(0, 1032));
 const Tail: ref;
 axiom (Tail == $sub.ref(0, 2064));
+
 const assert_: ref;
 axiom (assert_ == $sub.ref(0, 3096));
+
 procedure  assert_($i0: i32)
 {
 $bb0:
@@ -1565,7 +1571,7 @@ procedure  init()
 $bb0:
   call $node := malloc(2);
   $node.next := $node + 1;
-  call $ign := atomic_store_explicit.ref.ref.i32($node.next, $0.ref, 0);
+  call $ign := atomic_init.ref.ref($node.next, $0.ref, 0);
   call $ign := atomic_init.ref.ref(Head, $node);
   call $ign := atomic_init.ref.ref(Tail, $node);
   return;
@@ -1608,8 +1614,9 @@ procedure  enqueue($val: i32)
   var $casSucc: bool;
   var $ign: int; // ignored value
   var $temp: int;
+  var $notNull: i32;
 $bb0:
-  call $tail_addr := $alloc(1);
+  call $tail_addr := $alloc(1); // These are needed due to the C-style CAS
   call $next_addr := $alloc(1);
   call $node := malloc(2);
   $M.0 := $store.i32($M.0, $node, $val); // node->val = val;
@@ -1617,6 +1624,8 @@ $bb0:
   call $ign := atomic_init.ref.ref($node.next, $0.ref); // node->next = NULL;
 $bb1:
   call $tail := atomic_load_explicit.ref.i32(Tail, 2); // tail = Tail;
+  $notNull := $ne.ref($tail, $0.ref);
+  call __VERIFIER_assert($notNull);
   $M.0 := $store.ref($M.0, $tail_addr, $tail); // tail_addr = &tail
   $tail.next := $tail + 1;
   call $next := atomic_load_explicit.ref.i32($tail.next, 2); // next = tail->next;
@@ -1625,26 +1634,26 @@ $bb1:
   $tailEqTail := $tail == $temp; // tail == Tail
   goto $bb2, $bb3;
 $bb2:
-  assume !($tailEqTail == true); // tail != Tail -> Loop
+  assume !($tailEqTail == true); // CASE: tail != Tail
   goto $bb1;
 $bb3:
-  assume ($tailEqTail == true);
+  assume ($tailEqTail == true); // CASE: tail == TAIL
   $nextNotNull := $next != $0.ref; // next != NULL;
   goto $bb5, $bb6;
 $bb5:
-  assume ($nextNotNull == true); // next != NULL;
+  assume ($nextNotNull == true); // CASE: next != NULL;
   call $temp := atomic_compare_exchange_strong_explicit.ref.ref.ref.i32.i32(Tail, $tail_addr, $next, 4, 0); // CAS(&Tail, &tail, next)
   goto $bb1; // Loop
 $bb6:
-  assume !($nextNotNull == true); // next == NULL;
+  assume !($nextNotNull == true); // CASE: next == NULL;
   call $temp:= atomic_compare_exchange_strong_explicit.ref.ref.ref.i32.i32($tail.next, $next_addr, $node, 4, 0); // CAS(&tail->next, &next, node)
-  $casSucc := $temp != 0;
+  $casSucc := $temp != 0; // CAS result
   goto $bb8, $bb9;
 $bb8:
-  assume !($casSucc == true); // CAS fail
+  assume !($casSucc == true); // CASE: CAS fail
   goto $bb1;
 $bb9:
-  assume ($casSucc == true); // Cas success
+  assume ($casSucc == true); // CASE: CAS success
   call $temp := atomic_compare_exchange_strong_explicit.ref.ref.ref.i32.i32(Tail, $tail_addr, $node, 4, 0); // CAS(&Tail, &tail, node)
   return;
 }
@@ -1682,49 +1691,54 @@ procedure  dequeue()
   var $nextEqNull: bool;
   var $casSucc: bool;
   var $retVal: i32;
+  var $notNull: i32;
 $bb0:
   call $head_addr := $alloc(1); // &head: Node**
   call $tail_addr := $alloc(1); // tail: Node**
 $bb1:
   call $head := atomic_load_explicit.ref.i32(Head, 2); // head = Head;
+  $notNull := $ne.ref($head, $0.ref);
+  call __VERIFIER_assert($notNull);
   $M.0 := $store.ref($M.0, $head_addr, $head); // head_addr = &head;
   call $tail := atomic_load_explicit.ref.i32(Tail, 2); // tail = Tail;
+  $notNull := $ne.ref($tail, $0.ref);
+  call __VERIFIER_assert($notNull);
   $M.0 := $store.ref($M.0, $tail_addr, $tail); // tail_addr = &tail;
   $head.next := $head + 1;
   call $next := atomic_load_explicit.ref.i32($head.next, 2); // next = head->next;
   call $temp := atomic_load_explicit.ref.i32(Head, 2);
-  $headEqHead := $head == $temp;
+  $headEqHead := $head == $temp; // head == Head
   goto $bb2, $bb3;
 $bb2:
-  assume !($headEqHead == true);
+  assume !($headEqHead == true); // CASE: head != Head
   goto $bb1;
 $bb3:
-  assume ($headEqHead == true);
-  $nextEqNull := $next == $0.ref;
+  assume ($headEqHead == true); // CASE: head == Head
+  $nextEqNull := $next == $0.ref; // next == NULL
   goto $bb5, $bb6;
 $bb5:
-  assume ($nextEqNull == true);
+  assume ($nextEqNull == true); // CASE: next == NULL (empty queue)
   $retVal := 0 - 1;
   goto $done;
 $bb6:
-  assume !($nextEqNull == true);
-  $headEqTail := $head == $tail;
+  assume !($nextEqNull == true); // CASE: next != NULL
+  $headEqTail := $head == $tail; // head == tail
   goto $bb8, $bb9;
 $bb8:
-  assume ($headEqTail == true);
-  call $temp := atomic_compare_exchange_strong_explicit.ref.ref.ref.i32.i32(Tail, $tail_addr, $next, 4, 0);
-  goto $bb1;
+  assume ($headEqTail == true); // CASE: head == tail
+  call $temp := atomic_compare_exchange_strong_explicit.ref.ref.ref.i32.i32(Tail, $tail_addr, $next, 4, 0); // CAS(&Tail, &tail, next)
+  goto $bb1; // loop
 $bb9:
-  assume !($headEqTail == true);
-  $retVal := $load.i32($M.0, $next);
-  call $temp := atomic_compare_exchange_strong_explicit.ref.ref.ref.i32.i32(Head, $head_addr, $next, 4, 0);
-  $casSucc := $temp != 0;
+  assume !($headEqTail == true); // CASE head != tail
+  $retVal := $load.i32($M.0, $next); // result = next->val
+  call $temp := atomic_compare_exchange_strong_explicit.ref.ref.ref.i32.i32(Head, $head_addr, $next, 4, 0); // CAS(&Head, &head, next)
+  $casSucc := $temp != 0; // CAS result
   goto $bb11, $bb12;
 $bb11:
-  assume !($casSucc  == true);
+  assume !($casSucc  == true); // CASE: CAS fail
   goto $bb1;
 $bb12:
-  assume ($casSucc  == true);
+  assume ($casSucc  == true); // CASE: CAS success
 $done:
   $r := $retVal;
   return;
@@ -1744,11 +1758,10 @@ procedure  worker_1($p0: ref)
 $bb0:
   call enqueue(42);
   call $i1 := dequeue();
-  $i2 := $eq.i32($i1, 42);
+  $i2 := $ne.i32($i1, $sub.i32(0, 1));
   $i3 := $zext.i1.i32($i2);
   call __VERIFIER_assert($i3);
   $r := $0.ref;
-  $exn := false;
   return;
 }
 
@@ -1765,11 +1778,10 @@ procedure  worker_2($p0: ref)
 $bb0:
   call enqueue(41);
   call $i1 := dequeue();
-  $i2 := $eq.i32($i1, 41);
+  $i2 := $ne.i32($i1, $sub.i32(0, 1));
   $i3 := $zext.i1.i32($i2);
   call __VERIFIER_assert($i3);
   $r := $0.ref;
-  $exn := false;
   return;
 }
 

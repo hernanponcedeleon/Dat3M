@@ -34,7 +34,7 @@ _Atomic(Node *) Head;
 
 void init() {
 	Node* node = malloc(sizeof (Node));
-	rx_store(&node->next, NULL);
+	atomic_init(&node->next, NULL);
 	atomic_init(&Head, node); 
 	atomic_init(&Tail, node);
 }
@@ -48,6 +48,7 @@ void enqueue(int value) {
 
 	while (true) {
 		tail = load(&Tail);
+		__VERIFIER_assert(tail != NULL);
 		next = load(&tail->next);
 
 		if (tail == load(&Tail)) {
@@ -70,8 +71,10 @@ int dequeue() {
 
 	while (true) {
 		head = load(&Head);
+		__VERIFIER_assert(head != NULL);
 		tail = load(&Tail);
-		next = rx_load(&head->next);
+		__VERIFIER_assert(tail != NULL);
+		next = load(&head->next);
 
 		if (head == load(&Head)) {
 			if (next == NULL) {
@@ -106,7 +109,7 @@ void *worker_1(void *unused)
 	enqueue(42);
     r = dequeue();
 
-	__VERIFIER_assert(r == 42);
+	__VERIFIER_assert(r != EMPTY);
 
 	return NULL;
 }
@@ -118,10 +121,11 @@ void *worker_2(void *unused)
 	enqueue(41);
     r = dequeue();
 
-	__VERIFIER_assert(r == 41);
+	__VERIFIER_assert(r != EMPTY);
 
 	return NULL;
 }
+
 
 int main()
 {
