@@ -1,5 +1,6 @@
 package com.dat3m.ui.result;
 
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
@@ -14,7 +15,7 @@ import com.dat3m.ui.utils.Utils;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 
-public class ReachabilityResult {
+public class ReachabilityResult implements Dat3mResult {
 
     private final Program program;
     private final Wmm wmm;
@@ -28,7 +29,7 @@ public class ReachabilityResult {
         this.options = options;
         run();
     }
-    
+
     public String getVerdict(){
         return verdict;
     }
@@ -48,6 +49,9 @@ public class ReachabilityResult {
             		break;
             	case TWOSOLVERS:
                     result = runAnalysis(solver, ctx, task);
+                    break;
+                case GRAPH:
+                    result = runAnalysisGraphRefinement(solver, ctx, task);
                     break;
             }
             buildVerdict(result);

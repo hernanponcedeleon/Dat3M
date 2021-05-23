@@ -1,0 +1,4 @@
+These classes are quite outdated. They are widely used but should probably be revised.
+A global ordering on the variables should be introduced to allow more efficient handling.
+Furthermore, there exists a partial ordering on variables given by implication (e.g. rf(e1,e2) => e1 AND e2 ).
+This ordering could be incorporated to reduce clauses when possible.
