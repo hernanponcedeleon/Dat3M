@@ -56,14 +56,15 @@ public class RMWGraph extends StaticEventGraph {
     }
 
 
-    /* There are three cases where the RMW-Relation is established:
+    /* There are four cases where the RMW-Relation is established:
      (1) LOCK : Load -> CondJump -> Store
      (2) RMW : RMWLoad -> RMWStore (completely static)
      (3) ExclAccess : ExclLoad -> ExclStore (dependent on control flow)
+     (4) Atomic blocks: BeginAtomic -> Events* -> EndAtomic
     */
     private void populate() {
         //TODO: Add atomic blocks
-        //TODO: We still need to encode parts of RMW to give correct semantics to exclusive Load/Store on AARCH64
+        //TODO: We still need to encode parts of RMW to give correct semantics to exclusive Load/Store on AARCH64 (do we?)
         for (List<EventData> events : context.getThreadEventsMap().values()) {
             EventData lastExclLoad = null;
             for (int i = 0; i < events.size(); i++) {
@@ -75,8 +76,6 @@ public class RMWGraph extends StaticEventGraph {
                             EventData next = events.get(i + 1);
                             graph.add(new Edge(e, next));
                         }
-                        //EventData nnext = events.get(i + 2); (The CondJump is not visible)
-
                     } else if (e.isExclusive()) {  // LoadExcl
                         lastExclLoad = e;
                     }

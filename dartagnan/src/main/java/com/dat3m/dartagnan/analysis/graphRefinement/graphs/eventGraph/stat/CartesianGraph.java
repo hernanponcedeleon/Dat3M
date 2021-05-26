@@ -21,8 +21,6 @@ public class CartesianGraph extends StaticEventGraph {
     private final FilterAbstract first;
     private final FilterAbstract second;
 
-    //TODO: Change this to accept Filters directly
-    // And add a factory method to construct this graph from a relation.
     public CartesianGraph(RelCartesian rel) {
         this(rel.getFirstFilter(), rel.getSecondFilter());
     }

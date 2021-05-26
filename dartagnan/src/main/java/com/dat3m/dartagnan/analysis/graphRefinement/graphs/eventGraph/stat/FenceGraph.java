@@ -16,7 +16,11 @@ public class FenceGraph extends StaticEventGraph {
     private Map<Thread, List<EventData>> threadFencesMap;
 
     public FenceGraph(RelFencerel fencerel) {
-        fenceName = fencerel.getFenceName();
+        this(fencerel.getFenceName());
+    }
+
+    public FenceGraph(String fenceName) {
+        this.fenceName = fenceName;
     }
 
     //TODO: We might want to employ binary search instead of linear search
