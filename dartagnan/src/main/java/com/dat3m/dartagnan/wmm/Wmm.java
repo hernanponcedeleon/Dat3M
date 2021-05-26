@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.utils.*;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
 import com.google.common.collect.ImmutableSet;
@@ -99,6 +100,18 @@ public class Wmm {
         for (Axiom axiom : axioms) {
             axiom.initialise(task, ctx);
         }
+    }
+
+    // Encodes the memory models relations as if co was empty (but not the axioms yet)
+    // NOTE: The call to <consistent> for encoding the axioms does not see co as empty anymore
+    // This is done to get a correct computation for the active set.
+    public BoolExpr encodeEmptyCo(Context ctx) {
+        RelCo co = ((RelCo)getRelationRepository().getRelation("co"));
+        co.setDoEncode(false);
+        BoolExpr enc = encode(ctx);
+        //TODO(TH): can we remove this?
+        //co.setDoEncode(true);
+        return enc;
     }
 
     // Encodes only the base relations of the memory model without co!

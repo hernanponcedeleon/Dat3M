@@ -29,6 +29,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Model;
 
+import java.math.BigInteger;
 import java.util.*;
 
 
@@ -57,7 +58,7 @@ public class GraphRefinement {
         testStaticGraphs();
     }
 
-    private final Map<Long, Set<Edge>> possibleCoEdges = new HashMap<>();
+    private final Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
     private final SortedClauseSet<CoreLiteral> coreReasonsSorted = new SortedClauseSet<>();
 
 
@@ -338,9 +339,9 @@ public class GraphRefinement {
 
     private void initSearch() {
         Relation co = context.getMemoryModel().getRelationRepository().getRelation("co");
-        for (Map.Entry<Long, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
+        for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
-            Long address = addressedWrites.getKey();
+            BigInteger address = addressedWrites.getKey();
             Set<Edge> coEdges = new HashSet<>();
             possibleCoEdges.put(address, coEdges);
 

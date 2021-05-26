@@ -31,6 +31,23 @@ public class RelCo extends Relation {
         forceDoEncode = true;
     }
 
+    //TODO(TH): shall we move this to the global settings?
+    // Temporary test code
+    private boolean doEncode = true;
+    // if set to false, the co-relation will not be encoded
+    // and it will be considered empty for may and active set computations
+    public void setDoEncode(Boolean value) {
+        doEncode = value;
+        maxTupleSet = value ? null : getMinTupleSet();
+    }
+
+    @Override
+    public TupleSet getEncodeTupleSet() {
+        if (!doEncode)
+            return new TupleSet();
+        return super.getEncodeTupleSet();
+    }
+
     @Override
     public TupleSet getMinTupleSet(){
         if(minTupleSet == null){
@@ -78,6 +95,13 @@ public class RelCo extends Relation {
     @Override
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
+
+        if (!doEncode) {
+            for (Tuple t : getMinTupleSet()) {
+                enc = ctx.mkAnd(enc, ctx.mkEq(getSMTVar(t, ctx), getExecPair(t, ctx)));
+            }
+            return enc;
+        }
 
         List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
         List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(

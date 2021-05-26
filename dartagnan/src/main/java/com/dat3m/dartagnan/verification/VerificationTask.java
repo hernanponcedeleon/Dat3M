@@ -136,6 +136,10 @@ public class VerificationTask {
         return memoryModel.encode( ctx);
     }
 
+    public BoolExpr encodeWmmRelationsWithoutCo(Context ctx) {
+        return memoryModel.encodeEmptyCo(ctx);
+    }
+
     public BoolExpr encodeWmmConsistency(Context ctx) {
         return memoryModel.consistent(ctx);
     }

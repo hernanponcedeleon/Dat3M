@@ -15,7 +15,7 @@ import com.dat3m.ui.utils.Utils;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 
-public class ReachabilityResult implements Dat3mResult {
+public class ReachabilityResult {
 
     private final Program program;
     private final Wmm wmm;

@@ -7,11 +7,12 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 
+import java.math.BigInteger;
 import java.util.*;
 
 public class LocationGraph extends StaticEventGraph {
 
-    private Map<Long, Set<EventData>> addrEventsMap;
+    private Map<BigInteger, Set<EventData>> addrEventsMap;
 
     @Override
     public boolean contains(Edge edge) {
@@ -20,7 +21,7 @@ public class LocationGraph extends StaticEventGraph {
 
     @Override
     public boolean contains(EventData a, EventData b) {
-        return a.getAccessedAddress() == b.getAccessedAddress();
+        return a.getAccessedAddress().equals(b.getAccessedAddress());
     }
 
     @Override
@@ -36,7 +37,7 @@ public class LocationGraph extends StaticEventGraph {
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
         addrEventsMap = new HashMap<>(context.getAddressReadsMap().size());
-        for (Long addr : context.getAddressReadsMap().keySet()) {
+        for (BigInteger addr : context.getAddressReadsMap().keySet()) {
             Set<EventData> events = new HashSet<>(context.getAddressReadsMap().get(addr));
             events.addAll(context.getAddressWritesMap().get(addr));
             size += events.size() * events.size();
@@ -56,8 +57,8 @@ public class LocationGraph extends StaticEventGraph {
 
     private class LocIterator extends EdgeIterator {
 
-        private Iterator<Long> addressIterator;
-        private Long curAddress;
+        private Iterator<BigInteger> addressIterator;
+        private BigInteger curAddress;
         private Iterator<EventData> firstIterator;
         private Iterator<EventData> secondIterator;
 
