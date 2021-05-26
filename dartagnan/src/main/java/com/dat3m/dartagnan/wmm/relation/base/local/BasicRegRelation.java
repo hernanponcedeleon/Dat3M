@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -20,15 +21,6 @@ import java.util.stream.Collectors;
 abstract class BasicRegRelation extends StaticRelation {
 
     abstract Collection<Register> getRegisters(Event regReader);
-
-    @Override
-    public TupleSet getMinTupleSet(){
-        if(minTupleSet == null){
-            minTupleSet = new TupleSet();
-            //TODO
-        }
-        return minTupleSet;
-    }
 
     void mkTupleSets(Collection<Event> regReaders) {
         maxTupleSet = new TupleSet();
@@ -55,6 +47,12 @@ abstract class BasicRegRelation extends StaticRelation {
 
                 if (possibleWriters.size() == 1) {
                     minTupleSet.add(new Tuple(possibleWriters.stream().findAny().get(), regReader));
+                } else {
+                    for (Event writer : possibleWriters) {
+                        if (possibleWriters.stream().allMatch(x -> x==writer || eq.areMutuallyExclusive(x, writer))) {
+                            minTupleSet.add(new Tuple(writer, regReader));
+                        }
+                    }
                 }
                 for(Event regWriter : possibleWriters){
                     maxTupleSet.add(new Tuple(regWriter, regReader));
