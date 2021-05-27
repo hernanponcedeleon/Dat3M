@@ -75,7 +75,7 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
-	    	cmd.addAll(asList("-t", "none"));
+	    	cmd.addAll(asList("-t", options.getTarget().toString()));
 	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().toString()));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
