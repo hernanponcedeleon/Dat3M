@@ -1,10 +1,12 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
@@ -12,6 +14,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.pthread.Create;
 import com.dat3m.dartagnan.program.event.pthread.Join;
 import com.dat3m.dartagnan.program.event.pthread.Lock;
@@ -77,6 +80,9 @@ public class PthreadsProcedures {
 		ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(visitor);
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 		visitor.pool.add(threadPtr, threadName);
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		// We assume pthread_create always succeeds
+		visitor.programBuilder.addChild(visitor.threadCount, new Local(reg, new IConst(BigInteger.ZERO, -1)));
 		Location loc = visitor.programBuilder.getOrCreateLocation(threadPtr + "_active", -1);
 		visitor.programBuilder.addChild(visitor.threadCount, new Create(threadPtr, threadName, loc.getAddress(), visitor.currentLine));
 	}
