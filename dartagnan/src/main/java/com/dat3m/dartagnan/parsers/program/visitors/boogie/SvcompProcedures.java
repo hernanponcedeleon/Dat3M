@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.INonDetTypes;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
@@ -112,6 +113,8 @@ public class SvcompProcedures {
     	Local event = new Local(ass, expr);
 		event.addFilters(EType.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
+       	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
+       	visitor.programBuilder.addChild(visitor.threadCount, new CondJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
