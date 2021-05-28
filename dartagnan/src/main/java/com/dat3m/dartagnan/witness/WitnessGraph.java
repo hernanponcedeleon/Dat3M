@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.collect.Lists;
 import com.microsoft.z3.BoolExpr;
@@ -82,16 +84,13 @@ public class WitnessGraph extends ElemWithAttributes {
 				Event ev = program.getEvents().stream().filter(e -> e.getCId() == parseInt(edge.getAttributed(EVENTID.toString()))).findFirst().get();
 				enc = ctx.mkAnd(enc, ctx.mkEq(intVar("hb", ev, ctx), ctx.mkInt(parseInt(edge.getAttributed(HBPOS.toString())))));
 			} 
-			if(!getAttributed(PRODUCER.toString()).equals("Dartagnan")) {
-				//TODO(HP): there seem to be problems with this in e.g. race-2-2
-				List<Event> events = program.getEvents().stream().filter(e -> e.hasFilter(MEMORY) && e.getCLine() == edge.getCline()).collect(Collectors.toList());				
-				if(!previous.isEmpty() && !events.isEmpty() && previous.get(0).getCLine() != edge.getCline()) {
-					enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> Utils.edge("hb", p.get(0), p.get(1), ctx)).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
-				}
-				if(!events.isEmpty()) {
-					previous = events;				
-				}				
+			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream().filter(e -> e.getCLine() == edge.getCline()).collect(Collectors.toList());
+			if(!previous.isEmpty() && !events.isEmpty()) {
+				enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> ctx.mkLe(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx))).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
 			}
+			if(!events.isEmpty()) {
+				previous = events;				
+			}				
 		}
 		return enc;
 	}
