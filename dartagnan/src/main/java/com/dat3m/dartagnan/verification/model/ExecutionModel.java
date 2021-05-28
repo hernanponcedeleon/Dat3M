@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -48,6 +50,10 @@ public class ExecutionModel {
     //TODO: Note, we could merge the
     // three above maps into a single one that holds writes, reads and init writes.
 
+    private final Map<EventData, Set<EventData>> dataDepMap;
+    private final Map<EventData, Set<EventData>> addrDepMap;
+    private final Map<EventData, Set<EventData>> ctrlDepMap;
+
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
     private List<Thread> threadListView;
@@ -59,6 +65,10 @@ public class ExecutionModel {
     private Map<BigInteger, Set<EventData>> addressReadsMapView;
     private Map<BigInteger, Set<EventData>> addressWritesMapView;
     private Map<BigInteger, EventData> addressInitMapView;
+
+    private Map<EventData, Set<EventData>> dataDepMapView;
+    private Map<EventData, Set<EventData>> addrDepMapView;
+    private Map<EventData, Set<EventData>> ctrlDepMapView;
 
     //========================== Construction =========================
 
@@ -75,6 +85,11 @@ public class ExecutionModel {
         addressWritesMap = new HashMap<>();
         addressInitMap = new HashMap<>();
         eventMap = new EventMap();
+        // New test code
+        dataDepMap = new HashMap<>();
+        addrDepMap = new HashMap<>();
+        ctrlDepMap = new HashMap<>();
+
         createViews();
     }
 
@@ -89,6 +104,11 @@ public class ExecutionModel {
         addressReadsMapView = Collections.unmodifiableMap(addressReadsMap);
         addressWritesMapView = Collections.unmodifiableMap(addressWritesMap);
         addressInitMapView = Collections.unmodifiableMap(addressInitMap);
+
+        // New test code
+        dataDepMapView = Collections.unmodifiableMap(dataDepMap);
+        addrDepMapView = Collections.unmodifiableMap(addrDepMap);
+        ctrlDepMapView = Collections.unmodifiableMap(ctrlDepMap);
     }
 
     //========================== Public data =========================
@@ -160,6 +180,10 @@ public class ExecutionModel {
         return addressInitMapView;
     }
 
+    public Map<EventData, Set<EventData>> getAddrDepMap() { return addrDepMapView; }
+    public Map<EventData, Set<EventData>> getDataDepMap() { return dataDepMapView; }
+    public Map<EventData, Set<EventData>> getCtrlDepMap() { return ctrlDepMapView; }
+
     public boolean eventExists(Event e) {
         return eventMap.contains(e);
     }
@@ -212,16 +236,23 @@ public class ExecutionModel {
         addressReadsMap.clear();
         fenceMap.clear();
         eventMap.clear();
+        addrDepMap.clear();
+        dataDepMap.clear();
+        ctrlDepMap.clear();
 
         List<Thread> threadList = new ArrayList<>(getProgram().getThreads());
         List<Integer> threadEndIndexList = new ArrayList<>(threadList.size());
 
         for (Thread thread : threadList) {
+            initDepTracking();
             Event e = thread.getEntry();
             int localId = 0;
             do {
                 if (e.wasExecuted(model) && eventFilter.filter(e)) {
                     addEvent(e, id++, localId++);
+                }
+                if (e.wasExecuted(model)) {
+                    trackDependencies(e);
                 }
                 //TODO: Add support for ifs
                 if (e instanceof CondJump) {
@@ -295,6 +326,65 @@ public class ExecutionModel {
             // having any data extracted
         }
     }
+
+    // =============== Dependency tracking ===============
+    //TODO: The following code is refinement specific and assumes that only visible events get extracted!
+
+    private Map<Register, Set<EventData>> lastRegWrites;
+    private Set<EventData> curCtrlDeps;
+    private void initDepTracking() {
+        lastRegWrites = new HashMap<>();
+        curCtrlDeps = new HashSet<>();
+    }
+
+    private void trackDependencies(Event e) {
+        if (e instanceof MemEvent) {
+            // ---- Track address dependency ----
+            MemEvent memEvent = (MemEvent) e;
+            HashSet<EventData> deps = new HashSet<>();
+
+            for (Register reg : memEvent.getAddress().getRegs()) {
+                deps.addAll(lastRegWrites.get(reg));
+            }
+            addrDepMap.put(getData(e), deps);
+        }
+
+        if (e.is(EType.VISIBLE)) {
+            // ---- Track ctrl dependency ----
+            ctrlDepMap.put(getData(e), new HashSet<>(curCtrlDeps));
+        }
+
+        if (e instanceof RegReaderData) {
+            // ---- Track data dependency ----
+            RegReaderData reader = (RegReaderData)e;
+            HashSet<EventData> deps = new HashSet<>();
+            for (Register r : reader.getDataRegs()) {
+                //TODO: The default case should not happen
+                deps.addAll(lastRegWrites.getOrDefault(r, Collections.emptySet()));
+            }
+
+            if (e instanceof Store) {
+                // ---- visible data dependency ----
+                dataDepMap.put(getData(e), deps);
+            }
+            if (e instanceof RegWriter) {
+                // ---- internal data dependency ----
+                RegWriter writer = (RegWriter) e;
+                lastRegWrites.put(writer.getResultRegister(), deps);
+            }
+            if (e instanceof CondJump) {
+                curCtrlDeps.addAll(deps);
+            }
+        }
+
+        if (e instanceof Load) {
+            // ---- Update lastRegWrites ----
+            Load load = (Load)e;
+            lastRegWrites.compute(load.getResultRegister(), (k, v) -> new HashSet<>()).add(getData(e));
+        }
+    }
+
+    // ===================================================
 
     private Relation rf;
     private void extractReadsFrom() {

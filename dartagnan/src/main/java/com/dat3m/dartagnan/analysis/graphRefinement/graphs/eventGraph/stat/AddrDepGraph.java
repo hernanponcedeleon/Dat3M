@@ -1,33 +1,19 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
-public class AddrDepGraph extends StaticEventGraph {
-
-
-
-    @Override
-    public boolean contains(EventData a, EventData b) {
-        return false;
-    }
+public  class AddrDepGraph extends DepGraph {
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return null;
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return null;
-    }
-
-    @Override
-    public int getMinSize(EventData e, EdgeDirection dir) {
-        return 0;
+    protected Map<EventData, Set<EventData>> getDependencyMap() {
+        return context.getAddrDepMap();
     }
 }

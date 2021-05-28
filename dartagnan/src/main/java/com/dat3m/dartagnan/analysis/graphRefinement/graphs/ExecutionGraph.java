@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -7,23 +9,12 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.Dif
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.AcyclicityAxiom;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.EmptinessAxiom;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.CartesianGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.ExternalGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.FenceGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.LocationGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.ProgramOrderGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.RMWGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.IrreflexivityAxiom;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.CompositionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.IntersectionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.UnionGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.ReadFromGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.StaticDefaultEventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.InverseGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.RecursiveGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.TransitiveGraph;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
@@ -39,12 +30,19 @@ import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
+import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
+import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 
 public class ExecutionGraph {
+
+    private static final Set<String> EXCLUDED_RELS = ImmutableSet.of("idd", "idd^+", "ctrlDirect", "addrDirect");
+    private static final Set<String> SPECIAL_RELS = ImmutableSet.of("addr", "data", "ctrl");
+
 
     private final VerificationTask verificationTask;
     private final Map<Relation, EventGraph> relationGraphMap;
@@ -68,7 +66,9 @@ public class ExecutionGraph {
     private void constructMappings() {
         // We make sure to compute graphs along the dependency order
         for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
-            getGraphFromRelation(rel);
+            if (!EXCLUDED_RELS.contains(rel.getName())) {
+                getGraphFromRelation(rel);
+            }
         }
 
         for (Axiom axiom : verificationTask.getAxioms()) {
@@ -143,7 +143,21 @@ public class ExecutionGraph {
 
         EventGraph graph = null;
         Class<?> relClass = rel.getClass();
-        if (relClass == RelRf.class) {
+
+        // ===== Filter special relations ======
+        if (SPECIAL_RELS.contains(rel.getName())) {
+            switch (rel.getName()) {
+                case "ctrl":
+                    graph = new CtrlDepGraph();
+                    break;
+                case "data":
+                    graph = new DataDepGraph();
+                    break;
+                case "addr":
+                    graph = new AddrDepGraph();
+                    break;
+            }
+        } else if (relClass == RelRf.class) {
             graph = rfGraph = new ReadFromGraph();
         } else if (relClass == RelLoc.class) {
             graph = locGraph = new LocationGraph();
@@ -162,7 +176,12 @@ public class ExecutionGraph {
                 graph = new InverseGraph(inner);
             } else if (relClass == RelTrans.class) {
                 graph = new TransitiveGraph(inner);
-            } //TODO: RelTransRef.class is missing
+            } else if (relClass == RelRangeIdentity.class) {
+                graph = new RangeIdentityGraph(inner);
+            } else if (relClass == RelTransRef.class) {
+                EventGraph transGraph = getGraphFromRelation(new RelTrans(rel.getInner()));
+                graph = new ReflexiveClosureGraph(transGraph);
+            }
         } else if (rel.isBinaryRelation()) {
             EventGraph first = getGraphFromRelation(rel.getFirst());
             EventGraph second = getGraphFromRelation(rel.getSecond());
