@@ -36,8 +36,6 @@ struct {
 
 
 void init() {
-    //NodePtr* top = malloc(sizeof (Node));
-    //rx_store(top->node, NULL);
     atomic_init(&TOP.node, NULL);
 }
 
@@ -83,7 +81,7 @@ void *worker_1(void *unused)
 	push(42);
     r = pop();
 
-	__VERIFIER_assert(r == 42);
+    __VERIFIER_assert(r != EMPTY);
 
 	return NULL;
 }
@@ -95,7 +93,7 @@ void *worker_2(void *unused)
 	push(41);
     r = pop();
 
-	__VERIFIER_assert(r == 41);
+    __VERIFIER_assert(r != EMPTY);
 
 	return NULL;
 }
