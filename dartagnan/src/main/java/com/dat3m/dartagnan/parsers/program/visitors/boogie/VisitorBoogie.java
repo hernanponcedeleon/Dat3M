@@ -591,7 +591,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Label pairingLabel;
 			if(!pairLabels.containsKey(currentLabel)) {
 				// If the current label doesn't have a pairing label, we jump to the end of the program
-	        	pairingLabel = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+				pairingLabel = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 			} else {
 				pairingLabel = pairLabels.get(currentLabel);
 			}
