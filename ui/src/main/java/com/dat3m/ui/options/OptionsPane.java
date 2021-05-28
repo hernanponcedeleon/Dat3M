@@ -3,17 +3,13 @@ package com.dat3m.ui.options;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.ui.button.ClearButton;
-import com.dat3m.ui.button.GraphButton;
-import com.dat3m.ui.button.RelsButton;
 import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
-import com.dat3m.ui.options.utils.ArchManager;
+import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.options.utils.Method;
 import com.dat3m.ui.utils.UiOptions;
-import com.dat3m.ui.options.utils.Task;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -34,15 +30,11 @@ public class OptionsPane extends JPanel implements ActionListener {
 
 	public final static int OPTWIDTH = 300;
 	
-    private final IconPane iconPane;
+    private final JLabel iconPane;
 
-    private final Selector<Task> taskPane;
-    private final Selector<Mode> modePane;
     private final Selector<Alias> aliasPane;
     private final Selector<Method> methodPane;
 
-    private final ArchManager archManager;
-    private final Selector<Arch> sourcePane;
     private final Selector<Arch> targetPane;
 
     private final BoundField boundField;
@@ -50,39 +42,26 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     private final JButton testButton;
     private final JButton clearButton;
-    private final GraphButton graphButton;
-    private final RelsButton relsButton;
 
     private final JTextPane consolePane;
-
-    private final RelSelector relSelector;
 
     public OptionsPane(){
         super(new GridLayout(1,0));
 
         int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
-        iconPane = new IconPane(IconCode.DARTAGNAN, height, JLabel.CENTER);
+        iconPane = new JLabel(IconHelper.getIcon(IconCode.DARTAGNAN, height), JLabel.CENTER);
 
-        taskPane = new Selector<>(EnumSet.allOf(Task.class).toArray(new Task[0]), ControlCode.TASK);
-        modePane = new Selector<>(EnumSet.allOf(Mode.class).toArray(new Mode[0]), ControlCode.MODE);
         aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
         methodPane = new Selector<>(EnumSet.allOf(Method.class).toArray(new Method[0]), ControlCode.METHOD);
 
         Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
-        sourcePane = new Selector<>(architectures, ControlCode.SOURCE);
-        sourcePane.setEnabled(false);
         targetPane = new Selector<>(architectures, ControlCode.TARGET);
-        archManager = new ArchManager(sourcePane, targetPane);
 
         boundField = new BoundField();
         timeoutField = new TimeoutField();
 
         testButton = new TestButton();
         clearButton = new ClearButton();
-        graphButton = new GraphButton();
-
-        relSelector = new RelSelector(taskPane);
-        relsButton = new RelsButton(relSelector);
 
         consolePane = new JTextPane();
         consolePane.setEditable(false);
@@ -92,62 +71,32 @@ public class OptionsPane extends JPanel implements ActionListener {
     }
 
     private void bindListeners(){
-        taskPane.addActionListener(archManager);
-        taskPane.addActionListener(iconPane);
 		// optionsPane needs to listen to options to clean the console
 		// Alias and Mode do not change the result and thus we don't listen to them 
-        taskPane.addActionListener(this);
 		targetPane.addActionListener(this);
-		sourcePane.addActionListener(this);
 		boundField.addActionListener(this);
 		timeoutField.addActionListener(this);
 		clearButton.addActionListener(this);
-		// Enabling graph options depends on mode
-		modePane.addActionListener(graphButton);
-		// Enabling rel selector depends on mode and graph button 
-		modePane.addActionListener(relsButton);
-		graphButton.addActionListener(relsButton);
-    }
-
-    public Selector<Task> getTaskPane(){
-        return taskPane;
-    }
-
-    public ArchManager getArchManager(){
-        return archManager;
     }
 
     public JButton getTestButton(){
         return testButton;
     }
 
-    public GraphButton getGraphButton(){
-        return graphButton;
-    }
-
     public JTextPane getConsolePane(){
         return consolePane;
     }
 
-    public RelSelector getRelSelector(){
-        return relSelector;
-    }
-
     public UiOptions getOptions(){
         Settings settings = new Settings(
-                (Mode)modePane.getSelectedItem(),
                 (Alias)aliasPane.getSelectedItem(),
                 Integer.parseInt(boundField.getText()),
-                Integer.parseInt(timeoutField.getText()),
-                graphButton.isEnabled() && graphButton.isSelected(),
-                relSelector.getSelection()
+                Integer.parseInt(timeoutField.getText())
         );
 
-        Task task = (Task)taskPane.getSelectedItem();
-        Arch source = (Arch)sourcePane.getSelectedItem();
         Arch target = (Arch)targetPane.getSelectedItem();
         Method method = (Method)methodPane.getSelectedItem();
-        return new UiOptions(task, source, target, method, settings);
+        return new UiOptions(target, method, settings);
     }
 
     private int getIconHeight(){
@@ -170,20 +119,12 @@ public class OptionsPane extends JPanel implements ActionListener {
         boundsPane.setMaximumSize(new Dimension(OPTWIDTH, 50));
         boundsPane.setDividerSize(0);
 
-        JSplitPane archPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        archPane.setLeftComponent(sourcePane);
-        archPane.setRightComponent(targetPane);
-        archPane.setMaximumSize(new Dimension(OPTWIDTH, 50));
-        archPane.setDividerSize(0);
-
         // Inner borders
         Border emptyBorder = BorderFactory.createEmptyBorder();
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        graphPane.setLeftComponent(graphButton);
-        graphPane.setRightComponent(relsButton);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { taskPane, archPane, modePane, aliasPane, methodPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { targetPane, aliasPane, methodPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);

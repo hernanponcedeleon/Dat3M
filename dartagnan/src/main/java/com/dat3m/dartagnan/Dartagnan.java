@@ -7,10 +7,8 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.microsoft.z3.enumerations.Z3_ast_print_mode.Z3_PRINT_SMTLIB_FULL;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -21,12 +19,10 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Graph;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
@@ -85,6 +81,7 @@ public class Dartagnan {
             System.exit(0);
             return;
         }
+        logger.info("Target: " + target);
         
         Settings settings = options.getSettings();
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
@@ -108,12 +105,6 @@ public class Dartagnan {
         	new WitnessBuilder(p, ctx, s, result, options).write();
         }
         
-        if(settings.getDrawGraph() && canDrawGraph(p.getAss(), result.equals(FAIL))) {
-        	ctx.setPrintMode(Z3_PRINT_SMTLIB_FULL);
-            drawGraph(new Graph(s.getModel(), ctx, p, settings.getGraphRelations()), options.getGraphFilePath());
-            System.out.println("Execution graph is written to " + options.getGraphFilePath());
-        }
-
         ctx.close();
     }
 
@@ -136,23 +127,4 @@ public class Dartagnan {
 				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
 		}
 	}
-
-    public static boolean canDrawGraph(AbstractAssert ass, boolean result){
-        String type = ass.getType();
-        if(type == null){
-            return result;
-        }
-
-        if(result){
-            return type.equals(AbstractAssert.ASSERT_TYPE_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FINAL);
-        }
-        return type.equals(AbstractAssert.ASSERT_TYPE_NOT_EXISTS) || type.equals(AbstractAssert.ASSERT_TYPE_FORALL);
-    }
-
-    public static void drawGraph(Graph graph, String path) throws IOException {
-        File newTextFile = new File(path);
-        FileWriter fw = new FileWriter(newTextFile);
-        fw.write(graph.toString());
-        fw.close();
-    }
 }

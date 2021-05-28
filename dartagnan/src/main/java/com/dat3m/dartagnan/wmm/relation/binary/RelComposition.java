@@ -56,13 +56,28 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
+    public TupleSet getMinTupleSetRecursive(){
+        if(recursiveGroupId > 0 && maxTupleSet != null){
+            BranchEquivalence eq = task.getBranchEquivalence();
+            minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
+                    (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+            removeMutuallyExclusiveTuples(minTupleSet);
+            return minTupleSet;
+        }
+        return getMinTupleSet();
+    }
+
+    @Override
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
+            BranchEquivalence eq = task.getBranchEquivalence();
             TupleSet set1 = r1.getMaxTupleSetRecursive();
             TupleSet set2 = r2.getMaxTupleSetRecursive();
             for(Tuple rel1 : set1){
                 for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
-                    maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                    if (!eq.areMutuallyExclusive(rel1.getFirst(), rel2.getSecond())) {
+                        maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
+                    }
                 }
             }
             return maxTupleSet;
@@ -145,57 +160,6 @@ public class RelComposition extends BinaryRelation {
         for(Tuple tuple : encodeTupleSet) {
             enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
         }
-        return enc;
-    }
-
-    @Override
-    protected BoolExpr encodeIDL(Context ctx) {
-        if(recursiveGroupId == 0){
-            return encodeApprox(ctx);
-        }
-
-        BoolExpr enc = ctx.mkTrue();
-
-        boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
-        boolean recurseInR2 = (r2.getRecursiveGroupId() & recursiveGroupId) > 0;
-
-        TupleSet r1Set = r1.getEncodeTupleSet();
-        TupleSet r2Set = r2.getEncodeTupleSet();
-
-        Map<Integer, BoolExpr> orClauseMap = new HashMap<>();
-        Map<Integer, BoolExpr> idlClauseMap = new HashMap<>();
-        for(Tuple tuple : encodeTupleSet){
-            orClauseMap.put(tuple.hashCode(), ctx.mkFalse());
-            idlClauseMap.put(tuple.hashCode(), ctx.mkFalse());
-        }
-
-        for(Tuple tuple1 : r1Set){
-            Event e1 = tuple1.getFirst();
-            Event e3 = tuple1.getSecond();
-            for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                Event e2 = tuple2.getSecond();
-                int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
-                if(orClauseMap.containsKey(id)){
-                    BoolExpr opt1 = r1.getSMTVar(tuple1, ctx);
-                    BoolExpr opt2 = r2.getSMTVar(tuple2, ctx);
-                    orClauseMap.put(id, ctx.mkOr(orClauseMap.get(id), ctx.mkAnd(opt1, opt2)));
-
-                    if(recurseInR1){
-                        opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e3, ctx)));
-                    }
-                    if(recurseInR2){
-                        opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e3, e2, ctx)));
-                    }
-                    idlClauseMap.put(id, ctx.mkOr(idlClauseMap.get(id), ctx.mkAnd(opt1, opt2)));
-                }
-            }
-        }
-
-        for(Tuple tuple : encodeTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), orClauseMap.get(tuple.hashCode())));
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), idlClauseMap.get(tuple.hashCode())));
-        }
-
         return enc;
     }
 

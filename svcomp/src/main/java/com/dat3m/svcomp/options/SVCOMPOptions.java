@@ -25,6 +25,7 @@ public class SVCOMPOptions extends BaseOptions {
 	private static final String WITNESS_PATH_OPTION = "witness";
 	private static final String OPTIMIZATION_OPTION = "optimization";
 	private static final String INTERGER_ENCODING_OPTION = "integer_encoding";
+	private static final String BOOGIESAN = "sanitise";
 	
     private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
     private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
@@ -34,6 +35,7 @@ public class SVCOMPOptions extends BaseOptions {
     private SolverTypes solver;
     private AnalysisTypes analysis;
     private String witnessFilePath;
+    private boolean boogiesan;
     
     public SVCOMPOptions(){
         super();
@@ -61,6 +63,9 @@ public class SVCOMPOptions extends BaseOptions {
                 "unbounded-integer=use SMT integer theory, " +
                 "wrapped-integer=use SMT integer theory but model wrap-around behavior" + 
                 " [default: unbounded-integer]"));
+
+        addOption(new Option(BOOGIESAN, false,
+                "Generates (also) a sanitised boogie file saved as /output/boogiesan.bpl"));
 }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -73,6 +78,7 @@ public class SVCOMPOptions extends BaseOptions {
         
     	optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
+        boogiesan = cmd.hasOption(BOOGIESAN);
         
         solver = cmd.hasOption(SOLVER_OPTION) ? fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
         if(!supported_solvers.contains(solver)) {
@@ -115,5 +121,9 @@ public class SVCOMPOptions extends BaseOptions {
 
     public AnalysisTypes getAnalysis(){
 		return analysis;
+    }
+
+    public boolean getBoogieSan(){
+		return boogiesan;
     }
 }

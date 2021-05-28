@@ -4,22 +4,36 @@
 <img src="ui/src/main/resources/dat3m.png">
 </p>
 
-This tool suite is currently composed of two tools
-
-* **Dartagnan:** a tool to check state reachability under weak memory models, and
-* **Porthos:** a tool to check state inclusion under weak memory models.
+**Dartagnan** is a tool to check state reachability under weak memory models.
 
 Requirements
 ======
 * [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
-* [Java 16](https://openjdk.java.net/projects/jdk/16/) (if you want to compile the source)
-* [SMACK 2.5.0](https://github.com/smackers/smack) (only to verify C programs)
+* [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile from source)
+* [SMACK 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
 
 Installation
 ======
+
+**Docker**
+
+The docker contains everything pre-installed to run the tool.
+
+1. Build the container:
+```
+docker build . -t dartagnan
+```
+
+2. Run the container:
+```
+docker run -w /home/Dat3M -v /sys/fs/cgroup:/sys/fs/cgroup:rw -it dartagnan /bin/bash
+```
+
+**From Sources**
+
 Download the z3 dependency
 ```
-mvn install:install-file -Dfile=lib/z3-4.8.6.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.6 -Dpackaging=jar
+mvn install:install-file -Dfile=lib/z3-4.8.10.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.10 -Dpackaging=jar
 ```
 Set Dat3M's home, the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
 ```
@@ -28,13 +42,13 @@ export PATH=$DAT3M_HOME/:$PATH
 export LD_LIBRARY_PATH=$DAT3M_HOME/lib/:$LD_LIBRARY_PATH
 ```
 
-To build the tools run
+To build the tool run
 ```
 mvn clean install -DskipTests
 ```
 
-Unit Tests
-======
+**Unit Tests**
+
 We provide a set of unit tests that can be run by
 ```
 mvn test
@@ -43,8 +57,8 @@ mvn test
 
 Usage
 ======
-Dat3M comes with a user interface (UI) where it is easy to select the tool to use (Dartagnan or Porthos), import, export and modify both the program and the memory model and select the options for the verification engine (see below).
-You can start the UI by running
+Dat3M comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+You can start the user interface by running
 ```
 java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 ```
@@ -52,40 +66,42 @@ java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 <img src="ui/src/main/resources/ui.jpg">
 </p>
 
-Dartagnan supports programs written in the `.litmus` or `.bpl` (Boogie) formats. For Porthos, programs shall be written in the `.pts` format which is explained [here](porthos/pts.md).
+Dartagnan supports programs written in the `.litmus` or `.bpl` (Boogie) formats.
 
 If SMACK was correctly installed, C programs can be converted to Boogie using the following command:
 ```
 smack -t -bpl <new Boogie file> <C file> [--integer-encoding bit-vector] --no-memory-splitting --clang-options="-DCUSTOM_VERIFIER_ASSERT -I\$DAT3M_HOME/include/"
 ```
 
-You can also run Dartagnan and Porthos from the console.
+You can also run Dartagnan from the console:
 
-For checking reachability (Dartagnan):
 ```
 java -jar dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar -cat <CAT file> [-t <target>] -i <program file> [options]
 ```
-For checking state inclusion (Porthos):
-```
-java -jar porthos/target/porthos-2.0.7-jar-with-dependencies.jar -s <source> -scat <CAT file> -t <target> -tcat <CAT file> -i <program file> [options]
-```
-The `-cat`,`-scat`,`-tcat` options specify the paths to the CAT files.
+The `-cat` option specifies the path to the CAT file.
 
-For programs written in the `.bpl` (if the original c program uses the `std::atomic` library) or `.pts` format, `\<source>` and `\<target>` specify the architectures to which the program will be compiled. They must be one of the following: 
+For programs written in the `.bpl`, `\<target>` specify the architectures to which the program will be compiled. It must be one of the following: 
 - none
 - tso
 - power
 - arm
 - arm8
 
-Program written in `.litmus` format do not require such options.
+Program written in `.litmus` format do not require such option.
 
 Other optional arguments include:
-- `-m, --mode {knastertarski, idl, kleene}`: specifies the encoding for fixed points. Knaster-tarski (default mode) uses the encoding introduced in [2]. Mode idl uses the Integer Difference Logic iteration encoding introduced in [1]. Kleene mode uses the Kleene iteration encoding using one Boolean variable for each iteration step.
 - `-a, --alias {none, andersen, cfs}`: specifies the alias-analysis used. Option andersen (the default one) uses a control-flow-insensitive method. Option cfs uses a control-flow-sensitive method. Option none performs no alias analysis.
 - `-unroll`: unrolling bound for the BMC.
 
 Dartagnan supports input non-determinism, assumptions and assertions using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) commands `__VERIFIER_nondet_X`, `__VERIFIER_assume` and `__VERIFIER_assert`.
+
+**SV-COMP Experiments**
+
+The docker container includes the [benchexec](https://github.com/sosy-lab/benchexec) framework to run all [SV-COMP](https://sv-comp.sosy-lab.org/) experiments, just run (this can take a couple of hs)
+```
+benchexec dartagnan.xml --no-container
+```
+The `dartagnan.xml` file instructs benchexec to use 4 CPUs, so either be sure your docker configuration has access to 4 CPUs or change the entry `cpuCores="4"` to match you CPUs limit.
 
 Authors and Contact
 ======

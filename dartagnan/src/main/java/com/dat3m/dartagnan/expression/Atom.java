@@ -34,11 +34,9 @@ public class Atom extends BExpr implements ExprInterface {
 	@Override
 	public Expr getLastValueExpr(Context ctx){
 		boolean bp = getPrecision() > 0;
-		return ctx.mkITE(
-				op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx),
-				bp ? ctx.mkBV(1, getPrecision()) : ctx.mkInt(1),
-				bp ? ctx.mkBV(0, getPrecision()) : ctx.mkInt(0)
-		);
+		return bp? 
+				ctx.mkITE(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), ctx.mkBV(1, getPrecision()), ctx.mkBV(0, getPrecision())) :
+				ctx.mkITE(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), ctx.mkInt(1), ctx.mkInt(0));
 
 	}
 

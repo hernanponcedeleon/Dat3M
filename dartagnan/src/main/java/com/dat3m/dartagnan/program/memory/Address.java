@@ -17,11 +17,24 @@ import com.dat3m.dartagnan.program.event.Event;
 public class Address extends IConst implements ExprInterface {
 
     private final int index;
+    private BigInteger constantValue;
 
     Address(int index, int precision){
         super(BigInteger.valueOf(index), precision);
         this.index = index;
     }
+
+    public boolean hasConstantValue() {
+     	return this.constantValue != null;
+     }
+
+    public BigInteger getConstantValue() {
+     	return this.constantValue;
+     }
+
+    public void setConstantValue(BigInteger value) {
+     	this.constantValue = value;
+     }
 
     @Override
     public ImmutableSet<Register> getRegs(){
@@ -70,6 +83,9 @@ public class Address extends IConst implements ExprInterface {
 
     @Override
     public Expr toZ3Int(Context ctx){
+    	if(constantValue != null) {
+    		return precision > 0 ? ctx.mkBV(constantValue.toString(), precision) : ctx.mkInt(constantValue.toString());
+    	}
 		return precision > 0 ? ctx.mkBVConst("memory_" + index, precision) : ctx.mkIntConst("memory_" + index);
     }
 

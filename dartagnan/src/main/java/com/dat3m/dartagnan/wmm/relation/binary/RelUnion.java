@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -52,10 +51,18 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
+    public TupleSet getMinTupleSetRecursive(){
+        if(recursiveGroupId > 0 && minTupleSet != null){
+            minTupleSet.addAll(Sets.union(r1.getMinTupleSetRecursive(), r2.getMinTupleSetRecursive()));
+            return minTupleSet;
+        }
+        return getMinTupleSet();
+    }
+
+    @Override
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
-            maxTupleSet.addAll(r1.getMaxTupleSetRecursive());
-            maxTupleSet.addAll(r2.getMaxTupleSetRecursive());
+            maxTupleSet.addAll(Sets.union(r1.getMaxTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
             return maxTupleSet;
         }
         return getMaxTupleSet();
@@ -78,36 +85,6 @@ public class RelUnion extends BinaryRelation {
             } else {
                 enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(opt1, opt2)));
             }
-        }
-        return enc;
-    }
-
-    @Override
-    protected BoolExpr encodeIDL(Context ctx) {
-        if(recursiveGroupId == 0){
-            return encodeApprox(ctx);
-        }
-
-        BoolExpr enc = ctx.mkTrue();
-
-        boolean recurseInR1 = (r1.getRecursiveGroupId() & recursiveGroupId) > 0;
-        boolean recurseInR2 = (r2.getRecursiveGroupId() & recursiveGroupId) > 0;
-
-        for(Tuple tuple : encodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
-            BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(opt1, opt2)));
-
-            if(recurseInR1){
-                opt1 = ctx.mkAnd(opt1, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r1.getName(), e1, e2, ctx)));
-            }
-            if(recurseInR2){
-                opt2 = ctx.mkAnd(opt2, ctx.mkGt(Utils.intCount(this.getName(), e1, e2, ctx), Utils.intCount(r2.getName(), e1, e2, ctx)));
-            }
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(opt1, opt2)));
         }
         return enc;
     }

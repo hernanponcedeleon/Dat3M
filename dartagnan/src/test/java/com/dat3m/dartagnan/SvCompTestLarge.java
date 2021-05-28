@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,7 +27,7 @@ public class SvCompTestLarge extends AbstractSvCompTest {
         String cat_file = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
-        Settings s1 = new Settings(Mode.KNASTER, Alias.CFIS, 1, TIMEOUT, false);
+        Settings s1 = new Settings(Alias.CFIS, 1, TIMEOUT);
 
         List<Object[]> data = new ArrayList<>();
         String base = TEST_RESOURCE_PATH + "large/";

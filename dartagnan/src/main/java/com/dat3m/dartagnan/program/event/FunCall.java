@@ -21,7 +21,7 @@ public class FunCall extends Event {
 
     @Override
     public String toString(){
-        return "=== Calling " + funName + "===";
+        return "=== Calling " + funName + " ===";
     }
 
     public String getFunctionName() {

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.wmm.utils.Mode;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
@@ -32,7 +31,7 @@ public class DartagnanArrayValidTest {
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
-        Settings settings = new Settings(Mode.KNASTER, Alias.CFIS, 1, 60, false);
+        Settings settings = new Settings(Alias.CFIS, 1, 60);
         return Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "arrays/ok/"))
                 .filter(Files::isRegularFile)
                 .filter(f -> (f.toString().endsWith("litmus")))

@@ -29,7 +29,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.GlobalSettings;
+
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
@@ -43,6 +47,7 @@ import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
+import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.And_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Assert_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Assign_cmdContext;
@@ -106,6 +111,8 @@ import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
+
+    private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
 	
 	protected ProgramBuilder programBuilder;
 	protected int threadCount = 0;
@@ -150,6 +157,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	
     @Override
     public Object visitMain(MainContext ctx) {
+    	visitLine_comment(ctx.line_comment(0));
     	for(Func_declContext funDecContext : ctx.func_decl()) {
     		visitFunc_decl(funDecContext);
     	}
@@ -206,6 +214,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			ExprInterface def = ((Atom)exp).getRHS();
 			constantsMap.put(name, def);
 		}
+		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
+ 			Address add = (Address)((Atom)exp).getLHS();
+ 			ExprInterface def = ((Atom)exp).getRHS();
+ 			add.setConstantValue(def.reduce().getValue());
+ 		}
 		return null;
 	}
 
@@ -836,4 +849,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	public Object visitDec(DecContext ctx) {
         throw new ParsingException("Floats are not yet supported");
 	}
+	
+	@Override
+	public Object visitLine_comment(BoogieParser.Line_commentContext ctx) {
+		String line = ctx.getText();
+		line = line.substring(line.indexOf("version") + 8, line.indexOf("for"));
+		logger.info("SMACK version: " + line);
+		return null;
+	}
+
 }

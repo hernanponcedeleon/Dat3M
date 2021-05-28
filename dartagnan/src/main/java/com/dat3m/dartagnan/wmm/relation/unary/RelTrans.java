@@ -10,13 +10,8 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intCount;
 
 /**
  *
@@ -131,134 +126,6 @@ public class RelTrans extends UnaryRelation {
         return enc;
     }
 
-    @Override
-    protected BoolExpr encodeIDL(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
-
-        for(Tuple tuple : fullEncodeTupleSet){
-            Event e1 = tuple.getFirst();
-            Event e2 = tuple.getSecond();
-
-            BoolExpr orClause = ctx.mkFalse();
-            for(Tuple tuple2 : fullEncodeTupleSet.getByFirst(e1)){
-                if (!tuple2.equals(tuple)) {
-                    Event e3 = tuple2.getSecond();
-                    if (transitiveReachabilityMap.get(e3).contains(e2)) {
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(
-                                this.getSMTVar(e1, e3, ctx),
-                                this.getSMTVar(e3, e2, ctx),
-                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e1, e3, ctx)),
-                                ctx.mkGt(intCount(this.idlConcatName(), e1, e2, ctx), intCount(this.getName(), e3, e2, ctx))));
-                    }
-                }
-            }
-
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
-
-            orClause = ctx.mkFalse();
-            for(Tuple tuple2 : fullEncodeTupleSet.getByFirst(e1)){
-                if (!tuple2.equals(tuple)) {
-                    Event e3 = tuple2.getSecond();
-                    if (transitiveReachabilityMap.get(e3).contains(e2)) {
-                        orClause = ctx.mkOr(orClause, ctx.mkAnd(
-                                this.getSMTVar(e1, e3, ctx),
-                                this.getSMTVar(e3, e2, ctx)));
-                    }
-                }
-            }
-
-            enc = ctx.mkAnd(enc, ctx.mkEq(edge(this.idlConcatName(), e1, e2, ctx), orClause));
-
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(
-                    r1.getSMTVar(tuple, ctx),
-                    ctx.mkAnd(edge(this.idlConcatName(), e1, e2, ctx), ctx.mkGt(intCount(this.getName(), e1, e2, ctx), intCount(this.idlConcatName(), e1, e2, ctx)))
-            )));
-
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(
-                    r1.getSMTVar(tuple, ctx),
-                    edge(this.idlConcatName(), e1, e2, ctx)
-            )));
-        }
-
-        return enc;
-    }
-
-    @Override
-    protected BoolExpr encodeLFP(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
-        int iteration = 0;
-
-        // Encode initial iteration
-        Set<Tuple> currentTupleSet = new HashSet<>(r1.getEncodeTupleSet());
-        for(Tuple tuple : currentTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(
-                    edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx),
-                    edge(r1.getName(), tuple.getFirst(), tuple.getSecond(), ctx)
-            ));
-        }
-
-        while(true){
-            Map<Tuple, Set<BoolExpr>> currentTupleMap = new HashMap<>();
-            Set<Tuple> newTupleSet = new HashSet<>();
-
-            // Original tuples from the previous iteration
-            for(Tuple tuple : currentTupleSet){
-                currentTupleMap.putIfAbsent(tuple, new HashSet<>());
-                currentTupleMap.get(tuple).add(
-                        edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
-                );
-            }
-
-            // Combine tuples from the previous iteration
-            for(Tuple tuple1 : currentTupleSet){
-                Event e1 = tuple1.getFirst();
-                Event e3 = tuple1.getSecond();
-                for(Tuple tuple2 : currentTupleSet){
-                    if(e3.getCId() == tuple2.getFirst().getCId()){
-                        Event e2 = tuple2.getSecond();
-                        Tuple newTuple = new Tuple(e1, e2);
-                        currentTupleMap.putIfAbsent(newTuple, new HashSet<>());
-                        currentTupleMap.get(newTuple).add(ctx.mkAnd(
-                                edge(r1.getName() + "_" + iteration, e1, e3, ctx),
-                                edge(r1.getName() + "_" + iteration, e3, e2, ctx)
-                        ));
-
-                        if(newTuple.getFirst().getCId() != newTuple.getSecond().getCId()){
-                            newTupleSet.add(newTuple);
-                        }
-                    }
-                }
-            }
-
-            iteration++;
-
-            // Encode this iteration
-            for(Tuple tuple : currentTupleMap.keySet()){
-                BoolExpr orClause = ctx.mkFalse();
-                for(BoolExpr expr : currentTupleMap.get(tuple)){
-                    orClause = ctx.mkOr(orClause, expr);
-                }
-
-                BoolExpr edge = edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx);
-                enc = ctx.mkAnd(enc, ctx.mkEq(edge, orClause));
-            }
-
-            if(!currentTupleSet.addAll(newTupleSet)){
-                break;
-            }
-        }
-
-        // Encode that transitive relation equals the relation at the last iteration
-        for(Tuple tuple : encodeTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(
-                    edge(getName(), tuple.getFirst(), tuple.getSecond(), ctx),
-                    edge(r1.getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
-            ));
-        }
-
-        return enc;
-    }
-
     private TupleSet getFullEncodeTupleSet(TupleSet tuples){
         TupleSet processNow = new TupleSet(Sets.intersection(tuples, getMaxTupleSet()));
         TupleSet result = new TupleSet();
@@ -285,9 +152,5 @@ public class RelTrans extends UnaryRelation {
         }
 
         return result;
-    }
-
-    private String idlConcatName(){
-        return "(" + getName() + ";" + getName() + ")";
     }
 }

@@ -6,7 +6,7 @@ import java.net.URL;
 
 public enum IconCode {
 
-    DAT3M, DARTAGNAN, PORTHOS;
+    DAT3M, DARTAGNAN;
 
     @Override
     public String toString(){
@@ -15,8 +15,6 @@ public enum IconCode {
                 return "Dat3M";
             case DARTAGNAN:
                 return "Dartagnan";
-            case PORTHOS:
-                return "Porthos";
         }
         return super.toString();
     }
@@ -27,8 +25,6 @@ public enum IconCode {
                 return getResource("/dat3m.png");
             case DARTAGNAN:
                 return getResource("/dartagnan.jpg");
-            case PORTHOS:
-                return getResource("/porthos.jpg");
         }
         throw new RuntimeException("Illegal IconCode option");
     }
