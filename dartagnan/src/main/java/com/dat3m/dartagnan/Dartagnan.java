@@ -81,6 +81,7 @@ public class Dartagnan {
             System.exit(0);
             return;
         }
+        logger.info("Target: " + target);
         
         Settings settings = options.getSettings();
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);

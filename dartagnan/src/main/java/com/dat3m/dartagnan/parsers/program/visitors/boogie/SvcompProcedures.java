@@ -31,7 +31,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 
 public class SvcompProcedures {
 
-	static List<String> FENCES = Arrays.asList("After_atomic", "Before_atomic", "Isync" ," Lwsync" ," Mb", "Mfence", 
+	static List<String> FENCES = Arrays.asList("After_atomic", "Before_atomic", "Isync" ,"Lwsync" ," Mb", "Mfence", 
 										"Rcu_lock" , "Rcu_unlock", "Rmb", "Sync", "Sync_rcu","Wmb", "Ish");
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(

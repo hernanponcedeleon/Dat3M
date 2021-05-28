@@ -63,8 +63,6 @@ public class RelUnion extends BinaryRelation {
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
             maxTupleSet.addAll(Sets.union(r1.getMaxTupleSetRecursive(), r2.getMaxTupleSetRecursive()));
-            //maxTupleSet.addAll(r1.getMaxTupleSetRecursive());
-            //maxTupleSet.addAll(r2.getMaxTupleSetRecursive());
             return maxTupleSet;
         }
         return getMaxTupleSet();
