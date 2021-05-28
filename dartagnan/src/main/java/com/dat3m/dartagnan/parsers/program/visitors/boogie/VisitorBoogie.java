@@ -45,6 +45,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.IfExpr;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
@@ -361,6 +362,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	Local event = new Local(ass, expr, currentLine);
 		event.addFilters(EType.ASSERTION);
 		programBuilder.addChild(threadCount, event);
+       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+		programBuilder.addChild(threadCount, new CondJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
     	return null;
     }
     
@@ -395,6 +398,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	    	Local event = new Local(ass, new BConst(false), currentLine);
 			event.addFilters(EType.ASSERTION);
 			programBuilder.addChild(threadCount, event);
+	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+			programBuilder.addChild(threadCount, new CondJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
 			return null;
 		}
 
