@@ -43,11 +43,13 @@ abstract class BasicRegRelation extends StaticRelation {
                     Event lastImplied = impliedWriters.get(impliedWriters.size() - 1);
                     possibleWriters.removeIf(x -> x.getCId() < lastImplied.getCId());
                 }
-                possibleWriters.removeIf(x -> possibleWriters.stream().anyMatch(y -> (x.getCId() < y.getCId()) && eq.isImplied(x ,y)));
+                possibleWriters.removeIf(x -> possibleWriters.stream().anyMatch(y -> (x.getCId() < y.getCId()) && y.cfImpliesExec() && eq.isImplied(x ,y)));
 
                 if (possibleWriters.size() == 1) {
+                    // there is only a single regWriter
                     minTupleSet.add(new Tuple(possibleWriters.stream().findAny().get(), regReader));
                 } else {
+                    // there are multiple regWriters, but some are exclusive to all others
                     for (Event writer : possibleWriters) {
                         if (possibleWriters.stream().allMatch(x -> x==writer || eq.areMutuallyExclusive(x, writer))) {
                             minTupleSet.add(new Tuple(writer, regReader));

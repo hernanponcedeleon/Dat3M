@@ -54,7 +54,7 @@ public class StaticDefaultEventGraph extends StaticEventGraph {
         super.constructFromModel(context);
         graph.constructFromModel(context);
         TupleSet maxTupleSet = relation.getMaxTupleSet();
-        for (Tuple tuple : relation.getEncodeTupleSet()) {
+        for (Tuple tuple : maxTupleSet/*relation.getEncodeTupleSet()*/) {
             // Edges are present IFF the tuple is part of <encodeTupleSet> AND <maxTupleSet>
             // (due to negated edges, the <encodeTupleSet> is not necessarily subset of <maxTupleSet>)
             if (!maxTupleSet.contains(tuple))

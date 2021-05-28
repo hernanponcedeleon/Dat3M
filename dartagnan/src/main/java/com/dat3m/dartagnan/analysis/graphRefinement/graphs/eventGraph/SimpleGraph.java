@@ -152,10 +152,16 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
     public Iterator<Edge> edgeIterator() {
+        if (outgoing == null) {
+            return IteratorUtils.empty();
+        }
         return new InternalIterator();
     }
 
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
+        if (outgoing == null) {
+            return IteratorUtils.empty();
+        }
         DataItem item = get(e, dir);
         return item == null ? IteratorUtils.empty() : item.iterator();
     }

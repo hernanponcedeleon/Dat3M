@@ -65,8 +65,7 @@ public class LocationGraph extends StaticEventGraph {
         public LocIterator() {
             super(true);
             addressIterator = addrEventsMap.keySet().iterator();
-            if (addressIterator.hasNext())
-                curAddress = addressIterator.next();
+            nextAddress();
         }
 
         public LocIterator(EventData fixed, EdgeDirection dir) {

@@ -50,6 +50,7 @@ public class CartesianGraph extends StaticEventGraph {
             if (second.filter(e.getEvent()))
                 secondEvents.add(e);
         }
+        size = firstEvents.size() * secondEvents.size();
     }
 
     @Override

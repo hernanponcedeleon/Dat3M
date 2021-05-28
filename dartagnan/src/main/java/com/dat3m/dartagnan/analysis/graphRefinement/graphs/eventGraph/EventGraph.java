@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public interface EventGraph extends GraphDerivable, Set<Edge> {
 
@@ -35,8 +37,6 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
 
 
 
-
-
     default boolean contains(Edge edge) { return contains(edge.getFirst(), edge.getSecond()); }
     default Timestamp getTime(Edge edge) { return getTime(edge.getFirst(), edge.getSecond()); }
 
@@ -56,6 +56,15 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
     default Iterable<Edge> outEdges(EventData e) {  return new OneTimeIterable<>(outEdgeIterator(e)); }
 
 
+    default Stream<Edge> edgeStream() {
+        Iterable<Edge> iterable = this::edgeIterator;
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+    default Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        Iterable<Edge> iterable = () -> edgeIterator(e, dir);
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
 
 
 
