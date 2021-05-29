@@ -248,12 +248,15 @@ public class ExecutionModel {
             Event e = thread.getEntry();
             int localId = 0;
             do {
-                if (e.wasExecuted(model) && eventFilter.filter(e)) {
+                if (!e.wasExecuted(model)) {
+                    e = e.getSuccessor();
+                    continue;
+                }
+
+                if (eventFilter.filter(e)) {
                     addEvent(e, id++, localId++);
                 }
-                if (e.wasExecuted(model)) {
-                    trackDependencies(e);
-                }
+                trackDependencies(e);
                 //TODO: Add support for ifs
                 if (e instanceof CondJump) {
                     CondJump jump = (CondJump) e;
@@ -359,7 +362,7 @@ public class ExecutionModel {
             RegReaderData reader = (RegReaderData)e;
             HashSet<EventData> deps = new HashSet<>();
             for (Register r : reader.getDataRegs()) {
-                //TODO: The default case should not happen
+                //TODO: The default case should not happen if all registers are assigned
                 deps.addAll(lastRegWrites.getOrDefault(r, Collections.emptySet()));
             }
 
