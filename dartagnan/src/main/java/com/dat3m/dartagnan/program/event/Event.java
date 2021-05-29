@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Thread;
 
@@ -306,7 +307,7 @@ public abstract class Event implements Comparable<Event> {
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
 		this.task = task;
-		if (GlobalSettings.MERGE_CF_VARS) {
+		if (GlobalSettings.MERGE_CF_VARS && !GlobalSettings.ALLOW_PARTIAL_MODELS) {
 			cfVar = ctx.mkBoolConst("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
 		} else {
 			cfVar = ctx.mkBoolConst("cf(" + repr() + ")");
@@ -352,6 +353,19 @@ public abstract class Event implements Comparable<Event> {
 		return cfEnc;
 	}
 
+	public BoolExpr encodePrefixCF(Context ctx, BoolExpr cond) {
+		if(cfEnc == null){
+			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
+			cfEnc = ctx.mkAnd(ctx.mkImplies(cfVar, cfCond),
+					ctx.mkImplies(
+							ctx.mkAnd(cfCond, ctx.mkNot(task.getViolationLiteral())),
+							cfVar
+					));
+			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
+		}
+		return cfEnc;
+	}
+
 	protected BoolExpr encodeExec(Context ctx){
 		return ctx.mkTrue();
 	}
@@ -360,11 +374,13 @@ public abstract class Event implements Comparable<Event> {
 	// =============== Utility methods ==================
 
 	public boolean wasExecuted(Model model) {
-		return model.getConstInterp(exec()).isTrue();
+		Expr expr = model.getConstInterp(exec());
+		return expr != null && expr.isTrue();
 	}
 
 	public boolean wasInControlFlow(Model model) {
-		return model.getConstInterp(cf()).isTrue();
+		Expr expr = model.getConstInterp(cf());
+		return expr != null && expr.isTrue();
 	}
 
 	public boolean cfImpliesExec() {

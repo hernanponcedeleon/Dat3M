@@ -120,6 +120,8 @@ public class VerificationTask {
     public void initialiseEncoding(Context ctx) {
         program.initialise(this, ctx);
         memoryModel.initialise(this, ctx);
+
+        violationLiteral = ctx.mkBoolConst("vioLiteral"); // TEST CODE
     }
 
     public BoolExpr encodeProgram(Context ctx) {
@@ -144,11 +146,20 @@ public class VerificationTask {
         return memoryModel.consistent(ctx);
     }
 
+    // ===== TESTCODE =====
+    private BoolExpr violationLiteral = null;
+
+    public BoolExpr getViolationLiteral() {
+        return violationLiteral;
+    }
+
     public BoolExpr encodeAssertions(Context ctx) {
         BoolExpr assertionEncoding = program.getAss().encode(ctx);
         if (program.getAssFilter() != null) {
-            assertionEncoding = ctx.mkAnd(program.getAssFilter().encode(ctx));
+            assertionEncoding = ctx.mkAnd(assertionEncoding, program.getAssFilter().encode(ctx));
         }
+        assertionEncoding = ctx.mkAnd(violationLiteral, ctx.mkImplies(violationLiteral, assertionEncoding));
+        // TODO: In the bound check, we might have to force violationLiteral = false!
         return assertionEncoding;
     }
 

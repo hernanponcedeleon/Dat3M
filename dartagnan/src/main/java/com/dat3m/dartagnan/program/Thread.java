@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.If;
@@ -172,7 +173,11 @@ public class Thread {
         			ifStack.pop();
         		}    			
     		}
-    		enc = ctx.mkAnd(enc, e.encodeCF(ctx, guard));
+    		if (GlobalSettings.ALLOW_PARTIAL_MODELS) {
+                enc = ctx.mkAnd(enc, e.encodePrefixCF(ctx, guard));
+            } else {
+                enc = ctx.mkAnd(enc, e.encodeCF(ctx, guard));
+            }
     		guard = e.cf();
     		if(e instanceof CondJump) {
     			guard = ctx.mkAnd(guard, ctx.mkNot(((CondJump)e).getGuard().toZ3Bool(e, ctx)));

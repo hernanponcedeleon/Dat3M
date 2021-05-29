@@ -17,6 +17,7 @@ public class GlobalSettings {
     public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
 
     // === Encoding ===
+    public static final boolean ALLOW_PARTIAL_MODELS = false; // ONLY works if MERGE_CF_VARS is 'false'
     public static final boolean MERGE_CF_VARS = true;
     public static final boolean ANTISYMM_CO = false;
 
@@ -33,7 +34,7 @@ public class GlobalSettings {
     public static final int MAX_RECURSION_DEPTH = 200;
 
     // === Debug ===
-    public static final boolean ENABLE_DEBUG_OUTPUT = false;
+    public static final boolean ENABLE_DEBUG_OUTPUT = true;
 
     public static void LogGlobalSettings() {
     	logger.info("Z3 version: " + Version.getFullVersion());
