@@ -216,6 +216,9 @@ public class Refinement {
         long totalResolutionTime = 0;
         long totalNumGuesses = 0;
         long totalNumViolations = 0;
+        long totalModelSize = 0;
+        long minModelSize = Long.MAX_VALUE;
+        long maxModelSize = Long.MIN_VALUE;
         int satDepth = 0;
 
         for (RefinementStats stats : statList) {
@@ -226,11 +229,18 @@ public class Refinement {
             totalNumGuesses += stats.getNumGuessedCoherences();
             totalNumViolations += stats.getNumComputedViolations();
             satDepth = Math.max(satDepth, stats.getSaturationDepth());
+
+            totalModelSize += stats.getModelSize();
+            minModelSize = Math.min(stats.getModelSize(), minModelSize);
+            maxModelSize = Math.max(stats.getModelSize(), maxModelSize);
         }
 
         System.out.println(" ======= Summary ========");
         System.out.println("Total solving time(ms): " + totalSolvingTime);
         System.out.println("Total model construction time(ms): " + totalModelTime);
+        System.out.println("Average model size (#events): " + totalModelSize / statList.size());
+        System.out.println("Min model size (#events): " + minModelSize);
+        System.out.println("Max model size (#events): " + maxModelSize);
         System.out.println("Total violation computation time(ms): " + totalViolationComputationTime);
         System.out.println("Total resolution time(ms): " + totalResolutionTime);
         System.out.println("Total search time(ms): " + totalSearchTime);

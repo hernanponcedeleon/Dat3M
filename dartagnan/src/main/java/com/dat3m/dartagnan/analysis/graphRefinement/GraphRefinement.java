@@ -79,6 +79,7 @@ public class GraphRefinement {
         long curTime = System.currentTimeMillis();
         populateFromModel(model, ctx);
         stats.modelConstructionTime = System.currentTimeMillis() - curTime;
+        stats.modelSize = executionModel.getEventList().size();
         // =================================
 
         // ======= Initialize search =======
