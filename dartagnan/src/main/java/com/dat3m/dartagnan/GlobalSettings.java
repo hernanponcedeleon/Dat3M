@@ -36,7 +36,7 @@ public class GlobalSettings {
     public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
     // === Testing ===
-    public static final boolean USE_BUGGY_ALIAS_ANALYSIS = true;
+    public static final boolean USE_BUGGY_ALIAS_ANALYSIS = false;
 
     public static void LogGlobalSettings() {
     	logger.info("Z3 version: " + Version.getFullVersion());
