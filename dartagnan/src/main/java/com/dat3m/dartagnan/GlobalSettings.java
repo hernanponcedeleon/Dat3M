@@ -36,6 +36,9 @@ public class GlobalSettings {
     // === Debug ===
     public static final boolean ENABLE_DEBUG_OUTPUT = true;
 
+    // === Testing ===
+    public static final boolean USE_BUGGY_ALIAS_ANALYSIS = false;
+
     public static void LogGlobalSettings() {
     	logger.info("Z3 version: " + Version.getFullVersion());
     	logger.info("ATOMIC_AS_LOCK: " + ATOMIC_AS_LOCK);
@@ -49,5 +52,6 @@ public class GlobalSettings {
     	logger.info("PERFORM_REORDERING: " + PERFORM_REORDERING);
     	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
+    	logger.info("USE_BUGGY_ALIAS_ANALYSIS: " + USE_BUGGY_ALIAS_ANALYSIS);
     }
 }

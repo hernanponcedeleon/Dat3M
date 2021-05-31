@@ -1,6 +1,11 @@
 package com.dat3m.dartagnan.witness;
 
 import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static java.lang.Integer.parseInt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +16,8 @@ import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.collect.Lists;
 import com.microsoft.z3.BoolExpr;
@@ -71,14 +78,19 @@ public class WitnessGraph extends ElemWithAttributes {
 	public BoolExpr encode(Program program, Context ctx) {
 		BoolExpr enc = ctx.mkTrue();
 		List<Event> previous = new ArrayList<>();
-		for(Edge e : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			List<Event> events = program.getEvents().stream().filter(f -> f.hasFilter(MEMORY) && f.getCLine() == e.getCline()).collect(Collectors.toList());
-			if(!previous.isEmpty() && !events.isEmpty() && previous.get(0).getCLine() != e.getCline()) {
-				enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> Utils.edge("hb", p.get(0), p.get(1), ctx)).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
+		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
+			if(getAttributed(PRODUCER.toString()).equals("Dartagnan") 
+					&& edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(HBPOS.toString())) {
+				Event ev = program.getEvents().stream().filter(e -> e.getCId() == parseInt(edge.getAttributed(EVENTID.toString()))).findFirst().get();
+				enc = ctx.mkAnd(enc, ctx.mkEq(intVar("hb", ev, ctx), ctx.mkInt(parseInt(edge.getAttributed(HBPOS.toString())))));
+			} 
+			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream().filter(e -> e.getCLine() == edge.getCline()).collect(Collectors.toList());
+			if(!previous.isEmpty() && !events.isEmpty()) {
+				enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> ctx.mkLe(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx))).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
 			}
 			if(!events.isEmpty()) {
 				previous = events;				
-			}
+			}				
 		}
 		return enc;
 	}
