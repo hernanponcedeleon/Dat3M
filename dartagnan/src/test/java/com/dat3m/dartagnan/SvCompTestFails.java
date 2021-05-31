@@ -25,12 +25,14 @@ public class SvCompTestFails extends AbstractSvCompTest {
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
         String cat_file = GlobalSettings.ATOMIC_AS_LOCK ? "cat/svcomp-locks.cat" : "cat/svcomp.cat";
+        cat_file = "cat/aarch64.cat";
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat_file));
 
-        Settings s6 = new Settings(Alias.CFIS, 6, TIMEOUT);
+        Settings s2 = new Settings(Alias.CFIS, 3, TIMEOUT);
 
         List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/concurrency/stack-1-O0.bpl", wmm, s6});
+        data.add(new Object[]{"../lfds/ms_datCAS-O0.bpl", wmm, s2});
+        //data.add(new Object[]{"../output/ms-test-O0.bpl", wmm, s2});
 
         return data;
     }

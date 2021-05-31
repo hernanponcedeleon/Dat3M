@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
 
-	public static final int TIMEOUT = 600000;
+	public static final int TIMEOUT = 6000000;
 
     private final String path;
     private final Wmm wmm;
@@ -42,7 +42,7 @@ public abstract class AbstractSvCompTest {
         this.settings = settings;
     }
 
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void test() {
         Context ctx = null;
         try {
@@ -62,12 +62,12 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testIncremental() {
         Context ctx = null;
         try {
-        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	expected = readExpected(property);
+        	//String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	//expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             ctx = new Context();
             Solver solver = ctx.mkSolver();
@@ -102,11 +102,11 @@ public abstract class AbstractSvCompTest {
             }
         }
     }
-
     //@Test(timeout = TIMEOUT)
     public void testRefinement() {
         Context ctx = null;
         try {
+            //
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
