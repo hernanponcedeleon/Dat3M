@@ -104,10 +104,6 @@ public class VerificationTask {
                 System.out.println("========== Thread " + t.getId() + " ==============");
                 for (Event e : t.getEntry().getSuccessors()) {
                     String indent = ((e instanceof Label) ? "" : "   ");
-                    //TODO(TH): why this print?
-                    // Answer(TH): why not? I use it for inspecting the final program (after all transformations)
-                    // HP: I think we should avoid printf ... I this is useful for us for inspection, maybe log it 
-                    // (that is the whole idea of the logger, that we can using for debugging, but switch it off for the normal user)
                     System.out.printf("%4d: %s%s%n", e.getCId(), indent, e);
                 }
             }
