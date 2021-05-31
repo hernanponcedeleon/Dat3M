@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.witness;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class ElemWithAttributes {
 
-	protected Map<String, String> attributes = new HashMap<>();
+	protected SortedMap<String, String> attributes = new TreeMap<>();
 	
 	public void addAttribute(String key, String value) {
 		attributes.put(key, value);
