@@ -33,6 +33,12 @@ public class Wmm {
     private VerificationTask task;
     private boolean relationsAreEncoded = false;
 
+    private boolean encodeCo = true;
+
+    public void setEncodeCo(boolean encodeCO) {
+        this.encodeCo = encodeCO;
+    }
+
     public Wmm() {
         relationRepository = new RelationRepository();
     }
@@ -167,6 +173,9 @@ public class Wmm {
 
         BoolExpr enc = ctx.mkTrue();
         for(String relName : baseRelations){
+            if (!encodeCo && relName.equals("co")) {
+                continue;
+            }
             enc = ctx.mkAnd(enc, relationRepository.getRelation(relName).encode(ctx));
         }
 
