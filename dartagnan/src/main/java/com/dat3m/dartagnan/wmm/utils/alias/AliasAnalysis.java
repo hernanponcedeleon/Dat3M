@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.utils.alias;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -44,7 +45,9 @@ public class AliasAnalysis {
             processLocs(program);
             //TODO this is broken because it assumes that if e1:r1 <- &mem1 and e3:r2 <- r1, then r2 points to mem1.
             // But we can have later r2 <- &mem2 with a back jump to e2 (between e1 and e3) and thus r2 points to mem1 or mem2
-            //processRegs(program);
+            if(GlobalSettings.USE_BUGGY_ALIAS_ANALYSIS) {
+                processRegs(program);            	
+            }
             algorithm(program);
             processResults(program);
         }
@@ -290,7 +293,11 @@ public class AliasAnalysis {
             	} else {
             	    addresses = maxAddressSet;
             	    //TODO: This line of code is buggy. It causes many WMM benchmarks to fail
-                    //addresses = graph.getAddresses(((Register) address));
+            	    if(GlobalSettings.USE_BUGGY_ALIAS_ANALYSIS) {
+            	    	addresses = graph.getAddresses(((Register) address));	
+            	    } else {
+            	    	addresses = maxAddressSet;
+            	    }
             	}
             } else if (address instanceof Address) {
                     addresses = ImmutableSet.of(((Address) address));

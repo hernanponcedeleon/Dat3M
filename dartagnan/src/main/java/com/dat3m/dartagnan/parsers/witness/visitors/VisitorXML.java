@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.parsers.witness.visitors;
 
+import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
+import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
+
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.parsers.XMLParser.ElementContext;
 import com.dat3m.dartagnan.parsers.XMLParserBaseVisitor;
@@ -15,6 +19,9 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParse
 	@Override
 	public WitnessGraph visitDocument(XMLParser.DocumentContext ctx) {
 		visitChildren(ctx);
+		if(!graph.hasAttributed(PRODUCER.toString())) {
+			throw new RuntimeException("The witness does not have a producer tag");
+		}
 		return graph;
 	}
 
@@ -26,13 +33,13 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> implements XMLParse
 					String key = ctx.attribute(0).STRING().getText();
 					key = key.substring(1, key.length()-1);
 					String value = ctx.content().getText();
-					if(key.equals("programfile")) {
+					if(key.equals(PROGRAMFILE.toString())) {
 						graph.addAttribute(key, value);	
 					}
-					if(key.equals("producer")) {
+					if(key.equals(PRODUCER.toString())) {
 						graph.addAttribute(key, value);	
 					}
-					if(key.equals("unroll-bound")) {
+					if(key.equals(UNROLLBOUND.toString())) {
 						graph.addAttribute(key, value);	
 					}
 				}

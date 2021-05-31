@@ -143,7 +143,7 @@ public class VerificationTask {
     public BoolExpr encodeAssertions(Context ctx) {
         BoolExpr assertionEncoding = program.getAss().encode(ctx);
         if (program.getAssFilter() != null) {
-            assertionEncoding = ctx.mkAnd(program.getAssFilter().encode(ctx));
+            assertionEncoding = ctx.mkAnd(assertionEncoding, program.getAssFilter().encode(ctx));
         }
         return assertionEncoding;
     }

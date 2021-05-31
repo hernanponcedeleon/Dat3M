@@ -51,8 +51,8 @@ public class RelFencerel extends StaticRelation {
                         while(it2.hasNext()){
                             Event e2 = it2.next();
                             for(Event f : fences) {
-                                if(f.getCId() > e1.getCId() && f.getCId() < e2.getCId()){
-                                    if (eq.isImplied(e1, f) || eq.isImplied(e2, f) && f.cfImpliesExec()) {
+                            	if(f.cfImpliesExec() && e1.getCId() < f.getCId() && f.getCId() < e2.getCId()){
+                                    if (eq.isImplied(e1, f) || eq.isImplied(e2, f)) {
                                         minTupleSet.add(new Tuple(e1, e2));
                                         break;
                                     }
