@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
@@ -16,7 +15,10 @@ import com.dat3m.dartagnan.analysis.graphRefinement.GraphRefinement;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementStats;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
+import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.microsoft.z3.*;
 
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ public class Refinement {
     //TODO(2): Add flags for printing stats (currently the stats always get printed)
 
     static final boolean PRINT_STATISTICS = true;
+    static final boolean USE_PO_RF_WMM = false;
 
 
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
@@ -66,9 +69,42 @@ public class Refinement {
 
         task.initialiseEncoding(ctx);
         solver.add(task.encodeProgram(ctx));
-        solver.add(task.encodeWmmCore(ctx));
+        if (USE_PO_RF_WMM) {
+            Wmm outer = createOuterWmm();
+            outer.initialise(task, ctx);
+            solver.add(outer.encode(ctx));
+            solver.add(outer.consistent(ctx));
+        } else {
+            solver.add(task.encodeWmmCore(ctx));
+        }
 
         return refinementCore(solver, ctx, task);
+    }
+
+    // Test code
+    private static Wmm createOuterWmm() {
+        Wmm outerWmm = new Wmm();
+        outerWmm.setEncodeCo(false);
+        RelationRepository repo = outerWmm.getRelationRepository();;
+        Relation poloc = repo.getRelation("po-loc");
+        Relation rf = repo.getRelation("rf");
+        /*
+        // UNIPROC (seems to be worse)
+        Relation co = repo.getRelation("co");
+        Relation fr = repo.getRelation("fr");
+
+        Relation cofr = new RelUnion(co, fr);
+        Relation cofrrf = new RelUnion(rf, cofr);
+        Relation hbloc = new RelUnion(poloc, cofrrf);
+        repo.addRelation(cofr);
+        repo.addRelation(cofrrf);
+        repo.addRelation(hbloc);
+        */
+        Relation porf = new RelUnion(poloc, rf);
+        repo.addRelation(porf);
+        outerWmm.addAxiom(new Acyclic(porf));
+
+        return outerWmm;
     }
 
 
@@ -238,9 +274,11 @@ public class Refinement {
         System.out.println(" ======= Summary ========");
         System.out.println("Total solving time(ms): " + totalSolvingTime);
         System.out.println("Total model construction time(ms): " + totalModelTime);
-        System.out.println("Average model size (#events): " + totalModelSize / statList.size());
-        System.out.println("Min model size (#events): " + minModelSize);
-        System.out.println("Max model size (#events): " + maxModelSize);
+        if (statList.size() > 0) {
+            System.out.println("Min model size (#events): " + minModelSize);
+            System.out.println("Average model size (#events): " + totalModelSize / statList.size());
+            System.out.println("Max model size (#events): " + maxModelSize);
+        }
         System.out.println("Total violation computation time(ms): " + totalViolationComputationTime);
         System.out.println("Total resolution time(ms): " + totalResolutionTime);
         System.out.println("Total search time(ms): " + totalSearchTime);
