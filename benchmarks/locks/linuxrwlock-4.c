@@ -8,14 +8,49 @@
 // linuxrwlocks.c
 //
 
+#ifdef MAKE_ACCESSES_SC
+# define mo_relaxed memory_order_seq_cst
+# define mo_acquire memory_order_seq_cst
+# define mo_release memory_order_seq_cst
+#else
 # define mo_relaxed memory_order_relaxed
 # define mo_acquire memory_order_acquire
 # define mo_release memory_order_release
+#endif
+
+#define MAXREADERS 3
+#define MAXWRITERS 3
+#define MAXRDWR 3
+
+#ifdef CONFIG_RWLOCK_READERS
+#define DEFAULT_READERS (CONFIG_RWLOCK_READERS)
+#else
+#define DEFAULT_READERS 1
+#endif
+
+#ifdef CONFIG_RWLOCK_WRITERS
+#define DEFAULT_WRITERS (CONFIG_RWLOCK_WRITERS)
+#else
+#define DEFAULT_WRITERS 1
+#endif
+
+#ifdef CONFIG_RWLOCK_RDWR
+#define DEFAULT_RDWR (CONFIG_RWLOCK_RDWR)
+#else
+#define DEFAULT_RDWR 0
+#endif
+
+int readers = DEFAULT_READERS, writers = DEFAULT_WRITERS, rdwr = DEFAULT_RDWR;
 
 #ifdef SPINLOOP_ASSUME
 void __VERIFIER_assume(int);
 #endif
 
+#define RW_LOCK_BIAS            0x00100000
+#define WRITE_LOCK_CMP          RW_LOCK_BIAS
+
+/** Example implementation of linux rw lock along with 2 thread test
+ *  driver... */
 typedef union {
     atomic_int lock;
 } rwlock_t;
