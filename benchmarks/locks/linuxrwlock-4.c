@@ -8,6 +8,10 @@
 // linuxrwlocks.c
 //
 
+# define mo_relaxed memory_order_relaxed
+# define mo_acquire memory_order_acquire
+# define mo_release memory_order_release
+
 #ifdef SPINLOOP_ASSUME
 void __VERIFIER_assume(int);
 #endif
