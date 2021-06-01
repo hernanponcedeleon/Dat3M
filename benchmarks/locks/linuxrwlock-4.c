@@ -132,6 +132,7 @@ void *threadR(void *arg)
 {
     read_lock(&mylock);
     int r = shareddata;
+    assert(r == shareddata);
     read_unlock(&mylock);
     return NULL;
 }
@@ -140,6 +141,7 @@ void *threadW(void *arg)
 {
     write_lock(&mylock);
     shareddata = 42;
+    assert(42 == shareddata);
     write_unlock(&mylock);
     return NULL;
 }
@@ -150,10 +152,12 @@ void *threadRW(void *arg)
         if ((i % 2) == 0) {
             read_lock(&mylock);
             int r = shareddata;
+            assert(r == shareddata);
             read_unlock(&mylock);
         } else {
             write_lock(&mylock);
             shareddata = i;
+            assert(shareddata == i);
             write_unlock(&mylock);
         }
     }
@@ -164,7 +168,7 @@ void *threadRW(void *arg)
 //
 int main()
 {
-    pthread_t W0, W1, R0, R1;
+    pthread_t W0, W1, R0, R1, RW0, RW1;
 
     atomic_init(&mylock.lock, RW_LOCK_BIAS);
     
@@ -173,6 +177,9 @@ int main()
     
     pthread_create(&R0, NULL, threadR, NULL);
     pthread_create(&R1, NULL, threadR, NULL);
+
+    pthread_create(&RW0, NULL, threadRW, NULL);
+    pthread_create(&RW1, NULL, threadRW, NULL);
 
     return 0;
 }
