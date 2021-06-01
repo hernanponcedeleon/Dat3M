@@ -19,6 +19,9 @@ public abstract class Event implements Comparable<Event> {
 	protected int oId = -1;		// ID after parsing (original)
 	protected int uId = -1;		// ID after unrolling
 	protected int cId = -1;		// ID after compilation
+	protected int fId = -1;		// ID within a function
+	
+	protected String symmId;		// ID after compilation
 	
 	protected int cLine = -1;	// line in the original C program
 
@@ -51,6 +54,7 @@ public abstract class Event implements Comparable<Event> {
 		this.oId = other.oId;
         this.uId = other.uId;
         this.cId = other.cId;
+        this.fId = other.fId;
         this.cLine = other.cLine;
         this.filter = other.filter;
         this.thread = other.thread;
@@ -71,6 +75,10 @@ public abstract class Event implements Comparable<Event> {
 
 	public int getCId() {
 		return cId;
+	}
+
+	public String getSymmId() {
+		return symmId;
 	}
 
 	public int getCLine() {
@@ -179,6 +187,23 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveAction.done();
 	}
 
+    public final int setFId(int nextId) {
+		return setFIdRecursive(nextId, 0).execute();
+    }
+
+	public RecursiveFunction<Integer> setFIdRecursive(int nextId, int depth) {
+		fId = nextId;
+		if (successor != null) {
+			if (depth < GlobalSettings.MAX_RECURSION_DEPTH) {
+				return successor.setFIdRecursive(nextId + 1, depth + 1);
+			} else {
+				return RecursiveFunction.call(() -> successor.setFIdRecursive(nextId + 1, 0));
+			}
+		}
+		return RecursiveFunction.done(nextId + 1);
+	}
+
+    
 	// Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -305,6 +330,7 @@ public abstract class Event implements Comparable<Event> {
 		if(cId < 0){
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
+		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
 		if (GlobalSettings.MERGE_CF_VARS) {
 			cfVar = ctx.mkBoolConst("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");

@@ -126,6 +126,12 @@ public class Thread {
         cache = null;
     }
 
+    public int setFId(int nextId) {
+        nextId = entry.setFId(0);
+        cache = null;
+        return nextId;
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

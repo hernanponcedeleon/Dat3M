@@ -4,13 +4,20 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.TIMEOUT;
 
+import java.util.List;
+import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.symmetry.SymmPerm;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Params;
@@ -29,6 +36,12 @@ public class Base {
 
         task.initialiseEncoding(ctx);
 
+       	List<Event> test = task.getProgram().getCache().getEvents(FilterBasic.get(EType.LOCAL));
+       	SymmPerm symm = new SymmPerm(task.getProgram(), Set.copyOf(test));
+       	for(List<Object> s : symm.getPermutations()) {
+           	System.out.println(s);       		
+       	}
+       	
         logger.info("Starting encoding");
         solver.add(task.encodeProgram(ctx));
         solver.add(task.encodeWmmRelations(ctx));

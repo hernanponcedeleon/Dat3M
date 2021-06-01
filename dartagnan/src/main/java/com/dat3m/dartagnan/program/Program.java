@@ -155,6 +155,13 @@ public class Program {
     	}
 	}
 
+    public int setFId(int nextId) {
+        for(Thread thread : threads){
+            nextId = thread.setFId(nextId);
+        }
+        cache = null;
+        return nextId;
+    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
