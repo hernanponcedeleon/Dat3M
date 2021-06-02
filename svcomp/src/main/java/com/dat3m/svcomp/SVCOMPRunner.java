@@ -52,13 +52,9 @@ public class SVCOMPRunner {
         File file = new File(options.getProgramFilePath());
         File tmp = new SVCOMPSanitizer(file).run(1);
 
-        int bound = options.hasOption("u") ? options.getSettings().getBound() :  
-        		witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
+        int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : 1;
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			if(options.hasOption("u") && bound == options.getSettings().getBound() + 1) {
-				break;
-			}
 			compile(tmp, options);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
