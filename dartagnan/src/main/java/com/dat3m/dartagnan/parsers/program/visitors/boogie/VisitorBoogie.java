@@ -128,6 +128,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     private final Map<String, Function> functions = new HashMap<>();
 	private FunctionCall currentCall = null;
 	
+	private FunCall currentProc = null;
+	private String lastStore = null;
+	protected Map<String, String> join_map = new HashMap<>();
+	
 	// Improves performance by initializing Locations rather than creating new write events
 	private boolean initMode = false;
 	
@@ -331,7 +335,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         for(Local_varsContext localVarContext : body.local_vars()) {
         	visitLocal_vars(localVarContext, threadCount);
         }
-
+        
         visitChildren(body.stmt_list());
 
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
@@ -370,6 +374,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     
 	@Override
 	public Object visitCall_cmd(Call_cmdContext ctx) {
+		if(ctx.getText().contains("cexpr") && lastStore != null) {
+			String line = ctx.getText();
+			String pthread_reg_name = line.substring(line.indexOf('"') + 1, line.lastIndexOf('"'));
+			join_map.put(lastStore, pthread_reg_name);
+			lastStore = null;
+		}
 		if(ctx.getText().contains("boogie_si_record") && !ctx.getText().contains("smack")) {
 			Object local = ctx.call_params().exprs().expr(0).accept(this);
 			if(local instanceof Register) {
@@ -387,6 +397,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
 		if(name.equals("$initialize")) {
 			initMode = true;
+			visitProc_decl(procedures.get("__SMACK_static_init"), false, new ArrayList<>());
 		}
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
@@ -448,8 +459,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		Event call = new FunCall(name, currentLine);
-		programBuilder.addChild(threadCount, call);	
+		currentProc = new FunCall(name, currentLine);
+		programBuilder.addChild(threadCount, currentProc);	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
@@ -464,7 +475,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			
 		}
-		Event ret = new FunRet(name, call.getCLine());
+		Event ret = new FunRet(name, currentProc.getCLine());
 		programBuilder.addChild(threadCount, ret);
 		if(name.equals("$initialize")) {
 			initMode = false;
@@ -511,6 +522,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 
 	@Override
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
+		if(currentProc != null && currentProc.getFunctionName().equals("__SMACK_static_init")) {
+			lastStore = ctx.getText().split(":=")[0];
+			lastStore = lastStore.equals("$exn") ? null : lastStore;
+		}
         ExprsContext exprs = ctx.def_body().exprs();
     	if(exprs.expr().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
@@ -534,16 +549,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.") || value instanceof Address) {
-	        		try {
-		    			// This names are global so we don't use currentScope.getID(), but per thread.
+	        		if(value instanceof Address) {
+	        			String val = ctx.getText().split(":=")[1];
+	        			val = val.substring(0, val.length() - 1);
 		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
-		    			String tmp = ctx.def_body().exprs().expr(0).getText();
-		    			tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
-		    			// This names are global so we don't use currentScope.getID(), but per thread.
-		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, tmp, -1);
-	        			pool.addRegPtr(reg, ptr);	        				        			
-	        		} catch (Exception e) {
-	        			// Nothing to be done
+		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, val, -1);
+		    			pool.addRegPtr(reg, ptr);	        				        			
 	        		}
 	        		if(!allocationRegs.contains(value)) {
 	        			programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null, currentLine));
