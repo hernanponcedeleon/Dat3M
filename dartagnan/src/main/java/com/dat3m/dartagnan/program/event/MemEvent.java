@@ -17,6 +17,7 @@ public abstract class MemEvent extends Event {
     protected Expr memAddressExpr;
     protected Expr memValueExpr;
     private ImmutableSet<Address> maxAddressSet;
+    private String region;
 
     public MemEvent(IExpr address, String mo, int cLine){
     	super(cLine);
@@ -46,6 +47,18 @@ public abstract class MemEvent extends Event {
         memAddressExpr = address.toZ3Int(this, ctx);
     }
 
+    public void setRegion(String region) {
+    	this.region = region;
+    }
+    
+    public String getRegion() {
+    	return region;
+    }
+    
+    public boolean hasRegion() {
+    	return region != null;
+    }
+    
     public Expr getMemAddressExpr(){
         if(memAddressExpr != null){
             return memAddressExpr;
@@ -80,7 +93,7 @@ public abstract class MemEvent extends Event {
     }
 
     public static boolean canAddressTheSameLocation(MemEvent e1, MemEvent e2){
-        return e1.getAddress().getBase().equals(e2.getAddress().getBase()) &&
+        return (!e1.hasRegion() || !e2.hasRegion() || e1.getRegion().equals(e2.getRegion())) &&
         		!Sets.intersection(e1.getMaxAddressSet(), e2.getMaxAddressSet()).isEmpty();
     }
     
