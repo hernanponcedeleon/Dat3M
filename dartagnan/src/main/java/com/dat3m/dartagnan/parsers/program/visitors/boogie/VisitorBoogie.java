@@ -549,13 +549,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.") || value instanceof Address) {
+	    			// This names are global so we don't use currentScope.getID(), but per thread.
+	    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
+	    			Register ptr;
+	    			String tmp;
 	        		if(value instanceof Address) {
-	        			String val = ctx.getText().split(":=")[1];
-	        			val = val.substring(0, val.length() - 1);
-		    			Register reg = programBuilder.getOrCreateRegister(threadCount, ctx.Ident(0).getText(), -1);
-		    			Register ptr = programBuilder.getOrCreateRegister(threadCount, val, -1);
-		    			pool.addRegPtr(reg, ptr);	        				        			
+	        			tmp = ctx.getText().split(":=")[1];
+	        			tmp = tmp.substring(0, tmp.length() - 1);
+	        		} else {
+			    		tmp = ctx.def_body().exprs().expr(0).getText();
+			    		tmp = tmp.substring(tmp.indexOf(",") + 1, tmp.indexOf(")"));
 	        		}
+		    		// This names are global so we don't use currentScope.getID(), but per thread.
+		    		ptr = programBuilder.getOrCreateRegister(threadCount, tmp, -1);
+        			pool.addRegPtr(reg, ptr);	        				        			
 	        		if(!allocationRegs.contains(value)) {
 	        			programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null, currentLine));
 	        		} else {
