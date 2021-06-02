@@ -46,6 +46,7 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IExprUn;
 import com.dat3m.dartagnan.expression.IfExpr;
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
@@ -150,7 +151,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	protected BeginAtomic currentBeginAtomic = null;
 	protected Call_cmdContext atomicMode = null;
 	 
-	private final List<String> smackDummyVariables = Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
+	private final List<String> smackDummyVariables = Arrays.asList("$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM", "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl", "$1024.ref", "$0.ref", "$1.ref", ".str.1", "env_value_str", ".str.1.3", ".str.19", "errno_global", "$CurrAddr");
 
 	public VisitorBoogie(ProgramBuilder pb) {
 		this.programBuilder = pb;
@@ -251,7 +252,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     		 for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
     			 String name = ident.getText();
     			 String type = atiwC.typed_idents_where().typed_idents().type().getText();
-    			 int precision = type.contains("bv") && !name.equals("$M.0") ? Integer.parseInt(type.split("bv")[1]) : -1;
+    			 int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
     			 if(!smackDummyVariables.contains(name)) {
         			 programBuilder.getOrCreateLocation(name, precision);
     			 }
@@ -765,13 +766,17 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			throw new ParsingException("Function " + name + " is not defined");
 		}
 		if(name.contains("$load.")) {
-			return ctx.expr(1).accept(this);
+			IExpr base = (IExpr)ctx.expr(0).accept(this);
+			IExpr offset = (IExpr)ctx.expr(1).accept(this);
+			return new IExprBin(base, IOpBin.PLUS, offset);
 		}
 		if(name.contains("$store.")) {
 			if(smackDummyVariables.contains(ctx.expr(1).getText())) {
 				return null;
 			}
-			IExpr address = (IExpr)ctx.expr(1).accept(this);
+			IExpr base = (IExpr)ctx.expr(0).accept(this);
+			IExpr offset = (IExpr)ctx.expr(1).accept(this);
+			IExpr address = new IExprBin(base, IOpBin.PLUS, offset);
 			IExpr value = (IExpr)ctx.expr(2).accept(this);
 			// This improves the blow-up
 			if(initMode && !(value instanceof Address)) {

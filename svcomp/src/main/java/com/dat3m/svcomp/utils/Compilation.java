@@ -17,7 +17,7 @@ public class Compilation {
 				file.getName().substring(0, file.getName().lastIndexOf('.'));
 
     	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
+    	cmd.addAll(asList("smack", "-q", "-t"));
     	cmd.addAll(asList("--integer-encoding", opt.getEncoding()));
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
     			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");
