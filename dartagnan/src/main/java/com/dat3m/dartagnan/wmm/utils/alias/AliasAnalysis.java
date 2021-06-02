@@ -296,7 +296,9 @@ public class AliasAnalysis {
         for (Event e : program.getCache().getEvents(FilterBasic.get(EType.MEMORY))) {
             IExpr address = ((MemEvent) e).getAddress();
             Set<Address> addresses;
-            if (address instanceof Register) {
+            if (address instanceof IExprBin) {
+            	addresses = ImmutableSet.of((Address)address.getBase());
+            } else if (address instanceof Register) {
             	if(bases.containsKey(address) && program.getMemory().isArrayPointer(bases.get(address))) {
             		if(offsets.containsKey(address)) {
                 		addresses = ImmutableSet.of(program.getMemory().getArrayfromPointer(bases.get(address)).get(offsets.get(address)));            			
@@ -304,7 +306,6 @@ public class AliasAnalysis {
                 		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
             		}
             	} else {
-            	    addresses = maxAddressSet;
             	    //TODO: This line of code is buggy. It causes many WMM benchmarks to fail
             	    if(GlobalSettings.USE_BUGGY_ALIAS_ANALYSIS) {
             	    	addresses = graph.getAddresses(((Register) address));	
@@ -313,11 +314,11 @@ public class AliasAnalysis {
             	    }
             	}
             } else if (address instanceof Address) {
-                    addresses = ImmutableSet.of(((Address) address));
+            	addresses = ImmutableSet.of(((Address) address));
             } else {
                 addresses = maxAddressSet;
             }
-            if (addresses.size() == 0) {
+            if (addresses.size() == 0) {            	
                 addresses = maxAddressSet;
             }
             ImmutableSet<Address> addr = ImmutableSet.copyOf(addresses);
