@@ -47,7 +47,7 @@ public class ExecutionGraph {
     private final VerificationTask verificationTask;
     private final Map<Relation, EventGraph> relationGraphMap;
     private final Map<Axiom, GraphAxiom> axiomMap;
-    private final GraphHierarchy graphHierarchy;
+    private GraphHierarchy graphHierarchy;
 
     private EventGraph poGraph;
     private EventGraph rfGraph;
@@ -59,20 +59,25 @@ public class ExecutionGraph {
         this.verificationTask = verificationTask;
         relationGraphMap = new HashMap<>();
         axiomMap = new HashMap<>();
-        graphHierarchy = new GraphHierarchy();
         constructMappings();
     }
 
     private void constructMappings() {
         // We make sure to compute graphs along the dependency order
+        // TODO: Is the order really important?
+        Set<EventGraph> graphs = new HashSet<>();
         for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
             if (!EXCLUDED_RELS.contains(rel.getName())) {
-                getGraphFromRelation(rel);
+                EventGraph graph = getGraphFromRelation(rel);
+                graphs.add(graph);
             }
         }
+        graphHierarchy = new GraphHierarchy(graphs);
 
         for (Axiom axiom : verificationTask.getAxioms()) {
-            getGraphAxiomFromAxiom(axiom);
+            GraphAxiom ax = getGraphAxiomFromAxiom(axiom);
+            EventGraph graph = getGraphFromRelation(axiom.getRelation());
+            graphHierarchy.addGraphListener(graph, ax);
         }
     }
 
@@ -102,7 +107,10 @@ public class ExecutionGraph {
     // We might want to add similar features for rf
     // We also assume, that the non-transitive write order is defined.
     public boolean addCoherenceEdge(Edge coEdge) {
-        graphHierarchy.addEdgesToGraph(woGraph, ImmutableList.of(coEdge));
+        if ( woGraph == null) {
+            return false;
+        }
+        graphHierarchy.addEdgesAndPropagate(woGraph, ImmutableList.of(coEdge));
         return true;
     }
 
@@ -133,7 +141,6 @@ public class ExecutionGraph {
         }
 
         axiomMap.put(axiom, graphAxiom);
-        graphHierarchy.addGraphListener(innerGraph, graphAxiom);
         return graphAxiom;
     }
 
@@ -164,8 +171,7 @@ public class ExecutionGraph {
         } else if (relClass == RelPo.class) {
             graph = poGraph = new ProgramOrderGraph();
         } else if (relClass == RelCo.class) {
-            graphHierarchy.addEventGraph(woGraph = new CoherenceGraph());
-            graph = coGraph = new TransitiveGraph(woGraph);
+            graph = coGraph = new TransitiveGraph(woGraph = new CoherenceGraph());
         } else if (rel.isUnaryRelation() || rel.isRecursiveRelation()) {
             EventGraph inner = getGraphFromRelation(rel.getInner());
             // A safety check because recursion might compute this edge set
@@ -221,7 +227,6 @@ public class ExecutionGraph {
             throw new RuntimeException(new ClassNotFoundException(relClass.toString() + " is no supported relation class"));
         }
 
-        graphHierarchy.addEventGraph(graph);
         relationGraphMap.put(rel, graph);
         return graph;
     }

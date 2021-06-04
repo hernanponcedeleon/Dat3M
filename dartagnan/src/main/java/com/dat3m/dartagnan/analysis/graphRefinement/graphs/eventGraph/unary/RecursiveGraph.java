@@ -43,11 +43,12 @@ public class RecursiveGraph extends DerivedEventGraph {
     public void constructFromModel(ExecutionModel context) {
         materializedGraph.constructFromModel(context);
         //TODO: How to properly initialize?
+        // Empty from the start!
     }
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
-        materializedGraph.addAll(addedEdges);
+        addedEdges.removeIf(x -> !materializedGraph.add(x));
         return addedEdges;
     }
 

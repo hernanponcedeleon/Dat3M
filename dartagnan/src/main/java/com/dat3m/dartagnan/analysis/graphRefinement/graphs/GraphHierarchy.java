@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs;
 
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.GraphListener;
-
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.RecursiveGraph;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 //TODO: Maybe add a concrete way of backtracking
 
@@ -19,36 +19,31 @@ import java.util.*;
 
 public class GraphHierarchy {
     private final Map<EventGraph, Set<GraphListener>> graphListenersMap;
-    private DependencyGraph<EventGraph> dependencyGraph;
-    private boolean changed = true;
+    private final DependencyGraph<EventGraph> dependencyGraph;
+    private final PriorityQueue<Task> tasks = new PriorityQueue<>();
 
 
-    // Note: Whenever the dependency graph gets recomputed due to added/removed event graphs
-    // the topological ordering may change non-deterministically.
-    public DependencyGraph<EventGraph> getDependencyGraph() {
-        if (changed) {
-            dependencyGraph = DependencyGraph.from(graphListenersMap.keySet());
-            // This makes sure that dependencies get added properly
-            // if they were not added previously (i.e. if a graph was added but not its dependencies)
-            dependencyGraph.getNodeContents().forEach(this::addEventGraph);
-        }
-        return dependencyGraph;
+    public GraphHierarchy(Set<EventGraph> eventGraphs) {
+        dependencyGraph = DependencyGraph.from(eventGraphs);
+        graphListenersMap = new HashMap<>(dependencyGraph.getNodeContents().size() * 4 / 3);
+        dependencyGraph.getNodeContents().forEach(x -> graphListenersMap.put(x, new HashSet<>()));
     }
+
+    // ============= Accessors =================
 
     public Set<EventGraph> getGraphs() { return graphListenersMap.keySet(); }
 
     // The list of graphs in topological order
-    public List<EventGraph> getGraphList() { return getDependencyGraph().getNodeContents(); }
+    public List<EventGraph> getGraphList() { return dependencyGraph.getNodeContents(); }
 
     public EventGraph getRootGraph() { return getGraphList().get(0); }
 
-    public GraphHierarchy() {
-        graphListenersMap = new HashMap<>();
-    }
+    // ==========================================
 
+    // ============== Propagation ===============
 
     // Should only ever be used on non-derived Graphs
-    public void addEdgesToGraph(EventGraph graph, Collection<Edge> edges) {
+    public void addEdgesAndPropagate(EventGraph graph, Collection<Edge> edges) {
         if (!graph.isStatic()) {
             throw new UnsupportedOperationException("Edges can only be added directly to non-derived graphs!");
         }
@@ -56,28 +51,106 @@ public class GraphHierarchy {
         forwardPropagate();
     }
 
-    public void createPropagationTask(EventGraph from, EventGraph target, Collection<Edge> added, int priority) {
+    public void backtrack() {
+        //TODO: Let EventGraph.update return a boolean that indicates if the graph changed
+        // Only then backtrack on the listeners
+        // (We could even propagate the deleted edges, if the Graph was explicit)
+        graphListenersMap.keySet().forEach(EventGraph::backtrack);
+        graphListenersMap.values().stream().flatMap(Collection::stream).forEach(GraphListener::backtrack);
+    }
+
+    // --------------------------------------------
+
+    private void forwardPropagate() {
+        while (!tasks.isEmpty()) {
+            handleTask(tasks.poll(), false);
+        }
+    }
+
+    private void createPropagationTask(EventGraph from, EventGraph target, Collection<Edge> added, int priority) {
         if (target == null || added.isEmpty())
             return;
         tasks.add(new Task(from, target, added, priority));
     }
 
+    private void handleTask(Task task, boolean withinRecGroup) {
+        EventGraph target = task.target;
+        EventGraph from = task.from;
+        Collection<Edge> added = task.added;
+
+        Collection<Edge> newEdges = target.forwardPropagate(from, added);
+        if (newEdges.isEmpty())
+            return;
+
+        for (GraphListener listener : graphListenersMap.get(target)) {
+            listener.onGraphChanged(target, newEdges);
+        }
+
+        List<DependencyGraph<EventGraph>.Node> dependents = dependencyGraph.get(target).getDependents();
+        if (withinRecGroup) {
+            // Limits propagation to EventGraphs in the same recursive Group.
+            Set<DependencyGraph<EventGraph>.Node> recGroup = dependencyGraph.get(target).getSCC();
+            dependents = dependents.stream().filter(recGroup::contains).collect(Collectors.toList());;
+        }
+        for (int i = 0; i < dependents.size() ; i++) {
+            Task newTask = new Task(target, dependents.get(i).getContent(), newEdges, dependents.get(i).getTopologicalIndex());
+            tasks.add(newTask);
+            if (i < dependents.size() - 1)
+                newEdges = new HashSet<>(newEdges); // Copy collection for future iteration
+        }
+    }
+
+    // ==========================================
+
+    // ============== Initialization =============
+
     public void constructFromModel(ExecutionModel executionModel) {
         // Initializes in topological order!
-        getGraphList().forEach(x -> x.constructFromModel(executionModel));
+        for (Set<DependencyGraph<EventGraph>.Node> scc : dependencyGraph.getSCCs()) {
+            Set<EventGraph> recGrp = scc.stream().map(DependencyGraph.Node::getContent).collect(Collectors.toSet());
+            if (recGrp.size() == 1) {
+                recGrp.stream().findAny().get().constructFromModel(executionModel);
+            } else {
+                initRecursively(recGrp.stream().findAny().get(), executionModel, recGrp, new HashSet<>());
+
+                // For all recursive relations, initialize the propagation
+                //TODO: Maybe copy all graphs into a new set and reuse that set
+                recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
+                    for(EventGraph dep : x.getDependencies()) {
+                        createPropagationTask(dep, x, dep, 0);
+                    }
+                });
+
+                // Propagate within this recursive group
+                while (!tasks.isEmpty()) {
+                    handleTask(tasks.poll(), true);
+                }
+            }
+        }
     }
 
-    public boolean addEventGraph(EventGraph graph) {
-        boolean added = graphListenersMap.putIfAbsent(graph, new HashSet<>()) == null;
-        changed |= added;
-        return added;
+    // --------------------------------------------
+
+    private void initRecursively(EventGraph graph, ExecutionModel executionModel, Set<EventGraph> recGroup, Set<EventGraph> initialized) {
+        if (initialized.contains(graph) || !recGroup.contains(graph)) {
+            return;
+        }
+        if (graph instanceof RecursiveGraph) {
+            graph.constructFromModel(executionModel);
+            initialized.add(graph);
+        }
+        for (EventGraph dep : graph.getDependencies()) {
+            initRecursively(dep, executionModel, recGroup, initialized);
+        }
+        if (!initialized.contains(graph)) {
+            graph.constructFromModel(executionModel);
+            initialized.add(graph);
+        }
     }
 
-    public boolean removeEventGraph(EventGraph graph) {
-        boolean removed = graphListenersMap.remove(graph) != null;
-        changed |= removed;
-        return removed;
-    }
+    // ==========================================
+
+    // ============== Listeners =================
 
     public boolean addGraphListener(EventGraph graph, GraphListener listener) {
         if (!graphListenersMap.containsKey(graph)) {
@@ -102,32 +175,14 @@ public class GraphHierarchy {
     }
 
 
-    public void backtrack() {
-        //TODO: Let EventGraph.update return a boolean that indicates if the graph changed
-        // Only then backtrack on the listeners
-        // (We could even propagate the deleted edges, if the Graph was explicit)
-        graphListenersMap.keySet().forEach(EventGraph::backtrack);
-        graphListenersMap.values().stream().flatMap(Collection::stream).forEach(GraphListener::backtrack);
-    }
-
     public void clearListeners() {
         graphListenersMap.values().forEach(Set::clear);
     }
 
-    public void clear() {
-        graphListenersMap.clear();
-    }
+    // ================= Internal structures ===================
 
 
-    // ================= Propagation ===================
-
-    private final PriorityQueue<Task> tasks = new PriorityQueue<>();
-    private void forwardPropagate() {
-        while (!tasks.isEmpty())
-            tasks.poll().perform();
-    }
-
-    private class Task implements Comparable<Task> {
+    private static class Task implements Comparable<Task> {
         private final EventGraph from;
         private final EventGraph target;
         private final Collection<Edge> added;
@@ -145,27 +200,5 @@ public class GraphHierarchy {
             return this.priority - o.priority;
         }
 
-        public void perform() {
-            Collection<Edge> newEdges = target.forwardPropagate(from, added);
-            if (newEdges.isEmpty())
-                return;
-
-            for (GraphListener listener : graphListenersMap.get(target)) {
-                listener.onGraphChanged(target, newEdges);
-            }
-
-            List<DependencyGraph<EventGraph>.Node> dependents = dependencyGraph.get(target).getDependents();
-            for (int i = 0; i < dependents.size() ; i++) {
-                Task newTask = new Task(target, dependents.get(i).getContent(), newEdges, dependents.get(i).getTopologicalIndex());
-                tasks.add(newTask);
-                if (i < dependents.size() - 1)
-                    newEdges = new HashSet<>(newEdges); // Copy collection for future iteration
-            }
-
-            /*for (DependencyGraph<EventGraph>.Node dependent : dependencyGraph.get(target).getDependents()) {
-                Task newTask = new Task(target, dependent.getContent(), newEdges, dependent.getTopologicalIndex());
-                tasks.add(newTask);
-            }*/
-        }
     }
 }
