@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.analysis;
 
 public enum SolverTypes {
-	TWO, INCREMENTAL, ASSUME;
+	TWO, INCREMENTAL, ASSUME, REFINEMENT;
 	
 	public static SolverTypes fromString(String s) {
         if(s != null){
@@ -13,6 +13,8 @@ public enum SolverTypes {
                     return INCREMENTAL;
                 case "assume":
                     return ASSUME;
+                case "refinement":
+                    return REFINEMENT;
             }
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + s);
@@ -26,6 +28,8 @@ public enum SolverTypes {
                 return "incremental";
             case ASSUME:
                 return "assume";
+            case REFINEMENT:
+                return "refinement";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
 	}

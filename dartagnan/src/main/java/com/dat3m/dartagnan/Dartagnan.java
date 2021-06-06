@@ -5,6 +5,7 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
@@ -120,6 +121,8 @@ public class Dartagnan {
 						return runAnalysisIncrementalSolver(s, ctx, task);
 					case ASSUME:
 						return runAnalysisAssumeSolver(s, ctx, task);
+					case REFINEMENT:
+						return runAnalysisGraphRefinement(s, ctx, task);
 					default:
 						throw new RuntimeException("Unrecognized solver mode: " + options.solver());
 				}
