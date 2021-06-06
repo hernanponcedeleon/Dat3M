@@ -278,20 +278,20 @@ public class Refinement {
         }
 
         System.out.println(" ======= Summary ========");
-        System.out.println("Total solving time(ms): " + totalSolvingTime);
-        System.out.println("Total model construction time(ms): " + totalModelTime);
+        System.out.println("Total solving time( ms): " + totalSolvingTime);
+        System.out.println("Total model construction time( ms): " + totalModelTime);
         if (statList.size() > 0) {
             System.out.println("Min model size (#events): " + minModelSize);
             System.out.println("Average model size (#events): " + totalModelSize / statList.size());
             System.out.println("Max model size (#events): " + maxModelSize);
         }
-        System.out.println("Total violation computation time(ms): " + totalViolationComputationTime);
-        System.out.println("Total resolution time(ms): " + totalResolutionTime);
-        System.out.println("Total search time(ms): " + totalSearchTime);
+        System.out.println("Total violation computation time( ms): " + totalViolationComputationTime);
+        System.out.println("Total resolution time( ms): " + totalResolutionTime);
+        System.out.println("Total search time( ms): " + totalSearchTime);
         System.out.println("Total guessing: " + totalNumGuesses);
         System.out.println("Total violations: " + totalNumViolations);
         System.out.println("Max Saturation Depth: " + satDepth);
-        System.out.println("Bound check time(ms): " + boundCheckTime);
+        System.out.println("Bound check time( ms): " + boundCheckTime);
 
         if (PRINT_RFS) {
             System.out.println("-------- Excluded Read-Froms --------");
