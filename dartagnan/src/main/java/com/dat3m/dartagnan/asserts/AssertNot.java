@@ -23,6 +23,11 @@ public class AssertNot extends AbstractAssert {
     }
 
     @Override
+    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
+        return new AssertNot(child.removeLocAssertions(replaceByTrue));
+    }
+
+    @Override
     public BoolExpr encode(Context ctx) {
         if(child != null){
             return ctx.mkNot(child.encode(ctx));

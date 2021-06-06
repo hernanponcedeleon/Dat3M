@@ -7,6 +7,7 @@ import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
+import org.antlr.v4.runtime.atn.PredicateTransition;
 
 public class AssertBasic extends AbstractAssert {
 
@@ -23,6 +24,11 @@ public class AssertBasic extends AbstractAssert {
     @Override
     public ImmutableSet<Location> getLocs() {
         return new ImmutableSet.Builder<Location>().addAll(e1.getLocs()).addAll(e2.getLocs()).build();
+    }
+
+    @Override
+    public AbstractAssert removeLocAssertions(boolean replaceByTrue) {
+        return getLocs().isEmpty() ? this : (replaceByTrue ? new AssertTrue() :  new AssertNot(new AssertTrue()));
     }
 
     @Override

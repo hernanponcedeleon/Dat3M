@@ -65,11 +65,49 @@ public abstract class AbstractDartagnanTest {
         this.settings = settings;
     }
 
+    //@Test
+    public void testCombined() {
+        // Compares Refinement and Assume solver on litmus tests
+        // Replaces location-based assertions by ...
+        final boolean REPLACE_BY_TRUE = true;
+        // ... to allow Refinement to work
+
+        Result res = Result.UNKNOWN;
+        try {
+            Program program = new ProgramParser().parse(new File(path));
+            if (program.getAss() != null) {
+                program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
+                Context ctx = new Context();
+                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
+                VerificationTask task = new VerificationTask(program, wmm, target, settings);
+                res = runAnalysis(solver, ctx, task);
+                ctx.close();
+            }
+        } catch (IOException e) {
+            fail("Missing resource file");
+        }
+
+        try {
+            Program program = new ProgramParser().parse(new File(path));
+            if (program.getAss() != null) {
+                program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
+                Context ctx = new Context();
+                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
+                VerificationTask task = new VerificationTask(program, wmm, target, settings);
+                assertEquals(res, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
+                ctx.close();
+            }
+        } catch (IOException e) {
+            fail("Missing resource file");
+        }
+    }
+
     @Test
     public void test() {
     	try {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
+                // program.setAss(program.getAss().removeLocAssertions(true)); // TEST CODE for comparing!
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
@@ -86,12 +124,13 @@ public abstract class AbstractDartagnanTest {
         try {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                if (!program.getAss().getLocs().isEmpty()) {
+                program.setAss(program.getAss().removeLocAssertions(true));
+                /*if (!program.getAss().getLocs().isEmpty()) {
                     // We assert true, because Refinement can't handle these assertions
                     // They need coherence, which Refinement avoids to encode!
                     assertEquals(0 ,0);
                     return;
-                }
+                }*/
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
