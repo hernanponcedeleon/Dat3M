@@ -7,21 +7,21 @@
 
 // futex.h
 //
-static atomic_int signal;
+static atomic_int sig;
 
 static inline void __futex_wait(atomic_int *m, int v)
 {
-    int s = atomic_load_explicit(&signal, memory_order_acquire);
+    int s = atomic_load_explicit(&sig, memory_order_acquire);
     if (atomic_load_explicit(m, memory_order_acquire) != v)
         return;
 
-    while (atomic_load_explicit(&signal, memory_order_acquire) == s)
+    while (atomic_load_explicit(&sig, memory_order_acquire) == s)
         ;
 }
 
 static inline void __futex_wake(atomic_int *m, int v)
 {
-    atomic_fetch_add_explicit(&signal, 1, memory_order_release);
+    atomic_fetch_add_explicit(&sig, 1, memory_order_release);
 }
 
 // mutex.h
