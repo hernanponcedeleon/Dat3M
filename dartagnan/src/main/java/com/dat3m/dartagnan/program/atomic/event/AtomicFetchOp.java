@@ -52,7 +52,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         switch(target) {
-            case NONE: case TSO:
+            case NONE: case TSO: case ARM8:
                 RMWLoad load = new RMWLoad(resultRegister, address, mo);
                 Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
                 Local add = new Local(dummyReg, new IExprBin(resultRegister, op, value));
