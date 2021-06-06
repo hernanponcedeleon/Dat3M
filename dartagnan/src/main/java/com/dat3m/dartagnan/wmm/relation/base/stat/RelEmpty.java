@@ -5,8 +5,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.microsoft.z3.Context;
 
-// TODO: Why is RelEmpty not a static relation?
-public class RelEmpty extends Relation {
+public class RelEmpty extends StaticRelation {
 
     public RelEmpty(String name) {
         super(name);
