@@ -40,7 +40,8 @@ public class Refinement {
     //TODO(2): Add flags for printing stats (currently the stats always get printed)
 
     static final boolean PRINT_STATISTICS = true;
-    static final boolean USE_PO_RF_WMM = false;
+    static final boolean USE_OUTER_WMM = true;
+    static final boolean ADD_ACYCLIC_DEP_RF = false;
 
 
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
@@ -69,7 +70,7 @@ public class Refinement {
 
         task.initialiseEncoding(ctx);
         solver.add(task.encodeProgram(ctx));
-        if (USE_PO_RF_WMM) {
+        if (USE_OUTER_WMM) {
             Wmm outer = createOuterWmm();
             outer.initialise(task, ctx);
             solver.add(outer.encode(ctx));
@@ -86,23 +87,26 @@ public class Refinement {
         Wmm outerWmm = new Wmm();
         outerWmm.setEncodeCo(false);
         RelationRepository repo = outerWmm.getRelationRepository();;
+        // ---- acyclic(po-loc | rf) ----
         Relation poloc = repo.getRelation("po-loc");
         Relation rf = repo.getRelation("rf");
-        /*
-        // UNIPROC (seems to be worse)
-        Relation co = repo.getRelation("co");
-        Relation fr = repo.getRelation("fr");
-
-        Relation cofr = new RelUnion(co, fr);
-        Relation cofrrf = new RelUnion(rf, cofr);
-        Relation hbloc = new RelUnion(poloc, cofrrf);
-        repo.addRelation(cofr);
-        repo.addRelation(cofrrf);
-        repo.addRelation(hbloc);
-        */
         Relation porf = new RelUnion(poloc, rf);
         repo.addRelation(porf);
         outerWmm.addAxiom(new Acyclic(porf));
+
+        // ---- acyclic (dep | rf) ----
+        if (ADD_ACYCLIC_DEP_RF) {
+            Relation data = repo.getRelation("data");
+            Relation ctrl = repo.getRelation("ctrl");
+            Relation addr = repo.getRelation("addr");
+            Relation dep = new RelUnion(data, addr);
+            repo.addRelation(dep);
+            dep = new RelUnion(ctrl, dep);
+            repo.addRelation(dep);
+            Relation hb = new RelUnion(dep, rf);
+            repo.addRelation(hb);
+            outerWmm.addAxiom(new Acyclic(hb));
+        }
 
         return outerWmm;
     }
@@ -197,17 +201,19 @@ public class Refinement {
             System.out.println("PROCEDURE was inconclusive");
             return res;
         } else if (solver.check() == SATISFIABLE) {
-            // We found a violation, but we still need to test the bounds.
+            // We found a violation
             System.out.println("Violation verified");
         } else {
+            // We showed safety but still need to verify bounds
             System.out.println("Safety proven");
         }
 
-        lastTime = System.currentTimeMillis();
+        long boundCheckTime = 0;
         if(solver.check() == SATISFIABLE) {
-            solver.add(program.encodeNoBoundEventExec(ctx));
-            res = solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
+            res = FAIL;
         } else {
+            // ------- CHECK BOUNDS -------
+            lastTime = System.currentTimeMillis();
             solver.pop();
             solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
             res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
@@ -219,8 +225,8 @@ public class Refinement {
                 }
                 res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
             }
+            boundCheckTime = System.currentTimeMillis() - lastTime;
         }
-        long boundCheckTime = System.currentTimeMillis() - lastTime;
         if (PRINT_STATISTICS) {
             printSummary(statList, totalSolvingTime, boundCheckTime, excludedRfs);
         }
