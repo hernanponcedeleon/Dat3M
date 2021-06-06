@@ -11,10 +11,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 //TODO:
 // (1) Implement.
@@ -41,9 +38,8 @@ public class RecursiveGraph extends DerivedEventGraph {
 
     @Override
     public void constructFromModel(ExecutionModel context) {
+        super.constructFromModel(context);
         materializedGraph.constructFromModel(context);
-        //TODO: How to properly initialize?
-        // Empty from the start!
     }
 
     @Override
@@ -126,9 +122,16 @@ public class RecursiveGraph extends DerivedEventGraph {
         return materializedGraph.edgeIterator(e, dir);
     }
 
+    private Set<Edge> visitedEdges = new HashSet<>();
     @Override
     public Conjunction<CoreLiteral> computeReason(Edge edge) {
         //TODO
-        return inner.computeReason(edge);
+        if (visitedEdges.contains(edge)) {
+            return Conjunction.FALSE;
+        }
+        visitedEdges.add(edge);
+        Conjunction<CoreLiteral> reason = inner.computeReason(edge);
+        visitedEdges.remove(edge);
+        return reason;
     }
 }

@@ -36,6 +36,9 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
     Conjunction<CoreLiteral> computeReason(Edge edge);
 
 
+    void setName(String name);
+    String getName();
+
 
     default boolean contains(Edge edge) { return contains(edge.getFirst(), edge.getSecond()); }
     default Timestamp getTime(Edge edge) { return getTime(edge.getFirst(), edge.getSecond()); }

@@ -84,16 +84,29 @@ public class CompositionGraph extends BinaryEventGraph {
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         ArrayList<Edge> newEdges = new ArrayList<>();
         if (changedGraph == first) {
+            // (A+R);B = A;B + R;B
             for (Edge e : addedEdges) {
                 updateFirst(e, newEdges);
             }
-        } else if (changedGraph == second) {
+        }
+        if (changedGraph == second) {
+            // A;(B+R) = A;B + A;R
             for (Edge e : addedEdges) {
                 updateSecond(e, newEdges);
             }
         }
-        // TODO: case first == second == changedGraph
+        // For A;A, we have the following:
+        // (A+R);(A+R) = A;A + A;R + R;A + R;R = A;A + (A+R);R + R;(A+R)
+        // So we add (A+R);R and (R;A+R), which is done by doing both update procedures
         return newEdges;
+    }
+
+    private void updateFirst(Edge a, Collection<Edge> addedEdges) {
+        for (Edge b : second.outEdges(a.getSecond())) {
+            Edge edge = new Edge(a.getFirst(), b.getSecond(), a.getTime());
+            if (graph.add(edge))
+                addedEdges.add(edge);
+        }
     }
 
     private void updateSecond(Edge b, Collection<Edge> addedEdges) {
@@ -104,13 +117,6 @@ public class CompositionGraph extends BinaryEventGraph {
         }
     }
 
-    private void updateFirst(Edge a, Collection<Edge> addedEdges) {
-        for (Edge b : second.outEdges(a.getSecond())) {
-            Edge edge = new Edge(a.getFirst(), b.getSecond(), a.getTime());
-            if (graph.add(edge))
-                addedEdges.add(edge);
-        }
-    }
 
     private void initialPopulation() {
 

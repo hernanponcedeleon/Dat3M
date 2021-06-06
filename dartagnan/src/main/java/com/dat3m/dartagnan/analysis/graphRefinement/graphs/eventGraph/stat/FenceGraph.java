@@ -55,6 +55,7 @@ public class FenceGraph extends StaticEventGraph {
         for (List<EventData> fenceList : threadFencesMap.values()) {
             fenceList.sort(Comparator.comparingInt(EventData::getLocalId));
         }
+        autoComputeSize();
     }
 
     @Override

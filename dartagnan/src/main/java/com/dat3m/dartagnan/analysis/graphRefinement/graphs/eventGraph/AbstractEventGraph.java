@@ -12,8 +12,17 @@ public abstract class AbstractEventGraph implements EventGraph {
 
     protected ExecutionModel context;
     protected VerificationTask task;
+    protected String name = null;
 
     public AbstractEventGraph() {
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
     }
 
     @Override
@@ -22,6 +31,10 @@ public abstract class AbstractEventGraph implements EventGraph {
         this.task = context.getVerificationTask();
     }
 
+    @Override
+    public String toString() {
+        return name != null ? name : super.toString();
+    }
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {

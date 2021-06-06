@@ -117,7 +117,7 @@ public class GraphHierarchy {
                 //TODO: Maybe copy all graphs into a new set and reuse that set
                 recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
                     for(EventGraph dep : x.getDependencies()) {
-                        createPropagationTask(dep, x, dep, 0);
+                        createPropagationTask(dep, x, new ArrayList<>(dep), 0);
                     }
                 });
 

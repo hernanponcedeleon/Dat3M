@@ -40,7 +40,10 @@ import java.util.*;
 
 public class ExecutionGraph {
 
-    private static final Set<String> EXCLUDED_RELS = ImmutableSet.of("idd", "idd^+", "ctrlDirect", "addrDirect");
+    private static final Set<String> EXCLUDED_RELS = ImmutableSet.of(
+            "idd", "idd^+", "ctrlDirect", "addrDirect", "(idd^+;addrDirect)", "(addrDirect+(idd^+;addrDirect))",
+            "(idd^+;ctrlDirect)"
+    );
     private static final Set<String> SPECIAL_RELS = ImmutableSet.of("addr", "data", "ctrl");
 
 
@@ -69,6 +72,7 @@ public class ExecutionGraph {
         for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
             if (!EXCLUDED_RELS.contains(rel.getName())) {
                 EventGraph graph = getGraphFromRelation(rel);
+                graph.setName(rel.getName());
                 graphs.add(graph);
             }
         }
@@ -172,7 +176,12 @@ public class ExecutionGraph {
             graph = poGraph = new ProgramOrderGraph();
         } else if (relClass == RelCo.class) {
             graph = coGraph = new TransitiveGraph(woGraph = new CoherenceGraph());
-        } else if (rel.isUnaryRelation() || rel.isRecursiveRelation()) {
+        } else if (rel.isRecursiveRelation()) {
+            RecursiveGraph recGraph = new RecursiveGraph();
+            relationGraphMap.put(rel, recGraph);
+            recGraph.setConcreteGraph(getGraphFromRelation(rel.getInner()));
+            return recGraph;
+        }else if (rel.isUnaryRelation()) {
             EventGraph inner = getGraphFromRelation(rel.getInner());
             // A safety check because recursion might compute this edge set
             if (relationGraphMap.containsKey(rel))
@@ -205,11 +214,6 @@ public class ExecutionGraph {
             } else if (relClass == RelMinus.class) {
                 graph = new DifferenceGraph(first, second);
             }
-        } else if (rel.isRecursiveRelation()) {
-            RecursiveGraph recGraph = new RecursiveGraph();
-            relationGraphMap.put(rel, recGraph);
-            recGraph.setConcreteGraph(getGraphFromRelation(rel.getInner()));
-            return recGraph;
         } else if (rel.isStaticRelation()) {
             if (relClass == RelCartesian.class) {
                 graph = new CartesianGraph((RelCartesian) rel);

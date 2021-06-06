@@ -74,7 +74,9 @@ public class UnionGraph extends BinaryEventGraph {
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == first || changedGraph == second) {
             EventGraph other = changedGraph == first ? second : first;
-            addedEdges.removeIf(other::contains);
+            //addedEdges.removeIf(other::contains); <---- Problem
+            // NOTE: This shortcut can only be done, if R = A | B and A and B are independent.
+            // This is not the case for recursive relations and will cause problems there.
         } else {
             addedEdges.clear();
         }

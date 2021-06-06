@@ -41,6 +41,10 @@ public class GraphRefinement {
     // ====== Data specific for a single refinement =======
     //TODO: We might want to take an external executionModel to perform refinement on!
     private final ExecutionModel executionModel;
+    private final Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
+    private final SortedClauseSet<CoreLiteral> coreReasonsSorted = new SortedClauseSet<>(); // TODO: delete
+    // Statistics of the last call to kSearch
+    private RefinementStats stats;
 
 
     public GraphRefinement(VerificationTask context) {
@@ -57,13 +61,6 @@ public class GraphRefinement {
         testIteration();
         testStaticGraphs();
     }
-
-    private final Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
-    private final SortedClauseSet<CoreLiteral> coreReasonsSorted = new SortedClauseSet<>();
-
-
-    // Statistics of the last call to kSearch
-    private RefinementStats stats;
 
     /*
     kSearch performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
@@ -373,6 +370,8 @@ public class GraphRefinement {
 
 
 
+    // ================ TESTING ======================
+
     private final static boolean DEBUG = false;
     private void testIteration() {
         if (!DEBUG)
@@ -394,10 +393,17 @@ public class GraphRefinement {
     private void testStaticGraphs() {
         if (!DEBUG)
             return;
-        for (Relation relData : context.getRelations()) {
-            if (relData.isStaticRelation()) {
+
+        for (Relation relData : context.getRelationDependencyGraph().getNodeContents()) {
+            if (relData.getName().equals("co")) {
+                continue;
+            }
+            if (relData.isStaticRelation() || relData.isRecursiveRelation()) {
                 EventGraph g = execGraph.getEventGraph(relData);
-                for (Tuple t : relData.getMaxTupleSet()) {
+                if (g == null) {
+                    continue;
+                }
+                for (Tuple t : relData.getMinTupleSet()) {
                     if (executionModel.eventExists(t.getFirst()) && executionModel.eventExists(t.getSecond())) {
                         if (!g.contains(executionModel.getEdge(t))) {
                             throw new RuntimeException();
