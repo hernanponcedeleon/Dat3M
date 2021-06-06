@@ -150,7 +150,7 @@ public class Refinement {
                 System.out.println(" ===== Iteration: " + ++vioCount + " =====");
             /*System.out.println(solver.getStatistics().get("mk clause"));
             System.out.println(solver.getStatistics().get("mk bool var"));*/
-                System.out.println("Solving time(ms): " + (curTime - lastTime));
+                System.out.println("Solving time( ms): " + (curTime - lastTime));
             }
             totalSolvingTime += (curTime - lastTime);
 
