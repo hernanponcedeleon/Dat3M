@@ -113,7 +113,10 @@ public class RangeIdentityGraph extends UnaryGraph {
 
     @Override
     public Conjunction<CoreLiteral> computeReason(Edge edge) {
-        return inner.computeReason(edge.getInverse());
+        for (Edge inEdge : inner.inEdges(edge.getSecond())) {
+            return inner.computeReason(inEdge);
+        }
+        throw new IllegalStateException("RangeIdentityGraph: No matching edge is found");
     }
 
 }

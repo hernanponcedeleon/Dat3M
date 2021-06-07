@@ -108,7 +108,11 @@ public class TreeResolution {
 
             DecisionNode decNode = leaf.getParent();
             SearchNode otherBranch = decNode.getPositive() == leaf ? decNode.getNegative() : decNode.getPositive();
-            decNode.replaceBy(otherBranch);
+            if (otherBranch != null) {
+                decNode.replaceBy(otherBranch);
+            } else {
+                throw new IllegalStateException("Empty branches in TreeResolution. Probably some reason computation bug (again).");
+            }
         }
     }
 }
