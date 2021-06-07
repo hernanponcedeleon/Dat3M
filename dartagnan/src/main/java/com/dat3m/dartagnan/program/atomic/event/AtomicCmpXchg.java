@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveStatus;
-import com.dat3m.dartagnan.program.atomic.utils.Mo;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
