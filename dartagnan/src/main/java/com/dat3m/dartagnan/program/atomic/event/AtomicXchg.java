@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
@@ -26,6 +27,7 @@ import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
+import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -62,14 +64,14 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
     	Load load;
     	Store store;
-    	LinkedList<Event> events;
+    	LinkedList<Event> events = new LinkedList<>();
         switch(target) {
             case NONE: case TSO:
                 load = new RMWLoad(resultRegister, address, mo);
                 store = new RMWStore((RMWLoad)load, address, value, mo);
-
                 events = new LinkedList<>(Arrays.asList(load, store));
-                return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+                break;
+            case POWER:
             case ARM8:
             	String loadMo;
             	String storeMo;
@@ -102,11 +104,26 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 Event jump = new CondJump(new Atom(statusReg, COpBin.EQ, IConst.ONE), end);
                 jump.addFilters(EType.BOUND);
 
-                events = new LinkedList<>(Arrays.asList(load, store, status, jump));
-                return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
+                // Extra fences for POWER
+                if(target.equals(POWER)) {
+                    if (mo.equals(SC)) {
+                        events.addFirst(new Fence("Sync"));
+                    } else if (storeMo.equals(REL)) {
+                        events.addFirst(new Fence("Lwsync"));
+                    }                	
+                }
+                
+                // All events for POWER and ARM8
+                events.addAll(Arrays.asList(load, store, status, jump));
 
+                // Extra fences for POWER
+                if (target.equals(POWER) && loadMo.equals(ACQ)) {
+                    events.addLast(new Fence("Isync"));
+                }
+                break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
+        return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }
