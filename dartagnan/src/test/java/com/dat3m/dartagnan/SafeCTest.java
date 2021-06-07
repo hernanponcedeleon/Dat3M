@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Base;
+import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -30,7 +32,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class SafeCTest {
 
-	static final int TIMEOUT = 180000;
+	static final int TIMEOUT = 1800000;
 
     private final String path;
     private final Wmm wmm;
@@ -79,7 +81,20 @@ public class SafeCTest {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(UNKNOWN, com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
+            assertEquals(UNKNOWN, Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
+            ctx.close();
+        } catch (IOException e){
+            fail("Missing resource file");
+        }
+    }
+
+    @Test(timeout = TIMEOUT)
+    public void testRefinement() {
+        try {
+            Program program = new ProgramParser().parse(new File(path));
+            Context ctx = new Context();
+            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            assertEquals(UNKNOWN, Refinement.runAnalysisGraphRefinement(ctx.mkSolver(), ctx, task));
             ctx.close();
         } catch (IOException e){
             fail("Missing resource file");
