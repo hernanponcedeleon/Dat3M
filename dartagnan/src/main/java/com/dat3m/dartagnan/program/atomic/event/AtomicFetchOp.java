@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
@@ -33,6 +34,7 @@ import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQ_REL;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELAXED;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -75,13 +77,14 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     	Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
     	Local add = new Local(dummyReg, new IExprBin(resultRegister, op, value));
     	Store store;
-    	LinkedList<Event> events;
+    	LinkedList<Event> events = new LinkedList<>();
         switch(target) {
             case NONE: case TSO:
                 load = new RMWLoad(resultRegister, address, mo);
                 store = new RMWStore((RMWLoad)load, address, dummyReg, mo);
                 events = new LinkedList<>(Arrays.asList(load, add, store));
                 break;
+            case POWER:
             case ARM8:
                 String loadMo;
                 String storeMo;
@@ -113,7 +116,23 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                 Label end = (Label)getThread().getExit();
                 Event jump = new CondJump(new Atom(statusReg, COpBin.EQ, IConst.ONE), end);
                 jump.addFilters(EType.BOUND);
-                events = new LinkedList<>(Arrays.asList(load, add, store, status, jump));
+
+                // Extra fences for POWER
+                if(target.equals(POWER)) {
+                    if (mo.equals(SC)) {
+                        events.addFirst(new Fence("Sync"));
+                    } else if (storeMo.equals(REL)) {
+                        events.addFirst(new Fence("Lwsync"));
+                    }                	
+                }
+                
+                // All events for POWER and ARM8
+                events.addAll(Arrays.asList(load, add, store, status, jump));
+                
+                // Extra fences for POWER
+                if (target.equals(POWER) && loadMo.equals(ACQ)) {
+                    events.addLast(new Fence("Isync"));
+                }
                 break;
             default:
                 String tag = mo != null ? "_explicit" : "";
