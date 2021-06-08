@@ -68,7 +68,7 @@ static inline void mutex_lock(mutex_t *m)
         return;
     atomic_thread_fence(memory_order_relaxed);
 
-    while (!mutex_lock_slowpath_check(m)) {
+    while (mutex_lock_slowpath_check(m) == 0) {
         atomic_thread_fence(memory_order_relaxed);
         atomic_fetch_add_explicit(&m->waiters, 1, memory_order_relaxed);
         int r = 1;
