@@ -66,7 +66,8 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
     	Store store;
     	LinkedList<Event> events = new LinkedList<>();
         switch(target) {
-            case NONE: case TSO:
+            case NONE: 
+            case TSO:
                 load = new RMWLoad(resultRegister, address, mo);
                 store = new RMWStore((RMWLoad)load, address, value, mo);
                 events = new LinkedList<>(Arrays.asList(load, store));

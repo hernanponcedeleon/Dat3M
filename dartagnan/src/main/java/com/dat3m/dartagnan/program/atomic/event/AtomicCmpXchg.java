@@ -63,7 +63,8 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
     	Store store;
     	LinkedList<Event> events = new LinkedList<>();
         switch(target) {
-            case NONE: case TSO: {
+            case NONE:
+            case TSO: {
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
                 load = new RMWLoad(dummy, address, mo);
                 Local casResult = new Local(resultRegister, new Atom(dummy, EQ, expected));
@@ -76,7 +77,8 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 events.addAll(Arrays.asList(load, casResult, branch, store, jumpToEnd, fail, updateReg, endCas));
                 break;
             }
-            case POWER: case ARM8: {
+            case POWER:
+            case ARM8: {
                 String loadMo;
                 String storeMo;
                 switch (mo) {
