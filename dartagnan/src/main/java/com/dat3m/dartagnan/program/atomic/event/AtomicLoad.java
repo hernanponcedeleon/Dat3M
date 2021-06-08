@@ -70,7 +70,8 @@ public class AtomicLoad extends MemEvent implements RegWriter {
         events.add(load);
 
         switch (target) {
-            case NONE: case TSO:
+            case NONE: 
+            case TSO:
                 break;
             case POWER:
                 if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)){
