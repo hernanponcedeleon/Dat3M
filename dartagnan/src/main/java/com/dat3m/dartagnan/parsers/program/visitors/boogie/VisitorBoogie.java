@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import com.dat3m.dartagnan.GlobalSettings;
 
+import com.dat3m.dartagnan.program.event.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,17 +93,6 @@ import com.dat3m.dartagnan.boogie.Scope;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.FunCall;
-import com.dat3m.dartagnan.program.event.FunRet;
-import com.dat3m.dartagnan.program.event.If;
-import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Load;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Skip;
-import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.event.While;
 import com.dat3m.dartagnan.program.event.pthread.End;
 import com.dat3m.dartagnan.program.event.pthread.Start;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -602,6 +592,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			if(c != null) {
+				//programBuilder.addChild(threadCount, new Assume(c));
 				programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), pairingLabel));	
 			}
 		}
