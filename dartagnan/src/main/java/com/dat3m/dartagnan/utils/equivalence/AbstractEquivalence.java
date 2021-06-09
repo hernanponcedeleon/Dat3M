@@ -81,6 +81,9 @@ public abstract class AbstractEquivalence<T> implements Equivalence<T> {
                 if (oldClass != null) {
                     oldClass.removeInternal(x);
                 }
+                if (internalSet.size() == 1) {
+                    representative = x;
+                }
                 return true;
             }
             return false;

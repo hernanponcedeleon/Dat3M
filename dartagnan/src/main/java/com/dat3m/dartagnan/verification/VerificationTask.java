@@ -98,6 +98,7 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+        program.setFId(0);
 
         if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {
             for (Thread t : program.getThreads()) {
