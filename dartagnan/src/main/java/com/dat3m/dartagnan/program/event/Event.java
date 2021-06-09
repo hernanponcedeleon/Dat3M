@@ -21,7 +21,7 @@ public abstract class Event implements Comparable<Event> {
 	protected int cId = -1;		// ID after compilation
 	protected int fId = -1;		// ID within a function
 	
-	protected String symmId;		// ID after compilation
+	protected String symmId;	// ID for symmetry breaking
 	
 	protected int cLine = -1;	// line in the original C program
 
