@@ -1,11 +1,16 @@
 package com.dat3m.dartagnan.analysis;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -19,11 +24,14 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.microsoft.z3.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.microsoft.z3.Status.SATISFIABLE;
@@ -42,6 +50,7 @@ public class Refinement {
     static final boolean PRINT_STATISTICS = true;
     static final boolean USE_OUTER_WMM = true;
     static final boolean ADD_ACYCLIC_DEP_RF = false;
+    static final boolean USE_SYMMETRY = true;
 
 
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
@@ -132,6 +141,18 @@ public class Refinement {
         GraphRefinement refinement = new GraphRefinement(verificationTask);
         Result res = UNKNOWN;
 
+        // ====== Test code ======
+        ThreadSymmetry symm = new ThreadSymmetry(verificationTask.getProgram());
+        List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
+        List<Function<Event, Event>> perms;
+        if (symmClasses.isEmpty() || !USE_SYMMETRY) {
+            perms = new ArrayList<>();
+            perms.add(Function.identity());
+        } else {
+            perms = symm.createAllPermutations(symmClasses.get(0));
+        }
+        // =======================
+
         solver.push();
         solver.add(verificationTask.encodeAssertions(ctx));
 
@@ -165,7 +186,7 @@ public class Refinement {
             if (res == FAIL) {
                 DNF<CoreLiteral> violations = gRes.getViolations();
                 foundViolations.add(violations);
-                refine(solver, ctx, violations);
+                refine(solver, ctx, violations, perms);
                 // Some statistics
                 for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
                     if (PRINT_STATISTICS) {
@@ -221,7 +242,7 @@ public class Refinement {
                 //TODO: This is just a temporary fallback
                 // We have to perform a second refinement for the bound checks!
                 for (DNF<CoreLiteral> violation : foundViolations) {
-                    refine(solver, ctx, violation);
+                    refine(solver, ctx, violation, perms);
                 }
                 res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
             }
@@ -236,16 +257,30 @@ public class Refinement {
     }
 
 
-    private static void refine(Solver solver, Context ctx, DNF<CoreLiteral> coreViolations) {
-        BoolExpr refinement = ctx.mkTrue();
-        for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
-            BoolExpr clause = ctx.mkFalse();
-            for (CoreLiteral literal : violation.getLiterals()) {
-                clause = ctx.mkOr(clause, ctx.mkNot(literal.getZ3BoolExpr(ctx)));
+    private static void refine(Solver solver, Context ctx, DNF<CoreLiteral> coreViolations, List<Function<Event, Event>> perms) {
+        for (Function<Event, Event> p : perms) {
+
+            BoolExpr refinement = ctx.mkTrue();
+            for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
+                BoolExpr clause = ctx.mkFalse();
+                for (CoreLiteral literal : violation.getLiterals()) {
+                    clause = ctx.mkOr(clause, ctx.mkNot(permute(literal, p, ctx)/*literal.getZ3BoolExpr(ctx))*/));
+                }
+                refinement = ctx.mkAnd(refinement, clause);
             }
-            refinement = ctx.mkAnd(refinement, clause);
+            solver.add(refinement);
         }
-        solver.add(refinement);
+    }
+
+    private static BoolExpr permute(CoreLiteral literal, Function<Event, Event> p, Context ctx) {
+        if (literal instanceof EventLiteral) {
+            EventLiteral lit = (EventLiteral) literal;
+            return p.apply(lit.getEvent().getEvent()).exec();
+        } else if (literal instanceof AbstractEdgeLiteral) {
+            AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
+            return Utils.edge(lit.getName(), p.apply(lit.getEdge().getFirst().getEvent()), p.apply(lit.getEdge().getSecond().getEvent()), ctx);
+        }
+        return null;
     }
 
 
