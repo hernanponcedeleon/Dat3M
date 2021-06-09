@@ -49,17 +49,13 @@ public class SafeCTest {
 
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-opt-O0.bpl", tso, TSO, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-optO0.bpl", arm, ARM8, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-optO0.bpl", power, POWER, s1});
-
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-O0.bpl", tso, TSO, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-O0.bpl", arm, ARM8, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-O0.bpl", power, POWER, s1});
 
-        /*data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", tso, TSO, s1});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", tso, TSO, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", arm, ARM8, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", power, POWER, s1});*/
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", power, POWER, s1});
 
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0.bpl", tso, TSO, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0.bpl", arm, ARM8, s1});
@@ -79,7 +75,7 @@ public class SafeCTest {
         this.settings = settings;
     }
     
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void test() {
     	try {
             Program program = new ProgramParser().parse(new File(path));
