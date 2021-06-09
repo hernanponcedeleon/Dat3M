@@ -54,6 +54,18 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         };
     }
 
+    public Function<Event, Event> createTransposition(Thread t1, Thread t2) {
+        if (!areEquivalent(t1, t2)) {
+            return Function.identity();
+        }
+
+        return e -> {
+            Thread t = e.getThread();
+            return (t == t1) ? map(e, t2) :
+                    (t == t2) ? map(e, t1) : e;
+        };
+    }
+
     public List<Function<Event, Event>> createAllPermutations(EquivalenceClass<Thread> eqClass) {
         if (eqClass.getEquivalence() != this) {
             throw new IllegalArgumentException("<eqClass> is not a symmetry class of this symmetry equivalence.");

@@ -50,7 +50,15 @@ public class Refinement {
     static final boolean PRINT_STATISTICS = true;
     static final boolean USE_OUTER_WMM = true;
     static final boolean ADD_ACYCLIC_DEP_RF = false;
-    static final boolean USE_SYMMETRY = true;
+    static final SymmetryLearning SYMMETRY_LEARNING = SymmetryLearning.FULL;
+
+
+    enum SymmetryLearning {
+        NONE,
+        LINEAR,
+        QUADRATIC,
+        FULL
+    }
 
 
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
@@ -121,6 +129,39 @@ public class Refinement {
     }
 
 
+    private static List<Function<Event, Event>> computePerms(Program program) {
+
+        ThreadSymmetry symm = new ThreadSymmetry(program);
+        List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
+        List<Function<Event, Event>> perms = new ArrayList<>();
+        List<Thread> threads = new ArrayList<>(symmClasses.get(0));
+        threads.sort(Comparator.comparingInt(Thread::getId));
+        if (symmClasses.isEmpty() || SYMMETRY_LEARNING == SymmetryLearning.NONE) {
+            // ==== None ====
+            perms.add(Function.identity());
+        } else if (SYMMETRY_LEARNING == SymmetryLearning.LINEAR) {
+            // ==== Linear ====
+            perms.add(Function.identity());
+            for(int i = 0; i < threads.size(); i++) {
+                int j = (i+1) < threads.size() ? i + 1 : 0;
+                perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
+            }
+        } else if (SYMMETRY_LEARNING == SymmetryLearning.QUADRATIC) {
+            // ==== Quadratic ====
+            perms.add(Function.identity());
+            for(int i = 0; i < threads.size(); i++) {
+                for (int j =  i + 1; j < threads.size(); j++) {
+                    perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
+                }
+            }
+        } else if (SYMMETRY_LEARNING == SymmetryLearning.FULL) {
+            // ==== Full ====
+            perms = symm.createAllPermutations(symmClasses.get(0));
+        }
+
+        return perms;
+    }
+
 
     private static Result refinementCore(Solver solver, Context ctx, VerificationTask verificationTask) {
 
@@ -142,15 +183,7 @@ public class Refinement {
         Result res = UNKNOWN;
 
         // ====== Test code ======
-        ThreadSymmetry symm = new ThreadSymmetry(verificationTask.getProgram());
-        List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
-        List<Function<Event, Event>> perms;
-        if (symmClasses.isEmpty() || !USE_SYMMETRY) {
-            perms = new ArrayList<>();
-            perms.add(Function.identity());
-        } else {
-            perms = symm.createAllPermutations(symmClasses.get(0));
-        }
+        List<Function<Event, Event>> perms = computePerms(verificationTask.getProgram());
         // =======================
 
         solver.push();
