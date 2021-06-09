@@ -43,6 +43,7 @@ static inline void ticketlock_acquire(struct ticketlock_s *l)
     await_for_ticket(l, ticket);
 }
 
+// NOTE: Unused and wrong code!
 static inline int ticketlock_tryacquire(struct ticketlock_s *l)
 {
     int o = atomic_load_explicit(&l->owner, memory_order_acquire);
@@ -61,17 +62,17 @@ static inline void ticketlock_release(struct ticketlock_s *l)
 // main.c
 //
 int shared;
-ticketlock_t lock;
+ticketlock_t *lock;
 
 void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
-    ticketlock_acquire(&lock);
+    ticketlock_acquire(lock);
     shared = index;
     int r = shared;
     assert(r == index);
-    ticketlock_release(&lock);
+    ticketlock_release(lock);
     return NULL;
 }
 
@@ -81,14 +82,15 @@ int main()
 {
     pthread_t t0, t1, t2, t3, t4, t5, t6;
 
-    ticketlock_init(&lock);
+    lock = malloc(sizeof(ticketlock_t));
+    ticketlock_init(lock);
     
-    pthread_create(&t0, NULL, thread_n, NULL);
-    pthread_create(&t1, NULL, thread_n, NULL);
-    pthread_create(&t2, NULL, thread_n, NULL);
-    pthread_create(&t3, NULL, thread_n, NULL);
-    pthread_create(&t4, NULL, thread_n, NULL);
-    pthread_create(&t5, NULL, thread_n, NULL);
+    pthread_create(&t0, NULL, thread_n, (void *) 0);
+    pthread_create(&t1, NULL, thread_n, (void *) 1);
+    pthread_create(&t2, NULL, thread_n, (void *) 2);
+    pthread_create(&t3, NULL, thread_n, (void *) 3);
+    pthread_create(&t4, NULL, thread_n, (void *) 4);
+    pthread_create(&t5, NULL, thread_n, (void *) 5);
     
     return 0;
 }

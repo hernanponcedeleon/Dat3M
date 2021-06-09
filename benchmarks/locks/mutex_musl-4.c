@@ -7,21 +7,21 @@
 
 // futex.h
 //
-static atomic_int signal;
+static atomic_int sig;
 
 static inline void __futex_wait(atomic_int *m, int v)
 {
-    int s = atomic_load_explicit(&signal, memory_order_acquire);
+    int s = atomic_load_explicit(&sig, memory_order_acquire);
     if (atomic_load_explicit(m, memory_order_acquire) != v)
         return;
 
-    while (atomic_load_explicit(&signal, memory_order_acquire) == s)
+    while (atomic_load_explicit(&sig, memory_order_acquire) == s)
         ;
 }
 
 static inline void __futex_wake(atomic_int *m, int v)
 {
-    atomic_fetch_add_explicit(&signal, 1, memory_order_release);
+    atomic_fetch_add_explicit(&sig, 1, memory_order_release);
 }
 
 // mutex_musl.h
@@ -92,17 +92,17 @@ static inline void mutex_unlock(mutex_t *m)
 // main.c
 //
 int shared;
-mutex_t mutex;
+mutex_t* mutex;
 
 void *thread_n(void *arg)
 {
     intptr_t index = ((intptr_t) arg);
 
-    mutex_lock(&mutex);
+    mutex_lock(mutex);
     shared = index;
     int r = shared;
     assert(r == index);
-    mutex_unlock(&mutex);
+    mutex_unlock(mutex);
     return NULL;
 }
 
@@ -111,6 +111,8 @@ void *thread_n(void *arg)
 int main()
 {
     pthread_t t0, t1, t2, t3;
+    mutex = malloc(sizeof(mutex_t));
+    mutex_init(mutex);
 
     pthread_create(&t0, NULL, thread_n, (void *) 0);
     pthread_create(&t1, NULL, thread_n, (void *) 1);
