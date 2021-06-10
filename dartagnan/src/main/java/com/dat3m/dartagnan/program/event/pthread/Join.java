@@ -89,8 +89,11 @@ public class Join extends Event {
                 events.addLast(label);
                 events.addLast(new Fence("Isync"));
                 break;
-            case ARM: case ARM8:
+            case ARM:
                 events.addLast(new Fence("Ish"));
+                break;
+            case ARM8:
+                events.addLast(new Fence("DMB.ISH"));
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

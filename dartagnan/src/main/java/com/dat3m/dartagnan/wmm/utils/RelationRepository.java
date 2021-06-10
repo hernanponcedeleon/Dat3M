@@ -159,7 +159,6 @@ public class RelationRepository {
                 return getRelation(RelIntersection.class,
                         getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")),
                         getRelation("(R*V)")).setName("ctrl");
-
             case "po-loc":
                 return getRelation(RelIntersection.class, getRelation("po"), getRelation("loc")).setName("po-loc");
             case "rfe":

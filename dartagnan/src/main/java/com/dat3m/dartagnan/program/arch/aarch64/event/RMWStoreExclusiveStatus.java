@@ -20,7 +20,7 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     private final RMWStoreExclusive storeEvent;
     private Expr regResultExpr;
 
-    RMWStoreExclusiveStatus(Register register, RMWStoreExclusive storeEvent){
+    public RMWStoreExclusiveStatus(Register register, RMWStoreExclusive storeEvent){
         this.register = register;
         this.storeEvent = storeEvent;
         addFilters(EType.ANY, EType.VISIBLE, EType.LOCAL, EType.REG_WRITER);

@@ -9,13 +9,11 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.atomic.event.AtomicFetchOp;
-import com.dat3m.dartagnan.program.atomic.event.AtomicLoad;
-import com.dat3m.dartagnan.program.atomic.event.AtomicStore;
-import com.dat3m.dartagnan.program.atomic.event.AtomicThreadFence;
-import com.dat3m.dartagnan.program.atomic.event.AtomicXchg;
+import com.dat3m.dartagnan.program.atomic.event.*;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 
 public class AtomicProcedures {
@@ -27,7 +25,8 @@ public class AtomicProcedures {
 			"atomic_fetch",
 			"atomic_exchange",
 			"atomic_compare_exchange",
-			"atomic_thread_fence");
+			"atomic_thread_fence",
+			"__DAT3M_CAS");
 	
 	public static void handleAtomicFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
@@ -49,14 +48,23 @@ public class AtomicProcedures {
 			atomicFetchOp(visitor, ctx);
 			return;
 		}
-		if(name.startsWith("atomic_exchange") || name.startsWith("atomic_compare_exchange")) {
+		if(name.startsWith("atomic_exchange") /*|| name.startsWith("atomic_compare_exchange")*/) {
 			atomicXchg(visitor, ctx);
+			return;
+		}
+		if (name.startsWith("atomic_compare_exchange")) {
+			atomicCmpXchg(visitor, ctx);
 			return;
 		}
 		if(name.startsWith("atomic_thread_fence")) {
 			atomicThreadFence(visitor, ctx);
 			return;
+		}		
+		if(name.startsWith("__DAT3M_CAS")) {
+			DAT3M_CAS(visitor, ctx);
+			return;
 		}
+		
 		throw new UnsupportedOperationException(name + " procedure is not part of ATOMICPROCEDURES");		
 	}
 	
@@ -122,8 +130,37 @@ public class AtomicProcedures {
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicXchg(reg, add, value, mo));
 	}
 
+	private static void DAT3M_CAS(VisitorBoogie visitor, Call_cmdContext ctx) {
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
+		IExpr add = (IExpr) params.get(0).accept(visitor);
+		Register expected = (Register) params.get(1).accept(visitor);
+		ExprInterface desired = (ExprInterface) params.get(2).accept(visitor);
+		String mo = null;
+		if(params.size() > 3) {
+			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
+		}
+		visitor.programBuilder.addChild(visitor.threadCount, new Dat3mCAS(reg, add, expected, desired, mo));
+	}
+
 	private static void atomicThreadFence(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String mo = intToMo(((IConst)ctx.call_params().exprs().expr().get(0).accept(visitor)).getIntValue().intValue());
 		visitor.programBuilder.addChild(visitor.threadCount, new AtomicThreadFence(mo));
+	}
+	
+	private static void atomicCmpXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
+		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
+		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
+		IExpr add = (IExpr) params.get(0).accept(visitor);
+		Register expectedAdd = (Register) params.get(1).accept(visitor); // NOTE: We assume a register here
+		Register expected = new Register(null, reg.getThreadId(), reg.getPrecision());
+		ExprInterface desired = (ExprInterface) params.get(2).accept(visitor);
+		String mo = null;
+		if(params.size() > 3) {
+			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
+			// NOTE: We forget about the 5th parameter (MO on fail) for now!
+		}
+		visitor.programBuilder.addChild(visitor.threadCount, new Load(expected, expectedAdd, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, new AtomicCmpXchg(reg, add, expected, desired, mo));
 	}
 }

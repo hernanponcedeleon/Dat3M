@@ -2,8 +2,7 @@ package com.dat3m.ui.result;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
-import static com.dat3m.ui.options.utils.Method.INCREMENTAL;
-import static com.dat3m.ui.options.utils.Method.TWOSOLVERS;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -36,14 +35,21 @@ public class ReachabilityResult {
 
     private void run(){
         if(validate()){
-            VerificationTask task = new VerificationTask(program, wmm, options.getTarget(), options.getSettings());
+            VerificationTask task = new VerificationTask(program, wmm, program.getArch() != null ? program.getArch() : options.getTarget(), options.getSettings());
             Context ctx = new Context();
             Solver solver = ctx.mkSolver();
             Result result = null;
-            if (options.getMethod() == INCREMENTAL)
-                result = runAnalysisIncrementalSolver(solver, ctx, task);
-            else if (options.getMethod() == TWOSOLVERS)
-                result = runAnalysis(solver, ctx, task);
+            switch(options.getMethod()) {
+            	case INCREMENTAL:
+            		result = runAnalysisIncrementalSolver(solver, ctx, task);
+            		break;
+            	case ASSUME:
+            		result = runAnalysisAssumeSolver(solver, ctx, task);
+            		break;
+            	case TWOSOLVERS:
+                    result = runAnalysis(solver, ctx, task);
+                    break;
+            }
             buildVerdict(result);
             ctx.close();
         }

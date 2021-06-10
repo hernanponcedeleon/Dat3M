@@ -68,9 +68,13 @@ public class Create extends Event {
             case POWER:
                 events.addFirst(new Fence("Sync"));
                 break;
-            case ARM: case ARM8:
+            case ARM:
                 events.addFirst(new Fence("Ish"));
                 events.addLast(new Fence("Ish"));
+                break;
+            case ARM8:
+                events.addFirst(new Fence("DMB.ISH"));
+                events.addLast(new Fence("DMB.ISH"));
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

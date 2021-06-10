@@ -22,4 +22,8 @@ public abstract class IExpr implements ExprInterface {
 	public IExpr getBase() {
 		return this;
 	}
+	
+	public IExpr simplify() {
+		return this;
+	}
 }

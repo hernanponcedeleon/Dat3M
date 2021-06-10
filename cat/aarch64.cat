@@ -104,11 +104,7 @@ let bob = po; [dmb.full]; po
 	| po; [L]; coi
 
 (* Ordered-before *)
-let rec ob = obs
-	| dob
-	| aob
-	| bob
-	| ob; ob
+let ob = (obs | dob | aob | bob)^+
 
 (* Internal visibility requirement *)
 acyclic po-loc | ca | rf as internal
