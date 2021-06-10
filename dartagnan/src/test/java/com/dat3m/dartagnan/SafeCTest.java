@@ -52,45 +52,45 @@ public class SafeCTest {
 
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-O0.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-O0.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-O0.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-O0.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-O0.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-O0.bpl", power, POWER, s1, UNKNOWN});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-acq2rx-O0.bpl", tso, TSO, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-acq2rx-O0.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-acq2rx-O0.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-acq2rx-O0.bpl", tso, TSO, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-acq2rx-O0.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-acq2rx-O0.bpl", power, POWER, s1, FAIL});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-rel2rx-O0.bpl", tso, TSO, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-rel2rx-O0.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ttas-5-rel2rx-O0.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-rel2rx-O0.bpl", tso, TSO, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-rel2rx-O0.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ttas-5-rel2rx-O0.bpl", power, POWER, s1, FAIL});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-O0.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-O0.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-O0.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-O0.bpl", power, POWER, s1, UNKNOWN});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-acq2rx-O0.bpl", tso, TSO, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-acq2rx-O0.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-acq2rx-O0.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-acq2rx-O0.bpl", tso, TSO, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-acq2rx-O0.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-acq2rx-O0.bpl", power, POWER, s1, FAIL});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-rel2rx-O0.bpl", tso, TSO, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-rel2rx-O0.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/ticketlock-6-rel2rx-O0.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-rel2rx-O0.bpl", tso, TSO, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-rel2rx-O0.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/ticketlock-6-rel2rx-O0.bpl", power, POWER, s1, FAIL});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-O0.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-O0.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-O0.bpl", power, POWER, s1, UNKNOWN});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-acq2rx-futex-O0.bpl", tso, TSO, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-acq2rx-futex-O0.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-acq2rx-futex-O0.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex-O0.bpl", tso, TSO, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex-O0.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex-O0.bpl", power, POWER, s1, FAIL});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0-rel2rx-futex-O0.bpl", tso, TSO, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0-rel2rx-futex-O0.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex-4-O0-rel2rx-futex-O0.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-O0-rel2rx-futex-O0.bpl", tso, TSO, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-O0-rel2rx-futex-O0.bpl", arm, ARM8, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-O0-rel2rx-futex-O0.bpl", power, POWER, s1, FAIL});
 
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex_musl-4-O0.bpl", tso, TSO, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex_musl-4-O0.bpl", arm, ARM8, s1, UNKNOWN});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/safe/mutex_musl-4-O0.bpl", power, POWER, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-O0.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-O0.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-O0.bpl", power, POWER, s1, UNKNOWN});
 
         return data;
     }
