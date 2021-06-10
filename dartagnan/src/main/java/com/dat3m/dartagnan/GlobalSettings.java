@@ -20,6 +20,7 @@ public class GlobalSettings {
     public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY works if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
+    public static final boolean ENABLE_SYMMETRY_BREAKING = false;
 
     // === BranchEquivalence ===
     public static final boolean MERGE_BRANCHES = true;
