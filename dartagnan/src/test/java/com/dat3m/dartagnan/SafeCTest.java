@@ -91,10 +91,9 @@ public class SafeCTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex-O0.bpl", tso, TSO, s1, UNKNOWN});
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex-O0.bpl", arm, ARM8, s1, UNKNOWN});
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-acq2rx-futex-O0.bpl", power, POWER, s1, UNKNOWN});
-
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex-O0.bpl", tso, TSO, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex-O0.bpl", arm, ARM8, s1, FAIL});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex-O0.bpl", power, POWER, s1, FAIL});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex-O0.bpl", tso, TSO, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex-O0.bpl", arm, ARM8, s1, UNKNOWN});
+        data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex-4-rel2rx-futex-O0.bpl", power, POWER, s1, UNKNOWN});
 
         // Known to be safe
         data.add(new Object[]{TEST_RESOURCE_PATH + "locks/mutex_musl-4-O0.bpl", tso, TSO, s1, UNKNOWN});
