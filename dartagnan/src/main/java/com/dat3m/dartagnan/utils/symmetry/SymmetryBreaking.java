@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -41,9 +42,13 @@ public class SymmetryBreaking {
         Thread t1 = symmThreads.get(0);
 
         // ===== Construct row =====
+        //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
+        // These need to get skipped!
         List<Tuple> r1 = new ArrayList<>();
         for (Tuple t : rf.getMaxTupleSet()) {
-            if (t.getFirst().getThread() == t1) {
+            Event a = t.getFirst();
+            Event b = t.getSecond();
+            if (!a.is(EType.PTHREAD) && !b.is(EType.PTHREAD) && a.getThread() == t1) {
                 r1.add(t);
             }
         }
@@ -56,7 +61,9 @@ public class SymmetryBreaking {
             List<Tuple> r2 = new ArrayList<>();
             for (Tuple t : r1) {
                 r2.add(mapTuple(t, p));
+                // assert rf.getMaxTupleSet().contains(r2.get(r2.size() - 1));
             }
+
 
             enc = ctx.mkAnd(enc, encodeLexLeader(i, r1, r2, ctx));
             t1 = t2;
