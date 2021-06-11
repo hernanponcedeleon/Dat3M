@@ -20,7 +20,7 @@ public class GlobalSettings {
     public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY works if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
-    public static final boolean ENABLE_SYMMETRY_BREAKING = false;
+    public static final boolean ENABLE_SYMMETRY_BREAKING = true;
 
     // === BranchEquivalence ===
     public static final boolean MERGE_BRANCHES = true;
@@ -30,6 +30,7 @@ public class GlobalSettings {
     public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
+    public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
 
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;

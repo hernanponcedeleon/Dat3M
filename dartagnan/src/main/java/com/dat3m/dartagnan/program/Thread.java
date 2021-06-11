@@ -17,7 +17,7 @@ import java.util.*;
 
 public class Thread {
 
-	private final String name;
+	private String name;
     private final int id;
     private final Event entry;
     private Event exit;
@@ -46,6 +46,10 @@ public class Thread {
 
     public String getName(){
         return name;
+    }
+
+    public void setName(String name){
+        this.name = name;
     }
 
     public int getId(){

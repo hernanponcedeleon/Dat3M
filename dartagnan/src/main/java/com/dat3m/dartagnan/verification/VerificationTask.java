@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.symmetry.SymmetryReduction;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -98,6 +99,10 @@ public class VerificationTask {
         program.simplify();
         program.unroll(settings.getBound(), 0);
         program.compile(target, 0);
+        if (GlobalSettings.ENABLE_SYMMETRY_REDUCTION) {
+            // Test code
+            new SymmetryReduction(program).apply();
+        }
         program.setFId(0);
 
         if (GlobalSettings.ENABLE_DEBUG_OUTPUT) {

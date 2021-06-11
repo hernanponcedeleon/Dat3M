@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.function.Function;
 
 
-// A first rough implementation for SymmetryBreaking
+// A first rough implementation for symmetry breaking
 public class SymmetryBreaking {
 
     private static final int LEX_LEADER_SIZE = 1000;
