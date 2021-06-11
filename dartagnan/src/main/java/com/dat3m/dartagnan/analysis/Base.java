@@ -4,6 +4,11 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.TIMEOUT;
 
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
+import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,6 +20,11 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Params;
 import com.microsoft.z3.Solver;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Base {
 
@@ -171,6 +181,22 @@ public class Base {
 		solver.add(task.encodeWmmRelations(ctx));
 		solver.add(task.encodeWmmConsistency(ctx));
         solver.add(task.encodeWitness(ctx));
+
+		// ====== test code =====
+		if (GlobalSettings.ENABLE_SYMMETRY_BREAKING) {
+			// Only breaks on the first symmetry class for now
+			ThreadSymmetry symm = new ThreadSymmetry(task.getProgram());
+			List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
+			if (!symmClasses.isEmpty()) {
+				List<Thread> threads = new ArrayList<>(symmClasses.get(0));
+				threads.sort(Comparator.comparingInt(Thread::getId));
+
+				SymmetryBreaking symmetryBreaking = new SymmetryBreaking(task, symm);
+				BoolExpr symmBreak = symmetryBreaking.encode(threads.get(0), ctx);
+				solver.add(symmBreak);
+			}
+		}
+		// =======================
 
 		if(task.getSettings().hasSolverTimeout()) {
 			Params p = ctx.mkParams();

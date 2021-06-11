@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
 import com.dat3m.dartagnan.asserts.AssertTrue;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
+import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
@@ -134,12 +136,14 @@ public class Refinement {
         ThreadSymmetry symm = new ThreadSymmetry(program);
         List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
         List<Function<Event, Event>> perms = new ArrayList<>();
+        if (symmClasses.isEmpty() || SYMMETRY_LEARNING == SymmetryLearning.NONE) {
+            perms.add(Function.identity());
+            return perms;
+        }
+
         List<Thread> threads = new ArrayList<>(symmClasses.get(0));
         threads.sort(Comparator.comparingInt(Thread::getId));
-        if (symmClasses.isEmpty() || SYMMETRY_LEARNING == SymmetryLearning.NONE) {
-            // ==== None ====
-            perms.add(Function.identity());
-        } else if (SYMMETRY_LEARNING == SymmetryLearning.LINEAR) {
+        if (SYMMETRY_LEARNING == SymmetryLearning.LINEAR) {
             // ==== Linear ====
             perms.add(Function.identity());
             for(int i = 0; i < threads.size(); i++) {
@@ -163,10 +167,10 @@ public class Refinement {
     }
 
 
-    private static Result refinementCore(Solver solver, Context ctx, VerificationTask verificationTask) {
+    private static Result refinementCore(Solver solver, Context ctx, VerificationTask task) {
 
         // ======= Some preprocessing to use a visible representative for each branch ========
-        for (BranchEquivalence.Class c : verificationTask.getBranchEquivalence().getAllEquivalenceClasses()) {
+        for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
             ArrayList<Event> events = new ArrayList<>(c);
             events.sort(Comparator.naturalOrder());
             for (Event e : events) {
@@ -178,16 +182,31 @@ public class Refinement {
         }
         // =====================================================================================
 
-        Program program = verificationTask.getProgram();
-        GraphRefinement refinement = new GraphRefinement(verificationTask);
+        Program program = task.getProgram();
+        GraphRefinement refinement = new GraphRefinement(task);
         Result res = UNKNOWN;
 
         // ====== Test code ======
-        List<Function<Event, Event>> perms = computePerms(verificationTask.getProgram());
+        List<Function<Event, Event>> perms = computePerms(task.getProgram());
+
+        // ====== Test code =====
+        if (GlobalSettings.ENABLE_SYMMETRY_BREAKING) {
+            ThreadSymmetry symm = new ThreadSymmetry(task.getProgram());
+            List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
+            if (!symmClasses.isEmpty()) {
+                List<Thread> threads = new ArrayList<>(symmClasses.get(0));
+                threads.sort(Comparator.comparingInt(Thread::getId));
+
+                SymmetryBreaking symmetryBreaking = new SymmetryBreaking(task, symm);
+                BoolExpr symmBreak = symmetryBreaking.encode(threads.get(0), ctx);
+                solver.add(symmBreak);
+            }
+        }
+        // =======================
         // =======================
 
         solver.push();
-        solver.add(verificationTask.encodeAssertions(ctx));
+        solver.add(task.encodeAssertions(ctx));
 
         // Just for statistics
         List<Conjunction<CoreLiteral>> excludedRfs = new ArrayList<>();

@@ -66,8 +66,8 @@ public abstract class AbstractSvCompTest {
     public void testIncremental() {
         Context ctx = null;
         try {
-        	//String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-        	//expected = readExpected(property);
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             ctx = new Context();
             Solver solver = ctx.mkSolver();
@@ -102,11 +102,10 @@ public abstract class AbstractSvCompTest {
             }
         }
     }
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testRefinement() {
         Context ctx = null;
         try {
-            //
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
