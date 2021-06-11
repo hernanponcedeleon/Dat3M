@@ -203,7 +203,7 @@ public class GraphRefinement {
                     execGraph.addCoherenceEdge(coEdgeInv);
                     stats.numGuessedCoherences++;
                     r = kSaturation(decNode.getNegative(), nextTime, k - 1, searchList, i + 1);
-                    if (r == Result.PASS) {
+                    if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
                         return Result.PASS;
                     }
                     backtrackOn(nextTime);
