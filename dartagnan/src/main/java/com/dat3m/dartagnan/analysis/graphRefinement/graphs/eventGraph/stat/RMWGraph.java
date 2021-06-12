@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
+import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
@@ -11,6 +13,8 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -63,7 +67,17 @@ public class RMWGraph extends StaticEventGraph {
      (4) Atomic blocks: BeginAtomic -> Events* -> EndAtomic
     */
     private void populate() {
-        //TODO: Add atomic blocks
+        // Atomic blocks
+        context.getAtomicBlocksMap().values().stream().flatMap(Collection::stream).forEach(
+                block -> {
+                    for (int i = 0; i < block.size(); i++) {
+                        for (int j = i + 1; j < block.size(); j++) {
+                            graph.add(new Edge(block.get(i), block.get(j)));
+                        }
+                    }
+                }
+        );
+
         //TODO: We still need to encode parts of RMW to give correct semantics to exclusive Load/Store on AARCH64 (do we?)
         for (List<EventData> events : context.getThreadEventsMap().values()) {
             EventData lastExclLoad = null;
