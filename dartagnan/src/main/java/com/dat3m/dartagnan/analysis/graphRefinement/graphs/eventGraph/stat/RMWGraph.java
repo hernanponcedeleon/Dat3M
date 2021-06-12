@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+// TODO: Reason computation is completely static, which is not correct in all cases
 public class RMWGraph extends StaticEventGraph {
 
 
