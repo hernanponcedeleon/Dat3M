@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Sets;
+import org.antlr.v4.runtime.atn.PredicateTransition;
 
 import java.util.*;
 
@@ -107,6 +108,12 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     @Override
     public Set<Class> getAllEquivalenceClasses() {
         return super.getAllTypedEqClasses();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Set<Class> getNonTrivialClasses() {
+        return (Set<Class>)super.getNonTrivialClasses();
     }
 
     public BranchEquivalence(Program program) {

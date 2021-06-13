@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -14,37 +15,37 @@ import java.util.stream.Collectors;
 public class SymmetryReduction {
 
     private final ThreadSymmetry symm;
-    private final Program program;
 
     public SymmetryReduction(Program prog) {
-        this.program = prog;
-        this.symm = new ThreadSymmetry(prog);
+        this.symm = new ThreadSymmetry(prog, false);
     }
 
     public void apply() {
 
-        List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(c -> c.size() > 1).collect(Collectors.toList());
+        Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
         if (symmClasses.isEmpty()) {
             return;
         }
-        Thread rep = symmClasses.get(0).getRepresentative();
-        if (rep.getEvents().stream().noneMatch(x -> x.is(EType.ASSERTION))) {
-            return;
-        }
 
-        rep.setName(rep.getName() + "_unique");
-
-        for (Thread t : symmClasses.get(0).stream().filter(x -> x != rep).collect(Collectors.toList())) {
-            Event pred = null;
-            for (Event e : t.getEvents()) {
-                if (e.is(EType.ASSERTION)) {
-                    e.delete(pred);
-                    e.getSuccessor().delete(pred);
-                }
-                pred = e;
+        for (EquivalenceClass<Thread> c : symmClasses) {
+            Thread rep = c.getRepresentative();
+            if (rep.getEvents().stream().noneMatch(x -> x.is(EType.ASSERTION))) {
+                continue;
             }
-            t.clearCache();
-        }
 
+            rep.setName(rep.getName() + "__symm_unique");
+
+            for (Thread t : c.stream().filter(x -> x != rep).collect(Collectors.toList())) {
+                Event pred = null;
+                for (Event e : t.getEvents()) {
+                    if (e.is(EType.ASSERTION)) {
+                        e.delete(pred);
+                        e.getSuccessor().delete(pred);
+                    }
+                    pred = e;
+                }
+                t.clearCache();
+            }
+        }
     }
 }

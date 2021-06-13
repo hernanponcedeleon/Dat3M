@@ -9,6 +9,7 @@ import com.google.common.collect.Collections2;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
@@ -16,10 +17,18 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     private final Map<Thread, Map<String, Event>> symmMap = new HashMap<>();
 
     public ThreadSymmetry(Program program) {
+        this(program, true);
+    }
+
+    ThreadSymmetry(Program program, boolean createMappings) {
         this.program = program;
         createClasses();
-        createMappings();
+        if (createMappings) {
+            createMappings();
+        }
     }
+
+    // ================= Private methods ===================
 
     private void createClasses() {
         Map<String, EqClass> nameMap = new HashMap<>();
@@ -34,6 +43,8 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
             thread.getEvents().forEach(e -> mapping.put(e.getSymmId(), e));
         }
     }
+
+    // ================= Public methods ===================
 
     public Event map(Event source, Thread target) {
         if (!areEquivalent(source.getThread(), target)) {
@@ -70,14 +81,12 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         if (eqClass.getEquivalence() != this) {
             throw new IllegalArgumentException("<eqClass> is not a symmetry class of this symmetry equivalence.");
         }
+
         List<Thread> symmThreads = new ArrayList<>(eqClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
-
-        List<Function<Event, Event>> permutations = new ArrayList<>();
-        for (List<Thread> perm : Collections2.permutations(symmThreads)) {
-            permutations.add(createPermutation(symmThreads, perm));
-        }
-        return permutations;
+        return Collections2.permutations(symmThreads).stream()
+                .map(x -> createPermutation(symmThreads, x))
+                .collect(Collectors.toList());
     }
 
 

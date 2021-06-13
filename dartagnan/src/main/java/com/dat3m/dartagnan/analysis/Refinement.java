@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
@@ -32,11 +31,12 @@ import com.microsoft.z3.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.microsoft.z3.Status.SATISFIABLE;
+import static com.dat3m.dartagnan.GlobalSettings.*;
 
 public class Refinement {
 
@@ -48,19 +48,6 @@ public class Refinement {
     // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
 
     //TODO(2): Add flags for printing stats (currently the stats always get printed)
-
-    static final boolean PRINT_STATISTICS = true;
-    static final boolean USE_OUTER_WMM = true;
-    static final boolean ADD_ACYCLIC_DEP_RF = false;
-    static final SymmetryLearning SYMMETRY_LEARNING = SymmetryLearning.FULL;
-
-
-    enum SymmetryLearning {
-        NONE,
-        LINEAR,
-        QUADRATIC,
-        FULL
-    }
 
 
     // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
@@ -89,7 +76,7 @@ public class Refinement {
 
         task.initialiseEncoding(ctx);
         solver.add(task.encodeProgram(ctx));
-        if (USE_OUTER_WMM) {
+        if (REF_USE_OUTER_WMM) {
             Wmm outer = createOuterWmm();
             outer.initialise(task, ctx);
             solver.add(outer.encode(ctx));
@@ -114,7 +101,7 @@ public class Refinement {
         outerWmm.addAxiom(new Acyclic(porf));
 
         // ---- acyclic (dep | rf) ----
-        if (ADD_ACYCLIC_DEP_RF) {
+        if (REF_ADD_ACYCLIC_DEP_RF) {
             Relation data = repo.getRelation("data");
             Relation ctrl = repo.getRelation("ctrl");
             Relation addr = repo.getRelation("addr");
@@ -131,36 +118,38 @@ public class Refinement {
     }
 
 
-    private static List<Function<Event, Event>> computePerms(Program program) {
+    private static List<Function<Event, Event>> computePerms(VerificationTask task) {
 
-        ThreadSymmetry symm = new ThreadSymmetry(program);
-        List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
+        ThreadSymmetry symm = task.getThreadSymmetry();
+        Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
         List<Function<Event, Event>> perms = new ArrayList<>();
-        if (symmClasses.isEmpty() || SYMMETRY_LEARNING == SymmetryLearning.NONE) {
+        if (symmClasses.isEmpty() || REF_SYMMETRY_LEARNING == SymmetryLearning.NONE) {
             perms.add(Function.identity());
             return perms;
         }
 
-        List<Thread> threads = new ArrayList<>(symmClasses.get(0));
-        threads.sort(Comparator.comparingInt(Thread::getId));
-        if (SYMMETRY_LEARNING == SymmetryLearning.LINEAR) {
-            // ==== Linear ====
-            perms.add(Function.identity());
-            for(int i = 0; i < threads.size(); i++) {
-                int j = (i+1) < threads.size() ? i + 1 : 0;
-                perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
-            }
-        } else if (SYMMETRY_LEARNING == SymmetryLearning.QUADRATIC) {
-            // ==== Quadratic ====
-            perms.add(Function.identity());
-            for(int i = 0; i < threads.size(); i++) {
-                for (int j =  i + 1; j < threads.size(); j++) {
+        for (EquivalenceClass<Thread> c : symmClasses) {
+            List<Thread> threads = new ArrayList<>(c);
+            threads.sort(Comparator.comparingInt(Thread::getId));
+            if (REF_SYMMETRY_LEARNING == SymmetryLearning.LINEAR) {
+                // ==== Linear ====
+                perms.add(Function.identity());
+                for (int i = 0; i < threads.size(); i++) {
+                    int j = (i + 1) < threads.size() ? i + 1 : 0;
                     perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
                 }
+            } else if (REF_SYMMETRY_LEARNING == SymmetryLearning.QUADRATIC) {
+                // ==== Quadratic ====
+                perms.add(Function.identity());
+                for (int i = 0; i < threads.size(); i++) {
+                    for (int j = i + 1; j < threads.size(); j++) {
+                        perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
+                    }
+                }
+            } else if (REF_SYMMETRY_LEARNING == SymmetryLearning.FULL) {
+                // ==== Full ====
+                perms.addAll(symm.createAllPermutations(c));
             }
-        } else if (SYMMETRY_LEARNING == SymmetryLearning.FULL) {
-            // ==== Full ====
-            perms = symm.createAllPermutations(symmClasses.get(0));
         }
 
         return perms;
@@ -187,22 +176,11 @@ public class Refinement {
         Result res = UNKNOWN;
 
         // ====== Test code ======
-        List<Function<Event, Event>> perms = computePerms(task.getProgram());
-
-        // ====== Test code =====
+        List<Function<Event, Event>> perms = computePerms(task);
+        // ----------
         if (GlobalSettings.ENABLE_SYMMETRY_BREAKING) {
-            ThreadSymmetry symm = new ThreadSymmetry(task.getProgram());
-            List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
-            if (!symmClasses.isEmpty()) {
-                List<Thread> threads = new ArrayList<>(symmClasses.get(0));
-                threads.sort(Comparator.comparingInt(Thread::getId));
-
-                SymmetryBreaking symmetryBreaking = new SymmetryBreaking(task, symm);
-                BoolExpr symmBreak = symmetryBreaking.encode(threads.get(0), ctx);
-                solver.add(symmBreak);
-            }
+            solver.add(task.encodeSymmetryBreaking(ctx));
         }
-        // =======================
         // =======================
 
         solver.push();
@@ -219,7 +197,7 @@ public class Refinement {
 
         while (solver.check() == SATISFIABLE) {
             curTime = System.currentTimeMillis();
-            if (PRINT_STATISTICS) {
+            if (REF_PRINT_STATISTICS) {
                 System.out.println(" ===== Iteration: " + ++vioCount + " =====");
             /*System.out.println(solver.getStatistics().get("mk clause"));
             System.out.println(solver.getStatistics().get("mk bool var"));*/
@@ -230,7 +208,7 @@ public class Refinement {
             RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
             RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
-            if (PRINT_STATISTICS) {
+            if (REF_PRINT_STATISTICS) {
                 System.out.println(stats.toString());
             }
 
@@ -241,13 +219,13 @@ public class Refinement {
                 refine(solver, ctx, violations, perms);
                 // Some statistics
                 for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
-                    if (PRINT_STATISTICS) {
+                    if (REF_PRINT_STATISTICS) {
                         System.out.println("Violation size: " + cube.getSize());
                         //System.out.println(cube);
                     }
                     Conjunction<CoreLiteral> excludedRf = cube.removeIf(x -> !(x instanceof RfLiteral));
                     excludedRfs.add(excludedRf);
-                    if (PRINT_STATISTICS) {
+                    if (REF_PRINT_STATISTICS) {
                         printStats(excludedRf);
                     }
                 }
@@ -258,7 +236,7 @@ public class Refinement {
             lastTime = System.currentTimeMillis();
         }
         curTime = System.currentTimeMillis();
-        if (PRINT_STATISTICS) {
+        if (REF_PRINT_STATISTICS) {
             System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
             System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
         }
@@ -300,7 +278,7 @@ public class Refinement {
             }
             boundCheckTime = System.currentTimeMillis() - lastTime;
         }
-        if (PRINT_STATISTICS) {
+        if (REF_PRINT_STATISTICS) {
             printSummary(statList, totalSolvingTime, boundCheckTime, excludedRfs);
         }
 

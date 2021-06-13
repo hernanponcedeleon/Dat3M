@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Refinement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,6 +32,16 @@ public class GlobalSettings {
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
+
+    // ==== Refinement ====
+    public static final boolean REF_PRINT_STATISTICS = true;
+    public static final boolean REF_USE_OUTER_WMM = true;
+    public static final boolean REF_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if REF_USE_OUTER_WMM is set to TRUE
+
+    public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
+    public static final SymmetryLearning REF_SYMMETRY_LEARNING = SymmetryLearning.FULL;
+
+    // --------------------
 
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;

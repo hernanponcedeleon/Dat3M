@@ -182,19 +182,9 @@ public class Base {
 		solver.add(task.encodeWmmConsistency(ctx));
         solver.add(task.encodeWitness(ctx));
 
-		// ====== test code =====
+		// ====== Test code =====
 		if (GlobalSettings.ENABLE_SYMMETRY_BREAKING) {
-			// Only breaks on the first symmetry class for now
-			ThreadSymmetry symm = new ThreadSymmetry(task.getProgram());
-			List<EquivalenceClass<Thread>> symmClasses = symm.getAllEquivalenceClasses().stream().filter(x -> x.size() > 1).collect(Collectors.toList());
-			if (!symmClasses.isEmpty()) {
-				List<Thread> threads = new ArrayList<>(symmClasses.get(0));
-				threads.sort(Comparator.comparingInt(Thread::getId));
-
-				SymmetryBreaking symmetryBreaking = new SymmetryBreaking(task, symm);
-				BoolExpr symmBreak = symmetryBreaking.encode(threads.get(0), ctx);
-				solver.add(symmBreak);
-			}
+			solver.add(task.encodeSymmetryBreaking(ctx));
 		}
 		// =======================
 

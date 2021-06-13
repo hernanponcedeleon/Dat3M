@@ -6,7 +6,9 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
 import com.dat3m.dartagnan.utils.symmetry.SymmetryReduction;
+import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -34,6 +36,7 @@ public class VerificationTask {
     private final WitnessGraph witness;
     private final Arch target;
     private final Settings settings;
+    private ThreadSymmetry threadSymmetry;
 
     public VerificationTask(Program program, Wmm memoryModel, Arch target, Settings settings) {
     	this(program, memoryModel, new WitnessGraph(), target, settings);
@@ -81,6 +84,16 @@ public class VerificationTask {
 
     public DependencyGraph<Relation> getRelationDependencyGraph() {
         return memoryModel.getRelationDependencyGraph();
+    }
+
+    public ThreadSymmetry getThreadSymmetry() {
+        if (!program.isCompiled()) {
+            throw new IllegalStateException("ThreadSymmetry is only available after compilation");
+        }
+        if (threadSymmetry == null) {
+            threadSymmetry = new ThreadSymmetry(program);
+        }
+        return threadSymmetry;
     }
 
 
@@ -146,6 +159,10 @@ public class VerificationTask {
 
     public BoolExpr encodeWmmConsistency(Context ctx) {
         return memoryModel.consistent(ctx);
+    }
+
+    public BoolExpr encodeSymmetryBreaking(Context ctx) {
+        return new SymmetryBreaking(this).encode(ctx);
     }
 
     // ===== TESTCODE =====

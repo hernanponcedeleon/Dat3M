@@ -2,18 +2,22 @@ package com.dat3m.dartagnan.utils.symmetry;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.BoolSort;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 // A first rough implementation for symmetry breaking
@@ -26,24 +30,37 @@ public class SymmetryBreaking {
     private final Wmm wmm;
     private final Relation rf;
 
-    public SymmetryBreaking(VerificationTask task, ThreadSymmetry symm) {
+    public SymmetryBreaking(VerificationTask task) {
         this.task = task;
-        this.symm = symm;
+        this.symm = task.getThreadSymmetry();
         this.wmm = task.getMemoryModel();
         this.rf = wmm.getRelationRepository().getRelation("rf");
 
     }
 
-    public BoolExpr encode(Thread thread, Context ctx) {
+    public BoolExpr encode(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
-        List<Thread> symmThreads = new ArrayList<>(symm.getEquivalenceClass(thread));
+        for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
+            enc = ctx.mkAnd(enc, encode(symmClass, ctx));
+        }
+        return enc;
+    }
+
+    public BoolExpr encode(EquivalenceClass<Thread> symmClass, Context ctx) {
+        BoolExpr enc = ctx.mkTrue();
+        if (symmClass.getEquivalence() != symm) {
+            return enc;
+        }
+
+        Thread rep = symmClass.getRepresentative();
+        List<Thread> symmThreads = new ArrayList<>(symmClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
 
-        Thread t1 = symmThreads.get(0);
 
         // ===== Construct row =====
         //IMPORTANT: Each thread writes to its own special location for the purpose of starting/terminating threads
         // These need to get skipped!
+        Thread t1 = symmThreads.get(0);
         List<Tuple> r1 = new ArrayList<>();
         for (Tuple t : rf.getMaxTupleSet()) {
             Event a = t.getFirst();
@@ -65,7 +82,7 @@ public class SymmetryBreaking {
             }
 
 
-            enc = ctx.mkAnd(enc, encodeLexLeader(i, r1, r2, ctx));
+            enc = ctx.mkAnd(enc, encodeLexLeader(rep, i, r1, r2, ctx));
             t1 = t2;
             r1 = r2;
         }
@@ -75,13 +92,14 @@ public class SymmetryBreaking {
 
     // y0, ..., y(n-1)
     // x1, ..., xn
-    private BoolExpr encodeLexLeader(int index, List<Tuple> r1, List<Tuple> r2, Context ctx) {
+    private BoolExpr encodeLexLeader(Thread rep, int index, List<Tuple> r1, List<Tuple> r2, Context ctx) {
         int size = Math.min(r1.size(), LEX_LEADER_SIZE);
-        BoolExpr ylast = ctx.mkBoolConst("y0_" + index);
+        String suffix = "_" + rep.getId() + "_" + index;
+        BoolExpr ylast = ctx.mkBoolConst("y0" + suffix);
         BoolExpr enc = ctx.mkEq(ylast, ctx.mkTrue());
         // From x1 to x(n-1)
         for (int i = 1; i < size; i++) {
-            BoolExpr y = ctx.mkBoolConst("y" + i + "_" + index);
+            BoolExpr y = ctx.mkBoolConst("y" + i + suffix);
             BoolExpr orig = rf.getSMTVar(r1.get(i-1), ctx);
             BoolExpr perm = rf.getSMTVar(r2.get(i-1), ctx);
             enc = ctx.mkAnd(enc, ctx.mkOr(y, ctx.mkNot(ylast), ctx.mkNot(orig)));
