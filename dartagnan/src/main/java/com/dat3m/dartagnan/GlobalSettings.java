@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Refinement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,8 +62,8 @@ public class GlobalSettings {
     	logger.info("ALWAYS_SPLIT_ON_JUMP: " + ALWAYS_SPLIT_ON_JUMP);
     	logger.info("PERFORM_DEAD_CODE_ELIMINATION: " + PERFORM_DEAD_CODE_ELIMINATION);
     	logger.info("PERFORM_REORDERING: " + PERFORM_REORDERING);
-    	logger.info("ENABLE_SYMMETRY_BREAKING" + ENABLE_SYMMETRY_BREAKING);
-        logger.info("ENABLE_SYMMETRY_REDUCTION" + ENABLE_SYMMETRY_REDUCTION);
+    	logger.info("ENABLE_SYMMETRY_BREAKING: " + ENABLE_SYMMETRY_BREAKING);
+        logger.info("ENABLE_SYMMETRY_REDUCTION: " + ENABLE_SYMMETRY_REDUCTION);
     	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
     	logger.info("USE_BUGGY_ALIAS_ANALYSIS: " + USE_BUGGY_ALIAS_ANALYSIS);

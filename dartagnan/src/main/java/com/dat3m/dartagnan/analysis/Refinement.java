@@ -34,11 +34,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.microsoft.z3.Status.SATISFIABLE;
 import static com.dat3m.dartagnan.GlobalSettings.*;
 
 public class Refinement {
+
+    private static final Logger logger = LogManager.getLogger(Refinement.class);
 
     //TODO: Currently, we pop the complete refinement before performing the bound check
     // This may lead to situations where a bound is only reachable because
@@ -283,6 +288,7 @@ public class Refinement {
         }
 
         res = program.getAss().getInvert() ? res.invert() : res;
+        logger.info("Verification finished with result " + res);
         return res;
     }
 

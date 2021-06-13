@@ -5,10 +5,6 @@ import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.TIMEOUT;
 
 import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
-import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
-import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,11 +16,6 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Params;
 import com.microsoft.z3.Solver;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class Base {
 
