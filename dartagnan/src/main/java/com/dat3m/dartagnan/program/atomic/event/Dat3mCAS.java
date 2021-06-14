@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -102,11 +103,8 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 Label endCas = new Label("CAS_end");
                 CondJump branch = new CondJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
                 // ---- CAS success ----
-                store = new RMWStoreExclusive(address, value, storeMo);
-                Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
-                Event jumpStoreFail = new CondJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
-                jumpStoreFail.addFilters(EType.BOUND);
+                // Note: we perform a strong CAS
+                store = new RMWStoreExclusive(address, value, storeMo, true);
                 // ---------------------
 
                 // --- Add Fence before under POWER ---
@@ -118,13 +116,13 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                     }                	
                 }
                 // --- Add success events ---
-                events.addAll(Arrays.asList(load, casResult, branch, store, status, jumpStoreFail));
+                events.addAll(Arrays.asList(load, casResult, branch, store));
                 // --- Add Fence after success under POWER ---
                 if (target.equals(POWER) && loadMo.equals(ACQ)) {
                     events.addLast(new Fence("Isync"));
                 }
                 // --- Add exit ---
-                events.addAll(Arrays.asList(endCas));
+                events.addAll(Collections.singletonList(endCas));
                 break;
             }
             default:

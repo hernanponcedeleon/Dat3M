@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.atomic.event.*;
-import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
 
 public class AtomicProcedures {
@@ -151,16 +150,15 @@ public class AtomicProcedures {
 	private static void atomicCmpXchg(VisitorBoogie visitor, Call_cmdContext ctx) {
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
-		IExpr add = (IExpr) params.get(0).accept(visitor);
-		Register expectedAdd = (Register) params.get(1).accept(visitor); // NOTE: We assume a register here
-		Register expected = new Register(null, reg.getThreadId(), reg.getPrecision());
-		ExprInterface desired = (ExprInterface) params.get(2).accept(visitor);
+		IExpr addr = (IExpr) params.get(0).accept(visitor);
+		IExpr expectedAddr = (IExpr) params.get(1).accept(visitor);
+		ExprInterface desiredVal = (ExprInterface) params.get(2).accept(visitor);
 		String mo = null;
 		if(params.size() > 3) {
 			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
-			// NOTE: We forget about the 5th parameter (MO on fail) for now!
+			//TODO: We forget about the 5th parameter (MO on fail) for now!
+			// We also assume a strong CAS.
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, new Load(expected, expectedAdd, mo));
-		visitor.programBuilder.addChild(visitor.threadCount, new AtomicCmpXchg(reg, add, expected, desired, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, new AtomicCmpXchg(reg, addr, expectedAddr, desiredVal, mo));
 	}
 }

@@ -33,13 +33,13 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     @Override
     public BoolExpr exec() {
-        return is(EType.STRONG) ? cfVar : execVar;
+        return execVar;
     }
 
     @Override
     public void initialise(VerificationTask task, Context ctx) {
         super.initialise(task, ctx);
-        execVar = ctx.mkBoolConst("exec(" + repr() + ")");
+        execVar = is(EType.STRONG) ? cfVar : ctx.mkBoolConst("exec(" + repr() + ")");
     }
 
     @Override
