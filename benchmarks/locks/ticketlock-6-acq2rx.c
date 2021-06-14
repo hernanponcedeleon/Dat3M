@@ -33,7 +33,7 @@ static inline int get_next_ticket(struct ticketlock_s *l)
 
 static inline void await_for_ticket(struct ticketlock_s *l, int ticket)
 {
-    while (atomic_load_explicit(&l->owner, memory_order_acquire) != ticket)
+    while (atomic_load_explicit(&l->owner, memory_order_relaxed) != ticket)
         ;
 }
 

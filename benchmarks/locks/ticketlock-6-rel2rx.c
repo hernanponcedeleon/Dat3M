@@ -56,7 +56,7 @@ static inline int ticketlock_tryacquire(struct ticketlock_s *l)
 static inline void ticketlock_release(struct ticketlock_s *l)
 {
     int owner = atomic_load_explicit(&l->owner, memory_order_relaxed);
-    atomic_store_explicit(&l->owner, owner + 1, memory_order_release);
+    atomic_store_explicit(&l->owner, owner + 1, memory_order_relaxed);
 }
 
 // main.c

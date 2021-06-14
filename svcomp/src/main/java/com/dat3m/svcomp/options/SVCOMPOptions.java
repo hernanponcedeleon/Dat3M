@@ -26,6 +26,8 @@ public class SVCOMPOptions extends BaseOptions {
 	private static final String OPTIMIZATION_OPTION = "optimization";
 	private static final String INTERGER_ENCODING_OPTION = "integer_encoding";
 	private static final String BOOGIESAN = "sanitise";
+	private static final String UMIN = "umin";
+	private static final String UMAX = "umax";
 	
     private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
     private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
@@ -36,6 +38,8 @@ public class SVCOMPOptions extends BaseOptions {
     private AnalysisTypes analysis;
     private String witnessFilePath;
     private boolean boogiesan;
+    private Integer umin;
+    private Integer umax; 
     
     public SVCOMPOptions(){
         super();
@@ -44,6 +48,12 @@ public class SVCOMPOptions extends BaseOptions {
         catOption.setRequired(true);
         addOption(catOption);
 
+        addOption(new Option(UMIN, true,
+                "Starting unrolling bound <integer>"));
+        
+        addOption(new Option(UMAX, true,
+                "Ending unrolling bound <integer>"));
+        
         Option propOption = new Option("p", PROPERTY_OPTION, true,
                 "The path to the property to be checked");
         propOption.setRequired(true);
@@ -79,6 +89,8 @@ public class SVCOMPOptions extends BaseOptions {
     	optimization = cmd.hasOption(OPTIMIZATION_OPTION) ? cmd.getOptionValue(OPTIMIZATION_OPTION) : "O0";
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
         boogiesan = cmd.hasOption(BOOGIESAN);
+        umin = cmd.hasOption(UMIN) ? Integer.parseInt(cmd.getOptionValue(UMIN)) : 1;
+        umax = cmd.hasOption(UMAX) ? Integer.parseInt(cmd.getOptionValue(UMAX)) : Integer.MAX_VALUE;
         
         solver = cmd.hasOption(SOLVER_OPTION) ? fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
         if(!supported_solvers.contains(solver)) {
@@ -125,5 +137,13 @@ public class SVCOMPOptions extends BaseOptions {
 
     public boolean getBoogieSan(){
 		return boogiesan;
+    }
+
+    public Integer getUMin(){
+		return umin;
+    }
+
+    public Integer getUMax(){
+		return umax;
     }
 }

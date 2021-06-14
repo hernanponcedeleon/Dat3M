@@ -91,6 +91,9 @@ public class Address extends IConst implements ExprInterface {
 
     @Override
     public BigInteger getIntValue(Event e, Model model, Context ctx){
+        if (hasConstantValue()) {
+            return constantValue;
+        }
         return new BigInteger(model.getConstInterp(toZ3Int(ctx)).toString());
     }
 

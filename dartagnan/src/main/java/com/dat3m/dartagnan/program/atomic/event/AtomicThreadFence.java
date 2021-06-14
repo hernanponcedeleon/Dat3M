@@ -60,10 +60,18 @@ public class AtomicThreadFence extends Fence {
                     events.add(new Fence("Lwsync"));
                 }
                 break;
-            case ARM: case ARM8:
+            case ARM:
                 if(ACQUIRE.equals(mo) || RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
                     events.addLast(new Fence("Ish"));
                 }
+                break;
+            case ARM8:
+                if(RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
+                	events.addLast(new Fence("DMB.ISH"));
+                }
+                if(ACQUIRE.equals(mo)){
+                	events.addLast(new Fence("DSB.ISHLD"));
+                }                
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
