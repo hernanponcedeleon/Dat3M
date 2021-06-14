@@ -21,8 +21,6 @@ import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.utils.EType;
-
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
@@ -98,12 +96,11 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             			throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
             	}
             	load = new RMWLoadExclusive(resultRegister, address, loadMo);
-                store = new RMWStoreExclusive(address, value, storeMo);
+                store = new RMWStoreExclusive(address, value, storeMo, true);
             	Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
                 RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
                 Label end = (Label)getThread().getExit();
                 Event jump = new CondJump(new Atom(statusReg, COpBin.EQ, IConst.ONE), end);
-                jump.addFilters(EType.BOUND);
 
                 // Extra fences for POWER
                 if(target.equals(POWER)) {

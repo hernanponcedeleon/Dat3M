@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
@@ -110,11 +109,10 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Label endCas = new Label("CAS_end");
                 CondJump branch = new CondJump(new Atom(resultRegister, NEQ, IConst.ONE), fail);
                 // ---- CAS success ----
-                store = new RMWStoreExclusive(address, value, storeMo);
+                store = new RMWStoreExclusive(address, value, storeMo, true);
                 Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
                 RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
                 Event jumpStoreFail = new CondJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
-                jumpStoreFail.addFilters(EType.BOUND);
                 CondJump jumpToEndCas = new CondJump(BConst.TRUE, endCas);
                 // ---------------------
                 // ---- CAS Fail ----

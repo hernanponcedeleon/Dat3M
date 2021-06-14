@@ -15,9 +15,16 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     protected transient BoolExpr execVar;
 
-    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo){
+    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong){
         super(address, value, mo);
         addFilters(EType.EXCL);
+        if(strong) {
+        	addFilters(EType.STRONG);
+        }
+    }
+
+    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo){
+        this(address, value, mo, false);
     }
 
     String toStringBase(){
@@ -26,7 +33,7 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     @Override
     public BoolExpr exec() {
-        return execVar;
+        return is(EType.STRONG) ? cfVar : execVar;
     }
 
     @Override
@@ -37,7 +44,8 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     @Override
     public String toString(){
-        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt";
+    	String tag = is(EType.STRONG) ? " strong" : "";
+        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
     }
 
     @Override
