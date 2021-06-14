@@ -4,7 +4,7 @@ input_files: '../ticketlock-6-rel2rx.c'
 
 properties:
   - property_file: ../properties/unreach-call.prp
-    expected_verdict: fail
+    expected_verdict: false
 
 options:
   language: C
