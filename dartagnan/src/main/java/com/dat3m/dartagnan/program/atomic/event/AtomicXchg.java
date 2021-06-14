@@ -10,13 +10,11 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -97,10 +95,8 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             	}
             	load = new RMWLoadExclusive(resultRegister, address, loadMo);
                 store = new RMWStoreExclusive(address, value, storeMo, true);
-            	Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
-                Label end = (Label)getThread().getExit();
-                Event jump = new CondJump(new Atom(statusReg, COpBin.EQ, IConst.ONE), end);
+                Label label = new Label("FakeDep");
+                Event ctrl = new CondJump(new Atom(resultRegister, COpBin.EQ, resultRegister), label);
 
                 // Extra fences for POWER
                 if(target.equals(POWER)) {
@@ -112,7 +108,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 }
                 
                 // All events for POWER and ARM8
-                events.addAll(Arrays.asList(load, store, status, jump));
+                events.addAll(Arrays.asList(load, ctrl, label, store));
 
                 // Extra fences for POWER
                 if (target.equals(POWER) && loadMo.equals(ACQ)) {
