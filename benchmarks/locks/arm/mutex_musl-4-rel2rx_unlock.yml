@@ -1,0 +1,11 @@
+format_version: '2.0'
+
+input_files: '../mutex_musl-4-rel2rx_unlock.c'
+
+properties:
+  - property_file: ../properties/unreach-call.prp
+    expected_verdict: fail
+
+options:
+  language: C
+  data_model: ILP32

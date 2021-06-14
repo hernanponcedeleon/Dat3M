@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 1.18//EN" "https://www.sosy-lab.org/benchexec/benchmark-1.18.dtd">
+<benchmark tool="dartagnan" timelimit="2 min" hardtimelimit="2 min" memlimit="15 GB" cpuCores="4">
+
+<require cpuModel="Intel Xeon E3-1230 v5 @ 3.40 GHz" cpuCores="8"/>
+
+  <resultfiles>**.graphml</resultfiles>
+      
+<rundefinition name="SV-COMP21_unreach-call">
+    <tasks name="ReachSafety-TSO">
+      <option name="-t">tso</option>
+      <option name="-cat">cat/tso.cat</option>
+      <includesfile>benchmarks/locks/tso.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="ReachSafety-ARM">
+      <option name="-t">arm8</option>
+      <option name="-cat">cat/aarch64.cat</option>
+      <includesfile>benchmarks/locks/arm.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+    <tasks name="ReachSafety-POWER">
+      <option name="-t">power</option>
+      <option name="-cat">cat/power.cat</option>
+      <includesfile>benchmarks/locks/power.set</includesfile>
+      <propertyfile>../sv-benchmarks/c/properties/unreach-call.prp</propertyfile>
+    </tasks>
+</rundefinition>
+</benchmark>
+
