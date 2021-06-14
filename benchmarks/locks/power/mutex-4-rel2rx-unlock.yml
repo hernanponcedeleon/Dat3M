@@ -4,7 +4,7 @@ input_files: '../mutex-4-rel2rx-unlock.c'
 
 properties:
   - property_file: ../properties/unreach-call.prp
-    expected_verdict: fail
+    expected_verdict: false
 
 options:
   language: C
