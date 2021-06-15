@@ -16,16 +16,11 @@
   <name>ui</name>
 
   <dependencies>
-    <dependency>
-    	<groupId>com.dat3m.porthos</groupId>
-    	<artifactId>porthos</artifactId>
+      <dependency>
+    	<groupId>com.dat3m.dartagnan</groupId>
+    	<artifactId>dartagnan</artifactId>
     	<version>2.0.7</version>
     </dependency>
-    <dependency>
-	    <groupId>guru.nidi</groupId>
-    	<artifactId>graphviz-java</artifactId>
-    	<version>0.8.3</version>
-	</dependency>
 	<dependency>
     	<groupId>ch.qos.logback</groupId>
     	<artifactId>logback-classic</artifactId>
