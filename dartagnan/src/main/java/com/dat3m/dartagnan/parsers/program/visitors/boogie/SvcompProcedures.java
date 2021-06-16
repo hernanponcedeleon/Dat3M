@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Assume;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
@@ -37,6 +38,7 @@ public class SvcompProcedures {
 
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
+			"__VERIFIER_assume",
 			"__VERIFIER_fence",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
@@ -57,6 +59,9 @@ public class SvcompProcedures {
 		switch(name) {
 		case "__VERIFIER_assert":
 			__VERIFIER_assert(visitor, ctx);
+			break;
+		case "__VERIFIER_assume":
+			__VERIFIER_assume(visitor, ctx);
 			break;
 		case "__VERIFIER_fence":
 			__VERIFIER_fence(visitor, ctx);
@@ -115,6 +120,11 @@ public class SvcompProcedures {
 		visitor.programBuilder.addChild(visitor.threadCount, event);
        	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
        	visitor.programBuilder.addChild(visitor.threadCount, new CondJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
+	}
+
+	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
+    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+       	visitor.programBuilder.addChild(visitor.threadCount, new Assume(expr));
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
