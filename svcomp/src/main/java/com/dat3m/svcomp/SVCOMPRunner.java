@@ -51,11 +51,13 @@ public class SVCOMPRunner {
         
         File file = new File(options.getProgramFilePath());
         File tmp = new SVCOMPSanitizer(file).run(1);
+        // First time we compiler with standard atomic header to catch compilation problems
+        compile(tmp, options, false);
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : options.getUMin();
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN") && bound <= options.getUMax()) {
-			compile(tmp, options);
+			compile(tmp, options, true);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
 	        // (it not the original C file) and we already created the Boogie file
