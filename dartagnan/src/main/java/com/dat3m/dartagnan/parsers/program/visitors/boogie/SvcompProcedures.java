@@ -39,6 +39,7 @@ public class SvcompProcedures {
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
 			"__VERIFIER_assume",
+			"assume_abort_if_not",
 			"__VERIFIER_fence",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
@@ -61,6 +62,7 @@ public class SvcompProcedures {
 			__VERIFIER_assert(visitor, ctx);
 			break;
 		case "__VERIFIER_assume":
+		case "assume_abort_if_not":
 			__VERIFIER_assume(visitor, ctx);
 			break;
 		case "__VERIFIER_fence":
