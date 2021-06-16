@@ -11,7 +11,7 @@ import com.dat3m.svcomp.options.SVCOMPOptions;
 
 public class Compilation {
 	
-	public static void compile(File file, SVCOMPOptions opt) {
+	public static void compile(File file, SVCOMPOptions opt, boolean ownAtomics) {
 		String name = file.getName().contains("_tmp") ?
 				file.getName().substring(0, file.getName().lastIndexOf('_')) :
 				file.getName().substring(0, file.getName().lastIndexOf('.'));
@@ -20,7 +20,10 @@ public class Compilation {
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
     	cmd.addAll(asList("--integer-encoding", opt.getEncoding()));
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
-    			" -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");
+    			" -fno-vectorize -fno-slp-vectorize");
+    	if(ownAtomics) {
+    		cmd.add("-I" + System.getenv().get("DAT3M_HOME") + "/include/");
+    	}
     	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + "-" + opt.getOptimization() + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
