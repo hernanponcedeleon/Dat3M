@@ -19,11 +19,9 @@ public class Compilation {
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
     	cmd.addAll(asList("--integer-encoding", opt.getEncoding()));
+    	String include = ownAtomics ? " -I" + System.getenv().get("DAT3M_HOME") + "/include/" : "";
     	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -" + opt.getOptimization() + 
-    			" -fno-vectorize -fno-slp-vectorize");
-    	if(ownAtomics) {
-    		cmd.add("-I" + System.getenv().get("DAT3M_HOME") + "/include/");
-    	}
+    			" -fno-vectorize -fno-slp-vectorize" + include);
     	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + "-" + opt.getOptimization() + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
