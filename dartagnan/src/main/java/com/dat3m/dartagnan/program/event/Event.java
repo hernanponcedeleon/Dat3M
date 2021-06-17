@@ -382,11 +382,7 @@ public abstract class Event implements Comparable<Event> {
 	public BoolExpr encodePrefixCF(Context ctx, BoolExpr cond) {
 		if(cfEnc == null){
 			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-			cfEnc = ctx.mkAnd(ctx.mkImplies(cfVar, cfCond),
-					ctx.mkImplies(
-							ctx.mkAnd(cfCond, ctx.mkNot(task.getViolationLiteral())),
-							cfVar
-					));
+			cfEnc = ctx.mkImplies(cfVar, cfCond);
 			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
 		}
 		return cfEnc;

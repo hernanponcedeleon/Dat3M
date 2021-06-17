@@ -186,4 +186,15 @@ public class CondJump extends Event implements RegReaderData {
         }
         return cfEnc;
     }
+
+    @Override
+    public BoolExpr encodePrefixCF(Context ctx, BoolExpr cond) {
+        if(cfEnc == null){
+            cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
+            BoolExpr ifCond = expr.toZ3Bool(this, ctx);
+            label.addCfCond(ctx, ctx.mkAnd(ifCond, cfVar));
+            cfEnc = ctx.mkAnd(ctx.mkImplies(cfVar, cfCond), encodeExec(ctx));
+        }
+        return cfEnc;
+    }
 }
