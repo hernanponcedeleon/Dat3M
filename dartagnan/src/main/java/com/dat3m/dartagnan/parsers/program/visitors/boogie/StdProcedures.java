@@ -25,6 +25,7 @@ public class StdProcedures {
 			"$alloc",
 			"__assert_rtn",
 			"assert_.i32",
+			"__assert_fail",
 			"$malloc",
 			"calloc",
 			"malloc",
@@ -62,7 +63,7 @@ public class StdProcedures {
 			alloc(visitor, ctx);
 			return;
 		}
-		if(name.equals("__assert_rtn") || name.equals("assert_.i32")) {
+		if(name.equals("__assert_rtn") || name.equals("assert_.i32") || name.equals("__assert_fail")) {
 			__assert(visitor, ctx);
 			return;
 		}
