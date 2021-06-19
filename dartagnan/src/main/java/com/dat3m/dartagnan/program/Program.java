@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -211,7 +212,7 @@ public class Program {
             throw new RuntimeException("The program needs to get initialised first.");
         }
 
-        BoolExpr enc = memory.encode(ctx);
+        BoolExpr enc = GlobalSettings.FIXED_MEMORY_ENCODING ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.mkAnd(enc, t.encodeCF(ctx));
         }
