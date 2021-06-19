@@ -1,15 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.ThreadCache;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.asserts.AssertCompositeOr;
 import com.dat3m.dartagnan.asserts.AssertInline;
@@ -19,6 +11,15 @@ import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -155,7 +156,6 @@ public class Program {
     	}
 	}
 
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -204,7 +204,7 @@ public class Program {
             throw new RuntimeException("The program needs to get initialised first.");
         }
 
-        BoolExpr enc = memory.encode(ctx);
+        BoolExpr enc = GlobalSettings.FIXED_MEMORY_ENCODING ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
         for(Thread t : threads){
             enc = ctx.mkAnd(enc, t.encodeCF(ctx));
         }

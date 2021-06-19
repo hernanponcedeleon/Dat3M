@@ -1,9 +1,8 @@
 package com.dat3m.dartagnan;
 
+import com.microsoft.z3.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.microsoft.z3.Version;
 
 public class GlobalSettings {
 	
@@ -17,6 +16,7 @@ public class GlobalSettings {
     public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
 
     // === Encoding ===
+    public static final boolean FIXED_MEMORY_ENCODING = true;
     public static final boolean MERGE_CF_VARS = true;
     public static final boolean ANTISYMM_CO = false;
 
@@ -29,11 +29,13 @@ public class GlobalSettings {
     public static final boolean PERFORM_REORDERING = true;
     public static final boolean DETERMINISTIC_REORDERING = true;
 
+    // --------------------
+
     // === Recursion depth ===
     public static final int MAX_RECURSION_DEPTH = 200;
 
     // === Debug ===
-    public static final boolean ENABLE_DEBUG_OUTPUT = false;
+    public static final boolean ENABLE_DEBUG_OUTPUT = true;
 
     // === Testing ===
     public static final boolean USE_BUGGY_ALIAS_ANALYSIS = false;

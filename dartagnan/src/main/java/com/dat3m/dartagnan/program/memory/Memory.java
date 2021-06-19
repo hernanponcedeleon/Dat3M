@@ -1,14 +1,10 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BitVecExpr;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
-import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
+import com.microsoft.z3.*;
 
 import java.util.*;
 
@@ -41,7 +37,6 @@ public class Memory {
                 e1 = e2;
             }
         }
-
         // Following SMACK, only address with constant values can have negative values.
         for(Address add : getAllAddresses()) {
         	if(!add.hasConstantValue()) {
@@ -50,6 +45,13 @@ public class Memory {
         }
         
         return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false) : a.toZ3Int(ctx)).toArray(Expr[]::new)));
+    }
+
+    // Assigns each Address a fixed memory address.
+    public BoolExpr fixedMemoryEncoding(Context ctx) {
+        BoolExpr[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
+                .map(add -> ctx.mkEq(add.toZ3Int(ctx), ctx.mkInt(add.getValue().intValue()))).toArray(BoolExpr[]::new);
+        return ctx.mkAnd(addrExprs);
     }
 
     public List<Address> malloc(String name, int size, int precision){
