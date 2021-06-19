@@ -1,8 +1,15 @@
 package com.dat3m.dartagnan.analysis;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.analysis.graphRefinement.GraphRefinement;
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementStats;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.RfLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
+import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -12,21 +19,18 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.RfLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.GraphRefinement;
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementStats;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Utils;
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Solver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,12 +38,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import static com.dat3m.dartagnan.GlobalSettings.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.microsoft.z3.Status.SATISFIABLE;
-import static com.dat3m.dartagnan.GlobalSettings.*;
 
 public class Refinement {
 
@@ -97,7 +98,7 @@ public class Refinement {
     private static Wmm createOuterWmm() {
         Wmm outerWmm = new Wmm();
         outerWmm.setEncodeCo(false);
-        RelationRepository repo = outerWmm.getRelationRepository();;
+        RelationRepository repo = outerWmm.getRelationRepository();
         // ---- acyclic(po-loc | rf) ----
         Relation poloc = repo.getRelation("po-loc");
         Relation rf = repo.getRelation("rf");

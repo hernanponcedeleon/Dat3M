@@ -67,17 +67,21 @@ public class TreeResolution {
                 }
             }
 
-            // ============ TEST CODE =============
-            // TODO: Replace this by more reasonable code
+            // ==== TEST CODE =====
+            //TODO: Remove the ugly conversion to clauseSet for minimization
+            // Remark: clauseSet.simplify does in general not give as good reduction as the reduction performed
+            // by DNF.reduce. However, right now it seems that they are equivalently strong for 1-SAT at least
             SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>(violations.size());
             clauseSet.addAll(violations);
             clauseSet.simplify();
             violations.clear();
-            for (Conjunction<CoreLiteral> c : clauseSet)
-                violations.add(c);
+            violations.addAll(clauseSet.getClauses());
             return violations;
+
         }
     }
+
+    // ============= Preprocessing ================
 
     private void reduceTree() {
         removeUnproductiveNodes();

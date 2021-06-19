@@ -1,28 +1,27 @@
 package com.dat3m.dartagnan.analysis.graphRefinement;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Literal;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
 import com.dat3m.dartagnan.analysis.graphRefinement.resolution.TreeResolution;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.DecisionNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.LeafNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.SearchNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.SearchTree;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -45,6 +44,10 @@ public class GraphRefinement {
     private final SortedClauseSet<CoreLiteral> coreReasonsSorted = new SortedClauseSet<>(); // TODO: delete
     // Statistics of the last call to kSearch
     private RefinementStats stats;
+
+    public VerificationTask getTask() {
+        return context;
+    }
 
 
     public GraphRefinement(VerificationTask context) {
@@ -80,7 +83,7 @@ public class GraphRefinement {
         // =================================
 
         // ======= Initialize search =======
-        SearchTree sTree = new SearchTree();
+        SearchTree sTree = new SearchTree(this);
         coreReasonsSorted.clear();
         possibleCoEdges.clear();
         initSearch();
@@ -129,6 +132,7 @@ public class GraphRefinement {
 
 
     private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
+        //TOOD: This is also ugly code
         SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
         SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
         res.forEach(clause -> res2.add(clause.removeIf(x -> canBeRemoved(x, clause))));
@@ -237,13 +241,7 @@ public class GraphRefinement {
     private List<Conjunction<CoreLiteral>> computeViolationList() {
         List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
         for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
-            // Computes a single reason
-            /*Conjunction<CoreLiteral> clause = axiom.computeSomeReason();
-            if (!clause.isFalse()) {
-                coreReasonsSorted.add(clause.removeIf(x -> canBeRemoved(x, clause)));
-            }*/
-
-            // Computes many reasons
+            // Compute all violations
             DNF<CoreLiteral> clauses = axiom.computeReasons();
             if (!clauses.isFalse()) {
                 for (Conjunction<CoreLiteral> clause : clauses.getCubes()) {
@@ -251,31 +249,16 @@ public class GraphRefinement {
                 }
             }
         }
+        // Important code: We only retain those violations with the least number of co-literals
+        // this heavily boosts the performance of the resolution!!!
+        int minComplex = violations.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
+        violations.removeIf(x -> x.getResolutionComplexity() > minComplex);
+        // TODO: The following is ugly, but we convert to DNF again, to remove dominated clauses and duplicates
+        violations = new ArrayList<>(new DNF<>(violations).getCubes());
+
         stats.numComputedViolations += violations.size();
+
         return violations;
-    }
-
-    private void computeViolations() {
-        //TODO: Compute more than just some reason. What we do depends on the implementation
-        // very important!!!!!!!! Finding all violations causes HUGE resolvents in the end
-        // finding just some reason can cause many, many iterations!!!!
-        int curSize = coreReasonsSorted.getClauseSize();
-        for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
-            // Computes a single reason
-            /*Conjunction<CoreLiteral> clause = axiom.computeSomeReason();
-            if (!clause.isFalse()) {
-                coreReasonsSorted.add(clause.removeIf(x -> canBeRemoved(x, clause)));
-            }*/
-
-            // Computes many reasons
-            DNF<CoreLiteral> clauses = axiom.computeReasons();
-            if (!clauses.isFalse()) {
-                for (Conjunction<CoreLiteral> clause : clauses.getCubes()) {
-                    coreReasonsSorted.add(clause.removeIf(x -> canBeRemoved(x, clause)));
-                }
-            }
-        }
-        stats.numComputedViolations += coreReasonsSorted.getClauseSize() - curSize;
     }
 
     // Returns TRUE, if <literal> is an EventLiteral that is implied by some non-coherence
@@ -286,27 +269,13 @@ public class GraphRefinement {
         BranchEquivalence eq = context.getBranchEquivalence();
 
         EventLiteral eventLit = (EventLiteral)literal;
+        Event e = eventLit.getEvent().getEvent();
         return clause.getLiterals().stream().anyMatch(x -> {
             if (!(x instanceof AbstractEdgeLiteral) || x.hasOpposite())
                 return false;
-            AbstractEdgeLiteral edgeLiteral = (AbstractEdgeLiteral)x;
-            /*return edgeLiteral.getEdge().getFirst().equals(eventLit.getEvent())
-                    || edgeLiteral.getEdge().getSecond().equals(eventLit.getEvent());*/
-            return eq.isImplied(edgeLiteral.getEdge().getFirst().getEvent(), eventLit.getEvent().getEvent())
-                    || eq.isImplied(edgeLiteral.getEdge().getSecond().getEvent(), eventLit.getEvent().getEvent());
+            Edge edge = ((AbstractEdgeLiteral)x).getEdge();
+            return eq.isImplied(edge.getFirst().getEvent(), e) || eq.isImplied(edge.getSecond().getEvent(), e);
         });
-    }
-
-    private DNF<CoreLiteral> resolveViolations() {
-        coreReasonsSorted.simplify();
-        //SortedClauseSet<CoreLiteral> res =  coreReasonsSorted.computeAllResolvents();
-        //TODO: replace this test code by some rigorous code
-        SortedClauseSet<CoreLiteral> res =  coreReasonsSorted.computeProductiveResolvents();
-        res.removeIf(Literal::hasOpposite);
-        //TODO: replace following temporary code. We should already simplify during resolution
-        SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
-        res.forEach(clause -> res2.add(clause.removeIf(x -> canBeRemoved(x, clause))));
-        return new DNF<>(res2.getClauses());
     }
 
     /*
@@ -315,18 +284,6 @@ public class GraphRefinement {
      */
     private void sortCoSearchList(List<Edge> list) {
         list.sort(Comparator.comparingInt(x -> (x.getFirst().getImportance() + x.getSecond().getImportance())));
-
-        /*int index = 0;
-        EventGraph rf = execGraph.getRfGraph();
-        for (int i = 0; i < list.size(); i++) {
-            Edge t = list.get(i);
-            if (i > index && (rf.inEdgeIterator(t.getFirst()).hasNext() || rf.inEdgeIterator(t.getSecond()).hasNext()
-            || rf.outEdgeIterator(t.getSecond()).hasNext() || rf.outEdgeIterator(t.getSecond()).hasNext()))
-            {
-                list.set(i, list.get(index));
-                list.set(index++, t);
-            }
-        }*/
     }
 
     private void backtrackOn(Timestamp time) {
@@ -349,7 +306,7 @@ public class GraphRefinement {
 
                     if (co.getMinTupleSet().contains(t)) {
                         //TODO: Test code
-                        execGraph.addCoherenceEdge(new Edge(e1,e2));
+                        execGraph.addCoherenceEdge(new Edge(e1, e2));
                         continue;
                     }
 

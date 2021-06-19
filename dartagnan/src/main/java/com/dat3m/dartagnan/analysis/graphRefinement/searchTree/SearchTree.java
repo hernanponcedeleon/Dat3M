@@ -1,11 +1,22 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.searchTree;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.GraphRefinement;
+
 import java.util.List;
 import java.util.function.Predicate;
 
 public class SearchTree {
 
     private final FakeRoot fakeRoot = new FakeRoot();
+    private final GraphRefinement refinement;
+
+    public GraphRefinement getRefinement() {
+        return refinement;
+    }
+
+    public SearchTree(GraphRefinement refinement) {
+        this.refinement = refinement;
+    }
 
     public SearchNode getRoot() {
         return fakeRoot.getTrueRoot();
@@ -21,7 +32,7 @@ public class SearchTree {
 
 
     public SearchTree copy() {
-        SearchTree copy = new SearchTree();
+        SearchTree copy = new SearchTree(refinement);
         copy.getRoot().replaceBy(getRoot().copy());
         return copy;
     }

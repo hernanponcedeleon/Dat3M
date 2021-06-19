@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.Subgraph;
@@ -11,6 +10,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
 
@@ -19,6 +19,7 @@ public class AcyclicityAxiom extends GraphAxiom {
 
     private final List<Set<EventData>> violatingSccs = new ArrayList<>();
     private EventNode[] nodeMap;
+    private boolean hasChanged = false;
 
     public AcyclicityAxiom(EventGraph inner) {
         super(inner);
@@ -31,9 +32,13 @@ public class AcyclicityAxiom extends GraphAxiom {
 
     @Override
     public boolean checkForViolations() {
+        if (!hasChanged) {
+            return false;
+        }
         tarjan();
         // Not sure if this is ok since usually total orderings are expected
         violatingSccs.sort(Comparator.comparingInt(Set::size));
+        hasChanged = false;
         return !violatingSccs.isEmpty();
     }
 
@@ -45,6 +50,7 @@ public class AcyclicityAxiom extends GraphAxiom {
         // -> repeat until SCC is empty
         if (violatingSccs.isEmpty())
             return DNF.FALSE;
+
 
         SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>();
         // Current implementation: For all events <e> in all SCCs, find a shortest cycle (e,e)
@@ -83,6 +89,7 @@ public class AcyclicityAxiom extends GraphAxiom {
     public void onGraphChanged(EventGraph changedGraph, Collection<Edge> addedEdges) {
         //TODO: Maybe use information about added edges to make the acyclicity check (tarjan) faster?
         // Maybe call visit only on affected nodes?
+        hasChanged = true;
     }
 
     @Override
@@ -93,6 +100,7 @@ public class AcyclicityAxiom extends GraphAxiom {
     @Override
     public void initialize(ExecutionModel context) {
         super.initialize(context);
+        hasChanged = true;
         nodeMap = new EventNode[context.getEventList().size()];
         violatingSccs.clear();
         for (EventData e : context.getEventList()) {
