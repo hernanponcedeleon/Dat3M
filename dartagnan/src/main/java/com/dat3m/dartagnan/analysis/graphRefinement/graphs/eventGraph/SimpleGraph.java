@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.utils.timeable.Timeable;
+import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.utils.timeable.Timeable;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
 
@@ -122,6 +122,7 @@ public final class SimpleGraph extends AbstractEventGraph {
         return item != null && item.contains(b);
     }
 
+    @Override
     public boolean add(Edge e) {
         int firstId = e.getFirst().getId();
         int secondId = e.getSecond().getId();
@@ -138,6 +139,15 @@ public final class SimpleGraph extends AbstractEventGraph {
             size++;
         }
         return added;
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends Edge> c) {
+        boolean changed = false;
+        for (Edge e : c) {
+            changed |= add(e);
+        }
+        return changed;
     }
 
     public void clear() {

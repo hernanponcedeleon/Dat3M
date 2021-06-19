@@ -45,9 +45,6 @@ public class AcyclicityAxiom extends GraphAxiom {
     @Override
     public DNF<CoreLiteral> computeReasons() {
         // Perform (Bidirectional) BFS from all Events inside each SCC (NOTE: for now we do unidirectional BFS)
-        // For each found cycle, remove all edges involving only already found Events.
-        // I.e. find cycle -> remove (blend out) partaking events -> if SCC is not empty yet, there are more cycles
-        // -> repeat until SCC is empty
         if (violatingSccs.isEmpty())
             return DNF.FALSE;
 

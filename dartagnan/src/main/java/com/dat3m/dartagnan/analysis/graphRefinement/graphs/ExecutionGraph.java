@@ -1,11 +1,5 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.AcyclicityAxiom;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.EmptinessAxiom;
@@ -13,8 +7,14 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Grap
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.IrreflexivityAxiom;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.CompositionGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.IntersectionGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.UnionGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatUnionGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
@@ -206,7 +206,8 @@ public class ExecutionGraph {
                 return relationGraphMap.get(rel);
 
             if (relClass == RelUnion.class) {
-                graph = new UnionGraph(first, second);
+                //graph = new UnionGraph(first, second);
+                graph = new MatUnionGraph(first, second);
             } else if (relClass == RelIntersection.class) {
                 graph = new IntersectionGraph(first, second);
             } else if (relClass == RelComposition.class) {
