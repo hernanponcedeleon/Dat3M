@@ -6,14 +6,14 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.symmetry.SymmetryBreaking;
 import com.dat3m.dartagnan.utils.symmetry.SymmetryReduction;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.dat3m.dartagnan.witness.WitnessGraph;
-import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.microsoft.z3.BoolExpr;
@@ -21,7 +21,8 @@ import com.microsoft.z3.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 /*
 Represents a verification task.
@@ -139,7 +140,7 @@ public class VerificationTask {
 
     public BoolExpr encodeProgram(Context ctx) {
         BoolExpr cfEncoding = program.encodeCF(ctx);
-        BoolExpr finalRegValueEncoding = program.encodeFinalRegisterValues(ctx);
+        BoolExpr finalRegValueEncoding = program.encodeFinalRegisterValues(ctx); // this is unnecessary for C tests
         return ctx.mkAnd(cfEncoding, finalRegValueEncoding);
     }
 
@@ -149,10 +150,6 @@ public class VerificationTask {
 
     public BoolExpr encodeWmmRelations(Context ctx) {
         return memoryModel.encode( ctx);
-    }
-
-    public BoolExpr encodeWmmRelationsWithoutCo(Context ctx) {
-        return memoryModel.encodeEmptyCo(ctx);
     }
 
     public BoolExpr encodeWmmConsistency(Context ctx) {

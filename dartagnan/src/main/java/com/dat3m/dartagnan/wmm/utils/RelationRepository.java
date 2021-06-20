@@ -88,6 +88,10 @@ public class RelationRepository {
         }
     }
 
+    public boolean containsRelation(String name) {
+        return relationMap.containsKey(name);
+    }
+
     private Class<?>[] getArgsForClass(Class<?> cls){
         if(BinaryRelation.class.isAssignableFrom(cls)){
             return new Class<?>[]{Relation.class, Relation.class};

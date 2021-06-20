@@ -56,23 +56,6 @@ public class Refinement {
     //TODO(2): Add flags for printing stats (currently the stats always get printed)
 
 
-    // Encodes an underapproximation of the target WMM by assuming an empty coherence relation.
-    // Then performs graph-based refinement.
-    public static Result runAnalysisGraphRefinementEmptyCoherence(Solver solver, Context ctx, VerificationTask task) {
-        task.unrollAndCompile();
-        if(task.getProgram().getAss() instanceof AssertTrue) {
-            return PASS;
-        }
-        task.initialiseEncoding(ctx);
-
-        solver.add(task.encodeProgram(ctx));
-        solver.add(task.encodeWmmRelationsWithoutCo(ctx));
-        solver.add(task.encodeWmmConsistency(ctx));
-
-        return refinementCore(solver, ctx, task);
-    }
-
-
     // Runs graph-based refinement, starting from the empty memory model.
     public static Result runAnalysisGraphRefinement(Solver solver, Context ctx, VerificationTask task) {
         task.unrollAndCompile();
@@ -83,8 +66,8 @@ public class Refinement {
         task.initialiseEncoding(ctx);
         solver.add(task.encodeProgram(ctx));
         if (REF_USE_OUTER_WMM) {
-            Wmm outer = createOuterWmm();
-            outer.initialise(task, ctx);
+            Wmm outer = createOuterWmm(task);
+            outer.initialise(task, ctx); // this is a little suspicious
             solver.add(outer.encode(ctx));
             solver.add(outer.consistent(ctx));
         } else {
@@ -95,10 +78,26 @@ public class Refinement {
     }
 
     // Test code
-    private static Wmm createOuterWmm() {
+    private static Wmm createOuterWmm(VerificationTask task) {
+        Wmm original = task.getMemoryModel();
         Wmm outerWmm = new Wmm();
         outerWmm.setEncodeCo(false);
+        RelationRepository origRepo = original.getRelationRepository();
         RelationRepository repo = outerWmm.getRelationRepository();
+        // We copy relations from the original WMM to avoid recomputations of max-/minSets
+        // This causes active set computations to be reflected in the original WMM (which shouldn't be problematic)
+        repo.addRelation(origRepo.getRelation("rf"));
+        repo.addRelation(origRepo.getRelation("po"));
+        repo.addRelation(origRepo.getRelation("co"));
+        repo.addRelation(origRepo.getRelation("idd"));
+        repo.addRelation(origRepo.getRelation("addrDirect"));
+        if (origRepo.containsRelation("loc")) {
+            repo.addRelation(origRepo.getRelation("loc"));
+        }
+        if (origRepo.containsRelation("po-loc")) {
+            repo.addRelation(origRepo.getRelation("po-loc"));
+        }
+
         // ---- acyclic(po-loc | rf) ----
         Relation poloc = repo.getRelation("po-loc");
         Relation rf = repo.getRelation("rf");
@@ -108,6 +107,15 @@ public class Refinement {
 
         // ---- acyclic (dep | rf) ----
         if (REF_ADD_ACYCLIC_DEP_RF) {
+            if (origRepo.containsRelation("data")) {
+                repo.addRelation(origRepo.getRelation("data"));
+            }
+            if (origRepo.containsRelation("ctrl")) {
+                repo.addRelation(origRepo.getRelation("ctrl"));
+            }
+            if (origRepo.containsRelation("addr")) {
+                repo.addRelation(origRepo.getRelation("addr"));
+            }
             Relation data = repo.getRelation("data");
             Relation ctrl = repo.getRelation("ctrl");
             Relation addr = repo.getRelation("addr");

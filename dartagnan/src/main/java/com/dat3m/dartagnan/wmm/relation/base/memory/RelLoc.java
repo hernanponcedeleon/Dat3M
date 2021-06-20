@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 import java.util.Collection;
@@ -59,7 +59,7 @@ public class RelLoc extends Relation {
         for(Tuple tuple : encodeTupleSet) {
             BoolExpr rel = this.getSMTVar(tuple, ctx);
             enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(
-                    ctx.mkAnd(tuple.getFirst().exec(), tuple.getSecond().exec()),
+                    getExecPair(tuple, ctx),
                     ctx.mkEq(((MemEvent)tuple.getFirst()).getMemAddressExpr(), ((MemEvent)tuple.getSecond()).getMemAddressExpr())
             )));
         }

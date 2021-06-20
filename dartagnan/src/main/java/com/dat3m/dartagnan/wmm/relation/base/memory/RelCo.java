@@ -1,20 +1,19 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.microsoft.z3.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterMinus;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.microsoft.z3.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
@@ -31,22 +30,6 @@ public class RelCo extends Relation {
         forceDoEncode = true;
     }
 
-    //TODO(TH): shall we move this to the global settings?
-    // Temporary test code
-    private boolean doEncode = true;
-    // if set to false, the co-relation will not be encoded
-    // and it will be considered empty for may and active set computations
-    public void setDoEncode(Boolean value) {
-        doEncode = value;
-        maxTupleSet = value ? null : getMinTupleSet();
-    }
-
-    @Override
-    public TupleSet getEncodeTupleSet() {
-        if (!doEncode)
-            return new TupleSet();
-        return super.getEncodeTupleSet();
-    }
 
     @Override
     public TupleSet getMinTupleSet(){
@@ -96,13 +79,6 @@ public class RelCo extends Relation {
     protected BoolExpr encodeApprox(Context ctx) {
         BoolExpr enc = ctx.mkTrue();
 
-        if (!doEncode) {
-            for (Tuple t : getMinTupleSet()) {
-                enc = ctx.mkAnd(enc, ctx.mkEq(getSMTVar(t, ctx), getExecPair(t, ctx)));
-            }
-            return enc;
-        }
-
         List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
         List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
                 FilterBasic.get(WRITE),
@@ -128,7 +104,7 @@ public class RelCo extends Relation {
             for(Tuple t : maxTupleSet.getByFirst(w1)){
                 MemEvent w2 = (MemEvent)t.getSecond();
                 BoolExpr relation = getSMTVar(t, ctx);
-                BoolExpr execPair = ctx.mkAnd(w1.exec(), w2.exec()); //getExecPair(t, ctx);
+                BoolExpr execPair = /*ctx.mkAnd(w1.exec(), w2.exec());*/ getExecPair(t, ctx);
                 lastCo = ctx.mkAnd(lastCo, ctx.mkNot(relation));
 
                 Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
