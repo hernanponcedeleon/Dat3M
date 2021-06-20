@@ -48,6 +48,10 @@ public class GraphRefinement {
         return context;
     }
 
+    public ExecutionModel getCurrentModel() {
+        return executionModel;
+    }
+
 
     public GraphRefinement(VerificationTask context) {
         this.context = context;

@@ -1,14 +1,10 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BitVecExpr;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
-import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
+import com.microsoft.z3.*;
 
 import java.util.*;
 
@@ -53,6 +49,7 @@ public class Memory {
 
     // Assigns each Address a fixed memory address.
     public BoolExpr fixedMemoryEncoding(Context ctx) {
+        // TODO: This is buggy with statically allocated arrays
         BoolExpr[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
                 .map(add -> ctx.mkEq(add.toZ3Int(ctx), ctx.mkInt(add.getValue().intValue()))).toArray(BoolExpr[]::new);
         return ctx.mkAnd(addrExprs);

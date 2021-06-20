@@ -1,9 +1,8 @@
 package com.dat3m.dartagnan;
 
+import com.microsoft.z3.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.microsoft.z3.Version;
 
 public class GlobalSettings {
 	
@@ -17,8 +16,8 @@ public class GlobalSettings {
     public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
 
     // === Encoding ===
-    public static final boolean FIXED_MEMORY_ENCODING = true;
-    public static final boolean ALLOW_PARTIAL_MODELS = false;
+    public static final boolean FIXED_MEMORY_ENCODING = false;
+    public static final boolean ALLOW_PARTIAL_MODELS = true;
     public static final boolean MERGE_CF_VARS = true; // ONLY works if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
     public static final boolean ENABLE_SYMMETRY_BREAKING = true;
@@ -36,7 +35,7 @@ public class GlobalSettings {
     // ==== Refinement ====
     public static final boolean REF_PRINT_STATISTICS = true;
     public static final boolean REF_USE_OUTER_WMM = true;
-    public static final boolean REF_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if REF_USE_OUTER_WMM is set to TRUE
+    public static final boolean REF_ADD_ACYCLIC_DEP_RF = true; // Only takes effect if REF_USE_OUTER_WMM is set to TRUE
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
     public static final SymmetryLearning REF_SYMMETRY_LEARNING = SymmetryLearning.FULL;
