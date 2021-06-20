@@ -9,16 +9,17 @@ import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Iterator;
 
-// A materialized Union Graph. This seems to be more efficient than the virtualized UnionGraph
-public class MatUnionGraph extends BinaryEventGraph {
+// A materialized Intersection Graph. This seems to be more efficient than the virtualized IntersectionGraph
+public class MatIntersectionGraph extends BinaryEventGraph {
 
     private final SimpleGraph simpleGraph = new SimpleGraph();
 
-    public MatUnionGraph(EventGraph first, EventGraph second) {
+    public MatIntersectionGraph(EventGraph first, EventGraph second) {
         super(first, second);
     }
 
@@ -27,8 +28,11 @@ public class MatUnionGraph extends BinaryEventGraph {
         super.constructFromModel(context);
         simpleGraph.constructFromModel(context);
 
-        simpleGraph.addAll(first);
-        simpleGraph.addAll(second);
+        if (first.getEstimatedSize() < second.getEstimatedSize()) {
+            simpleGraph.addAll(Sets.intersection(first, second));
+        } else {
+            simpleGraph.addAll(Sets.intersection(second, first));
+        }
     }
 
     @Override
@@ -90,7 +94,9 @@ public class MatUnionGraph extends BinaryEventGraph {
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == first || changedGraph == second) {
-            addedEdges.removeIf(edge -> !simpleGraph.add(edge));
+            EventGraph other = changedGraph == first ? second : first;
+            addedEdges.removeIf(x -> !other.contains(x));
+            simpleGraph.addAll(addedEdges);
         } else {
             addedEdges.clear();
         }
@@ -102,7 +108,7 @@ public class MatUnionGraph extends BinaryEventGraph {
         if (!contains(edge)) {
             return Conjunction.FALSE;
         }
-        return first.contains(edge) ? first.computeReason(edge) : second.computeReason(edge);
+        return first.computeReason(edge).and(second.computeReason(edge));
     }
 
 }

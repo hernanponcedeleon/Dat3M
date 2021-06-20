@@ -41,7 +41,6 @@ public class GraphRefinement {
     //TODO: We might want to take an external executionModel to perform refinement on!
     private final ExecutionModel executionModel;
     private final Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
-    private final SortedClauseSet<CoreLiteral> coreReasonsSorted = new SortedClauseSet<>(); // TODO: delete
     // Statistics of the last call to kSearch
     private RefinementStats stats;
 
@@ -84,7 +83,6 @@ public class GraphRefinement {
 
         // ======= Initialize search =======
         SearchTree sTree = new SearchTree(this);
-        coreReasonsSorted.clear();
         possibleCoEdges.clear();
         initSearch();
 
@@ -106,7 +104,6 @@ public class GraphRefinement {
                 result.setResult(r);
                 if (r == Result.FAIL) {
                     long temp = System.currentTimeMillis();
-                    //result.setViolations(resolveViolations());
                     result.setViolations(computeResolventsFromTree(sTree));
                     stats.resolutionTime = System.currentTimeMillis() - temp;
                 }
@@ -153,7 +150,6 @@ public class GraphRefinement {
             // 0-SAT amounts to a simple violation check
             if (checkViolations()) {
                 long time = System.currentTimeMillis();
-                //computeViolations();
                 node.replaceBy(new LeafNode(computeViolationList()));
                 stats.violationComputationTime += (System.currentTimeMillis() - time);
                 return Result.FAIL;

@@ -17,6 +17,11 @@ public abstract class AbstractEventGraph implements EventGraph {
     public AbstractEventGraph() {
     }
 
+    @Override
+    public ExecutionModel getModel() {
+        return context;
+    }
+
     public void setName(String name) {
         this.name = name;
     }

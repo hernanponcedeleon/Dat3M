@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.MatSubgraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.Subgraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
@@ -11,15 +12,15 @@ import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.google.common.collect.Sets;
 
 import java.util.*;
 
-//TODO: Implement
 public class AcyclicityAxiom extends GraphAxiom {
 
     private final List<Set<EventData>> violatingSccs = new ArrayList<>();
     private EventNode[] nodeMap;
-    private boolean hasChanged = false;
+    private final Set<EventData> markedNodes = new HashSet<>();
 
     public AcyclicityAxiom(EventGraph inner) {
         super(inner);
@@ -32,13 +33,15 @@ public class AcyclicityAxiom extends GraphAxiom {
 
     @Override
     public boolean checkForViolations() {
-        if (!hasChanged) {
+        if (markedNodes.isEmpty()) {
             return false;
         }
         tarjan();
         // Not sure if this is ok since usually total orderings are expected
         violatingSccs.sort(Comparator.comparingInt(Set::size));
-        hasChanged = false;
+        if (violatingSccs.isEmpty()) {
+            markedNodes.clear();
+        }
         return !violatingSccs.isEmpty();
     }
 
@@ -52,17 +55,20 @@ public class AcyclicityAxiom extends GraphAxiom {
         SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>();
         // Current implementation: For all events <e> in all SCCs, find a shortest cycle (e,e)
         for (Set<EventData> scc : violatingSccs) {
-            Subgraph subgraph = new Subgraph(inner, scc);
+            //Subgraph subgraph = new Subgraph(inner, scc);
+            MatSubgraph subgraph = new MatSubgraph(inner, scc);
+            //EventGraph subgraph = inner;
 
-            for (EventData e : scc) {
+            for (EventData e : Sets.intersection(scc, markedNodes)) {
                 Conjunction<CoreLiteral> conj = Conjunction.TRUE;
-                for (Edge edge : subgraph.findShortestPath(e, e)) {
+                for (Edge edge : subgraph.findShortestPathBiDir(e, e)) {
                     conj = conj.and(inner.computeReason(edge));
                 }
                 clauseSet.add(conj);
             }
         }
         clauseSet.simplify();
+        markedNodes.clear();
         return new DNF<>(clauseSet.getClauses());
     }
 
@@ -86,7 +92,10 @@ public class AcyclicityAxiom extends GraphAxiom {
     public void onGraphChanged(EventGraph changedGraph, Collection<Edge> addedEdges) {
         //TODO: Maybe use information about added edges to make the acyclicity check (tarjan) faster?
         // Maybe call visit only on affected nodes?
-        hasChanged = true;
+        for (Edge e : addedEdges) {
+            markedNodes.add(e.getFirst());
+            markedNodes.add(e.getSecond());
+        }
     }
 
     @Override
@@ -97,12 +106,13 @@ public class AcyclicityAxiom extends GraphAxiom {
     @Override
     public void initialize(ExecutionModel context) {
         super.initialize(context);
-        hasChanged = true;
+        markedNodes.clear();
         nodeMap = new EventNode[context.getEventList().size()];
         violatingSccs.clear();
         for (EventData e : context.getEventList()) {
             nodeMap[e.getId()] = new EventNode(e);
         }
+        onGraphChanged(inner, inner);
     }
 
 

@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.GraphDerivable;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -17,12 +16,14 @@ import java.util.stream.StreamSupport;
 
 public interface EventGraph extends GraphDerivable, Set<Edge> {
 
+
     boolean contains(EventData a, EventData b);
     Timestamp getTime(EventData a, EventData b);
 
     Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges);
 
     void constructFromModel(ExecutionModel context);
+    ExecutionModel getModel();
     void backtrack();
 
     int getMinSize();
@@ -75,7 +76,6 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
     // be computed.
     default List<Edge> findShortestPath(EventData start, EventData end) {
         // A BFS search for a shortest path.
-        //TODO: Implement bidirectional BFS
         Queue<EventData> queue = new ArrayDeque<>();
         HashSet<EventData> visited = new HashSet<>();
         Map<EventData, Edge> parentMap = new HashMap<>();
@@ -111,6 +111,102 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
             path.add(backEdge);
             end = backEdge.getFirst();
         } while (!end.equals(start));
+
+        return path;
+    }
+
+    // Bidirectional ShortestPath
+    default List<Edge> findShortestPathBiDir(EventData start, EventData end) {
+        // A Bidirectional BFS search for a shortest path.
+        Queue<EventData> queue1 = new ArrayDeque<>();
+        HashSet<EventData> visited1 = new HashSet<>();
+        Map<EventData, Edge> parentMap1 = new HashMap<>();
+
+        Queue<EventData> queue2 = new ArrayDeque<>();
+        HashSet<EventData> visited2 = new HashSet<>();
+        Map<EventData, Edge> parentMap2 = new HashMap<>();
+
+        queue1.add(start);
+        queue2.add(end);
+        boolean found = false;
+        boolean doBFS1 = true;
+        EventData cur = null;
+        
+        while (!queue1.isEmpty() || !queue2.isEmpty()) {
+            // Forwards BFS
+            if (doBFS1) {
+                int curSize = queue1.size();
+                while (curSize-- > 0 && !found) {
+                    for (Edge next : this.outEdges(queue1.poll())) {
+                        cur = next.getSecond();
+
+                        if (cur == end || visited2.contains(cur)) {
+                            found = true;
+                            parentMap1.put(cur, next);
+                            break;
+                        }
+
+                        if (!visited1.contains(cur)) {
+                            parentMap1.put(cur, next);
+                            visited1.add(cur);
+                            queue1.add(cur);
+                        }
+                    }
+                }
+                if (found) {
+                    break; 
+                }
+                doBFS1 = false;
+            } else {
+                // Backward BFS
+                int curSize = queue2.size();
+                while (curSize-- > 0 && !found) {
+                    for (Edge next : this.inEdges(queue2.poll())) {
+                        cur = next.getFirst();
+
+                        if (visited1.contains(cur)) {
+                            found = true;
+                            parentMap2.put(cur, next);
+                            break;
+                        }
+                        if (!visited2.contains(cur)) {
+                            parentMap2.put(cur, next);
+                            visited2.add(cur);
+                            queue2.add(cur);
+                        }
+                    }
+                }
+                if (found) {
+                    break;
+                }
+                doBFS1 = true;
+            }
+        }
+        
+        if (!found || cur == null) {
+            return Collections.emptyList();
+        }
+
+        ArrayList<Edge> path = new ArrayList<>();
+        EventData e = cur;
+        do {
+            Edge backEdge = parentMap1.get(e);
+            path.add(backEdge);
+            e = backEdge.getFirst();
+        } while (!e.equals(start));
+
+        e = cur;
+        while (!e.equals(end)) {
+            Edge forwardEdge = parentMap2.get(e);
+            path.add(forwardEdge);
+            e = forwardEdge.getSecond();
+        }
+
+        /*do {
+            Edge forwardEdge = parentMap2.get(e);
+            path.add(forwardEdge);
+            e = forwardEdge.getSecond();
+        } while (!e.equals(end));*/
 
         return path;
     }

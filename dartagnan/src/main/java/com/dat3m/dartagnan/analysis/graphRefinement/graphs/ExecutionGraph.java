@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Irre
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.CompositionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.IntersectionGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatIntersectionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatUnionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
@@ -209,7 +209,8 @@ public class ExecutionGraph {
                 //graph = new UnionGraph(first, second);
                 graph = new MatUnionGraph(first, second);
             } else if (relClass == RelIntersection.class) {
-                graph = new IntersectionGraph(first, second);
+                //graph = new IntersectionGraph(first, second);
+                graph = new MatIntersectionGraph(first, second);
             } else if (relClass == RelComposition.class) {
                 graph = new CompositionGraph(first, second);
             } else if (relClass == RelMinus.class) {
