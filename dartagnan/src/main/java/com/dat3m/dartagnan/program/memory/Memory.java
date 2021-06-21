@@ -51,7 +51,11 @@ public class Memory {
     public BoolExpr fixedMemoryEncoding(Context ctx) {
         // TODO: This is buggy with statically allocated arrays
         BoolExpr[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
-                .map(add -> ctx.mkEq(add.toZ3Int(ctx), ctx.mkInt(add.getValue().intValue()))).toArray(BoolExpr[]::new);
+                .map(add -> {
+                    Expr e1 = add.toZ3Int(ctx);
+                    e1 = e1.isBV() ? ctx.mkBV2Int(e1, false) : e1;
+                    return ctx.mkEq(e1, ctx.mkInt(add.getValue().intValue()));
+                }).toArray(BoolExpr[]::new);
         return ctx.mkAnd(addrExprs);
     }
 
