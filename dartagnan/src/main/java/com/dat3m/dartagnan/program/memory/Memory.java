@@ -50,7 +50,11 @@ public class Memory {
     // Assigns each Address a fixed memory address.
     public BoolExpr fixedMemoryEncoding(Context ctx) {
         BoolExpr[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
-                .map(add -> ctx.mkEq(add.toZ3Int(ctx), ctx.mkInt(add.getValue().intValue()))).toArray(BoolExpr[]::new);
+        		.map(add -> {
+                    Expr e1 = add.toZ3Int(ctx);
+                    e1 = e1.isBV() ? ctx.mkBV2Int(e1, false) : e1;
+                    return ctx.mkEq(e1, ctx.mkInt(add.getValue().intValue()));
+                }).toArray(BoolExpr[]::new);
         return ctx.mkAnd(addrExprs);
     }
 
