@@ -3,8 +3,8 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.analysis.Refinement;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -19,12 +19,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
+import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
@@ -113,26 +112,6 @@ public abstract class AbstractSvCompTest {
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
-        } catch (IOException e){
-            fail("Missing resource file");
-        } finally {
-            if(ctx != null) {
-                ctx.close();
-            }
-        }
-    }
-
-    //@Test(timeout = TIMEOUT)
-    public void testRefinementNoCo() {
-        Context ctx = null;
-        try {
-            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-            expected = readExpected(property);
-            Program program = new ProgramParser().parse(new File(path));
-            ctx = new Context();
-            Solver solver = ctx.mkSolver();
-            VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinementEmptyCoherence(solver, ctx, task));
         } catch (IOException e){
             fail("Missing resource file");
         } finally {
