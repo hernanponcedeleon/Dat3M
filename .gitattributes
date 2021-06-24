@@ -1,1 +1,3 @@
-dartagnan/src/test/resources/* linguist-vendored
+dartagnan/src/test/resources/boogie/concurrency* linguist-vendored
+dartagnan/src/test/resources/boogie/cf* linguist-vendored
+dartagnan/src/test/resources/boogie/loops* linguist-vendored
