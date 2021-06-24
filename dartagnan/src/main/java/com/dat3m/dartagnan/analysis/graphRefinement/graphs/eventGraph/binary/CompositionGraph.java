@@ -1,17 +1,21 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
-import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
 
 public class CompositionGraph extends BinaryEventGraph {
 
@@ -145,23 +149,28 @@ public class CompositionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge) {
+    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
          if (!contains(edge))
              return Conjunction.FALSE;
+
+        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
+        if (reason != null) {
+            return reason;
+        }
 
          if (first.getEstimatedSize(edge.getFirst(), EdgeDirection.Outgoing)
                  <= second.getEstimatedSize(edge.getSecond(), EdgeDirection.Ingoing)) {
              for (Edge a : first.outEdges(edge.getFirst())) {
                  Edge b = new Edge(a.getSecond(), edge.getSecond());
                  if (second.contains(b)) {
-                     return first.computeReason(a).and(second.computeReason(b));
+                     return first.computeReason(a, reasEngine).and(second.computeReason(b, reasEngine));
                  }
              }
          } else {
              for (Edge b : second.inEdges(edge.getSecond())) {
                  Edge a = new Edge(edge.getFirst(), b.getFirst());
                  if (first.contains(a)) {
-                     return first.computeReason(a).and(second.computeReason(b));
+                     return first.computeReason(a, reasEngine).and(second.computeReason(b, reasEngine));
                  }
              }
          }

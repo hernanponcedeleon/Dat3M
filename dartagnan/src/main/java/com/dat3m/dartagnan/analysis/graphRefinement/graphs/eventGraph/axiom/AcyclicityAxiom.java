@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.MatSubgraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.Subgraph;
@@ -46,7 +47,7 @@ public class AcyclicityAxiom extends GraphAxiom {
     }
 
     @Override
-    public DNF<CoreLiteral> computeReasons() {
+    public DNF<CoreLiteral> computeReasons(ReasoningEngine reasEng) {
         // Perform (Bidirectional) BFS from all Events inside each SCC (NOTE: for now we do unidirectional BFS)
         if (violatingSccs.isEmpty())
             return DNF.FALSE;
@@ -62,7 +63,7 @@ public class AcyclicityAxiom extends GraphAxiom {
             for (EventData e : Sets.intersection(scc, markedNodes)) {
                 Conjunction<CoreLiteral> conj = Conjunction.TRUE;
                 for (Edge edge : subgraph.findShortestPathBiDir(e, e)) {
-                    conj = conj.and(inner.computeReason(edge));
+                    conj = conj.and(inner.computeReason(edge, reasEng));
                 }
                 clauseSet.add(conj);
             }
@@ -73,7 +74,7 @@ public class AcyclicityAxiom extends GraphAxiom {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeSomeReason() {
+    public Conjunction<CoreLiteral> computeSomeReason(ReasoningEngine reasEng) {
         // Finds a single cycle in the smallest SCC (not necessarily the smallest cycle tho)
         if (violatingSccs.isEmpty())
             return Conjunction.FALSE;
@@ -83,7 +84,7 @@ public class AcyclicityAxiom extends GraphAxiom {
         Subgraph subgraph = new Subgraph(inner, scc);
         EventData e = scc.stream().findAny().get();
         for (Edge edge : subgraph.findShortestPath(e, e)) {
-            res = res.and(inner.computeReason(edge));
+            res = res.and(inner.computeReason(edge, reasEng));
         }
         return res;
     }

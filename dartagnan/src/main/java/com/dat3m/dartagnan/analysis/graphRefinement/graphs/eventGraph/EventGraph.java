@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.GraphDerivable;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
@@ -34,7 +35,7 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
     Iterator<Edge> edgeIterator();
     Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir);
 
-    Conjunction<CoreLiteral> computeReason(Edge edge);
+    Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine);
 
 
     void setName(String name);

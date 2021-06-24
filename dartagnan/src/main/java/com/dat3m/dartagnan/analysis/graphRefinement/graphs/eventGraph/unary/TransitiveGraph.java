@@ -1,15 +1,16 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary;
 
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
-import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.EventData;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
 
@@ -141,15 +142,21 @@ public class TransitiveGraph extends UnaryGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge) {
+    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
          if (!contains(edge))
              return Conjunction.FALSE;
-         else if (inner.contains(edge))
-             return inner.computeReason(edge);
+
+         Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
+         if (reason != null) {
+             return reason;
+         }
+
+         if (inner.contains(edge))
+             return inner.computeReason(edge, reasEngine);
 
         Conjunction<CoreLiteral> result = Conjunction.TRUE;
         for (Edge innerEdge : findShortestPathInternal(edge.getFirst(), edge.getSecond())) {
-            result = result.and(inner.computeReason(innerEdge));
+            result = result.and(inner.computeReason(innerEdge, reasEngine));
         }
         return result;
     }

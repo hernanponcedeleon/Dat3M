@@ -17,7 +17,8 @@ public class GlobalSettings {
 
     // === Encoding ===
     public static final boolean FIXED_MEMORY_ENCODING = false;
-    public static final boolean ALLOW_PARTIAL_MODELS = true;
+    // NOTE: This ALLOW_PARTIAL_MODELS does NOT work on Litmus tests due to their different assertion condition
+    public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY works if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
     public static final boolean ENABLE_SYMMETRY_BREAKING = true;

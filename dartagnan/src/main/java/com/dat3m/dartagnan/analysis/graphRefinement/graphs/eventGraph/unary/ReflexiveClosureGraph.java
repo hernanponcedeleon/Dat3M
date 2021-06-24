@@ -1,17 +1,16 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.google.common.collect.Streams;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReflexiveClosureGraph extends UnaryGraph {
@@ -79,8 +78,13 @@ public class ReflexiveClosureGraph extends UnaryGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge) {
-        return edge.isLoop() ? Conjunction.TRUE : inner.computeReason(edge);
+    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
+        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
+        if (reason != null) {
+            return reason;
+        }
+
+        return edge.isLoop() ? Conjunction.TRUE : inner.computeReason(edge, reasEngine);
     }
 
 }

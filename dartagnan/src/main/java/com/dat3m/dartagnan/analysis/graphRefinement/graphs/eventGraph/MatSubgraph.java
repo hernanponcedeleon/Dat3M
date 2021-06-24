@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
@@ -99,8 +100,8 @@ public class MatSubgraph extends AbstractEventGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge) {
-        return contains(edge) ? sourceGraph.computeReason(edge) : Conjunction.FALSE;
+    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
+        return contains(edge) ? sourceGraph.computeReason(edge, reasEngine) : Conjunction.FALSE;
     }
 
     @Override

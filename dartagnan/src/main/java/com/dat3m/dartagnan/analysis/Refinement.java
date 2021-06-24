@@ -1,19 +1,16 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.analysis.graphRefinement.GraphRefinement;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
 import com.dat3m.dartagnan.analysis.graphRefinement.RefinementStats;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.RfLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.*;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
@@ -192,7 +189,7 @@ public class Refinement {
         // ====== Test code ======
         List<Function<Event, Event>> perms = computePerms(task);
         // ----------
-        if (GlobalSettings.ENABLE_SYMMETRY_BREAKING) {
+        if (ENABLE_SYMMETRY_BREAKING) {
             solver.add(task.encodeSymmetryBreaking(ctx));
         }
         // =======================
@@ -321,6 +318,11 @@ public class Refinement {
         if (literal instanceof EventLiteral) {
             EventLiteral lit = (EventLiteral) literal;
             return p.apply(lit.getEvent().getEvent()).exec();
+        } else if (literal instanceof LocLiteral) {
+            LocLiteral loc = (LocLiteral) literal;
+            MemEvent e1 = (MemEvent) p.apply(loc.getEdge().getFirst().getEvent());
+            MemEvent e2 = (MemEvent) p.apply(loc.getEdge().getSecond().getEvent());
+            return ctx.mkEq(e1.getMemAddressExpr(), e2.getMemAddressExpr());
         } else if (literal instanceof AbstractEdgeLiteral) {
             AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
             return Utils.edge(lit.getName(), p.apply(lit.getEdge().getFirst().getEvent()), p.apply(lit.getEdge().getSecond().getEvent()), ctx);

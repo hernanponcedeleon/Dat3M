@@ -1,12 +1,13 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
-import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -84,11 +85,17 @@ public class UnionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge) {
+    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
+
+        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
+        if (reason != null) {
+            return reason;
+        }
+
         if (first.contains(edge))
-            return first.computeReason(edge);
+            return first.computeReason(edge, reasEngine);
         else if (second.contains(edge))
-            return second.computeReason(edge);
+            return second.computeReason(edge, reasEngine);
         return Conjunction.FALSE;
     }
 

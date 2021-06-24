@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
@@ -104,11 +105,16 @@ public class MatIntersectionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge) {
+    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
         if (!contains(edge)) {
             return Conjunction.FALSE;
         }
-        return first.computeReason(edge).and(second.computeReason(edge));
+        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
+        if (reason != null) {
+            return reason;
+        }
+
+        return first.computeReason(edge, reasEngine).and(second.computeReason(edge, reasEngine));
     }
 
 }

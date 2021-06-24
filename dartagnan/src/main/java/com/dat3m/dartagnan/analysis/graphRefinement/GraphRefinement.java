@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
@@ -36,6 +37,7 @@ public class GraphRefinement {
 
     private final VerificationTask context;
     private final ExecutionGraph execGraph;
+    private final ReasoningEngine reasoningEngine;
 
     // ====== Data specific for a single refinement =======
     //TODO: We might want to take an external executionModel to perform refinement on!
@@ -57,6 +59,7 @@ public class GraphRefinement {
         this.context = context;
         this.execGraph = new ExecutionGraph(context);
         this.executionModel = new ExecutionModel(context);
+        this.reasoningEngine = new ReasoningEngine(execGraph);
     }
 
 
@@ -242,7 +245,7 @@ public class GraphRefinement {
         List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
         for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
             // Compute all violations
-            DNF<CoreLiteral> clauses = axiom.computeReasons();
+            DNF<CoreLiteral> clauses = axiom.computeReasons(reasoningEngine);
             if (!clauses.isFalse()) {
                 for (Conjunction<CoreLiteral> clause : clauses.getCubes()) {
                     violations.add(clause.removeIf(x -> canBeRemoved(x, clause)));

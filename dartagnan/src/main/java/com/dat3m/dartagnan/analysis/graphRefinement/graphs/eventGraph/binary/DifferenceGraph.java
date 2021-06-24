@@ -1,12 +1,13 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -81,8 +82,8 @@ public class DifferenceGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge) {
-        return contains(edge) ? first.computeReason(edge) : Conjunction.FALSE;
+    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
+        return contains(edge) ? first.computeReason(edge, reasEngine) : Conjunction.FALSE;
     }
 
     private class DifferenceIterator implements Iterator<Edge> {

@@ -1,13 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.GraphListener;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
-import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
+import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -27,8 +28,8 @@ public abstract class GraphAxiom implements GraphListener, Dependent<EventGraph>
 
     public abstract void clearViolations();
     public abstract boolean checkForViolations();
-    public abstract DNF<CoreLiteral> computeReasons();
-    public abstract Conjunction<CoreLiteral> computeSomeReason();
+    public abstract DNF<CoreLiteral> computeReasons(ReasoningEngine reasEng);
+    public abstract Conjunction<CoreLiteral> computeSomeReason(ReasoningEngine reasEng);
 
     public void initialize(ExecutionModel context) {
         this.context = context;

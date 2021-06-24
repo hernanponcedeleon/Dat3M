@@ -28,7 +28,7 @@ public class EventLiteral implements CoreLiteral {
     public boolean equals(Object obj) {
         if (obj == this)
             return true;
-        if (obj == null || !(obj instanceof EventLiteral))
+        if (!(obj instanceof EventLiteral))
             return false;
 
         EventLiteral other = (EventLiteral) obj;

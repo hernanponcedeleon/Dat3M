@@ -33,10 +33,11 @@ import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelRangeIdentity;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.*;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ExecutionGraph {
 
@@ -48,8 +49,8 @@ public class ExecutionGraph {
 
 
     private final VerificationTask verificationTask;
-    private final Map<Relation, EventGraph> relationGraphMap;
-    private final Map<Axiom, GraphAxiom> axiomMap;
+    private final BiMap<Relation, EventGraph> relationGraphMap;
+    private final BiMap<Axiom, GraphAxiom> axiomMap;
     private GraphHierarchy graphHierarchy;
 
     private EventGraph poGraph;
@@ -60,8 +61,8 @@ public class ExecutionGraph {
 
     public ExecutionGraph(VerificationTask verificationTask) {
         this.verificationTask = verificationTask;
-        relationGraphMap = new HashMap<>();
-        axiomMap = new HashMap<>();
+        relationGraphMap = HashBiMap.create();
+        axiomMap = HashBiMap.create();
         constructMappings();
     }
 
@@ -83,6 +84,16 @@ public class ExecutionGraph {
             EventGraph graph = getGraphFromRelation(axiom.getRelation());
             graphHierarchy.addGraphListener(graph, ax);
         }
+    }
+
+    public VerificationTask getVerificationTask() { return verificationTask; }
+
+    public BiMap<Relation, EventGraph> getRelationGraphMap() {
+        return Maps.unmodifiableBiMap(relationGraphMap);
+    }
+
+    public BiMap<Axiom, GraphAxiom> getAxiomMap() {
+        return Maps.unmodifiableBiMap(axiomMap);
     }
 
     public EventGraph getPoGraph() { return poGraph; }
@@ -194,7 +205,9 @@ public class ExecutionGraph {
             } else if (relClass == RelRangeIdentity.class) {
                 graph = new RangeIdentityGraph(inner);
             } else if (relClass == RelTransRef.class) {
-                EventGraph transGraph = getGraphFromRelation(new RelTrans(rel.getInner()));
+                RelTrans relTrans = new RelTrans(rel.getInner());
+                relTrans.initialise(verificationTask, null);
+                EventGraph transGraph = getGraphFromRelation(relTrans);
                 graph = new ReflexiveClosureGraph(transGraph);
             }
         } else if (rel.isBinaryRelation()) {
