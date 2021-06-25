@@ -6,6 +6,10 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -20,11 +24,11 @@ import static java.lang.System.getProperty;
 import static javax.swing.BorderFactory.createTitledBorder;
 import static javax.swing.JFileChooser.APPROVE_OPTION;
 
-public class Editor extends JScrollPane implements ActionListener {
+public class Editor extends RTextScrollPane implements ActionListener {
 
     private final EditorCode code;
 
-    private final JEditorPane editorPane;
+    private final RSyntaxTextArea editorPane;
     private final JMenuItem importerItem;
     private final JMenuItem exporterItem;
     private final JFileChooser chooser;
@@ -35,10 +39,12 @@ public class Editor extends JScrollPane implements ActionListener {
 
     private Set<ActionListener> actionListeners = new HashSet<>();
 
-    Editor(EditorCode code, JEditorPane editorPane, String... formats){
+    Editor(EditorCode code, RSyntaxTextArea editorPane, String... formats){
         super(editorPane);
         this.code = code;
         this.editorPane = editorPane;
+        this.editorPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_C);
+        this.editorPane.setCodeFoldingEnabled(true);
         this.lineNumbers = new LineNumbersView(editorPane);
         this.addActionListener(lineNumbers);
         this.importerItem = new JMenuItem(code.toString());
@@ -47,7 +53,7 @@ public class Editor extends JScrollPane implements ActionListener {
         this.exporterItem = new JMenuItem(code.toString());
         exporterItem.setActionCommand(code.editorMenuExportActionCommand());
         exporterItem.addActionListener(this);
-
+        
         this.allowedFormats = ImmutableSet.copyOf(Arrays.asList(formats));
         this.chooser = new JFileChooser();
         for(String format : allowedFormats) {
@@ -123,7 +129,7 @@ public class Editor extends JScrollPane implements ActionListener {
         return exporterItem;
     }
 
-    public JEditorPane getEditorPane(){
+    public RSyntaxTextArea getEditorPane(){
         return editorPane;
     }
 

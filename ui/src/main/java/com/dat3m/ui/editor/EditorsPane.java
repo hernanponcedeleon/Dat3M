@@ -5,13 +5,15 @@ import com.google.common.collect.ImmutableMap;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+
 import java.awt.*;
 
 public class EditorsPane {
 
     private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
-            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new JEditorPane(), "litmus", "c", "bpl"),
-            EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new JEditorPane(), "cat")
+            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), "litmus", "c", "bpl"),
+            EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), "cat")
     );
 
     private final JSplitPane mmPane;
