@@ -5,7 +5,6 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compile;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
@@ -71,18 +70,7 @@ public class Dartagnan {
         logger.info("Alias Analysis: " + options.getSettings().getAlias());
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
-        Program p;
-        if(options.getProgramFilePath().endsWith("c")) {
-            File file = new File(options.getProgramFilePath());
-            // First time we compiler with standard atomic header to catch compilation problems
-            compile(file, options, false);
-            // Then we use our own headers
-            compile(file, options, true);
-            String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
-            p = new ProgramParser().parse(new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));
-        } else {
-            p = new ProgramParser().parse(new File(options.getProgramFilePath()));        	
-        }
+        Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));        	
 		
         Arch target = p.getArch();
         if(target == null){

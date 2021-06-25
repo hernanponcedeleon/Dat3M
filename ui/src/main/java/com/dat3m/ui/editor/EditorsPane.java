@@ -10,7 +10,7 @@ import java.awt.*;
 public class EditorsPane {
 
     private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
-            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new JEditorPane(), "litmus", "pts", "bpl"),
+            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new JEditorPane(), "litmus", "c", "bpl"),
             EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new JEditorPane(), "cat")
     );
 
