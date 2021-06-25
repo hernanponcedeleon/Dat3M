@@ -3,7 +3,8 @@ package com.dat3m.dartagnan.parsers.program;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compile;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
 
 import java.io.*;
 
@@ -19,10 +20,8 @@ public class ProgramParser {
 
     public Program parse(File file) throws Exception {
     	if(file.getPath().endsWith("c")) {
-            // First time we compiler with standard atomic header to catch compilation problems
-            compile(file, false);
-            // Then we use our own headers
-            compile(file, true);
+            compileWithClang(file);
+            compileWithSmack(file);
             String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
             return new ProgramParser().parse(new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));    		
     	}
@@ -43,10 +42,8 @@ public class ProgramParser {
 			    FileWriter writer = new FileWriter(CFile);
 			    writer.write(raw);
 			    writer.close();
-	            // First time we compiler with standard atomic header to catch compilation problems
-	            compile(CFile, false);
-	            // Then we use our own headers
-	            compile(CFile, true);
+	            compileWithClang(CFile);
+	            compileWithSmack(CFile);
 	            File BplFile = new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl");
 	            Program p = new ProgramParser().parse(BplFile);
 	            BplFile.delete();

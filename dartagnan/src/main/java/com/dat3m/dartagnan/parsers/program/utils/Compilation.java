@@ -16,16 +16,12 @@ public class Compilation {
 	
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 	
-	public static void compile(File file, boolean ownAtomics) throws Exception {
+	public static void compileWithSmack(File file) throws Exception {
 		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
 
     	ArrayList<String> cmd = new ArrayList<String>();
     	cmd.addAll(asList("smack", "-q", "-t", "--no-memory-splitting"));
-    	if(ownAtomics) {
-        	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");    		    		
-    	} else {
-        	cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize");    		
-    	}
+        cmd.add("--clang-options=-DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize -I" + System.getenv().get("DAT3M_HOME") + "/include/");    		    		
     	cmd.addAll(asList("-bpl", System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));
     	cmd.add(file.getAbsolutePath());
     	
@@ -44,4 +40,18 @@ public class Compilation {
         	proc.waitFor();
     	}
 	}	
+
+	public static void compileWithClang(File file) throws Exception {
+    	ArrayList<String> cmd = new ArrayList<String>();
+    	cmd.add("clang");
+    	cmd.add(file.getAbsolutePath());
+    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
+    	Process proc = processBuilder.start();
+    	proc.waitFor();
+    	if(proc.exitValue() == 1) {
+    		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
+			throw new Exception(errorString);
+    	}
+	}	
+
 }
