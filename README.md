@@ -57,7 +57,7 @@ mvn test
 
 Usage
 ======
-Dat3M comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
 java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
@@ -66,12 +66,9 @@ java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 <img src="ui/src/main/resources/ui.jpg">
 </p>
 
-Dartagnan supports programs written in the `.litmus` or `.bpl` (Boogie) formats.
+Dartagnan supports programs written in the `.c`, `.litmus` or `.bpl` (Boogie) formats.
 
-If SMACK was correctly installed, C programs can be converted to Boogie using the following command:
-```
-smack -t -bpl <new Boogie file> <C file> [--integer-encoding bit-vector] --no-memory-splitting --clang-options="-DCUSTOM_VERIFIER_ASSERT -I\$DAT3M_HOME/include/"
-```
+Verification of C programs requires the SMACK executable to be in your path.
 
 You can also run Dartagnan from the console:
 
@@ -80,7 +77,7 @@ java -jar dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar -cat <CAT f
 ```
 The `-cat` option specifies the path to the CAT file.
 
-For programs written in the `.bpl`, `\<target>` specify the architectures to which the program will be compiled. It must be one of the following: 
+For programs written in `.c` and `.bpl`, `<target>` specify the architectures to which the program will be compiled. It must be one of the following: 
 - none
 - tso
 - power
