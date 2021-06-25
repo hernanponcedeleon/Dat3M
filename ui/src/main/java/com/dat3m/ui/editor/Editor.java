@@ -32,7 +32,6 @@ public class Editor extends RTextScrollPane implements ActionListener {
     private final JMenuItem importerItem;
     private final JMenuItem exporterItem;
     private final JFileChooser chooser;
-    private final LineNumbersView lineNumbers;
 
     private final ImmutableSet<String> allowedFormats;
     private String loadedFormat = "";
@@ -45,8 +44,6 @@ public class Editor extends RTextScrollPane implements ActionListener {
         this.editorPane = editorPane;
         this.editorPane.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_C);
         this.editorPane.setCodeFoldingEnabled(true);
-        this.lineNumbers = new LineNumbersView(editorPane);
-        this.addActionListener(lineNumbers);
         this.importerItem = new JMenuItem(code.toString());
         importerItem.setActionCommand(code.editorMenuImportActionCommand());
         importerItem.addActionListener(this);
@@ -60,7 +57,6 @@ public class Editor extends RTextScrollPane implements ActionListener {
             chooser.addChoosableFileFilter(new FileNameExtensionFilter("*." + format, format));
         }
 
-        setRowHeaderView(lineNumbers);
         setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
