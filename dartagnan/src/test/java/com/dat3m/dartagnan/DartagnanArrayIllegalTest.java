@@ -41,7 +41,7 @@ public class DartagnanArrayIllegalTest {
             fail("Didn't throw an exception");
         } catch(ParseCancellationException | ParsingException e){
             // Test succeeded
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }

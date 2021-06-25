@@ -58,7 +58,7 @@ public class DartagnanArrayValidTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(runAnalysis(solver, ctx, task), FAIL);
             ctx.close();
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }

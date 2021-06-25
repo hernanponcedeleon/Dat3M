@@ -97,7 +97,7 @@ public class ExclusivePairsTest {
 
             ctx.close();
 
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }
@@ -124,7 +124,7 @@ public class ExclusivePairsTest {
             assertEquals(expectedFlag, solver.check() == Status.SATISFIABLE);
             ctx.close();
 
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }

@@ -75,7 +75,7 @@ public abstract class AbstractDartagnanTest {
                 assertEquals(expected, runAnalysis(solver, ctx, task));
                 ctx.close();
             }
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }

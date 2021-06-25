@@ -16,7 +16,6 @@ import org.junit.runners.Parameterized;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
@@ -52,7 +51,7 @@ public abstract class AbstractSvCompTest {
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(expected, runAnalysis(solver, ctx, task));
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         } finally {
             if(ctx != null) {
@@ -72,7 +71,7 @@ public abstract class AbstractSvCompTest {
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(expected, runAnalysisIncrementalSolver(solver, ctx, task));
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }  finally {
             if(ctx != null) {
@@ -93,7 +92,7 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(expected, runAnalysisAssumeSolver(solver, ctx, task));
             solver.reset();
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }  finally {
             if(ctx != null) {

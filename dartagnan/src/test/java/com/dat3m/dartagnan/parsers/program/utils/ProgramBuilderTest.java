@@ -23,7 +23,7 @@ public class ProgramBuilderTest {
                                 new ProgramParser().parse(new File(f.toString()));
                             } catch(ParsingException e){
                                 // Test succeeded
-                            } catch (IOException e){
+                            } catch (Exception e){
                                 fail("Missing resource file");
                             }
                         }

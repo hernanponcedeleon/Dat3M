@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.utils;
 
 import static java.util.Arrays.asList;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -10,11 +9,14 @@ import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
+
 public class Compilation {
 	
 	private static final Logger logger = LogManager.getLogger(Compilation.class);
 	
-	public static void compile(File file, boolean ownAtomics) {
+	public static void compile(File file, boolean ownAtomics) throws Exception {
 		String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
 
     	ArrayList<String> cmd = new ArrayList<String>();
@@ -28,26 +30,18 @@ public class Compilation {
     	cmd.add(file.getAbsolutePath());
     	
     	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
-    	try {
-        	Process proc = processBuilder.start();
+    	Process proc = processBuilder.start();
+    	proc.waitFor();
+    	int tries = 1 ;
+    	while(proc.exitValue() != 0 && tries < 100) {
+    		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
+			if(errorString.contains("compile_to_bc")) {
+				throw new Exception(errorString);
+    		}
+    		logger.info("Compiling with smack");
+    		tries++;
+        	proc = processBuilder.start();
         	proc.waitFor();
-        	int tries = 1 ;
-        	while(proc.exitValue() != 0 && tries < 100) {
-        		logger.info("Compiling with smack");
-        		tries++;
-            	proc = processBuilder.start();
-            	proc.waitFor();
-        	}
-			if(proc.exitValue() == 1) {
-				BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-				System.out.println("\nThere was a problem when compiling the file with smack\n");
-				while(error.ready()) {
-					System.out.println(error.readLine());
-				}
-			}
-		} catch(Exception e) {
-			System.out.println(e.getMessage());
-			System.exit(0);
-		}
+    	}
 	}	
 }

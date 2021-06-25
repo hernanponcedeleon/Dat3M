@@ -17,7 +17,7 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_C           = "C";
 
-    public Program parse(File file) throws IOException {
+    public Program parse(File file) throws Exception {
     	if(file.getPath().endsWith("c")) {
             // First time we compiler with standard atomic header to catch compilation problems
             compile(file, false);
@@ -35,7 +35,7 @@ public class ProgramParser {
         return program;
     }
 
-    public Program parse(String raw, String format) throws IOException {
+    public Program parse(String raw, String format) throws Exception {
         switch (format) {
         	case "c":
 				File CFile = File.createTempFile("dat3m", ".c");

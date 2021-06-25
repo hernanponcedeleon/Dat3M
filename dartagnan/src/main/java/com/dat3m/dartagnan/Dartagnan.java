@@ -9,7 +9,6 @@ import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
 import java.io.File;
-import java.io.IOException;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
@@ -35,7 +34,7 @@ public class Dartagnan {
 
 	private static final Logger logger = LogManager.getLogger(Dartagnan.class);  
 	
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
     	
     	CreateGitInfo();
     	LogGlobalSettings();
