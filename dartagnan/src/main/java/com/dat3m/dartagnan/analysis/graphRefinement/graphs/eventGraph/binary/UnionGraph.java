@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -85,18 +83,8 @@ public class UnionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
-
-        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
-        if (reason != null) {
-            return reason;
-        }
-
-        if (first.contains(edge))
-            return first.computeReason(edge, reasEngine);
-        else if (second.contains(edge))
-            return second.computeReason(edge, reasEngine);
-        return Conjunction.FALSE;
+    public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
+        return visitor.visitUnion(this, data, context);
     }
 
     private class UnionIterator implements Iterator<Edge> {

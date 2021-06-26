@@ -1,109 +1,42 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 
-public class RangeIdentityGraph extends UnaryGraph {
+public class RangeIdentityGraph extends MaterializedGraph {
 
-    private final SimpleGraph graph = new SimpleGraph();
-
-    public RangeIdentityGraph(EventGraph inner) {
-        super(inner);
-    }
+    private final EventGraph inner;
 
     @Override
-    public boolean contains(Edge edge) {
-        return graph.contains(edge);
+    public List<? extends EventGraph> getDependencies() {
+        return List.of(inner);
+    }
+
+    public RangeIdentityGraph(EventGraph inner) {
+        this.inner = inner;
     }
 
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
-        graph.constructFromModel(context);
 
         for (Edge e : inner) {
-            graph.add(new Edge(e.getSecond(), e.getSecond()));
+            simpleGraph.add(new Edge(e.getSecond(), e.getSecond()));
         }
-    }
-
-    @Override
-    public void backtrack() {
-        graph.backtrack();
-    }
-
-    @Override
-    public Timestamp getTime(Edge edge) {
-        return graph.getTime(edge);
-    }
-
-    @Override
-    public boolean contains(EventData a, EventData b) {
-        return graph.contains(a, b);
-    }
-
-    @Override
-    public Timestamp getTime(EventData a, EventData b) {
-        return graph.getTime(a, b);
-    }
-
-    @Override
-    public int getMinSize() {
-        return graph.getMinSize();
-    }
-
-    @Override
-    public int getMaxSize() {
-        return graph.getMaxSize();
-    }
-
-    @Override
-    public int getEstimatedSize() {
-        return graph.getEstimatedSize();
-    }
-
-    @Override
-    public int getEstimatedSize(EventData e, EdgeDirection dir) {
-        return graph.getEstimatedSize(e, dir);
-    }
-
-    @Override
-    public int getMinSize(EventData e, EdgeDirection dir) {
-        return graph.getMinSize(e, dir);
-    }
-
-    @Override
-    public int getMaxSize(EventData e, EdgeDirection dir) {
-        return graph.getMaxSize(e, dir);
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator() {
-        return graph.edgeIterator();
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return graph.edgeIterator(e, dir);
     }
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
             addedEdges = addedEdges.stream().map(x -> new Edge(x.getSecond(), x.getSecond(), x.getTime()))
-                    .filter(graph::add).collect(Collectors.toSet());
-
+                    .filter(simpleGraph::add).collect(Collectors.toSet());
         } else {
             addedEdges.clear();
         }
@@ -111,16 +44,8 @@ public class RangeIdentityGraph extends UnaryGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
-        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
-        if (reason != null) {
-            return reason;
-        }
-
-        for (Edge inEdge : inner.inEdges(edge.getSecond())) {
-            return inner.computeReason(inEdge, reasEngine);
-        }
-        throw new IllegalStateException("RangeIdentityGraph: No matching edge is found");
+    public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
+        return visitor.visitRangeIdentity(this, data, context);
     }
 
 }

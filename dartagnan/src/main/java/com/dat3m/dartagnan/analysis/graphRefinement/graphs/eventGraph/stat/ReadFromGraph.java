@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -17,7 +14,7 @@ public class ReadFromGraph extends StaticEventGraph {
 
     @Override
     public boolean contains(Edge edge) {
-        return edge.getSecond().getReadFrom() == edge.getFirst();
+        return contains(edge.getFirst(), edge.getSecond());
     }
 
     @Override
@@ -56,10 +53,6 @@ public class ReadFromGraph extends StaticEventGraph {
         return IteratorUtils.empty();
     }
 
-    @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
-        return contains(edge) ? reasEngine.getRfReason(edge) : Conjunction.FALSE;
-    }
 
     private class RfIterator extends EdgeIterator {
 

@@ -1,18 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.DerivedEventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
-import com.dat3m.dartagnan.utils.timeable.Timestamp;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 //TODO:
 // (1) Implement.
@@ -21,18 +17,18 @@ import java.util.*;
 // Maybe by temporarily storing all queries during calls to getTime/contains
 // But how about iteration?
 //
-public class RecursiveGraph extends DerivedEventGraph {
+public class RecursiveGraph extends MaterializedGraph {
 
     private EventGraph inner;
-    private final SimpleGraph materializedGraph;
-
-    public RecursiveGraph() {
-        materializedGraph = new SimpleGraph();
-    }
 
     @Override
     public List<EventGraph> getDependencies() {
         return Collections.singletonList(inner);
+    }
+
+    @Override
+    public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
+        return visitor.visitRecursive(this, data, context);
     }
 
     public EventGraph getInner() { return inner; }
@@ -40,104 +36,16 @@ public class RecursiveGraph extends DerivedEventGraph {
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
-        materializedGraph.constructFromModel(context);
     }
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
-        addedEdges.removeIf(x -> !materializedGraph.add(x));
+        addedEdges.removeIf(x -> !simpleGraph.add(x));
         return addedEdges;
-    }
-
-    @Override
-    public int size() {
-        return materializedGraph.size();
-    }
-
-    @Override
-    public void backtrack() {
-        materializedGraph.backtrack();
-    }
-
-    @Override
-    public int getEstimatedSize() {
-        return materializedGraph.getEstimatedSize();
-    }
-
-    @Override
-    public int getEstimatedSize(EventData e, EdgeDirection dir) {
-        return materializedGraph.getEstimatedSize(e, dir);
     }
 
     public void setConcreteGraph(EventGraph concreteGraph) {
         this.inner = concreteGraph;
     }
 
-    @Override
-    public boolean contains(Edge edge) {
-        return materializedGraph.contains(edge);
-    }
-
-    @Override
-    public Timestamp getTime(Edge edge) {
-        return materializedGraph.getTime(edge);
-    }
-
-    @Override
-    public boolean contains(EventData a, EventData b) {
-        return materializedGraph.contains(a, b);
-    }
-
-    @Override
-    public Timestamp getTime(EventData a, EventData b) {
-        return materializedGraph.getTime(a, b);
-    }
-
-    @Override
-    public int getMinSize() {
-        return materializedGraph.getMinSize();
-    }
-
-    @Override
-    public int getMaxSize() {
-        return materializedGraph.getMaxSize();
-    }
-
-    @Override
-    public int getMinSize(EventData e, EdgeDirection dir) {
-        return materializedGraph.getMinSize(e, dir);
-    }
-
-    @Override
-    public int getMaxSize(EventData e, EdgeDirection dir) {
-        return materializedGraph.getMaxSize(e, dir);
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator() {
-        return materializedGraph.edgeIterator();
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return materializedGraph.edgeIterator(e, dir);
-    }
-
-    private Set<Edge> visitedEdges = new HashSet<>();
-    @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
-        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
-        if (reason != null) {
-            return reason;
-        }
-
-        //TODO
-        if (visitedEdges.contains(edge)) {
-            return Conjunction.FALSE;
-        }
-        visitedEdges.add(edge);
-        reason = inner.computeReason(edge, reasEngine);
-        visitedEdges.remove(edge);
-        return reason;
-    }
 }

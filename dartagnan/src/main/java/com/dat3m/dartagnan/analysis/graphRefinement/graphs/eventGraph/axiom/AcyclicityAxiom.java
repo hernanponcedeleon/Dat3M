@@ -1,15 +1,9 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.MatSubgraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.Subgraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MatSubgraph;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -34,6 +28,9 @@ public class AcyclicityAxiom extends GraphAxiom {
 
     @Override
     public boolean checkForViolations() {
+        if (!violatingSccs.isEmpty()) {
+            return true;
+        }
         if (markedNodes.isEmpty()) {
             return false;
         }
@@ -47,46 +44,21 @@ public class AcyclicityAxiom extends GraphAxiom {
     }
 
     @Override
-    public DNF<CoreLiteral> computeReasons(ReasoningEngine reasEng) {
+    public List<List<Edge>> getViolations() {
         // Perform (Bidirectional) BFS from all Events inside each SCC (NOTE: for now we do unidirectional BFS)
         if (violatingSccs.isEmpty())
-            return DNF.FALSE;
+            return Collections.emptyList();
 
-
-        SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>();
+        List<List<Edge>> cycles = new ArrayList<>();
         // Current implementation: For all events <e> in all SCCs, find a shortest cycle (e,e)
         for (Set<EventData> scc : violatingSccs) {
-            //Subgraph subgraph = new Subgraph(inner, scc);
             MatSubgraph subgraph = new MatSubgraph(inner, scc);
-            //EventGraph subgraph = inner;
 
             for (EventData e : Sets.intersection(scc, markedNodes)) {
-                Conjunction<CoreLiteral> conj = Conjunction.TRUE;
-                for (Edge edge : subgraph.findShortestPathBiDir(e, e)) {
-                    conj = conj.and(inner.computeReason(edge, reasEng));
-                }
-                clauseSet.add(conj);
+                cycles.add(subgraph.findShortestPathBiDir(e, e));
             }
         }
-        clauseSet.simplify();
-        markedNodes.clear();
-        return new DNF<>(clauseSet.getClauses());
-    }
-
-    @Override
-    public Conjunction<CoreLiteral> computeSomeReason(ReasoningEngine reasEng) {
-        // Finds a single cycle in the smallest SCC (not necessarily the smallest cycle tho)
-        if (violatingSccs.isEmpty())
-            return Conjunction.FALSE;
-
-        Conjunction<CoreLiteral> res = Conjunction.TRUE;
-        Set<EventData> scc = violatingSccs.get(0);
-        Subgraph subgraph = new Subgraph(inner, scc);
-        EventData e = scc.stream().findAny().get();
-        for (Edge edge : subgraph.findShortestPath(e, e)) {
-            res = res.and(inner.computeReason(edge, reasEng));
-        }
-        return res;
+        return cycles;
     }
 
     @Override
@@ -102,18 +74,19 @@ public class AcyclicityAxiom extends GraphAxiom {
     @Override
     public void backtrack() {
         violatingSccs.clear();
+        markedNodes.clear();
     }
 
     @Override
     public void initialize(ExecutionModel context) {
         super.initialize(context);
+        violatingSccs.clear();
         markedNodes.clear();
         nodeMap = new EventNode[context.getEventList().size()];
-        violatingSccs.clear();
         for (EventData e : context.getEventList()) {
             nodeMap[e.getId()] = new EventNode(e);
         }
-        onGraphChanged(inner, inner);
+        onGraphChanged(inner, inner.setView());
     }
 
 

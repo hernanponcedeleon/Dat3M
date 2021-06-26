@@ -1,22 +1,29 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 
-public class InverseGraph extends UnaryGraph {
+public class InverseGraph extends AbstractEventGraph {
+
+    protected final EventGraph inner;
 
     public InverseGraph(EventGraph inner) {
-        super(inner);
+        this.inner = inner;
+    }
+
+    public List<EventGraph> getDependencies() {
+        return Collections.singletonList(inner);
     }
 
     @Override
@@ -90,13 +97,8 @@ public class InverseGraph extends UnaryGraph {
     }
 
     @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
-        Conjunction<CoreLiteral> reason = reasEngine.tryGetStaticReason(this, edge);
-        if (reason != null) {
-            return reason;
-        }
-
-        return inner.computeReason(edge.getInverse(), reasEngine);
+    public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
+        return visitor.visitInverse(this, data, context);
     }
 
 

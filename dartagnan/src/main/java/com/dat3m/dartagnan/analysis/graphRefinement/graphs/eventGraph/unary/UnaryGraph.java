@@ -1,14 +1,13 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.DerivedEventGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 
 import java.util.Collections;
 import java.util.List;
 
-public abstract class UnaryGraph extends DerivedEventGraph {
+public abstract class UnaryGraph extends AbstractEventGraph {
 
-    @Override
     public List<EventGraph> getDependencies() {
         return Collections.singletonList(inner);
     }

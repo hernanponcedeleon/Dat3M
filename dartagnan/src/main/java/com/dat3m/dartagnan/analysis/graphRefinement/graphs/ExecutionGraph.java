@@ -21,10 +21,7 @@ import com.dat3m.dartagnan.wmm.relation.base.RelRMW;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelCo;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelLoc;
 import com.dat3m.dartagnan.wmm.relation.base.memory.RelRf;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelExt;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelPo;
+import com.dat3m.dartagnan.wmm.relation.base.stat.*;
 import com.dat3m.dartagnan.wmm.relation.binary.RelComposition;
 import com.dat3m.dartagnan.wmm.relation.binary.RelIntersection;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
@@ -73,7 +70,6 @@ public class ExecutionGraph {
         for (Relation rel : verificationTask.getRelationDependencyGraph().getNodeContents()) {
             if (!EXCLUDED_RELS.contains(rel.getName())) {
                 EventGraph graph = getGraphFromRelation(rel);
-                graph.setName(rel.getName());
                 graphs.add(graph);
             }
         }
@@ -187,8 +183,10 @@ public class ExecutionGraph {
             graph = poGraph = new ProgramOrderGraph();
         } else if (relClass == RelCo.class) {
             graph = coGraph = new TransitiveGraph(woGraph = new CoherenceGraph());
+            woGraph.setName("_wo");
         } else if (rel.isRecursiveRelation()) {
             RecursiveGraph recGraph = new RecursiveGraph();
+            recGraph.setName(rel.getName() + "_rec");
             relationGraphMap.put(rel, recGraph);
             recGraph.setConcreteGraph(getGraphFromRelation(rel.getInner()));
             return recGraph;
@@ -238,6 +236,9 @@ public class ExecutionGraph {
                 graph = new ExternalGraph();
             } else if (relClass == RelFencerel.class) {
                 graph = new FenceGraph((RelFencerel) rel);
+            } else if (relClass == RelSetIdentity.class) {
+                RelSetIdentity relSet = (RelSetIdentity)rel;
+                graph = new SetIdentityGraph(relSet.getFilter());
             } else {
                 //TODO: Add all predefined static graphs (CartesianGraph, ExtGraph, ... etc.)
                 graph = new StaticDefaultEventGraph(rel);
@@ -246,6 +247,7 @@ public class ExecutionGraph {
             throw new RuntimeException(new ClassNotFoundException(relClass.toString() + " is no supported relation class"));
         }
 
+        graph.setName(rel.getName());
         relationGraphMap.put(rel, graph);
         return graph;
     }

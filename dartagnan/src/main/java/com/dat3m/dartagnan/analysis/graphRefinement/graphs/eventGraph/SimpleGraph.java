@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
@@ -123,7 +120,6 @@ public final class SimpleGraph extends AbstractEventGraph {
         return item != null && item.contains(b);
     }
 
-    @Override
     public boolean add(Edge e) {
         int firstId = e.getFirst().getId();
         int secondId = e.getSecond().getId();
@@ -142,7 +138,6 @@ public final class SimpleGraph extends AbstractEventGraph {
         return added;
     }
 
-    @Override
     public boolean addAll(Collection<? extends Edge> c) {
         boolean changed = false;
         for (Edge e : c) {
@@ -184,10 +179,6 @@ public final class SimpleGraph extends AbstractEventGraph {
         ingoing = new DataItem[context.getEventList().size()];
     }
 
-    @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
-        throw new UnsupportedOperationException();
-    }
 
     private class InternalIterator implements Iterator<Edge> {
         int index = -1;

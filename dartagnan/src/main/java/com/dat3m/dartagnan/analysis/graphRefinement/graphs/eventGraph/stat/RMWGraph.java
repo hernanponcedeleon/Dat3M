@@ -1,63 +1,35 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
-import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 // TODO: Reason computation is completely static, which is not correct in all cases
-public class RMWGraph extends StaticEventGraph {
+public class RMWGraph extends MaterializedGraph {
 
+    public RMWGraph() { }
 
-    private static final FilterAbstract loadExclFilter  = FilterIntersection.get(
-            FilterBasic.get(EType.EXCL),
-            FilterBasic.get(EType.READ)
-    );
-
-    private static final FilterAbstract storeExclFilter = FilterIntersection.get(
-            FilterBasic.get(EType.EXCL),
-            FilterBasic.get(EType.WRITE)
-    );
-
-    // Filters for the initial load of a lock event (which consists of Load->CondJump->Write)
-    private static final FilterAbstract lockFilter = FilterIntersection.get(FilterIntersection.get(
-            FilterBasic.get(EType.LOCK),
-            FilterBasic.get(EType.RMW)),
-            FilterBasic.get(EType.READ)
-    );
-
-    private static final FilterAbstract rmwFilter = FilterIntersection.get(
-            FilterBasic.get(EType.RMW),
-            FilterBasic.get(EType.WRITE)
-    );
-
-
-    private final SimpleGraph graph;
-
-    public RMWGraph() {
-        graph = new SimpleGraph();
+    @Override
+    public List<? extends EventGraph> getDependencies() {
+        return List.of();
     }
 
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
-        graph.constructFromModel(context);
-
         populate();
-        this.size = graph.getEstimatedSize();
+    }
+
+    @Override
+    public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
+        return visitor.visitBase(this, data, context);
     }
 
 
@@ -73,7 +45,7 @@ public class RMWGraph extends StaticEventGraph {
                 block -> {
                     for (int i = 0; i < block.size(); i++) {
                         for (int j = i + 1; j < block.size(); j++) {
-                            graph.add(new Edge(block.get(i), block.get(j)));
+                            simpleGraph.add(new Edge(block.get(i), block.get(j)));
                         }
                     }
                 }
@@ -89,7 +61,7 @@ public class RMWGraph extends StaticEventGraph {
                         if (i + 1 < events.size()) {
                             // The condition fails, if the lock was not obtained
                             EventData next = events.get(i + 1);
-                            graph.add(new Edge(e, next));
+                            simpleGraph.add(new Edge(e, next));
                         }
                     } else if (e.isExclusive()) {  // LoadExcl
                         lastExclLoad = e;
@@ -99,34 +71,14 @@ public class RMWGraph extends StaticEventGraph {
                         if (lastExclLoad == null) {
                             throw new IllegalStateException("Exclusive store was executed without exclusive load.");
                         }
-                        graph.add(new Edge(lastExclLoad, e));
+                        simpleGraph.add(new Edge(lastExclLoad, e));
                         lastExclLoad = null;
                     } else if (e.getEvent() instanceof RMWStore) { // RMWStore
                         EventData load = context.getData(((RMWStore) e.getEvent()).getLoadEvent());
-                        graph.add(new Edge(load, e));
+                        simpleGraph.add(new Edge(load, e));
                     }
                 }
             }
         }
-    }
-
-    @Override
-    public boolean contains(EventData a, EventData b) {
-        return graph.contains(a, b);
-    }
-
-    @Override
-    public int getMinSize(EventData e, EdgeDirection dir) {
-        return graph.getMinSize(e, dir);
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator() {
-        return graph.edgeIterator();
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return graph.edgeIterator(e, dir);
     }
 }

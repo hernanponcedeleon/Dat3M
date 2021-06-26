@@ -1,17 +1,13 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
 import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 //TODO: Track actual violating edges
@@ -39,46 +35,22 @@ public class IrreflexivityAxiom extends GraphAxiom {
     }
 
     @Override
-    public DNF<CoreLiteral> computeReasons(ReasoningEngine reasEng) {
-        if (!checkForViolations())
-            return DNF.FALSE;
-        SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>();
-        for (Edge e : violatingEdges) {
-            clauseSet.add(inner.computeReason(e, reasEng));
-        }
-        clauseSet.simplify();
-        return new DNF<>(clauseSet.getClauses());
-    }
-
-    @Override
-    public Conjunction<CoreLiteral> computeSomeReason(ReasoningEngine reasEng) {
-        return checkForViolations() ? inner.computeReason(violatingEdges.get(0), reasEng) : Conjunction.FALSE;
+    public List<List<Edge>> getViolations() {
+        return Collections.singletonList(Collections.unmodifiableList(violatingEdges));
     }
 
     @Override
     public void initialize(ExecutionModel context) {
         super.initialize(context);
         violatingEdges.clear();
-
-        inner.stream().filter(Edge::isLoop).forEach(violatingEdges::add);
-        /*for (Edge e : inner.edges()) {
-            if (e.isLoop()) {
-                violatingEdges.add(e);
-            }
-        }*/
+        inner.edgeStream().filter(Edge::isLoop).forEach(violatingEdges::add);
     }
 
     @Override
     public void onGraphChanged(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-
             addedEdges.stream().filter(Edge::isLoop).forEach(violatingEdges::add);
-            /*for (Edge e : addedEdges) {
-                if (e.isLoop())
-                    violatingEdges.add(e);
-            }*/
         }
-
     }
 
     @Override

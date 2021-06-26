@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.EventLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
+import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.Reasoner;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
@@ -17,7 +15,6 @@ import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.SearchNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.SearchTree;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -37,7 +34,7 @@ public class GraphRefinement {
 
     private final VerificationTask context;
     private final ExecutionGraph execGraph;
-    private final ReasoningEngine reasoningEngine;
+    private final Reasoner reasoner;
 
     // ====== Data specific for a single refinement =======
     //TODO: We might want to take an external executionModel to perform refinement on!
@@ -59,7 +56,7 @@ public class GraphRefinement {
         this.context = context;
         this.execGraph = new ExecutionGraph(context);
         this.executionModel = new ExecutionModel(context);
-        this.reasoningEngine = new ReasoningEngine(execGraph);
+        this.reasoner = new Reasoner(execGraph, true);
     }
 
 
@@ -139,7 +136,8 @@ public class GraphRefinement {
         //TOOD: This is also ugly code
         SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
         SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
-        res.forEach(clause -> res2.add(clause.removeIf(x -> canBeRemoved(x, clause))));
+        res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
+        //res.forEach(clause -> res2.add(clause.removeIf(x -> canBeRemoved(x, clause))));
         res2.simplify();
         return res2.toDNF();
     }
@@ -245,12 +243,7 @@ public class GraphRefinement {
         List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
         for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
             // Compute all violations
-            DNF<CoreLiteral> clauses = axiom.computeReasons(reasoningEngine);
-            if (!clauses.isFalse()) {
-                for (Conjunction<CoreLiteral> clause : clauses.getCubes()) {
-                    violations.add(clause.removeIf(x -> canBeRemoved(x, clause)));
-                }
-            }
+            violations.addAll(reasoner.computeViolationReasons(axiom).getCubes());
         }
         // Important code: We only retain those violations with the least number of co-literals
         // this heavily boosts the performance of the resolution!!!
@@ -262,23 +255,6 @@ public class GraphRefinement {
         stats.numComputedViolations += violations.size();
 
         return violations;
-    }
-
-    // Returns TRUE, if <literal> is an EventLiteral that is implied by some non-coherence
-    // EdgeLiteral (cause CoLiterals may get removed by resolution)
-    private boolean canBeRemoved(CoreLiteral literal, Conjunction<CoreLiteral> clause) {
-        if (!(literal instanceof EventLiteral))
-            return false;
-        BranchEquivalence eq = context.getBranchEquivalence();
-
-        EventLiteral eventLit = (EventLiteral)literal;
-        Event e = eventLit.getEvent().getEvent();
-        return clause.getLiterals().stream().anyMatch(x -> {
-            if (!(x instanceof AbstractEdgeLiteral) || x.hasOpposite())
-                return false;
-            Edge edge = ((AbstractEdgeLiteral)x).getEdge();
-            return eq.isImplied(edge.getFirst().getEvent(), e) || eq.isImplied(edge.getSecond().getEvent(), e);
-        });
     }
 
     /*

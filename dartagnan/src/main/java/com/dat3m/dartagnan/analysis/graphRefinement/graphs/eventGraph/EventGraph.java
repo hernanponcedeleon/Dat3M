@@ -1,11 +1,10 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.GraphDerivable;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.GraphSetView;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -15,17 +14,22 @@ import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public interface EventGraph extends GraphDerivable, Set<Edge> {
+public interface EventGraph extends GraphDerivable, Iterable<Edge> {
 
+    void setName(String name);
+    String getName();
 
     boolean contains(EventData a, EventData b);
     Timestamp getTime(EventData a, EventData b);
 
     Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges);
+    void backtrack();
 
     void constructFromModel(ExecutionModel context);
     ExecutionModel getModel();
-    void backtrack();
+
+    int size();
+    boolean isEmpty();
 
     int getMinSize();
     int getMinSize(EventData e, EdgeDirection dir);
@@ -35,15 +39,25 @@ public interface EventGraph extends GraphDerivable, Set<Edge> {
     Iterator<Edge> edgeIterator();
     Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir);
 
-    Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine);
+    @Override
+    List<? extends EventGraph> getDependencies();
+
+    <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context);
 
 
-    void setName(String name);
-    String getName();
-
+    default Set<Edge> setView() { return new GraphSetView(this); }
 
     default boolean contains(Edge edge) { return contains(edge.getFirst(), edge.getSecond()); }
     default Timestamp getTime(Edge edge) { return getTime(edge.getFirst(), edge.getSecond()); }
+
+    default boolean containsAll(Collection<? extends Edge> edges) {
+        for (Edge e : edges) {
+            if (!contains(e)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     default int getEstimatedSize() { return (getMinSize() + getMaxSize()) >> 1; }
     default int getEstimatedSize(EventData e, EdgeDirection dir) {

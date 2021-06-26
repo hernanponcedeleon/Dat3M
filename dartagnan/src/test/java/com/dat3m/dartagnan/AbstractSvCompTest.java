@@ -81,7 +81,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testAssume() {
         Context ctx = null;
         try {

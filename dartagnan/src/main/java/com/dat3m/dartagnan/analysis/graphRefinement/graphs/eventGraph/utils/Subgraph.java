@@ -1,9 +1,8 @@
-package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
+package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
-import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.ReasoningEngine;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
-import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -16,12 +15,18 @@ import java.util.List;
 
 public class Subgraph extends AbstractEventGraph {
 
+
     private final EventGraph sourceGraph;
     private final Collection<EventData> events;
 
     public Subgraph(EventGraph source, Collection<EventData> events) {
         sourceGraph = source;
         this.events = events;
+    }
+
+    @Override
+    public List<EventGraph> getDependencies() {
+        return Collections.singletonList(sourceGraph);
     }
 
     private boolean exists(Edge e) {
@@ -77,15 +82,6 @@ public class Subgraph extends AbstractEventGraph {
         return new SubGraphIterator(e, dir);
     }
 
-    @Override
-    public Conjunction<CoreLiteral> computeReason(Edge edge, ReasoningEngine reasEngine) {
-        return exists(edge) ? sourceGraph.computeReason(edge, reasEngine) : Conjunction.FALSE;
-    }
-
-    @Override
-    public List<EventGraph> getDependencies() {
-        return Collections.singletonList(sourceGraph);
-    }
 
 
     private class SubGraphIterator implements Iterator<Edge> {

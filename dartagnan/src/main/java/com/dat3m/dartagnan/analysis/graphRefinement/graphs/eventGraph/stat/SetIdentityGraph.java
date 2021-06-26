@@ -3,26 +3,21 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 import com.google.common.collect.Iterators;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class SetIdentityGraph extends StaticEventGraph {
 
     private final List<EventData> events;
     private final FilterAbstract filter;
-
-    /*public SetIdentityGraph(RelCartesian rel) {
-        this(rel.getFirstFilter(), rel.getSecondFilter());
-    }*/
 
     public SetIdentityGraph(FilterAbstract filter) {
         this.filter = filter;
@@ -63,6 +58,11 @@ public class SetIdentityGraph extends StaticEventGraph {
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
         return filter.filter(e.getEvent()) ? Iterators.singletonIterator(new Edge(e, e)) : IteratorUtils.empty();
+    }
+
+    @Override
+    public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
+        return visitor.visitBase(this, data, context);
     }
 
 
