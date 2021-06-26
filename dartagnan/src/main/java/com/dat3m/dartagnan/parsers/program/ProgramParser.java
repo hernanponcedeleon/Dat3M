@@ -46,6 +46,7 @@ public class ProgramParser {
 	            compileWithSmack(CFile);
 	            File BplFile = new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl");
 	            Program p = new ProgramParser().parse(BplFile);
+	            CFile.delete();
 	            BplFile.delete();
 	            return p;
             case "bpl":

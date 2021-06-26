@@ -43,15 +43,19 @@ public class Compilation {
 
 	public static void compileWithClang(File file) throws Exception {
     	ArrayList<String> cmd = new ArrayList<String>();
-    	cmd.add("clang");
+    	cmd.addAll(asList("clang", "-S", "-o"));
+    	cmd.add(System.getenv().get("DAT3M_HOME") + "/output/test.s");
     	cmd.add(file.getAbsolutePath());
-    	ProcessBuilder processBuilder = new ProcessBuilder(cmd); 
+    	ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+    	logger.info("Compiling with clang");
     	Process proc = processBuilder.start();
     	proc.waitFor();
     	if(proc.exitValue() == 1) {
     		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
 			throw new Exception(errorString);
     	}
+    	File testFile = new File(System.getenv().get("DAT3M_HOME") + "/output/test.s");
+    	testFile.delete();
 	}	
 
 }
