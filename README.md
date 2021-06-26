@@ -10,7 +10,8 @@ Requirements
 ======
 * [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
 * [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile from source)
-* [SMACK 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
+* [Smack 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
+* [Clang](https://clang.llvm.org) the concrete version depends on your `smack` version
 
 Installation
 ======
@@ -35,12 +36,14 @@ Download the z3 dependency
 ```
 mvn install:install-file -Dfile=lib/z3-4.8.10.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.10 -Dpackaging=jar
 ```
-Set Dat3M's home, the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
+Set Dat3M's home, the path and shared libraries variables (replace the latter by `DYLD_LIBRARY_PATH` in **MacOS**)
 ```
 export DAT3M_HOME=<Dat3M's root>
 export PATH=$DAT3M_HOME/:$PATH
 export LD_LIBRARY_PATH=$DAT3M_HOME/lib/:$LD_LIBRARY_PATH
 ```
+
+If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
 
 To build the tool run
 ```
@@ -67,8 +70,6 @@ java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 </p>
 
 Dartagnan supports programs written in the `.c`, `.litmus` or `.bpl` (Boogie) formats.
-
-Verification of C programs requires the SMACK executable to be in your path.
 
 You can also run Dartagnan from the console:
 
