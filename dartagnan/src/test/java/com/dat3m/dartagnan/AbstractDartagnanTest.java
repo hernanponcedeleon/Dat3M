@@ -82,7 +82,7 @@ public abstract class AbstractDartagnanTest {
                 res = runAnalysis(solver, ctx, task);
                 ctx.close();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             fail("Missing resource file");
         }
 
@@ -96,12 +96,12 @@ public abstract class AbstractDartagnanTest {
                 assertEquals(res, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
                 ctx.close();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             fail("Missing resource file");
         }
     }
 
-    //@Test
+    @Test
     public void test() {
     	try {
             Program program = new ProgramParser().parse(new File(path));
@@ -118,7 +118,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    @Test
+    //@Test
     public void testRefinement() {
         try {
             Program program = new ProgramParser().parse(new File(path));
@@ -136,7 +136,7 @@ public abstract class AbstractDartagnanTest {
                 assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
                 ctx.close();
             }
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }

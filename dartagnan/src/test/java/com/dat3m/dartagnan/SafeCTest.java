@@ -25,9 +25,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.wmm.utils.Arch.ARM8;
-import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
-import static com.dat3m.dartagnan.wmm.utils.Arch.TSO;
+import static com.dat3m.dartagnan.wmm.utils.Arch.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -141,7 +139,7 @@ public class SafeCTest {
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             assertEquals(expected, Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
             ctx.close();
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }

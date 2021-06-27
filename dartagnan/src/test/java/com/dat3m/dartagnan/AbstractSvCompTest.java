@@ -80,7 +80,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testAssume() {
         Context ctx = null;
         try {
@@ -100,7 +100,7 @@ public abstract class AbstractSvCompTest {
             }
         }
     }
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testRefinement() {
         Context ctx = null;
         try {
@@ -111,7 +111,7 @@ public abstract class AbstractSvCompTest {
             Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         } finally {
             if(ctx != null) {
