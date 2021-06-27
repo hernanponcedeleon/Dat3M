@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.Mat
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatUnionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphComplexityMeasure;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -49,6 +50,7 @@ public class ExecutionGraph {
     private final BiMap<Relation, EventGraph> relationGraphMap;
     private final BiMap<Axiom, GraphAxiom> axiomMap;
     private GraphHierarchy graphHierarchy;
+    private GraphComplexityMeasure complexityMeasure;
 
     private EventGraph poGraph;
     private EventGraph rfGraph;
@@ -74,6 +76,7 @@ public class ExecutionGraph {
             }
         }
         graphHierarchy = new GraphHierarchy(graphs);
+        complexityMeasure = new GraphComplexityMeasure(graphHierarchy);
 
         for (Axiom axiom : verificationTask.getAxioms()) {
             GraphAxiom ax = getGraphAxiomFromAxiom(axiom);
@@ -112,6 +115,12 @@ public class ExecutionGraph {
 
     public Collection<GraphAxiom> getGraphAxioms() {
         return axiomMap.values();
+    }
+
+    // The minimal complexity measures the length of a shortest path from <graph> to some base graph
+    // along the dependency graph
+    public int getMinComplexity(EventGraph graph) {
+        return complexityMeasure.getComplexityMap().getOrDefault(graph, -1);
     }
 
     // For now we only allow refinement on co-edges.

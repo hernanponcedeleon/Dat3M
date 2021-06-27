@@ -6,9 +6,9 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-public class LocLiteral extends AbstractEdgeLiteral {
+public class AddressLiteral extends AbstractEdgeLiteral {
 
-    public LocLiteral(Edge edge) {
+    public AddressLiteral(Edge edge) {
         super("loc", edge);
         if (edge.getFirst().getEvent().getCId() > edge.getSecond().getEvent().getCId()) {
             this.edge = edge.getInverse();

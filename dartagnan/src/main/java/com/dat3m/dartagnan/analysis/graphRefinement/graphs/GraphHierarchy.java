@@ -22,12 +22,15 @@ public class GraphHierarchy {
     private final DependencyGraph<EventGraph> dependencyGraph;
     private final PriorityQueue<Task> tasks = new PriorityQueue<>();
 
+    // ============== Construction ===============
 
     public GraphHierarchy(Set<EventGraph> eventGraphs) {
         dependencyGraph = DependencyGraph.from(eventGraphs);
         graphListenersMap = new HashMap<>(dependencyGraph.getNodeContents().size() * 4 / 3);
         dependencyGraph.getNodeContents().forEach(x -> graphListenersMap.put(x, new HashSet<>()));
     }
+
+    // ========================================
 
     // ============= Accessors =================
 
@@ -37,6 +40,10 @@ public class GraphHierarchy {
     public List<EventGraph> getGraphList() { return dependencyGraph.getNodeContents(); }
 
     public EventGraph getRootGraph() { return getGraphList().get(0); }
+
+    public DependencyGraph<EventGraph> getDependencyGraph() {
+        return dependencyGraph;
+    }
 
     // ==========================================
 

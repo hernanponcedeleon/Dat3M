@@ -318,8 +318,8 @@ public class Refinement {
         if (literal instanceof EventLiteral) {
             EventLiteral lit = (EventLiteral) literal;
             return p.apply(lit.getEvent().getEvent()).exec();
-        } else if (literal instanceof LocLiteral) {
-            LocLiteral loc = (LocLiteral) literal;
+        } else if (literal instanceof AddressLiteral) {
+            AddressLiteral loc = (AddressLiteral) literal;
             MemEvent e1 = (MemEvent) p.apply(loc.getEdge().getFirst().getEvent());
             MemEvent e2 = (MemEvent) p.apply(loc.getEdge().getSecond().getEvent());
             return ctx.mkEq(e1.getMemAddressExpr(), e2.getMemAddressExpr());
