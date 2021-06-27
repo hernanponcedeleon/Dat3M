@@ -3,6 +3,9 @@ package com.dat3m.dartagnan.parsers.program;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Program;
 
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
+
 import java.io.*;
 
 import org.antlr.v4.runtime.CharStream;
@@ -15,7 +18,13 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_C           = "C";
 
-    public Program parse(File file) throws IOException {
+    public Program parse(File file) throws Exception {
+    	if(file.getPath().endsWith("c")) {
+            compileWithClang(file);
+            compileWithSmack(file);
+            String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
+            return new ProgramParser().parse(new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));    		
+    	}
         FileInputStream stream = new FileInputStream(file);
         ParserInterface parser = getConcreteParser(file);
         CharStream charStream = CharStreams.fromStream(stream);
@@ -25,8 +34,21 @@ public class ProgramParser {
         return program;
     }
 
-    public Program parse(String raw, String format) {
+    public Program parse(String raw, String format) throws Exception {
         switch (format) {
+        	case "c":
+				File CFile = File.createTempFile("dat3m", ".c");
+        		String name = CFile.getName().substring(0, CFile.getName().lastIndexOf('.'));
+			    FileWriter writer = new FileWriter(CFile);
+			    writer.write(raw);
+			    writer.close();
+	            compileWithClang(CFile);
+	            compileWithSmack(CFile);
+	            File BplFile = new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl");
+	            Program p = new ProgramParser().parse(BplFile);
+	            CFile.delete();
+	            BplFile.delete();
+	            return p;
             case "bpl":
                 return new ParserBoogie().parse(CharStreams.fromString(raw));
             case "litmus":

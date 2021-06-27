@@ -10,7 +10,8 @@ Requirements
 ======
 * [Maven](https://maven.apache.org/) (if you want to build the tools. If not see the [release](https://github.com/hernanponcedeleon/Dat3M/releases) section)
 * [Java 8](https://openjdk.java.net/projects/jdk/16/) or above (if you want to compile from source)
-* [SMACK 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
+* [Smack 2.5.0](https://github.com/smackers/smack) or above (only to verify C programs)
+* [Clang](https://clang.llvm.org) the concrete version depends on your `smack` version
 
 Installation
 ======
@@ -35,12 +36,14 @@ Download the z3 dependency
 ```
 mvn install:install-file -Dfile=lib/z3-4.8.10.jar -DgroupId=com.microsoft -DartifactId="z3" -Dversion=4.8.10 -Dpackaging=jar
 ```
-Set Dat3M's home, the path and shared libraries variables (replace the latter by DYLD_LIBRARY_PATH in **MacOS**)
+Set Dat3M's home, the path and shared libraries variables (replace the latter by `DYLD_LIBRARY_PATH` in **MacOS**)
 ```
 export DAT3M_HOME=<Dat3M's root>
 export PATH=$DAT3M_HOME/:$PATH
 export LD_LIBRARY_PATH=$DAT3M_HOME/lib/:$LD_LIBRARY_PATH
 ```
+
+If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
 
 To build the tool run
 ```
@@ -57,7 +60,7 @@ mvn test
 
 Usage
 ======
-Dat3M comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
+Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
 java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
@@ -66,12 +69,7 @@ java -jar ui/target/ui-2.0.7-jar-with-dependencies.jar
 <img src="ui/src/main/resources/ui.jpg">
 </p>
 
-Dartagnan supports programs written in the `.litmus` or `.bpl` (Boogie) formats.
-
-If SMACK was correctly installed, C programs can be converted to Boogie using the following command:
-```
-smack -t -bpl <new Boogie file> <C file> [--integer-encoding bit-vector] --no-memory-splitting --clang-options="-DCUSTOM_VERIFIER_ASSERT -I\$DAT3M_HOME/include/"
-```
+Dartagnan supports programs written in the `.c`, `.litmus` or `.bpl` (Boogie) formats.
 
 You can also run Dartagnan from the console:
 
@@ -80,7 +78,7 @@ java -jar dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar -cat <CAT f
 ```
 The `-cat` option specifies the path to the CAT file.
 
-For programs written in the `.bpl`, `\<target>` specify the architectures to which the program will be compiled. It must be one of the following: 
+For programs written in `.c` and `.bpl`, `<target>` specify the architectures to which the program will be compiled. It must be one of the following: 
 - none
 - tso
 - power

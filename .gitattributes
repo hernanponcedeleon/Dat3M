@@ -1,0 +1,5 @@
+dartagnan/src/test/resources/boogie/concurrency* linguist-vendored=true
+dartagnan/src/test/resources/boogie/cf* linguist-vendored=true
+dartagnan/src/test/resources/boogie/loops* linguist-vendored=true
+dartagnan/src/test/resources/large/* linguist-vendored=true
+dartagnan/src/test/resources/locks/* linguist-vendored=true

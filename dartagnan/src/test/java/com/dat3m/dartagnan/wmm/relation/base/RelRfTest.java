@@ -19,7 +19,6 @@ import com.microsoft.z3.Status;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +31,7 @@ public class RelRfTest {
 	static int TIMEOUT = 60;
 	
     @Test
-    public void testUninitializedMemory() throws IOException {
+    public void testUninitializedMemory() throws Exception {
         Settings settings = new Settings(Alias.CFIS, 1, TIMEOUT);
         settings.setFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY, true);
 
@@ -63,7 +62,7 @@ public class RelRfTest {
     }
 
     @Test
-    public void testDuplicatedEdges() throws IOException {
+    public void testDuplicatedEdges() throws Exception {
         String p1Path = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rf/C-rf-03.litmus";
         String p2Path = ResourceHelper.TEST_RESOURCE_PATH + "wmm/relation/basic/rf/C-rf-04.litmus";
 
@@ -89,7 +88,7 @@ public class RelRfTest {
         doTestDuplicatedEdges(p2Path, wmm, settings);
     }
 
-    private void doTestDuplicatedEdges(String programPath, Wmm wmm, Settings settings) throws IOException {
+    private void doTestDuplicatedEdges(String programPath, Wmm wmm, Settings settings) throws Exception {
 
     	Program program = new ProgramParser().parse(new File(programPath));
     	VerificationTask task = new VerificationTask(program, wmm, program.getArch(), settings);

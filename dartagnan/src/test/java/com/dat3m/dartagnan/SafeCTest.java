@@ -154,7 +154,7 @@ public class SafeCTest {
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx.mkSolver(), ctx, task));
             ctx.close();
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }

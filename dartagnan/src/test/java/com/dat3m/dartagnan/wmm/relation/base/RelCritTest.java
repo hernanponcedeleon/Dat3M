@@ -81,7 +81,7 @@ public class RelCritTest {
 
             ctx.close();
 
-        } catch (IOException e){
+        } catch (Exception e){
             fail("Missing resource file");
         }
     }
