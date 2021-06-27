@@ -32,7 +32,7 @@ public class Reasoner {
     private final Visitor visitor = new Visitor();
 
     // We track for each recursive graph the the edges we visit recursively
-    // If we visit some edge twice, we end up in a cyclic reasoning (causing an exception right now)
+    // If we recursively visit some edge twice, we end up in a cyclic reasoning (causing an exception right now)
     private final Map<EventGraph, Set<Edge>> visitedMap = Maps.newIdentityHashMap();
 
     public Reasoner(ExecutionGraph execGraph, boolean useMinTupleReasoning) {
