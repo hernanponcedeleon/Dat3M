@@ -1,12 +1,13 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.google.common.collect.Iterators;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -45,12 +46,12 @@ public class ReadFromGraph extends StaticEventGraph {
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
         if (e.isWrite()) {
-            return dir == EdgeDirection.Outgoing ? new RfIterator(e, dir) : IteratorUtils.empty();
+            return dir == EdgeDirection.Outgoing ? new RfIterator(e, dir) : Collections.emptyIterator();
         } else if (e.isRead()) {
             return dir == EdgeDirection.Ingoing ?
-                    IteratorUtils.singleton(new Edge(e.getReadFrom(), e)) : IteratorUtils.empty();
+                Iterators.singletonIterator(new Edge(e.getReadFrom(), e)) : Collections.emptyIterator();
         }
-        return IteratorUtils.empty();
+        return Collections.emptyIterator();
     }
 
 

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -95,15 +94,15 @@ public class Subgraph extends AbstractEventGraph {
         public SubGraphIterator() {
             eventIsFixed = false;
             eventIterator = events.iterator();
-            edgeIterator = IteratorUtils.empty();
+            edgeIterator = Collections.emptyIterator();
             nextInternal();
 
         }
 
         public SubGraphIterator(EventData e, EdgeDirection dir) {
             eventIsFixed = true;
-            eventIterator = IteratorUtils.empty();
-            edgeIterator = events.contains(e) ? sourceGraph.edgeIterator(e, dir) : IteratorUtils.empty();
+            eventIterator = Collections.emptyIterator();
+            edgeIterator = events.contains(e) ? sourceGraph.edgeIterator(e, dir) : Collections.emptyIterator();
             nextInternal();
         }
 

@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MatSubgraph;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
 import java.util.*;
@@ -161,7 +161,7 @@ public class AcyclicityAxiom extends GraphAxiom {
         }
 
         public Iterable<EventNode> getSuccessors() {
-            return new OneTimeIterable<>(IteratorUtils.mappedIterator(inner.outEdgeIterator(event), x -> nodeMap[x.getSecond().getId()]));
+            return new OneTimeIterable<>(Iterators.transform(inner.outEdgeIterator(event), x -> nodeMap[x.getSecond().getId()]));
         }
 
         public void reset() {

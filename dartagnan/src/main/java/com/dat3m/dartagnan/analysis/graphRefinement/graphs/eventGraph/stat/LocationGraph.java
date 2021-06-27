@@ -1,11 +1,10 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -52,7 +51,7 @@ public class LocationGraph extends StaticEventGraph {
 
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return  e.isMemoryEvent() ? new LocIterator(e, dir) : IteratorUtils.empty();
+        return  e.isMemoryEvent() ? new LocIterator(e, dir) : Collections.emptyIterator();
     }
 
     private class LocIterator extends EdgeIterator {

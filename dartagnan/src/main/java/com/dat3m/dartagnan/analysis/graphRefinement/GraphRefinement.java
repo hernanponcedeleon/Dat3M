@@ -86,7 +86,7 @@ public class GraphRefinement {
         // =================================
 
         // ======= Initialize search =======
-        SearchTree sTree = new SearchTree(this);
+        SearchTree sTree = new SearchTree();
         possibleCoEdges.clear();
         initSearch();
 
@@ -137,7 +137,6 @@ public class GraphRefinement {
         SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
         SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
         res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
-        //res.forEach(clause -> res2.add(clause.removeIf(x -> canBeRemoved(x, clause))));
         res2.simplify();
         return res2.toDNF();
     }
@@ -242,14 +241,13 @@ public class GraphRefinement {
     private List<Conjunction<CoreLiteral>> computeViolationList() {
         List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
         for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
-            // Compute all violations
             violations.addAll(reasoner.computeViolationReasons(axiom).getCubes());
         }
         // Important code: We only retain those violations with the least number of co-literals
         // this heavily boosts the performance of the resolution!!!
         int minComplex = violations.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
         violations.removeIf(x -> x.getResolutionComplexity() > minComplex);
-        // TODO: The following is ugly, but we convert to DNF again, to remove dominated clauses and duplicates
+        // TODO: The following is ugly, but we convert to DNF again to remove dominated clauses and duplicates
         violations = new ArrayList<>(new DNF<>(violations).getCubes());
 
         stats.numComputedViolations += violations.size();

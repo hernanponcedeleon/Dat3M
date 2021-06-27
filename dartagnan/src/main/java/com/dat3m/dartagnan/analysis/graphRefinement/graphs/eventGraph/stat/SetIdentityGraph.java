@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -11,6 +10,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.google.common.collect.Iterators;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -57,7 +57,7 @@ public class SetIdentityGraph extends StaticEventGraph {
 
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return filter.filter(e.getEvent()) ? Iterators.singletonIterator(new Edge(e, e)) : IteratorUtils.empty();
+        return filter.filter(e.getEvent()) ? Iterators.singletonIterator(new Edge(e, e)) : Collections.emptyIterator();
     }
 
     @Override

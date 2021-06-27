@@ -14,4 +14,8 @@ public class OneTimeIterable<T> implements Iterable<T> {
     public Iterator<T> iterator() {
         return iterator;
     }
+
+    public static <V> Iterable<V> create(Iterator<V> iterator) {
+        return new OneTimeIterable<>(iterator);
+    }
 }

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.IteratorUtils;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
@@ -159,17 +158,17 @@ public final class SimpleGraph extends AbstractEventGraph {
 
     public Iterator<Edge> edgeIterator() {
         if (outgoing == null) {
-            return IteratorUtils.empty();
+            return Collections.emptyIterator();
         }
         return new InternalIterator();
     }
 
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
         if (outgoing == null) {
-            return IteratorUtils.empty();
+            return Collections.emptyIterator();
         }
         DataItem item = get(e, dir);
-        return item == null ? IteratorUtils.empty() : item.iterator();
+        return item == null ? Collections.emptyIterator() : item.iterator();
     }
 
     @Override
