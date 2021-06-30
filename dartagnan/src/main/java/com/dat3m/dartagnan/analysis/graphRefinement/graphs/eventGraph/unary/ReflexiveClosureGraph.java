@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -72,20 +71,16 @@ public class ReflexiveClosureGraph extends AbstractEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return context.getEventList().stream().
-                flatMap(x -> Stream.concat(
-                        Stream.of(new Edge(x, x)),
-                        inner.edgeStream(x, EdgeDirection.Outgoing).filter(edge -> !edge.isLoop())
-                )).iterator();
+    public Stream<Edge> edgeStream() {
+        return context.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         return Stream.concat(
                 Stream.of(new Edge(e, e)),
                 inner.edgeStream(e, dir).filter(edge -> !edge.isLoop())
-                ).iterator();
+        );
     }
 
 }

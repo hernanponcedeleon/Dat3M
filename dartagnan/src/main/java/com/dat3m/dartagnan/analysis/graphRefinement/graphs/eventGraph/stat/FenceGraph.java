@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
-import com.dat3m.dartagnan.program.Thread;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class FenceGraph extends StaticEventGraph {
 
@@ -59,15 +59,35 @@ public class FenceGraph extends StaticEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new FenceIterator();
+    public Stream<Edge> edgeStream() {
+        return context.getThreadEventsMap().entrySet().stream()
+                .map(x ->  {
+                    List<EventData> fences = threadFencesMap.get(x.getKey());
+                    if (fences.isEmpty()) {
+                        return Collections.<EventData>emptyList();
+                    }
+                    int lastId = fences.get(fences.size() - 1).getLocalId();
+                    return x.getValue().subList(0, lastId);
+                })
+                .flatMap(Collection::stream)
+                .flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return new FenceIterator(e, dir);
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        List<EventData> threadEvents = context.getThreadEventsMap().get(e.getThread());
+        if (dir == EdgeDirection.Outgoing) {
+            EventData fence = getNextFence(e);
+            return fence == null ? Stream.empty() :
+                    threadEvents.subList(fence.getLocalId() + 1, threadEvents.size())
+                            .stream().map(x -> new Edge(e, x));
+        } else {
+            EventData fence = getPreviousFence(e);
+            return fence == null ? Stream.empty() :
+                    threadEvents.subList(0, fence.getLocalId())
+                            .stream().map(x -> new Edge(x, e));
+        }
     }
-
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
         int size = 0;
@@ -123,126 +143,4 @@ public class FenceGraph extends StaticEventGraph {
         return closestFence;
     }
 
-
-    private class FenceIterator extends EdgeIterator {
-
-        Iterator<Thread> threadIterator;
-        Thread curThread = null;
-        List<EventData> threadEvents;
-        List<EventData> fenceEvents;
-        int lastFenceId;
-
-        public FenceIterator() {
-            super(true);
-            threadIterator = context.getThreads().listIterator();
-            nextThread();
-        }
-
-        public FenceIterator(EventData fixed, EdgeDirection dir) {
-            super(fixed, dir);
-            curThread = fixed.getThread();
-            initThreadData();
-            if (!fenceEvents.isEmpty()) {
-                autoInit();
-            }
-
-        }
-
-        private boolean areSeparatedByFence(EventData a, EventData b) {
-            for (EventData fence : threadFencesMap.get(curThread)) {
-                if (a.getLocalId() < fence.getLocalId() && fence.getLocalId() < b.getLocalId()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private void initThreadData() {
-            threadEvents = context.getThreadEventsMap().get(curThread);
-            fenceEvents = threadFencesMap.get(curThread);
-            lastFenceId = fenceEvents.isEmpty() ? -1 : fenceEvents.get(fenceEvents.size() - 1).getLocalId();
-        }
-
-        private void nextThread() {
-            curThread = null;
-            first = second = null;
-            while (threadIterator.hasNext()) {
-                curThread = threadIterator.next();
-                initThreadData();
-                if (fenceEvents.isEmpty()) {
-                    curThread = null;
-                } else {
-                    resetFirst();
-                    resetSecond();
-                    if (first != null && second != null) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        @Override
-        protected void resetFirst() {
-            first = threadEvents.get(0);
-            if (fenceEvents.get(fenceEvents.size() - 1) == first || (second != null && !areSeparatedByFence(first, second))) {
-                first = null;
-            }
-
-            if (first == null && second == null) {
-                nextThread();
-            }
-        }
-
-        @Override
-        protected void resetSecond() {
-            if (first == null) {
-                int index = fenceEvents.get(0).getLocalId() + 1;
-                if (index < threadEvents.size())
-                    second = threadEvents.get(index);
-            } else {
-                Optional<EventData> e = fenceEvents.stream()
-                        .filter(x -> x.getLocalId() > first.getLocalId()).findFirst();
-                if (e.isPresent()) {
-                    int index = e.get().getLocalId() + 1;
-                    if (index < threadEvents.size()) {
-                        second = threadEvents.get(index);
-                    }
-                }
-            }
-
-            if (first == null && second == null) {
-                nextThread();
-            }
-        }
-
-        @Override
-        protected void nextFirst() {
-            int nextIndex = first.getLocalId() + 1;
-            first = null;
-            if (nextIndex < lastFenceId) {
-                EventData next = threadEvents.get(nextIndex);
-                if (second == null || !next.isFence() || !next.getEvent().toString().equals(fenceName)
-                        || areSeparatedByFence(next, second)) {
-                    first = next;
-                }
-            }
-
-            if (first == null && second == null) {
-                nextThread();
-            }
-        }
-
-        @Override
-        protected void nextSecond() {
-            int nextIndex = second.getLocalId() + 1;
-            second = null;
-            if (nextIndex < threadEvents.size()) {
-                second = threadEvents.get(nextIndex);
-            }
-
-            if (first == null && second == null) {
-                nextThread();
-            }
-        }
-    }
 }

@@ -8,8 +8,13 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 
+//TODO: Do not recreate all DataItem items each run but only add new ones if a larger model is found.
+// If the DataItems are reused, no time is spent on the usual resizing operations.
+// We shouldn't use ArrayList for this resizing, cause it may use up to twice as many entries as needed
+// Also it might be reasonable to always create all DataItems to avoid checks during runtime
 public final class SimpleGraph extends AbstractEventGraph {
     private int size;
     private DataItem[] outgoing;
@@ -156,11 +161,23 @@ public final class SimpleGraph extends AbstractEventGraph {
         }
     }
 
-    public Iterator<Edge> edgeIterator() {
+    @Override
+    public Stream<Edge> edgeStream() {
         if (outgoing == null) {
-            return Collections.emptyIterator();
+            return Stream.empty();
         }
-        return new InternalIterator();
+        return Arrays.stream(outgoing)
+                .filter(item -> item != null && !item.edgeArray.isEmpty())
+                .flatMap(item -> item.edgeArray.stream());
+    }
+
+    @Override
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        if (outgoing == null) {
+            return Stream.empty();
+        }
+        DataItem item = get(e, dir);
+        return item == null ? Stream.empty() : item.stream();
     }
 
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
@@ -179,44 +196,6 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
 
-    private class InternalIterator implements Iterator<Edge> {
-        int index = -1;
-        private Iterator<Edge> inner;
-
-
-        public InternalIterator() {
-            findNextOuter();
-        }
-
-        private void findNextOuter() {
-            DataItem item = null;
-            while ((item == null || item.edgeArray.isEmpty()) && ++index < outgoing.length ) {
-                item = outgoing[index];
-            }
-            inner = item == null ? Collections.emptyIterator() : item.iterator();
-        }
-
-        private void findNext() {
-            if (!inner.hasNext()) {
-                findNextOuter();
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return inner.hasNext();
-        }
-
-        @Override
-        public Edge next() {
-            Edge edge = inner.next();
-            findNext();
-            return edge;
-        }
-    }
-
-
-
     private static final class DataItem implements Iterable<Edge> {
         final ArrayList<Edge> edgeArray;
         final Map<EventData, Timestamp> edgeMap;
@@ -225,6 +204,7 @@ public final class SimpleGraph extends AbstractEventGraph {
         public DataItem() {
             edgeArray = new ArrayList<>();
             edgeMap = new HashMap<>();
+            //edgeMap = Maps.newIdentityHashMap();
             maxStamp = Timestamp.ZERO;
         }
 
@@ -260,6 +240,10 @@ public final class SimpleGraph extends AbstractEventGraph {
 
         public Iterator<Edge> iterator() {
             return edgeArray.iterator();
+        }
+
+        public Stream<Edge> stream() {
+            return edgeArray.stream();
         }
 
         public void clear() {

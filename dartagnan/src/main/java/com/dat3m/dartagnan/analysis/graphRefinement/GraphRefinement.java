@@ -32,33 +32,47 @@ import java.util.*;
 
 public class GraphRefinement {
 
-    private final VerificationTask context;
+    // ================== Fields ==================
+
+    // --------------- Static data ----------------
+    private final VerificationTask task;
     private final ExecutionGraph execGraph;
     private final Reasoner reasoner;
 
-    // ====== Data specific for a single refinement =======
+    // ----------- Iteration-specific data -----------
     //TODO: We might want to take an external executionModel to perform refinement on!
     private final ExecutionModel executionModel;
     private final Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
-    // Statistics of the last call to kSearch
-    private RefinementStats stats;
+    private RefinementStats stats;  // Statistics of the last call to kSearch
+
+    // ============================================
+
+    // =============== Accessors =================
 
     public VerificationTask getTask() {
-        return context;
+        return task;
     }
+
+    // NOTE: The execution graph should not be modified from the outside!
+    public ExecutionGraph getExecutionGraph() { return execGraph; }
 
     public ExecutionModel getCurrentModel() {
         return executionModel;
     }
 
 
-    public GraphRefinement(VerificationTask context) {
-        this.context = context;
-        this.execGraph = new ExecutionGraph(context);
-        this.executionModel = new ExecutionModel(context);
+    // =============================================
+
+    // =========== Construction & Init ==============
+
+    public GraphRefinement(VerificationTask task) {
+        this.task = task;
+        this.execGraph = new ExecutionGraph(task);
+        this.executionModel = new ExecutionModel(task);
         this.reasoner = new Reasoner(execGraph, true);
     }
 
+    // ----------------------------------------------
 
     private void populateFromModel(Model model, Context ctx) {
         executionModel.initialize(model, ctx, false);
@@ -68,10 +82,56 @@ public class GraphRefinement {
         testStaticGraphs();
     }
 
+    private void initSearch() {
+        Relation co = task.getMemoryModel().getRelationRepository().getRelation("co");
+        for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
+            Set<EventData> writes = addressedWrites.getValue();
+            BigInteger address = addressedWrites.getKey();
+            Set<Edge> coEdges = new HashSet<>();
+            possibleCoEdges.put(address, coEdges);
+
+            for (EventData e1 : writes) {
+                for (EventData e2: writes) {
+                    Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
+
+                    if (co.getMinTupleSet().contains(t)) {
+                        //TODO: Test code
+                        execGraph.addCoherenceEdge(new Edge(e1, e2));
+                        continue;
+                    }
+
+                    // We only add edges in one direction
+                    if (e2.getId() >= e1.getId())
+                        continue;
+
+                    if (e1.isInit() && !e2.isInit()) {
+                        execGraph.addCoherenceEdge(new Edge(e1, e2));
+                    } else if (!e1.isInit() && !e2.isInit()) {
+                        coEdges.add(new Edge(e1, e2));
+                    }
+                }
+            }
+        }
+        possibleCoEdges.values().removeIf(Collection::isEmpty);
+    }
+
     /*
-    kSearch performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
-    It returns whether it was successful, what violations where found (if any) and the maximal saturation depth
-    that was used.
+        A simple heuristic which moves all coherences to the front, which involve
+        some write that was read from.
+    */
+    private void sortCoSearchList(List<Edge> list) {
+        list.sort(Comparator.comparingInt(x -> -(x.getFirst().getImportance() + x.getSecond().getImportance())));
+    }
+
+
+    // ====================================================
+
+    // ==============  Core functionality  =================
+
+    /*
+        kSearch performs a sequence of k-Saturations, starting from 0 up to <maxSaturationDepth>
+        It returns whether it was successful, what violations where found (if any) and statistics
+        about the computation.
      */
     public RefinementResult kSearch(Model model, Context ctx, int maxSaturationDepth) {
         RefinementResult result = new RefinementResult();
@@ -131,17 +191,7 @@ public class GraphRefinement {
         return result;
     }
 
-
-    private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
-        //TOOD: This is also ugly code
-        SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
-        SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
-        res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
-        res2.simplify();
-        return res2.toDNF();
-    }
-
-
+    // ----------------------------------------------
 
     /*
         <searchList> is a list of coherences that need to be tested. It is assumed
@@ -225,9 +275,16 @@ public class GraphRefinement {
         return Result.UNKNOWN;
     }
 
+    private void backtrackOn(Timestamp time) {
+        time.invalidate();
+        execGraph.backtrack();
+    }
+
     private boolean coExists(Edge coEdge) {
         return execGraph.getCoGraph().contains(coEdge) || execGraph.getCoGraph().contains(coEdge.getInverse());
     }
+
+    // ============= Violations + Resolution ================
 
     private boolean checkViolations() {
         boolean hasViolation = false;
@@ -255,56 +312,18 @@ public class GraphRefinement {
         return violations;
     }
 
-    /*
-    A simple heuristic which moves all coherences to the front, which involve
-    some write that was read from.
-     */
-    private void sortCoSearchList(List<Edge> list) {
-        list.sort(Comparator.comparingInt(x -> (x.getFirst().getImportance() + x.getSecond().getImportance())));
+    private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
+        //TOOD: This is also ugly code
+        SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
+        SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
+        res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
+        res2.simplify();
+        return res2.toDNF();
     }
 
-    private void backtrackOn(Timestamp time) {
-        time.invalidate();
-        execGraph.backtrack();
-    }
+    // ====================================================
 
-
-    private void initSearch() {
-        Relation co = context.getMemoryModel().getRelationRepository().getRelation("co");
-        for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
-            Set<EventData> writes = addressedWrites.getValue();
-            BigInteger address = addressedWrites.getKey();
-            Set<Edge> coEdges = new HashSet<>();
-            possibleCoEdges.put(address, coEdges);
-
-            for (EventData e1 : writes) {
-                for (EventData e2: writes) {
-                    Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
-
-                    if (co.getMinTupleSet().contains(t)) {
-                        //TODO: Test code
-                        execGraph.addCoherenceEdge(new Edge(e1, e2));
-                        continue;
-                    }
-
-                    // We only add edges in one direction
-                    if (e2.getId() >= e1.getId())
-                        continue;
-
-                    if (e1.isInit() && !e2.isInit()) {
-                        execGraph.addCoherenceEdge(new Edge(e1, e2));
-                    } else if (!e1.isInit() && !e2.isInit()) {
-                        coEdges.add(new Edge(e1, e2));
-                    }
-                }
-            }
-        }
-        possibleCoEdges.values().removeIf(Collection::isEmpty);
-    }
-
-
-
-    // ================ TESTING ======================
+    // ===================== TESTING ======================
 
     private final static boolean DEBUG = false;
     private void testIteration() {
@@ -321,6 +340,10 @@ public class GraphRefinement {
             if (size > 0) {
                 throw new RuntimeException();
             }
+
+            if (g.edgeStream().count() != g.size()) {
+                throw new RuntimeException();
+            }
         }
     }
 
@@ -328,7 +351,7 @@ public class GraphRefinement {
         if (!DEBUG)
             return;
 
-        for (Relation relData : context.getRelationDependencyGraph().getNodeContents()) {
+        for (Relation relData : task.getRelationDependencyGraph().getNodeContents()) {
             if (relData.getName().equals("co")) {
                 continue;
             }
@@ -379,5 +402,7 @@ public class GraphRefinement {
             }
         }
     }
+
+    // ====================================================
 
 }

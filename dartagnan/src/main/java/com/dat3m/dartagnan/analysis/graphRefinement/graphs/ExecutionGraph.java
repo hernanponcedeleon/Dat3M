@@ -12,7 +12,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.Mat
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatUnionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphComplexityMeasure;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.ShortestDerivationComplexity;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -35,22 +35,32 @@ import com.google.common.collect.*;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class ExecutionGraph {
 
+    // These graphs are only relevant for data, ctrl and addr, all of which have a special event graph (see below)
     private static final Set<String> EXCLUDED_RELS = ImmutableSet.of(
             "idd", "idd^+", "ctrlDirect", "addrDirect", "(idd^+;addrDirect)", "(addrDirect+(idd^+;addrDirect))",
             "(idd^+;ctrlDirect)"
     );
+
+    // These relations have special event graphs associated with them
     private static final Set<String> SPECIAL_RELS = ImmutableSet.of("addr", "data", "ctrl");
 
+
+    // ================== Fields =====================
+
+    // All following variables can be considered "final".
+    // Some are not declared final for purely technical reasons but all of them get
+    // assigned during construction.
 
     private final VerificationTask verificationTask;
     private final BiMap<Relation, EventGraph> relationGraphMap;
     private final BiMap<Axiom, GraphAxiom> axiomMap;
     private GraphHierarchy graphHierarchy;
-    private GraphComplexityMeasure complexityMeasure;
+    private Map<EventGraph, Integer> derivationComplexityMap;
 
     private EventGraph poGraph;
     private EventGraph rfGraph;
@@ -58,12 +68,23 @@ public class ExecutionGraph {
     private EventGraph locGraph;
     private EventGraph woGraph;
 
+    // =================================================
+
+    // ============= Construction & Init ===============
+
     public ExecutionGraph(VerificationTask verificationTask) {
         this.verificationTask = verificationTask;
         relationGraphMap = HashBiMap.create();
         axiomMap = HashBiMap.create();
         constructMappings();
     }
+
+    public void initializeFromModel(ExecutionModel executionModel) {
+        graphHierarchy.constructFromModel(executionModel);
+        axiomMap.values().forEach(x -> x.initialize(executionModel));
+    }
+
+    // --------------------------------------------------
 
     private void constructMappings() {
         // We make sure to compute graphs along the dependency order
@@ -76,7 +97,7 @@ public class ExecutionGraph {
             }
         }
         graphHierarchy = new GraphHierarchy(graphs);
-        complexityMeasure = new GraphComplexityMeasure(graphHierarchy);
+        derivationComplexityMap = ImmutableMap.copyOf(new ShortestDerivationComplexity(graphHierarchy).getComplexityMap());
 
         for (Axiom axiom : verificationTask.getAxioms()) {
             GraphAxiom ax = getGraphAxiomFromAxiom(axiom);
@@ -84,6 +105,10 @@ public class ExecutionGraph {
             graphHierarchy.addGraphListener(graph, ax);
         }
     }
+
+    // =================================================
+
+    // ================ Accessors =======================
 
     public VerificationTask getVerificationTask() { return verificationTask; }
 
@@ -117,14 +142,18 @@ public class ExecutionGraph {
         return axiomMap.values();
     }
 
-    // The minimal complexity measures the length of a shortest path from <graph> to some base graph
+    // The length of a shortest path from <graph> to some base graph
     // along the dependency graph
-    public int getMinComplexity(EventGraph graph) {
-        return complexityMeasure.getComplexityMap().getOrDefault(graph, -1);
+    public int getShortestDerivationComplexity(EventGraph graph) {
+        return derivationComplexityMap.getOrDefault(graph, -1);
     }
 
+    // ====================================================
+
+    // ==================== Mutation ======================
+
     // For now we only allow refinement on co-edges.
-    // We might want to add similar features for rf
+    // We might want to add similar features for other linear orders (i.e. user defined orders)
     // We also assume, that the non-transitive write order is defined.
     public boolean addCoherenceEdge(Edge coEdge) {
         if ( woGraph == null) {
@@ -134,17 +163,14 @@ public class ExecutionGraph {
         return true;
     }
 
-    public void initializeFromModel(ExecutionModel executionModel) {
-        graphHierarchy.constructFromModel(executionModel);
-        axiomMap.values().forEach(x -> x.initialize(executionModel));
-    }
-
     public void backtrack() {
         graphHierarchy.backtrack();
     }
 
+    // =======================================================
 
-    //===================== Reading the WMM ========================
+
+    //=================== Reading the WMM ====================
 
     private GraphAxiom getGraphAxiomFromAxiom(Axiom axiom) {
         if (axiomMap.containsKey(axiom))
@@ -199,7 +225,7 @@ public class ExecutionGraph {
             relationGraphMap.put(rel, recGraph);
             recGraph.setConcreteGraph(getGraphFromRelation(rel.getInner()));
             return recGraph;
-        }else if (rel.isUnaryRelation()) {
+        } else if (rel.isUnaryRelation()) {
             EventGraph inner = getGraphFromRelation(rel.getInner());
             // A safety check because recursion might compute this edge set
             if (relationGraphMap.containsKey(rel))
@@ -260,6 +286,8 @@ public class ExecutionGraph {
         relationGraphMap.put(rel, graph);
         return graph;
     }
+
+    // =======================================================
 
 
 }

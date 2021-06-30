@@ -10,6 +10,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
 import java.util.*;
+import java.util.stream.Stream;
+
+import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm.findShortestPathBiDir;
 
 public class AcyclicityAxiom extends GraphAxiom {
 
@@ -21,17 +24,12 @@ public class AcyclicityAxiom extends GraphAxiom {
         super(inner);
     }
 
-    @Override
-    public void clearViolations() {
-        violatingSccs.clear();
-    }
 
     @Override
     public boolean checkForViolations() {
         if (!violatingSccs.isEmpty()) {
             return true;
-        }
-        if (markedNodes.isEmpty()) {
+        } else if (markedNodes.isEmpty()) {
             return false;
         }
         tarjan();
@@ -45,17 +43,15 @@ public class AcyclicityAxiom extends GraphAxiom {
 
     @Override
     public List<List<Edge>> getViolations() {
-        // Perform (Bidirectional) BFS from all Events inside each SCC (NOTE: for now we do unidirectional BFS)
         if (violatingSccs.isEmpty())
             return Collections.emptyList();
 
         List<List<Edge>> cycles = new ArrayList<>();
-        // Current implementation: For all events <e> in all SCCs, find a shortest cycle (e,e)
+        // Current implementation: For all marked events <e> in all SCCs, find a shortest cycle (e,e)
         for (Set<EventData> scc : violatingSccs) {
             MatSubgraph subgraph = new MatSubgraph(inner, scc);
-
             for (EventData e : Sets.intersection(scc, markedNodes)) {
-                cycles.add(subgraph.findShortestPathBiDir(e, e));
+                cycles.add(findShortestPathBiDir(subgraph, e, e));
             }
         }
         return cycles;
@@ -65,10 +61,7 @@ public class AcyclicityAxiom extends GraphAxiom {
     public void onGraphChanged(EventGraph changedGraph, Collection<Edge> addedEdges) {
         //TODO: Maybe use information about added edges to make the acyclicity check (tarjan) faster?
         // Maybe call visit only on affected nodes?
-        for (Edge e : addedEdges) {
-            markedNodes.add(e.getFirst());
-            markedNodes.add(e.getSecond());
-        }
+        addedEdges.forEach(e -> markedNodes.add(e.getFirst()));
     }
 
     @Override
@@ -90,6 +83,7 @@ public class AcyclicityAxiom extends GraphAxiom {
     }
 
 
+    // ============== Tarjan & SCCs ================
 
     private final Stack<EventNode> stack = new Stack<>();
     private int index = 0;
@@ -113,7 +107,21 @@ public class AcyclicityAxiom extends GraphAxiom {
         v.isOnStack = true;
         index++;
 
-        for (EventNode w : v.getSuccessors()) {
+
+        v.successorStream().forEach(w -> {
+                if (!w.wasVisited()) {
+                    strongConnect(w);
+                    v.lowlink = Math.min(v.lowlink, w.lowlink);
+                } else if (w.isOnStack) {
+                    v.lowlink = Math.min(v.lowlink, w.index);
+                }
+
+                if (w == v) {
+                    v.hasSelfLoop = true;
+                }
+        });
+
+        /*for (EventNode w : v.getSuccessors()) {
             if (!w.wasVisited()) {
                 strongConnect(w);
                 v.lowlink = Math.min(v.lowlink, w.lowlink);
@@ -125,7 +133,7 @@ public class AcyclicityAxiom extends GraphAxiom {
             if (w == v) {
                 v.hasSelfLoop = true;
             }
-        }
+        }*/
 
 
         if (v.lowlink == v.index) {
@@ -144,7 +152,7 @@ public class AcyclicityAxiom extends GraphAxiom {
     }
 
     private class EventNode {
-        EventData event;
+        final EventData event;
 
 
         boolean hasSelfLoop = false;
@@ -158,6 +166,10 @@ public class AcyclicityAxiom extends GraphAxiom {
 
         boolean wasVisited() {
             return index != -1;
+        }
+
+        public Stream<EventNode> successorStream() {
+            return inner.outEdgeStream(event).map(e -> nodeMap[e.getSecond().getId()]);
         }
 
         public Iterable<EventNode> getSuccessors() {

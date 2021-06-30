@@ -29,6 +29,7 @@ public class TreeResolution {
         return result;
     }
 
+
     private List<Conjunction<CoreLiteral>> computeViolations(SearchNode node) {
         if (node.isEmptyNode()) {
             return Collections.emptyList();

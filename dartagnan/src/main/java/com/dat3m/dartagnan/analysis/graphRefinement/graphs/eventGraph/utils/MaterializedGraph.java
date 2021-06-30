@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 public abstract class MaterializedGraph extends AbstractEventGraph {
 
@@ -77,6 +78,16 @@ public abstract class MaterializedGraph extends AbstractEventGraph {
     @Override
     public int getMaxSize(EventData e, EdgeDirection dir) {
         return simpleGraph.getMaxSize(e, dir);
+    }
+
+    @Override
+    public Stream<Edge> edgeStream() {
+        return simpleGraph.edgeStream();
+    }
+
+    @Override
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        return simpleGraph.edgeStream(e, dir);
     }
 
     @Override

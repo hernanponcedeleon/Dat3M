@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -13,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class SetIdentityGraph extends StaticEventGraph {
 
@@ -38,6 +38,7 @@ public class SetIdentityGraph extends StaticEventGraph {
             if (filter.filter(e.getEvent()))
                 events.add(e);
         }
+        this.size = events.size();
     }
 
     @Override
@@ -51,8 +52,13 @@ public class SetIdentityGraph extends StaticEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return events.stream().map(x -> new Edge(x, x)).iterator();
+    public Stream<Edge> edgeStream() {
+        return events.stream().map(x -> new Edge(x, x));
+    }
+
+    @Override
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        return filter.filter(e.getEvent()) ? Stream.of(new Edge(e, e)) : Stream.empty();
     }
 
     @Override
@@ -63,58 +69,5 @@ public class SetIdentityGraph extends StaticEventGraph {
     @Override
     public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
         return visitor.visitBase(this, data, context);
-    }
-
-
-    private class SetIdentityIterator extends EdgeIterator {
-
-        Iterator<EventData> iter;
-
-        public SetIdentityIterator() {
-            super(true);
-            if (!events.isEmpty()) {
-                autoInit();
-            }
-        }
-
-        public SetIdentityIterator(EventData fixed, EdgeDirection dir) {
-            super(fixed, dir);
-            if (!events.isEmpty()) {
-                autoInit();
-            }
-        }
-
-
-        @Override
-        protected void resetFirst() {
-            if (second != null) {
-                first = second;
-            } else {
-                iter = events.iterator();
-                first = second = iter.next();
-            }
-        }
-
-        @Override
-        protected void resetSecond() {
-            if (first != null) {
-                second = first;
-            } else {
-                iter = events.iterator();
-                first = second = iter.next();
-            }
-        }
-
-        @Override
-        protected void nextFirst() {
-            first = iter.hasNext() ? iter.next() : null;
-            second = first;
-        }
-
-        @Override
-        protected void nextSecond() {
-            second = iter.hasNext() ? iter.next() : null;
-            first = second;
-        }
     }
 }

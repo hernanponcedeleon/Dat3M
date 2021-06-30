@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import java.util.Collection;
 import java.util.List;
 
-// TODO: Reason computation is completely static, which is not correct in all cases
 public class RMWGraph extends MaterializedGraph {
 
     public RMWGraph() { }

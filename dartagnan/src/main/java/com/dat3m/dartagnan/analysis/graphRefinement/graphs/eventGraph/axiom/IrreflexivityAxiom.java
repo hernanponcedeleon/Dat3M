@@ -25,11 +25,6 @@ public class IrreflexivityAxiom extends GraphAxiom {
     }
 
     @Override
-    public void clearViolations() {
-        violatingEdges.clear();
-    }
-
-    @Override
     public boolean checkForViolations() {
         return !violatingEdges.isEmpty();
     }

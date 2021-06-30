@@ -10,7 +10,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class GraphComplexityMeasure {
+/*
+This class computes the "shortest derivation complexity" C on a hierarchy of graphs as follows:
+    - Each base graph G (= non-derived) has complexity C(G) = 0
+    - Each unary graph G = f(A) has complexity C(G) = C(A) + 1
+    - Composition and intersection graphs G = f(A, B) have complexity C(G) = max(C(A), C(B)) + 1
+    - Union graphs G = f(A, B) have complexity C(G) = min(C(A), C(B)) + 1
+    - In case of non-welldefined shortest derivation length, C(G) = Integer.MAXVALUE (symbolizes infinity)
+        - This can happen in recursive definitions like A = A & B, where each derivation infinitely cycles through A
+        - Conjecture: C(G) = infinity => G is empty
+        - Proof: If C(G) = infinity, each derivation has at least infinite length. Due to least fixed point semantics,
+          edges can only be in a graph if they have some finite derivation.
+          The i-th Kleene iteration adds edges of derivation complexity at most i, so no finite number of Kleene iterations
+          will add new edges.
+ */
+public class ShortestDerivationComplexity {
 
     private final Map<EventGraph, Integer> complexityMap = new HashMap<>();
     private final GraphHierarchy hierarchy;
@@ -20,32 +34,33 @@ public class GraphComplexityMeasure {
         return complexityMap;
     }
 
-    public GraphComplexityMeasure(GraphHierarchy hierarchy) {
+    public ShortestDerivationComplexity(GraphHierarchy hierarchy) {
         this.hierarchy = hierarchy;
         computeComplexityMap();
     }
 
     private void computeComplexityMap() {
+        hierarchy.getGraphs().forEach(g -> complexityMap.put(g, Integer.MAX_VALUE));
+
         for (Set<DependencyGraph<EventGraph>.Node> scc : hierarchy.getDependencyGraph().getSCCs()) {
             if (scc.size() == 1) {
                 EventGraph g = scc.stream().findAny().get().getContent();
                 complexityMap.put(g, g.accept(visitor, null, null));
             } else {
-                handleRecursiveDistance(scc);
+                handleComplexityDistance(scc);
             }
         }
     }
 
-    private void handleRecursiveDistance(Set<DependencyGraph<EventGraph>.Node> scc) {
+    private void handleComplexityDistance(Set<DependencyGraph<EventGraph>.Node> scc) {
         List<EventGraph> graphs = scc.stream().map(DependencyGraph.Node::getContent).collect(Collectors.toList());;
         boolean progress;
         do {
             progress = false;
             for (EventGraph g : graphs) {
-                int curComp = complexityMap.getOrDefault(g, Integer.MAX_VALUE);
                 int comp = g.accept(visitor, null, null);
-                complexityMap.put(g, comp);
-                if (comp < curComp) {
+                int oldComp = complexityMap.put(g, comp);
+                if (comp < oldComp) {
                     progress = true;
                 }
             }
@@ -61,8 +76,7 @@ public class GraphComplexityMeasure {
             if (g.isStatic()) {
                 return 0;
             }
-            int comp = g.getDependencies().stream()
-                    .mapToInt(x -> complexityMap.getOrDefault(x, Integer.MAX_VALUE)).max().getAsInt();
+            int comp = g.getDependencies().stream().mapToInt(complexityMap::get).max().getAsInt();
             return comp == Integer.MAX_VALUE ? comp : comp + 1;
         }
 
@@ -70,8 +84,7 @@ public class GraphComplexityMeasure {
             if (g.isStatic()) {
                 return 0;
             }
-            int comp = g.getDependencies().stream()
-                    .mapToInt(x -> complexityMap.getOrDefault(x, Integer.MAX_VALUE)).min().getAsInt();
+            int comp = g.getDependencies().stream().mapToInt(complexityMap::get).min().getAsInt();
             return comp == Integer.MAX_VALUE ? comp : comp + 1;
         }
 

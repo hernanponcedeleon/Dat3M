@@ -47,6 +47,54 @@ public class GraphHierarchy {
 
     // ==========================================
 
+    // ============== Initialization =============
+
+    public void constructFromModel(ExecutionModel executionModel) {
+        // Initializes in topological order!
+        for (Set<DependencyGraph<EventGraph>.Node> scc : dependencyGraph.getSCCs()) {
+            Set<EventGraph> recGrp = scc.stream().map(DependencyGraph.Node::getContent).collect(Collectors.toSet());
+            if (recGrp.size() == 1) {
+                recGrp.stream().findAny().get().constructFromModel(executionModel);
+            } else {
+                initRecursively(recGrp.stream().findAny().get(), executionModel, recGrp, new HashSet<>());
+
+                // For all recursive relations, initialize the propagation
+                //TODO: Maybe copy all graphs into a new set and reuse that set
+                recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
+                    for(EventGraph dep : x.getDependencies()) {
+                        createPropagationTask(dep, x, new ArrayList<>(dep.setView()), 0);
+                    }
+                });
+
+                // Propagate within this recursive group
+                while (!tasks.isEmpty()) {
+                    handleTask(tasks.poll(), true);
+                }
+            }
+        }
+    }
+
+    // --------------------------------------------
+
+    private void initRecursively(EventGraph graph, ExecutionModel executionModel, Set<EventGraph> recGroup, Set<EventGraph> initialized) {
+        if (initialized.contains(graph) || !recGroup.contains(graph)) {
+            return;
+        }
+        if (graph instanceof RecursiveGraph) {
+            graph.constructFromModel(executionModel);
+            initialized.add(graph);
+        }
+        for (EventGraph dep : graph.getDependencies()) {
+            initRecursively(dep, executionModel, recGroup, initialized);
+        }
+        if (!initialized.contains(graph)) {
+            graph.constructFromModel(executionModel);
+            initialized.add(graph);
+        }
+    }
+
+    // ==========================================
+
     // ============== Propagation ===============
 
     // Should only ever be used on non-derived Graphs
@@ -109,54 +157,6 @@ public class GraphHierarchy {
 
     // ==========================================
 
-    // ============== Initialization =============
-
-    public void constructFromModel(ExecutionModel executionModel) {
-        // Initializes in topological order!
-        for (Set<DependencyGraph<EventGraph>.Node> scc : dependencyGraph.getSCCs()) {
-            Set<EventGraph> recGrp = scc.stream().map(DependencyGraph.Node::getContent).collect(Collectors.toSet());
-            if (recGrp.size() == 1) {
-                recGrp.stream().findAny().get().constructFromModel(executionModel);
-            } else {
-                initRecursively(recGrp.stream().findAny().get(), executionModel, recGrp, new HashSet<>());
-
-                // For all recursive relations, initialize the propagation
-                //TODO: Maybe copy all graphs into a new set and reuse that set
-                recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
-                    for(EventGraph dep : x.getDependencies()) {
-                        createPropagationTask(dep, x, new ArrayList<>(dep.setView()), 0);
-                    }
-                });
-
-                // Propagate within this recursive group
-                while (!tasks.isEmpty()) {
-                    handleTask(tasks.poll(), true);
-                }
-            }
-        }
-    }
-
-    // --------------------------------------------
-
-    private void initRecursively(EventGraph graph, ExecutionModel executionModel, Set<EventGraph> recGroup, Set<EventGraph> initialized) {
-        if (initialized.contains(graph) || !recGroup.contains(graph)) {
-            return;
-        }
-        if (graph instanceof RecursiveGraph) {
-            graph.constructFromModel(executionModel);
-            initialized.add(graph);
-        }
-        for (EventGraph dep : graph.getDependencies()) {
-            initRecursively(dep, executionModel, recGroup, initialized);
-        }
-        if (!initialized.contains(graph)) {
-            graph.constructFromModel(executionModel);
-            initialized.add(graph);
-        }
-    }
-
-    // ==========================================
-
     // ============== Listeners =================
 
     public boolean addGraphListener(EventGraph graph, GraphListener listener) {
@@ -208,4 +208,6 @@ public class GraphHierarchy {
         }
 
     }
+
+    // =======================================================
 }

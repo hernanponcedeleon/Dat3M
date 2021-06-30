@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.stream.Stream;
 
 public class IntersectionGraph extends BinaryEventGraph {
 
@@ -60,13 +60,21 @@ public class IntersectionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new IntersectionIterator();
+    public Stream<Edge> edgeStream() {
+        if (first.getEstimatedSize() <= second.getEstimatedSize()) {
+            return first.edgeStream().filter(second::contains);
+        } else {
+            return second.edgeStream().filter(first::contains);
+        }
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return new IntersectionIterator(e, dir);
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        if (first.getEstimatedSize(e, dir) <= second.getEstimatedSize(e, dir)) {
+            return first.edgeStream(e, dir).filter(second::contains);
+        } else {
+            return second.edgeStream(e, dir).filter(first::contains);
+        }
     }
 
     @Override
@@ -85,58 +93,4 @@ public class IntersectionGraph extends BinaryEventGraph {
         return visitor.visitIntersection(this, data, context);
     }
 
-
-    private class IntersectionIterator implements Iterator<Edge> {
-
-        private final Iterator<Edge> innerIterator;
-        private final EventGraph other;
-
-        private Edge nextEdge;
-
-        public IntersectionIterator() {
-            if (first.getEstimatedSize() <= second.getEstimatedSize()) {
-                innerIterator = first.edgeIterator();
-                other = second;
-            } else {
-                innerIterator = second.edgeIterator();
-                other = first;
-            }
-            nextInternal();
-        }
-
-        public IntersectionIterator(EventData e, EdgeDirection dir) {
-            if (first.getEstimatedSize(e, dir) <= second.getEstimatedSize(e, dir)) {
-                innerIterator = first.edgeIterator(e, dir);
-                other = second;
-            } else {
-                innerIterator = second.edgeIterator(e, dir);
-                other = first;
-            }
-            nextInternal();
-        }
-
-        private void nextInternal() {
-            nextEdge = null;
-            while (innerIterator.hasNext() && nextEdge == null) {
-                nextEdge = innerIterator.next();
-                Timestamp t = other.getTime(nextEdge);
-                if (t.isInvalid()) {
-                    nextEdge = null;
-                } else if (nextEdge.getTime().compareTo(t) > 0)
-                    nextEdge = nextEdge.withTimestamp(t);
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextEdge != null;
-        }
-
-        @Override
-        public Edge next() {
-            Edge e = nextEdge;
-            nextInternal();
-            return e;
-        }
-    }
 }

@@ -36,9 +36,7 @@ public abstract class DepGraph extends MaterializedGraph {
 
         Map<EventData, Set<EventData>> depMap = getDependencyMap();
         for (EventData e1: depMap.keySet()) {
-            for (EventData e2 : depMap.get(e1)) {
-                simpleGraph.add(new Edge(e2, e1));
-            }
+            depMap.get(e1).forEach(e2 -> simpleGraph.add(new Edge(e2, e1)));
         }
     }
 }

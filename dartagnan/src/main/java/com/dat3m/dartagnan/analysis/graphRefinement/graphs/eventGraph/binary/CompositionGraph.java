@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -42,15 +43,11 @@ public class CompositionGraph extends MaterializedGraph {
         ArrayList<Edge> newEdges = new ArrayList<>();
         if (changedGraph == first) {
             // (A+R);B = A;B + R;B
-            for (Edge e : addedEdges) {
-                updateFirst(e, newEdges);
-            }
+            addedEdges.forEach(e -> updateFirst(e, newEdges));
         }
         if (changedGraph == second) {
             // A;(B+R) = A;B + A;R
-            for (Edge e : addedEdges) {
-                updateSecond(e, newEdges);
-            }
+            addedEdges.forEach(e -> updateSecond(e, newEdges));
         }
         // For A;A, we have the following:
         // (A+R);(A+R) = A;A + A;R + R;A + R;R = A;A + (A+R);R + R;(A+R)
@@ -59,33 +56,24 @@ public class CompositionGraph extends MaterializedGraph {
     }
 
     private void updateFirst(Edge a, Collection<Edge> addedEdges) {
-        for (Edge b : second.outEdges(a.getSecond())) {
-            Edge edge = new Edge(a.getFirst(), b.getSecond(), a.getTime());
-            if (simpleGraph.add(edge))
-                addedEdges.add(edge);
-        }
+        second.edgeStream(a.getSecond(), EdgeDirection.Outgoing)
+                .map(b -> new Edge(a.getFirst(), b.getSecond(), a.getTime()))
+                .filter(simpleGraph::add).forEach(addedEdges::add);
     }
 
     private void updateSecond(Edge b, Collection<Edge> addedEdges) {
-        for (Edge a : first.inEdges(b.getFirst())) {
-            Edge edge = new Edge(a.getFirst(), b.getSecond(), b.getTime());
-            if (simpleGraph.add(edge))
-                addedEdges.add(edge);
-        }
+        first.edgeStream(b.getFirst(), EdgeDirection.Ingoing)
+                .map(a -> new Edge(a.getFirst(), b.getSecond(), b.getTime()))
+                .filter(simpleGraph::add).forEach(addedEdges::add);
     }
 
 
     private void initialPopulation() {
-
         Set<Edge> fakeSet = SetUtil.fakeSet();
         if (first.getEstimatedSize() <= second.getEstimatedSize()) {
-            for (Edge a : first.edges()) {
-                updateFirst(a, fakeSet);
-            }
+            first.edgeStream().forEach(a -> updateFirst(a, fakeSet));
         } else {
-            for (Edge b : second.edges()) {
-                updateSecond(b, fakeSet);
-            }
+            second.edgeStream().forEach(b -> updateSecond(b, fakeSet));
         }
     }
 

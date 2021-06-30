@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -8,7 +7,10 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
+// NOTE: Unlike LocRel, this graph is reflexive!
 public class LocationGraph extends StaticEventGraph {
 
     private Map<BigInteger, Set<EventData>> addrEventsMap;
@@ -20,15 +22,16 @@ public class LocationGraph extends StaticEventGraph {
 
     @Override
     public boolean contains(EventData a, EventData b) {
-        return a.getAccessedAddress().equals(b.getAccessedAddress());
+        return a.isMemoryEvent() && b.isMemoryEvent() && a.getAccessedAddress().equals(b.getAccessedAddress());
     }
 
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
         if (!e.isMemoryEvent())
             return 0;
-        return context.getAddressWritesMap().get(e.getAccessedAddress()).size()
-                + context.getAddressReadsMap().get(e.getAccessedAddress()).size() - 1;
+        return addrEventsMap.get(e.getAccessedAddress()).size();
+        /*return context.getAddressWritesMap().get(e.getAccessedAddress()).size()
+                + context.getAddressReadsMap().get(e.getAccessedAddress()).size() - 1;*/
     }
 
 
@@ -37,6 +40,7 @@ public class LocationGraph extends StaticEventGraph {
         super.constructFromModel(context);
         addrEventsMap = new HashMap<>(context.getAddressReadsMap().size());
         for (BigInteger addr : context.getAddressReadsMap().keySet()) {
+            // TODO: This can be improved via a disjoint union class
             Set<EventData> events = new HashSet<>(context.getAddressReadsMap().get(addr));
             events.addAll(context.getAddressWritesMap().get(addr));
             size += events.size() * events.size();
@@ -45,74 +49,19 @@ public class LocationGraph extends StaticEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new LocIterator();
+    public Stream<Edge> edgeStream() {
+        return addrEventsMap.values().stream().flatMap(Collection::stream)
+                .flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return  e.isMemoryEvent() ? new LocIterator(e, dir) : Collections.emptyIterator();
-    }
-
-    private class LocIterator extends EdgeIterator {
-
-        private Iterator<BigInteger> addressIterator;
-        private BigInteger curAddress;
-        private Iterator<EventData> firstIterator;
-        private Iterator<EventData> secondIterator;
-
-        public LocIterator() {
-            super(true);
-            addressIterator = addrEventsMap.keySet().iterator();
-            nextAddress();
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        if (!e.isMemoryEvent()) {
+            return Stream.empty();
         }
-
-        public LocIterator(EventData fixed, EdgeDirection dir) {
-            super(fixed, dir);
-            curAddress = fixed.getAccessedAddress();
-            if(dir == EdgeDirection.Ingoing) {
-                resetFirst();
-            } else {
-                resetSecond();
-            }
-        }
-
-        private void nextAddress() {
-            if (addressIterator.hasNext()) {
-                curAddress = addressIterator.next();
-                resetFirst();
-                resetSecond();
-            } else {
-                first = second = null;
-            }
-
-        }
-
-        @Override
-        protected void resetFirst() {
-            firstIterator = addrEventsMap.get(curAddress).iterator();
-            first = firstIterator.next(); // We can do this because every address has at least one event
-        }
-
-        @Override
-        protected void resetSecond() {
-            secondIterator = addrEventsMap.get(curAddress).iterator();
-            second = secondIterator.next();
-        }
-
-        @Override
-        protected void nextFirst() {
-            first = firstIterator.hasNext() ? firstIterator.next() : null;
-            if (first == null && second == null)
-                nextAddress();
-        }
-
-        @Override
-        protected void nextSecond() {
-            second = secondIterator.hasNext() ? secondIterator.next() : null;
-            if (first == null && second == null)
-                nextAddress();
-        }
+        Function<EventData, Edge> edgeMapping = dir == EdgeDirection.Outgoing ?
+                (x -> new Edge(e, x)) : (x -> new Edge(x, e));
+        return addrEventsMap.get(e.getAccessedAddress()).stream().map(edgeMapping);
     }
 
 }

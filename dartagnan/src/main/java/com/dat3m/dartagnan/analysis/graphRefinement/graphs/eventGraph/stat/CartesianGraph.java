@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -9,9 +8,8 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class CartesianGraph extends StaticEventGraph {
 
@@ -68,60 +66,16 @@ public class CartesianGraph extends StaticEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new CartesianIterator();
+    public Stream<Edge> edgeStream() {
+        return firstEvents.stream().flatMap(a -> secondEvents.stream().map(b -> new Edge(a, b)));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         if (dir == EdgeDirection.Outgoing) {
-            return first.filter(e.getEvent()) ? new CartesianIterator(e, dir) : Collections.emptyIterator();
+            return first.filter(e.getEvent()) ? secondEvents.stream().map(b -> new Edge(e, b)) : Stream.empty();
         } else {
-            return second.filter(e.getEvent()) ? new CartesianIterator(e, dir) : Collections.emptyIterator();
-        }
-    }
-
-
-    private class CartesianIterator extends EdgeIterator {
-
-        Iterator<EventData> firstIt;
-        Iterator<EventData> secondIt;
-
-        public CartesianIterator() {
-            super(true);
-            if (!firstEvents.isEmpty() && !secondEvents.isEmpty()) {
-                autoInit();
-            }
-        }
-
-        public CartesianIterator(EventData fixed, EdgeDirection dir) {
-            super(fixed, dir);
-            if (!firstEvents.isEmpty() && !secondEvents.isEmpty()) {
-                autoInit();
-            }
-        }
-
-
-        @Override
-        protected void resetFirst() {
-            firstIt = firstEvents.iterator();
-            first = firstIt.next();
-        }
-
-        @Override
-        protected void resetSecond() {
-            secondIt = secondEvents.iterator();
-            second = secondIt.next();
-        }
-
-        @Override
-        protected void nextFirst() {
-            first = firstIt.hasNext() ? firstIt.next() : null;
-        }
-
-        @Override
-        protected void nextSecond() {
-            second = secondIt.hasNext() ? secondIt.next() : null;
+            return second.filter(e.getEvent()) ? firstEvents.stream().map(a -> new Edge(a, e)) : Stream.empty();
         }
     }
 }

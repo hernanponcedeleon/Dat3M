@@ -232,7 +232,7 @@ public class Refinement {
                 for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
                     if (REF_PRINT_STATISTICS) {
                         System.out.println("Violation size: " + cube.getSize());
-                        //System.out.println(cube);
+                        System.out.println(cube);
                     }
                     Conjunction<CoreLiteral> excludedRf = cube.removeIf(x -> !(x instanceof RfLiteral));
                     excludedRfs.add(excludedRf);
@@ -387,11 +387,11 @@ public class Refinement {
 
 
     private static void printStats(Conjunction<CoreLiteral> cube) {
-        System.out.print(cube);
+        /*System.out.print(cube);
         if (cube.getLiterals().stream().anyMatch(x -> ((RfLiteral)x).getEdge().isBackwardEdge())) {
             System.out.print(": future read");
         }
-        System.out.println();
+        System.out.println();*/
     }
 
 }

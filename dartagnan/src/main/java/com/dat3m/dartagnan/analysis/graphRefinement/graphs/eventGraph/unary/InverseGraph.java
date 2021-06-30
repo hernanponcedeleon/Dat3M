@@ -7,12 +7,14 @@ import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
+import com.google.common.collect.Iterators;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class InverseGraph extends AbstractEventGraph {
 
@@ -76,20 +78,31 @@ public class InverseGraph extends AbstractEventGraph {
         return inner.getMaxSize(e, dir.flip());
     }
 
+
+    @Override
+    public Stream<Edge> edgeStream() {
+        return inner.edgeStream().map(Edge::getInverse);
+    }
+
+    @Override
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        return inner.edgeStream(e, dir.flip()).map(Edge::getInverse);
+    }
+
     @Override
     public Iterator<Edge> edgeIterator() {
-        return new InverseIterator();
+        return Iterators.transform(inner.edgeIterator(), Edge::getInverse);
     }
 
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return new InverseIterator(e, dir);
+        return Iterators.transform(inner.edgeIterator(e, dir.flip()), Edge::getInverse);
     }
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-            addedEdges = addedEdges.stream().map(Edge::getInverse).collect(Collectors.toSet());
+            addedEdges = addedEdges.stream().map(Edge::getInverse).collect(Collectors.toList());
         } else {
             addedEdges.clear();
         }
@@ -99,29 +112,5 @@ public class InverseGraph extends AbstractEventGraph {
     @Override
     public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
         return visitor.visitInverse(this, data, context);
-    }
-
-
-    private class InverseIterator implements Iterator<Edge> {
-
-        private final Iterator<Edge> innerIterator;
-
-        public InverseIterator() {
-            innerIterator = inner.edgeIterator();
-        }
-
-        public InverseIterator(EventData e, EdgeDirection dir) {
-            innerIterator = inner.edgeIterator(e, dir.flip());
-        }
-
-        @Override
-        public boolean hasNext() {
-            return innerIterator.hasNext();
-        }
-
-        @Override
-        public Edge next() {
-            return innerIterator.next().getInverse();
-        }
     }
 }

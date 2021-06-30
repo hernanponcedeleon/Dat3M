@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration;
 
 
+import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 
 import java.util.Iterator;
+
+//TODO: All usages of this class have been replaced by streams for easy maintenance
+// This class is not used right now and may be deleted later.
 
 // Correctly implementing this class is highly subtle and error prone.
 // It is advisable to read the specifications below.

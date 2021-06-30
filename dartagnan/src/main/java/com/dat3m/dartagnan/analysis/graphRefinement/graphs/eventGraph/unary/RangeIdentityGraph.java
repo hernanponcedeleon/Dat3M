@@ -26,17 +26,15 @@ public class RangeIdentityGraph extends MaterializedGraph {
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
-
-        for (Edge e : inner) {
-            simpleGraph.add(new Edge(e.getSecond(), e.getSecond()));
-        }
+        inner.edgeStream().forEach(e -> simpleGraph.add(new Edge(e.getSecond(), e.getSecond())));
     }
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-            addedEdges = addedEdges.stream().map(x -> new Edge(x.getSecond(), x.getSecond(), x.getTime()))
-                    .filter(simpleGraph::add).collect(Collectors.toSet());
+            addedEdges = addedEdges.stream()
+                    .map(x -> new Edge(x.getSecond(), x.getSecond(), x.getTime()))
+                    .filter(simpleGraph::add).collect(Collectors.toList());
         } else {
             addedEdges.clear();
         }

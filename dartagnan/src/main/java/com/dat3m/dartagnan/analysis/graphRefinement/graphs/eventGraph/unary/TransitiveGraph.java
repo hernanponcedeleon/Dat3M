@@ -39,9 +39,7 @@ public class TransitiveGraph extends MaterializedGraph {
     private void initialPopulation() {
         //TODO: This is inefficient for many edges (the likely default case!)
         Set<Edge> fakeSet = SetUtil.fakeSet();
-        for (Edge e : inner.edges()) {
-            updateEdgeRecursive(e, fakeSet);
-        }
+        inner.edgeStream().forEach(e -> updateEdge(e, fakeSet));
     }
 
     private void updateEdgeRecursive(Edge edge, Set<Edge> addedEdges) {
@@ -67,14 +65,32 @@ public class TransitiveGraph extends MaterializedGraph {
         }
     }
 
+    private void updateEdge(Edge edge, Set<Edge> addedEdges) {
+        if (!simpleGraph.add(edge))
+            return;
+        addedEdges.add(edge);
+
+        inEdgeStream(edge.getFirst()).forEach(inEdge -> {
+            Edge newEdge = new Edge(inEdge.getFirst(), edge.getSecond(), edge.getTime());
+            if (simpleGraph.add(newEdge)) {
+                addedEdges.add(newEdge);
+                outEdgeStream(edge.getSecond())
+                        .map(outEdge -> new Edge(inEdge.getFirst(), outEdge.getSecond(), edge.getTime()))
+                        .filter(simpleGraph::add).forEach(addedEdges::add);
+            }
+        });
+
+        outEdgeStream(edge.getSecond())
+                .map(outEdge -> new Edge(edge.getFirst(), outEdge.getSecond(), edge.getTime()))
+                .filter(simpleGraph::add).forEach(addedEdges::add);
+    }
+
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         Set<Edge> newEdges = new HashSet<>();
         if (changedGraph == inner) {
-            for (Edge e : addedEdges) {
-                updateEdgeRecursive(e, newEdges);
-            }
+            addedEdges.forEach(e -> updateEdge(e, newEdges));
         }
         return newEdges;
     }

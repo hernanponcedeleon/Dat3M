@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.stream.Stream;
 
 public class DifferenceGraph extends BinaryEventGraph {
 
@@ -57,13 +57,13 @@ public class DifferenceGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new DifferenceIterator();
+    public Stream<Edge> edgeStream() {
+        return first.edgeStream().filter(edge -> !second.contains(edge));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return new DifferenceIterator(e, dir);
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        return first.edgeStream(e, dir).filter(edge -> !second.contains(edge));
     }
 
     @Override
@@ -84,41 +84,4 @@ public class DifferenceGraph extends BinaryEventGraph {
         return visitor.visitDifference(this, data, context);
     }
 
-
-    private class DifferenceIterator implements Iterator<Edge> {
-
-        private final Iterator<Edge> innerIterator;
-        private Edge nextEdge;
-
-        public DifferenceIterator() {
-            innerIterator = first.edgeIterator();
-            nextInternal();
-        }
-
-        public DifferenceIterator(EventData e, EdgeDirection dir) {
-            innerIterator = first.edgeIterator(e, dir);
-            nextInternal();
-        }
-
-        private void nextInternal() {
-            nextEdge = null;
-            while (innerIterator.hasNext() && nextEdge == null) {
-                nextEdge = innerIterator.next();
-                if (second.contains(nextEdge))
-                    nextEdge = null;
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextEdge != null;
-        }
-
-        @Override
-        public Edge next() {
-            Edge e = nextEdge;
-            nextInternal();
-            return e;
-        }
-    }
 }

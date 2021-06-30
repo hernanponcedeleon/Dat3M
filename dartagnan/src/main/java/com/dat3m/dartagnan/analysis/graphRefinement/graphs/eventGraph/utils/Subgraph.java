@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class Subgraph extends AbstractEventGraph {
 
@@ -72,6 +73,19 @@ public class Subgraph extends AbstractEventGraph {
     }
 
     @Override
+    public Stream<Edge> edgeStream() {
+        return events.stream().flatMap(e -> sourceGraph.outEdgeStream(e).filter(edge -> events.contains(edge.getSecond())));
+    }
+
+    @Override
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        if (!events.contains(e)) {
+            return Stream.empty();
+        }
+        return sourceGraph.edgeStream(e, dir).filter(edge -> events.contains(edge.getSecond()));
+    }
+
+    /*@Override
     public Iterator<Edge> edgeIterator() {
         return new SubGraphIterator();
     }
@@ -79,7 +93,7 @@ public class Subgraph extends AbstractEventGraph {
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
         return new SubGraphIterator(e, dir);
-    }
+    }*/
 
 
 

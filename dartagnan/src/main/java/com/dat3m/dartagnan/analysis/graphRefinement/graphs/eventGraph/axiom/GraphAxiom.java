@@ -6,13 +6,14 @@ import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 public abstract class GraphAxiom implements GraphListener, Dependent<EventGraph> {
     protected ExecutionModel context;
     protected final EventGraph inner;
+
+    public EventGraph getConstrainedGraph() { return inner; }
 
     public List<EventGraph> getDependencies() {
         return Collections.singletonList(inner);
@@ -22,19 +23,11 @@ public abstract class GraphAxiom implements GraphListener, Dependent<EventGraph>
         this.inner = inner;
     }
 
-    public abstract void clearViolations();
-    public abstract boolean checkForViolations();
-    public abstract List<List<Edge>> getViolations();
-
     public void initialize(ExecutionModel context) {
         this.context = context;
     }
 
-    @Override
-    public abstract void onGraphChanged(EventGraph graph, Collection<Edge> addedEdges);
+    public abstract boolean checkForViolations();
+    public abstract List<List<Edge>> getViolations();
 
-    @Override
-    public void backtrack() {
-
-    }
 }

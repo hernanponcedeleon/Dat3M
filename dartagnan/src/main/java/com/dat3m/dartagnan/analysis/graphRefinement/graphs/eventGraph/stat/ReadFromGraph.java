@@ -1,15 +1,11 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.google.common.collect.Iterators;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.stream.Stream;
 
 public class ReadFromGraph extends StaticEventGraph {
 
@@ -39,79 +35,19 @@ public class ReadFromGraph extends StaticEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new RfIterator();
+    public Stream<Edge> edgeStream() {
+        return context.getReadWriteMap().entrySet().stream().map(x -> new Edge(x.getValue(), x.getKey()));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         if (e.isWrite()) {
-            return dir == EdgeDirection.Outgoing ? new RfIterator(e, dir) : Collections.emptyIterator();
+            return dir == EdgeDirection.Ingoing ? Stream.empty() :
+                    context.getWriteReadsMap().get(e).stream().map(read -> new Edge(e, read));
         } else if (e.isRead()) {
             return dir == EdgeDirection.Ingoing ?
-                Iterators.singletonIterator(new Edge(e.getReadFrom(), e)) : Collections.emptyIterator();
+                    Stream.of(new Edge(e.getReadFrom(), e)) : Stream.empty();
         }
-        return Collections.emptyIterator();
-    }
-
-
-    private class RfIterator extends EdgeIterator {
-
-        private Iterator<EventData> readIterator;
-        private Iterator<Map.Entry<EventData, EventData>> readWriteIterator;
-
-        public RfIterator() {
-            super(true);
-            readWriteIterator = context.getReadWriteMap().entrySet().iterator();
-            nextSecond();
-        }
-
-
-        public RfIterator(EventData fixed, EdgeDirection dir) {
-            super(fixed, dir);
-            // We assume that the fixed event is a write and we look for outgoing edges.
-            // In all other cases, the iterator would only produce one or no element.
-            // And we expect them to be covered explicitly
-            if (!firstIsFixed && !fixed.isWrite())
-                throw new IllegalArgumentException("Iteration from " + fixed + " is not supported");
-            readIterator = context.getWriteReadsMap().get(first).iterator();
-            nextSecond();
-        }
-
-        // The following 3 methods should never get called
-        @Override
-        protected void resetFirst() {
-            first = null;
-            //throw new UnsupportedOperationException("This should never happen");
-        }
-
-        @Override
-        protected void resetSecond() {
-            second = null;
-            //throw new UnsupportedOperationException("This should never happen");
-        }
-
-        @Override
-        protected void nextFirst() {
-            first = null;
-            //throw new UnsupportedOperationException("This should never happen");
-        }
-
-        @Override
-        protected void nextSecond() {
-            if (readIterator != null) {
-                // If a write is fixed, iterate over all reading reads
-                second = readIterator.hasNext() ? readIterator.next() : null;
-            } else {
-                // If no write is fixed, instead iterate to the next read and its sole write
-                if (readWriteIterator.hasNext()) {
-                    Map.Entry<EventData, EventData> entry = readWriteIterator.next();
-                    first = entry.getValue();
-                    second = entry.getKey();
-                } else {
-                    first = second = null;
-                }
-            }
-        }
+        return Stream.empty();
     }
 }

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.utils.collections;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 
 // This is essentially an array with more functionality.
@@ -518,6 +519,11 @@ public final class Vect<T> extends AbstractList<T> {
     @Override
     public Iterator<T> iterator() {
         return listIterator();
+    }
+
+    @Override
+    public Stream<T> stream() {
+        return Arrays.stream(array, 0, size());
     }
 
     @Override

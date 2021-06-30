@@ -22,6 +22,8 @@ import com.google.common.collect.Maps;
 
 import java.util.*;
 
+import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm.findShortestPathBiDir;
+
 public class Reasoner {
 
     private final ExecutionGraph execGraph;
@@ -182,7 +184,7 @@ public class Reasoner {
 
             // We try to compute a shortest reason based on the distance to the base graphs
             List<EventGraph> deps = new ArrayList<>(graph.getDependencies());
-            deps.sort(Comparator.comparingInt(execGraph::getMinComplexity));
+            deps.sort(Comparator.comparingInt(execGraph::getShortestDerivationComplexity));
 
             for (EventGraph g : deps) {
                 if (g.contains(edge)) {
@@ -313,7 +315,7 @@ public class Reasoner {
 
             EventGraph inner = graph.getDependencies().get(0);
             reason = Conjunction.TRUE;
-            for (Edge e : inner.findShortestPathBiDir(edge.getFirst(), edge.getSecond())) {
+            for (Edge e : findShortestPathBiDir(inner, edge.getFirst(), edge.getSecond())) {
                 reason = reason.and(inner.accept(this, e, unused));
             }
             return reason;

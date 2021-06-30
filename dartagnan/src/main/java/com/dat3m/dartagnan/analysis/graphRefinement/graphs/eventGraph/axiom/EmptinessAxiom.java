@@ -38,10 +38,6 @@ public class EmptinessAxiom extends GraphAxiom {
         violatingEdges.removeIf(Timeable::isInvalid);
     }
 
-    @Override
-    public void clearViolations() {
-        violatingEdges.clear();
-    }
 
     @Override
     public boolean checkForViolations() {

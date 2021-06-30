@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.stream.Stream;
 
 public class UnionGraph extends BinaryEventGraph {
 
@@ -60,13 +60,17 @@ public class UnionGraph extends BinaryEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new UnionIterator();
+    public Stream<Edge> edgeStream() {
+        EventGraph a = first.getEstimatedSize() >= second.getEstimatedSize() ? first : second;
+        EventGraph b = a == first ? second : first;
+        return Stream.concat(a.edgeStream(), b.edgeStream().filter(edge -> !a.contains(edge)));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return new UnionIterator(e, dir);
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        EventGraph a = first.getEstimatedSize(e, dir) >= second.getEstimatedSize(e, dir) ? first : second;
+        EventGraph b = a == first ? second : first;
+        return Stream.concat(a.edgeStream(e, dir), b.edgeStream(e, dir).filter(edge -> !a.contains(edge)));
     }
 
     @Override
@@ -85,72 +89,5 @@ public class UnionGraph extends BinaryEventGraph {
     @Override
     public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
         return visitor.visitUnion(this, data, context);
-    }
-
-    private class UnionIterator implements Iterator<Edge> {
-
-        private final Iterator<Edge> firstIterator;
-        private final Iterator<Edge> secondIterator;
-        private final EventGraph firstSet;
-
-        private Edge nextEdge;
-
-        public UnionIterator() {
-            if (first.getEstimatedSize() < second.getEstimatedSize()) {
-                firstIterator = second.edgeIterator();
-                secondIterator = first.edgeIterator();
-                firstSet = second;
-            } else {
-                firstIterator = first.edgeIterator();
-                secondIterator = second.edgeIterator();
-                firstSet = first;
-            }
-            nextInternal();
-        }
-
-        public UnionIterator(EventData e, EdgeDirection dir) {
-            if (first.getEstimatedSize(e, dir) < second.getEstimatedSize(e, dir)) {
-                firstIterator = second.edgeIterator(e, dir);
-                secondIterator = first.edgeIterator(e, dir);
-                firstSet = second;
-            } else {
-                firstIterator = first.edgeIterator(e, dir);
-                secondIterator = second.edgeIterator(e, dir);
-                firstSet = first;
-            }
-            nextInternal();
-        }
-
-        private void nextInternal() {
-            if (firstIterator.hasNext()) {
-                nextEdge = firstIterator.next();
-                // We take a look into the second set to see if
-                // we can actually reduce the timestamp
-                if (!nextEdge.getTime().isInitial()) {
-                    Timestamp t = second.getTime(nextEdge);
-                    if (t.compareTo(nextEdge.getTime()) < 0)
-                        nextEdge = nextEdge.withTimestamp(t);
-                }
-            } else {
-                nextEdge = null;
-                while (nextEdge == null && secondIterator.hasNext()) {
-                    nextEdge = secondIterator.next();
-                    if (firstSet.contains(nextEdge))
-                        nextEdge = null;
-                }
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextEdge != null;
-        }
-
-        @Override
-        public Edge next() {
-            Edge e = nextEdge;
-            nextInternal();
-            return e;
-        }
     }
 }

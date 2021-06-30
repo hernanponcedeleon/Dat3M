@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.EdgeIterator;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class ProgramOrderGraph extends StaticEventGraph {
 
@@ -45,85 +44,17 @@ public class ProgramOrderGraph extends StaticEventGraph {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator() {
-        return new PoIterator();
+    public Stream<Edge> edgeStream() {
+        return context.getEventList().stream().flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return new PoIterator(e, dir);
-    }
-
-    private class PoIterator extends EdgeIterator {
-
-        private final List<Thread> threads;
-        private int threadIndex;
-        private List<EventData> eventList;
-        private int i;
-        private int j;
-
-        public PoIterator() {
-            super(true );
-            threads = context.getThreads();
-            threadIndex = -1;
-            findNextThread();
-        }
-
-        public PoIterator(EventData e, EdgeDirection dir) {
-            super(e, dir);
-            threads = context.getThreads();
-            eventList = threadEventsMap.get(e.getThread());
-            if (firstIsFixed) {
-                first = eventList.get(i = e.getLocalId());
-            } else {
-                second = eventList.get(j = e.getLocalId());
-            }
-            autoInit();
-        }
-
-        private void findNextThread() {
-            first = second = null;
-            while (++threadIndex < threads.size()) {
-                eventList = threadEventsMap.get(threads.get(threadIndex));
-                if (eventList.size() > 1) {
-                    first = eventList.get(i = 0);
-                    second = eventList.get(j = 1);
-                    break;
-                }
-            }
-        }
-
-        // We operate under the assumption that on ResetX not both <first> and <second> are NULL.
-        // This is because we do not use autoInit().
-        @Override
-        protected void resetFirst() {
-            if (0 < j) {
-                first = eventList.get(i = 0);
-            }
-        }
-
-        @Override
-        protected void resetSecond() {
-            if(i + 1 < eventList.size()) {
-                second = eventList.get(j = i + 1);
-            }
-        }
-
-        @Override
-        protected void nextFirst() {
-            int bound = second == null ? eventList.size() : j;
-            first = (++i < bound) ? eventList.get(i) : null;
-
-            if (first == null && second == null)
-                findNextThread();
-        }
-
-        @Override
-        protected void nextSecond() {
-            second = (++j < eventList.size()) ? eventList.get(j) : null;
-
-            if (first == null && second == null)
-                findNextThread();
+    public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
+        List<EventData> threadEvents = context.getThreadEventsMap().get(e.getThread());
+        if (dir == EdgeDirection.Outgoing) {
+            return threadEvents.subList(e.getLocalId() + 1, threadEvents.size()).stream().map(x -> new Edge(e, x));
+        } else {
+            return threadEvents.subList(0, e.getLocalId()).stream().map(x -> new Edge(x, e));
         }
     }
 }
