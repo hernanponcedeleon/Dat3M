@@ -12,22 +12,22 @@ public class GlobalSettings {
     public static final boolean ATOMIC_AS_LOCK = false;
 
     // === WMM Assumptions ===
-    public static final boolean ASSUME_LOCAL_CONSISTENCY = false;
-    public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = false;
+    public static final boolean ASSUME_LOCAL_CONSISTENCY = true;
+    public static final boolean PERFORM_ATOMIC_BLOCK_OPTIMIZATION = true;
 
     // === Encoding ===
-    public static final boolean FIXED_MEMORY_ENCODING = false;
-    public static final boolean MERGE_CF_VARS = false;
+    public static final boolean FIXED_MEMORY_ENCODING = true;
+    public static final boolean MERGE_CF_VARS = true;
     public static final boolean ANTISYMM_CO = false;
 
     // === BranchEquivalence ===
-    public static final boolean MERGE_BRANCHES = false;
+    public static final boolean MERGE_BRANCHES = true;
     public static final boolean ALWAYS_SPLIT_ON_JUMP = false;
 
     // === Static analysis ===
-    public static final boolean PERFORM_DEAD_CODE_ELIMINATION = false;
-    public static final boolean PERFORM_REORDERING = false;
-    public static final boolean DETERMINISTIC_REORDERING = false;
+    public static final boolean PERFORM_DEAD_CODE_ELIMINATION = true;
+    public static final boolean PERFORM_REORDERING = true;
+    public static final boolean DETERMINISTIC_REORDERING = true;
 
     // --------------------
 
@@ -38,7 +38,7 @@ public class GlobalSettings {
     public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
     // === Testing ===
-    public static final boolean USE_BUGGY_ALIAS_ANALYSIS = true;
+    public static final boolean USE_BUGGY_ALIAS_ANALYSIS = false;
 
     public static void LogGlobalSettings() {
     	logger.info("Z3 version: " + Version.getFullVersion());
