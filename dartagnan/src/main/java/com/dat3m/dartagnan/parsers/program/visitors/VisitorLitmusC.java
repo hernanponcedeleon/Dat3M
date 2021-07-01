@@ -183,19 +183,6 @@ public class VisitorLitmusC
     }
 
     @Override
-    public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
-        ExprInterface expr = (ExprInterface) ctx.re().accept(this);
-        Skip exitEvent = new Skip();
-        While whileEvent = new While(expr, exitEvent);
-        programBuilder.addChild(currentThread, whileEvent);
-
-        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
-            expressionContext.accept(this);
-
-        return programBuilder.addChild(currentThread, exitEvent);
-    }
-
-    @Override
     public Object visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
     	ExprInterface expr = (ExprInterface) ctx.re().accept(this);
 

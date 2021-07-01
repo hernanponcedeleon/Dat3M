@@ -39,12 +39,6 @@ threadArguments
 expression
     :   nre Semi
     |   ifExpression
-    |   whileExpression
-    ;
-
-whileExpression
-    :   While LPar re RPar expression
-    |   While LPar re RPar LBrace expression* RBrace
     ;
 
 ifExpression
@@ -259,10 +253,6 @@ comment
 
 Locations
     :   'locations'
-    ;
-
-While
-    :   'while'
     ;
 
 If

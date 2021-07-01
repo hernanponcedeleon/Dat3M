@@ -65,7 +65,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.FactorContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Fun_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Goto_cmdContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.If_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.If_then_else_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Int_exprContext;
@@ -83,7 +82,6 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Return_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.TermContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.While_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieVisitor;
 import com.dat3m.dartagnan.boogie.Function;
 import com.dat3m.dartagnan.boogie.FunctionCall;
@@ -96,13 +94,10 @@ import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.FunCall;
 import com.dat3m.dartagnan.program.event.FunRet;
-import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.event.While;
 import com.dat3m.dartagnan.program.event.pthread.End;
 import com.dat3m.dartagnan.program.event.pthread.Start;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -469,43 +464,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			initMode = false;
 		}
 		return null;
-	}
-
-	@Override
-	public Object visitWhile_cmd(While_cmdContext ctx) {
-        ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
-        Skip exitEvent = new Skip();
-        While whileEvent = new While(expr, exitEvent);
-        programBuilder.addChild(threadCount, whileEvent);
-
-        visitChildren(ctx.stmt_list());
-        return programBuilder.addChild(threadCount, exitEvent);
-	}
-
-	@Override
-	public Object visitIf_cmd(If_cmdContext ctx) {
-        ExprInterface expr = (ExprInterface)ctx.guard().expr().accept(this);
-        Skip exitMainBranch = new Skip();
-        Skip exitElseBranch = new Skip();
-        If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
-        programBuilder.addChild(threadCount, ifEvent);
-        
-        visitChildren(ctx.stmt_list(0));
-        programBuilder.addChild(threadCount, exitMainBranch);
-
-        // case when the else branch is a stmt list
-        if(ctx.stmt_list().size() > 1){
-            visitChildren(ctx.stmt_list(1));
-        }
-
-        // case when the else branch is another if        
-        if(ctx.if_cmd() != null) {
-            visitChildren(ctx.if_cmd());
-        }
-        
-        programBuilder.addChild(threadCount, exitElseBranch);
-        return null;
-
 	}
 
 	@Override
