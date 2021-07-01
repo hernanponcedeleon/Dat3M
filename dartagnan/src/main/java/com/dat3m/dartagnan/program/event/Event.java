@@ -261,15 +261,7 @@ public abstract class Event implements Comparable<Event> {
 		while(from != null && !from.equals(until)){
 			Event copy = from.getCopy();
 			appendTo.setSuccessor(copy);
-			if(from instanceof If){
-				from = ((If)from).getExitElseBranch();
-				appendTo = ((If)copy).getExitElseBranch();
-			} else if(from instanceof While){
-				from = ((While)from).getExitEvent();
-				appendTo = ((While)copy).getExitEvent();
-			} else {
-				appendTo = copy;
-			}
+			appendTo = copy;
 			from = from.successor;
 		}
 		return appendTo;

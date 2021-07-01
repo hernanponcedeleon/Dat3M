@@ -95,22 +95,6 @@ public class Printer {
                 result.append(padding).append("{\n");
                 padding.append(paddingStep);
             }
-
-            if(e instanceof If) {
-                If ifEvent = (If) e;
-                if (!ifEvent.getExitMainBranch().equals(ifEvent.getExitElseBranch())) {
-                    elseStack.push(ifEvent.getExitMainBranch());
-                }
-                endStack.push(ifEvent.getExitElseBranch());
-                result.append(padding).append("{\n");
-                padding.append(paddingStep);
-            }
-
-            if(e instanceof While) {
-                endStack.push(((While)e).getExitEvent());
-                result.append(padding).append("{\n");
-                padding.append(paddingStep);
-            }
         }
     }
 

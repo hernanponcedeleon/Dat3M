@@ -110,10 +110,6 @@ public class EventData implements Comparable<EventData> {
         return event.is(JUMP);
     }
 
-    public boolean isIfElse() {
-        return event instanceof If;
-    }
-
     public boolean isExclusive() {
     	return event.is(EXCL);
     }

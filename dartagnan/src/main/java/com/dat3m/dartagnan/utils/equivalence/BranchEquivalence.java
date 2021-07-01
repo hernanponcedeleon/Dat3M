@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -187,36 +186,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                     b.children.add(b2);
                     return b;
                 }
-            } else if (succ instanceof If) {
-                If ifElse = (If)succ;
-                Branch bSucc = null;
-
-                if (ifElse.getSuccessor() != null) {
-                    // There is this odd case that a final If has no successor
-                    bSucc = computeBranches(ifElse.getSuccessor(), branchMap, finalBranchMap);
-                }
-                // Look at if and else branches...
-                Branch bMain = computeBranches(ifElse.getSuccessorMainBranch(), branchMap, finalBranchMap);
-                Branch bElse = computeBranches(ifElse.getSuccessorElseBranch(), branchMap, finalBranchMap);
-
-                b.children.add(bMain);
-                bMain.parents.add(b);
-                b.children.add(bElse);
-                bElse.parents.add(b);
-
-                // Get the last branch from the if/else branches ...
-                Branch bMainFinal = finalBranchMap.get(ifElse.getExitMainBranch());
-                Branch bElseFinal = finalBranchMap.get(ifElse.getExitElseBranch());
-                // ... and connect them with the successor branch of the if
-                if (bMainFinal != null && bSucc != null) {
-                    bSucc.parents.add(bMainFinal);
-                    bMainFinal.children.add(bSucc);
-                }
-                if (bElseFinal != null && bSucc != null) {
-                    bSucc.parents.add(bElseFinal);
-                    bElseFinal.children.add(bSucc);
-                }
-                return b;
             } else {
                 // No branching happened, thus we stay on the current branch
                 succ = succ.getSuccessor();

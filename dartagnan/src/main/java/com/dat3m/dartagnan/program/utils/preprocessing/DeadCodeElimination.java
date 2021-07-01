@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.utils.preprocessing;
 
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.Thread;
 
@@ -59,8 +58,6 @@ public class DeadCodeElimination {
                 else {
                     computeReachableEvents(j.getLabel(), reachable);
                 }
-            } else if (e instanceof If) {
-            	//TODO(TH): implement
             }
             e = e.getSuccessor();
         }
