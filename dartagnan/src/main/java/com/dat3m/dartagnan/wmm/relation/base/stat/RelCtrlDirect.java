@@ -2,9 +2,11 @@ package com.dat3m.dartagnan.wmm.relation.base.stat;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.If;
+import com.dat3m.dartagnan.program.event.IfAsJump;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.dat3m.dartagnan.wmm.filter.FilterMinus;
+import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
@@ -27,16 +29,18 @@ public class RelCtrlDirect extends StaticRelation {
             // In particular, transforming If's to CondJump's is invalid under Linux
             for(Thread thread : task.getProgram().getThreads()){
                 for(Event e1 : thread.getCache().getEvents(FilterBasic.get(EType.CMP))){
-                    for(Event e2 : ((If) e1).getMainBranchEvents()){
+                    for(Event e2 : ((IfAsJump) e1).getMainBranchEvents()){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
-                    for(Event e2 : ((If) e1).getElseBranchEvents()){
+                    for(Event e2 : ((IfAsJump) e1).getElseBranchEvents()){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
-
-                //Relates jumps with all later events
-                List<Event> condJumps = thread.getCache().getEvents(FilterBasic.get(EType.JUMP));
+                
+                // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
+                List<Event> condJumps = thread.getCache().getEvents(FilterMinus.get(
+                		FilterBasic.get(EType.JUMP), 
+                		FilterUnion.get(FilterBasic.get(EType.CMP), FilterBasic.get(EType.IFI))));
                 if(!condJumps.isEmpty()){
                     for(Event e2 : thread.getCache().getEvents(FilterBasic.get(EType.ANY))){
                         for(Event e1 : condJumps){

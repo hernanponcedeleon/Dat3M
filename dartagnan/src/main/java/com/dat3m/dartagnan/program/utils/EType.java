@@ -12,6 +12,7 @@ public class EType {
     public static final String LOCAL        = "T";
     public static final String LABEL        = "LB";
     public static final String CMP          = "C";
+    public static final String IFI          = "IFI";	// Internal jump in Ifs to goto end 
     public static final String JUMP    		= "J";
     public static final String VISIBLE      = "V";
     public static final String REG_WRITER   = "rW";
