@@ -21,23 +21,16 @@ public class IfAsJump extends CondJump {
 		this.end = other.end;
 	}
 	
-    public List<Event> getMainBranchEvents(){
+    public List<Event> getBranchesEvents(){
         if(cId > -1){
     		List<Event> events = new ArrayList<>();
     		Event next = successor;
+    		// For IfAsJump events, getLabel() returns the label representing the else branch
     		while(next != null && next.successor != getLabel()) {
     			events.add(next);
     			next = next.getSuccessor();
     		}
-    		return events;
-        }
-        throw new RuntimeException("Not implemented");
-    }
-
-    public List<Event> getElseBranchEvents(){
-        if(cId > -1){
-        	List<Event> events = new ArrayList<>();
-    		Event next = getLabel().successor;
+    		next = getLabel().successor;
     		while(next != end && next != null) {
     			events.add(next);
     			next = next.getSuccessor();

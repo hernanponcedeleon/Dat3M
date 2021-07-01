@@ -25,14 +25,10 @@ public class RelCtrlDirect extends StaticRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
 
-            //NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
-            // In particular, transforming If's to CondJump's is invalid under Linux
+            // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
             for(Thread thread : task.getProgram().getThreads()){
                 for(Event e1 : thread.getCache().getEvents(FilterBasic.get(EType.CMP))){
-                    for(Event e2 : ((IfAsJump) e1).getMainBranchEvents()){
-                        maxTupleSet.add(new Tuple(e1, e2));
-                    }
-                    for(Event e2 : ((IfAsJump) e1).getElseBranchEvents()){
+                    for(Event e2 : ((IfAsJump) e1).getBranchesEvents()){
                         maxTupleSet.add(new Tuple(e1, e2));
                     }
                 }
