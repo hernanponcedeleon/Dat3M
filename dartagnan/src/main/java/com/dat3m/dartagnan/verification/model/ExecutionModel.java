@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -31,7 +32,7 @@ public class ExecutionModel {
 
     private final VerificationTask verificationTask;
 
-    // ============= Refinement specific  =============
+    // ============= Model specific  =============
     private Model model;
     private Context context;
     private FilterAbstract eventFilter;
@@ -370,9 +371,15 @@ public class ExecutionModel {
 
     private Map<Register, Set<EventData>> lastRegWrites;
     private Set<EventData> curCtrlDeps;
+    // This is used for Linux
+    private Stack<Set<EventData>> ifCtrlDeps;
+    private Stack<Label> endIfs;
+    //------------------------
     private void initDepTracking() {
         lastRegWrites = new HashMap<>();
         curCtrlDeps = new HashSet<>();
+        ifCtrlDeps = new Stack<>();
+        endIfs = new Stack<>();
     }
 
     private void trackDependencies(Event e) {
@@ -411,7 +418,22 @@ public class ExecutionModel {
                 lastRegWrites.put(writer.getResultRegister(), deps);
             }
             if (e instanceof CondJump) {
+                if (e instanceof IfAsJump) {
+                    // Remember what dependencies were added when entering the If
+                    HashSet<EventData> addedDeps = new HashSet<>(Sets.difference(deps, curCtrlDeps));
+                    ifCtrlDeps.push(addedDeps);
+                    endIfs.push(((IfAsJump)e).getEndIf());
+                }
+                // Regular jumps add all dependencies
                 curCtrlDeps.addAll(deps);
+            }
+
+            if (!endIfs.isEmpty()) {
+                // TODO: Might have to do this in a loop, if there is a jump that exits mutliple nested if-blocks.
+                if (e.getCId() >= endIfs.peek().getCId()) {
+                    endIfs.pop();
+                    curCtrlDeps.removeAll(ifCtrlDeps.pop());
+                }
             }
         }
 

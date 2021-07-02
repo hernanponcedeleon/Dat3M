@@ -47,7 +47,7 @@ public class ExecutionGraph {
     );
 
     // These relations have special event graphs associated with them
-    private static final Set<String> SPECIAL_RELS = ImmutableSet.of("addr", "data", "ctrl");
+    private static final Set<String> SPECIAL_RELS = ImmutableSet.of("addr", "data", "ctrl", "crit");
 
 
     // ================== Fields =====================
@@ -208,6 +208,9 @@ public class ExecutionGraph {
                     break;
                 case "addr":
                     graph = new AddrDepGraph();
+                    break;
+                case "crit":
+                    graph = new RcuGraph();
                     break;
             }
         } else if (relClass == RelRf.class) {

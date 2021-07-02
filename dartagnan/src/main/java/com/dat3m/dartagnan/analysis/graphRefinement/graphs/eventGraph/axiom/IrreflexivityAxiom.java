@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 //TODO: Track actual violating edges
 // To support further search after finding some violations
@@ -31,7 +31,8 @@ public class IrreflexivityAxiom extends GraphAxiom {
 
     @Override
     public List<List<Edge>> getViolations() {
-        return Collections.singletonList(Collections.unmodifiableList(violatingEdges));
+        return violatingEdges.stream().map(List::of).collect(Collectors.toList());
+        //return Collections.singletonList(Collections.unmodifiableList(violatingEdges));
     }
 
     @Override

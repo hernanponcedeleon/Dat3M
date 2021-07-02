@@ -101,7 +101,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    @Test
+    //@Test
     public void test() {
     	try {
             Program program = new ProgramParser().parse(new File(path));
@@ -118,18 +118,18 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    //@Test
+    @Test
     public void testRefinement() {
         try {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                program.setAss(program.getAss().removeLocAssertions(true));
-                /*if (!program.getAss().getLocs().isEmpty()) {
+                //program.setAss(program.getAss().removeLocAssertions(true));
+                if (!program.getAss().getLocs().isEmpty()) {
                     // We assert true, because Refinement can't handle these assertions
                     // They need coherence, which Refinement avoids to encode!
                     assertEquals(0 ,0);
                     return;
-                }*/
+                }
                 Context ctx = new Context();
                 Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
