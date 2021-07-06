@@ -37,6 +37,7 @@ public class CoherenceGraph extends MaterializedGraph {
     }
 
     public Collection<Edge> forwardPropagate(Collection<Edge> addedEdges) {
+        //return addedEdges.stream().map(e -> e.with(100)).filter(simpleGraph::add).collect(Collectors.toList());
         return addedEdges.stream().filter(simpleGraph::add).collect(Collectors.toList());
     }
 

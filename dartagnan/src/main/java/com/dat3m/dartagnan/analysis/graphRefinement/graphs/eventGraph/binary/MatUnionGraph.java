@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 // A materialized Union Graph. This seems to be more efficient than the virtualized UnionGraph
 public class MatUnionGraph extends MaterializedGraph {
@@ -25,19 +26,25 @@ public class MatUnionGraph extends MaterializedGraph {
         this.second = second;
     }
 
+    private Edge derive(Edge e) {
+        return e.with(e.getDerivationLength() + 1);
+    }
+
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
 
-        simpleGraph.addAll(first.setView());
-        simpleGraph.addAll(second.setView());
+        //TODO: Maybe try to minimize the deriviation length initially
+        first.edgeStream().map(this::derive).forEach(simpleGraph::add);
+        second.edgeStream().map(this::derive).forEach(simpleGraph::add);
     }
 
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == first || changedGraph == second) {
-            addedEdges.removeIf(edge -> !simpleGraph.add(edge));
+            addedEdges = addedEdges.stream().map(this::derive)
+                    .filter(simpleGraph::add).collect(Collectors.toList());
         } else {
             addedEdges.clear();
         }

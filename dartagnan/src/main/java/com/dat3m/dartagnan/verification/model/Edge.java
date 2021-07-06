@@ -6,22 +6,36 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 // An untyped edge.
 // This is just a decoration for Tuple to use EventData instead of Event
-// Addtionally, it contains timing information used for refinement
+// Additionally, it contains information used for refinement (for now)
 
+//TODO: Create a version without the refinement-specific extra data.
+// We then differentiate between (Simple)Edge and (Complex)Edge
+//TODO 2: Make equality comparison based on EventData identity (faster for hashmaps!)
+// Maybe even avoid class checks
 public class Edge implements Comparable<Edge>, Timeable {
 
     private final EventData first;
     private final EventData second;
-    private Timestamp time;
+    private final Timestamp time;
+    private final int derivLength;
 
-    public Edge(EventData first, EventData second, Timestamp time) {
+    public Edge(EventData first, EventData second, Timestamp time, int derivLength) {
         this.first = first;
         this.second = second;
         this.time = time;
+        this.derivLength = derivLength;
+    }
+
+    public Edge(EventData first, EventData second, Timestamp time) {
+        this (first, second, time, 0);
+    }
+
+    public Edge(EventData first, EventData second, int derivLength) {
+        this (first, second, Timestamp.ZERO, derivLength);
     }
 
     public Edge(EventData first, EventData second) {
-        this (first, second, Timestamp.ZERO);
+        this (first, second, Timestamp.ZERO, 0);
     }
 
     public EventData getFirst(){
@@ -32,6 +46,12 @@ public class Edge implements Comparable<Edge>, Timeable {
         return second;
     }
 
+    public Timestamp getTime() {
+        return time;
+    }
+
+    public int getDerivationLength() { return derivLength; }
+
     public String toString() {
         return "(" + first.toString() + ", " + second.toString() + ")";
     }
@@ -40,11 +60,8 @@ public class Edge implements Comparable<Edge>, Timeable {
         return new Tuple(first.getEvent(), second.getEvent());
     }
 
-    public Timestamp getTime() {
-        return time;
-    }
 
-    public Edge getInverse() { return new Edge(second, first, time); }
+    public Edge inverse() { return new Edge(second, first, time, derivLength); }
 
     public boolean isCrossEdge() {
         return !first.getThread().equals(second.getThread());
@@ -65,16 +82,9 @@ public class Edge implements Comparable<Edge>, Timeable {
     public boolean isLocEdge()  { return first.isMemoryEvent() && second.isMemoryEvent()
             && first.getAccessedAddress().equals(second.getAccessedAddress()); }
 
-    public void normalizeTime() {
-        if (time.isInitial())
-            time = Timestamp.ZERO;
-        else if (time.isInvalid())
-            time = Timestamp.INVALID;
-    }
-
-    public Edge withTimestamp(Timestamp t) {
-        return new Edge(first, second, t);
-    }
+    public Edge with(Timestamp time) { return new Edge(first, second, time, derivLength); }
+    public Edge with(int derivLength) { return new Edge(first, second, time, derivLength); }
+    public Edge with(Timestamp time, int derivLength) { return new Edge(first, second, time, derivLength); }
 
     @Override
     public int hashCode() {

@@ -34,16 +34,25 @@ public class ReadFromGraph extends StaticEventGraph {
         size = context.getReadWriteMap().size();
     }
 
+    private Edge makeEdge(EventData a, EventData b) {
+        return new Edge(a, b, 0);
+    }
+
+    @Override
+    public Edge get(Edge edge) {
+        return contains(edge) ? makeEdge(edge.getFirst(), edge.getSecond()) : null;
+    }
+
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getReadWriteMap().entrySet().stream().map(x -> new Edge(x.getValue(), x.getKey()));
+        return context.getReadWriteMap().entrySet().stream().map(x -> makeEdge(x.getValue(), x.getKey()));
     }
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         if (e.isWrite()) {
             return dir == EdgeDirection.Ingoing ? Stream.empty() :
-                    context.getWriteReadsMap().get(e).stream().map(read -> new Edge(e, read));
+                    context.getWriteReadsMap().get(e).stream().map(read -> makeEdge(e, read));
         } else if (e.isRead()) {
             return dir == EdgeDirection.Ingoing ?
                     Stream.of(new Edge(e.getReadFrom(), e)) : Stream.empty();

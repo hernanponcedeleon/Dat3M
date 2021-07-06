@@ -226,7 +226,7 @@ public class GraphRefinement {
                     continue;
 
                 Timestamp nextTime = curTime.next();
-                coEdge = coEdge.withTimestamp(nextTime);
+                coEdge = coEdge.with(nextTime);
                 DecisionNode decNode = new DecisionNode(coEdge);
 
                 execGraph.addCoherenceEdge(coEdge);
@@ -240,7 +240,7 @@ public class GraphRefinement {
                 if (r == Result.FAIL) {
                     node.replaceBy(decNode);
                     node = decNode.getNegative();
-                    execGraph.addCoherenceEdge(coEdge.getInverse().withTimestamp(curTime));
+                    execGraph.addCoherenceEdge(coEdge.inverse().with(curTime));
                     r = kSaturation(decNode.getNegative(), curTime, k - 1, searchList, i + 1);
                     if (r == Result.FAIL) {
                         return r;
@@ -253,7 +253,7 @@ public class GraphRefinement {
                     progress = true;
                 } else {
                     nextTime = curTime.next();
-                    Edge coEdgeInv = coEdge.getInverse().withTimestamp(nextTime);
+                    Edge coEdgeInv = coEdge.inverse().with(nextTime);
                     execGraph.addCoherenceEdge(coEdgeInv);
                     stats.numGuessedCoherences++;
                     r = kSaturation(decNode.getNegative(), nextTime, k - 1, searchList, i + 1);
@@ -265,7 +265,7 @@ public class GraphRefinement {
                     if(r == Result.FAIL) {
                         node.replaceBy(decNode);
                         node = decNode.getPositive();
-                        execGraph.addCoherenceEdge(coEdge.withTimestamp(curTime));
+                        execGraph.addCoherenceEdge(coEdge.with(curTime));
                         progress = true;
                     }
                 }
@@ -281,7 +281,7 @@ public class GraphRefinement {
     }
 
     private boolean coExists(Edge coEdge) {
-        return execGraph.getCoGraph().contains(coEdge) || execGraph.getCoGraph().contains(coEdge.getInverse());
+        return execGraph.getCoGraph().contains(coEdge) || execGraph.getCoGraph().contains(coEdge.inverse());
     }
 
     // ============= Violations + Resolution ================

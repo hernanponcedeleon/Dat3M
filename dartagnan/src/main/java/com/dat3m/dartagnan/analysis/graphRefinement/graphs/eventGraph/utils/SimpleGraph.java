@@ -1,5 +1,7 @@
-package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
+package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timeable;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
@@ -15,6 +17,8 @@ import java.util.stream.Stream;
 // If the DataItems are reused, no time is spent on the usual resizing operations.
 // We shouldn't use ArrayList for this resizing, cause it may use up to twice as many entries as needed
 // Also it might be reasonable to always create all DataItems to avoid checks during runtime
+//TODO 2: Check if it is worth to maintain an extra array per DataItem for iteration.
+// This might be relevant in particular with the first idea
 public final class SimpleGraph extends AbstractEventGraph {
     private int size;
     private DataItem[] outgoing;
@@ -42,7 +46,7 @@ public final class SimpleGraph extends AbstractEventGraph {
         }
     }
 
-    private DataItem get(EventData e, EdgeDirection dir) {
+    private DataItem getItem(EventData e, EdgeDirection dir) {
         DataItem item;
         switch (dir) {
             case Outgoing:
@@ -58,28 +62,23 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
     public Collection<Edge> getEdges(EventData e, EdgeDirection dir) {
-        DataItem item = get(e, dir);
-        return item == null ? Collections.emptyList() : item.edgeArray;
+        DataItem item = getItem(e, dir);
+        return item == null ? Collections.emptyList() : item.edgeMap.keySet();
     }
 
 
     public Edge get(Edge edge) {
         DataItem item = outgoing[edge.getFirst().getId()];
-        if (item == null)
-            return null;
-        Timestamp t = item.edgeMap.get(edge.getSecond());
-        return t == null ? null : edge.withTimestamp(t);
+        return item != null ? item.get(edge) : null;
     }
 
     public Timestamp getTime(Edge edge) {
-        return getTime(edge.getFirst(), edge.getSecond());
+        Edge e = get(edge);
+        return e != null ? e.getTime() : Timestamp.INVALID;
     }
 
     public Timestamp getTime(EventData a, EventData b) {
-        DataItem item = outgoing[a.getId()];
-        if (item == null)
-            return Timestamp.INVALID;
-        return item.edgeMap.getOrDefault(b, Timestamp.INVALID);
+        return getTime(new Edge(a, b));
     }
 
 
@@ -93,7 +92,7 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
     public int getMinSize(EventData e, EdgeDirection dir) {
-        DataItem item = get(e, dir);
+        DataItem item = getItem(e, dir);
         return item == null ? 0 : item.size();
     }
 
@@ -102,7 +101,7 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
     public int getMaxSize(EventData e, EdgeDirection dir) {
-        DataItem item = get(e, dir);
+        DataItem item = getItem(e, dir);
         return item == null ? 0 : item.size();
     }
 
@@ -111,17 +110,18 @@ public final class SimpleGraph extends AbstractEventGraph {
     }
 
     public int getEstimatedSize(EventData e, EdgeDirection dir) {
-        DataItem item = get(e, dir);
+        DataItem item = getItem(e, dir);
         return item == null ? 0 : item.size();
     }
 
     public boolean contains(Edge e) {
-        return contains(e.getFirst(), e.getSecond());
+        DataItem item = outgoing[e.getFirst().getId()];
+        return item != null && item.contains(e);
     }
 
     public boolean contains(EventData a, EventData b) {
         DataItem item = outgoing[a.getId()];
-        return item != null && item.contains(b);
+        return item != null && item.contains(new Edge(a, b));
     }
 
     public boolean add(Edge e) {
@@ -135,7 +135,8 @@ public final class SimpleGraph extends AbstractEventGraph {
         if (item2 == null) {
             ingoing[secondId] = item2 = new DataItem();
         }
-        boolean added = item1.add(e, EdgeDirection.Outgoing) && item2.add(e, EdgeDirection.Ingoing);
+
+        boolean added = item1.add(e) && item2.add(e);
         if (added) {
             size++;
         }
@@ -167,8 +168,8 @@ public final class SimpleGraph extends AbstractEventGraph {
             return Stream.empty();
         }
         return Arrays.stream(outgoing)
-                .filter(item -> item != null && !item.edgeArray.isEmpty())
-                .flatMap(item -> item.edgeArray.stream());
+                .filter(item -> item != null && !item.isEmpty())
+                .flatMap(DataItem::stream);
     }
 
     @Override
@@ -176,7 +177,7 @@ public final class SimpleGraph extends AbstractEventGraph {
         if (outgoing == null) {
             return Stream.empty();
         }
-        DataItem item = get(e, dir);
+        DataItem item = getItem(e, dir);
         return item == null ? Stream.empty() : item.stream();
     }
 
@@ -184,7 +185,7 @@ public final class SimpleGraph extends AbstractEventGraph {
         if (outgoing == null) {
             return Collections.emptyIterator();
         }
-        DataItem item = get(e, dir);
+        DataItem item = getItem(e, dir);
         return item == null ? Collections.emptyIterator() : item.iterator();
     }
 
@@ -197,70 +198,64 @@ public final class SimpleGraph extends AbstractEventGraph {
 
 
     private static final class DataItem implements Iterable<Edge> {
-        final ArrayList<Edge> edgeArray;
-        final Map<EventData, Timestamp> edgeMap;
+        //final ArrayList<Edge> edgeArray;
+        final Map<Edge, Edge> edgeMap;
+        final Set<Edge> edgeSet;
         Timestamp maxStamp;
 
         public DataItem() {
-            edgeArray = new ArrayList<>();
+            //edgeArray = new ArrayList<>();
             edgeMap = new HashMap<>();
-            //edgeMap = Maps.newIdentityHashMap();
+            edgeSet = edgeMap.keySet();
             maxStamp = Timestamp.ZERO;
         }
 
         public int size() {
-            return edgeArray.size();
+            return edgeMap.size();
         }
 
-        public boolean add(Edge e, EdgeDirection dir) {
-            Timestamp t = e.getTime();
-            switch (dir) {
-                case Outgoing:
-                    if (edgeMap.putIfAbsent(e.getSecond(), t) == null) {
-                        edgeArray.add(e);
-                        maxStamp = Timestamp.max(maxStamp, t);
-                        return true;
-                    }
-                    break;
-                case Ingoing:
-                    if (edgeMap.putIfAbsent(e.getFirst(), t) == null) {
-                        edgeArray.add(e);
-                        maxStamp = Timestamp.max(maxStamp, t);
-                        return true;
-                    }
-                    break;
+        public boolean isEmpty() {
+            return edgeMap.isEmpty();
+        }
+
+        public boolean add(Edge e) {
+            if (edgeMap.putIfAbsent(e, e) == null) {
+                maxStamp = Timestamp.max(maxStamp, e.getTime());
+                return true;
             }
+            //edgeArray.add(e);
             return false;
-
         }
 
-        public boolean contains(EventData e) {
+        public boolean contains(Edge e) {
             return edgeMap.containsKey(e);
         }
 
+
+        public Edge get(Edge e) {
+            return edgeMap.get(e);
+        }
+
+
         public Iterator<Edge> iterator() {
-            return edgeArray.iterator();
+            return edgeSet.iterator();
         }
 
         public Stream<Edge> stream() {
-            return edgeArray.stream();
+            return edgeSet.stream();
         }
 
         public void clear() {
-            edgeArray.clear();
+           // edgeArray.clear();
             edgeMap.clear();
             maxStamp = Timestamp.ZERO;
         }
 
         public void backtrack() {
             if (maxStamp.isInvalid()) {
-                edgeArray.removeIf(Timeable::isInvalid);
-                edgeMap.values().removeIf(Timestamp::isInvalid);
-                Timestamp newMax = Timestamp.ZERO;
-                for (Edge e : edgeArray) {
-                    newMax  = Timestamp.max(e.getTime(), newMax);
-                }
-                maxStamp = newMax;
+                //edgeArray.removeIf(Timeable::isInvalid);
+                edgeSet.removeIf(Timeable::isInvalid);
+                maxStamp = edgeSet.stream().map(Edge::getTime).reduce(Timestamp.ZERO, Timestamp::max);
             }
         }
 

@@ -102,7 +102,7 @@ public class FenceGraph extends StaticEventGraph {
         return size;
     }
 
-    private EventData getNextFence(EventData e) {
+    public EventData getNextFence(EventData e) {
         List<EventData> fences = threadFencesMap.get(e.getThread());
         if (fences.isEmpty()) {
             return null;
@@ -123,7 +123,7 @@ public class FenceGraph extends StaticEventGraph {
         return closestFence;
     }
 
-    private EventData getPreviousFence(EventData e) {
+    public EventData getPreviousFence(EventData e) {
         List<EventData> fences = threadFencesMap.get(e.getThread());
         if (fences.isEmpty()) {
             return null;

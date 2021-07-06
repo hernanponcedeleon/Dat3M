@@ -33,7 +33,7 @@ public class RangeIdentityGraph extends MaterializedGraph {
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
             addedEdges = addedEdges.stream()
-                    .map(x -> new Edge(x.getSecond(), x.getSecond(), x.getTime()))
+                    .map(x -> new Edge(x.getSecond(), x.getSecond(), x.getTime(), x.getDerivationLength() + 1))
                     .filter(simpleGraph::add).collect(Collectors.toList());
         } else {
             addedEdges.clear();

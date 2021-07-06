@@ -16,6 +16,11 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     protected int size;
 
     @Override
+    public Edge get(Edge edge) {
+        return contains(edge) ? edge.with(Timestamp.ZERO, 0) : null;
+    }
+
+    @Override
     public List<EventGraph> getDependencies() {
         return Collections.emptyList();
     }

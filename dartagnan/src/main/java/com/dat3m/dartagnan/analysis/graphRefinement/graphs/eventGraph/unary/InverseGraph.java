@@ -29,13 +29,19 @@ public class InverseGraph extends AbstractEventGraph {
     }
 
     @Override
+    public Edge get(Edge edge) {
+        Edge e = inner.get(edge.inverse());
+        return e != null ? derive(e) : null;
+    }
+
+    @Override
     public boolean contains(Edge edge) {
-        return inner.contains(edge.getInverse());
+        return inner.contains(edge.inverse());
     }
 
     @Override
     public Timestamp getTime(Edge edge) {
-        return inner.getTime(edge.getInverse());
+        return inner.getTime(edge.inverse());
     }
 
     @Override
@@ -79,30 +85,34 @@ public class InverseGraph extends AbstractEventGraph {
     }
 
 
+    private Edge derive(Edge e) {
+        return new Edge(e.getSecond(), e.getFirst(), e.getTime(), e.getDerivationLength() + 1);
+    }
+
     @Override
     public Stream<Edge> edgeStream() {
-        return inner.edgeStream().map(Edge::getInverse);
+        return inner.edgeStream().map(this::derive);
     }
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        return inner.edgeStream(e, dir.flip()).map(Edge::getInverse);
+        return inner.edgeStream(e, dir.flip()).map(this::derive);
     }
 
     @Override
     public Iterator<Edge> edgeIterator() {
-        return Iterators.transform(inner.edgeIterator(), Edge::getInverse);
+        return Iterators.transform(inner.edgeIterator(), this::derive);
     }
 
     @Override
     public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return Iterators.transform(inner.edgeIterator(e, dir.flip()), Edge::getInverse);
+        return Iterators.transform(inner.edgeIterator(e, dir.flip()), this::derive);
     }
 
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-            addedEdges = addedEdges.stream().map(Edge::getInverse).collect(Collectors.toList());
+            addedEdges = addedEdges.stream().map(this::derive).collect(Collectors.toList());
         } else {
             addedEdges.clear();
         }

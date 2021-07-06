@@ -351,7 +351,7 @@ public class ExecutionModel {
 
         } else if (data.isFence()) {
             // ===== Fences =====
-            String name = data.getEvent().toString();
+            String name = ((Fence)data.getEvent()).getName();
             if (!fenceMap.containsKey(name))
                 fenceMap.put(name, new HashSet<>());
             fenceMap.get(name).add(data);
@@ -371,7 +371,7 @@ public class ExecutionModel {
 
     private Map<Register, Set<EventData>> lastRegWrites;
     private Set<EventData> curCtrlDeps;
-    // This is used for Linux
+    // The following is used for Linux
     private Stack<Set<EventData>> ifCtrlDeps;
     private Stack<Label> endIfs;
     //------------------------
@@ -383,6 +383,15 @@ public class ExecutionModel {
     }
 
     private void trackDependencies(Event e) {
+
+        while (!endIfs.isEmpty() && e.getCId() >= endIfs.peek().getCId()) {
+            // We exited an If and remove the dependencies associated with it
+            // We do this inside a loop just in case multiple Ifs are left simultaneously
+            endIfs.pop();
+            curCtrlDeps.removeAll(ifCtrlDeps.pop());
+        }
+
+
         if (e instanceof MemEvent) {
             // ---- Track address dependency ----
             MemEvent memEvent = (MemEvent) e;
@@ -396,6 +405,7 @@ public class ExecutionModel {
 
         if (e.is(EType.VISIBLE)) {
             // ---- Track ctrl dependency ----
+            // TODO: This may be done more efficiently, as many events share the same set of ctrldeps.
             ctrlDepMap.put(getData(e), new HashSet<>(curCtrlDeps));
         }
 
@@ -404,7 +414,6 @@ public class ExecutionModel {
             RegReaderData reader = (RegReaderData)e;
             HashSet<EventData> deps = new HashSet<>();
             for (Register r : reader.getDataRegs()) {
-                //TODO: The default case should not happen if all registers are assigned
                 deps.addAll(lastRegWrites.getOrDefault(r, Collections.emptySet()));
             }
 
@@ -424,16 +433,8 @@ public class ExecutionModel {
                     ifCtrlDeps.push(addedDeps);
                     endIfs.push(((IfAsJump)e).getEndIf());
                 }
-                // Regular jumps add all dependencies
+                // Jumps add all dependencies
                 curCtrlDeps.addAll(deps);
-            }
-
-            if (!endIfs.isEmpty()) {
-                // TODO: Might have to do this in a loop, if there is a jump that exits mutliple nested if-blocks.
-                if (e.getCId() >= endIfs.peek().getCId()) {
-                    endIfs.pop();
-                    curCtrlDeps.removeAll(ifCtrlDeps.pop());
-                }
             }
         }
 

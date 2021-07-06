@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
+import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
@@ -36,33 +37,19 @@ public class TransitiveGraph extends MaterializedGraph {
         return visitor.visitTransitiveClosure(this, data, context);
     }
 
+    private Edge derive(Edge e) {
+        return e.with(e.getDerivationLength() + 1);
+    }
+
     private void initialPopulation() {
         //TODO: This is inefficient for many edges (the likely default case!)
         Set<Edge> fakeSet = SetUtil.fakeSet();
-        inner.edgeStream().forEach(e -> updateEdge(e, fakeSet));
+        inner.edgeStream().forEach(e -> updateEdge(derive(e), fakeSet));
     }
 
-    private void updateEdgeRecursive(Edge edge, Set<Edge> addedEdges) {
-        if (!simpleGraph.add(edge))
-            return;
-        addedEdges.add(edge);
-        for (Edge inEdge : inEdges(edge.getFirst())) {
-            Edge newEdge = new Edge(inEdge.getFirst(), edge.getSecond(), edge.getTime());
-            if (simpleGraph.add(newEdge)) {
-                addedEdges.add(newEdge);
-                for (Edge outEdge : outEdges(edge.getSecond())) {
-                    newEdge = new Edge(inEdge.getFirst(), outEdge.getSecond(), edge.getTime());
-                    if (simpleGraph.add(newEdge))
-                        addedEdges.add(newEdge);
-                }
-            }
-        }
-
-        for (Edge outEdge : outEdges(edge.getSecond())) {
-            Edge newEdge = new Edge(edge.getFirst(), outEdge.getSecond(), edge.getTime());
-            if (simpleGraph.add(newEdge))
-                addedEdges.add(newEdge);
-        }
+    private Edge combine(Edge a, Edge b, Timestamp time) {
+        return new Edge(a.getFirst(), b.getSecond(), time,
+                Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
     }
 
     private void updateEdge(Edge edge, Set<Edge> addedEdges) {
@@ -71,17 +58,17 @@ public class TransitiveGraph extends MaterializedGraph {
         addedEdges.add(edge);
 
         inEdgeStream(edge.getFirst()).forEach(inEdge -> {
-            Edge newEdge = new Edge(inEdge.getFirst(), edge.getSecond(), edge.getTime());
+            Edge newEdge = combine(inEdge, edge, edge.getTime());
             if (simpleGraph.add(newEdge)) {
                 addedEdges.add(newEdge);
                 outEdgeStream(edge.getSecond())
-                        .map(outEdge -> new Edge(inEdge.getFirst(), outEdge.getSecond(), edge.getTime()))
+                        .map(outEdge -> combine(newEdge, outEdge, edge.getTime()))
                         .filter(simpleGraph::add).forEach(addedEdges::add);
             }
         });
 
         outEdgeStream(edge.getSecond())
-                .map(outEdge -> new Edge(edge.getFirst(), outEdge.getSecond(), edge.getTime()))
+                .map(outEdge -> combine(edge, outEdge, edge.getTime()))
                 .filter(simpleGraph::add).forEach(addedEdges::add);
     }
 
@@ -90,7 +77,7 @@ public class TransitiveGraph extends MaterializedGraph {
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         Set<Edge> newEdges = new HashSet<>();
         if (changedGraph == inner) {
-            addedEdges.forEach(e -> updateEdge(e, newEdges));
+            addedEdges.forEach(e -> updateEdge(derive(e), newEdges));
         }
         return newEdges;
     }

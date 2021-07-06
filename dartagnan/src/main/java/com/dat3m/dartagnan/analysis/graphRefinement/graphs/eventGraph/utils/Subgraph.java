@@ -38,6 +38,11 @@ public class Subgraph extends AbstractEventGraph {
     }
 
     @Override
+    public Edge get(Edge edge) {
+        return exists(edge) ? sourceGraph.get(edge) : null;
+    }
+
+    @Override
     public boolean contains(EventData a, EventData b) {
         return exists(a, b) && sourceGraph.contains(a, b);
     }

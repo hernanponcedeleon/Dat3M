@@ -17,7 +17,7 @@ public class CoLiteral extends AbstractEdgeLiteral {
     @Override
     public CoreLiteral getOpposite() {
         if (opposite == null) {
-            opposite = new CoLiteral(edge.getInverse());
+            opposite = new CoLiteral(edge.inverse());
             opposite.opposite = this;
         }
         return opposite;

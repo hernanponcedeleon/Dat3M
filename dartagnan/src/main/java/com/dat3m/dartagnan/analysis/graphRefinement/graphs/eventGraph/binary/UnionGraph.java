@@ -10,10 +10,19 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+
+//TODO: Since the addition of derivation length, this class is not correct anymore
 public class UnionGraph extends BinaryEventGraph {
 
     public UnionGraph(EventGraph first, EventGraph second) {
         super(first, second);
+    }
+
+    @Override
+    public Edge get(Edge edge) {
+        // Note: does not guarantee minimality
+        Edge a = first.get(edge);
+        return a != null ? a : second.get(edge);
     }
 
     @Override

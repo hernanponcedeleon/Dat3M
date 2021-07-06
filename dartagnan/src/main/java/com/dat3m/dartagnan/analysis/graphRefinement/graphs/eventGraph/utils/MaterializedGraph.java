@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.SimpleGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -17,6 +16,11 @@ public abstract class MaterializedGraph extends AbstractEventGraph {
 
     protected MaterializedGraph() {
         this.simpleGraph = new SimpleGraph();
+    }
+
+    @Override
+    public Edge get(Edge edge) {
+        return simpleGraph.get(edge);
     }
 
     @Override

@@ -11,7 +11,7 @@ public class AddressLiteral extends AbstractEdgeLiteral {
     public AddressLiteral(Edge edge) {
         super("loc", edge);
         if (edge.getFirst().getEvent().getCId() > edge.getSecond().getEvent().getCId()) {
-            this.edge = edge.getInverse();
+            this.edge = edge.inverse();
         }
     }
 

@@ -33,7 +33,6 @@ public class AcyclicityAxiom extends GraphAxiom {
             return false;
         }
         tarjan();
-        // Not sure if this is ok since usually total orderings are expected
         violatingSccs.sort(Comparator.comparingInt(Set::size));
         if (violatingSccs.isEmpty()) {
             markedNodes.clear();
@@ -59,8 +58,6 @@ public class AcyclicityAxiom extends GraphAxiom {
 
     @Override
     public void onGraphChanged(EventGraph changedGraph, Collection<Edge> addedEdges) {
-        //TODO: Maybe use information about added edges to make the acyclicity check (tarjan) faster?
-        // Maybe call visit only on affected nodes?
         addedEdges.forEach(e -> markedNodes.add(e.getFirst()));
     }
 

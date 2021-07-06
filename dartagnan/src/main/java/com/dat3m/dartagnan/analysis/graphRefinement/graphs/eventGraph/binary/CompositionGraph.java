@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
+import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
@@ -38,6 +38,11 @@ public class CompositionGraph extends MaterializedGraph {
         return visitor.visitComposition(this, data, context);
     }
 
+    private Edge combine(Edge a, Edge b, Timestamp time) {
+        return new Edge(a.getFirst(), b.getSecond(), time,
+                Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
+    }
+
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         ArrayList<Edge> newEdges = new ArrayList<>();
@@ -56,14 +61,14 @@ public class CompositionGraph extends MaterializedGraph {
     }
 
     private void updateFirst(Edge a, Collection<Edge> addedEdges) {
-        second.edgeStream(a.getSecond(), EdgeDirection.Outgoing)
-                .map(b -> new Edge(a.getFirst(), b.getSecond(), a.getTime()))
+        second.outEdgeStream(a.getSecond())
+                .map(b -> combine(a, b, a.getTime()))
                 .filter(simpleGraph::add).forEach(addedEdges::add);
     }
 
     private void updateSecond(Edge b, Collection<Edge> addedEdges) {
-        first.edgeStream(b.getFirst(), EdgeDirection.Ingoing)
-                .map(a -> new Edge(a.getFirst(), b.getSecond(), b.getTime()))
+        first.inEdgeStream(b.getFirst())
+                .map(a -> combine(a, b, b.getTime()))
                 .filter(simpleGraph::add).forEach(addedEdges::add);
     }
 

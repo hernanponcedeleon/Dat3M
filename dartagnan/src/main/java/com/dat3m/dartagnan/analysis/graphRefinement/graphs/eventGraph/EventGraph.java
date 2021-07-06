@@ -24,6 +24,8 @@ public interface EventGraph extends GraphDerivable, Iterable<Edge> {
     void setName(String name);
     String getName();
 
+    Edge get(Edge edge);
+
     boolean contains(EventData a, EventData b);
     Timestamp getTime(EventData a, EventData b);
 

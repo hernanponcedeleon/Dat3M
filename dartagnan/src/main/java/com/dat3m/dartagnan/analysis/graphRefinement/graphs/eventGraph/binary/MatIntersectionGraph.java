@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.Mate
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.google.common.collect.Sets;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -26,14 +26,31 @@ public class MatIntersectionGraph extends MaterializedGraph {
         this.second = second;
     }
 
+    // Note: The derived edge has the timestamp of edge <a>
+    private Edge derive(Edge a, Edge b) {
+        return a.with(Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
+    }
+
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
 
         if (first.getEstimatedSize() < second.getEstimatedSize()) {
-            simpleGraph.addAll(Sets.intersection(first.setView(), second.setView()));
+            for (Edge e1 : first.edges()) {
+                Edge e2 = second.get(e1);
+                if (e2 != null) {
+                    simpleGraph.add(derive(e1, e2));
+                }
+            }
+            //simpleGraph.addAll(Sets.intersection(first.setView(), second.setView()));
         } else {
-            simpleGraph.addAll(Sets.intersection(second.setView(), first.setView()));
+            for (Edge e2 : second.edges()) {
+                Edge e1 = first.get(e2);
+                if (e1 != null) {
+                    simpleGraph.add(derive(e2, e1));
+                }
+            }
+            //simpleGraph.addAll(Sets.intersection(second.setView(), first.setView()));
         }
     }
 
@@ -42,8 +59,19 @@ public class MatIntersectionGraph extends MaterializedGraph {
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == first || changedGraph == second) {
             EventGraph other = changedGraph == first ? second : first;
-            addedEdges.removeIf(x -> !other.contains(x));
-            simpleGraph.addAll(addedEdges);
+
+            List<Edge> newlyAdded = new ArrayList<>();
+            for (Edge e1 : addedEdges) {
+                Edge e2 = other.get(e1);
+                if (e2 != null) {
+                    Edge e = derive(e1, e2);
+                    simpleGraph.add(e);
+                    newlyAdded.add(e);
+                }
+            }
+            /*addedEdges.removeIf(x -> !other.contains(x));
+            simpleGraph.addAll(addedEdges);*/
+            addedEdges = newlyAdded;
         } else {
             addedEdges.clear();
         }

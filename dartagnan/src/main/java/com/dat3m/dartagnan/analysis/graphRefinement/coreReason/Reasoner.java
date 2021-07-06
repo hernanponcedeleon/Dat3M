@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.FenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.LocationGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.ReadFromGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.RecursiveGraph;
@@ -16,6 +17,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.model.Edge;
+import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.Maps;
@@ -24,6 +26,9 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm.findShortestPathBiDir;
 
+
+//TODO: Check the usage of derivation length
+// Especially for ReflexiveClosure and TransitiveClosure
 public class Reasoner {
 
     private final ExecutionGraph execGraph;
@@ -139,7 +144,7 @@ public class Reasoner {
             Event temp = e1;
             e1 = e2;
             e2 = temp;
-            e = e.getInverse();
+            e = e.inverse();
         }
         if (eq.isImplied(e1, e2)) {
             return new Conjunction<>(new EventLiteral(e.getFirst()));
@@ -186,16 +191,22 @@ public class Reasoner {
             List<EventGraph> deps = new ArrayList<>(graph.getDependencies());
             deps.sort(Comparator.comparingInt(execGraph::getShortestDerivationComplexity));
 
+            Edge min = edge;
+            EventGraph next = graph;
             for (EventGraph g : deps) {
-                if (g.contains(edge)) {
-                    reason = g.accept(this, edge, unused);
-                    if (!reason.isFalse()) {
-                        return reason;
-                    }
+                Edge e = g.get(edge);
+                if (e != null && e.getDerivationLength() < min.getDerivationLength()) {
+                    next = g;
+                    min = e;
                 }
             }
+            if (next == graph) {
+                throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
+            }
+            reason = next.accept(this, min, null);
+            assert !reason.isFalse();
+            return reason;
 
-            throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
         }
 
         @Override
@@ -208,8 +219,9 @@ public class Reasoner {
 
             reason = Conjunction.TRUE;
             for (EventGraph g : graph.getDependencies()) {
-                if (g.contains(edge)) {
-                    reason = reason.and(g.accept(this, edge, unused));
+                Edge e = g.get(edge);
+                if (e != null) {
+                    reason = reason.and(g.accept(this, e, unused));
                 } else {
                     throw new IllegalStateException("Did not find a reason for " + edge + " in " + graph.getName());
                 }
@@ -233,16 +245,26 @@ public class Reasoner {
             if (first.getEstimatedSize(edge.getFirst(), EdgeDirection.Outgoing)
                     <= second.getEstimatedSize(edge.getSecond(), EdgeDirection.Ingoing)) {
                 for (Edge e1 : first.outEdges(edge.getFirst())) {
-                    Edge e2 = new Edge(e1.getSecond(), edge.getSecond());
-                    if (second.contains(e2)) {
-                        return first.accept(this, e1, null).and(second.accept(this, e2, null));
+                    if (e1.getDerivationLength() >= edge.getDerivationLength()) {
+                        continue;
+                    }
+                    Edge e2 = second.get(new Edge(e1.getSecond(), edge.getSecond()));
+                    if (e2 != null && e2.getDerivationLength() < edge.getDerivationLength()) {
+                        reason = first.accept(this, e1, null).and(second.accept(this, e2, null));
+                        assert !reason.isFalse();
+                        return reason;
                     }
                 }
             } else {
                 for (Edge e2 : second.inEdges(edge.getSecond())) {
-                    Edge e1 = new Edge(edge.getFirst(), e2.getFirst());
-                    if (first.contains(e1)) {
-                        return first.accept(this, e1, null).and(second.accept(this, e2, null));
+                    if (e2.getDerivationLength() >= edge.getDerivationLength()) {
+                        continue;
+                    }
+                    Edge e1 = first.get(new Edge(edge.getFirst(), e2.getFirst()));
+                    if (e1 != null && e1.getDerivationLength() < edge.getDerivationLength()) {
+                        reason = first.accept(this, e1, null).and(second.accept(this, e2, null));
+                        assert !reason.isFalse();
+                        return reason;
                     }
                 }
             }
@@ -270,7 +292,7 @@ public class Reasoner {
                 return reason;
             }
 
-            reason = graph.getDependencies().get(0).accept(this, edge.getInverse(), unused);
+            reason = graph.getDependencies().get(0).accept(this, edge.inverse().with(edge.getDerivationLength() - 1), unused);
             assert !reason.isFalse();
             return reason;
         }
@@ -302,7 +324,11 @@ public class Reasoner {
             if (edge.isLoop()) {
                 return new Conjunction<>(new EventLiteral(edge.getFirst()));
             } else {
-                return graph.getDependencies().get(0).accept(this, edge, unused);
+                //TODO: Make sure that we can simply delegate the edge through
+                // The reflexive closure right now does NOT change the derivation length
+                reason = graph.getDependencies().get(0).accept(this, edge, unused);
+                assert !reason.isFalse();
+                return reason;
             }
         }
 
@@ -315,9 +341,12 @@ public class Reasoner {
 
             EventGraph inner = graph.getDependencies().get(0);
             reason = Conjunction.TRUE;
-            for (Edge e : findShortestPathBiDir(inner, edge.getFirst(), edge.getSecond())) {
+            //TODO: Here might be a problem with the derivation length (will fix this later!)
+            List<Edge> path = findShortestPathBiDir(inner, edge.getFirst(), edge.getSecond(),  edge.getDerivationLength() + 1);
+            for (Edge e : path) {
                 reason = reason.and(inner.accept(this, e, unused));
             }
+            assert !reason.isFalse();
             return reason;
         }
 
@@ -354,9 +383,18 @@ public class Reasoner {
                 return visitWo(graph, edge, unused);
             } else if (graph instanceof LocationGraph) {
                 return visitLoc(graph, edge, unused);
+            } else if (graph instanceof FenceGraph) {
+                return visitFence(graph, edge, unused);
             } else {
                 return visitStatic(graph, edge, unused);
             }
+        }
+
+        private Conjunction<CoreLiteral> visitFence(EventGraph graph, Edge edge, Void unused) {
+            FenceGraph fenceGraph = (FenceGraph) graph;
+            EventData fence = fenceGraph.getNextFence(edge.getFirst());
+
+            return getExecReason(edge).and(new Conjunction<>(new EventLiteral(fence)));
         }
 
         private Conjunction<CoreLiteral> visitRf(EventGraph graph, Edge edge, Void unused) {

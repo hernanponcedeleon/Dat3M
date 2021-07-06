@@ -17,6 +17,11 @@ public class DifferenceGraph extends BinaryEventGraph {
     }
 
     @Override
+    public Edge get(Edge edge) {
+        return second.contains(edge) ? null : first.get(edge);
+    }
+
+    @Override
     public boolean contains(Edge edge) {
         return first.contains(edge) && !second.contains(edge);
     }

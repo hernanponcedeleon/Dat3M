@@ -1,17 +1,20 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemEvent;
+
+import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.EType.EXCL;
 import static com.dat3m.dartagnan.program.utils.EType.*;
 
-import java.math.BigInteger;
-
-import com.dat3m.dartagnan.program.Thread;
-
 
 //EventData represents all data associated with an event in a concrete model.
 
+//TODO: We should assume that each EventData instance is unique
+// This can be easily used to optimize equals (also for edges)
+// which in turn may increase performance
 public class EventData implements Comparable<EventData> {
     private final Event event;
     private EventData readFrom;

@@ -10,12 +10,29 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+
+//TODO: Since the addition of derivation length, this class is not correct anymore
 public class IntersectionGraph extends BinaryEventGraph {
 
     public IntersectionGraph(EventGraph first, EventGraph second) {
         super(first, second);
     }
 
+
+    @Override
+    public Edge get(Edge edge) {
+        Edge a = first.get(edge);
+        if (a == null) {
+            return null;
+        }
+        Edge b = second.get(edge);
+        if (b == null) {
+            return null;
+        }
+
+        return edge.with(Timestamp.max(a.getTime(), b.getTime()),
+                Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
+    }
 
     @Override
     public boolean contains(Edge edge) {
