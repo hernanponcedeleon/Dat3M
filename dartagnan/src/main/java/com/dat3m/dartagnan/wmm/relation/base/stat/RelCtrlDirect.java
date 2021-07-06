@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.List;
 
+//TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
+// ctrl := idd^+;ctrlDirect & (R*V)
 public class RelCtrlDirect extends StaticRelation {
 
     public RelCtrlDirect(){
