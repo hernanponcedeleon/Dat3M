@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
 
 import java.math.BigInteger;
 
@@ -93,34 +92,22 @@ public class EventData implements Comparable<EventData> {
     	return event.getThread();
     }
 
-    public boolean isMemoryEvent() {
-        return event instanceof MemEvent;
-    }
-
-    public boolean isWrite() { return event.is(WRITE); }
-
+    public boolean isMemoryEvent() { return event.is(MEMORY); }
     public boolean isInit() {
         return event.is(INIT);
     }
-
+    public boolean isWrite() { return event.is(WRITE); }
     public boolean isRead() { return event.is(READ); }
-
-    public boolean isFence() {
-        return event.is(FENCE);
-    }
-
+    public boolean isFence() { return event.is(FENCE); }
     public boolean isJump() {
         return event.is(JUMP);
     }
-
     public boolean isExclusive() {
     	return event.is(EXCL);
     }
-
     public boolean isLock() {
     	return event.is(LOCK);
     }
-
     public boolean isRMW() {
     	return event.is(RMW);
     }

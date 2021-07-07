@@ -24,13 +24,12 @@ public interface EventGraph extends GraphDerivable, Iterable<Edge> {
     void setName(String name);
     String getName();
 
+    // Returns the edge that is stored in this graph, including all the metadata
+    // Returns NULL, if the edge is not present
     Edge get(Edge edge);
 
     boolean contains(EventData a, EventData b);
     Timestamp getTime(EventData a, EventData b);
-
-    Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges);
-    void backtrack();
 
     void constructFromModel(ExecutionModel context);
     ExecutionModel getModel();

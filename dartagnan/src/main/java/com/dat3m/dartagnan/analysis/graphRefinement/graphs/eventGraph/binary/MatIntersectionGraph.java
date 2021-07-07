@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class MatIntersectionGraph extends MaterializedGraph {
 
     @Override
     public List<? extends EventGraph> getDependencies() {
-        return List.of(first, second);
+        return Arrays.asList(first, second);
     }
 
     public MatIntersectionGraph(EventGraph first, EventGraph second) {

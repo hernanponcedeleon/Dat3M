@@ -2,15 +2,12 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,15 +41,5 @@ public class CoherenceGraph extends MaterializedGraph {
     @Override
     public <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context) {
         return visitor.visitBase(this, data, context);
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator() {
-        return simpleGraph.edgeIterator();
-    }
-
-    @Override
-    public Iterator<Edge> edgeIterator(EventData e, EdgeDirection dir) {
-        return simpleGraph.edgeIterator(e, dir);
     }
 }

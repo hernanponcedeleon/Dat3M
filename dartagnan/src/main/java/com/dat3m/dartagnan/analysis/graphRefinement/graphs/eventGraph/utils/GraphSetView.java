@@ -48,15 +48,15 @@ public class GraphSetView implements Set<Edge> {
 
     @Override
     public Object[] toArray() {
-        ArrayList<Edge> edgeList = new ArrayList<>(this.size());
-        iterator().forEachRemaining(edgeList::add);
+        ArrayList<Edge> edgeList = new ArrayList<>(graph.getEstimatedSize());
+        stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
         return edgeList.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        ArrayList<Edge> edgeList = new ArrayList<>(this.size());
-        iterator().forEachRemaining(edgeList::add);
+        ArrayList<Edge> edgeList = new ArrayList<>(graph.getEstimatedSize());
+        stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
         return edgeList.toArray(a);
     }
 
@@ -95,7 +95,5 @@ public class GraphSetView implements Set<Edge> {
     }
 
     @Override
-    public void clear() {
-
-    }
+    public void clear() { }
 }

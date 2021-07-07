@@ -38,8 +38,10 @@ public class Reasoner {
     private final Relation co;
     private final Visitor visitor = new Visitor();
 
-    // We track for each recursive graph the the edges we visit recursively
+    // We track for each recursive graph the edges we visit recursively
     // If we recursively visit some edge twice, we end up in a cyclic reasoning (causing an exception right now)
+    //TODO: For edges that do not depend on co, we may want to store the computed violations
+    // to reuse them if possible.
     private final Map<EventGraph, Set<Edge>> visitedMap = Maps.newIdentityHashMap();
 
     public Reasoner(ExecutionGraph execGraph, boolean useMinTupleReasoning) {
@@ -172,7 +174,10 @@ public class Reasoner {
         return false;
     }
 
-
+    // ======================== Visitor ==========================
+    /*
+        The visitor is used to traverse the structure of the graph hierarchy.
+     */
     private class Visitor implements GraphVisitor<Conjunction<CoreLiteral>, Edge, Void> {
 
         @Override
@@ -240,8 +245,6 @@ public class Reasoner {
             EventGraph first = graph.getDependencies().get(0);
             EventGraph second = graph.getDependencies().get(1);
 
-            //NOTE: We accept the first possible edge. We potentially might want to
-            // look further in the case of recursive equations?
             if (first.getEstimatedSize(edge.getFirst(), EdgeDirection.Outgoing)
                     <= second.getEstimatedSize(edge.getSecond(), EdgeDirection.Ingoing)) {
                 for (Edge e1 : first.outEdges(edge.getFirst())) {
@@ -309,7 +312,10 @@ public class Reasoner {
 
             EventGraph inner = graph.getDependencies().get(0);
             for (Edge inEdge : inner.inEdges(edge.getSecond())) {
-                return inner.accept(this, inEdge, unused);
+                // TODO: We could look for the edge with the least derivation length here
+                if (inEdge.getDerivationLength() < edge.getDerivationLength()) {
+                    return inner.accept(this, inEdge, unused);
+                }
             }
             throw new IllegalStateException("RangeIdentityGraph: No matching edge is found");
         }
@@ -342,7 +348,7 @@ public class Reasoner {
             EventGraph inner = graph.getDependencies().get(0);
             reason = Conjunction.TRUE;
             //TODO: Here might be a problem with the derivation length (will fix this later!)
-            List<Edge> path = findShortestPathBiDir(inner, edge.getFirst(), edge.getSecond(),  edge.getDerivationLength() + 1);
+            List<Edge> path = findShortestPathBiDir(inner, edge.getFirst(), edge.getSecond(),  edge.getDerivationLength());
             for (Edge e : path) {
                 reason = reason.and(inner.accept(this, e, unused));
             }

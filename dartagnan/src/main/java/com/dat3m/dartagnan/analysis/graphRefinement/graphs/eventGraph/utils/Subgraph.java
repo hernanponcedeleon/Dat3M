@@ -13,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+
+// NOT used right now!
 public class Subgraph extends AbstractEventGraph {
 
 

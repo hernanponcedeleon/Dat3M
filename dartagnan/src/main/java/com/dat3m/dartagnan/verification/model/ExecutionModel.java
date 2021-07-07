@@ -25,12 +25,12 @@ import java.math.BigInteger;
 import java.util.*;
 
 /*
-The ExecutionModel wraps a Z3Model and extracts data from it in a more workable manner.
+The ExecutionModel wraps a Z3 model and extracts data from it in a more workable manner.
  */
 
 public class ExecutionModel {
 
-    private final VerificationTask verificationTask;
+    private final VerificationTask task;
 
     // ============= Model specific  =============
     private Model model;
@@ -51,8 +51,7 @@ public class ExecutionModel {
     private final Map<BigInteger, Set<EventData>> addressReadsMap;
     private final Map<BigInteger, Set<EventData>> addressWritesMap; // This ALSO contains the init writes
     private final Map<BigInteger, EventData> addressInitMap;
-    //TODO: Note, we could merge the
-    // three above maps into a single one that holds writes, reads and init writes.
+    //Note, we could merge the three above maps into a single one that holds writes, reads and init writes.
 
     private final Map<EventData, Set<EventData>> dataDepMap;
     private final Map<EventData, Set<EventData>> addrDepMap;
@@ -77,8 +76,8 @@ public class ExecutionModel {
 
     //========================== Construction =========================
 
-    public ExecutionModel(VerificationTask verificationTask) {
-        this.verificationTask = verificationTask;
+    public ExecutionModel(VerificationTask task) {
+        this.task = task;
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
         threadEventsMap = new HashMap<>(getProgram().getThreads().size());
@@ -91,7 +90,6 @@ public class ExecutionModel {
         addressWritesMap = new HashMap<>();
         addressInitMap = new HashMap<>();
         eventMap = new EventMap();
-        // New test code
         dataDepMap = new HashMap<>();
         addrDepMap = new HashMap<>();
         ctrlDepMap = new HashMap<>();
@@ -111,8 +109,6 @@ public class ExecutionModel {
         addressReadsMapView = Collections.unmodifiableMap(addressReadsMap);
         addressWritesMapView = Collections.unmodifiableMap(addressWritesMap);
         addressInitMapView = Collections.unmodifiableMap(addressInitMap);
-
-        // New test code
         dataDepMapView = Collections.unmodifiableMap(dataDepMap);
         addrDepMapView = Collections.unmodifiableMap(addrDepMap);
         ctrlDepMapView = Collections.unmodifiableMap(ctrlDepMap);
@@ -121,16 +117,16 @@ public class ExecutionModel {
     //========================== Public data =========================
 
     // General data
-    public VerificationTask getVerificationTask() {
-    	return verificationTask;
+    public VerificationTask getTask() {
+    	return task;
     }
     
     public Wmm getMemoryModel() {
-        return verificationTask.getMemoryModel();
+        return task.getMemoryModel();
     }
 
     public Program getProgram() {
-        return verificationTask.getProgram();
+        return task.getProgram();
     }
 
     // Model specific data
@@ -428,7 +424,7 @@ public class ExecutionModel {
             }
             if (e instanceof CondJump) {
                 if (e instanceof IfAsJump) {
-                    // Remember what dependencies were added when entering the If
+                    // Remember what dependencies were added when entering the If so we an remove them when exiting
                     HashSet<EventData> addedDeps = new HashSet<>(Sets.difference(deps, curCtrlDeps));
                     ifCtrlDeps.push(addedDeps);
                     endIfs.push(((IfAsJump)e).getEndIf());
@@ -479,8 +475,9 @@ public class ExecutionModel {
     private Relation co;
     private void extractCoherences() {
         coherenceMap.clear();
-        if (!extractCoherences)
+        if (!extractCoherences) {
             return;
+        }
 
         if (co == null) {
             co = getMemoryModel().getRelationRepository().getRelation("co");

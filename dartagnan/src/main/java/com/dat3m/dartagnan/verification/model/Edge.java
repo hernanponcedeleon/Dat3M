@@ -41,11 +41,9 @@ public class Edge implements Comparable<Edge>, Timeable {
     public EventData getFirst(){
         return first;
     }
-
     public EventData getSecond(){
         return second;
     }
-
     public Timestamp getTime() {
         return time;
     }
@@ -59,26 +57,23 @@ public class Edge implements Comparable<Edge>, Timeable {
     public Tuple toTuple() {
         return new Tuple(first.getEvent(), second.getEvent());
     }
-
-
     public Edge inverse() { return new Edge(second, first, time, derivLength); }
 
-    public boolean isCrossEdge() {
-        return !first.getThread().equals(second.getThread());
+
+    public boolean isInternal() { return first.getThread() == second.getThread();}
+    public boolean isExternal() {
+        return !isInternal();
     }
 
     public boolean isBackwardEdge() {
-        return !isCrossEdge() && first.getLocalId() > second.getLocalId();
+        return isInternal() && first.getLocalId() > second.getLocalId();
     }
-
     public boolean isForwardEdge() {
-        return !isCrossEdge() && first.getLocalId() < second.getLocalId();
+        return isInternal() && first.getLocalId() < second.getLocalId();
     }
-
     public boolean isLoop() {
         return first.equals(second);
     }
-
     public boolean isLocEdge()  { return first.isMemoryEvent() && second.isMemoryEvent()
             && first.getAccessedAddress().equals(second.getAccessedAddress()); }
 

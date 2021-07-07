@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +19,7 @@ public class MatUnionGraph extends MaterializedGraph {
 
     @Override
     public List<? extends EventGraph> getDependencies() {
-        return List.of(first, second);
+        return Arrays.asList(first, second);
     }
 
     public MatUnionGraph(EventGraph first, EventGraph second) {

@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import java.util.Collections;
 import java.util.List;
 
 // Used for static relations that are not yet implemented explicitly
@@ -21,7 +22,7 @@ public class StaticDefaultEventGraph extends MaterializedGraph {
 
     @Override
     public List<? extends EventGraph> getDependencies() {
-        return List.of();
+        return Collections.emptyList();
     }
 
     @Override

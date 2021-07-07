@@ -69,7 +69,7 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     @Override
     public void constructFromModel(ExecutionModel context) {
         super.constructFromModel(context);
-        this.task = context.getVerificationTask();
+        this.task = context.getTask();
         size = 0;
     }
 

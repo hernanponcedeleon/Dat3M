@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,8 +32,7 @@ public class IrreflexivityAxiom extends GraphAxiom {
 
     @Override
     public List<List<Edge>> getViolations() {
-        return violatingEdges.stream().map(List::of).collect(Collectors.toList());
-        //return Collections.singletonList(Collections.unmodifiableList(violatingEdges));
+        return violatingEdges.stream().map(Collections::singletonList).collect(Collectors.toList());
     }
 
     @Override
@@ -44,9 +44,7 @@ public class IrreflexivityAxiom extends GraphAxiom {
 
     @Override
     public void onGraphChanged(EventGraph changedGraph, Collection<Edge> addedEdges) {
-        if (changedGraph == inner) {
-            addedEdges.stream().filter(Edge::isLoop).forEach(violatingEdges::add);
-        }
+        addedEdges.stream().filter(Edge::isLoop).forEach(violatingEdges::add);
     }
 
     @Override

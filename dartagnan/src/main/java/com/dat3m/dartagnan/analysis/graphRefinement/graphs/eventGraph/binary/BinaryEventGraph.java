@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph
 import java.util.Arrays;
 import java.util.List;
 
+// TODO: This class is outdated
 public abstract class BinaryEventGraph extends AbstractEventGraph {
     @Override
     public List<EventGraph> getDependencies() {

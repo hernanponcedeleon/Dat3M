@@ -33,7 +33,7 @@ public abstract class AbstractEventGraph implements EventGraph {
     @Override
     public void constructFromModel(ExecutionModel context) {
         this.context = context;
-        this.task = context.getVerificationTask();
+        this.task = context.getTask();
     }
 
     @Override

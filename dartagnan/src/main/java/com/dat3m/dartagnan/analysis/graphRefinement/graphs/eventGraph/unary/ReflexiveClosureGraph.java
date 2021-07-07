@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -23,7 +24,7 @@ public class ReflexiveClosureGraph extends AbstractEventGraph {
 
     @Override
     public List<EventGraph> getDependencies() {
-        return List.of(inner);
+        return Collections.singletonList(inner);
     }
 
     @Override

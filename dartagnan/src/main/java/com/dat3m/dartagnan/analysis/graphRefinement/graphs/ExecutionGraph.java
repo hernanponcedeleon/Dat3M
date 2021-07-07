@@ -242,7 +242,7 @@ public class ExecutionGraph {
                 graph = new RangeIdentityGraph(inner);
             } else if (relClass == RelTransRef.class) {
                 RelTrans relTrans = new RelTrans(rel.getInner());
-                relTrans.initialise(verificationTask, null);
+                relTrans.initialise(verificationTask, null); // A little sketchy
                 EventGraph transGraph = getGraphFromRelation(relTrans);
                 graph = new ReflexiveClosureGraph(transGraph);
             }
@@ -272,13 +272,19 @@ public class ExecutionGraph {
                 graph = new RMWGraph();
             } else if (relClass == RelExt.class) {
                 graph = new ExternalGraph();
+            } else if (relClass == RelInt.class) {
+                graph = new InternalGraph();
             } else if (relClass == RelFencerel.class) {
                 graph = new FenceGraph((RelFencerel) rel);
             } else if (relClass == RelSetIdentity.class) {
-                RelSetIdentity relSet = (RelSetIdentity)rel;
+                RelSetIdentity relSet = (RelSetIdentity) rel;
                 graph = new SetIdentityGraph(relSet.getFilter());
+            } else if (relClass == RelId.class) {
+                graph = new IdentityGraph();
+            } else if (relClass == RelEmpty.class) {
+                graph = new EmptyGraph();
             } else {
-                //TODO: Add all predefined static graphs (CartesianGraph, ExtGraph, ... etc.)
+                // This is a fallback for all unimplemented static graphs
                 graph = new StaticDefaultEventGraph(rel);
             }
         } else {

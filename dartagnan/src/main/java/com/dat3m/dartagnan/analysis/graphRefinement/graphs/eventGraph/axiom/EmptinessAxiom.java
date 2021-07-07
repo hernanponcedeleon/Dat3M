@@ -20,10 +20,7 @@ public class EmptinessAxiom extends GraphAxiom {
 
     @Override
     public void onGraphChanged(EventGraph changedGraph, Collection<Edge> addedEdges) {
-        // The check is superfluous but we keep it for now
-        if (changedGraph == inner) {
-            violatingEdges.addAll(addedEdges);
-        }
+        violatingEdges.addAll(addedEdges);
     }
 
     @Override
@@ -47,6 +44,5 @@ public class EmptinessAxiom extends GraphAxiom {
     @Override
     public List<List<Edge>> getViolations() {
         return violatingEdges.stream().map(List::of).collect(Collectors.toList());
-        //return Collections.singletonList(Collections.unmodifiableList(violatingEdges));
     }
 }

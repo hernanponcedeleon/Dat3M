@@ -17,8 +17,8 @@ import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.uti
 public class AcyclicityAxiom extends GraphAxiom {
 
     private final List<Set<EventData>> violatingSccs = new ArrayList<>();
-    private EventNode[] nodeMap;
     private final Set<EventData> markedNodes = new HashSet<>();
+    private EventNode[] nodeMap;
 
     public AcyclicityAxiom(EventGraph inner) {
         super(inner);
@@ -117,20 +117,6 @@ public class AcyclicityAxiom extends GraphAxiom {
                     v.hasSelfLoop = true;
                 }
         });
-
-        /*for (EventNode w : v.getSuccessors()) {
-            if (!w.wasVisited()) {
-                strongConnect(w);
-                v.lowlink = Math.min(v.lowlink, w.lowlink);
-            }
-            else if (w.isOnStack) {
-                v.lowlink = Math.min(v.lowlink, w.index);
-            }
-
-            if (w == v) {
-                v.hasSelfLoop = true;
-            }
-        }*/
 
 
         if (v.lowlink == v.index) {

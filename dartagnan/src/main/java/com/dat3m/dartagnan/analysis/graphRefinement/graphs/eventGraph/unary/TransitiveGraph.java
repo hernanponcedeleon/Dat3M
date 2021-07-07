@@ -8,10 +8,7 @@ import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class TransitiveGraph extends MaterializedGraph {
 
@@ -19,7 +16,7 @@ public class TransitiveGraph extends MaterializedGraph {
 
     @Override
     public List<? extends EventGraph> getDependencies() {
-        return List.of(inner);
+        return Collections.singletonList(inner);
     }
 
     public TransitiveGraph(EventGraph inner) {
@@ -41,15 +38,15 @@ public class TransitiveGraph extends MaterializedGraph {
         return e.with(e.getDerivationLength() + 1);
     }
 
+    private Edge combine(Edge a, Edge b, Timestamp time) {
+        return new Edge(a.getFirst(), b.getSecond(), time,
+                Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
+    }
+
     private void initialPopulation() {
         //TODO: This is inefficient for many edges (the likely default case!)
         Set<Edge> fakeSet = SetUtil.fakeSet();
         inner.edgeStream().forEach(e -> updateEdge(derive(e), fakeSet));
-    }
-
-    private Edge combine(Edge a, Edge b, Timestamp time) {
-        return new Edge(a.getFirst(), b.getSecond(), time,
-                Math.max(a.getDerivationLength(), b.getDerivationLength()) + 1);
     }
 
     private void updateEdge(Edge edge, Set<Edge> addedEdges) {
