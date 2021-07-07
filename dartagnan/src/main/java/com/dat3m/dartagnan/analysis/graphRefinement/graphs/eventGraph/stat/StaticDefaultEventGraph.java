@@ -31,11 +31,11 @@ public class StaticDefaultEventGraph extends MaterializedGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
         TupleSet maxTupleSet = relation.getMaxTupleSet();
         for (Tuple tuple : maxTupleSet) {
-            Edge e = context.getEdge(tuple);
+            Edge e = model.getEdge(tuple);
             if (e != null) {
                 simpleGraph.add(e);
             }

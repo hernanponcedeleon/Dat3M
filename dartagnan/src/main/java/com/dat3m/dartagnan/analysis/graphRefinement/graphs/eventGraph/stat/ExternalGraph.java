@@ -26,12 +26,12 @@ public class ExternalGraph extends StaticEventGraph {
 
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
-        return context.getEventList().size() - threadEventsMap.get(e.getThread()).size();
+        return model.getEventList().size() - threadEventsMap.get(e.getThread()).size();
     }
 
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
+        return model.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
     }
 
     @Override
@@ -46,10 +46,10 @@ public class ExternalGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        threadEventsMap = context.getThreadEventsMap();
-        int totalSize = context.getEventList().size();
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        threadEventsMap = model.getThreadEventsMap();
+        int totalSize = model.getEventList().size();
         for (List<EventData> threadEvents : threadEventsMap.values()) {
             int threadSize = threadEvents.size();
             size += (totalSize - threadSize) * threadSize;

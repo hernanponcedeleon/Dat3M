@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -28,6 +29,8 @@ import java.util.*;
 The ExecutionModel wraps a Z3 model and extracts data from it in a more workable manner.
  */
 
+//TODO: Add the capability to remove unnecessary init events from a model
+// i.e. those that init some address which no read nor write access.
 public class ExecutionModel {
 
     private final VerificationTask task;
@@ -114,7 +117,7 @@ public class ExecutionModel {
         ctrlDepMapView = Collections.unmodifiableMap(ctrlDepMap);
     }
 
-    //========================== Public data =========================
+    //======================== Public data ===========================‚
 
     // General data
     public VerificationTask getTask() {
@@ -139,7 +142,6 @@ public class ExecutionModel {
     public FilterAbstract getEventFilter() {
     	return eventFilter;
     }
-    
     public boolean hasCoherences() {
     	return extractCoherences;
     }
@@ -155,39 +157,33 @@ public class ExecutionModel {
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
-
     public Map<Thread, List<List<EventData>>> getAtomicBlocksMap() { return atomicBlocksMapView; }
-
     public Map<EventData, EventData> getReadWriteMap() {
         return readWriteMapView;
     }
-    
     public Map<EventData, Set<EventData>> getCoherenceMap() {
     	return coherenceMapView;
     }
-    
     public Map<EventData, Set<EventData>> getWriteReadsMap() {
         return writeReadsMapView;
     }
     public Map<String, Set<EventData>> getFenceMap() {
         return fenceMapView;
     }
-    
     public Map<BigInteger, Set<EventData>> getAddressReadsMap() {
         return addressReadsMapView;
     }
-    
     public Map<BigInteger, Set<EventData>> getAddressWritesMap() {
         return addressWritesMapView;
     }
-    
     public Map<BigInteger, EventData> getAddressInitMap() {
         return addressInitMapView;
     }
-
     public Map<EventData, Set<EventData>> getAddrDepMap() { return addrDepMapView; }
     public Map<EventData, Set<EventData>> getDataDepMap() { return dataDepMapView; }
     public Map<EventData, Set<EventData>> getCtrlDepMap() { return ctrlDepMapView; }
+
+
 
     public boolean eventExists(Event e) {
         return eventMap.contains(e);
@@ -225,6 +221,9 @@ public class ExecutionModel {
         extractEventsFromModel();
         extractReadsFrom();
         extractCoherences();
+
+        // Test code
+        printUnusedInitEvents();
     }
 
     //========================== Internal methods  =========================
@@ -273,13 +272,11 @@ public class ExecutionModel {
                     if (atomicBegin == -1) {
                         throw new IllegalStateException("EndAtomic without matching BeginAtomic in model");
                     }
-                    atomicBlockRanges.add(List.of(atomicBegin, id));
+                    atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
                     atomicBegin = -1;
                 }
                 // =========================
 
-
-                //TODO: Add support for ifs
                 if (e instanceof CondJump) {
                     CondJump jump = (CondJump) e;
                     if (jump.didJump(model, context)) {
@@ -292,7 +289,7 @@ public class ExecutionModel {
             } while (e != null);
             // We have a BeginAtomic without EndAtomic since the program terminated within the block
             if (atomicBegin != -1) {
-                atomicBlockRanges.add(List.of(atomicBegin, id));
+                atomicBlockRanges.add(ImmutableList.of(atomicBegin, id));
             }
             // -----------
             threadEndIndexList.add(id);
@@ -314,6 +311,17 @@ public class ExecutionModel {
             }
             start = end;
         }
+    }
+
+    private void printUnusedInitEvents() {
+        List<BigInteger> unnecessaryAddresses = new ArrayList<>();
+        for (BigInteger address : addressInitMap.keySet()) {
+            if (addressWritesMap.get(address).size() == 1 && addressReadsMap.get(address).size() == 0) {
+                unnecessaryAddresses.add(address);
+            }
+        }
+
+        System.out.println("Unnecessary init writes: " + unnecessaryAddresses.size());
     }
 
     private void addEvent(Event e, int globalId, int localId) {

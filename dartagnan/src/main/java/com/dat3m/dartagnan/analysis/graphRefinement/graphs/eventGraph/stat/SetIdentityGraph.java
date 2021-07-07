@@ -30,11 +30,11 @@ public class SetIdentityGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
         events.clear();;
 
-        for (EventData e : context.getEventList()) {
+        for (EventData e : model.getEventList()) {
             if (filter.filter(e.getEvent()))
                 events.add(e);
         }

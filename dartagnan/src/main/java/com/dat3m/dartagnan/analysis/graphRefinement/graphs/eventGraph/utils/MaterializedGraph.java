@@ -49,9 +49,9 @@ public abstract class MaterializedGraph extends AbstractEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        simpleGraph.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        simpleGraph.constructFromModel(model);
     }
 
     @Override

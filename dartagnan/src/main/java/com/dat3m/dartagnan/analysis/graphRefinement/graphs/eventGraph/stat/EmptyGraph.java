@@ -35,8 +35,8 @@ public class EmptyGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
         size = 0;
     }
 

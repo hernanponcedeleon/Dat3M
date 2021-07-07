@@ -21,8 +21,8 @@ public class RMWGraph extends MaterializedGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
         populate();
     }
 
@@ -40,7 +40,7 @@ public class RMWGraph extends MaterializedGraph {
     */
     private void populate() {
         // Atomic blocks
-        context.getAtomicBlocksMap().values().stream().flatMap(Collection::stream).forEach(
+        model.getAtomicBlocksMap().values().stream().flatMap(Collection::stream).forEach(
                 block -> {
                     for (int i = 0; i < block.size(); i++) {
                         for (int j = i + 1; j < block.size(); j++) {
@@ -51,7 +51,7 @@ public class RMWGraph extends MaterializedGraph {
         );
 
         //TODO: We still need to encode parts of RMW to give correct semantics to exclusive Load/Store on AARCH64 (do we?)
-        for (List<EventData> events : context.getThreadEventsMap().values()) {
+        for (List<EventData> events : model.getThreadEventsMap().values()) {
             EventData lastExclLoad = null;
             for (int i = 0; i < events.size(); i++) {
                 EventData e = events.get(i);
@@ -73,7 +73,7 @@ public class RMWGraph extends MaterializedGraph {
                         simpleGraph.add(new Edge(lastExclLoad, e));
                         lastExclLoad = null;
                     } else if (e.getEvent() instanceof RMWStore) { // RMWStore
-                        EventData load = context.getData(((RMWStore) e.getEvent()).getLoadEvent());
+                        EventData load = model.getData(((RMWStore) e.getEvent()).getLoadEvent());
                         simpleGraph.add(new Edge(load, e));
                     }
                 }

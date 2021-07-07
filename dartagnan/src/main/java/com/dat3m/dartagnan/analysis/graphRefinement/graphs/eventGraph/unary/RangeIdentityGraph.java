@@ -28,8 +28,8 @@ public class RangeIdentityGraph extends MaterializedGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
         inner.edgeStream().forEach(e -> simpleGraph.add(derive(e)));
     }
 

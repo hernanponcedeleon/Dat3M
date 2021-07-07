@@ -36,13 +36,13 @@ public class RcuGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
         this.lockUnlockMap = HashBiMap.create();
         this.unlockLockMap = lockUnlockMap.inverse();
 
         Stack<EventData> lastLocks = new Stack<>();
-        for (List<EventData> events : context.getThreadEventsMap().values()) {
+        for (List<EventData> events : model.getThreadEventsMap().values()) {
             for (EventData e : events) {
                 if (LOCK_FILTER.filter(e.getEvent())) {
                     lastLocks.push(e);

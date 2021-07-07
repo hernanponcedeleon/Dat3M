@@ -67,9 +67,9 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        this.task = context.getTask();
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        this.task = model.getTask();
         size = 0;
     }
 
@@ -81,7 +81,7 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
 
     protected final void autoComputeSize() {
         size = 0;
-        for (EventData e : context.getEventList())
+        for (EventData e : model.getEventList())
             size += getMinSize(e, EdgeDirection.Outgoing);
     }
 

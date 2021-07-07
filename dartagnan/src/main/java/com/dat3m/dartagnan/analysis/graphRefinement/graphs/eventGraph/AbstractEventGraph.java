@@ -10,16 +10,15 @@ import java.util.Iterator;
 
 public abstract class AbstractEventGraph implements EventGraph {
 
-    protected ExecutionModel context;
+    protected ExecutionModel model;
     protected VerificationTask task;
     protected String name = null;
 
-    public AbstractEventGraph() {
-    }
+    public AbstractEventGraph() { }
 
     @Override
     public ExecutionModel getModel() {
-        return context;
+        return model;
     }
 
     public void setName(String name) {
@@ -31,9 +30,9 @@ public abstract class AbstractEventGraph implements EventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        this.context = context;
-        this.task = context.getTask();
+    public void constructFromModel(ExecutionModel model) {
+        this.model = model;
+        this.task = model.getTask();
     }
 
     @Override

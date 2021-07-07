@@ -37,14 +37,14 @@ public class FenceGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
 
         threadFencesMap = new HashMap<>();
-        for (Thread t : context.getThreads()) {
+        for (Thread t : model.getThreads()) {
             threadFencesMap.put(t, new ArrayList<>());
         }
-        Set<EventData> fenceEvents = context.getFenceMap().get(fenceName);
+        Set<EventData> fenceEvents = model.getFenceMap().get(fenceName);
         if (fenceEvents == null) {
             return;
         }
@@ -60,7 +60,7 @@ public class FenceGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getThreadEventsMap().entrySet().stream()
+        return model.getThreadEventsMap().entrySet().stream()
                 .map(x ->  {
                     List<EventData> fences = threadFencesMap.get(x.getKey());
                     if (fences.isEmpty()) {
@@ -75,7 +75,7 @@ public class FenceGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        List<EventData> threadEvents = context.getThreadEventsMap().get(e.getThread());
+        List<EventData> threadEvents = model.getThreadEventsMap().get(e.getThread());
         if (dir == EdgeDirection.Outgoing) {
             EventData fence = getNextFence(e);
             return fence == null ? Stream.empty() :
@@ -94,7 +94,7 @@ public class FenceGraph extends StaticEventGraph {
         if (dir == EdgeDirection.Outgoing) {
             EventData closestFence = getNextFence(e);
             size = closestFence == null ? 0 :
-                    context.getThreadEventsMap().get(e.getThread()).size() - (closestFence.getLocalId() + 1);
+                    model.getThreadEventsMap().get(e.getThread()).size() - (closestFence.getLocalId() + 1);
         } else if (dir == EdgeDirection.Ingoing) {
             EventData closestFence = getPreviousFence(e);
             size = closestFence == null ? 0 : closestFence.getLocalId();

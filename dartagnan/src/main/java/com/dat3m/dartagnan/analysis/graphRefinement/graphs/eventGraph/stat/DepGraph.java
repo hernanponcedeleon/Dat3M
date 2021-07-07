@@ -30,8 +30,8 @@ public abstract class DepGraph extends MaterializedGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
 
         Map<EventData, Set<EventData>> depMap = getDependencyMap();
         for (EventData e1: depMap.keySet()) {

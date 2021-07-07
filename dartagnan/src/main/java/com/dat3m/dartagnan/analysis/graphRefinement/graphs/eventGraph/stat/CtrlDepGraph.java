@@ -9,6 +9,6 @@ public class CtrlDepGraph extends DepGraph {
 
     @Override
     protected Map<EventData, Set<EventData>> getDependencyMap() {
-        return context.getCtrlDepMap();
+        return model.getCtrlDepMap();
     }
 }

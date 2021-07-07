@@ -34,8 +34,8 @@ public class RecursiveGraph extends MaterializedGraph {
     public EventGraph getInner() { return inner; }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
     }
 
     @Override

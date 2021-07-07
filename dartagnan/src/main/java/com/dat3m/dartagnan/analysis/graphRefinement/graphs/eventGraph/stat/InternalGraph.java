@@ -31,7 +31,7 @@ public class InternalGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
+        return model.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
     }
 
     @Override
@@ -43,9 +43,9 @@ public class InternalGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        threadEventsMap = context.getThreadEventsMap();
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        threadEventsMap = model.getThreadEventsMap();
         size = threadEventsMap.values().stream().mapToInt(x -> x.size() * x.size()).sum();
     }
 

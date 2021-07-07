@@ -53,6 +53,7 @@ public class Reasoner {
 
         execGraph.getEventGraphs().stream().filter(graph -> graph instanceof RecursiveGraph)
                 .forEach(g -> visitedMap.put(g, new HashSet<>()));
+
     }
 
 
@@ -314,7 +315,8 @@ public class Reasoner {
             for (Edge inEdge : inner.inEdges(edge.getSecond())) {
                 // TODO: We could look for the edge with the least derivation length here
                 if (inEdge.getDerivationLength() < edge.getDerivationLength()) {
-                    return inner.accept(this, inEdge, unused);
+                    reason = inner.accept(this, inEdge, unused);
+                    return reason;
                 }
             }
             throw new IllegalStateException("RangeIdentityGraph: No matching edge is found");

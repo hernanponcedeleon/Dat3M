@@ -34,9 +34,9 @@ public class ProgramOrderGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        this.threadEventsMap = context.getThreadEventsMap();
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        this.threadEventsMap = model.getThreadEventsMap();
         size = 0;
         for (List<EventData> threadEvents : threadEventsMap.values()) {
             size += ((threadEvents.size() - 1) * threadEvents.size()) >> 1;
@@ -45,12 +45,12 @@ public class ProgramOrderGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getEventList().stream().flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
+        return model.getEventList().stream().flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
     }
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        List<EventData> threadEvents = context.getThreadEventsMap().get(e.getThread());
+        List<EventData> threadEvents = model.getThreadEventsMap().get(e.getThread());
         if (dir == EdgeDirection.Outgoing) {
             return threadEvents.subList(e.getLocalId() + 1, threadEvents.size()).stream().map(x -> new Edge(e, x));
         } else {

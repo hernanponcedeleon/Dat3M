@@ -44,7 +44,7 @@ public class ReflexiveClosureGraph extends AbstractEventGraph {
 
     @Override
     public int getMinSize() {
-        return Math.max(inner.getMinSize(), context.getEventList().size());
+        return Math.max(inner.getMinSize(), model.getEventList().size());
     }
 
     @Override
@@ -54,7 +54,7 @@ public class ReflexiveClosureGraph extends AbstractEventGraph {
 
     @Override
     public int getMaxSize() {
-        return inner.getMaxSize() + context.getEventList().size();
+        return inner.getMaxSize() + model.getEventList().size();
     }
 
     @Override
@@ -79,7 +79,7 @@ public class ReflexiveClosureGraph extends AbstractEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
+        return model.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
     }
 
     @Override

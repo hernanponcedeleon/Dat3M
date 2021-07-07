@@ -9,6 +9,6 @@ public class AddrDepGraph extends DepGraph {
 
     @Override
     protected Map<EventData, Set<EventData>> getDependencyMap() {
-        return context.getAddrDepMap();
+        return model.getAddrDepMap();
     }
 }

@@ -26,7 +26,7 @@ public class IdentityGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getEventList().stream().map(e -> new Edge(e, e));
+        return model.getEventList().stream().map(e -> new Edge(e, e));
     }
 
     @Override
@@ -35,9 +35,9 @@ public class IdentityGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        size = context.getEventList().size();
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        size = model.getEventList().size();
     }
 
 }

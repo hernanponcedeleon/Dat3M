@@ -27,22 +27,18 @@ public class LocationGraph extends StaticEventGraph {
 
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
-        if (!e.isMemoryEvent())
-            return 0;
-        return addrEventsMap.get(e.getAccessedAddress()).size();
-        /*return context.getAddressWritesMap().get(e.getAccessedAddress()).size()
-                + context.getAddressReadsMap().get(e.getAccessedAddress()).size() - 1;*/
+        return e.isMemoryEvent() ? addrEventsMap.get(e.getAccessedAddress()).size() : 0;
     }
 
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        addrEventsMap = new HashMap<>(context.getAddressReadsMap().size());
-        for (BigInteger addr : context.getAddressReadsMap().keySet()) {
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        addrEventsMap = new HashMap<>(model.getAddressReadsMap().size());
+        for (BigInteger addr : model.getAddressReadsMap().keySet()) {
             // TODO: This can be improved via a disjoint union class
-            Set<EventData> events = new HashSet<>(context.getAddressReadsMap().get(addr));
-            events.addAll(context.getAddressWritesMap().get(addr));
+            Set<EventData> events = new HashSet<>(model.getAddressReadsMap().get(addr));
+            events.addAll(model.getAddressWritesMap().get(addr));
             size += events.size() * events.size();
             addrEventsMap.put(addr, events);
         }

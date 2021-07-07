@@ -28,16 +28,16 @@ public interface EventGraph extends GraphDerivable, Iterable<Edge> {
     // Returns NULL, if the edge is not present
     Edge get(Edge edge);
 
+    //TODO: We might want to make these default
     boolean contains(EventData a, EventData b);
     Timestamp getTime(EventData a, EventData b);
 
-    void constructFromModel(ExecutionModel context);
+    void constructFromModel(ExecutionModel model);
     ExecutionModel getModel();
 
     <TRet, TData, TContext> TRet accept(GraphVisitor<TRet, TData, TContext> visitor, TData data, TContext context);
 
     int size();
-    boolean isEmpty();
 
     int getMinSize();
     int getMinSize(EventData e, EdgeDirection dir);
@@ -53,6 +53,8 @@ public interface EventGraph extends GraphDerivable, Iterable<Edge> {
 
     default boolean contains(Edge edge) { return contains(edge.getFirst(), edge.getSecond()); }
     default Timestamp getTime(Edge edge) { return getTime(edge.getFirst(), edge.getSecond()); }
+
+    default  boolean isEmpty() { return size() == 0; }
 
     default boolean containsAll(Collection<? extends Edge> edges) {
         return edges.stream().allMatch(this::contains);

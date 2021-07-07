@@ -37,12 +37,12 @@ public class CartesianGraph extends StaticEventGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
         firstEvents.clear();
         secondEvents.clear();
 
-        for (EventData e : context.getEventList()) {
+        for (EventData e : model.getEventList()) {
             if (first.filter(e.getEvent()))
                 firstEvents.add(e);
             if (second.filter(e.getEvent()))

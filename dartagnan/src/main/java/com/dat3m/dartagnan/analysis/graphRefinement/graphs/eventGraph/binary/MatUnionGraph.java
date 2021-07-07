@@ -32,8 +32,8 @@ public class MatUnionGraph extends MaterializedGraph {
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
 
         //TODO: Maybe try to minimize the deriviation length initially
         first.edgeStream().map(this::derive).forEach(simpleGraph::add);

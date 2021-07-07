@@ -24,14 +24,14 @@ public class ReadFromGraph extends StaticEventGraph {
         if (dir == EdgeDirection.Ingoing) {
             return  e.getReadFrom() == null ? 0 : 1;
         } else  {
-            return e.isWrite() ? context.getWriteReadsMap().get(e).size() : 0;
+            return e.isWrite() ? model.getWriteReadsMap().get(e).size() : 0;
         }
     }
 
     @Override
-    public void constructFromModel(ExecutionModel context) {
-        super.constructFromModel(context);
-        size = context.getReadWriteMap().size();
+    public void constructFromModel(ExecutionModel model) {
+        super.constructFromModel(model);
+        size = model.getReadWriteMap().size();
     }
 
     private Edge makeEdge(EventData a, EventData b) {
@@ -45,14 +45,14 @@ public class ReadFromGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return context.getReadWriteMap().entrySet().stream().map(x -> makeEdge(x.getValue(), x.getKey()));
+        return model.getReadWriteMap().entrySet().stream().map(x -> makeEdge(x.getValue(), x.getKey()));
     }
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         if (e.isWrite()) {
             return dir == EdgeDirection.Ingoing ? Stream.empty() :
-                    context.getWriteReadsMap().get(e).stream().map(read -> makeEdge(e, read));
+                    model.getWriteReadsMap().get(e).stream().map(read -> makeEdge(e, read));
         } else if (e.isRead()) {
             return dir == EdgeDirection.Ingoing ?
                     Stream.of(new Edge(e.getReadFrom(), e)) : Stream.empty();
