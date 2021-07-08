@@ -85,6 +85,7 @@ public class Refinement {
         Program program = task.getProgram();
         GraphRefinement refinement = new GraphRefinement(task);
         Result res = UNKNOWN;
+        int timeout = task.getSettings().hasSolverTimeout() ? 1000*task.getSettings().getSolverTimeout() : Integer.MAX_VALUE;
 
         // ====== Test code ======
         List<Function<Event, Event>> perms = computePerms(task);
@@ -108,6 +109,10 @@ public class Refinement {
         while (solver.check() == SATISFIABLE) {
             curTime = System.currentTimeMillis();
             totalSolvingTime += (curTime - lastTime);
+            if (totalSolvingTime > timeout) {
+                return TIMEOUT;
+            }
+
             if (REF_PRINT_STATISTICS) {
                 System.out.println(" ===== Iteration: " + ++vioCount + " =====");
                 System.out.println("Solving time( ms): " + (curTime - lastTime));
