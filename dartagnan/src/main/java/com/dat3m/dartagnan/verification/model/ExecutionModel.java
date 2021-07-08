@@ -223,7 +223,7 @@ public class ExecutionModel {
         extractCoherences();
 
         // Test code
-        printUnusedInitEvents();
+        //printUnusedInitEvents();
     }
 
     //========================== Internal methods  =========================
@@ -320,7 +320,6 @@ public class ExecutionModel {
                 unnecessaryAddresses.add(address);
             }
         }
-
         System.out.println("Unnecessary init writes: " + unnecessaryAddresses.size());
     }
 

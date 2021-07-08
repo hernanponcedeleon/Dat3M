@@ -95,7 +95,6 @@ public class GraphRefinement {
                     Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
 
                     if (co.getMinTupleSet().contains(t)) {
-                        //TODO: Test code
                         execGraph.addCoherenceEdge(new Edge(e1, e2));
                         continue;
                     }
@@ -313,7 +312,7 @@ public class GraphRefinement {
     }
 
     private DNF<CoreLiteral> computeResolventsFromTree(SearchTree tree) {
-        //TOOD: This is also ugly code
+        //TODO: This is also ugly code
         SortedClauseSet<CoreLiteral> res = new TreeResolution(tree).computeViolations();
         SortedClauseSet<CoreLiteral> res2 = new SortedClauseSet<>();
         res.forEach(clause -> res2.add(reasoner.simplifyReason(clause)));
