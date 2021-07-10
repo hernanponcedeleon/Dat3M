@@ -28,12 +28,9 @@ public class FenceGraph extends StaticEventGraph {
     public boolean contains(EventData a, EventData b) {
         if (a.getThread() != b.getThread() || a.getLocalId() >= b.getLocalId())
             return false;
-        for (EventData fence : threadFencesMap.get(a.getThread())) {
-            if (a.getLocalId() < fence.getLocalId() && fence.getLocalId() < b.getLocalId()) {
-                return true;
-            }
-        }
-        return false;
+
+        return threadFencesMap.get(a.getThread()).stream()
+                .anyMatch(fence -> a.getLocalId() < fence.getLocalId() && fence.getLocalId() < b.getLocalId());
     }
 
     @Override
@@ -55,7 +52,7 @@ public class FenceGraph extends StaticEventGraph {
         for (List<EventData> fenceList : threadFencesMap.values()) {
             fenceList.sort(Comparator.comparingInt(EventData::getLocalId));
         }
-        autoComputeSize();
+        super.autoComputeSize();
     }
 
     @Override
@@ -79,13 +76,11 @@ public class FenceGraph extends StaticEventGraph {
         if (dir == EdgeDirection.Outgoing) {
             EventData fence = getNextFence(e);
             return fence == null ? Stream.empty() :
-                    threadEvents.subList(fence.getLocalId() + 1, threadEvents.size())
-                            .stream().map(x -> new Edge(e, x));
+                    threadEvents.subList(fence.getLocalId() + 1, threadEvents.size()).stream().map(x -> new Edge(e, x));
         } else {
             EventData fence = getPreviousFence(e);
             return fence == null ? Stream.empty() :
-                    threadEvents.subList(0, fence.getLocalId())
-                            .stream().map(x -> new Edge(x, e));
+                    threadEvents.subList(0, fence.getLocalId()).stream().map(x -> new Edge(x, e));
         }
     }
     @Override
@@ -107,12 +102,9 @@ public class FenceGraph extends StaticEventGraph {
         if (fences.isEmpty()) {
             return null;
         }
-        EventData closestFence = fences.get(fences.size() - 1);
-        if (closestFence.getLocalId() <= e.getLocalId()) {
-            return null;
-        }
 
-        for (int i = fences.size() - 2; i >= 0; i--) {
+        EventData closestFence = null;
+        for (int i = fences.size() - 1; i >= 0; i--) {
             EventData fence = fences.get(i);
             if (fence.getLocalId() > e.getLocalId()) {
                 closestFence = fence;
@@ -128,12 +120,10 @@ public class FenceGraph extends StaticEventGraph {
         if (fences.isEmpty()) {
             return null;
         }
-        EventData closestFence = fences.get(0);
-        if (closestFence.getLocalId() >= e.getLocalId()) {
-            return null;
-        }
-        for (int i = 1; i < fences.size(); i++) {
-            EventData fence = fences.get(i);
+
+
+        EventData closestFence = null;
+        for (EventData fence : fences) {
             if (fence.getLocalId() < e.getLocalId()) {
                 closestFence = fence;
             } else {

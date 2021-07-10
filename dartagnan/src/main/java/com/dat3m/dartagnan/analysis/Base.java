@@ -1,13 +1,6 @@
 package com.dat3m.dartagnan.analysis;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.TIMEOUT;
-
 import com.dat3m.dartagnan.GlobalSettings;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.dat3m.dartagnan.asserts.AssertTrue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -16,6 +9,10 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Params;
 import com.microsoft.z3.Solver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import static com.dat3m.dartagnan.utils.Result.*;
 
 public class Base {
 
@@ -38,6 +35,12 @@ public class Base {
         solver.push();
         solver.add(task.encodeAssertions(ctx));
         solver.add(task.encodeWitness(ctx));
+
+		// ====== Test code =====
+		if (GlobalSettings.ENABLE_SYMMETRY_BREAKING) {
+			solver.add(task.encodeSymmetryBreaking(ctx));
+		}
+		// =======================
         
 		if(task.getSettings().hasSolverTimeout()) {
 			Params p = ctx.mkParams();

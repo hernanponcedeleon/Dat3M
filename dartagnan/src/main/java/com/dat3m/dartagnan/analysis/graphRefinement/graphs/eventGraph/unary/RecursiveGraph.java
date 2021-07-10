@@ -10,13 +10,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-//TODO:
-// (1) Implement.
-// (2)We surely need to materialize this set
-// There is probably no reasonable way to do it virtually
-// Maybe by temporarily storing all queries during calls to getTime/contains
-// But how about iteration?
-//
 public class RecursiveGraph extends MaterializedGraph {
 
     private EventGraph inner;

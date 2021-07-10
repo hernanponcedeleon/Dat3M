@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class RMWGraph extends MaterializedGraph {
@@ -17,7 +18,7 @@ public class RMWGraph extends MaterializedGraph {
 
     @Override
     public List<? extends EventGraph> getDependencies() {
-        return List.of();
+        return Collections.emptyList();
     }
 
     @Override

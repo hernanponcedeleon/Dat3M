@@ -34,12 +34,6 @@ public class EventMap {
 
     public EventData get(Event e) {
         return eventMap.computeIfAbsent(e, EventData::new);
-        /*EventData data = eventMap.get(e);
-        if (data == null) {
-            data = new EventData(e);
-            eventMap.put(e, data);
-        }
-        return data;*/
     }
 
     public Collection<EventData> getValues() {
