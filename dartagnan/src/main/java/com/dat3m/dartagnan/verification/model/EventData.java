@@ -118,16 +118,12 @@ public class EventData implements Comparable<EventData> {
 
     @Override
     public int hashCode() {
-        return event.hashCode();
+        return id;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this)
-            return true;
-        if (obj == null || obj.getClass() != this.getClass())
-            return false;
-        return this.event.equals(((EventData)obj).event);
+        return obj == this;
     }
 
     @Override

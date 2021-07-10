@@ -95,8 +95,7 @@ public class Edge implements Comparable<Edge>, Timeable {
             return false;
 
         Edge other = (Edge) obj;
-        return first.equals(other.first)
-                && second.equals(other.second);
+        return first.equals(other.first) && second.equals(other.second);
     }
 
     @Override

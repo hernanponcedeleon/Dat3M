@@ -156,7 +156,7 @@ public class AcyclicityAxiom extends GraphAxiom {
         }
 
         public Iterable<EventNode> getSuccessors() {
-            return new OneTimeIterable<>(Iterators.transform(inner.outEdgeIterator(event), x -> nodeMap[x.getSecond().getId()]));
+            return OneTimeIterable.create(Iterators.transform(inner.outEdgeIterator(event), x -> nodeMap[x.getSecond().getId()]));
         }
 
         public void reset() {

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 // Encapsulates a Graph into a read-only Set
@@ -44,6 +45,11 @@ public class GraphSetView implements Set<Edge> {
     @Override
     public Stream<Edge> stream() {
         return graph.edgeStream();
+    }
+
+    @Override
+    public void forEach(Consumer<? super Edge> action) {
+        stream().forEach(action);
     }
 
     @Override

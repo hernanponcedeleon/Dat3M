@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
 import java.util.Collection;
@@ -22,11 +21,7 @@ public class MatSubgraph extends MaterializedGraph {
         simpleGraph.constructFromModel(sourceGraph.getModel());
 
         for (EventData e : events) {
-            for (Edge edge : sourceGraph.outEdges(e)) {
-                if (events.contains(edge.getSecond())) {
-                    simpleGraph.add(edge);
-                }
-            }
+            sourceGraph.outEdgeStream(e).filter(edge -> events.contains(edge.getSecond())).forEach(simpleGraph::add);
         }
 
     }

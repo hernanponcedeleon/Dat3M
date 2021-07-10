@@ -35,7 +35,7 @@ public class GlobalSettings {
 
     // ==== Refinement ====
     public static final boolean REF_PRINT_STATISTICS = true;
-    public static final boolean REF_USE_OUTER_WMM = true;
+    public static final boolean REF_USE_OUTER_WMM = false;
     public static final boolean REF_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if REF_USE_OUTER_WMM is set to TRUE
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }

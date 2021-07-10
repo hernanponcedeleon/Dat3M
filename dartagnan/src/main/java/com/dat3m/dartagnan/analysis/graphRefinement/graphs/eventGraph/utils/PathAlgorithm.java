@@ -52,16 +52,29 @@ public class PathAlgorithm {
         return Lists.reverse(path);
     }
 
+    static Queue<EventData> queue1 = new ArrayDeque<>();
+    static HashSet<EventData> visited1 = new HashSet<>();
+    static Map<EventData, Edge> parentMap1 = new HashMap<>();
+
+    static Queue<EventData> queue2 = new ArrayDeque<>();
+    static HashSet<EventData> visited2 = new HashSet<>();
+    static Map<EventData, Edge> parentMap2 = new HashMap<>();
     // Bidirectional ShortestPath
     public static List<Edge> findShortestPathBiDir(EventGraph graph, EventData start, EventData end) {
         // A Bidirectional BFS search for a shortest path.
-        Queue<EventData> queue1 = new ArrayDeque<>();
+        /*Queue<EventData> queue1 = new ArrayDeque<>();
         HashSet<EventData> visited1 = new HashSet<>();
         Map<EventData, Edge> parentMap1 = new HashMap<>();
 
         Queue<EventData> queue2 = new ArrayDeque<>();
         HashSet<EventData> visited2 = new HashSet<>();
-        Map<EventData, Edge> parentMap2 = new HashMap<>();
+        Map<EventData, Edge> parentMap2 = new HashMap<>();*/
+        queue1.clear();
+        queue2.clear();
+        visited1.clear();;
+        visited2.clear();
+        parentMap1.clear();
+        parentMap2.clear();
 
         queue1.add(start);
         queue2.add(end);
@@ -83,9 +96,8 @@ public class PathAlgorithm {
                             break;
                         }
 
-                        if (!visited1.contains(cur)) {
+                        if (visited1.add(cur)) {
                             parentMap1.put(cur, next);
-                            visited1.add(cur);
                             queue1.add(cur);
                         }
                     }
@@ -106,9 +118,8 @@ public class PathAlgorithm {
                             parentMap2.put(cur, next);
                             break;
                         }
-                        if (!visited2.contains(cur)) {
+                        if (visited2.add(cur)) {
                             parentMap2.put(cur, next);
-                            visited2.add(cur);
                             queue2.add(cur);
                         }
                     }
@@ -146,13 +157,20 @@ public class PathAlgorithm {
     //TODO: Check this code thoroughly
     public static List<Edge> findShortestPathBiDir(EventGraph graph, EventData start, EventData end, int derivationBound) {
         // A Bidirectional BFS search for a shortest path.
-        Queue<EventData> queue1 = new ArrayDeque<>();
+        /*Queue<EventData> queue1 = new ArrayDeque<>();
         HashSet<EventData> visited1 = new HashSet<>();
         Map<EventData, Edge> parentMap1 = new HashMap<>();
 
         Queue<EventData> queue2 = new ArrayDeque<>();
         HashSet<EventData> visited2 = new HashSet<>();
-        Map<EventData, Edge> parentMap2 = new HashMap<>();
+        Map<EventData, Edge> parentMap2 = new HashMap<>();*/
+
+        queue1.clear();
+        queue2.clear();
+        visited1.clear();;
+        visited2.clear();
+        parentMap1.clear();
+        parentMap2.clear();
 
         queue1.add(start);
         queue2.add(end);
@@ -177,9 +195,8 @@ public class PathAlgorithm {
                             break;
                         }
 
-                        if (!visited1.contains(cur)) {
+                        if (visited1.add(cur)) {
                             parentMap1.put(cur, next);
-                            visited1.add(cur);
                             queue1.add(cur);
                         }
                     }
@@ -203,9 +220,8 @@ public class PathAlgorithm {
                             parentMap2.put(cur, next);
                             break;
                         }
-                        if (!visited2.contains(cur)) {
+                        if (visited2.add(cur)) {
                             parentMap2.put(cur, next);
-                            visited2.add(cur);
                             queue2.add(cur);
                         }
                     }

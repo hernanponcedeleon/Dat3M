@@ -154,7 +154,7 @@ public abstract class EdgeIterator implements Iterator<Edge> {
 
 
     public final Iterable<Edge> toIterable() {
-        return new OneTimeIterable<>(this);
+        return OneTimeIterable.create(this);
     }
 
 }
