@@ -83,7 +83,7 @@ public class Edge implements Comparable<Edge>, Timeable {
 
     @Override
     public int hashCode() {
-        return (first.getId() * 8191) + second.getId();
+        return 8191 * first.getId() * (second.getId() + 1);
     }
 
     @Override

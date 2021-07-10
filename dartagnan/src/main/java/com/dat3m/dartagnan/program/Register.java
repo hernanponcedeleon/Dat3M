@@ -1,17 +1,16 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
-
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.event.Event;
 
 public class Register extends IExpr implements ExprInterface {
 
@@ -55,7 +54,7 @@ public class Register extends IExpr implements ExprInterface {
 
     @Override
     public int hashCode(){
-        return (name.hashCode() << 8) + threadId;
+        return name.hashCode() + threadId;
     }
 
     @Override

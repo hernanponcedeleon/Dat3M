@@ -239,6 +239,7 @@ public class ExecutionModel {
         addressInitMap.clear(); // This one can probably be constant and need not be rebuilt!
         addressWritesMap.clear();
         addressReadsMap.clear();
+        writeReadsMap.clear();
         fenceMap.clear();
         eventMap.clear();
         addrDepMap.clear();
