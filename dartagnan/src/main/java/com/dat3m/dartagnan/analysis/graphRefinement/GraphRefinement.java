@@ -29,7 +29,40 @@ import com.microsoft.z3.Model;
 import java.math.BigInteger;
 import java.util.*;
 
+/*
+    Graph-based Refinement works as follows (with some simplifications):
+    (1) We extract an ExecutionModel (~abstract execution) from the model produced by Z3
+    (2) We initialize an ExecutionGraph with all data from the model (rf, po, dependencies, min-set coherences etc.)
+        - The ExecutionGraph in turn maintains a GraphHierarchy, which consists of graphs for each relation in the WMM
+    (3) We perform an initial check of all axioms (if there is any violation, we compute reasons for it and are done)
+    (4) We start the 'Saturation' algorithm:
+        -- Maintained Data --
+            - A list of coherences to be tested
+            - A SearchTree with binary DecisionNodes for tested coherences and LeafNodes for found violations.
+        -- Algorithm --
+            (1) We pick a coherence edge co(w1, w2) and create a DecisionNode in the SearchTree
+                - If we already tested each coherence edge without any progress, we terminate with inconclusive results
+                - If we have a complete coherence order, we have verified the violation and terminate
+            (2) We add the coherence edge to the ExecutionGraph (which propagates all changes to derived graphs)
+            (3) We check all axioms:
+                - CASE Violation found:
+                    (1) We compute the reasons of all found violations
+                    (2) We create a LeafNode in the SearchTree that contains all found reasons.
+                    (3) We backtrack (remove the new co-edge + all derived edges)
+                    (4) We permanently add the opposite coherence edge co(w2, w1) to the ExecutionGraph
+                        - We repeat the axiom checks for this new edge
+                        - If we again find violations, we have established inconsistency. We perform resolution
+                          and return the resolved violations.
+                - CASE No Violation found:
+                    (1) We backtrack
+                    (2) We check the opposite coherence edge (add edge + axiom checks)
+             (4) We repeat the procedure. If neither of the two coherences caused a violation, we remove the DecisionNode
 
+     NOTES:
+        - The above algorithm is 1-Saturation.
+        - The reason computation is handled by Reasoner.
+        - The resolution is handled by TreeResolution.
+ */
 public class GraphRefinement {
 
     // ================== Fields ==================
@@ -42,7 +75,6 @@ public class GraphRefinement {
     // ----------- Iteration-specific data -----------
     //TODO: We might want to take an external executionModel to perform refinement on!
     private final ExecutionModel executionModel;
-    private final Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
     private RefinementStats stats;  // Statistics of the last call to kSearch
 
     // ============================================
@@ -82,8 +114,9 @@ public class GraphRefinement {
         testStaticGraphs();
     }
 
-    private void initSearch() {
+    private List<Edge> createCoSearchList() {
         Relation co = task.getMemoryModel().getRelationRepository().getRelation("co");
+        Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
         for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
             BigInteger address = addressedWrites.getKey();
@@ -112,6 +145,13 @@ public class GraphRefinement {
             }
         }
         possibleCoEdges.values().removeIf(Collection::isEmpty);
+
+        List<Edge> coSearchList = new ArrayList<>();
+        for (Set<Edge> coEdges : possibleCoEdges.values()) {
+            coSearchList.addAll(coEdges);
+        }
+        return coSearchList;
+
     }
 
     /*
@@ -146,13 +186,7 @@ public class GraphRefinement {
 
         // ======= Initialize search =======
         SearchTree sTree = new SearchTree();
-        possibleCoEdges.clear();
-        initSearch();
-
-        List<Edge> coSearchList = new ArrayList<>();
-        for (Set<Edge> coEdges : possibleCoEdges.values()) {
-            coSearchList.addAll(coEdges);
-        }
+        List<Edge> coSearchList = createCoSearchList();
         sortCoSearchList(coSearchList);
         // =================================
 
@@ -268,8 +302,8 @@ public class GraphRefinement {
                         progress = true;
                     }
                 }
-                searchList.removeIf(this::coExists);
             }
+            searchList.removeIf(this::coExists);
         }
         return Result.UNKNOWN;
     }
