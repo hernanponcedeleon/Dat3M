@@ -27,7 +27,7 @@ public class Tuple implements Comparable<Tuple> {
 
     @Override
     public int hashCode() {
-        return 8191 * first.getCId() * (second.getCId() + 1); // This seems to give the best results!
+        return 8191 * (first.getCId() + 2) * (second.getCId() + 1); // This seems to give the best results!
         //return first.getCId() << 16 + second.getCId();
     }
 

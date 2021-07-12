@@ -10,6 +10,10 @@ public class SetUtil {
         return new FakeSet<>();
     }
 
+    public static <T> Set<T> identityHashSet(int capacity) {
+        return Collections.newSetFromMap(new IdentityHashMap<>(capacity));
+    }
+
     /*
     Like an empty set, but does silently ignore all attempts to modify it without throwing exceptions.
      */
