@@ -49,9 +49,21 @@ public class AcyclicityAxiom extends GraphAxiom {
         // Current implementation: For all marked events <e> in all SCCs, find a shortest cycle (e,e)
         for (Set<EventData> scc : violatingSccs) {
             MatSubgraph subgraph = new MatSubgraph(inner, scc);
-            for (EventData e : Sets.intersection(scc, markedNodes)) {
-                cycles.add(findShortestPathBiDir(subgraph, e, e));
+            Set<EventData> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
+            while (!nodes.isEmpty()) {
+                EventData e = nodes.stream().findAny().get();
+                List<Edge> cycle = findShortestPathBiDir(subgraph, e, e);
+                for (Edge edge : cycle) {
+                    nodes.remove(edge.getFirst());
+                    nodes.remove(edge.getSecond());
+                }
+
+                cycles.add(cycle);
             }
+
+            /*for (EventData e : Sets.intersection(scc, markedNodes)) {
+                cycles.add(findShortestPathBiDir(subgraph, e, e));
+            }*/
         }
         return cycles;
     }

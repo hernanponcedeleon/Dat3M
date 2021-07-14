@@ -117,6 +117,7 @@ public class GraphRefinement {
     private List<Edge> createCoSearchList() {
         Relation co = task.getMemoryModel().getRelationRepository().getRelation("co");
         Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
+        List<Edge> initCoherences = new ArrayList<>();
         for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
             BigInteger address = addressedWrites.getKey();
@@ -128,7 +129,8 @@ public class GraphRefinement {
                     Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
 
                     if (co.getMinTupleSet().contains(t)) {
-                        execGraph.addCoherenceEdge(new Edge(e1, e2));
+                        //execGraph.addCoherenceEdges(new Edge(e1, e2));
+                        initCoherences.add(new Edge(e1, e2));
                         continue;
                     }
 
@@ -137,7 +139,8 @@ public class GraphRefinement {
                         continue;
 
                     if (e1.isInit() && !e2.isInit()) {
-                        execGraph.addCoherenceEdge(new Edge(e1, e2));
+                        initCoherences.add(new Edge(e1, e2));
+                        //execGraph.addCoherenceEdges(new Edge(e1, e2));
                     } else if (!e1.isInit() && !e2.isInit()) {
                         coEdges.add(new Edge(e1, e2));
                     }
@@ -145,6 +148,7 @@ public class GraphRefinement {
             }
         }
         possibleCoEdges.values().removeIf(Collection::isEmpty);
+        execGraph.addCoherenceEdges(initCoherences);
 
         List<Edge> coSearchList = new ArrayList<>();
         for (Set<Edge> coEdges : possibleCoEdges.values()) {
@@ -262,7 +266,7 @@ public class GraphRefinement {
                 coEdge = coEdge.with(nextTime);
                 DecisionNode decNode = new DecisionNode(coEdge);
 
-                execGraph.addCoherenceEdge(coEdge);
+                execGraph.addCoherenceEdges(coEdge);
                 stats.numGuessedCoherences++;
                 Result r = kSaturation(decNode.getPositive(), nextTime, k - 1, searchList, i + 1);
                 if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
@@ -273,7 +277,7 @@ public class GraphRefinement {
                 if (r == Result.FAIL) {
                     node.replaceBy(decNode);
                     node = decNode.getNegative();
-                    execGraph.addCoherenceEdge(coEdge.inverse().with(curTime));
+                    execGraph.addCoherenceEdges(coEdge.inverse().with(curTime));
                     r = kSaturation(decNode.getNegative(), curTime, k - 1, searchList, i + 1);
                     if (r == Result.FAIL) {
                         return r;
@@ -287,7 +291,7 @@ public class GraphRefinement {
                 } else {
                     nextTime = curTime.next();
                     Edge coEdgeInv = coEdge.inverse().with(nextTime);
-                    execGraph.addCoherenceEdge(coEdgeInv);
+                    execGraph.addCoherenceEdges(coEdgeInv);
                     stats.numGuessedCoherences++;
                     r = kSaturation(decNode.getNegative(), nextTime, k - 1, searchList, i + 1);
                     if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
@@ -298,7 +302,7 @@ public class GraphRefinement {
                     if(r == Result.FAIL) {
                         node.replaceBy(decNode);
                         node = decNode.getPositive();
-                        execGraph.addCoherenceEdge(coEdge.with(curTime));
+                        execGraph.addCoherenceEdges(coEdge.with(curTime));
                         progress = true;
                     }
                 }

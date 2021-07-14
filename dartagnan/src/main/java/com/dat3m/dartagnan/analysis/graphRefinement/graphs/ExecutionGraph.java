@@ -155,11 +155,15 @@ public class ExecutionGraph {
     // For now we only allow refinement on co-edges.
     // We might want to add similar features for other linear orders (i.e. user defined orders)
     // We also assume, that the non-transitive write order is defined.
-    public boolean addCoherenceEdge(Edge coEdge) {
+    public boolean addCoherenceEdges(Edge coEdge) {
+        return addCoherenceEdges(ImmutableList.of(coEdge));
+    }
+
+    public boolean addCoherenceEdges(Collection<Edge> coEdges) {
         if ( woGraph == null) {
             return false;
         }
-        graphHierarchy.addEdgesAndPropagate(woGraph, ImmutableList.of(coEdge));
+        graphHierarchy.addEdgesAndPropagate(woGraph, coEdges);
         return true;
     }
 
