@@ -16,6 +16,11 @@
   <name>dartagnan</name>
 
   <dependencies>
+  	<dependency>
+  	  <groupId>org.sosy-lab</groupId>
+	  <artifactId>java-smt</artifactId>
+  	  <version>3.9.0-1-g304079c2</version>
+	</dependency>
     <dependency>
       <groupId>com.microsoft</groupId>
       <artifactId>z3</artifactId>

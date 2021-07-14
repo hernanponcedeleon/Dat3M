@@ -17,6 +17,11 @@ import com.dat3m.dartagnan.witness.WitnessGraph;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -27,8 +32,6 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 
 public class Dartagnan {
 
@@ -54,6 +57,7 @@ public class Dartagnan {
 
         WitnessGraph witness = new WitnessGraph();
         
+        logger.info("SMT solver: " + options.getSMTSolver().name());
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
         if(options.getWitnessPath() != null) {
@@ -85,40 +89,49 @@ public class Dartagnan {
         Settings settings = options.getSettings();
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 
-        Context ctx = new Context();
-        Solver s = ctx.mkSolver();
-        Result result = selectAndRunAnalysis(options, task, ctx, s);
- 
-        if(options.getProgramFilePath().endsWith(".litmus")) {
-            System.out.println("Settings: " + options.getSettings());
-            if(p.getAssFilter() != null){
-                System.out.println("Filter " + (p.getAssFilter()));
-            }
-            System.out.println("Condition " + p.getAss().toStringWithType());
-            System.out.println(result == FAIL ? "Ok" : "No");
-        } else {
-        	System.out.println(result);
-        }
+        try {
+            Configuration config = Configuration.builder().build();
+            SolverContext ctx = SolverContextFactory.createSolverContext(
+                    config, 
+                    BasicLogManager.create(config), 
+                    ShutdownManager.create().getNotifier(), 
+                    options.getSMTSolver()); 
 
-        if(options.createWitness() != null) {
-        	new WitnessBuilder(p, ctx, s, result, options).write();
+            Result result = selectAndRunAnalysis(options, task, ctx);
+            
+            if(options.getProgramFilePath().endsWith(".litmus")) {
+                System.out.println("Settings: " + options.getSettings());
+                if(p.getAssFilter() != null){
+                    System.out.println("Filter " + (p.getAssFilter()));
+                }
+                System.out.println("Condition " + p.getAss().toStringWithType());
+                System.out.println(result == FAIL ? "Ok" : "No");
+            } else {
+            	System.out.println(result);
+            }
+
+            if(options.createWitness() != null) {
+            	new WitnessBuilder(p, ctx, result, options).write();
+            }
+            
+            ctx.close();
+        } catch (Exception e) {
+        	logger.error(e.getMessage());
         }
-        
-        ctx.close();
     }
 
-	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, Context ctx, Solver s) {
+	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx) {
 		switch(options.getAnalysis()) {
 			case RACES:
-				return checkForRaces(s, ctx, task);	
+				return checkForRaces(ctx, task);	
 			case REACHABILITY:
 				switch(options.solver()) {
 					case TWO:
-						return runAnalysis(s, ctx, task);
+						return runAnalysis(ctx, task);
 					case INCREMENTAL:
-						return runAnalysisIncrementalSolver(s, ctx, task);
+						return runAnalysisIncrementalSolver(ctx, task);
 					case ASSUME:
-						return runAnalysisAssumeSolver(s, ctx, task);
+						return runAnalysisAssumeSolver(ctx, task);
 					default:
 						throw new RuntimeException("Unrecognized solver mode: " + options.solver());
 				}

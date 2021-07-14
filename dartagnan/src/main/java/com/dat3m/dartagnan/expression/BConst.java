@@ -1,11 +1,16 @@
 package com.dat3m.dartagnan.expression;
 
+import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -22,13 +27,15 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return value ? ctx.mkTrue() : ctx.mkFalse();
+	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		return value ? bmgr.makeTrue() : bmgr.makeFalse();
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
-		return value ? ctx.mkInt(1) : ctx.mkInt(0);
+	public Formula getLastValueExpr(SolverContext ctx){
+		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+		return value ? imgr.makeNumber(BigInteger.ONE) : imgr.makeNumber(BigInteger.ZERO);
 	}
 
     @Override
@@ -42,7 +49,7 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, Context ctx){
+	public boolean getBoolValue(Event e, Model model, SolverContext ctx){
 		return value;
 	}
 

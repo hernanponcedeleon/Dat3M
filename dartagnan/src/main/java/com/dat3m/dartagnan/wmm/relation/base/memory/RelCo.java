@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.microsoft.z3.*;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -10,11 +9,19 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
@@ -76,8 +83,12 @@ public class RelCo extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    	BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+    	
+    	BooleanFormula enc = bmgr.makeTrue();
 
         List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
         List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
@@ -86,56 +97,68 @@ public class RelCo extends Relation {
         ));
 
         for(Event e : eventsInit) {
-            enc = ctx.mkAnd(enc, ctx.mkEq(intVar("co", e, ctx), ctx.mkInt(0)));
+            enc = bmgr.and(enc, imgr.equal(intVar("co", e, ctx), imgr.makeNumber(BigInteger.ZERO)));
         }
 
-        List<IntExpr> intVars = new ArrayList<>();
+        List<IntegerFormula> intVars = new ArrayList<>();
         for(Event w : eventsStore) {
-            IntExpr coVar = intVar("co", w, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkGt(coVar, ctx.mkInt(0)));
+        	IntegerFormula coVar = intVar("co", w, ctx);
+            enc = bmgr.and(enc, imgr.greaterThan(coVar, imgr.makeNumber(BigInteger.ZERO)));
             intVars.add(coVar);
         }
-        enc = ctx.mkAnd(enc, ctx.mkDistinct(intVars.toArray(new IntExpr[0])));
+        enc = bmgr.and(enc, imgr.distinct(intVars));
 
         for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))){
             MemEvent w1 = (MemEvent)w;
-            BoolExpr lastCo = w1.exec();
+            BooleanFormula lastCo = w1.exec();
 
             for(Tuple t : maxTupleSet.getByFirst(w1)){
                 MemEvent w2 = (MemEvent)t.getSecond();
-                BoolExpr relation = getSMTVar(t, ctx);
-                BoolExpr execPair = ctx.mkAnd(w1.exec(), w2.exec()); //getExecPair(t, ctx);
-                lastCo = ctx.mkAnd(lastCo, ctx.mkNot(relation));
+                BooleanFormula relation = getSMTVar(t, ctx);
+                BooleanFormula execPair = bmgr.and(w1.exec(), w2.exec()); //getExecPair(t, ctx);
+                lastCo = bmgr.and(lastCo, bmgr.not(relation));
 
-                Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
-                Expr a2 = w2.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w2.getMemAddressExpr(), false) : w2.getMemAddressExpr();
-                enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkAnd(
-                        ctx.mkAnd(ctx.mkAnd(execPair), ctx.mkEq(a1, a2)),
-                        ctx.mkLt(intVar("co", w1, ctx), intVar("co", w2, ctx))
+                IntegerFormula a1 = w1.getMemAddressExpr() instanceof BitvectorFormula ?
+                		bvmgr.toIntegerFormula((BitvectorFormula)w1.getMemAddressExpr(), false) :
+                		(IntegerFormula)w1.getMemAddressExpr();
+                IntegerFormula a2 = w2.getMemAddressExpr()instanceof BitvectorFormula ?
+                		bvmgr.toIntegerFormula((BitvectorFormula)w2.getMemAddressExpr(), false) :
+                		(IntegerFormula)w2.getMemAddressExpr();
+                enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.and(
+                		bmgr.and(bmgr.and(execPair), imgr.equal(a1, a2)),
+                		imgr.lessThan(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
 
                 // ============ Local consistency optimizations ============
                 if (getMinTupleSet().contains(t)) {
-                   enc = ctx.mkAnd(enc, ctx.mkEq(relation, execPair));
+                   enc = bmgr.and(enc, bmgr.equivalence(relation, execPair));
                 } else if (task.getMemoryModel().isLocallyConsistent()) {
                     if (w2.is(INIT) || t.isBackward()){
-                        enc = ctx.mkAnd(enc, ctx.mkEq(relation, ctx.mkFalse()));
+                        enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.makeFalse()));
                     }
                     if (w1.is(INIT) || t.isForward()) {
-                        enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(execPair, ctx.mkEq(a1, a2)), relation));
+                        enc = bmgr.and(enc, bmgr.implication(bmgr.and(execPair, imgr.equal(a1, a2)), relation));
                     }
                 }
             }
 
-            BoolExpr lastCoExpr = ctx.mkBoolConst("co_last(" + w1.repr() + ")");
-            enc = ctx.mkAnd(enc, ctx.mkEq(lastCoExpr, lastCo));
+            BooleanFormula lastCoExpr = bmgr.makeVariable("co_last(" + w1.repr() + ")");
+            enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
-            	Expr a1 = w1.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemAddressExpr(), false) : w1.getMemAddressExpr();
-            	Expr a2 = address.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr)address.toZ3Int(ctx), false) : address.toZ3Int(ctx);
-				Expr v1 = address.getLastMemValueExpr(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr)address.getLastMemValueExpr(ctx), false) : address.getLastMemValueExpr(ctx);
-                Expr v2 = w1.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w1.getMemValueExpr(), false) : w1.getMemValueExpr();
-				enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(lastCoExpr, ctx.mkEq(a1, a2)),ctx.mkEq(v1, v2)));
+            	IntegerFormula a1 = w1.getMemAddressExpr() instanceof BitvectorFormula ?
+            			bvmgr.toIntegerFormula((BitvectorFormula)w1.getMemAddressExpr(), false) : 
+            			(IntegerFormula)w1.getMemAddressExpr();
+            	IntegerFormula a2 = address.toZ3Int(ctx) instanceof BitvectorFormula ?
+            			bvmgr.toIntegerFormula((BitvectorFormula)address.toZ3Int(ctx), false) :
+            			(IntegerFormula)address.toZ3Int(ctx);
+            	IntegerFormula v1 = address.getLastMemValueExpr(ctx) instanceof BitvectorFormula ?
+            			bvmgr.toIntegerFormula((BitvectorFormula)address.getLastMemValueExpr(ctx), false) :
+            			(IntegerFormula)address.getLastMemValueExpr(ctx);
+            	IntegerFormula v2 = w1.getMemValueExpr() instanceof BitvectorFormula ?
+            			bvmgr.toIntegerFormula((BitvectorFormula)w1.getMemValueExpr(), false) :
+            			(IntegerFormula)w1.getMemValueExpr();
+				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, imgr.equal(a1, a2)), imgr.equal(v1, v2)));
             }
         }
         return enc;
@@ -166,19 +189,22 @@ public class RelCo extends Relation {
     }
     
     @Override
-    public BoolExpr getSMTVar(Tuple edge, Context ctx) {
+    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    	
     	if(!ANTISYMM_CO) {
     		return super.getSMTVar(edge, ctx);
     	}
         MemEvent first = (MemEvent) edge.getFirst();
         MemEvent second = (MemEvent) edge.getSecond();
         // Doing the check at the java level seems to slightly improve  performance
-        BoolExpr eqAdd = first.getAddress().equals(second.getAddress()) ? ctx.mkTrue() : ctx.mkEq(first.getMemAddressExpr(), second.getMemAddressExpr());
-        return !getMaxTupleSet().contains(edge) ? ctx.mkFalse() :
+        BooleanFormula eqAdd = first.getAddress().equals(second.getAddress()) ? bmgr.makeTrue() : imgr.equal((IntegerFormula)first.getMemAddressExpr(), (IntegerFormula)second.getMemAddressExpr());
+        return !getMaxTupleSet().contains(edge) ? bmgr.makeFalse() :
     		first.getUId() <= second.getUId() ?
     				edge(getName(), first, second, ctx) :
-    					(BoolExpr) ctx.mkITE(ctx.mkAnd(getExecPair(edge, ctx), eqAdd), 
-    							ctx.mkNot(getSMTVar(edge.getInverse(), ctx)), 
-    							ctx.mkFalse());
+    					(BooleanFormula) bmgr.ifThenElse(bmgr.and(getExecPair(edge, ctx), eqAdd), 
+    							bmgr.not(getSMTVar(edge.getInverse(), ctx)), 
+    							bmgr.makeFalse());
     }
 }

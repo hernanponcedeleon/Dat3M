@@ -16,12 +16,15 @@ import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,7 +52,7 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         super.initialise(task, ctx);
         this.baseMaxTupleSet = null;
     }
@@ -122,62 +125,66 @@ public class RelRMW extends StaticRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+        
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
         encodeTupleSet = new TupleSet(Sets.intersection(encodeTupleSet, baseMaxTupleSet));
-        BoolExpr enc = super.encodeApprox(ctx);
+        BooleanFormula enc = super.encodeApprox(ctx);
         encodeTupleSet = origEncodeTupleSet;
 
         // Encode RMW for exclusive pairs
-        BoolExpr unpredictable = ctx.mkFalse();
+		BooleanFormula unpredictable = bmgr.makeFalse();
         for(Thread thread : task.getProgram().getThreads()) {
             for (Event store : thread.getCache().getEvents(storeFilter)) {
-                BoolExpr storeExec = ctx.mkFalse();
+            	BooleanFormula storeExec = bmgr.makeFalse();
                 for (Event load : thread.getCache().getEvents(loadFilter)) {
                     if (load.getCId() < store.getCId()) {
 
                         // Encode if load and store form an exclusive pair
-                        BoolExpr isPair = exclPair(load, store, ctx);
-                        BoolExpr isExecPair = ctx.mkAnd(isPair, store.exec());
-                        enc = ctx.mkAnd(enc, ctx.mkEq(isPair, pairingCond(thread, load, store, ctx)));
+                    	BooleanFormula isPair = exclPair(load, store, ctx);
+                    	BooleanFormula isExecPair = bmgr.and(isPair, store.exec());
+                        enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond(thread, load, store, ctx)));
 
                         // If load and store have the same address
-                        BoolExpr sameAddress = ctx.mkEq(((MemEvent)load).getMemAddressExpr(), (((MemEvent)store).getMemAddressExpr()));
-                        unpredictable = ctx.mkOr(unpredictable, ctx.mkAnd(isExecPair, ctx.mkNot(sameAddress)));
+                        BooleanFormula sameAddress = imgr.equal((IntegerFormula)((MemEvent)load).getMemAddressExpr(), (IntegerFormula)(((MemEvent)store).getMemAddressExpr()));
+                        unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
 
                         // Relation between exclusive load and store
-                        enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(load, store, ctx), ctx.mkAnd(isExecPair, sameAddress)));
+                        enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(load, store, ctx), bmgr.and(isExecPair, sameAddress)));
 
                         // Can be executed if addresses mismatch, but behaviour is "constrained unpredictable"
                         // The implementation does not include all possible unpredictable cases: in case of address
                         // mismatch, addresses of read and write are unknown, i.e. read and write can use any address
-                        storeExec = ctx.mkOr(storeExec, isPair);
+                        storeExec = bmgr.or(storeExec, isPair);
                     }
                 }
-                enc = ctx.mkAnd(enc, ctx.mkImplies(store.exec(), storeExec));
+                enc = bmgr.and(enc, bmgr.implication(store.exec(), storeExec));
             }
         }
-        return ctx.mkAnd(enc, ctx.mkEq(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
+        return bmgr.and(enc, bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(ctx), unpredictable));
     }
 
-    private BoolExpr pairingCond(Thread thread, Event load, Event store, Context ctx){
-        BoolExpr pairingCond = ctx.mkAnd(load.exec(), store.cf());
+    private BooleanFormula pairingCond(Thread thread, Event load, Event store, SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula pairingCond = bmgr.and(load.exec(), store.cf());
 
         for (Event otherLoad : thread.getCache().getEvents(loadFilter)) {
             if (otherLoad.getCId() > load.getCId() && otherLoad.getCId() < store.getCId()) {
-                pairingCond = ctx.mkAnd(pairingCond, ctx.mkNot(otherLoad.exec()));
+                pairingCond = bmgr.and(pairingCond, bmgr.not(otherLoad.exec()));
             }
         }
         for (Event otherStore : thread.getCache().getEvents(storeFilter)) {
             if (otherStore.getCId() > load.getCId() && otherStore.getCId() < store.getCId()) {
-                pairingCond = ctx.mkAnd(pairingCond, ctx.mkNot(otherStore.cf()));
+                pairingCond = bmgr.and(pairingCond, bmgr.not(otherStore.cf()));
             }
         }
         return pairingCond;
     }
 
-    private BoolExpr exclPair(Event load, Event store, Context ctx){
-        return ctx.mkBoolConst("excl(" + load.getCId() + "," + store.getCId() + ")");
+    private BooleanFormula exclPair(Event load, Event store, SolverContext ctx){
+    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("excl(" + load.getCId() + "," + store.getCId() + ")");
     }
 }

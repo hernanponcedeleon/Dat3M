@@ -3,8 +3,10 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -14,8 +16,8 @@ public abstract class MemEvent extends Event {
     protected final IExpr address;
     protected final String mo;
 
-    protected Expr memAddressExpr;
-    protected Expr memValueExpr;
+    protected Formula memAddressExpr;
+    protected Formula memValueExpr;
     private ImmutableSet<Address> maxAddressSet;
 
     public MemEvent(IExpr address, String mo, int cLine){
@@ -41,19 +43,19 @@ public abstract class MemEvent extends Event {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
         memAddressExpr = address.toZ3Int(this, ctx);
     }
 
-    public Expr getMemAddressExpr(){
+    public Formula getMemAddressExpr(){
         if(memAddressExpr != null){
             return memAddressExpr;
         }
         throw new RuntimeException("Attempt to access not initialised address expression in " + this);
     }
 
-    public Expr getMemValueExpr(){
+    public Formula getMemValueExpr(){
         if(memValueExpr != null){
             return memValueExpr;
         }

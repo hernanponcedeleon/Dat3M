@@ -9,11 +9,15 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +46,7 @@ public class DartagnanArrayValidTest {
     private final String path;
     private final Wmm wmm;
     private final Settings settings;
+    private SolverContext ctx;
 
     public DartagnanArrayValidTest(String path, Wmm wmm, Settings settings) {
         this.path = path;
@@ -49,14 +54,22 @@ public class DartagnanArrayValidTest {
         this.settings = settings;
     }
 
+    private void initSolverContext() throws Exception {
+        Configuration config = Configuration.builder().build();
+        ctx = SolverContextFactory.createSolverContext(
+                config, 
+                BasicLogManager.create(config), 
+                ShutdownManager.create().getNotifier(), 
+                Solvers.Z3);
+    }
+    
     @Test
     public void test() {
         try{
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
-            Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(runAnalysis(solver, ctx, task), FAIL);
+            initSolverContext();
+            assertEquals(runAnalysis(ctx, task), FAIL);
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

@@ -1,13 +1,15 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-
 import com.dat3m.dartagnan.wmm.utils.Utils;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.Context;
 
 /**
  *
@@ -69,29 +71,31 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
             if (min.contains(tuple)) {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
                 continue;
             }
-            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
-            BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
+            BooleanFormula opt1 = r1.getSMTVar(tuple, ctx);
+            BooleanFormula opt2 = r2.getSMTVar(tuple, ctx);
             if (Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkOr(opt1, opt2), this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.implication(bmgr.or(opt1, opt2), this.getSMTVar(tuple, ctx)));
             } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(opt1, opt2)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), bmgr.or(opt1, opt2)));
             }
         }
         return enc;
     }
 
     @Override
-    public BoolExpr encodeIteration(int groupId, int iteration, Context ctx){
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encodeIteration(int groupId, int iteration, SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){
             lastEncodedIteration = iteration;
@@ -100,7 +104,7 @@ public class RelUnion extends BinaryRelation {
 
             if(iteration == 0 && isRecursive){
                 for(Tuple tuple : encodeTupleSet){
-                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
+                    enc = bmgr.and(bmgr.not(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
                 }
             } else {
                 int childIteration = isRecursive ? iteration - 1 : iteration;
@@ -112,18 +116,18 @@ public class RelUnion extends BinaryRelation {
                 String r2Name = recurseInR2 ? r2.getName() + "_" + childIteration : r2.getName();
 
                 for(Tuple tuple : encodeTupleSet){
-                    BoolExpr edge = Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx);
-                    BoolExpr opt1 = Utils.edge(r1Name, tuple.getFirst(), tuple.getSecond(), ctx);
-                    BoolExpr opt2 = Utils.edge(r2Name, tuple.getFirst(), tuple.getSecond(), ctx);
-                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkOr(opt1, opt2)));
+                	BooleanFormula edge = Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx);
+                	BooleanFormula opt1 = Utils.edge(r1Name, tuple.getFirst(), tuple.getSecond(), ctx);
+                    BooleanFormula opt2 = Utils.edge(r2Name, tuple.getFirst(), tuple.getSecond(), ctx);
+                    enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.or(opt1, opt2)));
                 }
 
                 if(recurseInR1){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration, ctx));
+                    enc = bmgr.and(enc, r1.encodeIteration(groupId, childIteration, ctx));
                 }
 
                 if(recurseInR2){
-                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, childIteration, ctx));
+                    enc = bmgr.and(enc, r2.encodeIteration(groupId, childIteration, ctx));
                 }
             }
         }

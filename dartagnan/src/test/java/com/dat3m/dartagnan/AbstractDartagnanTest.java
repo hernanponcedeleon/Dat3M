@@ -10,10 +10,14 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 
 import org.junit.Test;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +59,7 @@ public abstract class AbstractDartagnanTest {
     private final Arch target;
     private final Wmm wmm;
     private final Settings settings;
+    private SolverContext ctx;
 
     AbstractDartagnanTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         this.path = path;
@@ -64,19 +69,26 @@ public abstract class AbstractDartagnanTest {
         this.settings = settings;
     }
 
-    @Test
+    private void initSolverContext() throws Exception {
+        Configuration config = Configuration.builder().build();
+        ctx = SolverContextFactory.createSolverContext(
+                config, 
+                BasicLogManager.create(config), 
+                ShutdownManager.create().getNotifier(), 
+                Solvers.Z3);
+    }
+    
+    @Test()
     public void test() {
-    	try {
+        try {
             Program program = new ProgramParser().parse(new File(path));
-            if (program.getAss() != null) {
-                Context ctx = new Context();
-                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
-                VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                assertEquals(expected, runAnalysis(solver, ctx, task));
-                ctx.close();
-            }
+            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            initSolverContext();
+            assertEquals(expected, runAnalysis(ctx, task));
         } catch (Exception e){
-            fail("Missing resource file");
+            fail(e.getMessage());
+        }  finally {
+        	ctx.close();
         }
     }
 }

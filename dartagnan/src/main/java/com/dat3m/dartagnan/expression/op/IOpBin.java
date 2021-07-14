@@ -4,10 +4,12 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import com.microsoft.z3.BitVecExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 public enum IOpBin {
     PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM;
@@ -61,36 +63,56 @@ public enum IOpBin {
         }
     }
 
-    public Expr encode(Expr e1, Expr e2, Context ctx){
+    public Formula encode(Formula e1, Formula e2, SolverContext ctx){
+		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+
 		switch(this){
             case PLUS:
-            	return e1.isBV() ? ctx.mkBVAdd((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkAdd((IntExpr)e1, (IntExpr)e2);            		
+            	return e1 instanceof IntegerFormula ? 
+            		imgr.add((IntegerFormula)e1, (IntegerFormula)e2) :
+            		bvmgr.add((BitvectorFormula)e1, (BitvectorFormula)e2);
             case MINUS:
-            	return e1.isBV() ? ctx.mkBVSub((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkSub((IntExpr)e1, (IntExpr)e2);
+            	return e1 instanceof IntegerFormula ?
+            		imgr.subtract((IntegerFormula)e1, (IntegerFormula)e2) :
+            		bvmgr.subtract((BitvectorFormula)e1, (BitvectorFormula)e2);
             case MULT:
-            	return e1.isBV() ? ctx.mkBVMul((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMul((IntExpr)e1, (IntExpr)e2);
+            	return e1 instanceof IntegerFormula ?
+                		imgr.multiply((IntegerFormula)e1, (IntegerFormula)e2) :
+                		bvmgr.multiply((BitvectorFormula)e1, (BitvectorFormula)e2);
             case DIV:
-            	return e1.isBV() ? ctx.mkBVSDiv((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkDiv((IntExpr)e1, (IntExpr)e2);
             case UDIV:
-            	return e1.isBV() ? ctx.mkBVUDiv((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVUDiv(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return e1 instanceof IntegerFormula ?
+                		imgr.divide((IntegerFormula)e1, (IntegerFormula)e2) :
+                		bvmgr.divide((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(DIV));
             case MOD:
-            	return e1.isBV() ? ctx.mkBVSMod((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkMod((IntExpr)e1, (IntExpr)e2);
+            	return e1 instanceof IntegerFormula ?
+                		imgr.modulo((IntegerFormula)e1, (IntegerFormula)e2) :
+                		bvmgr.modulo((BitvectorFormula)e1, (BitvectorFormula)e2, true);
             case AND:
-            	return e1.isBV() ? ctx.mkBVAND((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVAND(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);	
+            	return e1 instanceof IntegerFormula ?
+            			bvmgr.toIntegerFormula(bvmgr.and(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
+                		bvmgr.and((BitvectorFormula)e1, (BitvectorFormula)e2);
             case OR:
-            	return e1.isBV() ? ctx.mkBVOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return e1 instanceof IntegerFormula ?
+            			bvmgr.toIntegerFormula(bvmgr.or(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
+                		bvmgr.or((BitvectorFormula)e1, (BitvectorFormula)e2);
             case XOR:
-            	return e1.isBV() ? ctx.mkBVXOR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVXOR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return e1 instanceof IntegerFormula ?
+            			bvmgr.toIntegerFormula(bvmgr.xor(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
+                		bvmgr.xor((BitvectorFormula)e1, (BitvectorFormula)e2);
             case L_SHIFT:
-            	return e1.isBV() ? ctx.mkBVSHL((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVSHL(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return e1 instanceof IntegerFormula ?
+            			bvmgr.toIntegerFormula(bvmgr.shiftLeft(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
+                		bvmgr.shiftLeft((BitvectorFormula)e1, (BitvectorFormula)e2);
             case R_SHIFT:
-            	return e1.isBV() ? ctx.mkBVLSHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVLSHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return e1 instanceof IntegerFormula ?
+            			bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), false), false) : 
+                		bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, false);
             case AR_SHIFT:
-            	return e1.isBV() ? ctx.mkBVASHR((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVASHR(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
-            case SREM:
-            	return e1.isBV() ? ctx.mkBVSRem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVSRem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
-            case UREM:
-            	return e1.isBV() ? ctx.mkBVURem((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkBV2Int(ctx.mkBVURem(ctx.mkInt2BV(32, (IntExpr)e1), ctx.mkInt2BV(32, (IntExpr)e2)), false);
+            	return e1 instanceof IntegerFormula ?
+            			bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), true), false) : 
+                		bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, true);
         }
         throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
     }

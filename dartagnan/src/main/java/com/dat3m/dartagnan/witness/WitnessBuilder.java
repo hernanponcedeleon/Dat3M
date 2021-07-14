@@ -25,10 +25,14 @@ import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
@@ -39,28 +43,23 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
-import com.microsoft.z3.Solver;
 
 public class WitnessBuilder {
 	
 	private WitnessGraph graph;
 	private Program program;
-	private Context ctx;
-	private Solver solver;
+	private SolverContext ctx;
+	private Model model;
 	private String type ;
 	private String path;
 	
 	private Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
-	public WitnessBuilder(Program program, Context ctx, Solver solver, Result result, DartagnanOptions options) {
+	public WitnessBuilder(Program program, SolverContext ctx, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
 		this.graph.addAttribute(UNROLLBOUND.toString(), String.valueOf(options.getSettings().getBound()));
 		this.program = program;
 		this.ctx = ctx;
-		this.solver = solver;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
 		this.path = options.createWitness();
 		buildGraph();
@@ -117,7 +116,7 @@ public class WitnessBuilder {
 			return;
 		}
 
-		List<Event> execution = getSCExecutionOrder(ctx, solver.getModel());
+		List<Event> execution = getSCExecutionOrder(ctx, model);
 		for(int i = 0; i < execution.size(); i++) {
 			Event e = execution.get(i);
 			if(i+1 < execution.size() && e.getCLine() == execution.get(i+1).getCLine() && e.getThread().equals(execution.get(i+1).getThread())) {
@@ -127,9 +126,9 @@ public class WitnessBuilder {
 			edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode+1)));
 			edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
 			edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
-			if(solver.getModel().getConstInterp(intVar("hb", e, ctx)) != null) {
+			if(model.evaluate(intVar("hb", e, ctx)) != null) {
 				edge.addAttribute(EVENTID.toString(), valueOf(e.getCId()));
-				edge.addAttribute(HBPOS.toString(), valueOf(solver.getModel().getConstInterp(intVar("hb", e, ctx))));				
+				edge.addAttribute(HBPOS.toString(), valueOf(model.evaluate(intVar("hb", e, ctx))));				
 			}
 			
 			if(e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
@@ -155,10 +154,10 @@ public class WitnessBuilder {
 		}
 	}
 	
-	private List<Event> getSCExecutionOrder(Context ctx, Model model) {
+	private List<Event> getSCExecutionOrder(SolverContext ctx, Model model) {
 		List<Event> execEvents = new ArrayList<>();
-		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList()));
-		execEvents.addAll(program.getEvents().stream().filter(e -> model.getConstInterp(e.exec()).isTrue() && e.getCLine() > -1).collect(Collectors.toList()));
+		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));
+		execEvents.addAll(program.getEvents().stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));
 		
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
@@ -166,16 +165,16 @@ public class WitnessBuilder {
 			if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 				continue;
 			}
-        	Expr var = model.getConstInterp(intVar("hb", e, ctx));
+        	BigInteger var = model.evaluate(intVar("hb", e, ctx));
         	if(var != null) {
-        		int key = Integer.parseInt(var.toString());
+        		int key = var.intValue();
 				if(!map.containsKey(key)) {
 					map.put(key, new ArrayList<>());
 				}
 				List<Event> lst = new ArrayList<>(Collections.singletonList(e));
 				Event next = e.getSuccessor();
 				// This collects all the successors not accessing global variables
-				while(next != null && execEvents.contains(next) && model.getConstInterp(intVar("hb", next, ctx)) == null) {
+				while(next != null && execEvents.contains(next) && model.evaluate(intVar("hb", next, ctx)) == null) {
 					lst.add(next);
 					next = next.getSuccessor();
 				}

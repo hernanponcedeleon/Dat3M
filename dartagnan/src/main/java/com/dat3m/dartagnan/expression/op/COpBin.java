@@ -1,12 +1,14 @@
 package com.dat3m.dartagnan.expression.op;
 
 import java.math.BigInteger;
-
-import com.microsoft.z3.ArithExpr;
-import com.microsoft.z3.BitVecExpr;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public enum COpBin {
     EQ, NEQ, GTE, LTE, GT, LT, UGTE, ULTE, UGT, ULT;
@@ -34,28 +36,63 @@ public enum COpBin {
         return super.toString();
     }
 
-    public BoolExpr encode(Expr e1, Expr e2, Context ctx) {
-        switch(this) {
+    public BooleanFormula encode(Formula e1, Formula e2, SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+		switch(this) {
             case EQ:
-                return ctx.mkEq(e1, e2);
+            	if(e1 instanceof BooleanFormula) {
+            		return bmgr.equivalence((BooleanFormula)e1, (BooleanFormula)e2);
+            	}
+            	if(e1 instanceof IntegerFormula) {
+            		return imgr.equal((IntegerFormula)e1, (IntegerFormula)e2);
+            	}
+            	if(e1 instanceof BitvectorFormula) {
+            		return bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	}
             case NEQ:
-                return ctx.mkDistinct(e1, e2);
+            	if(e1 instanceof BooleanFormula) {
+            		return bmgr.not(bmgr.equivalence((BooleanFormula)e1, (BooleanFormula)e2));
+            	}
+            	if(e1 instanceof IntegerFormula) {
+            		return bmgr.not(imgr.equal((IntegerFormula)e1, (IntegerFormula)e2));
+            	}
+            	if(e1 instanceof BitvectorFormula) {
+            		return bmgr.not(bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2));
+            	}
             case LT:
-            	return e1.isBV() ? ctx.mkBVSLT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLt((ArithExpr)e1, (ArithExpr)e2);
             case ULT:
-            	return e1.isBV() ? ctx.mkBVULT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLt((ArithExpr)e1, (ArithExpr)e2);
+            	if(e1 instanceof IntegerFormula) {
+            		return imgr.lessThan((IntegerFormula)e1, (IntegerFormula)e2);
+            	}
+            	if(e1 instanceof BitvectorFormula) {
+            		return bvmgr.lessThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LT));
+            	}
             case LTE:
-                return e1.isBV() ? ctx.mkBVSLE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLe((ArithExpr)e1, (ArithExpr)e2);
             case ULTE:
-                return e1.isBV() ? ctx.mkBVULE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkLe((ArithExpr)e1, (ArithExpr)e2);
+            	if(e1 instanceof IntegerFormula) {
+            		return imgr.lessOrEquals((IntegerFormula)e1, (IntegerFormula)e2);
+            	}
+            	if(e1 instanceof BitvectorFormula) {
+            		return bvmgr.lessOrEquals((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LTE));
+            	}
             case GT:
-            	return e1.isBV() ? ctx.mkBVSGT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGt((ArithExpr)e1, (ArithExpr)e2);
             case UGT:
-            	return e1.isBV() ? ctx.mkBVUGT((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGt((ArithExpr)e1, (ArithExpr)e2);
+            	if(e1 instanceof IntegerFormula) {
+            		return imgr.greaterThan((IntegerFormula)e1, (IntegerFormula)e2);
+            	}
+            	if(e1 instanceof BitvectorFormula) {
+            		return bvmgr.greaterThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(GT));
+            	}
             case GTE:
-            	return e1.isBV() ? ctx.mkBVSGE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGe((ArithExpr)e1, (ArithExpr)e2);
             case UGTE:
-            	return e1.isBV() ? ctx.mkBVUGE((BitVecExpr)e1, (BitVecExpr)e2) : ctx.mkGe((ArithExpr)e1, (ArithExpr)e2);
+            	if(e1 instanceof IntegerFormula) {
+            		return imgr.greaterOrEquals((IntegerFormula)e1, (IntegerFormula)e2);
+            	}
+            	if(e1 instanceof BitvectorFormula) {
+            		return bvmgr.greaterOrEquals((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(GTE));
+            	}
         }
         throw new UnsupportedOperationException("Encoding of not supported for COpBin " + this);
     }

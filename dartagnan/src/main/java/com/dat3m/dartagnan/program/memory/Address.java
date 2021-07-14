@@ -2,12 +2,14 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -42,22 +44,25 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3Int(Event e, Context ctx){
+    public Formula toZ3Int(Event e, SolverContext ctx){
         return toZ3Int(ctx);
     }
 
     @Override
-    public Expr getLastValueExpr(Context ctx){
+    public Formula getLastValueExpr(SolverContext ctx){
         return toZ3Int(ctx);
     }
 
-    public Expr getLastMemValueExpr(Context ctx){
-        return precision > 0 ? ctx.mkBVConst("last_val_at_memory_" + index, precision) : ctx.mkIntConst("last_val_at_memory_" + index);
+    public Formula getLastMemValueExpr(SolverContext ctx){
+        FormulaManager fmgr = ctx.getFormulaManager();
+		return precision > 0 ? 
+        		fmgr.getBitvectorFormulaManager().makeVariable(precision, "last_val_at_memory_" + index) : 
+        		fmgr.getIntegerFormulaManager().makeVariable("last_val_at_memory_" + index);
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, Context ctx){
-        return ctx.mkTrue();
+    public BooleanFormula toZ3Bool(Event e, SolverContext ctx){
+        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
     @Override
@@ -82,19 +87,20 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Expr toZ3Int(Context ctx){
+    public Formula toZ3Int(SolverContext ctx){
+		FormulaManager fmgr = ctx.getFormulaManager();
     	if(constantValue != null) {
-    		return precision > 0 ? ctx.mkBV(constantValue.toString(), precision) : ctx.mkInt(constantValue.toString());
+			return precision > 0 ? fmgr.getBitvectorFormulaManager().makeBitvector(precision, constantValue) : fmgr.getIntegerFormulaManager().makeNumber(constantValue);
     	}
-		return precision > 0 ? ctx.mkBVConst("memory_" + index, precision) : ctx.mkIntConst("memory_" + index);
+		return precision > 0 ? fmgr.getBitvectorFormulaManager().makeVariable(precision, "memory_" + index) : fmgr.getIntegerFormulaManager().makeVariable("memory_" + index);
     }
 
     @Override
-    public BigInteger getIntValue(Event e, Model model, Context ctx){
+    public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
         if (hasConstantValue()) {
             return constantValue;
         }
-        return new BigInteger(model.getConstInterp(toZ3Int(ctx)).toString());
+        return new BigInteger(model.evaluate(toZ3Int(ctx)).toString());
     }
 
     @Override

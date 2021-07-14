@@ -3,13 +3,18 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
-import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -40,15 +45,25 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, Context ctx) {
+    public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
         return op.encode(b1.toZ3Bool(e, ctx), b2.toZ3Bool(e, ctx), ctx);
     }
 
     @Override
-    public Expr getLastValueExpr(Context ctx){
-        BoolExpr expr1 = ctx.mkGt((IntExpr)b1.getLastValueExpr(ctx), ctx.mkInt(1));
-        BoolExpr expr2 = ctx.mkGt((IntExpr)b2.getLastValueExpr(ctx), ctx.mkInt(1));
-        return ctx.mkITE(op.encode(expr1, expr2, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    public Formula getLastValueExpr(SolverContext ctx){
+        FormulaManager fmgr = ctx.getFormulaManager();
+		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+		
+		BooleanFormula expr1 = b1.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
+				bvmgr.greaterThan((BitvectorFormula)b1.getLastValueExpr(ctx), bvmgr.makeBitvector(b1.getPrecision(), (BigInteger.ONE)), false):
+				imgr.greaterThan((IntegerFormula)b1.getLastValueExpr(ctx), imgr.makeNumber(BigInteger.ONE));
+       
+		BooleanFormula expr2 = b2.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
+				bvmgr.greaterThan((BitvectorFormula)b2.getLastValueExpr(ctx), bvmgr.makeBitvector(b2.getPrecision(), (BigInteger.ONE)), false):
+        		imgr.greaterThan((IntegerFormula)b2.getLastValueExpr(ctx), imgr.makeNumber(BigInteger.ONE));
+        
+		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr1, expr2, ctx), imgr.makeNumber(BigInteger.ONE), imgr.makeNumber(BigInteger.ZERO));
     }
 
     @Override
@@ -67,7 +82,7 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-    public boolean getBoolValue(Event e, Model model, Context ctx){
+    public boolean getBoolValue(Event e, Model model, SolverContext ctx){
         return op.combine(b1.getBoolValue(e, model, ctx), b2.getBoolValue(e, model, ctx));
     }
 

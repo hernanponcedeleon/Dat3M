@@ -5,7 +5,18 @@ import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-import static com.microsoft.z3.Status.SATISFIABLE;
+
+import java.math.BigInteger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
@@ -17,39 +28,50 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 
 public class DataRaces {
 	
 	// This analysis assumes that CAT file defining the memory model has a happens-before 
 	// relation named hb: it should contain the following axiom "acyclic hb"
 
-	public static Result checkForRaces(Solver solver, Context ctx, VerificationTask task) {
+    private static final Logger logger = LogManager.getLogger(DataRaces.class);
+
+	public static Result checkForRaces(SolverContext ctx, VerificationTask task) {
+        Result res = Result.UNKNOWN;
+        ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+
 		// TODO(HP): No program.simplify() ???
 		task.unrollAndCompile();
 		task.initialiseEncoding(ctx);
-		solver.add(task.encodeProgram(ctx));
-		solver.add(task.encodeWmmRelations(ctx));
-        solver.add(task.encodeWmmConsistency(ctx));
-        solver.push();
-        solver.add(encodeRaces(task.getProgram(), ctx));
-        
-		BoolExpr noBoundEventExec = task.getProgram().encodeNoBoundEventExec(ctx);
 		
-		if(solver.check() == SATISFIABLE) {
-        	solver.add(noBoundEventExec);
-			return solver.check() == SATISFIABLE ? FAIL : UNKNOWN;
-        } else {
-        	solver.pop();
-			solver.add(ctx.mkNot(noBoundEventExec));
-        	return solver.check() == SATISFIABLE ? UNKNOWN : PASS;
-        }
+		try {
+			prover.addConstraint(task.encodeProgram(ctx));
+			prover.addConstraint(task.encodeWmmRelations(ctx));
+	        prover.addConstraint(task.encodeWmmConsistency(ctx));
+	        prover.push();
+	        prover.addConstraint(encodeRaces(task.getProgram(), ctx));
+	        
+			BooleanFormula noBoundEventExec = task.getProgram().encodeNoBoundEventExec(ctx);
+			
+			if(prover.isUnsat()) {
+	        	prover.pop();
+				prover.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(noBoundEventExec));
+	        	return prover.isUnsat() ? PASS : UNKNOWN;
+	        } else {
+	        	prover.addConstraint(noBoundEventExec);
+				return prover.isUnsat() ? UNKNOWN : FAIL;
+	        }
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return res;
     }
     
-    private static BoolExpr encodeRaces(Program p, Context ctx) {
-    	BoolExpr enc = ctx.mkFalse();
+    private static BooleanFormula encodeRaces(Program p, SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    	
+		BooleanFormula enc = bmgr.makeFalse();
     	for(Thread t1 : p.getThreads()) {
     		for(Thread t2 : p.getThreads()) {
     			if(t1.getId() == t2.getId()) {
@@ -70,9 +92,13 @@ public class DataRaces {
     						continue;
     					}
     					if(w.canRace() && m.canRace() && MemEvent.canAddressTheSameLocation(w, m)) {
-        					BoolExpr conflict = ctx.mkAnd(m.exec(), w.exec(), ctx.mkEq(w.getMemAddressExpr(), m.getMemAddressExpr()), 
-        							edge("hb", m, w, ctx), ctx.mkEq(intVar("hb", w, ctx), ctx.mkAdd(intVar("hb", m, ctx), ctx.mkInt(1))));
-    						enc = ctx.mkOr(enc, conflict);
+    						BooleanFormula conflict = bmgr.and(m.exec(), w.exec(), imgr.equal(
+    								(IntegerFormula)w.getMemAddressExpr(), 
+    								(IntegerFormula)m.getMemAddressExpr()), 
+        							edge("hb", m, w, ctx), imgr.equal(
+        									intVar("hb", w, ctx), 
+        									imgr.add(intVar("hb", m, ctx), imgr.makeNumber(BigInteger.ONE))));
+    						enc = bmgr.or(enc, conflict);
     					}
     				}
     			}

@@ -2,15 +2,16 @@ package com.dat3m.dartagnan.expression;
 
 import java.math.BigInteger;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 public class IfExpr implements ExprInterface {
 
@@ -25,29 +26,31 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3Int(Event e, Context ctx) {
-		return ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
+	public Formula toZ3Int(Event e, SolverContext ctx) {
+		return ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
+				guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
 	}
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return (BoolExpr)ctx.mkITE(guard.toZ3Bool(e, ctx), tbranch.toZ3Bool(e, ctx), fbranch.toZ3Bool(e, ctx));
+	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+		return (BooleanFormula)ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
+				guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
+	public Formula getLastValueExpr(SolverContext ctx) {
 		// In principle this method is only called by assertions 
 		// and thus it should never be called for this class
         throw new RuntimeException("Problem with getLastValueExpr in " + this);
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, Context ctx) {
+	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
 		return guard.getBoolValue(e, model, ctx) ? tbranch.getIntValue(e, model, ctx) : fbranch.getIntValue(e, model, ctx);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, Context ctx) {
+	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
 		return guard.getBoolValue(e, model, ctx)? tbranch.getBoolValue(e, model, ctx) : fbranch.getBoolValue(e, model, ctx);
 	}
 

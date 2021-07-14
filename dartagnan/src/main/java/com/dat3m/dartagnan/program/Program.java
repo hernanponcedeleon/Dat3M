@@ -18,10 +18,15 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
 
@@ -189,7 +194,7 @@ public class Program {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         if (!isCompiled) {
             throw new IllegalStateException("The program needs to be compiled first.");
         }
@@ -199,19 +204,23 @@ public class Program {
         }
     }
 
-    public BoolExpr encodeCF(Context ctx) {
+    public BooleanFormula encodeCF(SolverContext ctx) {
         if (this.task == null) {
             throw new RuntimeException("The program needs to get initialised first.");
         }
 
-        BoolExpr enc = GlobalSettings.FIXED_MEMORY_ENCODING ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
+        BooleanFormula enc = GlobalSettings.FIXED_MEMORY_ENCODING ? memory.fixedMemoryEncoding(ctx) : memory.encode(ctx);
         for(Thread t : threads){
-            enc = ctx.mkAnd(enc, t.encodeCF(ctx));
+            enc = ctx.getFormulaManager().getBooleanFormulaManager().and(enc, t.encodeCF(ctx));
         }
         return enc;
     }
 
-    public BoolExpr encodeFinalRegisterValues(Context ctx){
+    public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+        BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+        
         if (this.task == null) {
             throw new RuntimeException("The program needs to get initialised first.");
         }
@@ -224,7 +233,7 @@ public class Program {
         }
 
         BranchEquivalence eq = getBranchEquivalence();
-        BoolExpr enc = ctx.mkTrue();
+		BooleanFormula enc = bmgr.makeTrue();
         for (Register reg : eMap.keySet()) {
             Thread thread = threads.get(reg.getThreadId());
 
@@ -247,28 +256,35 @@ public class Program {
 
             for(int i = 0; i <  events.size(); i++){
                 Event w1 = events.get(i);
-                BoolExpr lastModReg = w1.exec();
+                BooleanFormula lastModReg = w1.exec();
                 for(int j = 0; j < i; j++){
                     Event w2 = events.get(j);
                     if (!eq.areMutuallyExclusive(w1, w2)) {
-                        lastModReg = ctx.mkAnd(lastModReg, ctx.mkNot(w2.exec()));
+                        lastModReg = bmgr.and(lastModReg, bmgr.not(w2.exec()));
                     }
                 }
-                enc = ctx.mkAnd(enc, ctx.mkImplies(lastModReg,
-                        ctx.mkEq(reg.getLastValueExpr(ctx), ((RegWriter)w1).getResultRegisterExpr())));
+                BooleanFormula same = reg.getLastValueExpr(ctx) instanceof BitvectorFormula ?
+                		bvmgr.equal(
+                				(BitvectorFormula)reg.getLastValueExpr(ctx), 
+                				(BitvectorFormula)((RegWriter)w1).getResultRegisterExpr()) :
+                		imgr.equal(
+                				(IntegerFormula)reg.getLastValueExpr(ctx), 
+                				(IntegerFormula)((RegWriter)w1).getResultRegisterExpr());
+                enc = bmgr.and(enc, bmgr.implication(lastModReg, same));
             }
         }
         return enc;
     }
     
-    public BoolExpr encodeNoBoundEventExec(Context ctx){
+    public BooleanFormula encodeNoBoundEventExec(SolverContext ctx){
         if (this.task == null) {
             throw new RuntimeException("The program needs to get initialised first.");
         }
 
-    	BoolExpr enc = ctx.mkTrue();
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
         for(Event e : getCache().getEvents(FilterBasic.get(EType.BOUND))){
-        	enc = ctx.mkAnd(enc, ctx.mkNot(e.exec()));
+        	enc = bmgr.and(enc, bmgr.not(e.exec()));
         }
         return enc;
     }

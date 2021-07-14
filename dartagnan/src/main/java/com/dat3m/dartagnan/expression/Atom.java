@@ -3,12 +3,14 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -27,17 +29,17 @@ public class Atom extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
+	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
 		return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
+	public Formula getLastValueExpr(SolverContext ctx){
 		boolean bp = getPrecision() > 0;
+		FormulaManager fmgr = ctx.getFormulaManager();
 		return bp? 
-				ctx.mkITE(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), ctx.mkBV(1, getPrecision()), ctx.mkBV(0, getPrecision())) :
-				ctx.mkITE(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), ctx.mkInt(1), ctx.mkInt(0));
-
+				fmgr.getBooleanFormulaManager().ifThenElse(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), 1), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), 0)) :
+				fmgr.getBooleanFormulaManager().ifThenElse(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
 	}
 
     @Override
@@ -56,7 +58,7 @@ public class Atom extends BExpr implements ExprInterface {
     }
     
     @Override
-	public boolean getBoolValue(Event e, Model model, Context ctx){
+	public boolean getBoolValue(Event e, Model model, SolverContext ctx){
 		return op.combine(lhs.getIntValue(e, model, ctx), rhs.getIntValue(e, model, ctx));
 	}
     

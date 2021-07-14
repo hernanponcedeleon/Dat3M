@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -14,6 +12,10 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -39,7 +41,7 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         super.initialise(task, ctx);
         identityEncodeTupleSet = new TupleSet();
         transEncodeTupleSet = new TupleSet();
@@ -89,19 +91,21 @@ public class RelTransRef extends RelTrans {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
     	return invokeEncode(super::encodeApprox, ctx);
     }
 
-    private BoolExpr invokeEncode(Function<Context, BoolExpr> originalMethod, Context ctx) {
-            TupleSet temp = encodeTupleSet;
-            encodeTupleSet = transEncodeTupleSet;
-            BoolExpr enc = originalMethod.apply(ctx);
-            encodeTupleSet = temp;
+    private BooleanFormula invokeEncode(Function<SolverContext, BooleanFormula> originalMethod, SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 
-            for(Tuple tuple : identityEncodeTupleSet){
-                enc = ctx.mkAnd(enc, ctx.mkEq(tuple.getFirst().exec(), this.getSMTVar(tuple, ctx)));
-            }
-            return enc;
+        TupleSet temp = encodeTupleSet;
+        encodeTupleSet = transEncodeTupleSet;
+        BooleanFormula enc = originalMethod.apply(ctx);
+        encodeTupleSet = temp;
+
+        for(Tuple tuple : identityEncodeTupleSet){
+        	enc = bmgr.and(enc, bmgr.equivalence(tuple.getFirst().exec(), this.getSMTVar(tuple, ctx)));
+        }
+        return enc;
     }
 }

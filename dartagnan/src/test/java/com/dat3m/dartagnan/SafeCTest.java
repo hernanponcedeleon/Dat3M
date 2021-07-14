@@ -10,16 +10,22 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.microsoft.z3.Context;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
@@ -39,6 +45,7 @@ public class SafeCTest {
     private final Arch target;
     private final Settings settings;
     private final Result expected;
+    private SolverContext ctx;
 
 	@Parameterized.Parameters(name = "{index}: {0} target={2}")
     public static Iterable<Object[]> data() throws IOException {
@@ -104,13 +111,22 @@ public class SafeCTest {
         this.expected = expected;
     }
     
+    private void initSolverContext() throws Exception {
+        Configuration config = Configuration.builder().build();
+        ctx = SolverContextFactory.createSolverContext(
+                config, 
+                BasicLogManager.create(config), 
+                ShutdownManager.create().getNotifier(), 
+                Solvers.Z3);
+    }
+
     @Test(timeout = TIMEOUT)
     public void test() {
     	try {
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
+            initSolverContext();
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, task));
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

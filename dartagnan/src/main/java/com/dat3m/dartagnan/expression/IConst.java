@@ -2,14 +2,16 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
 import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class IConst extends IExpr implements ExprInterface {
 
@@ -35,8 +37,11 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr toZ3Int(Event e, Context ctx) {
-		return precision > 0 ? ctx.mkBV(value.toString(), precision) : ctx.mkInt(value.toString());
+    public Formula toZ3Int(Event e, SolverContext ctx){
+		FormulaManager fmgr = ctx.getFormulaManager();
+		return precision > 0 ? 
+				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) : 
+				fmgr.getIntegerFormulaManager().makeNumber(value);
 	}
 
 	@Override
@@ -50,12 +55,15 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
-		return precision > 0 ? ctx.mkBV(value.toString(), precision) : ctx.mkInt(value.toString());
+	public Formula getLastValueExpr(SolverContext ctx){
+		FormulaManager fmgr = ctx.getFormulaManager();
+		return precision > 0 ? 
+				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) : 
+				fmgr.getIntegerFormulaManager().makeNumber(value);
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, Context ctx){
+	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
 		return value;
 	}
 
@@ -63,8 +71,11 @@ public class IConst extends IExpr implements ExprInterface {
 		return value;
 	}
 
-    public Expr toZ3Int(Context ctx) {
-		return precision > 0 ? ctx.mkBV(value.toString(), precision) : ctx.mkInt(value.toString());
+    public Formula toZ3Int(SolverContext ctx) {
+		FormulaManager fmgr = ctx.getFormulaManager();
+		return precision > 0 ?
+				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) :
+				fmgr.getIntegerFormulaManager().makeNumber(value);
     }
 
 	@Override

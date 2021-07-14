@@ -1,6 +1,14 @@
 package com.dat3m.ui.result;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
+
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 
@@ -11,8 +19,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 
 public class ReachabilityResult {
 
@@ -36,22 +42,32 @@ public class ReachabilityResult {
     private void run(){
         if(validate()){
             VerificationTask task = new VerificationTask(program, wmm, program.getArch() != null ? program.getArch() : options.getTarget(), options.getSettings());
-            Context ctx = new Context();
-            Solver solver = ctx.mkSolver();
-            Result result = null;
-            switch(options.getMethod()) {
+            Result result = Result.UNKNOWN;
+
+            try {
+                Configuration config = Configuration.builder().build();
+                SolverContext ctx = SolverContextFactory.createSolverContext(
+                        config, 
+                        BasicLogManager.create(config), 
+                        ShutdownManager.create().getNotifier(), 
+                        Solvers.Z3);
+                
+                switch(options.getMethod()) {
             	case INCREMENTAL:
-            		result = runAnalysisIncrementalSolver(solver, ctx, task);
+            		result = runAnalysisIncrementalSolver(ctx, task);
             		break;
             	case ASSUME:
-            		result = runAnalysisAssumeSolver(solver, ctx, task);
+            		result = runAnalysisAssumeSolver(ctx, task);
             		break;
             	case TWOSOLVERS:
-                    result = runAnalysis(solver, ctx, task);
+                    result = runAnalysis(ctx, task);
                     break;
+                }
+                buildVerdict(result);
+                ctx.close();
+            } catch (Exception e) {
+            	System.out.println(e.getMessage());
             }
-            buildVerdict(result);
-            ctx.close();
         }
     }
 

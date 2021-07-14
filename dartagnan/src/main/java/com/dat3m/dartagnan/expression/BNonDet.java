@@ -1,10 +1,14 @@
 package com.dat3m.dartagnan.expression;
 
+import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
@@ -23,25 +27,30 @@ public class BNonDet extends BExpr implements ExprInterface {
 	}
 
     @Override
-    public Expr toZ3Int(Event e, Context ctx) {
-    	Expr e1 = precision > 0 ? ctx.mkBV(1, precision) : ctx.mkInt(1);
-    	Expr e2 = precision > 0 ? ctx.mkBV(0, precision) : ctx.mkInt(0);
-        return ctx.mkITE(toZ3Bool(e, ctx), e1, e2);
+    public Formula toZ3Int(Event e, SolverContext ctx) {
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		Formula e1 = precision > 0 ? 
+    			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ONE) : 
+    			fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE);
+    	Formula e2 = precision > 0 ?
+    			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ZERO) : 
+    			fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
+        return fmgr.getBooleanFormulaManager().ifThenElse(toZ3Bool(e, ctx), e1, e2);
     }
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return ctx.mkBoolConst(Integer.toString(hashCode()));
+	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+		return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(Integer.toString(hashCode()));
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
+	public Formula getLastValueExpr(SolverContext ctx) {
 		throw new UnsupportedOperationException("getLastValueExpr not supported for " + this);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, Context ctx) {
-		return model.getConstInterp(toZ3Int(e, ctx)).isTrue();
+	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
+		return model.evaluate((BooleanFormula)toZ3Int(e, ctx)).booleanValue();
 	}
 
 	@Override

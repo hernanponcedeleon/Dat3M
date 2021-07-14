@@ -1,9 +1,13 @@
 package com.dat3m.dartagnan.expression.op;
 
-import com.microsoft.z3.BitVecExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
+import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 public enum IOpUn {
     MINUS, 
@@ -23,82 +27,87 @@ public enum IOpUn {
         }
     }
 
-    public Expr encode(Expr e, Context ctx) {
+    public Formula encode(Formula e, SolverContext ctx) {
+		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+
     	switch(this){
     		case MINUS:
-    			return e.isBV() ? ctx.mkBVSub(ctx.mkBV(0, 32), (BitVecExpr)e) : ctx.mkSub(ctx.mkInt(0), (IntExpr)e);
+            	return e instanceof IntegerFormula ?
+                		imgr.subtract(imgr.makeNumber(BigInteger.ZERO), (IntegerFormula)e) :
+                		bvmgr.subtract(bvmgr.makeBitvector(32, BigInteger.ZERO), (BitvectorFormula)e);
     		case BV2UINT:
-    			return e.isBV() ? ctx.mkBV2Int((BitVecExpr)e, false) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.toIntegerFormula((BitvectorFormula)e, false);
     		case BV2INT:
-    			return e.isBV() ? ctx.mkBV2Int((BitVecExpr)e, true) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.toIntegerFormula((BitvectorFormula)e, true);
     		// ============ INT2BV ============
     		case INT2BV1:
-    			return e.isBV() ? e : ctx.mkInt2BV(1, (IntExpr)e);
+    			return e instanceof IntegerFormula ? bvmgr.makeBitvector(1, (IntegerFormula)e) : e;
     		case INT2BV8:
-    			return e.isBV() ? e : ctx.mkInt2BV(8, (IntExpr)e);
+    			return e instanceof IntegerFormula ? bvmgr.makeBitvector(8, (IntegerFormula)e) : e;
     		case INT2BV16:
-    			return e.isBV() ? e : ctx.mkInt2BV(16, (IntExpr)e);
+    			return e instanceof IntegerFormula ? bvmgr.makeBitvector(16, (IntegerFormula)e) : e;
     		case INT2BV32:
-    			return e.isBV() ? e : ctx.mkInt2BV(32, (IntExpr)e);
+    			return e instanceof IntegerFormula ? bvmgr.makeBitvector(32, (IntegerFormula)e) : e;
     		case INT2BV64:
-    			return e.isBV() ? e : ctx.mkInt2BV(64, (IntExpr)e);
+    			return e instanceof IntegerFormula ? bvmgr.makeBitvector(64, (IntegerFormula)e) : e;
         	// ============ TRUNC ============    		
     		case TRUNC6432:
-    			return e.isBV() ? ctx.mkExtract(31, 0, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extract((BitvectorFormula)e, 31, 0, false);
     		case TRUNC6416:
     		case TRUNC3216:
-    			return e.isBV() ? ctx.mkExtract(15, 0, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extract((BitvectorFormula)e, 15, 0, false);
     		case TRUNC648:
     		case TRUNC328:
     		case TRUNC168:
-    			return e.isBV() ? ctx.mkExtract(7, 0, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extract((BitvectorFormula)e, 7, 0, false);
     		case TRUNC641:
     		case TRUNC321:
     		case TRUNC161:
     		case TRUNC81:
-    			return e.isBV() ? ctx.mkExtract(0, 0, (BitVecExpr)e) : e;    		
+    			return e instanceof IntegerFormula ? e : bvmgr.extract((BitvectorFormula)e, 1, 0, false);    		
         	// ============ ZEXT ============    		
     		case ZEXT18:
-    			return e.isBV() ? ctx.mkZeroExt(7, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 7, false);
     		case ZEXT116:
-    			return e.isBV() ? ctx.mkZeroExt(15, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 15, false);
     		case ZEXT132:
-    			return e.isBV() ? ctx.mkZeroExt(31, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 31, false);
     		case ZEXT164:
-    			return e.isBV() ? ctx.mkZeroExt(63, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 63, false);
     		case ZEXT816:
-    			return e.isBV() ? ctx.mkZeroExt(8, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 8, false);
     		case ZEXT832:
-    			return e.isBV() ? ctx.mkZeroExt(24, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 24, false);
     		case ZEXT864:
-    			return e.isBV() ? ctx.mkZeroExt(56, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 56, false);
     		case ZEXT1632:
-    			return e.isBV() ? ctx.mkZeroExt(16, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 16, false);
     		case ZEXT1664:
-    			return e.isBV() ? ctx.mkZeroExt(484, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 48, false);
     		case ZEXT3264:
-    			return e.isBV() ? ctx.mkZeroExt(32, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 32, false);
         	// ============ SEXT ============
     		case SEXT18:
-    			return e.isBV() ? ctx.mkSignExt(7, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 7, true);
     		case SEXT116:
-    			return e.isBV() ? ctx.mkSignExt(15, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 15, true);
     		case SEXT132:
-    			return e.isBV() ? ctx.mkSignExt(31, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 31, true);
     		case SEXT164:
-    			return e.isBV() ? ctx.mkSignExt(63, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 63, true);
     		case SEXT816:
-    			return e.isBV() ? ctx.mkSignExt(8, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 8, true);
     		case SEXT832:
-    			return e.isBV() ? ctx.mkSignExt(24, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 24, true);
     		case SEXT864:
-    			return e.isBV() ? ctx.mkSignExt(56, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 56, true);
     		case SEXT1632:
-    			return e.isBV() ? ctx.mkSignExt(16, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 16, true);
     		case SEXT1664:
-    			return e.isBV() ? ctx.mkSignExt(48, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 48, true);
     		case SEXT3264:
-    			return e.isBV() ? ctx.mkSignExt(32, (BitVecExpr)e) : e;
+    			return e instanceof IntegerFormula ? e : bvmgr.extend((BitvectorFormula)e, 32, true);
     	}
         throw new UnsupportedOperationException("Encoding of not supported for IOpUn " + this);
     }

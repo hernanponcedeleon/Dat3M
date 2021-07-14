@@ -5,8 +5,11 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
@@ -18,7 +21,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
 
     protected ExprInterface cmp;
     private final ImmutableSet<Register> dataRegs;
-    protected BoolExpr z3Cond;
+    protected BooleanFormula z3Cond;
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
@@ -28,12 +31,14 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        z3Cond = ctx.mkEq(memValueExpr, cmp.toZ3Int(this, ctx));
+        z3Cond = ctx.getFormulaManager().getIntegerFormulaManager().equal(
+        		(IntegerFormula)memValueExpr, 
+        		(IntegerFormula)cmp.toZ3Int(this, ctx));
     }
 
-    public BoolExpr getCond(){
+    public BooleanFormula getCond(){
         if(z3Cond != null){
             return z3Cond;
         }

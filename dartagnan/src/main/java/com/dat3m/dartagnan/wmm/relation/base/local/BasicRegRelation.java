@@ -7,15 +7,21 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.microsoft.z3.Context;
 
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 abstract class BasicRegRelation extends StaticRelation {
 
@@ -63,8 +69,13 @@ abstract class BasicRegRelation extends StaticRelation {
         }
     }
 
-    BoolExpr doEncodeApprox(Collection<Event> regReaders, Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    BooleanFormula doEncodeApprox(Collection<Event> regReaders, SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    	BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+
+    	BooleanFormula enc = bmgr.makeTrue();
+
         ImmutableMap<Register, ImmutableList<Event>> regWriterMap = task.getProgram().getCache().getRegWriterMap();
 
         for (Event regReader : regReaders) {
@@ -74,25 +85,38 @@ abstract class BasicRegRelation extends StaticRelation {
                 List<Event> possibleWriters = writers.stream().filter(x -> writerReaders.contains(new Tuple(x, regReader))).collect(Collectors.toList());
 
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
-                    enc = ctx.mkAnd(enc, ctx.mkEq(register.toZ3Int(regReader, ctx), new IConst(BigInteger.ZERO, register.getPrecision()).toZ3Int(ctx)));
+                	BooleanFormula equal = register.toZ3Int(regReader, ctx) instanceof BitvectorFormula ?
+                			bvmgr.equal(
+                					(BitvectorFormula)register.toZ3Int(regReader, ctx), 
+                					(BitvectorFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toZ3Int(ctx)) :
+                			imgr.equal(
+                					(IntegerFormula)register.toZ3Int(regReader, ctx), 
+                					(IntegerFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toZ3Int(ctx));
+                    enc = bmgr.and(enc, equal);
                 } else {
 
                     for (int i = 0; i < possibleWriters.size(); i++) {
                         Event regWriter = possibleWriters.get(i);
                         // RegReader uses the value of RegWriter if it is executed ..
-                        BoolExpr clause = getExecPair(regWriter, regReader, ctx);
-                        BoolExpr edge = this.getSMTVar(regWriter, regReader, ctx);
+                        BooleanFormula clause = getExecPair(regWriter, regReader, ctx);
+                        BooleanFormula edge = this.getSMTVar(regWriter, regReader, ctx);
                         // .. and no other write to the same register is executed in between
                         for (int j = i + 1; j < possibleWriters.size(); j++) {
-                            clause = ctx.mkAnd(clause, ctx.mkNot(possibleWriters.get(j).exec()));
+                            clause = bmgr.and(clause, bmgr.not(possibleWriters.get(j).exec()));
                         }
 
                         // Encode edge and value binding
-                        enc = ctx.mkAnd(enc, ctx.mkEq(edge, clause));
-                        enc = ctx.mkAnd(enc, ctx.mkImplies(edge, ctx.mkEq(
-                                ((RegWriter) regWriter).getResultRegisterExpr(),
-                                register.toZ3Int(regReader, ctx)
-                        )));
+                        enc = bmgr.and(enc, bmgr.equivalence(edge, clause));
+                        
+                        BooleanFormula equal = ((RegWriter) regWriter).getResultRegisterExpr() instanceof BitvectorFormula ?
+                        		bvmgr.equal(
+                                		(BitvectorFormula)((RegWriter) regWriter).getResultRegisterExpr(),
+                                		(BitvectorFormula)register.toZ3Int(regReader, ctx)) :
+                                imgr.equal(
+                                		(IntegerFormula)((RegWriter) regWriter).getResultRegisterExpr(),
+                                		(IntegerFormula)register.toZ3Int(regReader, ctx));
+                                		
+                        enc = bmgr.and(enc, bmgr.implication(edge, equal));
                     }
                 }
             }
