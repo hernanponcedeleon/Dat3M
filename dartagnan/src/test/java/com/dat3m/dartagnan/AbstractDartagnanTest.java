@@ -27,7 +27,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -75,7 +75,7 @@ public abstract class AbstractDartagnanTest {
                 config, 
                 BasicLogManager.create(config), 
                 ShutdownManager.create().getNotifier(), 
-                Solvers.Z3);
+                Solvers.CVC4);
     }
     
     @Test()
@@ -84,11 +84,10 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysis(ctx, task));
+            assertEquals(expected, runAnalysisIncrementalSolver(ctx, task));
+            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
-        }  finally {
-        	ctx.close();
         }
     }
 }
