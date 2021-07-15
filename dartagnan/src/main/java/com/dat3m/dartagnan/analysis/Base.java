@@ -49,11 +49,10 @@ public class Base {
             	res = FAIL;
             }
             res = task.getProgram().getAss().getInvert() ? res.invert() : res;
-            logger.info("Verification finished with result " + res);
-    		return res;	
         } catch (Exception e) {
         	logger.error(e.getMessage());
         }
+        logger.info("Verification finished with result " + res);
         return res;
     }
 
