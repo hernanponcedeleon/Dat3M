@@ -57,7 +57,6 @@ public class Dartagnan {
 
         WitnessGraph witness = new WitnessGraph();
         
-        logger.info("SMT solver: " + options.getSMTSolver().name());
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
         if(options.getWitnessPath() != null) {
@@ -96,6 +95,7 @@ public class Dartagnan {
                     BasicLogManager.create(config), 
                     ShutdownManager.create().getNotifier(), 
                     options.getSMTSolver()); 
+            logger.info("SMT solver: " + ctx.getVersion());
 
             Result result = selectAndRunAnalysis(options, task, ctx);
             
