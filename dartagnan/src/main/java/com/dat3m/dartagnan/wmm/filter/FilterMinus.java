@@ -16,7 +16,7 @@ public class FilterMinus extends FilterAbstract {
 
     private static String mkName(FilterAbstract filter1, FilterAbstract filter2){
         return ((filter1 instanceof FilterBasic) ? filter1 : "( " + filter1 + " )")
-                + " minus " + ((filter2 instanceof FilterBasic) ? filter2 : "( " + filter2 + " )");
+                + " *minus* " + ((filter2 instanceof FilterBasic) ? filter2 : "( " + filter2 + " )");
     }
 
     private final FilterAbstract filter1;
