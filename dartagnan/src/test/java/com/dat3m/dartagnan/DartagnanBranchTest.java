@@ -89,7 +89,7 @@ public class DartagnanBranchTest {
     }
 
     private void initSolverContext() throws Exception {
-        Configuration config = Configuration.builder().build();
+        Configuration config = Configuration.defaultConfiguration();
         ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 

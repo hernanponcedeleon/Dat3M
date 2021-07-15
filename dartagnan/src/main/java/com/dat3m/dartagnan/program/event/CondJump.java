@@ -56,7 +56,7 @@ public class CondJump extends Event implements RegReaderData {
 
     private void initCtx() {
         try {
-            Configuration config = Configuration.builder().build();
+            Configuration config = Configuration.defaultConfiguration();
 			defaultCtx = SolverContextFactory.createSolverContext(
 			        config, 
 			        BasicLogManager.create(config), 

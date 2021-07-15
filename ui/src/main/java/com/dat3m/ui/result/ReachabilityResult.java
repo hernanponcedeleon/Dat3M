@@ -45,7 +45,7 @@ public class ReachabilityResult {
             Result result = Result.UNKNOWN;
 
             try {
-                Configuration config = Configuration.builder().build();
+                Configuration config = Configuration.defaultConfiguration();
                 SolverContext ctx = SolverContextFactory.createSolverContext(
                         config, 
                         BasicLogManager.create(config), 

@@ -90,7 +90,7 @@ public class Dartagnan {
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 
         try {
-            Configuration config = Configuration.builder().build();
+            Configuration config = Configuration.defaultConfiguration();
             SolverContext ctx = SolverContextFactory.createSolverContext(
                     config, 
                     BasicLogManager.create(config), 
