@@ -115,9 +115,7 @@ public class Dartagnan {
             }
             
             ctx.close();
-        } catch (Exception e) {
-        	logger.error(e.getMessage());
-        }
+        } catch (Exception ignore) {}
     }
 
 	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx) {
@@ -125,7 +123,7 @@ public class Dartagnan {
 			case RACES:
 				return checkForRaces(ctx, task);	
 			case REACHABILITY:
-				switch(options.solver()) {
+				switch(options.getSolver()) {
 					case TWO:
 						return runAnalysis(ctx, task);
 					case INCREMENTAL:
@@ -133,7 +131,7 @@ public class Dartagnan {
 					case ASSUME:
 						return runAnalysisAssumeSolver(ctx, task);
 					default:
-						throw new RuntimeException("Unrecognized solver mode: " + options.solver());
+						throw new RuntimeException("Unrecognized solver mode: " + options.getSolver());
 				}
 			default:
 				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());

@@ -2,9 +2,6 @@ package com.dat3m.svcomp.options;
 
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
-import static com.dat3m.dartagnan.analysis.SolverTypes.TWO;
-import static com.dat3m.dartagnan.analysis.SolverTypes.fromString;
-
 import java.util.Arrays;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
@@ -21,7 +18,6 @@ import com.google.common.io.Files;
 public class SVCOMPOptions extends BaseOptions {
 
 	private static final String PROPERTY_OPTION = "property";
-	private static final String SOLVER_OPTION = "solver";
 	private static final String WITNESS_PATH_OPTION = "witness";
 	private static final String OPTIMIZATION_OPTION = "optimization";
 	private static final String INTERGER_ENCODING_OPTION = "integer_encoding";
@@ -31,7 +27,6 @@ public class SVCOMPOptions extends BaseOptions {
 	
     private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
     private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
-    private Set<SolverTypes> supported_solvers = ImmutableSet.copyOf(Arrays.asList(SolverTypes.values()));
     private String encoding;
     private String optimization;
     private SolverTypes solver;
@@ -62,9 +57,6 @@ public class SVCOMPOptions extends BaseOptions {
         addOption(new Option(WITNESS_PATH_OPTION, true,
                 "Run Dartagnan as a violation witness validator. Argument is the path to the witness file"));
 
-        addOption(new Option(SOLVER_OPTION, true,
-        		"The solver method to be used: two (default), incremental, assume"));
-
         addOption(new Option("o", OPTIMIZATION_OPTION, true,
                 "Optimization flag for LLVM compiler"));
 
@@ -91,11 +83,6 @@ public class SVCOMPOptions extends BaseOptions {
         boogiesan = cmd.hasOption(BOOGIESAN);
         umin = cmd.hasOption(UMIN) ? Integer.parseInt(cmd.getOptionValue(UMIN)) : 1;
         umax = cmd.hasOption(UMAX) ? Integer.parseInt(cmd.getOptionValue(UMAX)) : Integer.MAX_VALUE;
-        
-        solver = cmd.hasOption(SOLVER_OPTION) ? fromString(cmd.getOptionValue(SOLVER_OPTION)) : TWO;
-        if(!supported_solvers.contains(solver)) {
-            throw new UnsupportedOperationException("Unrecognized solver method: " + solver);        		
-        }
         
         encoding = cmd.hasOption(INTERGER_ENCODING_OPTION) ? cmd.getOptionValue(INTERGER_ENCODING_OPTION) : "unbounded-integer";
         if(!supported_integer_encoding.contains(encoding)) {
@@ -125,10 +112,6 @@ public class SVCOMPOptions extends BaseOptions {
 
     public String getWitnessPath(){
         return witnessFilePath;
-    }
-
-    public SolverTypes getSolver(){
-        return solver;
     }
 
     public AnalysisTypes getAnalysis(){

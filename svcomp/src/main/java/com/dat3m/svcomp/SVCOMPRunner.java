@@ -1,5 +1,6 @@
 package com.dat3m.svcomp;
 
+import static com.dat3m.dartagnan.utils.options.BaseOptions.SMTSOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
@@ -75,7 +76,7 @@ public class SVCOMPRunner {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + file.getName());
-	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
+	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7.jar"));
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", options.getTarget() != null ? options.getTarget().toString() : "none"));
@@ -83,6 +84,7 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
 	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getSolver().toString()));
+	    	cmd.addAll(asList("-" + SMTSOLVER_OPTION, options.getSMTSolver().toString()));
 	    	if(options.getWitnessPath() != null) {
 	    		// In validation mode we do not create witnesses.
 	    		cmd.addAll(asList("-" + WITNESS_PATH_OPTION, options.getWitnessPath()));
