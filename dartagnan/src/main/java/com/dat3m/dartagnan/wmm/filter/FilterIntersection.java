@@ -16,7 +16,7 @@ public class FilterIntersection extends FilterAbstract {
 
     private static String mkName(FilterAbstract filter1, FilterAbstract filter2){
         return (filter1 instanceof FilterBasic ? filter1.toString() : "( " + filter1.toString() + " )")
-                + " & " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
+                + " and " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
     }
 
     private final FilterAbstract filter1;
