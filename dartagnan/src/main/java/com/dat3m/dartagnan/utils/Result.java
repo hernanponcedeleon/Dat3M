@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.utils;
 
 public enum Result {
-	PASS, FAIL, UNKNOWN, TIMEOUT;
+	PASS, FAIL, UNKNOWN, TIMEOUT, ERROR;
 
 	public static Result fromString(String name) {
 		switch (name) {
@@ -13,6 +13,8 @@ public enum Result {
 			return UNKNOWN;
 		case "TIMEOUT":
 			return TIMEOUT;
+		case "ERROR":
+			return ERROR;
 		}
         throw new UnsupportedOperationException("Illegal operator in Result");
 	}
@@ -27,6 +29,8 @@ public enum Result {
 			return UNKNOWN;
 		case TIMEOUT:
 			return TIMEOUT;
+		case ERROR:
+			return ERROR;
 		}
 		throw new UnsupportedOperationException("Illegal operator in Result");
 	}

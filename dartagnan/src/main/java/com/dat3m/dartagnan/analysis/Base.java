@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis;
 
+import static com.dat3m.dartagnan.utils.Result.ERROR;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
@@ -48,12 +49,15 @@ public class Base {
             } else {
             	res = FAIL;
             }
+
             res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+            logger.info("Verification finished with result " + res);
+            return res;
+
         } catch (Exception e) {
         	logger.error(e.getMessage());
+            return ERROR;
         }
-        logger.info("Verification finished with result " + res);
-        return res;
     }
 
     public static Result runAnalysisAssumeSolver(SolverContext ctx, VerificationTask task) {
@@ -82,12 +86,15 @@ public class Base {
             } else {
             	res = FAIL;
             }
+        
             res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+            logger.info("Verification finished with result " + res);        
+            return res;
+
         } catch (Exception e) {
         	logger.error(e.getMessage());
+            return ERROR;
         }
-        logger.info("Verification finished with result " + res);
-        return res;
     }
 
     public static Result runAnalysis(SolverContext ctx, VerificationTask task) {
@@ -135,11 +142,14 @@ public class Base {
         } else {
         	res = FAIL;
         }
+        
         res = task.getProgram().getAss().getInvert() ? res.invert() : res;
-        } catch (Exception e) {
-        	logger.error(e.getMessage());
-        }
         logger.info("Verification finished with result " + res);
         return res;
+        
+        } catch (Exception e) {
+        	logger.error(e.getMessage());
+        	return ERROR;
+        }
     }
 }
