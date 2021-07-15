@@ -12,8 +12,16 @@
   <groupId>com.dat3m.svcomp</groupId>
   <artifactId>svcomp</artifactId>
   <packaging>jar</packaging>
-
   <name>svcomp</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>11</maven.compiler.release>
+    <project.dependency.relativepath>dependency</project.dependency.relativepath>
+    <project.dependency.path>${project.build.directory}/${project.dependency.relativepath}</project.dependency.path>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -21,10 +29,72 @@
       <artifactId>dartagnan</artifactId>
       <version>2.0.7</version>
     </dependency>
+    <dependency>
+      <groupId>commons-cli</groupId>
+      <artifactId>commons-cli</artifactId>
+      <version>1.4</version>
+    </dependency>
   </dependencies>
 
   <build>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.22.1</version>
+          <configuration>
+            <argLine>-Djava.library.path=${project.dependency.path}</argLine>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.0.2</version>
+          <configuration>
+            <archive>
+              <manifest>
+                <addClasspath>true</addClasspath>
+                <classpathPrefix>${project.dependency.relativepath}</classpathPrefix>
+                <mainClass>com.dat3m.svcomp.SVCOMPRunner</mainClass>
+              </manifest>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
     <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.1.1</version>
+          <executions>
+            <execution>
+              <id>copy</id>
+              <phase>initialize</phase>
+              <goals>
+                <goal>copy</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>copy-dependencies</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>copy-dependencies</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <outputDirectory>${project.dependency.path}</outputDirectory>
+            <artifactItems>
+              <artifactItem>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <type>jar</type>
+              </artifactItem>
+            </artifactItems>
+          </configuration>
+      </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
@@ -36,6 +106,78 @@
           </environmentVariables>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4-maven-plugin</artifactId>
+        <version>4.7.2</version>
+        <configuration>
+          <listener>true</listener>
+          <visitor>true</visitor>
+          <libDirectory>${project.basedir}/src/main/antlr4/com/dat3m/dartagnan/parsers</libDirectory>
+          <outputDirectory>${project.build.directory}/generated-sources/antlr4/com/dat3m/dartagnan/parsers</outputDirectory>
+          <arguments>
+            <argument>-package</argument>
+            <argument>com.dat3m.dartagnan.parsers</argument>
+          </arguments>
+        </configuration>
+        <executions>
+          <execution>
+            <id>antlr-generate</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>antlr4</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/antlr4</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+	 <plugin>
+          <groupId>pl.project13.maven</groupId>
+          <artifactId>git-commit-id-plugin</artifactId>
+          <version>2.1.13</version>
+          <executions>
+              <execution>
+                  <id>populate-git-commit-information</id>
+                  <goals>
+                      <goal>revision</goal>
+                  </goals>
+                  <configuration>
+                      <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                      <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                  </configuration>
+              </execution>
+          </executions>
+          <configuration>
+              <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+          </configuration>
+      </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <source>11</source>
+                <target>11</target>
+            </configuration>
+        </plugin>
     </plugins>
   </build>
+
 </project>
