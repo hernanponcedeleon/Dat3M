@@ -62,10 +62,9 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
             assertEquals(expected, runAnalysis(ctx, task));
+            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
-        }  finally {
-        	ctx.close();
         }
     }
 
@@ -78,14 +77,13 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
             assertEquals(expected, runAnalysisIncrementalSolver(ctx, task));
+            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
-        }  finally {
-        	ctx.close();
         }
     }
 
-//    @Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testAssume() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
@@ -94,10 +92,9 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
             assertEquals(expected, runAnalysisAssumeSolver(ctx, task));
+            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
-        }  finally {
-        	ctx.close();
         }
     }
 
