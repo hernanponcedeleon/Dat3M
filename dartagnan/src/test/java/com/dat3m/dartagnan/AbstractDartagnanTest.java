@@ -75,7 +75,7 @@ public abstract class AbstractDartagnanTest {
                 config, 
                 BasicLogManager.create(config), 
                 ShutdownManager.create().getNotifier(), 
-                Solvers.CVC4);
+                Solvers.Z3);
     }
     
     @Test()
