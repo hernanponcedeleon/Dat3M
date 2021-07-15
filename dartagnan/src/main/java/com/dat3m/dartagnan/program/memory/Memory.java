@@ -67,9 +67,13 @@ public class Memory {
         	}
         }
         
-        return bmgr.and(enc, imgr.distinct(getAllAddresses().stream()
-        		.map(a -> convertToIntegerFormula(a.toZ3Int(ctx), ctx))
-        		.collect(Collectors.toList())));        	
+        BooleanFormula distinct = getAllAddresses().size() > 1 ?
+        		imgr.distinct(getAllAddresses().stream()
+                		.map(a -> convertToIntegerFormula(a.toZ3Int(ctx), ctx))
+                		.collect(Collectors.toList())) : 
+                bmgr.makeTrue();
+        
+        return bmgr.and(enc, distinct);        	
     }
 
     private IntegerFormula convertToIntegerFormula(Formula f, SolverContext ctx) {

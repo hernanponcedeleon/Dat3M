@@ -106,7 +106,12 @@ public class RelCo extends Relation {
             enc = bmgr.and(enc, imgr.greaterThan(coVar, imgr.makeNumber(BigInteger.ZERO)));
             intVars.add(coVar);
         }
-        enc = bmgr.and(enc, imgr.distinct(intVars));
+        
+        BooleanFormula distinct = intVars.size() > 1 ?
+        		imgr.distinct(intVars) : 
+                bmgr.makeTrue();
+        
+        enc = bmgr.and(enc, distinct);
 
         for(Event w :  task.getProgram().getCache().getEvents(FilterBasic.get(WRITE))){
             MemEvent w1 = (MemEvent)w;
