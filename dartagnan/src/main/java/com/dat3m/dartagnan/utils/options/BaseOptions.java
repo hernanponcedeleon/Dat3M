@@ -16,7 +16,9 @@ import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.YICES2;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.*;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -35,17 +37,33 @@ public abstract class BaseOptions extends Options {
     protected  SolverTypes solver;
     protected  Solvers smtsolver;
 
-    private Set<SolverTypes> supported_solvers = ImmutableSet.copyOf(Arrays.asList(SolverTypes.values()));
+    private Set<SolverTypes> supported_solvers = 
+    		ImmutableSet.copyOf(Arrays.asList(SolverTypes.values()).stream()
+            .sorted(Comparator.comparing(SolverTypes::toString))
+    		.collect(Collectors.toList()));
 
+    private Set<String> supported_smtsolvers = 
+    		ImmutableSet.copyOf(Arrays.asList(Solvers.values()).stream()
+    		.map(a -> a.toString().toLowerCase())
+            .sorted(Comparator.comparing(String::toString))
+    		.collect(Collectors.toList()));
+
+    private Set<String> supportedTargets = 
+    		ImmutableSet.copyOf(Arrays.asList(Arch.values()).stream()
+    		.map(a -> a.toString().toLowerCase())
+            .sorted(Comparator.comparing(String::toString))
+    		.collect(Collectors.toList()));
+    		
     public BaseOptions(){
         super();
+        
         Option inputOption = new Option("i", "input", true,
                 "Path to the file with input program");
         inputOption.setRequired(true);
         addOption(inputOption);
 
         addOption(new Option("t", "target", true,
-                "Target architecture {none|arm|arm8|power|tso}"));
+                "Target architecture: " + supportedTargets));
 
         addOption(new Option("alias", true,
                 "Type of alias analysis {none|andersen|cfs}"));
@@ -57,10 +75,10 @@ public abstract class BaseOptions extends Options {
                 "Timeout (in secs) for the SMT solver"));
         
         addOption(new Option(SOLVER_OPTION, true,
-        		"The solver method to be used: two (default), incremental, assume"));
+        		"The solver method to be used: " + supported_solvers));
         
         addOption(new Option(SMTSOLVER_OPTION, true,
-        		"The SMT solver to be used: z3 (default), mathsat5, smtinterpol, princess, boolector, cvc4, yices2"));
+        		"The SMT solver to be used: " + supported_smtsolvers));
     }
 
     public void parse(String[] args) throws ParseException, RuntimeException {
@@ -81,25 +99,30 @@ public abstract class BaseOptions extends Options {
 
         smtsolver = Z3;
         if(cmd.hasOption(SMTSOLVER_OPTION)) {
-    		switch(cmd.getOptionValue(SMTSOLVER_OPTION)) {
-			case "mathsat5":
-				smtsolver = MATHSAT5;
-				break;
-			case "smtinterpol":
-				smtsolver = SMTINTERPOL;
-				break;
-			case "princess":
-				smtsolver = PRINCESS;
-				break;
-			case "boolector":
-				smtsolver = BOOLECTOR;
-				break;
-			case "cvc4":
-				smtsolver = CVC4;
-				break;
-			case "yices2":
-				smtsolver = YICES2;
-				break;
+			
+        	if(!supported_smtsolvers.contains(cmd.getOptionValue(SMTSOLVER_OPTION))) {
+                throw new UnsupportedOperationException("Unrecognized SMT solver: " + cmd.getOptionValue(SMTSOLVER_OPTION));        		
+            }
+
+			switch(cmd.getOptionValue(SMTSOLVER_OPTION)) {
+				case "mathsat5":
+					smtsolver = MATHSAT5;
+					break;
+				case "smtinterpol":
+					smtsolver = SMTINTERPOL;
+					break;
+				case "princess":
+					smtsolver = PRINCESS;
+					break;
+				case "boolector":
+					smtsolver = BOOLECTOR;
+					break;
+				case "cvc4":
+					smtsolver = CVC4;
+					break;
+				case "yices2":
+					smtsolver = YICES2;
+					break;
     		}        	
         }
     }

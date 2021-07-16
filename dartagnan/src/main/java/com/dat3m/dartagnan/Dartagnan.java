@@ -101,6 +101,10 @@ public class Dartagnan {
 
             Result result = selectAndRunAnalysis(options, task, ctx);
             
+            if(result.equals(Result.ERROR)) {
+            	System.exit(1);
+            }
+            
             if(options.getProgramFilePath().endsWith(".litmus")) {
                 System.out.println("Settings: " + options.getSettings());
                 if(p.getAssFilter() != null){
@@ -117,7 +121,9 @@ public class Dartagnan {
             }
             
             ctx.close();
-        } catch (Exception ignore) {}
+        } catch (Exception e) {
+        	System.out.println(e.getMessage());
+        }
     }
 
 	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx) {

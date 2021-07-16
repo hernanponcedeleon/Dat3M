@@ -2,11 +2,12 @@ package com.dat3m.dartagnan.utils.options;
 
 import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.*;
 import com.dat3m.dartagnan.analysis.AnalysisTypes;
-import com.dat3m.dartagnan.analysis.SolverTypes;
 import com.google.common.collect.ImmutableSet;
 
 public class DartagnanOptions extends BaseOptions {
@@ -16,8 +17,12 @@ public class DartagnanOptions extends BaseOptions {
 	public static final String WITNESS_PATH_OPTION = "witness";
 
     private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl", "c"));
-    private Set<AnalysisTypes> supportedAnalyses = ImmutableSet.copyOf(AnalysisTypes.values());
-    private Set<SolverTypes> supportedSolvers = ImmutableSet.copyOf(SolverTypes.values());
+
+    private Set<AnalysisTypes> supportedAnalyses = 
+    		ImmutableSet.copyOf(Arrays.asList(AnalysisTypes.values()).stream()
+            .sorted(Comparator.comparing(AnalysisTypes::toString))
+    		.collect(Collectors.toList()));
+
     private AnalysisTypes analysis;
     private String witness;
     private String witnessFilePath;
@@ -30,10 +35,11 @@ public class DartagnanOptions extends BaseOptions {
         addOption(catOption);
 
         addOption(new Option("w", WITNESS_OPTION, true,
-                "Creates a machine readable witness. The argument is the original *.c file from which the Boogie code was generated."));
+                "Creates a machine readable witness. "
+                + "The argument is the original *.c file from which the Boogie code was generated."));
 
         addOption(new Option("a", ANALYSIS_OPTION, true,
-        		"The analysis to be performed: reachability (default), data-race detection"));
+        		"The analysis to be performed: " + supportedAnalyses));
         
         addOption(new Option(WITNESS_PATH_OPTION, true,
         		"Path to the machine readable witness file"));
@@ -46,11 +52,9 @@ public class DartagnanOptions extends BaseOptions {
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
 
-        if(!supportedSolvers.contains(solver)) {
-        	throw new RuntimeException("Unrecognized solver method: " + solver);
-        }
-
-        analysis = cmd.hasOption(ANALYSIS_OPTION) ? AnalysisTypes.fromString(cmd.getOptionValue(ANALYSIS_OPTION)) : REACHABILITY;
+        analysis = cmd.hasOption(ANALYSIS_OPTION) ? 
+        		AnalysisTypes.fromString(cmd.getOptionValue(ANALYSIS_OPTION)) : 
+        		REACHABILITY;
         if(!supportedAnalyses.contains(analysis)) {
         	throw new RuntimeException("Unrecognized analysis: " + analysis);
         }

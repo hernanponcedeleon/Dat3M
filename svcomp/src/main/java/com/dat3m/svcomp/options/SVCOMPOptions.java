@@ -10,7 +10,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
 import com.dat3m.dartagnan.analysis.AnalysisTypes;
-import com.dat3m.dartagnan.analysis.SolverTypes;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
@@ -25,11 +24,14 @@ public class SVCOMPOptions extends BaseOptions {
 	private static final String UMIN = "umin";
 	private static final String UMAX = "umax";
 	
-    private Set<String> supported_formats = ImmutableSet.copyOf(Arrays.asList("c", "i"));
-    private Set<String> supported_integer_encoding = ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
+    private Set<String> supported_formats = 
+    		ImmutableSet.copyOf(Arrays.asList("c", "i"));
+    
+    private Set<String> supported_integer_encoding = 
+    		ImmutableSet.copyOf(Arrays.asList("bit-vector","unbounded-integer","wrapped-integer"));
+
     private String encoding;
     private String optimization;
-    private SolverTypes solver;
     private AnalysisTypes analysis;
     private String witnessFilePath;
     private boolean boogiesan;
