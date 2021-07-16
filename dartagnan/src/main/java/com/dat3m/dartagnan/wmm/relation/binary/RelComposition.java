@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.google.common.collect.Sets;
+import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
 import java.util.HashMap;
@@ -95,23 +95,17 @@ public class RelComposition extends BinaryRelation {
             TupleSet r1Set = new TupleSet();
             TupleSet r2Set = new TupleSet();
 
-            Map<Integer, Set<Integer>> myMap = new HashMap<>();
-            for(Tuple tuple : activeSet){
-                int id1 = tuple.getFirst().getCId();
-                int id2 = tuple.getSecond().getCId();
-                myMap.putIfAbsent(id1, new HashSet<>());
-                myMap.get(id1).add(id2);
-            }
-
-            for(Tuple tuple1 : r1.getMaxTupleSet()){
-                Event e1 = tuple1.getFirst();
-                Set<Integer> ends = myMap.get(e1.getCId());
-                if(ends == null) continue;
-                for(Tuple tuple2 : r2.getMaxTupleSet().getByFirst(tuple1.getSecond())){
-                    Event e2 = tuple2.getSecond();
-                    if(ends.contains(e2.getCId())){
-                        r1Set.add(tuple1);
-                        r2Set.add(tuple2);
+            TupleSet r1Max = r1.getMaxTupleSet();
+            TupleSet r2Max = r2.getMaxTupleSet();
+            for (Tuple t : activeSet) {
+                Event e1 = t.getFirst();
+                Event e3 = t.getSecond();
+                for (Tuple t1 : r1Max.getByFirst(e1)) {
+                    Event e2 = t1.getSecond();
+                    Tuple t2 = new Tuple(e2, e3);
+                    if (r2Max.contains(t2)) {
+                        r1Set.add(t1);
+                        r2Set.add(t2);
                     }
                 }
             }
@@ -129,36 +123,20 @@ public class RelComposition extends BinaryRelation {
         TupleSet r2Set = r2.getEncodeTupleSet();
         TupleSet minSet = getMinTupleSet();
 
-        //TODO: Fix this abuse of hashCode
-        Map<Integer, BoolExpr> exprMap = new HashMap<>();
-        for(Tuple tuple : encodeTupleSet){
-            if (minSet.contains(tuple)) {
-                exprMap.put(tuple.hashCode(), getExecPair(tuple, ctx));
-            } else {
-                exprMap.put(tuple.hashCode(), ctx.mkFalse());
-            }
-        }
-
-        for(Tuple tuple1 : r1Set){
-            Event e1 = tuple1.getFirst();
-            Event e3 = tuple1.getSecond();
-            for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                Event e2 = tuple2.getSecond();
-                if (minSet.contains(new Tuple(e1, e2))) {
-                    continue;
-                }
-
-                int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
-                if(exprMap.containsKey(id)){
-                    BoolExpr e = exprMap.get(id);
-                    e = ctx.mkOr(e, ctx.mkAnd(r1.getSMTVar(tuple1, ctx), r2.getSMTVar(tuple2, ctx)));
-                    exprMap.put(id, e);
-                }
-            }
-        }
-
         for(Tuple tuple : encodeTupleSet) {
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
+            BoolExpr expr = ctx.mkFalse();
+            if (minSet.contains(tuple)) {
+                expr = ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx));
+            } else {
+                for (Tuple t1 : r1Set.getByFirst(tuple.getFirst())) {
+                    Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
+                    if (r2Set.contains(t2)) {
+                        expr = ctx.mkOr(expr, ctx.mkAnd(r1.getSMTVar(t1, ctx), r2.getSMTVar(t2, ctx)));
+                    }
+                }
+            }
+
+            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), expr));
         }
         return enc;
     }

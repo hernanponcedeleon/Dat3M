@@ -24,11 +24,10 @@ public class Tuple implements Comparable<Tuple> {
         return "(" + first + ", " + second + ")";
     }
 
-
     @Override
     public int hashCode() {
         return 8191 * (first.getCId() + 2) * (second.getCId() + 1); // This seems to give the best results!
-        //return first.getCId() << 16 + second.getCId();
+        //return (first.getCId() << 16) + second.getCId();
     }
 
     // Notes on hashCode: Java's hashtable uses powers of two as capacity
@@ -48,7 +47,8 @@ public class Tuple implements Comparable<Tuple> {
 
 
     public static int toHashCode(int a, int b){
-        return 8191* a * (b + 1);
+        return 8191 * (a + 2) * (b + 1);
+        //return (a << 16) + b;
     }
 
     @Override
