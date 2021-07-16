@@ -56,7 +56,9 @@ public class CondJump extends Event implements RegReaderData {
 
     private void initCtx() {
         try {
-            Configuration config = Configuration.defaultConfiguration();
+            Configuration config = Configuration.builder()
+            		.setOption("solver.z3.usePhantomReferences", "true")
+            		.build();
 			defaultCtx = SolverContextFactory.createSolverContext(
 			        config, 
 			        BasicLogManager.create(config), 

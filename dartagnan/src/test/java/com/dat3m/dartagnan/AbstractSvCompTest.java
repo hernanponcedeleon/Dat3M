@@ -45,7 +45,9 @@ public abstract class AbstractSvCompTest {
     }
 
     private void initSolverContext() throws Exception {
-        Configuration config = Configuration.defaultConfiguration();
+        Configuration config = Configuration.builder()
+        		.setOption("solver.z3.usePhantomReferences", "true")
+        		.build();
         ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 
@@ -83,7 +85,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+//    @Test(timeout = TIMEOUT)
     public void testAssume() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";

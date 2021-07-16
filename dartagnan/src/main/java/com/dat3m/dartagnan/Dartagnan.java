@@ -89,7 +89,9 @@ public class Dartagnan {
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 
         try {
-            Configuration config = Configuration.defaultConfiguration();
+            Configuration config = Configuration.builder()
+            		.setOption("solver.z3.usePhantomReferences", "true")
+            		.build();
             SolverContext ctx = SolverContextFactory.createSolverContext(
                     config, 
                     BasicLogManager.create(config), 

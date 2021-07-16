@@ -45,7 +45,9 @@ public class ReachabilityResult {
             Result result = Result.UNKNOWN;
 
             try {
-                Configuration config = Configuration.defaultConfiguration();
+                Configuration config = Configuration.builder()
+                		.setOption("solver.z3.usePhantomReferences", "true")
+                		.build();
                 SolverContext ctx = SolverContextFactory.createSolverContext(
                         config, 
                         BasicLogManager.create(config), 

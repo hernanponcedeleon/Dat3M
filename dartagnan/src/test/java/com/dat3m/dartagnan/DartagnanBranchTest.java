@@ -89,7 +89,9 @@ public class DartagnanBranchTest {
     }
 
     private void initSolverContext() throws Exception {
-        Configuration config = Configuration.defaultConfiguration();
+        Configuration config = Configuration.builder()
+        		.setOption("solver.z3.usePhantomReferences", "true")
+        		.build();
         ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 
