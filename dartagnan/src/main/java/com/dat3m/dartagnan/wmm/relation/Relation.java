@@ -166,6 +166,9 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected BoolExpr getExecPair(Event e1, Event e2, Context ctx) {
+        if (e1.exec() == e2.exec()) {
+            return e1.exec();
+        }
         if (e1.getCId() > e2.getCId()) {
             Event temp = e1;
             e1 = e2;

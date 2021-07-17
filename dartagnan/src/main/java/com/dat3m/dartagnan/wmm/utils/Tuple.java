@@ -26,29 +26,12 @@ public class Tuple implements Comparable<Tuple> {
 
     @Override
     public int hashCode() {
-        return 8191 * (first.getCId() + 2) * (second.getCId() + 1); // This seems to give the best results!
-        //return (first.getCId() << 16) + second.getCId();
-    }
-
-    // Notes on hashCode: Java's hashtable uses powers of two as capacity
-    // for which modulo operations can be replaced by efficient bit masking.
-    // Since this only ever looks into the lower bits of the hash code,
-    // the above hashCode function would be really bad since the entry <first> gets ignored
-    // for all hashtables with size <= 2^16.
-    // To compensate this flaw, Java's hashmap computes its hashcode by
-    // (key.hashCode) ^ (key.hashCode >>> 16). This effectively translates to
-    // hashCode = <first.getCId> ^ <second.getCId> for tables with <= 2^16 entries.
-    // This hashing function is commutative (i.e. reversed tuples have the same hashcode)
-    // and all same-entry tuples get mapped to 0. These are bad properties.
-    // Instead, we should multiply <first.getCId> by some prime,
-    // ideally a Mersenne Prime p like 31 or 8191 for which multiplication is fast. This also
-    // produces unique hashCodes for all pairs if the compilation Id is bounded by p,
-    // a highly likely case if p = 8191.
-
-
-    public static int toHashCode(int a, int b){
-        return 8191 * (a + 2) * (b + 1);
-        //return (a << 16) + b;
+        int a = first.getCId();
+        int b = second.getCId();
+        return  a ^ (31 * b + 0x9e3779b9 + (a << 6) + (a >> 2)); // Best hashing function ever :)
+        // Alternatives:
+        // --- a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2))
+        // --- 31 * b + 0x9e3779b9 + (a << 6) + (a >> 2)
     }
 
     @Override
