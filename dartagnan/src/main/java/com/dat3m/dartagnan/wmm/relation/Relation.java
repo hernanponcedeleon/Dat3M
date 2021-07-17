@@ -7,13 +7,15 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -146,10 +148,6 @@ public abstract class Relation implements Dependent<Relation> {
     }
 
     protected abstract BoolExpr encodeApprox(Context ctx);
-
-    public BoolExpr encodeIteration(int recGroupId, int iteration, Context ctx){
-        return ctx.mkTrue();
-    }
 
     protected BoolExpr doEncode(Context ctx){
         if(!encodeTupleSet.isEmpty() || forceDoEncode){

@@ -5,14 +5,11 @@ import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.collect.Sets;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -137,70 +134,6 @@ public class RelComposition extends BinaryRelation {
             }
 
             enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), expr));
-        }
-        return enc;
-    }
-
-    @Override
-    public BoolExpr encodeIteration(int groupId, int iteration, Context ctx){
-        BoolExpr enc = ctx.mkTrue();
-
-        if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration) {
-            lastEncodedIteration = iteration;
-            String name = this.getName() + "_" + iteration;
-
-            if(iteration == 0 && isRecursive){
-                for(Tuple tuple : encodeTupleSet){
-                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
-                }
-            } else {
-                int childIteration = isRecursive ? iteration - 1 : iteration;
-
-                boolean recurseInR1 = (r1.getRecursiveGroupId() & groupId) > 0;
-                boolean recurseInR2 = (r2.getRecursiveGroupId() & groupId) > 0;
-
-                String r1Name = recurseInR1 ? r1.getName() + "_" + childIteration : r1.getName();
-                String r2Name = recurseInR2 ? r2.getName() + "_" + childIteration : r2.getName();
-
-                TupleSet r1Set = new TupleSet();
-                r1Set.addAll(r1.getEncodeTupleSet());
-                r1Set.retainAll(r1.getMaxTupleSet());
-
-                TupleSet r2Set = new TupleSet();
-                r2Set.addAll(r2.getEncodeTupleSet());
-                r2Set.retainAll(r2.getMaxTupleSet());
-
-                Map<Integer, BoolExpr> exprMap = new HashMap<>();
-                for(Tuple tuple : encodeTupleSet){
-                    exprMap.put(tuple.hashCode(), ctx.mkFalse());
-                }
-
-                for(Tuple tuple1 : r1Set){
-                    Event e1 = tuple1.getFirst();
-                    Event e3 = tuple1.getSecond();
-                    for(Tuple tuple2 : r2Set.getByFirst(e3)){
-                        Event e2 = tuple2.getSecond();
-                        int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
-                        if(exprMap.containsKey(id)){
-                            BoolExpr e = exprMap.get(id);
-                            e = ctx.mkOr(e, ctx.mkAnd(Utils.edge(r1Name, e1, e3, ctx), Utils.edge(r2Name, e3, e2, ctx)));
-                            exprMap.put(id, e);
-                        }
-                    }
-                }
-
-                for(Tuple tuple : encodeTupleSet){
-                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
-                }
-
-                if(recurseInR1){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration, ctx));
-                }
-
-                if(recurseInR2){
-                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, childIteration, ctx));
-                }
-            }
         }
         return enc;
     }
