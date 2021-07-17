@@ -126,7 +126,7 @@ public class RelComposition extends BinaryRelation {
         for(Tuple tuple : encodeTupleSet) {
             BoolExpr expr = ctx.mkFalse();
             if (minSet.contains(tuple)) {
-                expr = ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx));
+                expr = getExecPair(tuple, ctx);
             } else {
                 for (Tuple t1 : r1Set.getByFirst(tuple.getFirst())) {
                     Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
