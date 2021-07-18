@@ -17,9 +17,9 @@ public class GlobalSettings {
 
     // === Encoding ===
     public static final boolean FIXED_MEMORY_ENCODING = false;
-    // NOTE: This ALLOW_PARTIAL_MODELS does NOT work on Litmus tests due to their different assertion condition
+    // NOTE: ALLOW_PARTIAL_MODELS does NOT work on Litmus tests due to their different assertion condition
     public static final boolean ALLOW_PARTIAL_MODELS = false;
-    public static final boolean MERGE_CF_VARS = true; // ONLY works if ALLOW_PARTIAL_MODELS is 'false'
+    public static final boolean MERGE_CF_VARS = true; // ONLY has effect if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
     public static final boolean ENABLE_SYMMETRY_BREAKING = true;
 
@@ -47,7 +47,7 @@ public class GlobalSettings {
     public static final int MAX_RECURSION_DEPTH = 200;
 
     // === Debug ===
-    public static final boolean ENABLE_DEBUG_OUTPUT = true;
+    public static final boolean ENABLE_DEBUG_OUTPUT = false;
 
     // === Testing ===
     public static final boolean USE_BUGGY_ALIAS_ANALYSIS = false;

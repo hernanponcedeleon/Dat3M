@@ -46,24 +46,18 @@ public class AcyclicityAxiom extends GraphAxiom {
             return Collections.emptyList();
 
         List<List<Edge>> cycles = new ArrayList<>();
-        // Current implementation: For all marked events <e> in all SCCs, find a shortest cycle (e,e)
+        // Current implementation: For all marked events <e> in all SCCs:
+        // (1) find a shortest path C from <e> to <e> (=cycle)
+        // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         for (Set<EventData> scc : violatingSccs) {
             MatSubgraph subgraph = new MatSubgraph(inner, scc);
             Set<EventData> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
                 EventData e = nodes.stream().findAny().get();
                 List<Edge> cycle = findShortestPathBiDir(subgraph, e, e);
-                for (Edge edge : cycle) {
-                    nodes.remove(edge.getFirst());
-                    nodes.remove(edge.getSecond());
-                }
-
+                cycle.forEach(edge -> nodes.remove(edge.getFirst()));
                 cycles.add(cycle);
             }
-
-            /*for (EventData e : Sets.intersection(scc, markedNodes)) {
-                cycles.add(findShortestPathBiDir(subgraph, e, e));
-            }*/
         }
         return cycles;
     }
@@ -164,6 +158,7 @@ public class AcyclicityAxiom extends GraphAxiom {
         }
 
         public Stream<EventNode> successorStream() {
+            final EventNode[] nodeMap = AcyclicityAxiom.this.nodeMap;
             return inner.outEdgeStream(event).map(e -> nodeMap[e.getSecond().getId()]);
         }
 
