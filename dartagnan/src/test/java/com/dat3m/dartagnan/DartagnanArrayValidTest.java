@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.*;
 
@@ -71,7 +71,7 @@ public class DartagnanArrayValidTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(runAnalysis(ctx, task), FAIL);
+            assertEquals(runAnalysisTwoSolvers(ctx, task), FAIL);
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

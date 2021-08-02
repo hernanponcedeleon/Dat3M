@@ -9,7 +9,7 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 
 import com.dat3m.dartagnan.program.Program;
@@ -62,7 +62,7 @@ public class ReachabilityResult {
             		result = runAnalysisAssumeSolver(ctx, task);
             		break;
             	case TWOSOLVERS:
-                    result = runAnalysis(ctx, task);
+                    result = runAnalysisTwoSolvers(ctx, task);
                     break;
                 }
                 buildVerdict(result);

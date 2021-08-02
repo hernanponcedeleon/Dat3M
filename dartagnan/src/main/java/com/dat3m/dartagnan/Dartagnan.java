@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
@@ -133,13 +133,13 @@ public class Dartagnan {
 			case REACHABILITY:
 				switch(options.getScope()) {
 					case TWO:
-						return runAnalysis(ctx, task);
+						return runAnalysisTwoSolvers(ctx, task);
 					case INCREMENTAL:
 						return runAnalysisIncrementalSolver(ctx, task);
 					case ASSUME:
 						return runAnalysisAssumeSolver(ctx, task);
 					default:
-						throw new RuntimeException("Unrecognized solver mode: " + options.getScope());
+						throw new RuntimeException("Unrecognized scope mode: " + options.getScope());
 				}
 			default:
 				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());

@@ -20,7 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
@@ -63,7 +63,7 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysis(ctx, task));
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());

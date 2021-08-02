@@ -97,7 +97,7 @@ public class Base {
         }
     }
 
-    public static Result runAnalysis(SolverContext ctx, VerificationTask task) {
+    public static Result runAnalysisTwoSolvers(SolverContext ctx, VerificationTask task) {
     	Result res = Result.UNKNOWN;
     	ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
     	ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
