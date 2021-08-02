@@ -16,6 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -72,14 +73,17 @@ public class Acyclic extends Axiom {
 
     @Override
 	public BooleanFormula consistent(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
         BooleanFormula enc = bmgr.makeTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
-			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), imgr.greaterThan(Utils.intVar(rel.getName(), e1, ctx), Utils.intVar(rel.getName(), e2, ctx))));
+			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 
+									imgr.greaterThan(Utils.intVar(rel.getName(), e1, ctx), 
+									Utils.intVar(rel.getName(), e2, ctx))));
         }
         return enc;
     }

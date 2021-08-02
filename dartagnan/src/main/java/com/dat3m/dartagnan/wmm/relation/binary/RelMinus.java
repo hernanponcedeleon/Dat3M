@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 public class RelMinus extends BinaryRelation {
 
     public static String makeTerm(Relation r1, Relation r2){
+    	// '/' causes problems.
         return "(" + r1.getName() + " *minus* " + r2.getName() + ")";
     }
 

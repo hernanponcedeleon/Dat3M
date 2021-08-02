@@ -300,10 +300,11 @@ public abstract class Event implements Comparable<Event> {
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
 		this.task = task;
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		if (GlobalSettings.MERGE_CF_VARS) {
-			cfVar = ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
+			cfVar = bmgr.makeVariable("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
 		} else {
-			cfVar = ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("cf(" + repr() + ")");
+			cfVar = bmgr.makeVariable("cf(" + repr() + ")");
 		}
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}

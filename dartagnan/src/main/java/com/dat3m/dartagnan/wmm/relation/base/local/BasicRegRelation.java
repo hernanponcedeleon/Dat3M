@@ -19,6 +19,7 @@ import org.sosy_lab.java_smt.api.BitvectorFormula;
 import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -70,9 +71,10 @@ abstract class BasicRegRelation extends StaticRelation {
     }
 
     BooleanFormula doEncodeApprox(Collection<Event> regReaders, SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-    	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-    	BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+    	IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+    	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
 
     	BooleanFormula enc = bmgr.makeTrue();
 
@@ -108,7 +110,7 @@ abstract class BasicRegRelation extends StaticRelation {
                         // Encode edge and value binding
                         enc = bmgr.and(enc, bmgr.equivalence(edge, clause));
                         
-                        BooleanFormula equal = ((RegWriter) regWriter).getResultRegisterExpr() instanceof BitvectorFormula ?
+                        BooleanFormula equal = ((RegWriter)regWriter).getResultRegisterExpr() instanceof BitvectorFormula ?
                         		bvmgr.equal(
                                 		(BitvectorFormula)((RegWriter) regWriter).getResultRegisterExpr(),
                                 		(BitvectorFormula)register.toZ3Int(regReader, ctx)) :

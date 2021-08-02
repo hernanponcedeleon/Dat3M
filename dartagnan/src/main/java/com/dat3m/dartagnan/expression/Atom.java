@@ -37,9 +37,18 @@ public class Atom extends BExpr implements ExprInterface {
 	public Formula getLastValueExpr(SolverContext ctx){
 		boolean bp = getPrecision() > 0;
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return bp? 
-				fmgr.getBooleanFormulaManager().ifThenElse(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), 1), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), 0)) :
-				fmgr.getBooleanFormulaManager().ifThenElse(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
+
+		Formula tbranch = bp? 
+				fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ONE) : 
+				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE);
+		
+		Formula fbranch = bp? 
+				fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO) : 
+				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
+				
+		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(lhs.getLastValueExpr(ctx), rhs.getLastValueExpr(ctx), ctx), 
+				tbranch, 
+				fbranch);
 	}
 
     @Override

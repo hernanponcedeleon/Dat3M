@@ -11,6 +11,7 @@ import java.util.Collection;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -59,15 +60,17 @@ public class RelLoc extends Relation {
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-    	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+    	IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
     	
     	BooleanFormula enc = bmgr.makeTrue();
         for(Tuple tuple : encodeTupleSet) {
         	BooleanFormula rel = this.getSMTVar(tuple, ctx);
             enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(
                     bmgr.and(tuple.getFirst().exec(), tuple.getSecond().exec()),
-                    imgr.equal((IntegerFormula)((MemEvent)tuple.getFirst()).getMemAddressExpr(), (IntegerFormula)((MemEvent)tuple.getSecond()).getMemAddressExpr())
+                    imgr.equal((IntegerFormula)((MemEvent)tuple.getFirst()).getMemAddressExpr(), 
+                    			(IntegerFormula)((MemEvent)tuple.getSecond()).getMemAddressExpr())
             )));
         }
         return enc;

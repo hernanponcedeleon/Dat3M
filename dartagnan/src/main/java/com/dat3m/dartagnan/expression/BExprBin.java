@@ -63,7 +63,9 @@ public class BExprBin extends BExpr {
 				bvmgr.greaterThan((BitvectorFormula)b2.getLastValueExpr(ctx), bvmgr.makeBitvector(b2.getPrecision(), (BigInteger.ONE)), false):
         		imgr.greaterThan((IntegerFormula)b2.getLastValueExpr(ctx), imgr.makeNumber(BigInteger.ONE));
         
-		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr1, expr2, ctx), imgr.makeNumber(BigInteger.ONE), imgr.makeNumber(BigInteger.ZERO));
+		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr1, expr2, ctx), 
+				imgr.makeNumber(BigInteger.ONE), 
+				imgr.makeNumber(BigInteger.ZERO));
     }
 
     @Override

@@ -24,7 +24,7 @@ public class AssertInline extends AbstractAssert {
     @Override
     public BooleanFormula encode(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
-    	BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
 		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 

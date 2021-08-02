@@ -75,9 +75,10 @@ public class Register extends IExpr implements ExprInterface {
 	@Override
 	public Formula toZ3Int(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + ")";
+		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
-				ctx.getFormulaManager().getBitvectorFormulaManager().makeVariable(precision, name) :
-				ctx.getFormulaManager().getIntegerFormulaManager().makeVariable(name);
+				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
 	public Formula toZ3IntResult(Event e, SolverContext ctx) {

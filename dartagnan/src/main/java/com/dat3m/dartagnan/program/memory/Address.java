@@ -5,9 +5,11 @@ import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -89,10 +91,12 @@ public class Address extends IConst implements ExprInterface {
     @Override
     public Formula toZ3Int(SolverContext ctx){
 		FormulaManager fmgr = ctx.getFormulaManager();
-    	if(constantValue != null) {
-			return precision > 0 ? fmgr.getBitvectorFormulaManager().makeBitvector(precision, constantValue) : fmgr.getIntegerFormulaManager().makeNumber(constantValue);
+    	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+		if(constantValue != null) {
+			return precision > 0 ? bvmgr.makeBitvector(precision, constantValue) : imgr.makeNumber(constantValue);
     	}
-		return precision > 0 ? fmgr.getBitvectorFormulaManager().makeVariable(precision, "memory_" + index) : fmgr.getIntegerFormulaManager().makeVariable("memory_" + index);
+		return precision > 0 ? bvmgr.makeVariable(precision, "memory_" + index) : imgr.makeVariable("memory_" + index);
     }
 
     @Override

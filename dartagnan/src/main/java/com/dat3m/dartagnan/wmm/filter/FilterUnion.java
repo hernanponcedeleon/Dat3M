@@ -15,6 +15,7 @@ public class FilterUnion extends FilterAbstract {
     }
 
     private static String mkName(FilterAbstract filter1, FilterAbstract filter2){
+    	// '/' from FilterMinus causes problems. Thus we use text for consistency.
         return (filter1 instanceof FilterBasic ? filter1.toString() : "( " + filter1.toString() + " )")
                 + " *or* " + (filter2 instanceof FilterBasic ? filter2.toString() : "( " + filter2.toString() + " )");
     }
