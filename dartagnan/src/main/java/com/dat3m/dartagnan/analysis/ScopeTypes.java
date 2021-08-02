@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.analysis;
 
-public enum SolverTypes {
+public enum ScopeTypes {
 	TWO, INCREMENTAL, ASSUME;
 	
-	public static SolverTypes fromString(String s) {
+	public static ScopeTypes fromString(String s) {
         if(s != null){
             s = s.trim();
             switch(s){

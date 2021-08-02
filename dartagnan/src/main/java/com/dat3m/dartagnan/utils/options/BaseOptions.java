@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.analysis.SolverTypes;
+import com.dat3m.dartagnan.analysis.ScopeTypes;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableSet;
 
-import static com.dat3m.dartagnan.analysis.SolverTypes.INCREMENTAL;
+import static com.dat3m.dartagnan.analysis.ScopeTypes.INCREMENTAL;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.BOOLECTOR;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.CVC4;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.MATHSAT5;
@@ -25,8 +25,8 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 public abstract class BaseOptions extends Options {
 
-	public static final String SOLVER_OPTION = "solver";
-	public static final String SMTSOLVER_OPTION = "smt_solver";
+	public static final String SCOPE_OPTION = "scope";
+	public static final String SMTSOLVER_OPTION = "solver";
 
     protected String programFilePath;
     protected String targetModelFilePath;
@@ -34,12 +34,12 @@ public abstract class BaseOptions extends Options {
     protected Settings settings;
     protected Arch target;
 
-    protected  SolverTypes solver;
+    protected  ScopeTypes scope;
     protected  Solvers smtsolver;
 
-    private Set<SolverTypes> supported_solvers = 
-    		ImmutableSet.copyOf(Arrays.asList(SolverTypes.values()).stream()
-            .sorted(Comparator.comparing(SolverTypes::toString))
+    private Set<ScopeTypes> supported_scope = 
+    		ImmutableSet.copyOf(Arrays.asList(ScopeTypes.values()).stream()
+            .sorted(Comparator.comparing(ScopeTypes::toString))
     		.collect(Collectors.toList()));
 
     private Set<String> supported_smtsolvers = 
@@ -74,8 +74,8 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("solver_timeout", true,
                 "Timeout (in secs) for the SMT solver"));
         
-        addOption(new Option(SOLVER_OPTION, true,
-        		"The solver method to be used: " + supported_solvers));
+        addOption(new Option(SCOPE_OPTION, true,
+        		"The solver method to be used: " + supported_scope));
         
         addOption(new Option(SMTSOLVER_OPTION, true,
         		"The SMT solver to be used: " + supported_smtsolvers));
@@ -92,9 +92,9 @@ public abstract class BaseOptions extends Options {
             target = Arch.get(cmd.getOptionValue("target"));
         }
         
-        solver = cmd.hasOption(SOLVER_OPTION) ? SolverTypes.fromString(cmd.getOptionValue(SOLVER_OPTION)) : INCREMENTAL;
-        if(!supported_solvers.contains(solver)) {
-            throw new UnsupportedOperationException("Unrecognized solver method: " + solver);        		
+        scope = cmd.hasOption(SCOPE_OPTION) ? ScopeTypes.fromString(cmd.getOptionValue(SCOPE_OPTION)) : INCREMENTAL;
+        if(!supported_scope.contains(scope)) {
+            throw new UnsupportedOperationException("Unrecognized solver method: " + scope);        		
         }
 
         smtsolver = Z3;
@@ -127,8 +127,8 @@ public abstract class BaseOptions extends Options {
         }
     }
 
-    public SolverTypes getSolver(){
-        return solver;
+    public ScopeTypes getScope(){
+        return scope;
     }
 
     public Solvers getSMTSolver(){

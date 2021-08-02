@@ -131,7 +131,7 @@ public class Dartagnan {
 			case RACES:
 				return checkForRaces(ctx, task);	
 			case REACHABILITY:
-				switch(options.getSolver()) {
+				switch(options.getScope()) {
 					case TWO:
 						return runAnalysis(ctx, task);
 					case INCREMENTAL:
@@ -139,7 +139,7 @@ public class Dartagnan {
 					case ASSUME:
 						return runAnalysisAssumeSolver(ctx, task);
 					default:
-						throw new RuntimeException("Unrecognized solver mode: " + options.getSolver());
+						throw new RuntimeException("Unrecognized solver mode: " + options.getScope());
 				}
 			default:
 				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
