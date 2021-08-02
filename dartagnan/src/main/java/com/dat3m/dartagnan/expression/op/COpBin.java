@@ -38,17 +38,17 @@ public enum COpBin {
 
     public BooleanFormula encode(Formula e1, Formula e2, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
 		switch(this) {
             case EQ:
             	if(e1 instanceof BooleanFormula) {
             		return bmgr.equivalence((BooleanFormula)e1, (BooleanFormula)e2);
             	}
             	if(e1 instanceof IntegerFormula) {
+            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
             		return imgr.equal((IntegerFormula)e1, (IntegerFormula)e2);
             	}
             	if(e1 instanceof BitvectorFormula) {
+            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2);
             	}
             case NEQ:
@@ -56,41 +56,51 @@ public enum COpBin {
             		return bmgr.not(bmgr.equivalence((BooleanFormula)e1, (BooleanFormula)e2));
             	}
             	if(e1 instanceof IntegerFormula) {
+            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
             		return bmgr.not(imgr.equal((IntegerFormula)e1, (IntegerFormula)e2));
             	}
             	if(e1 instanceof BitvectorFormula) {
+            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bmgr.not(bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2));
             	}
             case LT:
             case ULT:
             	if(e1 instanceof IntegerFormula) {
+            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
             		return imgr.lessThan((IntegerFormula)e1, (IntegerFormula)e2);
             	}
             	if(e1 instanceof BitvectorFormula) {
+            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.lessThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LT));
             	}
             case LTE:
             case ULTE:
             	if(e1 instanceof IntegerFormula) {
+            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
             		return imgr.lessOrEquals((IntegerFormula)e1, (IntegerFormula)e2);
             	}
             	if(e1 instanceof BitvectorFormula) {
+            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.lessOrEquals((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LTE));
             	}
             case GT:
             case UGT:
             	if(e1 instanceof IntegerFormula) {
+            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
             		return imgr.greaterThan((IntegerFormula)e1, (IntegerFormula)e2);
             	}
             	if(e1 instanceof BitvectorFormula) {
+            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.greaterThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(GT));
             	}
             case GTE:
             case UGTE:
             	if(e1 instanceof IntegerFormula) {
+            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
             		return imgr.greaterOrEquals((IntegerFormula)e1, (IntegerFormula)e2);
             	}
             	if(e1 instanceof BitvectorFormula) {
+            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.greaterOrEquals((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(GTE));
             	}
         }

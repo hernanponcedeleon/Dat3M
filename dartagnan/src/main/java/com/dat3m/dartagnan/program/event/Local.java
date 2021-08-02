@@ -5,11 +5,9 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -79,18 +77,16 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	@Override
 	protected BooleanFormula encodeExec(SolverContext ctx){
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
 		
 		BooleanFormula enc = super.encodeExec(ctx);
 		if(expr instanceof INonDet) {
 			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toZ3Int(this, ctx) instanceof BitvectorFormula, ctx));
 		}
 		BooleanFormula eq = regResultExpr instanceof BitvectorFormula ?
-				bvmgr.equal(
+				ctx.getFormulaManager().getBitvectorFormulaManager().equal(
 						(BitvectorFormula)regResultExpr, 
 						(BitvectorFormula)expr.toZ3Int(this, ctx)) :
-				imgr.equal(
+				ctx.getFormulaManager().getIntegerFormulaManager().equal(
 						(IntegerFormula)regResultExpr, 
 						(IntegerFormula)expr.toZ3Int(this, ctx));
 		return bmgr.and(enc, eq);

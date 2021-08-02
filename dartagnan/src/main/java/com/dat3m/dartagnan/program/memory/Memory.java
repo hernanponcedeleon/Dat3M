@@ -10,12 +10,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -39,8 +37,6 @@ public class Memory {
 
     public BooleanFormula encode(SolverContext ctx){
     	FormulaManager fmgr = ctx.getFormulaManager();
-    	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
 		BooleanFormula enc = bmgr.makeTrue();
@@ -50,11 +46,11 @@ public class Memory {
             for(int i = 1; i < array.size(); i++){
             	Formula e2 = array.get(i).toZ3Int(ctx);
 				Formula newAddress = bv ?
-            			bvmgr.add((BitvectorFormula)e1, bvmgr.makeBitvector(array.get(0).getPrecision(), BigInteger.ONE)) :
-            			imgr.add((IntegerFormula)e1, imgr.makeNumber(BigInteger.ONE));
+						fmgr.getBitvectorFormulaManager().add((BitvectorFormula)e1, fmgr.getBitvectorFormulaManager().makeBitvector(array.get(0).getPrecision(), BigInteger.ONE)) :
+							fmgr.getIntegerFormulaManager().add((IntegerFormula)e1, fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
 				enc = bmgr.and(enc, bv ? 
-						bvmgr.equal((BitvectorFormula)e2, (BitvectorFormula)newAddress) : 
-						imgr.equal((IntegerFormula)e2, (IntegerFormula)newAddress));
+						fmgr.getBitvectorFormulaManager().equal((BitvectorFormula)e2, (BitvectorFormula)newAddress) : 
+							fmgr.getIntegerFormulaManager().equal((IntegerFormula)e2, (IntegerFormula)newAddress));
                 e1 = e2;
             }
         }
@@ -62,13 +58,13 @@ public class Memory {
         for(Address add : getAllAddresses()) {
         	if(!add.hasConstantValue()) {
         		enc = bmgr.and(enc, add.toZ3Int(ctx) instanceof BitvectorFormula ?
-        				imgr.greaterThan(bvmgr.toIntegerFormula((BitvectorFormula)add.toZ3Int(ctx), false), imgr.makeNumber(BigInteger.ZERO)) :
-        				imgr.greaterThan((IntegerFormula)add.toZ3Int(ctx), imgr.makeNumber(BigInteger.ZERO)));
+        				fmgr.getIntegerFormulaManager().greaterThan(fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)add.toZ3Int(ctx), false), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO)) :
+        				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)add.toZ3Int(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO)));
         	}
         }
         
         BooleanFormula distinct = getAllAddresses().size() > 1 ?
-        		imgr.distinct(getAllAddresses().stream()
+        		fmgr.getIntegerFormulaManager().distinct(getAllAddresses().stream()
                 		.map(a -> convertToIntegerFormula(a.toZ3Int(ctx), ctx))
                 		.collect(Collectors.toList())) : 
                 bmgr.makeTrue();
@@ -84,8 +80,7 @@ public class Memory {
     
     // Assigns each Address a fixed memory address.
     public BooleanFormula fixedMemoryEncoding(SolverContext ctx) {
-        BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-        IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+        FormulaManager fmgr = ctx.getFormulaManager();
 
         boolean bv = getAllAddresses().iterator().next().toZ3Int(ctx) instanceof BitvectorFormula;
     	BooleanFormula[] addrExprs;
@@ -93,15 +88,15 @@ public class Memory {
         	addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
             		.map(add -> {
                         Formula e1 = add.toZ3Int(ctx);
-						bvmgr.toIntegerFormula((BitvectorFormula) e1, false);
-						return (BooleanFormula)imgr.equal((IntegerFormula) e1, imgr.makeNumber(add.getValue().intValue()));})
+                        fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) e1, false);
+						return fmgr.getIntegerFormulaManager().equal((IntegerFormula) e1, fmgr.getIntegerFormulaManager().makeNumber(add.getValue().intValue()));})
             		.toArray(BooleanFormula[]::new);
     	} else {
         	addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
-            		.map(add -> (BooleanFormula)imgr.equal((IntegerFormula) add.toZ3Int(ctx), imgr.makeNumber(add.getValue().intValue())))
+            		.map(add -> fmgr.getIntegerFormulaManager().equal((IntegerFormula) add.toZ3Int(ctx), fmgr.getIntegerFormulaManager().makeNumber(add.getValue().intValue())))
             		.toArray(BooleanFormula[]::new);
     	}
-        return ctx.getFormulaManager().getBooleanFormulaManager().and(addrExprs);
+        return fmgr.getBooleanFormulaManager().and(addrExprs);
     }
 
     public List<Address> malloc(String name, int size, int precision){

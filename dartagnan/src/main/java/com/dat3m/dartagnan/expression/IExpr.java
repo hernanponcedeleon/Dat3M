@@ -3,9 +3,7 @@ package com.dat3m.dartagnan.expression;
 import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -16,12 +14,9 @@ public abstract class IExpr implements ExprInterface {
 
     @Override
 	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
-    	IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-    	BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-    	
 		return toZ3Int(e, ctx) instanceof BitvectorFormula ? 
-				bvmgr.greaterThan((BitvectorFormula)toZ3Int(e, ctx), bvmgr.makeBitvector(getPrecision(), BigInteger.ZERO), false) :
-				imgr.greaterThan((IntegerFormula)toZ3Int(e, ctx), imgr.makeNumber(BigInteger.ZERO));
+				ctx.getFormulaManager().getBitvectorFormulaManager().greaterThan((BitvectorFormula)toZ3Int(e, ctx), ctx.getFormulaManager().getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO), false) :
+					ctx.getFormulaManager().getIntegerFormulaManager().greaterThan((IntegerFormula)toZ3Int(e, ctx), ctx.getFormulaManager().getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
 	}
 
     @Override

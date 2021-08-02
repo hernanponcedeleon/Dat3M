@@ -64,55 +64,97 @@ public enum IOpBin {
     }
 
     public Formula encode(Formula e1, Formula e2, SolverContext ctx){
-		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+    	// Some SMT solvers do not support certain theories.
+    	// Calling the constructor of the manager in such solvers results in an Exception.
+    	// Thus we initialize the manager inside the branches
+    	
+		IntegerFormulaManager imgr;
+		BitvectorFormulaManager bvmgr;
 
 		switch(this){
             case PLUS:
-            	return e1 instanceof IntegerFormula ? 
-            		imgr.add((IntegerFormula)e1, (IntegerFormula)e2) :
-            		bvmgr.add((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	if(e1 instanceof IntegerFormula) {
+            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            		return imgr.add((IntegerFormula)e1, (IntegerFormula)e2);            		
+            	} else {
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		return bvmgr.add((BitvectorFormula)e1, (BitvectorFormula)e2);            		
+            	}
             case MINUS:
-            	return e1 instanceof IntegerFormula ?
-            		imgr.subtract((IntegerFormula)e1, (IntegerFormula)e2) :
-            		bvmgr.subtract((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	if(e1 instanceof IntegerFormula) {
+            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            		return imgr.subtract((IntegerFormula)e1, (IntegerFormula)e2);
+            	} else {
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		return bvmgr.subtract((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	}
             case MULT:
-            	return e1 instanceof IntegerFormula ?
-                		imgr.multiply((IntegerFormula)e1, (IntegerFormula)e2) :
-                		bvmgr.multiply((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	if(e1 instanceof IntegerFormula) {
+            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            		return imgr.multiply((IntegerFormula)e1, (IntegerFormula)e2);
+            	} else {
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		return bvmgr.multiply((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	}
             case DIV:
             case UDIV:
-            	return e1 instanceof IntegerFormula ?
-                		imgr.divide((IntegerFormula)e1, (IntegerFormula)e2) :
-                		bvmgr.divide((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(DIV));
+            	if(e1 instanceof IntegerFormula) {
+            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            		return imgr.divide((IntegerFormula)e1, (IntegerFormula)e2);
+            	} else {
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		return bvmgr.divide((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(DIV)); 
+            	}
             case MOD:
-            	return e1 instanceof IntegerFormula ?
-                		imgr.modulo((IntegerFormula)e1, (IntegerFormula)e2) :
-                		bvmgr.modulo((BitvectorFormula)e1, (BitvectorFormula)e2, true);
+            	if(e1 instanceof IntegerFormula) {
+            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            		return imgr.modulo((IntegerFormula)e1, (IntegerFormula)e2);
+            	} else {
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		return bvmgr.modulo((BitvectorFormula)e1, (BitvectorFormula)e2, true); 
+            	}
             case AND:
-            	return e1 instanceof IntegerFormula ?
-            			bvmgr.toIntegerFormula(bvmgr.and(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
-                		bvmgr.and((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            	if(e1 instanceof IntegerFormula) {
+            		return bvmgr.toIntegerFormula(bvmgr.and(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            	} else {
+            		return bvmgr.and((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	}
             case OR:
-            	return e1 instanceof IntegerFormula ?
-            			bvmgr.toIntegerFormula(bvmgr.or(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
-                		bvmgr.or((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            	if(e1 instanceof IntegerFormula) {
+            		return bvmgr.toIntegerFormula(bvmgr.or(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            	} else {
+            		return bvmgr.or((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	}
             case XOR:
-            	return e1 instanceof IntegerFormula ?
-            			bvmgr.toIntegerFormula(bvmgr.xor(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
-                		bvmgr.xor((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            	if(e1 instanceof IntegerFormula) {
+            		return bvmgr.toIntegerFormula(bvmgr.xor(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            	} else {
+            		return bvmgr.xor((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	}
             case L_SHIFT:
-            	return e1 instanceof IntegerFormula ?
-            			bvmgr.toIntegerFormula(bvmgr.shiftLeft(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false) : 
-                		bvmgr.shiftLeft((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            	if(e1 instanceof IntegerFormula) {
+            		return bvmgr.toIntegerFormula(bvmgr.shiftLeft(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            	} else {
+            		return bvmgr.shiftLeft((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	}
             case R_SHIFT:
-            	return e1 instanceof IntegerFormula ?
-            			bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), false), false) : 
-                		bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, false);
+            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            	if(e1 instanceof IntegerFormula) {
+            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), false), false);
+            	} else {
+            		return bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, false); 
+            	}
             case AR_SHIFT:
-            	return e1 instanceof IntegerFormula ?
-            			bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), true), false) : 
-                		bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, true);
+            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            	if(e1 instanceof IntegerFormula) {
+            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), true), false); 
+            	} else {
+            		return bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, true); 
+            	}
         }
         throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
     }

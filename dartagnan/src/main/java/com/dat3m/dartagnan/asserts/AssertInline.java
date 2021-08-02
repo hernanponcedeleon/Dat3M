@@ -25,13 +25,13 @@ public class AssertInline extends AbstractAssert {
     public BooleanFormula encode(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
 		BooleanFormula eq;
 		if(e.getResultRegisterExpr() instanceof BitvectorFormula) {
+			BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
 			eq = bvmgr.equal((BitvectorFormula)e.getResultRegisterExpr(), bvmgr.makeBitvector(e.getResultRegister().getPrecision(), BigInteger.ZERO));
     	} else {
+    		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 			eq = imgr.equal((IntegerFormula)e.getResultRegisterExpr(), imgr.makeNumber(BigInteger.ZERO));
     	}
 		return bmgr.and(e.exec(), eq);

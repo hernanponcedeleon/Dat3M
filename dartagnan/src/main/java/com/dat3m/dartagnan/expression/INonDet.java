@@ -10,12 +10,10 @@ import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
 import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -150,18 +148,16 @@ public class INonDet extends IExpr implements ExprInterface {
 	public BooleanFormula encodeBounds(boolean bp, SolverContext ctx) {
 		FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-    	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
 		long min = getMin();
 		long max = getMax();
 		if(bp) {
 			boolean signed = !(type.equals(UINT) || type.equals(ULONG) || type.equals(USHORT) || type.equals(UCHAR));
-			enc = bmgr.and(enc, bvmgr.greaterOrEquals((BitvectorFormula) toZ3Int(null,ctx), bvmgr.makeBitvector(precision, min), signed));
-	        enc = bmgr.and(enc, bvmgr.lessOrEquals((BitvectorFormula) toZ3Int(null,ctx), bvmgr.makeBitvector(precision, max), signed));
+			enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().greaterOrEquals((BitvectorFormula) toZ3Int(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, min), signed));
+	        enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().lessOrEquals((BitvectorFormula) toZ3Int(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, max), signed));
 		} else {
-			enc = bmgr.and(enc, imgr.greaterOrEquals((IntegerFormula)toZ3Int(null,ctx), imgr.makeNumber(min)));
-			enc = bmgr.and(enc, imgr.lessOrEquals((IntegerFormula)toZ3Int(null,ctx), imgr.makeNumber(max)));
+			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().greaterOrEquals((IntegerFormula)toZ3Int(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(min)));
+			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().lessOrEquals((IntegerFormula)toZ3Int(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(max)));
 		}
 		return enc;
 	}

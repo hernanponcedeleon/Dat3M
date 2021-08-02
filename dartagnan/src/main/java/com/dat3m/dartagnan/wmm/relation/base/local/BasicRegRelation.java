@@ -16,11 +16,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -73,8 +71,6 @@ abstract class BasicRegRelation extends StaticRelation {
     BooleanFormula doEncodeApprox(Collection<Event> regReaders, SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-    	IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-    	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
 
     	BooleanFormula enc = bmgr.makeTrue();
 
@@ -88,10 +84,10 @@ abstract class BasicRegRelation extends StaticRelation {
 
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
                 	BooleanFormula equal = register.toZ3Int(regReader, ctx) instanceof BitvectorFormula ?
-                			bvmgr.equal(
+                			fmgr.getBitvectorFormulaManager().equal(
                 					(BitvectorFormula)register.toZ3Int(regReader, ctx), 
                 					(BitvectorFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toZ3Int(ctx)) :
-                			imgr.equal(
+                			fmgr.getIntegerFormulaManager().equal(
                 					(IntegerFormula)register.toZ3Int(regReader, ctx), 
                 					(IntegerFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toZ3Int(ctx));
                     enc = bmgr.and(enc, equal);
@@ -111,10 +107,10 @@ abstract class BasicRegRelation extends StaticRelation {
                         enc = bmgr.and(enc, bmgr.equivalence(edge, clause));
                         
                         BooleanFormula equal = ((RegWriter)regWriter).getResultRegisterExpr() instanceof BitvectorFormula ?
-                        		bvmgr.equal(
+                        		fmgr.getBitvectorFormulaManager().equal(
                                 		(BitvectorFormula)((RegWriter) regWriter).getResultRegisterExpr(),
                                 		(BitvectorFormula)register.toZ3Int(regReader, ctx)) :
-                                imgr.equal(
+                                fmgr.getIntegerFormulaManager().equal(
                                 		(IntegerFormula)((RegWriter) regWriter).getResultRegisterExpr(),
                                 		(IntegerFormula)register.toZ3Int(regReader, ctx));
                                 		

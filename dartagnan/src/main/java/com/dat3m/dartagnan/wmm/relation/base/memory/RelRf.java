@@ -23,11 +23,9 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -95,8 +93,6 @@ public class RelRf extends Relation {
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-    	IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-    	BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
     	
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
@@ -110,20 +106,20 @@ public class RelRf extends Relation {
             MemEvent r = (MemEvent) tuple.getSecond();
             BooleanFormula edge = this.getSMTVar(tuple, ctx);
             IntegerFormula a1 = w.getMemAddressExpr() instanceof BitvectorFormula ? 
-            		bvmgr.toIntegerFormula((BitvectorFormula)w.getMemAddressExpr(), false) : 
+            		fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w.getMemAddressExpr(), false) : 
             		(IntegerFormula)w.getMemAddressExpr();
             IntegerFormula a2 = r.getMemAddressExpr() instanceof BitvectorFormula ? 
-            		bvmgr.toIntegerFormula((BitvectorFormula)r.getMemAddressExpr(), false) : 
+            		fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)r.getMemAddressExpr(), false) : 
             		(IntegerFormula)r.getMemAddressExpr();
-            BooleanFormula sameAddress = imgr.equal(a1, a2);
+            BooleanFormula sameAddress = fmgr.getIntegerFormulaManager().equal(a1, a2);
             
             IntegerFormula v1 = w.getMemValueExpr() instanceof BitvectorFormula ? 
-            		bvmgr.toIntegerFormula((BitvectorFormula)w.getMemValueExpr(), false) : 
+            		fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w.getMemValueExpr(), false) : 
             		(IntegerFormula)w.getMemValueExpr();
             IntegerFormula v2 = r.getMemValueExpr() instanceof BitvectorFormula ? 
-            		bvmgr.toIntegerFormula((BitvectorFormula)r.getMemValueExpr(), false) :
+            		fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)r.getMemValueExpr(), false) :
             		(IntegerFormula)r.getMemValueExpr();
-            BooleanFormula sameValue = imgr.equal(v1, v2);
+            BooleanFormula sameValue = fmgr.getIntegerFormulaManager().equal(v1, v2);
 
             edgeMap.putIfAbsent(r, new ArrayList<>());
             edgeMap.get(r).add(edge);

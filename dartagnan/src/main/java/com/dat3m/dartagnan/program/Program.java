@@ -21,11 +21,9 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -220,8 +218,6 @@ public class Program {
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx){
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-        BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
         
         if (this.task == null) {
             throw new RuntimeException("The program needs to get initialised first.");
@@ -266,10 +262,10 @@ public class Program {
                     }
                 }
                 BooleanFormula same = reg.getLastValueExpr(ctx) instanceof BitvectorFormula ?
-                		bvmgr.equal(
+                		fmgr.getBitvectorFormulaManager().equal(
                 				(BitvectorFormula)reg.getLastValueExpr(ctx), 
                 				(BitvectorFormula)((RegWriter)w1).getResultRegisterExpr()) :
-                		imgr.equal(
+                		fmgr.getIntegerFormulaManager().equal(
                 				(IntegerFormula)reg.getLastValueExpr(ctx), 
                 				(IntegerFormula)((RegWriter)w1).getResultRegisterExpr());
                 enc = bmgr.and(enc, bmgr.implication(lastModReg, same));

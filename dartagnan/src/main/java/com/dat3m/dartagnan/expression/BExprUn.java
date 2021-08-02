@@ -7,11 +7,9 @@ import com.google.common.collect.ImmutableSet;
 import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -46,16 +44,14 @@ public class BExprUn extends BExpr {
     @Override
     public Formula getLastValueExpr(SolverContext ctx){
     	FormulaManager fmgr = ctx.getFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
 		
 		BooleanFormula expr = b.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
-				bvmgr.greaterThan((BitvectorFormula)b.getLastValueExpr(ctx), bvmgr.makeBitvector(b.getPrecision(), (BigInteger.ONE)), false):
-				imgr.greaterThan((IntegerFormula)b.getLastValueExpr(ctx), imgr.makeNumber(BigInteger.ONE));
+				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)b.getLastValueExpr(ctx), fmgr.getBitvectorFormulaManager().makeBitvector(b.getPrecision(), (BigInteger.ONE)), false):
+				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)b.getLastValueExpr(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
         
 		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr, ctx), 
-				imgr.makeNumber(BigInteger.ONE), 
-				imgr.makeNumber(BigInteger.ZERO));
+				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), 
+				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
     }
 
     @Override
