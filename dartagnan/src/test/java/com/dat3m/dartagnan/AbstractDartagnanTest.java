@@ -60,7 +60,6 @@ public abstract class AbstractDartagnanTest {
     private final Wmm wmm;
     private final Settings settings;
     private SolverContext ctx;
-    private ShutdownManager sdm;
 
     AbstractDartagnanTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         this.path = path;
@@ -74,11 +73,10 @@ public abstract class AbstractDartagnanTest {
         Configuration config = Configuration.builder()
         		.setOption("solver.z3.usePhantomReferences", "true")
         		.build();
-        sdm = ShutdownManager.create();
 		ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 
-                sdm.getNotifier(), 
+                ShutdownManager.create().getNotifier(), 
                 Solvers.Z3);
     }
     
@@ -88,7 +86,7 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisTwoSolvers(ctx, sdm, task));
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());

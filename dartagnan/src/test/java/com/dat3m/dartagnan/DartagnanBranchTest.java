@@ -80,7 +80,6 @@ public class DartagnanBranchTest {
     private final Settings settings;
     private final Result expected;
     private SolverContext ctx;
-    private ShutdownManager sdm;
 
     public DartagnanBranchTest(String path, Result expected, Wmm wmm, Settings settings) {
         this.path = path;
@@ -93,11 +92,10 @@ public class DartagnanBranchTest {
         Configuration config = Configuration.builder()
         		.setOption("solver.z3.usePhantomReferences", "true")
         		.build();
-        sdm = ShutdownManager.create();
 		ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 
-                sdm.getNotifier(), 
+                ShutdownManager.create().getNotifier(), 
                 Solvers.Z3);
     }
     
@@ -107,7 +105,7 @@ public class DartagnanBranchTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisTwoSolvers(ctx, sdm, task));
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, task));
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

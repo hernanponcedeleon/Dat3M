@@ -47,22 +47,21 @@ public class ReachabilityResult {
                 Configuration config = Configuration.builder()
                 		.setOption("solver.z3.usePhantomReferences", "true")
                 		.build();
-                ShutdownManager sdm = ShutdownManager.create();
 				SolverContext ctx = SolverContextFactory.createSolverContext(
                         config, 
                         BasicLogManager.create(config), 
-                        sdm.getNotifier(), 
+                        ShutdownManager.create().getNotifier(), 
                         options.getSolver());
                 
                 switch(options.getMethod()) {
             	case INCREMENTAL:
-            		result = runAnalysisIncrementalSolver(ctx, sdm, task);
+            		result = runAnalysisIncrementalSolver(ctx, task);
             		break;
             	case ASSUME:
-            		result = runAnalysisAssumeSolver(ctx, sdm, task);
+            		result = runAnalysisAssumeSolver(ctx, task);
             		break;
             	case TWOSOLVERS:
-                    result = runAnalysisTwoSolvers(ctx, sdm, task);
+                    result = runAnalysisTwoSolvers(ctx, task);
                     break;
                 }
                 buildVerdict(result);

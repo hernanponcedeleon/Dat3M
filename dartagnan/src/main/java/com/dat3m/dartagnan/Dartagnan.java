@@ -22,6 +22,7 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -57,6 +58,19 @@ public class Dartagnan {
 
         WitnessGraph witness = new WitnessGraph();
         
+        ShutdownManager sdm = ShutdownManager.create();
+    	Thread t = new Thread(() -> {
+			try {
+				if(options.getSettings().getSolverTimeout() > 0) {
+					// Converts timeout from secs to millisecs
+					Thread.sleep(1000 * options.getSettings().getSolverTimeout());
+					sdm.requestShutdown("Shutdown Request");
+					logger.warn("Shutdown Request");
+				}
+			} catch (InterruptedException e) {
+				throw new UnsupportedOperationException("Unexpected interrupt");
+			}});
+        
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
         if(options.getWitnessPath() != null) {
@@ -89,21 +103,17 @@ public class Dartagnan {
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 
         try {
+        	t.start();
             Configuration config = Configuration.builder()
             		.setOption("solver.z3.usePhantomReferences", "true")
             		.build();
-            ShutdownManager sdm = ShutdownManager.create();
 			SolverContext ctx = SolverContextFactory.createSolverContext(
                     config, 
                     BasicLogManager.create(config), 
                     sdm.getNotifier(), 
                     options.getSMTSolver()); 
 
-            Result result = selectAndRunAnalysis(options, task, ctx, sdm);
-            
-            if(result.equals(Result.ERROR)) {
-            	System.exit(1);
-            }
+            Result result = selectAndRunAnalysis(options, task, ctx);
             
             if(options.getProgramFilePath().endsWith(".litmus")) {
                 System.out.println("Settings: " + options.getSettings());
@@ -121,23 +131,29 @@ public class Dartagnan {
             }
             
             ctx.close();
+        } catch (InterruptedException e){
+        	logger.warn("Timeout elapsed. The SMT solver was stopped");
+        	System.out.println("TIMEOUT");
+        	System.exit(0);
         } catch (Exception e) {
-        	System.out.println(e.getMessage());
+        	logger.error(e.getMessage());
+        	System.out.println("ERROR");
+        	System.exit(1);
         }
     }
 
-	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx, ShutdownManager sdm) {
+	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx) throws InterruptedException, SolverException {
 		switch(options.getAnalysis()) {
 			case RACES:
 				return checkForRaces(ctx, task);	
 			case REACHABILITY:
 				switch(options.getScope()) {
 					case TWO:
-						return runAnalysisTwoSolvers(ctx, sdm, task);
+						return runAnalysisTwoSolvers(ctx, task);
 					case INCREMENTAL:
-						return runAnalysisIncrementalSolver(ctx, sdm, task);
+						return runAnalysisIncrementalSolver(ctx, task);
 					case ASSUME:
-						return runAnalysisAssumeSolver(ctx, sdm, task);
+						return runAnalysisAssumeSolver(ctx, task);
 					default:
 						throw new RuntimeException("Unrecognized scope mode: " + options.getScope());
 				}
