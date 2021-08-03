@@ -47,6 +47,7 @@ public class DartagnanArrayValidTest {
     private final Wmm wmm;
     private final Settings settings;
     private SolverContext ctx;
+    private ShutdownManager sdm;
 
     public DartagnanArrayValidTest(String path, Wmm wmm, Settings settings) {
         this.path = path;
@@ -58,10 +59,11 @@ public class DartagnanArrayValidTest {
         Configuration config = Configuration.builder()
         		.setOption("solver.z3.usePhantomReferences", "true")
         		.build();
-        ctx = SolverContextFactory.createSolverContext(
+        sdm = ShutdownManager.create();
+		ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 
-                ShutdownManager.create().getNotifier(), 
+                sdm.getNotifier(), 
                 Solvers.Z3);
     }
     
@@ -71,7 +73,7 @@ public class DartagnanArrayValidTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(runAnalysisTwoSolvers(ctx, task), FAIL);
+            assertEquals(runAnalysisTwoSolvers(ctx, sdm, task), FAIL);
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

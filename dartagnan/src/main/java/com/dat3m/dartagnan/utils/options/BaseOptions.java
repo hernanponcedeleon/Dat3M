@@ -27,7 +27,8 @@ public abstract class BaseOptions extends Options {
 
 	public static final String SCOPE_OPTION = "scope";
 	public static final String SMTSOLVER_OPTION = "solver";
-
+	public static final String SMTSOLVER_TIMEOUT_OPTION = "timeout";
+	
     protected String programFilePath;
     protected String targetModelFilePath;
     protected Set<String> supportedFormats; 
@@ -71,7 +72,7 @@ public abstract class BaseOptions extends Options {
         addOption(new Option("u", "unroll", true,
                 "Unrolling bound <integer>"));
 
-        addOption(new Option("solver_timeout", true,
+        addOption(new Option(SMTSOLVER_TIMEOUT_OPTION, true,
                 "Timeout (in secs) for the SMT solver"));
         
         addOption(new Option(SCOPE_OPTION, true,
@@ -163,9 +164,9 @@ public abstract class BaseOptions extends Options {
                 throw new UnsupportedOperationException("Illegal unroll value");
             }
         }
-        if(cmd.hasOption("solver_timeout")){
+        if(cmd.hasOption(SMTSOLVER_TIMEOUT_OPTION)){
             try {
-            	solver_timeout = Math.max(1, Integer.parseInt(cmd.getOptionValue("solver_timeout")));
+            	solver_timeout = Math.max(1, Integer.parseInt(cmd.getOptionValue(SMTSOLVER_TIMEOUT_OPTION)));
             } catch (NumberFormatException e){
                 throw new UnsupportedOperationException("Illegal solver_timeout value");
             }

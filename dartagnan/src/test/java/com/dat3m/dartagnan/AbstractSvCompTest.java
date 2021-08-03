@@ -37,6 +37,7 @@ public abstract class AbstractSvCompTest {
     private final Settings settings;
     private Result expected;
     private SolverContext ctx;
+    private ShutdownManager sdm;
     
     public AbstractSvCompTest(String path, Wmm wmm, Settings settings) {
         this.path = path;
@@ -48,14 +49,15 @@ public abstract class AbstractSvCompTest {
         Configuration config = Configuration.builder()
         		.setOption("solver.z3.usePhantomReferences", "true")
         		.build();
-        ctx = SolverContextFactory.createSolverContext(
+        sdm = ShutdownManager.create();
+		ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 
-                ShutdownManager.create().getNotifier(), 
+                sdm.getNotifier(), 
                 Solvers.Z3);
     }
     
-//    @Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void test() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
@@ -63,7 +65,7 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisTwoSolvers(ctx, task));
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, sdm, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
@@ -78,7 +80,7 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisIncrementalSolver(ctx, task));
+            assertEquals(expected, runAnalysisIncrementalSolver(ctx, sdm, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
@@ -93,7 +95,7 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisAssumeSolver(ctx, task));
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, sdm, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());

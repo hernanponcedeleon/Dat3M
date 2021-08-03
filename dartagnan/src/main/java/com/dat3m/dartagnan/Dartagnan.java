@@ -92,14 +92,15 @@ public class Dartagnan {
             Configuration config = Configuration.builder()
             		.setOption("solver.z3.usePhantomReferences", "true")
             		.build();
-            SolverContext ctx = SolverContextFactory.createSolverContext(
+            ShutdownManager sdm = ShutdownManager.create();
+			SolverContext ctx = SolverContextFactory.createSolverContext(
                     config, 
                     BasicLogManager.create(config), 
-                    ShutdownManager.create().getNotifier(), 
+                    sdm.getNotifier(), 
                     options.getSMTSolver()); 
             logger.info("SMT solver: " + ctx.getVersion());
 
-            Result result = selectAndRunAnalysis(options, task, ctx);
+            Result result = selectAndRunAnalysis(options, task, ctx, sdm);
             
             if(result.equals(Result.ERROR)) {
             	System.exit(1);
@@ -126,18 +127,18 @@ public class Dartagnan {
         }
     }
 
-	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx) {
+	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx, ShutdownManager sdm) {
 		switch(options.getAnalysis()) {
 			case RACES:
 				return checkForRaces(ctx, task);	
 			case REACHABILITY:
 				switch(options.getScope()) {
 					case TWO:
-						return runAnalysisTwoSolvers(ctx, task);
+						return runAnalysisTwoSolvers(ctx, sdm, task);
 					case INCREMENTAL:
-						return runAnalysisIncrementalSolver(ctx, task);
+						return runAnalysisIncrementalSolver(ctx, sdm, task);
 					case ASSUME:
-						return runAnalysisAssumeSolver(ctx, task);
+						return runAnalysisAssumeSolver(ctx, sdm, task);
 					default:
 						throw new RuntimeException("Unrecognized scope mode: " + options.getScope());
 				}

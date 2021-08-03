@@ -46,6 +46,7 @@ public class SafeCTest {
     private final Settings settings;
     private final Result expected;
     private SolverContext ctx;
+    private ShutdownManager sdm;
 
 	@Parameterized.Parameters(name = "{index}: {0} target={2}")
     public static Iterable<Object[]> data() throws IOException {
@@ -115,10 +116,11 @@ public class SafeCTest {
         Configuration config = Configuration.builder()
         		.setOption("solver.z3.usePhantomReferences", "true")
         		.build();
-        ctx = SolverContextFactory.createSolverContext(
+        sdm = ShutdownManager.create();
+		ctx = SolverContextFactory.createSolverContext(
                 config, 
                 BasicLogManager.create(config), 
-                ShutdownManager.create().getNotifier(), 
+                sdm.getNotifier(), 
                 Solvers.Z3);
     }
 
@@ -128,7 +130,7 @@ public class SafeCTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisAssumeSolver(ctx, task));
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, sdm, task));
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");
