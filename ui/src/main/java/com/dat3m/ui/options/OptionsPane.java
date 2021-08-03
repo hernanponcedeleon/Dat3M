@@ -14,6 +14,9 @@ import com.dat3m.ui.utils.UiOptions;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -34,7 +37,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     private final Selector<Alias> aliasPane;
     private final Selector<Method> methodPane;
-
+    private final Selector<Solvers> solverPane;
+    
     private final Selector<Arch> targetPane;
 
     private final BoundField boundField;
@@ -53,6 +57,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
         methodPane = new Selector<>(EnumSet.allOf(Method.class).toArray(new Method[0]), ControlCode.METHOD);
+        solverPane = new Selector<>(Solvers.values(), ControlCode.SOLVER);
 
         Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
         targetPane = new Selector<>(architectures, ControlCode.TARGET);
@@ -96,7 +101,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         Arch target = (Arch)targetPane.getSelectedItem();
         Method method = (Method)methodPane.getSelectedItem();
-        return new UiOptions(target, method, settings);
+        Solvers solver = (Solvers)solverPane.getSelectedItem();
+        return new UiOptions(target, method, solver, settings);
     }
 
     private int getIconHeight(){
@@ -124,7 +130,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, aliasPane, methodPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { targetPane, aliasPane, methodPane, solverPane, boundsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);

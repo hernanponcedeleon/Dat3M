@@ -44,7 +44,7 @@ public class Base {
     					}});
 
     	try {
-            logger.info("Starting encoding");
+            logger.info("Starting encoding using " + ctx.getVersion());
             prover.addConstraint(task.encodeProgram(ctx));
             prover.addConstraint(task.encodeWmmRelations(ctx));
             prover.addConstraint(task.encodeWmmConsistency(ctx));
@@ -98,7 +98,7 @@ public class Base {
 			}});
 
     	try {
-            logger.info("Starting encoding");
+            logger.info("Starting encoding using " + ctx.getVersion());
             prover.addConstraint(task.encodeProgram(ctx));
             prover.addConstraint(task.encodeWmmRelations(ctx));
             prover.addConstraint(task.encodeWmmConsistency(ctx));
@@ -150,49 +150,49 @@ public class Base {
 			}});
 
     	try {
-        logger.info("Starting encoding");
-        BooleanFormula encodeCF = task.encodeProgram(ctx);
-        prover1.addConstraint(encodeCF);
-        prover2.addConstraint(encodeCF);
-        
-        BooleanFormula encodeWmm = task.encodeWmmRelations(ctx);
-		prover1.addConstraint(encodeWmm);
-        prover2.addConstraint(encodeWmm);
-        
-        BooleanFormula encodeConsistency = task.encodeWmmConsistency(ctx);
-		prover1.addConstraint(encodeConsistency);
-        prover2.addConstraint(encodeConsistency);
-       	
-        prover1.addConstraint(task.getProgram().getAss().encode(ctx));
-        if(task.getProgram().getAssFilter() != null){
-        	BooleanFormula encodeFilter = task.getProgram().getAssFilter().encode(ctx);
-			prover1.addConstraint(encodeFilter);
-            prover2.addConstraint(encodeFilter);
-        }
-        // For validation this contains information.
-        // For verification graph.encode() just returns ctx.mkTrue()
-        prover1.addConstraint(task.encodeWitness(ctx));
-
-        // Starting the solver timeout
-        t.start();
-        logger.info("Starting first solver.check()");
-        if(prover1.isUnsat()) {
-			prover2.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
-            logger.info("Starting second solver.check()");
-            res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
-        } else {
-        	res = FAIL;
-        }
-        
-        res = task.getProgram().getAss().getInvert() ? res.invert() : res;
-        logger.info("Verification finished with result " + res);
-        return res;
-        } catch (InterruptedException e){
-        	logger.warn(String.format("The SMT solver was stopped after %s seconds", task.getSettings().getSolverTimeout()));
-        	return TIMEOUT;  
-        } catch (Exception e) {
-        	logger.error(e.getMessage());
-        	return ERROR;
-        }
+            logger.info("Starting encoding using " + ctx.getVersion());
+	        BooleanFormula encodeCF = task.encodeProgram(ctx);
+	        prover1.addConstraint(encodeCF);
+	        prover2.addConstraint(encodeCF);
+	        
+	        BooleanFormula encodeWmm = task.encodeWmmRelations(ctx);
+			prover1.addConstraint(encodeWmm);
+	        prover2.addConstraint(encodeWmm);
+	        
+	        BooleanFormula encodeConsistency = task.encodeWmmConsistency(ctx);
+			prover1.addConstraint(encodeConsistency);
+	        prover2.addConstraint(encodeConsistency);
+	       	
+	        prover1.addConstraint(task.getProgram().getAss().encode(ctx));
+	        if(task.getProgram().getAssFilter() != null){
+	        	BooleanFormula encodeFilter = task.getProgram().getAssFilter().encode(ctx);
+				prover1.addConstraint(encodeFilter);
+	            prover2.addConstraint(encodeFilter);
+	        }
+	        // For validation this contains information.
+	        // For verification graph.encode() just returns ctx.mkTrue()
+	        prover1.addConstraint(task.encodeWitness(ctx));
+	
+	        // Starting the solver timeout
+	        t.start();
+	        logger.info("Starting first solver.check()");
+	        if(prover1.isUnsat()) {
+				prover2.addConstraint(ctx.getFormulaManager().getBooleanFormulaManager().not(task.getProgram().encodeNoBoundEventExec(ctx)));
+	            logger.info("Starting second solver.check()");
+	            res = prover2.isUnsat() ? PASS : Result.UNKNOWN;
+	        } else {
+	        	res = FAIL;
+	        }
+	        
+	        res = task.getProgram().getAss().getInvert() ? res.invert() : res;
+	        logger.info("Verification finished with result " + res);
+	        return res;
+	        } catch (InterruptedException e){
+	        	logger.warn(String.format("The SMT solver was stopped after %s seconds", task.getSettings().getSolverTimeout()));
+	        	return TIMEOUT;  
+	        } catch (Exception e) {
+	        	logger.error(e.getMessage());
+	        	return ERROR;
+	        }
     }
 }

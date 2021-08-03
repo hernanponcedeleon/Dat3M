@@ -98,7 +98,6 @@ public class Dartagnan {
                     BasicLogManager.create(config), 
                     sdm.getNotifier(), 
                     options.getSMTSolver()); 
-            logger.info("SMT solver: " + ctx.getVersion());
 
             Result result = selectAndRunAnalysis(options, task, ctx, sdm);
             

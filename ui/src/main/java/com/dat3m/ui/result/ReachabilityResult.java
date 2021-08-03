@@ -6,7 +6,6 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
@@ -53,7 +52,7 @@ public class ReachabilityResult {
                         config, 
                         BasicLogManager.create(config), 
                         sdm.getNotifier(), 
-                        Solvers.Z3);
+                        options.getSolver());
                 
                 switch(options.getMethod()) {
             	case INCREMENTAL:
