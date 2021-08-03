@@ -43,14 +43,27 @@ public class ReachabilityResult {
             VerificationTask task = new VerificationTask(program, wmm, program.getArch() != null ? program.getArch() : options.getTarget(), options.getSettings());
             Result result = Result.UNKNOWN;
 
+            ShutdownManager sdm = ShutdownManager.create();
+        	Thread t = new Thread(() -> {
+    			try {
+    				if(options.getSettings().getSolverTimeout() > 0) {
+    					// Converts timeout from secs to millisecs
+    					Thread.sleep(1000 * options.getSettings().getSolverTimeout());
+    					sdm.requestShutdown("Shutdown Request");
+    				}
+    			} catch (InterruptedException e) {
+    				throw new UnsupportedOperationException("Unexpected interrupt");
+    			}});
+
             try {
+            	t.start();
                 Configuration config = Configuration.builder()
                 		.setOption("solver.z3.usePhantomReferences", "true")
                 		.build();
 				SolverContext ctx = SolverContextFactory.createSolverContext(
                         config, 
                         BasicLogManager.create(config), 
-                        ShutdownManager.create().getNotifier(), 
+                        sdm.getNotifier(), 
                         options.getSolver());
                 
                 switch(options.getMethod()) {
@@ -66,8 +79,10 @@ public class ReachabilityResult {
                 }
                 buildVerdict(result);
                 ctx.close();
+            } catch (InterruptedException e){
+            	verdict = "TIMEOUT";
             } catch (Exception e) {
-            	System.out.println(e.getMessage());
+            	verdict = "ERROR: " + e.getMessage();
             }
         }
     }
