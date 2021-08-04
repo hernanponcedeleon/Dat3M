@@ -2,7 +2,7 @@ package com.dat3m.svcomp;
 
 import static com.dat3m.dartagnan.utils.options.BaseOptions.SMTSOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SCOPE_OPTION;
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.METHOD_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_PATH_OPTION;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
@@ -83,7 +83,7 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().toString()));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
-	    	cmd.addAll(asList("-" + SCOPE_OPTION, options.getScope().toString()));
+	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getScope().toString()));
 	    	cmd.addAll(asList("-" + SMTSOLVER_OPTION, options.getSMTSolver().toString().toLowerCase()));
 	    	if(options.getWitnessPath() != null) {
 	    		// In validation mode we do not create witnesses.

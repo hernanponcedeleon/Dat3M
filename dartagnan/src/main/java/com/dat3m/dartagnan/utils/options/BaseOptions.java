@@ -25,7 +25,7 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 public abstract class BaseOptions extends Options {
 
-	public static final String SCOPE_OPTION = "scope";
+	public static final String METHOD_OPTION = "method";
 	public static final String SMTSOLVER_OPTION = "solver";
 	public static final String SMTSOLVER_TIMEOUT_OPTION = "timeout";
 	
@@ -75,7 +75,7 @@ public abstract class BaseOptions extends Options {
         addOption(new Option(SMTSOLVER_TIMEOUT_OPTION, true,
                 "Timeout (in secs) for the SMT solver"));
         
-        addOption(new Option(SCOPE_OPTION, true,
+        addOption(new Option(METHOD_OPTION, true,
         		"The solver method to be used: " + supported_scope));
         
         addOption(new Option(SMTSOLVER_OPTION, true,
@@ -93,7 +93,7 @@ public abstract class BaseOptions extends Options {
             target = Arch.get(cmd.getOptionValue("target"));
         }
         
-        scope = cmd.hasOption(SCOPE_OPTION) ? ScopeTypes.fromString(cmd.getOptionValue(SCOPE_OPTION)) : INCREMENTAL;
+        scope = cmd.hasOption(METHOD_OPTION) ? ScopeTypes.fromString(cmd.getOptionValue(METHOD_OPTION)) : INCREMENTAL;
         if(!supported_scope.contains(scope)) {
             throw new UnsupportedOperationException("Unrecognized solver method: " + scope);        		
         }
