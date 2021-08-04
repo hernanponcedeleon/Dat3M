@@ -54,7 +54,7 @@ public class ReachabilityResult {
     					sdm.requestShutdown("Shutdown Request");
     				}
     			} catch (InterruptedException e) {
-    				throw new UnsupportedOperationException("Unexpected interrupt");
+    				// Verification ended, nothing to be done.
     			}});
 
             try {
@@ -81,6 +81,8 @@ public class ReachabilityResult {
 	                    result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
 	                    break;
                 }
+				// Verification ended, we can interrupt the timeout Thread
+				t.interrupt();
                 buildVerdict(result);
                 ctx.close();
             } catch (InterruptedException e){

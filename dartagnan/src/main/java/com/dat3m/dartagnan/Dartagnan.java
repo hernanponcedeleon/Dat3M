@@ -69,7 +69,7 @@ public class Dartagnan {
 					logger.warn("Shutdown Request");
 				}
 			} catch (InterruptedException e) {
-				throw new UnsupportedOperationException("Unexpected interrupt");
+				// Verification ended, nothing to be done.
 			}});
         
         logger.info("Program path: " + options.getProgramFilePath());
@@ -139,6 +139,9 @@ public class Dartagnan {
 					throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
     		}
             
+			// Verification ended, we can interrupt the timeout Thread
+			t.interrupt();
+
             if(options.getProgramFilePath().endsWith(".litmus")) {
                 System.out.println("Settings: " + options.getSettings());
                 if(p.getAssFilter() != null){
