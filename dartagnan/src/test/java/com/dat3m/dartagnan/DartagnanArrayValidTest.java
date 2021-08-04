@@ -17,7 +17,9 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,7 +73,9 @@ public class DartagnanArrayValidTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(runAnalysisTwoSolvers(ctx, task), FAIL);
+            ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+            ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+            assertEquals(runAnalysisTwoSolvers(ctx, prover1, prover2, task), FAIL);
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

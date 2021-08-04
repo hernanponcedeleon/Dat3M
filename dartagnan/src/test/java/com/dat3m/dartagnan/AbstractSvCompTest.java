@@ -15,7 +15,10 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -63,7 +66,9 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisTwoSolvers(ctx, task));
+            ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+            ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
@@ -78,7 +83,8 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisIncrementalSolver(ctx, task));
+            ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+            assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
@@ -93,7 +99,8 @@ public abstract class AbstractSvCompTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisAssumeSolver(ctx, task));
+            ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             ctx.close();
         } catch (Exception e){
             fail(e.getMessage());

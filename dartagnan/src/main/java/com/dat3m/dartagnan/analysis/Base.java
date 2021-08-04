@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import com.dat3m.dartagnan.asserts.AssertTrue;
@@ -20,9 +19,8 @@ public class Base {
 
     private static final Logger logger = LogManager.getLogger(Base.class);
 
-    public static Result runAnalysisIncrementalSolver(SolverContext ctx, VerificationTask task) throws InterruptedException, SolverException {
+    public static Result runAnalysisIncrementalSolver(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         Result res = Result.UNKNOWN;
-        ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
         
         task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
@@ -55,9 +53,8 @@ public class Base {
         return res;
     }
 
-    public static Result runAnalysisAssumeSolver(SolverContext ctx, VerificationTask task) throws InterruptedException, SolverException {
+    public static Result runAnalysisAssumeSolver(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         Result res = Result.UNKNOWN;
-        ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
         
         task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {
@@ -86,10 +83,8 @@ public class Base {
         return res;
     }
 
-    public static Result runAnalysisTwoSolvers(SolverContext ctx, VerificationTask task) throws InterruptedException, SolverException {
+    public static Result runAnalysisTwoSolvers(SolverContext ctx, ProverEnvironment prover1, ProverEnvironment prover2, VerificationTask task) throws InterruptedException, SolverException {
     	Result res = Result.UNKNOWN;
-    	ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-    	ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
     	
     	task.unrollAndCompile();
        	if(task.getProgram().getAss() instanceof AssertTrue) {

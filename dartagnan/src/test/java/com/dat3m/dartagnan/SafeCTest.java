@@ -18,7 +18,9 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.io.IOException;
@@ -128,7 +130,8 @@ public class SafeCTest {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             initSolverContext();
-            assertEquals(expected, runAnalysisAssumeSolver(ctx, task));
+            ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

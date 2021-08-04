@@ -6,7 +6,9 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
@@ -65,17 +67,19 @@ public class ReachabilityResult {
                         BasicLogManager.create(config), 
                         sdm.getNotifier(), 
                         options.getSolver());
-                
-                switch(options.getMethod()) {
-            	case INCREMENTAL:
-            		result = runAnalysisIncrementalSolver(ctx, task);
-            		break;
-            	case ASSUME:
-            		result = runAnalysisAssumeSolver(ctx, task);
-            		break;
-            	case TWOSOLVERS:
-                    result = runAnalysisTwoSolvers(ctx, task);
-                    break;
+				ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+
+				switch(options.getMethod()) {
+	            	case INCREMENTAL:
+	            		result = runAnalysisIncrementalSolver(ctx, prover, task);
+	            		break;
+	            	case ASSUME:
+	            		result = runAnalysisAssumeSolver(ctx, prover, task);
+	            		break;
+	            	case TWOSOLVERS:
+	            		ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+	                    result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+	                    break;
                 }
                 buildVerdict(result);
                 ctx.close();

@@ -32,7 +32,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
@@ -49,17 +51,19 @@ public class WitnessBuilder {
 	private WitnessGraph graph;
 	private Program program;
 	private SolverContext ctx;
+	private ProverEnvironment prover;
 	private Model model;
 	private String type ;
 	private String path;
 	
 	private Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
-	public WitnessBuilder(Program program, SolverContext ctx, Result result, DartagnanOptions options) {
+	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
 		this.graph.addAttribute(UNROLLBOUND.toString(), String.valueOf(options.getSettings().getBound()));
 		this.program = program;
 		this.ctx = ctx;
+		this.prover = prover;
 		this.type = result.equals(FAIL) ? "violation" : "correctness";
 		this.path = options.createWitness();
 		buildGraph();
@@ -116,7 +120,12 @@ public class WitnessBuilder {
 			return;
 		}
 
-		List<Event> execution = getSCExecutionOrder(ctx, model);
+		try {
+			model = prover.getModel();
+		} catch (SolverException ignore) {
+			// The if above guarantees that if we reach this try, a Model exists
+		}		
+		List<Event> execution = getSCExecutionOrder();
 		for(int i = 0; i < execution.size(); i++) {
 			Event e = execution.get(i);
 			if(i+1 < execution.size() && e.getCLine() == execution.get(i+1).getCLine() && e.getThread().equals(execution.get(i+1).getThread())) {
@@ -154,7 +163,7 @@ public class WitnessBuilder {
 		}
 	}
 	
-	private List<Event> getSCExecutionOrder(SolverContext ctx, Model model) {
+	private List<Event> getSCExecutionOrder() {
 		List<Event> execEvents = new ArrayList<>();
 		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));
 		execEvents.addAll(program.getEvents().stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));

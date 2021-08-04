@@ -21,8 +21,9 @@ import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -112,8 +113,31 @@ public class Dartagnan {
                     BasicLogManager.create(config), 
                     sdm.getNotifier(), 
                     options.getSMTSolver()); 
+			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
 
-            Result result = selectAndRunAnalysis(options, task, ctx);
+            Result result;
+    		switch(options.getAnalysis()) {
+				case RACES:
+					result = checkForRaces(ctx, task);	
+				case REACHABILITY:
+					switch(options.getScope()) {
+						case TWO:
+							ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+							result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+							break;
+						case INCREMENTAL:
+							result = runAnalysisIncrementalSolver(ctx, prover, task);
+							break;
+						case ASSUME:
+							result = runAnalysisAssumeSolver(ctx, prover, task);
+							break;
+						default:
+							throw new RuntimeException("Unrecognized method mode: " + options.getScope());
+					}
+					break;
+				default:
+					throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
+    		}
             
             if(options.getProgramFilePath().endsWith(".litmus")) {
                 System.out.println("Settings: " + options.getSettings());
@@ -127,7 +151,7 @@ public class Dartagnan {
             }
 
             if(options.createWitness() != null) {
-            	new WitnessBuilder(p, ctx, result, options).write();
+            	new WitnessBuilder(p, ctx, prover, result, options).write();
             }
             
             ctx.close();
@@ -141,24 +165,4 @@ public class Dartagnan {
         	System.exit(1);
         }
     }
-
-	private static Result selectAndRunAnalysis(DartagnanOptions options, VerificationTask task, SolverContext ctx) throws InterruptedException, SolverException {
-		switch(options.getAnalysis()) {
-			case RACES:
-				return checkForRaces(ctx, task);	
-			case REACHABILITY:
-				switch(options.getScope()) {
-					case TWO:
-						return runAnalysisTwoSolvers(ctx, task);
-					case INCREMENTAL:
-						return runAnalysisIncrementalSolver(ctx, task);
-					case ASSUME:
-						return runAnalysisAssumeSolver(ctx, task);
-					default:
-						throw new RuntimeException("Unrecognized scope mode: " + options.getScope());
-				}
-			default:
-				throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
-		}
-	}
 }
