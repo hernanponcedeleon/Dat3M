@@ -41,6 +41,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
+import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
@@ -125,7 +127,7 @@ public class WitnessBuilder {
 		} catch (SolverException ignore) {
 			// The if above guarantees that if we reach this try, a Model exists
 		}		
-		List<Event> execution = getSCExecutionOrder();
+		List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder());
 		for(int i = 0; i < execution.size(); i++) {
 			Event e = execution.get(i);
 			if(i+1 < execution.size() && e.getCLine() == execution.get(i+1).getCLine() && e.getThread().equals(execution.get(i+1).getThread())) {
@@ -198,6 +200,25 @@ public class WitnessBuilder {
         }
         
         return exec.isEmpty() ? execEvents : exec;
+	}
+	
+	private List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
+		List<Event> result = new ArrayList<>();
+		while(!order.isEmpty()) {
+			Event next = order.remove(0);
+			List<Event> bucket = new ArrayList<>();
+			if(program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream().anyMatch(e -> ((EndAtomic)e).getBlock().contains(next))) {
+				// We add the whole atomic block and remove the whole bucket from the order
+				bucket = ((EndAtomic)program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream()
+						.filter(e -> ((EndAtomic)e).getBlock().contains(next)).collect(Collectors.toList()).get(0)).getBlock().stream()
+						.filter(e -> !(e instanceof BeginAtomic) && !(e instanceof EndAtomic)).collect(Collectors.toList());
+				order.removeAll(bucket);
+			} else {
+				bucket.add(next);
+			}
+			result.addAll(bucket);
+		}
+		return result;
 	}
 	
 	private String checksum() {
