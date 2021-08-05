@@ -165,7 +165,7 @@ public class WitnessBuilder {
 		}
 	}
 	
-	private List<Event> getSCExecutionOrder() {
+	public List<Event> getSCExecutionOrder() {
 		List<Event> execEvents = new ArrayList<>();
 		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));
 		execEvents.addAll(program.getEvents().stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));
@@ -202,21 +202,26 @@ public class WitnessBuilder {
         return exec.isEmpty() ? execEvents : exec;
 	}
 	
-	private List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
+	public List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
 		List<Event> result = new ArrayList<>();
-		while(!order.isEmpty()) {
-			Event next = order.remove(0);
+		int id = 0;
+		while(id < order.size()) {
+			Event next = order.get(id);
+			if(result.contains(next)) {
+				id++;
+				continue;
+			}
 			List<Event> bucket = new ArrayList<>();
 			if(program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream().anyMatch(e -> ((EndAtomic)e).getBlock().contains(next))) {
 				// We add the whole atomic block and remove the whole bucket from the order
 				bucket = ((EndAtomic)program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream()
 						.filter(e -> ((EndAtomic)e).getBlock().contains(next)).collect(Collectors.toList()).get(0)).getBlock().stream()
-						.filter(e -> !(e instanceof BeginAtomic) && !(e instanceof EndAtomic)).collect(Collectors.toList());
-				order.removeAll(bucket);
+						.filter(e -> order.contains(e)).collect(Collectors.toList());
 			} else {
 				bucket.add(next);
 			}
 			result.addAll(bucket);
+			id++;
 		}
 		return result;
 	}

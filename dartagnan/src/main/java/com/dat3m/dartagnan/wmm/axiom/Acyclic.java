@@ -81,9 +81,10 @@ public class Acyclic extends Axiom {
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
-			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 
-									imgr.greaterThan(Utils.intVar(rel.getName(), e1, ctx), 
-									Utils.intVar(rel.getName(), e2, ctx))));
+			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx),
+									imgr.lessThan(
+											Utils.intVar(rel.getName(), e1, ctx), 
+											Utils.intVar(rel.getName(), e2, ctx))));
         }
         return enc;
     }
