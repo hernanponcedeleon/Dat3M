@@ -1,12 +1,7 @@
 package com.dat3m.dartagnan.witness;
 
 import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-import static java.lang.Integer.parseInt;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -83,11 +78,6 @@ public class WitnessGraph extends ElemWithAttributes {
 		BooleanFormula enc = bmgr.makeTrue();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			if(getAttributed(PRODUCER.toString()).equals("Dartagnan") 
-					&& edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(HBPOS.toString())) {
-				Event ev = program.getEvents().stream().filter(e -> e.getCId() == parseInt(edge.getAttributed(EVENTID.toString()))).findFirst().get();
-				enc = bmgr.and(enc, imgr.equal(intVar("hb", ev, ctx), imgr.makeNumber(edge.getAttributed(HBPOS.toString()))));
-			} 
 			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream().filter(e -> e.getCLine() == edge.getCline()).collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
 				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream().map(p -> imgr.lessThan(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx))).collect(Collectors.toList()).toArray(BooleanFormula[]::new)));

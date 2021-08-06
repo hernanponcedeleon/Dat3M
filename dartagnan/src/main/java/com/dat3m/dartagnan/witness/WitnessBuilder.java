@@ -5,8 +5,6 @@ import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.CREATETHREAD;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.ENTERFUNCTION;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.STARTLINE;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.THREADID;
 import static com.dat3m.dartagnan.witness.GraphAttributes.ARCHITECTURE;
@@ -41,7 +39,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
@@ -137,11 +134,6 @@ public class WitnessBuilder {
 			edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode+1)));
 			edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
 			edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
-			if(model.evaluate(intVar("hb", e, ctx)) != null) {
-				edge.addAttribute(EVENTID.toString(), valueOf(e.getCId()));
-				edge.addAttribute(HBPOS.toString(), valueOf(model.evaluate(intVar("hb", e, ctx))));				
-			}
-			
 			if(e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
 				edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 				threads++;
