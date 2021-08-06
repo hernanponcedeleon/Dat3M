@@ -58,7 +58,7 @@ public abstract class AbstractSvCompTest {
                 Solvers.Z3);
     }
     
-    @Test(timeout = TIMEOUT)
+//    @Test(timeout = TIMEOUT)
     public void test() {
         try {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
