@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.Base;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -23,9 +24,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.wmm.utils.Arch.ARM8;
-import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
-import static com.dat3m.dartagnan.wmm.utils.Arch.TSO;
+import static com.dat3m.dartagnan.wmm.utils.Arch.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -110,7 +109,7 @@ public class SafeCTest {
             Program program = new ProgramParser().parse(new File(path));
             Context ctx = new Context();
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
+            assertEquals(expected, Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
             ctx.close();
         } catch (Exception e){
             fail("Missing resource file");

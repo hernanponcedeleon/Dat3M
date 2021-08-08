@@ -5,12 +5,14 @@ import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
 import com.dat3m.dartagnan.witness.WitnessGraph;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
-import org.antlr.v4.runtime.*;
 
 public class ParserWitness {
 
@@ -32,8 +34,10 @@ public class ParserWitness {
     }
     
     public WitnessGraph parse(File file) throws IOException {
-        FileInputStream stream = new FileInputStream(file);
-        CharStream charStream = CharStreams.fromStream(stream);
+        CharStream charStream;
+        try (FileInputStream stream = new FileInputStream(file)) {
+            charStream = CharStreams.fromStream(stream);
+        }
         return parse(charStream);
     }
 }
