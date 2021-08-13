@@ -34,7 +34,7 @@ public class IfExpr implements ExprInterface {
 	@Override
 	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
 		return (BooleanFormula)ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
-				guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
+				guard.toZ3Bool(e, ctx), tbranch.toZ3Bool(e, ctx), fbranch.toZ3Bool(e, ctx));
 	}
 
 	@Override
