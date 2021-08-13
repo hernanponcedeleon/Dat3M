@@ -27,7 +27,7 @@ public class BConst extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		return value ? bmgr.makeTrue() : bmgr.makeFalse();
 	}

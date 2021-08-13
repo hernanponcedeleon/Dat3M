@@ -35,7 +35,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
         super.initialise(task, ctx);
         z3Cond = ctx.getFormulaManager().getIntegerFormulaManager().equal(
         		(IntegerFormula)memValueExpr, 
-        		(IntegerFormula)cmp.toZ3Int(this, ctx));
+        		(IntegerFormula)cmp.toIntFormula(this, ctx));
     }
 
     public BooleanFormula getCond(){

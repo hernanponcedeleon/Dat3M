@@ -27,7 +27,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 	}
 
     @Override
-    public Formula toZ3Int(Event e, SolverContext ctx) {
+    public Formula toIntFormula(Event e, SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		Formula e1 = precision > 0 ? 
     			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ONE) : 
@@ -35,11 +35,11 @@ public class BNonDet extends BExpr implements ExprInterface {
     	Formula e2 = precision > 0 ?
     			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ZERO) : 
     			fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
-        return fmgr.getBooleanFormulaManager().ifThenElse(toZ3Bool(e, ctx), e1, e2);
+        return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), e1, e2);
     }
 
 	@Override
-	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(Integer.toString(hashCode()));
 	}
 
@@ -50,7 +50,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
-		return model.evaluate(toZ3Bool(e, ctx)).booleanValue();
+		return model.evaluate(toBoolFormula(e, ctx)).booleanValue();
 	}
 
 	@Override

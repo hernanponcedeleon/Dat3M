@@ -73,7 +73,7 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public Formula toZ3Int(Event e, SolverContext ctx) {
+	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + ")";
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
@@ -104,7 +104,7 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-		return new BigInteger(model.evaluate(toZ3Int(e, ctx)).toString());
+		return new BigInteger(model.evaluate(toIntFormula(e, ctx)).toString());
 	}
 
 	@Override

@@ -27,8 +27,8 @@ public class IExprBin extends IExpr implements ExprInterface {
     }
 
     @Override
-    public Formula toZ3Int(Event e, SolverContext ctx) {
-        return op.encode(lhs.toZ3Int(e, ctx), rhs.toZ3Int(e, ctx), ctx);
+    public Formula toIntFormula(Event e, SolverContext ctx) {
+        return op.encode(lhs.toIntFormula(e, ctx), rhs.toIntFormula(e, ctx), ctx);
     }
 
     @Override

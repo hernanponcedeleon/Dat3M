@@ -14,11 +14,11 @@ import com.dat3m.dartagnan.program.event.Event;
 public abstract class IExpr implements ExprInterface {
 
     @Override
-	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return toZ3Int(e, ctx) instanceof BitvectorFormula ? 
-				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)toZ3Int(e, ctx), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO), false) :
-				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)toZ3Int(e, ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
+		return toIntFormula(e, ctx) instanceof BitvectorFormula ? 
+				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)toIntFormula(e, ctx), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO), false) :
+				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)toIntFormula(e, ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
 	}
 
     @Override

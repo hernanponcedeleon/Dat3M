@@ -37,8 +37,8 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
-        return op.encode(b.toZ3Bool(e, ctx), ctx);
+    public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
+        return op.encode(b.toBoolFormula(e, ctx), ctx);
     }
 
     @Override

@@ -17,9 +17,9 @@ public interface ExprInterface {
 
 	IConst reduce();
 	
-    Formula toZ3Int(Event e, SolverContext ctx);
+    Formula toIntFormula(Event e, SolverContext ctx);
 
-    BooleanFormula toZ3Bool(Event e, SolverContext ctx);
+    BooleanFormula toBoolFormula(Event e, SolverContext ctx);
 
     Formula getLastValueExpr(SolverContext ctx);
 

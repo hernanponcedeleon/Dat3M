@@ -44,7 +44,7 @@ public class INonDet extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula toZ3Int(Event e, SolverContext ctx) {
+	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = Integer.toString(hashCode());
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ? 
@@ -63,7 +63,7 @@ public class INonDet extends IExpr implements ExprInterface {
 
 	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
-		return new BigInteger(model.evaluate(toZ3Int(e, ctx)).toString());
+		return new BigInteger(model.evaluate(toIntFormula(e, ctx)).toString());
 	}
 
 	@Override
@@ -153,11 +153,11 @@ public class INonDet extends IExpr implements ExprInterface {
 		long max = getMax();
 		if(bp) {
 			boolean signed = !(type.equals(UINT) || type.equals(ULONG) || type.equals(USHORT) || type.equals(UCHAR));
-			enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().greaterOrEquals((BitvectorFormula) toZ3Int(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, min), signed));
-	        enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().lessOrEquals((BitvectorFormula) toZ3Int(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, max), signed));
+			enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().greaterOrEquals((BitvectorFormula) toIntFormula(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, min), signed));
+	        enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().lessOrEquals((BitvectorFormula) toIntFormula(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, max), signed));
 		} else {
-			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().greaterOrEquals((IntegerFormula)toZ3Int(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(min)));
-			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().lessOrEquals((IntegerFormula)toZ3Int(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(max)));
+			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().greaterOrEquals((IntegerFormula)toIntFormula(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(min)));
+			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().lessOrEquals((IntegerFormula)toIntFormula(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(max)));
 		}
 		return enc;
 	}

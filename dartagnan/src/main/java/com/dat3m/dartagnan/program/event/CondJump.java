@@ -73,7 +73,7 @@ public class CondJump extends Event implements RegReaderData {
     	if(defaultCtx == null) {
     		initCtx();
     	}
-        return defaultCtx.getFormulaManager().getBooleanFormulaManager().isTrue(expr.toZ3Bool(this, defaultCtx));
+        return defaultCtx.getFormulaManager().getBooleanFormulaManager().isTrue(expr.toBoolFormula(this, defaultCtx));
     }
     
     public Label getLabel(){
@@ -207,7 +207,7 @@ public class CondJump extends Event implements RegReaderData {
 
     	if(cfEnc == null){
 			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-            BooleanFormula ifCond = expr.toZ3Bool(this, ctx);
+            BooleanFormula ifCond = expr.toBoolFormula(this, ctx);
             label.addCfCond(ctx, bmgr.and(ifCond, cfVar));
             cfEnc = bmgr.and(bmgr.equivalence(cfVar, cfCond), encodeExec(ctx));
         }

@@ -60,10 +60,10 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
 		BooleanFormula enc = bmgr.and(
 				bmgr.implication(storeEvent.exec(), imgr.equal(
 						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)new IConst(BigInteger.ZERO, precision).toZ3Int(this, ctx))),
+						(IntegerFormula)new IConst(BigInteger.ZERO, precision).toIntFormula(this, ctx))),
 				bmgr.implication(bmgr.not(storeEvent.exec()), imgr.equal(
 						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)new IConst(BigInteger.ONE, precision).toZ3Int(this, ctx)))
+						(IntegerFormula)new IConst(BigInteger.ONE, precision).toIntFormula(this, ctx)))
         );
         return bmgr.and(super.encodeExec(ctx), enc);
     }

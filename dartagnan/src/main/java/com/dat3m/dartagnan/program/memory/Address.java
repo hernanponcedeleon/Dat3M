@@ -44,13 +44,13 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Formula toZ3Int(Event e, SolverContext ctx){
-        return toZ3Int(ctx);
+    public Formula toIntFormula(Event e, SolverContext ctx){
+        return toIntFormula(ctx);
     }
 
     @Override
     public Formula getLastValueExpr(SolverContext ctx){
-        return toZ3Int(ctx);
+        return toIntFormula(ctx);
     }
 
     public Formula getLastMemValueExpr(SolverContext ctx){
@@ -61,7 +61,7 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public BooleanFormula toZ3Bool(Event e, SolverContext ctx){
+    public BooleanFormula toBoolFormula(Event e, SolverContext ctx){
         return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
@@ -87,7 +87,7 @@ public class Address extends IConst implements ExprInterface {
     }
 
     @Override
-    public Formula toZ3Int(SolverContext ctx){
+    public Formula toIntFormula(SolverContext ctx){
 		FormulaManager fmgr = ctx.getFormulaManager();
 		if(constantValue != null) {
 			return precision > 0 ? 
@@ -104,7 +104,7 @@ public class Address extends IConst implements ExprInterface {
         if (hasConstantValue()) {
             return constantValue;
         }
-        return new BigInteger(model.evaluate(toZ3Int(ctx)).toString());
+        return new BigInteger(model.evaluate(toIntFormula(ctx)).toString());
     }
 
     @Override

@@ -163,7 +163,7 @@ public class Thread {
     		enc = bmgr.and(enc, e.encodeCF(ctx, guard));
     		guard = e.cf();
     		if(e instanceof CondJump) {
-    			guard = bmgr.and(guard, bmgr.not(((CondJump)e).getGuard().toZ3Bool(e, ctx)));
+    			guard = bmgr.and(guard, bmgr.not(((CondJump)e).getGuard().toBoolFormula(e, ctx)));
     		}
     	}
     	return enc;

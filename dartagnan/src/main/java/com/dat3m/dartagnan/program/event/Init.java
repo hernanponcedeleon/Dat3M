@@ -29,7 +29,7 @@ public class Init extends MemEvent {
 	@Override
 	public void initialise(VerificationTask task, SolverContext ctx) {
 		super.initialise(task, ctx);
-		memValueExpr = value.toZ3Int(ctx);
+		memValueExpr = value.toIntFormula(ctx);
 	}
 
 	@Override

@@ -29,8 +29,8 @@ public class Atom extends BExpr implements ExprInterface {
 	}
 
     @Override
-	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
-		return op.encode(lhs.toZ3Bool(e, ctx), rhs.toZ3Bool(e, ctx), ctx);
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
+		return op.encode(lhs.toBoolFormula(e, ctx), rhs.toBoolFormula(e, ctx), ctx);
 	}
 
 	@Override

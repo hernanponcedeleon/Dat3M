@@ -79,7 +79,7 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public Formula toZ3Int(Event e, SolverContext ctx){
+	public Formula toIntFormula(Event e, SolverContext ctx){
 		if(e instanceof MemEvent){
 			return ((MemEvent) e).getMemValueExpr();
 		}
@@ -87,7 +87,7 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public BooleanFormula toZ3Bool(Event e, SolverContext ctx){
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx){
 		if(e instanceof MemEvent){
 			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
 			return imgr.greaterThan((IntegerFormula)((MemEvent) e).getMemValueExpr(), imgr.makeNumber(BigInteger.ZERO));

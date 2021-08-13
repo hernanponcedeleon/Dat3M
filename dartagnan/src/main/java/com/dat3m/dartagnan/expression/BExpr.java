@@ -12,9 +12,9 @@ import com.dat3m.dartagnan.program.event.Event;
 public abstract class BExpr implements ExprInterface {
 
     @Override
-    public Formula toZ3Int(Event e, SolverContext ctx) {
+    public Formula toIntFormula(Event e, SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
-		return fmgr.getBooleanFormulaManager().ifThenElse(toZ3Bool(e, ctx), 
+		return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), 
 				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), 
 				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
     }

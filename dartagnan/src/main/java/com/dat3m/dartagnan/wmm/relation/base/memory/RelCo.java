@@ -153,9 +153,9 @@ public class RelCo extends Relation {
             	IntegerFormula a1 = w1.getMemAddressExpr() instanceof BitvectorFormula ?
             			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w1.getMemAddressExpr(), false) : 
             			(IntegerFormula)w1.getMemAddressExpr();
-            	IntegerFormula a2 = address.toZ3Int(ctx) instanceof BitvectorFormula ?
-            			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)address.toZ3Int(ctx), false) :
-            			(IntegerFormula)address.toZ3Int(ctx);
+            	IntegerFormula a2 = address.toIntFormula(ctx) instanceof BitvectorFormula ?
+            			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)address.toIntFormula(ctx), false) :
+            			(IntegerFormula)address.toIntFormula(ctx);
             	IntegerFormula v1 = address.getLastMemValueExpr(ctx) instanceof BitvectorFormula ?
             			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)address.getLastMemValueExpr(ctx), false) :
             			(IntegerFormula)address.getLastMemValueExpr(ctx);

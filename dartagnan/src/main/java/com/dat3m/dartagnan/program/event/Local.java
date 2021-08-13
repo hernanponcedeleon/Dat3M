@@ -80,15 +80,15 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		
 		BooleanFormula enc = super.encodeExec(ctx);
 		if(expr instanceof INonDet) {
-			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toZ3Int(this, ctx) instanceof BitvectorFormula, ctx));
+			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, ctx) instanceof BitvectorFormula, ctx));
 		}
 		BooleanFormula eq = regResultExpr instanceof BitvectorFormula ?
 				ctx.getFormulaManager().getBitvectorFormulaManager().equal(
 						(BitvectorFormula)regResultExpr, 
-						(BitvectorFormula)expr.toZ3Int(this, ctx)) :
+						(BitvectorFormula)expr.toIntFormula(this, ctx)) :
 				ctx.getFormulaManager().getIntegerFormulaManager().equal(
 						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)expr.toZ3Int(this, ctx));
+						(IntegerFormula)expr.toIntFormula(this, ctx));
 		return bmgr.and(enc, eq);
 	}
 

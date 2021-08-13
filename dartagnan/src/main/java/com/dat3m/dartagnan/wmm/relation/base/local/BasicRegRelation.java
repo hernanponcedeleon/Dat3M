@@ -83,13 +83,13 @@ abstract class BasicRegRelation extends StaticRelation {
                 List<Event> possibleWriters = writers.stream().filter(x -> writerReaders.contains(new Tuple(x, regReader))).collect(Collectors.toList());
 
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
-                	BooleanFormula equal = register.toZ3Int(regReader, ctx) instanceof BitvectorFormula ?
+                	BooleanFormula equal = register.toIntFormula(regReader, ctx) instanceof BitvectorFormula ?
                 			fmgr.getBitvectorFormulaManager().equal(
-                					(BitvectorFormula)register.toZ3Int(regReader, ctx), 
-                					(BitvectorFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toZ3Int(ctx)) :
+                					(BitvectorFormula)register.toIntFormula(regReader, ctx), 
+                					(BitvectorFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toIntFormula(ctx)) :
                 			fmgr.getIntegerFormulaManager().equal(
-                					(IntegerFormula)register.toZ3Int(regReader, ctx), 
-                					(IntegerFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toZ3Int(ctx));
+                					(IntegerFormula)register.toIntFormula(regReader, ctx), 
+                					(IntegerFormula)new IConst(BigInteger.ZERO, register.getPrecision()).toIntFormula(ctx));
                     enc = bmgr.and(enc, equal);
                 } else {
 
@@ -109,10 +109,10 @@ abstract class BasicRegRelation extends StaticRelation {
                         BooleanFormula equal = ((RegWriter)regWriter).getResultRegisterExpr() instanceof BitvectorFormula ?
                         		fmgr.getBitvectorFormulaManager().equal(
                                 		(BitvectorFormula)((RegWriter) regWriter).getResultRegisterExpr(),
-                                		(BitvectorFormula)register.toZ3Int(regReader, ctx)) :
+                                		(BitvectorFormula)register.toIntFormula(regReader, ctx)) :
                                 fmgr.getIntegerFormulaManager().equal(
                                 		(IntegerFormula)((RegWriter) regWriter).getResultRegisterExpr(),
-                                		(IntegerFormula)register.toZ3Int(regReader, ctx));
+                                		(IntegerFormula)register.toIntFormula(regReader, ctx));
                                 		
                         enc = bmgr.and(enc, bmgr.implication(edge, equal));
                     }
