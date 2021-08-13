@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -14,9 +15,10 @@ public abstract class IExpr implements ExprInterface {
 
     @Override
 	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+		FormulaManager fmgr = ctx.getFormulaManager();
 		return toZ3Int(e, ctx) instanceof BitvectorFormula ? 
-				ctx.getFormulaManager().getBitvectorFormulaManager().greaterThan((BitvectorFormula)toZ3Int(e, ctx), ctx.getFormulaManager().getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO), false) :
-					ctx.getFormulaManager().getIntegerFormulaManager().greaterThan((IntegerFormula)toZ3Int(e, ctx), ctx.getFormulaManager().getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
+				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)toZ3Int(e, ctx), fmgr.getBitvectorFormulaManager().makeBitvector(getPrecision(), BigInteger.ZERO), false) :
+				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)toZ3Int(e, ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
 	}
 
     @Override

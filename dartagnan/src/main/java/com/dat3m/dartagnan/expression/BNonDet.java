@@ -50,7 +50,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
-		return model.evaluate((BooleanFormula)toZ3Int(e, ctx)).booleanValue();
+		return model.evaluate(toZ3Bool(e, ctx)).booleanValue();
 	}
 
 	@Override
