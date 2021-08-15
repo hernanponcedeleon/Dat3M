@@ -31,4 +31,9 @@ public class Utils {
 		throw new RuntimeException(String.format("Formulas %s and %s have different types or are of unsopported type for generalEqual", f1, f2));
 	}
 	
+    public static IntegerFormula convertToIntegerFormula(Formula f, SolverContext ctx) {
+    	return f instanceof BitvectorFormula ? 
+    			ctx.getFormulaManager().getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) : 
+    			(IntegerFormula)f;
+    }    
 }

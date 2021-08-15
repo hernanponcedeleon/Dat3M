@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.BitvectorFormula;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -26,6 +25,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
@@ -123,12 +123,8 @@ public class RelCo extends Relation {
                 BooleanFormula execPair = bmgr.and(w1.exec(), w2.exec()); //getExecPair(t, ctx);
                 lastCo = bmgr.and(lastCo, bmgr.not(relation));
 
-                IntegerFormula a1 = w1.getMemAddressExpr() instanceof BitvectorFormula ?
-                		fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w1.getMemAddressExpr(), false) :
-                		(IntegerFormula)w1.getMemAddressExpr();
-                IntegerFormula a2 = w2.getMemAddressExpr()instanceof BitvectorFormula ?
-                		fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w2.getMemAddressExpr(), false) :
-                		(IntegerFormula)w2.getMemAddressExpr();
+                IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
+                IntegerFormula a2 = convertToIntegerFormula(w2.getMemAddressExpr(), ctx);
                 enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.and(
                 		bmgr.and(bmgr.and(execPair), imgr.equal(a1, a2)),
                 		imgr.lessThan(intVar("co", w1, ctx), intVar("co", w2, ctx))
@@ -151,18 +147,10 @@ public class RelCo extends Relation {
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
-            	IntegerFormula a1 = w1.getMemAddressExpr() instanceof BitvectorFormula ?
-            			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w1.getMemAddressExpr(), false) : 
-            			(IntegerFormula)w1.getMemAddressExpr();
-            	IntegerFormula a2 = address.toIntFormula(ctx) instanceof BitvectorFormula ?
-            			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)address.toIntFormula(ctx), false) :
-            			(IntegerFormula)address.toIntFormula(ctx);
-            	IntegerFormula v1 = address.getLastMemValueExpr(ctx) instanceof BitvectorFormula ?
-            			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)address.getLastMemValueExpr(ctx), false) :
-            			(IntegerFormula)address.getLastMemValueExpr(ctx);
-            	IntegerFormula v2 = w1.getMemValueExpr() instanceof BitvectorFormula ?
-            			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w1.getMemValueExpr(), false) :
-            			(IntegerFormula)w1.getMemValueExpr();
+            	IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
+            	IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
+            	IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
+            	IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
 				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, imgr.equal(a1, a2)), imgr.equal(v1, v2)));
             }
         }
