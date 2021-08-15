@@ -312,7 +312,8 @@ public class ExecutionModel {
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
-                    if (model.evaluate(rfExpr) != null && model.evaluate(rfExpr)) {
+					Boolean rfVal = model.evaluate(rfExpr);
+					if (rfVal != null && rfVal) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
