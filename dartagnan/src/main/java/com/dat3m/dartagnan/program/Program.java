@@ -20,6 +20,11 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -45,6 +50,7 @@ public class Program {
     private boolean isCompiled;
     private VerificationTask task;
     private BranchEquivalence branchEquivalence;
+    public static SolverContext defaultCtx;
 
     public Program(Memory memory, ImmutableSet<Location> locations){
         this("", memory, locations);
@@ -201,8 +207,22 @@ public class Program {
         for(Event e : getEvents()){
             e.initialise(task, ctx);
         }
+        Program.defaultCtx = ctx;
     }
 
+    public static void initCtx() {
+        try {
+            Configuration config = Configuration.defaultConfiguration();
+			defaultCtx = SolverContextFactory.createSolverContext(
+			        config, 
+			        BasicLogManager.create(config), 
+			        ShutdownManager.create().getNotifier(), 
+			        Solvers.Z3);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
     public BooleanFormula encodeCF(SolverContext ctx) {
         if (this.task == null) {
             throw new RuntimeException("The program needs to get initialised first.");
