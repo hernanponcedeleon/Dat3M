@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.analysis;
 
-public enum ScopeTypes {
+public enum MethodTypes {
 	TWO, INCREMENTAL, ASSUME;
 	
-	public static ScopeTypes fromString(String s) {
+	public static MethodTypes fromString(String s) {
         if(s != null){
             s = s.trim();
             switch(s){

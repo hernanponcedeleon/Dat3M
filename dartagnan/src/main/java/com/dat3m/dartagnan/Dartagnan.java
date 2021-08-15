@@ -59,19 +59,6 @@ public class Dartagnan {
 
         WitnessGraph witness = new WitnessGraph();
         
-        ShutdownManager sdm = ShutdownManager.create();
-    	Thread t = new Thread(() -> {
-			try {
-				if(options.getSettings().getSolverTimeout() > 0) {
-					// Converts timeout from secs to millisecs
-					Thread.sleep(1000 * options.getSettings().getSolverTimeout());
-					sdm.requestShutdown("Shutdown Request");
-					logger.warn("Shutdown Request");
-				}
-			} catch (InterruptedException e) {
-				// Verification ended, nothing to be done.
-			}});
-        
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
         if(options.getWitnessPath() != null) {
@@ -103,6 +90,19 @@ public class Dartagnan {
         Settings settings = options.getSettings();
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 
+        ShutdownManager sdm = ShutdownManager.create();
+    	Thread t = new Thread(() -> {
+			try {
+				if(options.getSettings().getSolverTimeout() > 0) {
+					// Converts timeout from secs to millisecs
+					Thread.sleep(1000 * options.getSettings().getSolverTimeout());
+					sdm.requestShutdown("Shutdown Request");
+					logger.warn("Shutdown Request");
+				}
+			} catch (InterruptedException e) {
+				// Verification ended, nothing to be done.
+			}});
+        
         try {
         	t.start();
             Configuration config = Configuration.builder()
@@ -118,9 +118,10 @@ public class Dartagnan {
             Result result;
     		switch(options.getAnalysis()) {
 				case RACES:
-					result = checkForRaces(ctx, task);	
+					result = checkForRaces(ctx, task);
+					break;
 				case REACHABILITY:
-					switch(options.getScope()) {
+					switch(options.getMethod()) {
 						case TWO:
 							ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
 							result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
@@ -132,7 +133,7 @@ public class Dartagnan {
 							result = runAnalysisAssumeSolver(ctx, prover, task);
 							break;
 						default:
-							throw new RuntimeException("Unrecognized method mode: " + options.getScope());
+							throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
 					}
 					break;
 				default:

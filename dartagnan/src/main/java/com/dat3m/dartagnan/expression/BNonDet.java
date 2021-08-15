@@ -2,9 +2,11 @@ package com.dat3m.dartagnan.expression;
 
 import java.math.BigInteger;
 
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -29,12 +31,16 @@ public class BNonDet extends BExpr implements ExprInterface {
     @Override
     public Formula toIntFormula(Event e, SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
-		Formula e1 = precision > 0 ? 
-    			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ONE) : 
-    			fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE);
-    	Formula e2 = precision > 0 ?
-    			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ZERO) : 
-    			fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
+    	Formula e1, e2;
+    	if( precision > 0) {
+    		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+			e1 = bvmgr.makeBitvector(precision, BigInteger.ONE);
+    		e2 = bvmgr.makeBitvector(precision, BigInteger.ZERO);
+    	} else {
+    		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+			e1 = imgr.makeNumber(BigInteger.ONE);
+    		e2 = imgr.makeNumber(BigInteger.ZERO);
+    	}
         return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), e1, e2);
     }
 

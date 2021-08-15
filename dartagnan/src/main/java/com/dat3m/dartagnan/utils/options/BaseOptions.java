@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.analysis.ScopeTypes;
+import com.dat3m.dartagnan.analysis.MethodTypes;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableSet;
 
-import static com.dat3m.dartagnan.analysis.ScopeTypes.INCREMENTAL;
+import static com.dat3m.dartagnan.analysis.MethodTypes.INCREMENTAL;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.BOOLECTOR;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.CVC4;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.MATHSAT5;
@@ -35,12 +35,12 @@ public abstract class BaseOptions extends Options {
     protected Settings settings;
     protected Arch target;
 
-    protected  ScopeTypes scope;
+    protected  MethodTypes scope;
     protected  Solvers smtsolver;
 
-    private Set<ScopeTypes> supported_scope = 
-    		ImmutableSet.copyOf(Arrays.asList(ScopeTypes.values()).stream()
-            .sorted(Comparator.comparing(ScopeTypes::toString))
+    private Set<MethodTypes> supported_scope = 
+    		ImmutableSet.copyOf(Arrays.asList(MethodTypes.values()).stream()
+            .sorted(Comparator.comparing(MethodTypes::toString))
     		.collect(Collectors.toList()));
 
     private Set<String> supported_smtsolvers = 
@@ -93,7 +93,7 @@ public abstract class BaseOptions extends Options {
             target = Arch.get(cmd.getOptionValue("target"));
         }
         
-        scope = cmd.hasOption(METHOD_OPTION) ? ScopeTypes.fromString(cmd.getOptionValue(METHOD_OPTION)) : INCREMENTAL;
+        scope = cmd.hasOption(METHOD_OPTION) ? MethodTypes.fromString(cmd.getOptionValue(METHOD_OPTION)) : INCREMENTAL;
         if(!supported_scope.contains(scope)) {
             throw new UnsupportedOperationException("Unrecognized solver method: " + scope);        		
         }
@@ -128,7 +128,7 @@ public abstract class BaseOptions extends Options {
         }
     }
 
-    public ScopeTypes getScope(){
+    public MethodTypes getMethod(){
         return scope;
     }
 

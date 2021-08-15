@@ -105,7 +105,7 @@ public class Location implements ExprInterface {
 		}
 		if(e instanceof Load){
 			Register reg = ((Load) e).getResultRegister();
-			return new BigInteger(model.evaluate(reg.toZ3IntResult(e, ctx)).toString());
+			return new BigInteger(model.evaluate(reg.toIntFormulaResult(e, ctx)).toString());
 
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");

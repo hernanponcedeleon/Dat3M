@@ -20,7 +20,7 @@ import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 /*
-The ExecutionModel wraps a Z3Model and extracts data from it in a more workable manner.
+The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
  */
 
 public class ExecutionModel {
@@ -107,10 +107,10 @@ public class ExecutionModel {
     }
 
     // Model specific data
-    public Model getZ3Model() {
+    public Model getModel() {
         return model;
     }
-    public SolverContext getZ3Context() {
+    public SolverContext getContext() {
         return context;
     }
     public FilterAbstract getEventFilter() {

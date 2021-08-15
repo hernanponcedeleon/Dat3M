@@ -4,13 +4,13 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
 import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.IConst;
@@ -33,7 +33,7 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     @Override
     public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        regResultExpr = register.toZ3IntResult(this, ctx);
+        regResultExpr = register.toIntFormulaResult(this, ctx);
     }
 
     @Override
@@ -54,16 +54,13 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
     @Override
     protected BooleanFormula encodeExec(SolverContext ctx){
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
 
         int precision = register.getPrecision();
 		BooleanFormula enc = bmgr.and(
-				bmgr.implication(storeEvent.exec(), imgr.equal(
-						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)new IConst(BigInteger.ZERO, precision).toIntFormula(this, ctx))),
-				bmgr.implication(bmgr.not(storeEvent.exec()), imgr.equal(
-						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)new IConst(BigInteger.ONE, precision).toIntFormula(this, ctx)))
+				bmgr.implication(storeEvent.exec(), 
+						generalEqual(regResultExpr, new IConst(BigInteger.ZERO, precision).toIntFormula(this, ctx), ctx)),
+				bmgr.implication(bmgr.not(storeEvent.exec()), 
+						generalEqual(regResultExpr, new IConst(BigInteger.ONE, precision).toIntFormula(this, ctx), ctx))
         );
         return bmgr.and(super.encodeExec(ctx), enc);
     }

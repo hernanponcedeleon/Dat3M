@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -14,9 +15,10 @@ public abstract class BExpr implements ExprInterface {
     @Override
     public Formula toIntFormula(Event e, SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
+		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 		return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), 
-				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
+				imgr.makeNumber(BigInteger.ONE), 
+				imgr.makeNumber(BigInteger.ZERO));
     }
 
     @Override

@@ -55,9 +55,10 @@ public class Address extends IConst implements ExprInterface {
 
     public Formula getLastMemValueExpr(SolverContext ctx){
         FormulaManager fmgr = ctx.getFormulaManager();
+		String name = "last_val_at_memory_" + index;
 		return precision > 0 ? 
-        		fmgr.getBitvectorFormulaManager().makeVariable(precision, "last_val_at_memory_" + index) : 
-        		fmgr.getIntegerFormulaManager().makeVariable("last_val_at_memory_" + index);
+        		fmgr.getBitvectorFormulaManager().makeVariable(precision, name) : 
+        		fmgr.getIntegerFormulaManager().makeVariable(name);
     }
 
     @Override

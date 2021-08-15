@@ -10,10 +10,12 @@ import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
 import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -63,7 +65,11 @@ public class INonDet extends IExpr implements ExprInterface {
 
 	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
-		return new BigInteger(model.evaluate(toIntFormula(e, ctx)).toString());
+		Object value = model.evaluate(toIntFormula(e, ctx));
+		if(value != null) {
+			return new BigInteger(value.toString());			
+		}
+        throw new RuntimeException("No value in the model for " + this);
 	}
 
 	@Override
@@ -153,11 +159,13 @@ public class INonDet extends IExpr implements ExprInterface {
 		long max = getMax();
 		if(bp) {
 			boolean signed = !(type.equals(UINT) || type.equals(ULONG) || type.equals(USHORT) || type.equals(UCHAR));
-			enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().greaterOrEquals((BitvectorFormula) toIntFormula(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, min), signed));
-	        enc = bmgr.and(enc, fmgr.getBitvectorFormulaManager().lessOrEquals((BitvectorFormula) toIntFormula(null,ctx), fmgr.getBitvectorFormulaManager().makeBitvector(precision, max), signed));
+			BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+			enc = bmgr.and(enc, bvmgr.greaterOrEquals((BitvectorFormula) toIntFormula(null,ctx), bvmgr.makeBitvector(precision, min), signed));
+	        enc = bmgr.and(enc, bvmgr.lessOrEquals((BitvectorFormula) toIntFormula(null,ctx), bvmgr.makeBitvector(precision, max), signed));
 		} else {
-			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().greaterOrEquals((IntegerFormula)toIntFormula(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(min)));
-			enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().lessOrEquals((IntegerFormula)toIntFormula(null,ctx), fmgr.getIntegerFormulaManager().makeNumber(max)));
+			IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+			enc = bmgr.and(enc, imgr.greaterOrEquals((IntegerFormula) toIntFormula(null,ctx), imgr.makeNumber(min)));
+			enc = bmgr.and(enc, imgr.lessOrEquals((IntegerFormula) toIntFormula(null,ctx), imgr.makeNumber(max)));
 		}
 		return enc;
 	}

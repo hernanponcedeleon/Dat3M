@@ -38,71 +38,57 @@ public enum COpBin {
 
     public BooleanFormula encode(Formula e1, Formula e2, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		switch(this) {
-            case EQ:
-            	if(e1 instanceof BooleanFormula) {
+        if(e1 instanceof BooleanFormula) {
+    		switch(this) {
+            	case EQ:
             		return bmgr.equivalence((BooleanFormula)e1, (BooleanFormula)e2);
-            	}
-            	if(e1 instanceof IntegerFormula) {
-            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
-            		return imgr.equal((IntegerFormula)e1, (IntegerFormula)e2);
-            	}
-            	if(e1 instanceof BitvectorFormula) {
-            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2);
-            	}
-            case NEQ:
-            	if(e1 instanceof BooleanFormula) {
+            	case NEQ:
             		return bmgr.not(bmgr.equivalence((BooleanFormula)e1, (BooleanFormula)e2));
-            	}
-            	if(e1 instanceof IntegerFormula) {
-            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            	default:
+            		throw new UnsupportedOperationException("Encoding of not supported for COpBin " + this);
+    		}
+        }
+        if(e1 instanceof IntegerFormula) {
+			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    		switch(this) {
+    			case EQ:            		
+            		return imgr.equal((IntegerFormula)e1, (IntegerFormula)e2);
+    			case NEQ:
             		return bmgr.not(imgr.equal((IntegerFormula)e1, (IntegerFormula)e2));
-            	}
-            	if(e1 instanceof BitvectorFormula) {
-            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bmgr.not(bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2));
-            	}
-            case LT:
-            case ULT:
-            	if(e1 instanceof IntegerFormula) {
-            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    			case LT:
+    			case ULT:
             		return imgr.lessThan((IntegerFormula)e1, (IntegerFormula)e2);
-            	}
-            	if(e1 instanceof BitvectorFormula) {
-            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.lessThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LT));
-            	}
-            case LTE:
-            case ULTE:
-            	if(e1 instanceof IntegerFormula) {
-            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    			case LTE:
+    			case ULTE:
             		return imgr.lessOrEquals((IntegerFormula)e1, (IntegerFormula)e2);
-            	}
-            	if(e1 instanceof BitvectorFormula) {
-            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.lessOrEquals((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LTE));
-            	}
-            case GT:
-            case UGT:
-            	if(e1 instanceof IntegerFormula) {
-            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    			case GT:
+    			case UGT:
             		return imgr.greaterThan((IntegerFormula)e1, (IntegerFormula)e2);
-            	}
-            	if(e1 instanceof BitvectorFormula) {
-            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.greaterThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(GT));
-            	}
-            case GTE:
-            case UGTE:
-            	if(e1 instanceof IntegerFormula) {
-            		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+    			case GTE:
+    			case UGTE:
             		return imgr.greaterOrEquals((IntegerFormula)e1, (IntegerFormula)e2);
-            	}
-            	if(e1 instanceof BitvectorFormula) {
-            		BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+    		}  	
+        }
+        if(e1 instanceof BitvectorFormula) {
+        	BitvectorFormulaManager bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+    		switch(this) {
+            	case EQ:
+            		return bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	case NEQ:
+            		return bmgr.not(bvmgr.equal((BitvectorFormula)e1, (BitvectorFormula)e2));
+            	case LT:
+            	case ULT:
+            		return bvmgr.lessThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LT));
+            	case LTE:
+            	case ULTE:
+            		return bvmgr.lessOrEquals((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(LTE));
+            	case GT:
+            	case UGT:
+            		return bvmgr.greaterThan((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(GT));
+            	case GTE:
+            	case UGTE:
             		return bvmgr.greaterOrEquals((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(GTE));
-            	}
+    		}        	
         }
         throw new UnsupportedOperationException("Encoding of not supported for COpBin " + this);
     }

@@ -68,95 +68,73 @@ public enum IOpBin {
     	// Calling the constructor of the manager in such solvers results in an Exception.
     	// Thus we initialize the manager inside the branches
     	
-		IntegerFormulaManager imgr;
 		BitvectorFormulaManager bvmgr;
 
-		switch(this){
-            case PLUS:
-            	if(e1 instanceof IntegerFormula) {
-            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+		if(e1 instanceof IntegerFormula) {
+			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+			switch(this){
+            	case PLUS:
             		return imgr.add((IntegerFormula)e1, (IntegerFormula)e2);            		
-            	} else {
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.add((BitvectorFormula)e1, (BitvectorFormula)e2);            		
-            	}
-            case MINUS:
-            	if(e1 instanceof IntegerFormula) {
-            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            	case MINUS:
             		return imgr.subtract((IntegerFormula)e1, (IntegerFormula)e2);
-            	} else {
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.subtract((BitvectorFormula)e1, (BitvectorFormula)e2);
-            	}
-            case MULT:
-            	if(e1 instanceof IntegerFormula) {
-            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            	case MULT:
             		return imgr.multiply((IntegerFormula)e1, (IntegerFormula)e2);
-            	} else {
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.multiply((BitvectorFormula)e1, (BitvectorFormula)e2);
-            	}
-            case DIV:
-            case UDIV:
-            	if(e1 instanceof IntegerFormula) {
-            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            	case DIV:
+            	case UDIV:
             		return imgr.divide((IntegerFormula)e1, (IntegerFormula)e2);
-            	} else {
-            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.divide((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(DIV)); 
-            	}
-            case MOD:
-            	if(e1 instanceof IntegerFormula) {
-            		imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            	case MOD:
             		return imgr.modulo((IntegerFormula)e1, (IntegerFormula)e2);
-            	} else {
+            	case AND:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.modulo((BitvectorFormula)e1, (BitvectorFormula)e2, true); 
-            	}
-            case AND:
-            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            	if(e1 instanceof IntegerFormula) {
             		return bvmgr.toIntegerFormula(bvmgr.and(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
-            	} else {
-            		return bvmgr.and((BitvectorFormula)e1, (BitvectorFormula)e2); 
-            	}
-            case OR:
-            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            	if(e1 instanceof IntegerFormula) {
+            	case OR:
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.or(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
-            	} else {
-            		return bvmgr.or((BitvectorFormula)e1, (BitvectorFormula)e2); 
-            	}
-            case XOR:
-            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            	if(e1 instanceof IntegerFormula) {
+            	case XOR:
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.xor(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
-            	} else {
-            		return bvmgr.xor((BitvectorFormula)e1, (BitvectorFormula)e2); 
-            	}
-            case L_SHIFT:
-            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            	if(e1 instanceof IntegerFormula) {
+            	case L_SHIFT:
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.shiftLeft(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
-            	} else {
-            		return bvmgr.shiftLeft((BitvectorFormula)e1, (BitvectorFormula)e2); 
-            	}
-            case R_SHIFT:
-            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            	if(e1 instanceof IntegerFormula) {
+            	case R_SHIFT:
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
             		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), false), false);
-            	} else {
+            	case AR_SHIFT:
+            		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), true), false);
+            	default:
+            		throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this); 
+			}			
+		} else {
+			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+			switch(this){
+            	case PLUS:
+            		return bvmgr.add((BitvectorFormula)e1, (BitvectorFormula)e2);            		
+            	case MINUS:
+            		return bvmgr.subtract((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	case MULT:
+            		return bvmgr.multiply((BitvectorFormula)e1, (BitvectorFormula)e2);
+            	case DIV:
+            	case UDIV:
+            		return bvmgr.divide((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(DIV)); 
+            	case MOD:
+            		return bvmgr.modulo((BitvectorFormula)e1, (BitvectorFormula)e2, true); 
+            	case AND:
+            		return bvmgr.and((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	case OR:
+            		return bvmgr.or((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	case XOR:
+            		return bvmgr.xor((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	case L_SHIFT:
+            		return bvmgr.shiftLeft((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            	case R_SHIFT:
             		return bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, false); 
-            	}
-            case AR_SHIFT:
-            	bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            	if(e1 instanceof IntegerFormula) {
-            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), true), false); 
-            	} else {
-            		return bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, true); 
-            	}
-        }
-        throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this);
+            	case AR_SHIFT:
+            		return bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, true);
+            	default:
+            		throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this); 
+			}	
+		}
     }
 
     public BigInteger combine(BigInteger a, BigInteger b){

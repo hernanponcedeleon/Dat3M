@@ -86,7 +86,8 @@ public class RelCo extends Relation {
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-    	
+        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+
     	BooleanFormula enc = bmgr.makeTrue();
 
         List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
@@ -95,19 +96,19 @@ public class RelCo extends Relation {
                 FilterBasic.get(INIT)
         ));
 
-        for(Event e : eventsInit) {
-            enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().equal(intVar("co", e, ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO)));
+		for(Event e : eventsInit) {
+            enc = bmgr.and(enc, imgr.equal(intVar("co", e, ctx), imgr.makeNumber(BigInteger.ZERO)));
         }
 
         List<IntegerFormula> intVars = new ArrayList<>();
         for(Event w : eventsStore) {
         	IntegerFormula coVar = intVar("co", w, ctx);
-            enc = bmgr.and(enc, fmgr.getIntegerFormulaManager().greaterThan(coVar, fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO)));
+            enc = bmgr.and(enc, imgr.greaterThan(coVar, imgr.makeNumber(BigInteger.ZERO)));
             intVars.add(coVar);
         }
         
         BooleanFormula distinct = intVars.size() > 1 ?
-        		fmgr.getIntegerFormulaManager().distinct(intVars) : 
+        		imgr.distinct(intVars) : 
                 bmgr.makeTrue();
         
         enc = bmgr.and(enc, distinct);
@@ -129,8 +130,8 @@ public class RelCo extends Relation {
                 		fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w2.getMemAddressExpr(), false) :
                 		(IntegerFormula)w2.getMemAddressExpr();
                 enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.and(
-                		bmgr.and(bmgr.and(execPair), fmgr.getIntegerFormulaManager().equal(a1, a2)),
-                		fmgr.getIntegerFormulaManager().lessThan(intVar("co", w1, ctx), intVar("co", w2, ctx))
+                		bmgr.and(bmgr.and(execPair), imgr.equal(a1, a2)),
+                		imgr.lessThan(intVar("co", w1, ctx), intVar("co", w2, ctx))
                 )));
 
                 // ============ Local consistency optimizations ============
@@ -141,7 +142,7 @@ public class RelCo extends Relation {
                         enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.makeFalse()));
                     }
                     if (w1.is(INIT) || t.isForward()) {
-                        enc = bmgr.and(enc, bmgr.implication(bmgr.and(execPair, fmgr.getIntegerFormulaManager().equal(a1, a2)), relation));
+                        enc = bmgr.and(enc, bmgr.implication(bmgr.and(execPair, imgr.equal(a1, a2)), relation));
                     }
                 }
             }
@@ -162,7 +163,7 @@ public class RelCo extends Relation {
             	IntegerFormula v2 = w1.getMemValueExpr() instanceof BitvectorFormula ?
             			fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)w1.getMemValueExpr(), false) :
             			(IntegerFormula)w1.getMemValueExpr();
-				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, fmgr.getIntegerFormulaManager().equal(a1, a2)), fmgr.getIntegerFormulaManager().equal(v1, v2)));
+				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, imgr.equal(a1, a2)), imgr.equal(v1, v2)));
             }
         }
         return enc;

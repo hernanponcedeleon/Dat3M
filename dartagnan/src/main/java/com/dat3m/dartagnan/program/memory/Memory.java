@@ -5,6 +5,8 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,6 +16,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -38,19 +41,19 @@ public class Memory {
     public BooleanFormula encode(SolverContext ctx){
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
 		BooleanFormula enc = bmgr.makeTrue();
-        for(List<Address> array : arrays.values()){
+		for(List<Address> array : arrays.values()){
         	Formula e1 = array.get(0).toIntFormula(ctx);
         	boolean bv = e1 instanceof BitvectorFormula;
             for(int i = 1; i < array.size(); i++){
             	Formula e2 = array.get(i).toIntFormula(ctx);
 				Formula newAddress = bv ?
 						fmgr.getBitvectorFormulaManager().add((BitvectorFormula)e1, fmgr.getBitvectorFormulaManager().makeBitvector(array.get(0).getPrecision(), BigInteger.ONE)) :
-							fmgr.getIntegerFormulaManager().add((IntegerFormula)e1, fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
-				enc = bmgr.and(enc, bv ? 
-						fmgr.getBitvectorFormulaManager().equal((BitvectorFormula)e2, (BitvectorFormula)newAddress) : 
-							fmgr.getIntegerFormulaManager().equal((IntegerFormula)e2, (IntegerFormula)newAddress));
+						imgr.add((IntegerFormula)e1, imgr.makeNumber(BigInteger.ONE));
+				;
+				enc = bmgr.and(enc, generalEqual(e2, newAddress, ctx));
                 e1 = e2;
             }
         }
@@ -58,13 +61,13 @@ public class Memory {
         for(Address add : getAllAddresses()) {
         	if(!add.hasConstantValue()) {
         		enc = bmgr.and(enc, add.toIntFormula(ctx) instanceof BitvectorFormula ?
-        				fmgr.getIntegerFormulaManager().greaterThan(fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)add.toIntFormula(ctx), false), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO)) :
-        				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)add.toIntFormula(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO)));
+        				imgr.greaterThan(fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula)add.toIntFormula(ctx), false), imgr.makeNumber(BigInteger.ZERO)) :
+        				imgr.greaterThan((IntegerFormula)add.toIntFormula(ctx), imgr.makeNumber(BigInteger.ZERO)));
         	}
         }
         
         BooleanFormula distinct = getAllAddresses().size() > 1 ?
-        		fmgr.getIntegerFormulaManager().distinct(getAllAddresses().stream()
+        		imgr.distinct(getAllAddresses().stream()
                 		.map(a -> convertToIntegerFormula(a.toIntFormula(ctx), ctx))
                 		.collect(Collectors.toList())) : 
                 bmgr.makeTrue();
@@ -81,6 +84,7 @@ public class Memory {
     // Assigns each Address a fixed memory address.
     public BooleanFormula fixedMemoryEncoding(SolverContext ctx) {
         FormulaManager fmgr = ctx.getFormulaManager();
+		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
         boolean bv = getAllAddresses().iterator().next().toIntFormula(ctx) instanceof BitvectorFormula;
     	BooleanFormula[] addrExprs;
@@ -89,11 +93,11 @@ public class Memory {
             		.map(add -> {
                         Formula e1 = add.toIntFormula(ctx);
                         fmgr.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) e1, false);
-						return fmgr.getIntegerFormulaManager().equal((IntegerFormula) e1, fmgr.getIntegerFormulaManager().makeNumber(add.getValue().intValue()));})
+						return imgr.equal((IntegerFormula) e1, imgr.makeNumber(add.getValue().intValue()));})
             		.toArray(BooleanFormula[]::new);
     	} else {
         	addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
-            		.map(add -> fmgr.getIntegerFormulaManager().equal((IntegerFormula) add.toIntFormula(ctx), fmgr.getIntegerFormulaManager().makeNumber(add.getValue().intValue())))
+            		.map(add -> imgr.equal((IntegerFormula) add.toIntFormula(ctx), fmgr.getIntegerFormulaManager().makeNumber(add.getValue().intValue())))
             		.toArray(BooleanFormula[]::new);
     	}
         return fmgr.getBooleanFormulaManager().and(addrExprs);
