@@ -1,15 +1,11 @@
 package com.dat3m.dartagnan.expression.op;
 
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 public enum IOpBin {
     PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, L_SHIFT, R_SHIFT, AR_SHIFT, SREM, UREM;
@@ -70,70 +66,76 @@ public enum IOpBin {
     	
 		BitvectorFormulaManager bvmgr;
 
-		if(e1 instanceof IntegerFormula) {
+		if(e1 instanceof IntegerFormula && e2 instanceof IntegerFormula) {
 			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+            IntegerFormula i1 = (IntegerFormula)e1;
+            IntegerFormula i2 = (IntegerFormula)e2;
 			switch(this){
             	case PLUS:
-            		return imgr.add((IntegerFormula)e1, (IntegerFormula)e2);            		
+            		return imgr.add(i1, i2);
             	case MINUS:
-            		return imgr.subtract((IntegerFormula)e1, (IntegerFormula)e2);
+            		return imgr.subtract(i1, i2);
             	case MULT:
-            		return imgr.multiply((IntegerFormula)e1, (IntegerFormula)e2);
+            		return imgr.multiply(i1, i2);
             	case DIV:
             	case UDIV:
-            		return imgr.divide((IntegerFormula)e1, (IntegerFormula)e2);
+            		return imgr.divide(i1, i2);
             	case MOD:
-            		return imgr.modulo((IntegerFormula)e1, (IntegerFormula)e2);
+            		return imgr.modulo(i1, i2);
             	case AND:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.toIntegerFormula(bvmgr.and(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            		return bvmgr.toIntegerFormula(bvmgr.and(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case OR:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.toIntegerFormula(bvmgr.or(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            		return bvmgr.toIntegerFormula(bvmgr.or(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case XOR:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.toIntegerFormula(bvmgr.xor(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            		return bvmgr.toIntegerFormula(bvmgr.xor(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case L_SHIFT:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.toIntegerFormula(bvmgr.shiftLeft(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2)), false);
+            		return bvmgr.toIntegerFormula(bvmgr.shiftLeft(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2)), false);
             	case R_SHIFT:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), false), false);
+            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2), false), false);
             	case AR_SHIFT:
             		bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
-            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, (IntegerFormula)e1), bvmgr.makeBitvector(32, (IntegerFormula)e2), true), false);
+            		return bvmgr.toIntegerFormula(bvmgr.shiftRight(bvmgr.makeBitvector(32, i1), bvmgr.makeBitvector(32, i2), true), false);
             	default:
-            		throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this); 
+                    throw new UnsupportedOperationException("Encoding of IOpBin operation " + this + " not supported on integer formulas.");
 			}			
-		} else {
+		} else if ( e1 instanceof BitvectorFormula && e2 instanceof BitvectorFormula) {
 			bvmgr = ctx.getFormulaManager().getBitvectorFormulaManager();
+            BitvectorFormula bv1 = (BitvectorFormula)e1;
+            BitvectorFormula bv2 = (BitvectorFormula)e2;
 			switch(this){
             	case PLUS:
-            		return bvmgr.add((BitvectorFormula)e1, (BitvectorFormula)e2);            		
+            		return bvmgr.add(bv1, bv2);
             	case MINUS:
-            		return bvmgr.subtract((BitvectorFormula)e1, (BitvectorFormula)e2);
+            		return bvmgr.subtract(bv1, bv2);
             	case MULT:
-            		return bvmgr.multiply((BitvectorFormula)e1, (BitvectorFormula)e2);
+            		return bvmgr.multiply(bv1, bv2);
             	case DIV:
             	case UDIV:
-            		return bvmgr.divide((BitvectorFormula)e1, (BitvectorFormula)e2, this.equals(DIV)); 
+            		return bvmgr.divide(bv1, bv2, this.equals(DIV));
             	case MOD:
-            		return bvmgr.modulo((BitvectorFormula)e1, (BitvectorFormula)e2, true); 
+            		return bvmgr.modulo(bv1, bv2, true);
             	case AND:
-            		return bvmgr.and((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            		return bvmgr.and(bv1, bv2);
             	case OR:
-            		return bvmgr.or((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            		return bvmgr.or(bv1, bv2);
             	case XOR:
-            		return bvmgr.xor((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            		return bvmgr.xor(bv1, bv2);
             	case L_SHIFT:
-            		return bvmgr.shiftLeft((BitvectorFormula)e1, (BitvectorFormula)e2); 
+            		return bvmgr.shiftLeft(bv1, bv2);
             	case R_SHIFT:
-            		return bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, false); 
+            		return bvmgr.shiftRight(bv1, bv2, false);
             	case AR_SHIFT:
-            		return bvmgr.shiftRight((BitvectorFormula)e1, (BitvectorFormula)e2, true);
+            		return bvmgr.shiftRight(bv1, bv2, true);
             	default:
-            		throw new UnsupportedOperationException("Encoding of not supported for IOpBin " + this); 
-			}	
+                    throw new UnsupportedOperationException("Encoding of IOpBin operation " + this + " not supported on bitvector formulas.");
+            }
+		} else {
+            throw new UnsupportedOperationException("Encoding of IOpBin operation " + this + " not supported on formulas of mismatching type.");
 		}
     }
 

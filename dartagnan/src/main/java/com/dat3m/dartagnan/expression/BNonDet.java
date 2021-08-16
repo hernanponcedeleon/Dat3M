@@ -1,19 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
 
 public class BNonDet extends BExpr implements ExprInterface {
 
@@ -56,7 +49,11 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
-		return model.evaluate(toBoolFormula(e, ctx)).booleanValue();
+		Boolean value = model.evaluate(toBoolFormula(e, ctx));
+		if(value != null) {
+			return value;
+		}
+		throw new RuntimeException("No value in the model for " + this);
 	}
 
 	@Override

@@ -5,23 +5,16 @@ import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableSet;
-
-import static com.dat3m.dartagnan.analysis.MethodTypes.INCREMENTAL;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.BOOLECTOR;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.CVC4;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.MATHSAT5;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.PRINCESS;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.SMTINTERPOL;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.YICES2;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
+import org.apache.commons.cli.*;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.cli.*;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import static com.dat3m.dartagnan.analysis.MethodTypes.INCREMENTAL;
+import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.*;
 
 public abstract class BaseOptions extends Options {
 
@@ -31,26 +24,26 @@ public abstract class BaseOptions extends Options {
 	
     protected String programFilePath;
     protected String targetModelFilePath;
-    protected Set<String> supportedFormats; 
+    protected Set<String> supportedFormats; //TODO (HP): This is never used?
     protected Settings settings;
     protected Arch target;
 
-    protected  MethodTypes scope;
-    protected  Solvers smtsolver;
+    protected MethodTypes method;
+    protected Solvers smtsolver;
 
-    private Set<MethodTypes> supported_scope = 
-    		ImmutableSet.copyOf(Arrays.asList(MethodTypes.values()).stream()
+    private final Set<MethodTypes> supported_methods =
+    		ImmutableSet.copyOf(Arrays.stream(MethodTypes.values())
             .sorted(Comparator.comparing(MethodTypes::toString))
     		.collect(Collectors.toList()));
 
-    private Set<String> supported_smtsolvers = 
-    		ImmutableSet.copyOf(Arrays.asList(Solvers.values()).stream()
+    private final Set<String> supported_smtsolvers =
+    		ImmutableSet.copyOf(Arrays.stream(Solvers.values())
     		.map(a -> a.toString().toLowerCase())
             .sorted(Comparator.comparing(String::toString))
     		.collect(Collectors.toList()));
 
-    private Set<String> supportedTargets = 
-    		ImmutableSet.copyOf(Arrays.asList(Arch.values()).stream()
+    private final Set<String> supportedTargets =
+    		ImmutableSet.copyOf(Arrays.stream(Arch.values())
     		.map(a -> a.toString().toLowerCase())
             .sorted(Comparator.comparing(String::toString))
     		.collect(Collectors.toList()));
@@ -76,7 +69,7 @@ public abstract class BaseOptions extends Options {
                 "Timeout (in secs) for the SMT solver"));
         
         addOption(new Option(METHOD_OPTION, true,
-        		"The solver method to be used: " + supported_scope));
+        		"The solver method to be used: " + supported_methods));
         
         addOption(new Option(SMTSOLVER_OPTION, true,
         		"The SMT solver to be used: " + supported_smtsolvers));
@@ -93,9 +86,9 @@ public abstract class BaseOptions extends Options {
             target = Arch.get(cmd.getOptionValue("target"));
         }
         
-        scope = cmd.hasOption(METHOD_OPTION) ? MethodTypes.fromString(cmd.getOptionValue(METHOD_OPTION)) : INCREMENTAL;
-        if(!supported_scope.contains(scope)) {
-            throw new UnsupportedOperationException("Unrecognized solver method: " + scope);        		
+        method = cmd.hasOption(METHOD_OPTION) ? MethodTypes.fromString(cmd.getOptionValue(METHOD_OPTION)) : INCREMENTAL;
+        if(!supported_methods.contains(method)) {
+            throw new UnsupportedOperationException("Unrecognized solver method: " + method);
         }
 
         smtsolver = Z3;
@@ -129,7 +122,7 @@ public abstract class BaseOptions extends Options {
     }
 
     public MethodTypes getMethod(){
-        return scope;
+        return method;
     }
 
     public Solvers getSMTSolver(){

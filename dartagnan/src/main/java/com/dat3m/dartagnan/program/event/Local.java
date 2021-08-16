@@ -1,21 +1,15 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.ImmutableSet;
-
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.Utils;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
 
 public class Local extends Event implements RegWriter, RegReaderData {
 	
@@ -82,13 +76,15 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		if(expr instanceof INonDet) {
 			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, ctx) instanceof BitvectorFormula, ctx));
 		}
-		BooleanFormula eq = regResultExpr instanceof BitvectorFormula ?
+
+		BooleanFormula eq = Utils.generalEqual(regResultExpr, expr.toIntFormula(this, ctx), ctx);
+		/*BooleanFormula eq = regResultExpr instanceof BitvectorFormula ?
 				ctx.getFormulaManager().getBitvectorFormulaManager().equal(
 						(BitvectorFormula)regResultExpr, 
 						(BitvectorFormula)expr.toIntFormula(this, ctx)) :
 				ctx.getFormulaManager().getIntegerFormulaManager().equal(
 						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)expr.toIntFormula(this, ctx));
+						(IntegerFormula)expr.toIntFormula(this, ctx));*/
 		return bmgr.and(enc, eq);
 	}
 

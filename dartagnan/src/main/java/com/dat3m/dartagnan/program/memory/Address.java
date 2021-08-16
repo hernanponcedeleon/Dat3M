@@ -1,20 +1,14 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
 
 public class Address extends IConst implements ExprInterface {
 
@@ -95,9 +89,10 @@ public class Address extends IConst implements ExprInterface {
 					fmgr.getBitvectorFormulaManager().makeBitvector(precision, constantValue) : 
 					fmgr.getIntegerFormulaManager().makeNumber(constantValue);
     	}
+		String name = "memory_" + index;
 		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, "memory_" + index) :
-				fmgr.getIntegerFormulaManager().makeVariable("memory_" + index);
+				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.getIntegerFormulaManager().makeVariable(name);
     }
 
     @Override
