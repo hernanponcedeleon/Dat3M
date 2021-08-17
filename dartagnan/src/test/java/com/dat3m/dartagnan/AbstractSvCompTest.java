@@ -44,13 +44,14 @@ public abstract class AbstractSvCompTest {
     
 //    @Test(timeout = TIMEOUT)
     public void test() {
-        try (SolverContext ctx = TestHelper.createContext()) {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-            ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
         } catch (Exception e){
             fail(e.getMessage());
@@ -59,12 +60,13 @@ public abstract class AbstractSvCompTest {
 
     @Test(timeout = TIMEOUT)
     public void testIncremental() {
-        try (SolverContext ctx = TestHelper.createContext()) {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
         } catch (Exception e){
             fail(e.getMessage());
@@ -73,12 +75,13 @@ public abstract class AbstractSvCompTest {
 
 //    @Test(timeout = TIMEOUT)
     public void testAssume() {
-        try (SolverContext ctx = TestHelper.createContext()) {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
             fail(e.getMessage());

@@ -38,7 +38,8 @@ public class ReachabilityResult {
 
     private void run(){
         if(validate()){
-            VerificationTask task = new VerificationTask(program, wmm, program.getArch() != null ? program.getArch() : options.getTarget(), options.getSettings());
+            Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
+            VerificationTask task = new VerificationTask(program, wmm, arch, options.getSettings());
             Result result = Result.UNKNOWN;
 
             ShutdownManager sdm = ShutdownManager.create();
@@ -62,8 +63,8 @@ public class ReachabilityResult {
                         config,
                         BasicLogManager.create(config),
                         sdm.getNotifier(),
-                        options.getSolver())) {
-                    ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+                        options.getSolver());
+                     ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
 
                     switch (options.getMethod()) {
                         case INCREMENTAL:
@@ -73,8 +74,9 @@ public class ReachabilityResult {
                             result = runAnalysisAssumeSolver(ctx, prover, task);
                             break;
                         case TWOSOLVERS:
-                            ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-                            result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                            try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                                result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                            }
                             break;
                     }
                     // Verification ended, we can interrupt the timeout Thread

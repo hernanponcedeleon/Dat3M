@@ -1,25 +1,18 @@
 package com.dat3m.dartagnan.witness;
 
-import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
-import static com.dat3m.dartagnan.program.utils.EType.WRITE;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.CREATETHREAD;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.ENTERFUNCTION;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.STARTLINE;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.THREADID;
-import static com.dat3m.dartagnan.witness.GraphAttributes.ARCHITECTURE;
-import static com.dat3m.dartagnan.witness.GraphAttributes.CREATIONTIME;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMHASH;
-import static com.dat3m.dartagnan.witness.GraphAttributes.SOURCECODELANG;
-import static com.dat3m.dartagnan.witness.GraphAttributes.SPECIFICATION;
-import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
-import static com.dat3m.dartagnan.witness.GraphAttributes.WITNESSTYPE;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-import static java.lang.String.valueOf;
+import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.options.DartagnanOptions;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
@@ -31,20 +24,13 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
-
-import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
+import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static java.lang.String.valueOf;
 
 public class WitnessBuilder {
 	
@@ -165,8 +151,8 @@ public class WitnessBuilder {
 	
 	private List<Event> getSCExecutionOrder() {
 		List<Event> execEvents = new ArrayList<>();
-		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));
-		execEvents.addAll(program.getEvents().stream().filter(e -> model.evaluate(e.exec()).booleanValue() && e.getCLine() > -1).collect(Collectors.toList()));
+		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.evaluate(e.exec()) && e.getCLine() > -1).collect(Collectors.toList()));
+		execEvents.addAll(program.getEvents().stream().filter(e -> model.evaluate(e.exec()) && e.getCLine() > -1).collect(Collectors.toList()));
 		
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {

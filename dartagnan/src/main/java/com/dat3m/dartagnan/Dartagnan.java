@@ -100,6 +100,7 @@ public class Dartagnan {
 			}});
 
     	try {
+            t.start();
             Configuration config = Configuration.builder()
                     .setOption("solver.z3.usePhantomReferences", "true")
                     .build();
@@ -107,11 +108,9 @@ public class Dartagnan {
                     config,
                     BasicLogManager.create(config),
                     sdm.getNotifier(),
-                    options.getSMTSolver())) {
-
-                t.start();
-                ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-
+                    options.getSMTSolver());
+                 ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+            {
                 Result result;
                 switch (options.getAnalysis()) {
                     case RACES:
@@ -120,8 +119,9 @@ public class Dartagnan {
                     case REACHABILITY:
                         switch (options.getMethod()) {
                             case TWO:
-                                ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-                                result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                                try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                                    result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                                }
                                 break;
                             case INCREMENTAL:
                                 result = runAnalysisIncrementalSolver(ctx, prover, task);
