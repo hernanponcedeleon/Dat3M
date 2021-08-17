@@ -24,7 +24,6 @@ public abstract class BaseOptions extends Options {
 	
     protected String programFilePath;
     protected String targetModelFilePath;
-    protected Set<String> supportedFormats; //TODO (HP): This is never used?
     protected Settings settings;
     protected Arch target;
 
@@ -34,12 +33,6 @@ public abstract class BaseOptions extends Options {
     private final Set<MethodTypes> supported_methods =
     		ImmutableSet.copyOf(Arrays.stream(MethodTypes.values())
             .sorted(Comparator.comparing(MethodTypes::toString))
-    		.collect(Collectors.toList()));
-
-    private final Set<String> supported_smtsolvers =
-    		ImmutableSet.copyOf(Arrays.stream(Solvers.values())
-    		.map(a -> a.toString().toLowerCase())
-            .sorted(Comparator.comparing(String::toString))
     		.collect(Collectors.toList()));
 
     private final Set<String> supportedTargets =
@@ -71,6 +64,11 @@ public abstract class BaseOptions extends Options {
         addOption(new Option(METHOD_OPTION, true,
         		"The solver method to be used: " + supported_methods));
         
+        Set<String> supported_smtsolvers =
+        		ImmutableSet.copyOf(Arrays.stream(Solvers.values())
+        		.map(a -> a.toString().toLowerCase())
+                .sorted(Comparator.comparing(String::toString))
+        		.collect(Collectors.toList()));
         addOption(new Option(SMTSOLVER_OPTION, true,
         		"The SMT solver to be used: " + supported_smtsolvers));
     }

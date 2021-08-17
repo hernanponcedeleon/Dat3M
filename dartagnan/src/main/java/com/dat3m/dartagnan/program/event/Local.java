@@ -6,9 +6,11 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.Utils;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
+
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
 import org.sosy_lab.java_smt.api.*;
 
 public class Local extends Event implements RegWriter, RegReaderData {
@@ -77,15 +79,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, ctx) instanceof BitvectorFormula, ctx));
 		}
 
-		BooleanFormula eq = Utils.generalEqual(regResultExpr, expr.toIntFormula(this, ctx), ctx);
-		/*BooleanFormula eq = regResultExpr instanceof BitvectorFormula ?
-				ctx.getFormulaManager().getBitvectorFormulaManager().equal(
-						(BitvectorFormula)regResultExpr, 
-						(BitvectorFormula)expr.toIntFormula(this, ctx)) :
-				ctx.getFormulaManager().getIntegerFormulaManager().equal(
-						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)expr.toIntFormula(this, ctx));*/
-		return bmgr.and(enc, eq);
+		return bmgr.and(enc, generalEqual(regResultExpr, expr.toIntFormula(this, ctx), ctx));
 	}
 
 	// Unrolling
