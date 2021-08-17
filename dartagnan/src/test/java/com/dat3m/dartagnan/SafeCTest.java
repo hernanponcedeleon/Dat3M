@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -13,11 +14,6 @@ import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -31,9 +27,7 @@ import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.wmm.utils.Arch.ARM8;
-import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
-import static com.dat3m.dartagnan.wmm.utils.Arch.TSO;
+import static com.dat3m.dartagnan.wmm.utils.Arch.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -47,7 +41,6 @@ public class SafeCTest {
     private final Arch target;
     private final Settings settings;
     private final Result expected;
-    private SolverContext ctx;
 
 	@Parameterized.Parameters(name = "{index}: {0} target={2}")
     public static Iterable<Object[]> data() throws IOException {
@@ -112,27 +105,14 @@ public class SafeCTest {
         this.settings = settings;
         this.expected = expected;
     }
-    
-    private void initSolverContext() throws Exception {
-        Configuration config = Configuration.builder()
-        		.setOption("solver.z3.usePhantomReferences", "true")
-        		.build();
-		ctx = SolverContextFactory.createSolverContext(
-                config, 
-                BasicLogManager.create(config), 
-                ShutdownManager.create().getNotifier(), 
-                Solvers.Z3);
-    }
 
     @Test(timeout = TIMEOUT)
     public void test() {
-    	try {
+        try (SolverContext ctx = TestHelper.createContext()) {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            initSolverContext();
             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
-            ctx.close();
         } catch (Exception e){
             fail("Missing resource file");
         }

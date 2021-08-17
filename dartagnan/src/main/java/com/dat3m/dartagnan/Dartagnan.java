@@ -98,17 +98,17 @@ public class Dartagnan {
 			} catch (InterruptedException e) {
 				// Verification ended, nothing to be done.
 			}});
-        
-        try {
-        	t.start();
-            Configuration config = Configuration.builder()
-            		.setOption("solver.z3.usePhantomReferences", "true")
-            		.build();
-			SolverContext ctx = SolverContextFactory.createSolverContext(
-                    config, 
-                    BasicLogManager.create(config), 
-                    sdm.getNotifier(), 
-                    options.getSMTSolver()); 
+
+		Configuration config = Configuration.builder()
+				.setOption("solver.z3.usePhantomReferences", "true")
+				.build();
+		SolverContext ctx = SolverContextFactory.createSolverContext(
+				config,
+				BasicLogManager.create(config),
+				sdm.getNotifier(),
+				options.getSMTSolver());
+		try (ctx) {
+			t.start();
 			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
 
             Result result;
@@ -153,8 +153,6 @@ public class Dartagnan {
             if(options.createWitness() != null) {
             	new WitnessBuilder(p, ctx, prover, result, options).write();
             }
-            
-            ctx.close();
         } catch (InterruptedException e){
         	logger.warn("Timeout elapsed. The SMT solver was stopped");
         	System.out.println("TIMEOUT");

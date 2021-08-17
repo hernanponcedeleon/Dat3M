@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils;
 
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,8 +60,6 @@ public class Settings {
 
     @Override
     public String toString(){
-        StringBuilder sb = new StringBuilder();
-        sb.append(" alias=").append(alias).append(" bound=").append(bound);
-        return sb.toString();
+        return " alias=" + alias + " bound=" + bound;
     }
 }

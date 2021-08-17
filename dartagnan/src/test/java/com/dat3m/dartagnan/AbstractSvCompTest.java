@@ -2,19 +2,15 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -23,12 +19,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
+import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
@@ -39,7 +34,6 @@ public abstract class AbstractSvCompTest {
     private final Wmm wmm;
     private final Settings settings;
     private Result expected;
-    private SolverContext ctx;
     
     public AbstractSvCompTest(String path, Wmm wmm, Settings settings) {
         this.path = path;
@@ -47,29 +41,17 @@ public abstract class AbstractSvCompTest {
         this.settings = settings;
     }
 
-    private void initSolverContext() throws Exception {
-        Configuration config = Configuration.builder()
-        		.setOption("solver.z3.usePhantomReferences", "true")
-        		.build();
-		ctx = SolverContextFactory.createSolverContext(
-                config, 
-                BasicLogManager.create(config), 
-                ShutdownManager.create().getNotifier(), 
-                Solvers.Z3);
-    }
     
 //    @Test(timeout = TIMEOUT)
     public void test() {
-        try {
+        try (SolverContext ctx = TestHelper.createContext()) {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            initSolverContext();
             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
-            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -77,15 +59,13 @@ public abstract class AbstractSvCompTest {
 
     @Test(timeout = TIMEOUT)
     public void testIncremental() {
-        try {
+        try (SolverContext ctx = TestHelper.createContext()) {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            initSolverContext();
             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
-            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
         }
@@ -93,15 +73,13 @@ public abstract class AbstractSvCompTest {
 
 //    @Test(timeout = TIMEOUT)
     public void testAssume() {
-        try {
+        try (SolverContext ctx = TestHelper.createContext()) {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            initSolverContext();
             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
-            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
         }

@@ -85,11 +85,8 @@ public abstract class BaseOptions extends Options {
         if(cmd.hasOption("target")) {
             target = Arch.get(cmd.getOptionValue("target"));
         }
-        
-        method = cmd.hasOption(METHOD_OPTION) ? MethodTypes.fromString(cmd.getOptionValue(METHOD_OPTION)) : INCREMENTAL;
-        if(!supported_methods.contains(method)) {
-            throw new UnsupportedOperationException("Unrecognized solver method: " + method);
-        }
+
+        method = MethodTypes.fromString(cmd.getOptionValue(METHOD_OPTION, INCREMENTAL.toString()));
 
         String solverString = cmd.getOptionValue(SMTSOLVER_OPTION, "unspecified");
         switch (solverString) {
