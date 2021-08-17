@@ -99,59 +99,61 @@ public class Dartagnan {
 				// Verification ended, nothing to be done.
 			}});
 
-		Configuration config = Configuration.builder()
-				.setOption("solver.z3.usePhantomReferences", "true")
-				.build();
-		SolverContext ctx = SolverContextFactory.createSolverContext(
-				config,
-				BasicLogManager.create(config),
-				sdm.getNotifier(),
-				options.getSMTSolver());
-		try (ctx) {
-			t.start();
-			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+    	try {
+            Configuration config = Configuration.builder()
+                    .setOption("solver.z3.usePhantomReferences", "true")
+                    .build();
+            try (SolverContext ctx = SolverContextFactory.createSolverContext(
+                    config,
+                    BasicLogManager.create(config),
+                    sdm.getNotifier(),
+                    options.getSMTSolver())) {
 
-            Result result;
-    		switch(options.getAnalysis()) {
-				case RACES:
-					result = checkForRaces(ctx, task);
-					break;
-				case REACHABILITY:
-					switch(options.getMethod()) {
-						case TWO:
-							ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-							result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
-							break;
-						case INCREMENTAL:
-							result = runAnalysisIncrementalSolver(ctx, prover, task);
-							break;
-						case ASSUME:
-							result = runAnalysisAssumeSolver(ctx, prover, task);
-							break;
-						default:
-							throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
-					}
-					break;
-				default:
-					throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
-    		}
-            
-			// Verification ended, we can interrupt the timeout Thread
-			t.interrupt();
+                t.start();
+                ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
 
-            if(options.getProgramFilePath().endsWith(".litmus")) {
-                System.out.println("Settings: " + options.getSettings());
-                if(p.getAssFilter() != null){
-                    System.out.println("Filter " + (p.getAssFilter()));
+                Result result;
+                switch (options.getAnalysis()) {
+                    case RACES:
+                        result = checkForRaces(ctx, task);
+                        break;
+                    case REACHABILITY:
+                        switch (options.getMethod()) {
+                            case TWO:
+                                ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+                                result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                                break;
+                            case INCREMENTAL:
+                                result = runAnalysisIncrementalSolver(ctx, prover, task);
+                                break;
+                            case ASSUME:
+                                result = runAnalysisAssumeSolver(ctx, prover, task);
+                                break;
+                            default:
+                                throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
+                        }
+                        break;
+                    default:
+                        throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
                 }
-                System.out.println("Condition " + p.getAss().toStringWithType());
-                System.out.println(result == FAIL ? "Ok" : "No");
-            } else {
-            	System.out.println(result);
-            }
 
-            if(options.createWitness() != null) {
-            	new WitnessBuilder(p, ctx, prover, result, options).write();
+                // Verification ended, we can interrupt the timeout Thread
+                t.interrupt();
+
+                if (options.getProgramFilePath().endsWith(".litmus")) {
+                    System.out.println("Settings: " + options.getSettings());
+                    if (p.getAssFilter() != null) {
+                        System.out.println("Filter " + (p.getAssFilter()));
+                    }
+                    System.out.println("Condition " + p.getAss().toStringWithType());
+                    System.out.println(result == FAIL ? "Ok" : "No");
+                } else {
+                    System.out.println(result);
+                }
+
+                if (options.createWitness() != null) {
+                    new WitnessBuilder(p, ctx, prover, result, options).write();
+                }
             }
         } catch (InterruptedException e){
         	logger.warn("Timeout elapsed. The SMT solver was stopped");
