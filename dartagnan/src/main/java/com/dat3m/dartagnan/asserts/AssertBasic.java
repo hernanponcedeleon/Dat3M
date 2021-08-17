@@ -2,12 +2,13 @@ package com.dat3m.dartagnan.asserts;
 
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
-import org.antlr.v4.runtime.atn.PredicateTransition;
 
 public class AssertBasic extends AbstractAssert {
 
@@ -32,7 +33,7 @@ public class AssertBasic extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
         return op.encode(e1.getLastValueExpr(ctx), e2.getLastValueExpr(ctx), ctx);
     }
 

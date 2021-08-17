@@ -1,9 +1,10 @@
 package com.dat3m.dartagnan.asserts;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 public class AssertCompositeAnd extends AbstractAssert {
 
@@ -26,8 +27,8 @@ public class AssertCompositeAnd extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
-        return ctx.mkAnd(a1.encode(ctx), a2.encode(ctx));
+    public BooleanFormula encode(SolverContext ctx) {
+        return ctx.getFormulaManager().getBooleanFormulaManager().and(a1.encode(ctx), a2.encode(ctx));
     }
 
     @Override

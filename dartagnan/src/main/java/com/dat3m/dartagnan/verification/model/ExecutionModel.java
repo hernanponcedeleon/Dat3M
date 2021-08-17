@@ -15,18 +15,17 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
 import java.util.*;
 
 /*
-The ExecutionModel wraps a Z3 model and extracts data from it in a more workable manner.
+The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
  */
 
 //TODO: Add the capability to remove unnecessary init events from a model
@@ -37,7 +36,7 @@ public class ExecutionModel {
 
     // ============= Model specific  =============
     private Model model;
-    private Context context;
+    private SolverContext context;
     private FilterAbstract eventFilter;
     private boolean extractCoherences;
 
@@ -133,10 +132,10 @@ public class ExecutionModel {
     }
 
     // Model specific data
-    public Model getZ3Model() {
+    public Model getModel() {
         return model;
     }
-    public Context getZ3Context() {
+    public SolverContext getContext() {
         return context;
     }
     public FilterAbstract getEventFilter() {
@@ -201,15 +200,15 @@ public class ExecutionModel {
     //========================== Initialization =========================
 
 
-    public void initialize(Model model, Context ctx) {
+    public void initialize(Model model, SolverContext ctx) {
         initialize(model, ctx, true);
     }
 
-    public void initialize(Model model, Context ctx, boolean extractCoherences) {
+    public void initialize(Model model, SolverContext ctx, boolean extractCoherences) {
         initialize(model, ctx, FilterBasic.get(EType.VISIBLE), extractCoherences);
     }
 
-    public void initialize(Model model, Context ctx, FilterAbstract eventFilter, boolean extractCoherences) {
+    public void initialize(Model model, SolverContext ctx, FilterAbstract eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations and thus we should have less overhead in future populations)
@@ -341,7 +340,7 @@ public class ExecutionModel {
             }
 
             if (data.isRead()) {
-                data.setValue(new BigInteger(model.getConstInterp(((RegWriter)e).getResultRegisterExpr()).toString()));
+                data.setValue(new BigInteger(model.evaluate(((RegWriter)e).getResultRegisterExpr()).toString()));
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
                 data.setValue(((MemEvent)e).getMemValue().getIntValue(e, model, context));
@@ -463,12 +462,12 @@ public class ExecutionModel {
         	BigInteger address = addressedReads.getKey();
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
-                    BoolExpr rfExpr = rf.getSMTVar(write.getEvent(), read.getEvent(), context);
-                    Expr rfInterp = model.getConstInterp(rfExpr);
+                    BooleanFormula rfExpr = rf.getSMTVar(write.getEvent(), read.getEvent(), context);
                     // The null check is important: Currently there are cases where no rf-edge between
                     // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
                     // since in a well-initialized program, the init write should not be readable anyway.
-                    if (rfInterp != null && rfInterp.isTrue()) {
+					Boolean rfVal = model.evaluate(rfExpr);
+					if (rfVal != null && rfVal) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);
                         writeReadsMap.get(write).add(read);
@@ -496,9 +495,9 @@ public class ExecutionModel {
             for (EventData w1 : addressedWrites.getValue()) {
                 coherenceMap.put(w1, new HashSet<>());
                 for (EventData w2 : addressWritesMap.get(address)) {
-                    BoolExpr coExpr = co.getSMTVar(w1.getEvent(), w2.getEvent(), context);
-                    Expr coInterp = model.getConstInterp(coExpr);
-                    if (coInterp != null && coInterp.isTrue()) {
+                	BooleanFormula coExpr = co.getSMTVar(w1.getEvent(), w2.getEvent(), context);
+                	Boolean coVal = model.evaluate(coExpr);
+                    if (coVal != null && coVal) {
                         coherenceMap.get(w1).add(w2);
                         break;
                     }

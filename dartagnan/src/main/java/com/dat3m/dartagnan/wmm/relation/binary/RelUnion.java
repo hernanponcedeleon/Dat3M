@@ -1,11 +1,15 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.google.common.collect.Sets;
+import com.dat3m.dartagnan.wmm.utils.Utils;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 /**
  *
@@ -62,21 +66,22 @@ public class RelUnion extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
             if (min.contains(tuple)) {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
                 continue;
             }
-            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
-            BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
+            BooleanFormula opt1 = r1.getSMTVar(tuple, ctx);
+            BooleanFormula opt2 = r2.getSMTVar(tuple, ctx);
             if (Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkOr(opt1, opt2), this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.implication(bmgr.or(opt1, opt2), this.getSMTVar(tuple, ctx)));
             } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkOr(opt1, opt2)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), bmgr.or(opt1, opt2)));
             }
         }
         return enc;

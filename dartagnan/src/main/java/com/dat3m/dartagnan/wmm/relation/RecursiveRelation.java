@@ -1,12 +1,16 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.wmm.utils.Utils;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 import java.util.Collections;
 import java.util.List;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -35,7 +39,7 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         if(doRecurse){
             doRecurse = false;
             super.initialise(task, ctx);
@@ -125,16 +129,16 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
         if(isEncoded){
-            return ctx.mkTrue();
+            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
         }
         isEncoded = true;
         return r1.encode(ctx);
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
         return r1.encodeApprox(ctx);
     }
 

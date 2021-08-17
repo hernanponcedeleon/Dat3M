@@ -1,11 +1,15 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.google.common.collect.Sets;
+import com.dat3m.dartagnan.wmm.utils.Utils;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 /**
  *
@@ -62,18 +66,19 @@ public class RelIntersection extends BinaryRelation {
     }
 
     @Override
-    public BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
             if (min.contains(tuple)) {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
                 continue;
             }
-            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
-            BoolExpr opt2 = r2.getSMTVar(tuple, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkAnd(opt1, opt2)));
+            BooleanFormula opt1 = r1.getSMTVar(tuple, ctx);
+            BooleanFormula opt2 = r2.getSMTVar(tuple, ctx);
+            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), bmgr.and(opt1, opt2)));
         }
         return enc;
     }

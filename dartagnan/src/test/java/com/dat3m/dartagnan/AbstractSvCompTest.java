@@ -5,14 +5,16 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -42,62 +44,47 @@ public abstract class AbstractSvCompTest {
 
     //@Test(timeout = TIMEOUT)
     public void test() {
-        Context ctx = null;
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            ctx = new Context();
-            Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, runAnalysis(solver, ctx, task));
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
         } catch (Exception e){
-            fail("Missing resource file");
-        } finally {
-            if(ctx != null) {
-                ctx.close();
-            }
+            fail(e.getMessage());
         }
     }
 
     //@Test(timeout = TIMEOUT)
     public void testIncremental() {
-        Context ctx = null;
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
         	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
         	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            ctx = new Context();
-            Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, runAnalysisIncrementalSolver(solver, ctx, task));
+            assertEquals(expected, runAnalysisIncrementalSolver(ctx, prover, task));
         } catch (Exception e){
-            fail("Missing resource file");
-        }  finally {
-            if(ctx != null) {
-                ctx.close();
-            }
+            fail(e.getMessage());
         }
     }
 
     //@Test(timeout = TIMEOUT)
     public void testAssume() {
-        Context ctx = null;
-        try {
-            String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
-            expected = readExpected(property);
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
+        	String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
+        	expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            ctx = new Context();
-            Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, runAnalysisAssumeSolver(solver, ctx, task));
-            solver.reset();
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
-            fail("Missing resource file");
-        }  finally {
-            if(ctx != null) {
-                ctx.close();
-            }
+            fail(e.getMessage());
         }
     }
     @Test(timeout = TIMEOUT)

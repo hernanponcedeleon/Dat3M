@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
@@ -7,8 +11,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 public class RelCrit extends StaticRelation {
     //TODO: We can optimize this a lot by using branching analysis
@@ -47,26 +49,27 @@ public class RelCrit extends StaticRelation {
     // TODO: Not the most efficient implementation
     // Let's see if we need to keep a reference to a thread in events for anything else, and then optimize this method
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
         for(Thread thread : task.getProgram().getThreads()){
             for(Event lock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){
                 for(Event unlock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_UNLOCK))){
                     if(lock.getCId() < unlock.getCId()){
                         Tuple tuple = new Tuple(lock, unlock);
                         if(encodeTupleSet.contains(tuple)){
-                            BoolExpr relation = ctx.mkAnd(lock.exec(), unlock.exec());
+                        	BooleanFormula relation = bmgr.and(lock.exec(), unlock.exec());
                             for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_LOCK))){
                                 if(otherLock.getCId() > lock.getCId() && otherLock.getCId() < unlock.getCId()){
-                                    relation = ctx.mkAnd(relation, ctx.mkNot(this.getSMTVar(otherLock, unlock, ctx)));
+                                    relation = bmgr.and(relation, bmgr.not(this.getSMTVar(otherLock, unlock, ctx)));
                                 }
                             }
                             for(Event otherUnlock : thread.getCache().getEvents(FilterBasic.get(EType.RCU_UNLOCK))){
                                 if(otherUnlock.getCId() > lock.getCId() && otherUnlock.getCId() < unlock.getCId()){
-                                    relation = ctx.mkAnd(relation, ctx.mkNot(this.getSMTVar(lock, otherUnlock, ctx)));
+                                    relation = bmgr.and(relation, bmgr.not(this.getSMTVar(lock, otherUnlock, ctx)));
                                 }
                             }
-                            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), relation));
+                            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), relation));
                         }
                     }
                 }

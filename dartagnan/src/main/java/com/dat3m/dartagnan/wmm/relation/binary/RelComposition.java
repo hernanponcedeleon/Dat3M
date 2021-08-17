@@ -1,16 +1,19 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
+import com.google.common.collect.Sets;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -113,27 +116,28 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
         TupleSet minSet = getMinTupleSet();
 
         for(Tuple tuple : encodeTupleSet) {
-            BoolExpr expr = ctx.mkFalse();
+            BoolFormula expr = bmgr.false();
             if (minSet.contains(tuple)) {
                 expr = getExecPair(tuple, ctx);
             } else {
                 for (Tuple t1 : r1Set.getByFirst(tuple.getFirst())) {
                     Tuple t2 = new Tuple(t1.getSecond(), tuple.getSecond());
                     if (r2Set.contains(t2)) {
-                        expr = ctx.mkOr(expr, ctx.mkAnd(r1.getSMTVar(t1, ctx), r2.getSMTVar(t2, ctx)));
+                        expr = bmgr.or(expr, bmgr.and(r1.getSMTVar(t1, ctx), r2.getSMTVar(t2, ctx)));
                     }
                 }
             }
 
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), expr));
+            enc = bmgr.and(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), expr));
         }
         return enc;
     }

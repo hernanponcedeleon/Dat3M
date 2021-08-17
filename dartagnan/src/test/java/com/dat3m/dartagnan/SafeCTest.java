@@ -9,20 +9,24 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.microsoft.z3.Context;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
@@ -134,12 +138,12 @@ public class SafeCTest {
     
 //    @Test(timeout = TIMEOUT)
     public void test() {
-    	try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
-            ctx.close();
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
             fail("Missing resource file");
         }

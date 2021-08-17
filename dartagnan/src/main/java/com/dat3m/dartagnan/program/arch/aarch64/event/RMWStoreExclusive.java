@@ -4,8 +4,10 @@ import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
@@ -13,7 +15,7 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 
 public class RMWStoreExclusive extends Store implements RegReaderData {
 
-    protected transient BoolExpr execVar;
+    protected transient BooleanFormula execVar;
 
     public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong){
         super(address, value, mo);
@@ -32,14 +34,14 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     }
 
     @Override
-    public BoolExpr exec() {
+    public BooleanFormula exec() {
         return execVar;
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        execVar = is(EType.STRONG) ? cfVar : ctx.mkBoolConst("exec(" + repr() + ")");
+        execVar = is(EType.STRONG) ? cfVar : ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("exec(" + repr() + ")");
     }
 
     @Override
@@ -49,8 +51,8 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     }
 
     @Override
-    protected BoolExpr encodeExec(Context ctx){
-        return ctx.mkImplies(execVar, cfVar);
+    protected BooleanFormula encodeExec(SolverContext ctx){
+    	return ctx.getFormulaManager().getBooleanFormulaManager().implication(execVar, cfVar);
     }
 
     // Unrolling

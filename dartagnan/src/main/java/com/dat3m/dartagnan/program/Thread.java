@@ -9,10 +9,12 @@ import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 import java.util.*;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Thread {
 
@@ -164,17 +166,18 @@ public class Thread {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public BoolExpr encodeCF(Context ctx){
-    	BoolExpr enc = ctx.mkTrue();
-    	BoolExpr guard = ctx.mkTrue();
+    public BooleanFormula encodeCF(SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
+    	BooleanFormula guard = bmgr.makeTrue();
     	for(Event e : entry.getSuccessors()) {
-    		enc = ctx.mkAnd(enc, e.encodeCF(ctx, guard));
+    		enc = bmgr.and(enc, e.encodeCF(ctx, guard));
     		guard = e.cf();
     		if(e instanceof CondJump) {
-    			guard = ctx.mkAnd(guard, ctx.mkNot(((CondJump)e).getGuard().toZ3Bool(e, ctx)));
+    			guard = bmgr.and(guard, bmgr.not(((CondJump)e).getGuard().toBoolFormula(e, ctx)));
     		}
     	}
-        return enc;
+    	return enc;
     }
 
 

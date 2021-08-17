@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.asserts;
 
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class AssertTrue extends AbstractAssert {
 
     @Override
-    public BoolExpr encode(Context ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
     	// We want the verification to succeed so it should be UNSAT
-        return ctx.mkFalse();
+        return ctx.getFormulaManager().getBooleanFormulaManager().makeFalse();
     }
 
     @Override

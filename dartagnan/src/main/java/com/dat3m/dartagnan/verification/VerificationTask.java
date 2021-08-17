@@ -16,10 +16,11 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 import java.util.Set;
@@ -133,42 +134,44 @@ public class VerificationTask {
         program.updateAssertion();
     }
 
-    public void initialiseEncoding(Context ctx) {
+    public void initialiseEncoding(SolverContext ctx) {
         program.initialise(this, ctx);
         memoryModel.initialise(this, ctx);
     }
 
-    public BoolExpr encodeProgram(Context ctx) {
-        BoolExpr cfEncoding = program.encodeCF(ctx);
-        BoolExpr finalRegValueEncoding = program.encodeFinalRegisterValues(ctx); // this is unnecessary for C tests
-        return ctx.mkAnd(cfEncoding, finalRegValueEncoding);
+    public BooleanFormula encodeProgram(SolverContext ctx) {
+    	BooleanFormula cfEncoding = program.encodeCF(ctx);
+    	BooleanFormula finalRegValueEncoding = program.encodeFinalRegisterValues(ctx);
+        return ctx.getFormulaManager().getBooleanFormulaManager().and(cfEncoding, finalRegValueEncoding);
     }
 
-    public BoolExpr encodeWmmCore(Context ctx) {
+    public BooleanFormula encodeWmmCore(SolverContext ctx) {
         return memoryModel.encodeCore(ctx);
     }
 
-    public BoolExpr encodeWmmRelations(Context ctx) {
+    public BooleanFormula encodeWmmRelations(SolverContext ctx) {
         return memoryModel.encode( ctx);
     }
 
-    public BoolExpr encodeWmmConsistency(Context ctx) {
+    public BooleanFormula encodeWmmConsistency(SolverContext ctx) {
         return memoryModel.consistent(ctx);
     }
 
-    public BoolExpr encodeSymmetryBreaking(Context ctx) {
+    public BooleanFormula encodeSymmetryBreaking(SolverContext ctx) {
         return new SymmetryBreaking(this).encode(ctx);
     }
 
-    public BoolExpr encodeAssertions(Context ctx) {
-        BoolExpr assertionEncoding = program.getAss().encode(ctx);
+    public BooleanFormula encodeAssertions(SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+
+        BooleanFormula assertionEncoding = program.getAss().encode(ctx);
         if (program.getAssFilter() != null) {
-            assertionEncoding = ctx.mkAnd(assertionEncoding, program.getAssFilter().encode(ctx));
+			assertionEncoding = bmgr.and(assertionEncoding, program.getAssFilter().encode(ctx));
         }
         return assertionEncoding;
     }
 
-    public BoolExpr encodeWitness(Context ctx) {
+    public BooleanFormula encodeWitness(SolverContext ctx) {
     	return witness.encode(program, ctx);
     }
 }

@@ -1,12 +1,16 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.Sets;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 /**
  *
@@ -29,7 +33,7 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         super.initialise(task, ctx);
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
@@ -72,22 +76,23 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
             if (min.contains(tuple)) {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
                 continue;
             }
 
-            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
-            BoolExpr opt2 = ctx.mkNot(r2.getSMTVar(tuple, ctx));
+            BooleanFormula opt1 = r1.getSMTVar(tuple, ctx);
+            BooleanFormula opt2 = bmgr.not(r2.getSMTVar(tuple, ctx));
             if (Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(opt1, opt2), this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.implication(bmgr.and(opt1, opt2), this.getSMTVar(tuple, ctx)));
             } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkAnd(opt1, opt2)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), bmgr.and(opt1, opt2)));
             }
         }
         return enc;

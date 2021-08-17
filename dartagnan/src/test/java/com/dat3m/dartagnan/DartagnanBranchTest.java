@@ -6,16 +6,18 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableMap;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,7 +30,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
@@ -94,13 +96,13 @@ public class DartagnanBranchTest {
 
     @Test
     public void test() {
-        try{
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
-            Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, runAnalysis(solver, ctx, task));
-            ctx.close();
+            assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
         } catch (Exception e){
             fail("Missing resource file");
         }

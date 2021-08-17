@@ -4,9 +4,21 @@ import com.dat3m.dartagnan.program.memory.utils.IllegalMemoryAccessException;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.*;
 
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
+import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Memory {
 
@@ -26,37 +38,49 @@ public class Memory {
         return map.inverse().get(address);
     }
 
-    public BoolExpr encode(Context ctx){
-        BoolExpr enc = ctx.mkTrue();
-        for(List<Address> array : arrays.values()){
-            Expr e1 = array.get(0).toZ3Int(ctx);
+    public BooleanFormula encode(SolverContext ctx){
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+
+		BooleanFormula enc = bmgr.makeTrue();
+		for(List<Address> array : arrays.values()){
+        	Formula e1 = array.get(0).toIntFormula(ctx);
             for(int i = 1; i < array.size(); i++){
-                Expr e2 = array.get(i).toZ3Int(ctx);
-                Expr newAddress = e1.isBV() ? ctx.mkBVAdd((BitVecExpr)e1, ctx.mkBV(1, array.get(0).getPrecision())) : ctx.mkAdd((IntExpr)e1, ctx.mkInt(1));
-				enc = ctx.mkAnd(enc, ctx.mkEq(e2, newAddress));
+            	IntegerFormula e2 = convertToIntegerFormula(array.get(i).toIntFormula(ctx), ctx);
+				IntegerFormula newAddress = imgr.add(convertToIntegerFormula(e1, ctx), imgr.makeNumber(BigInteger.ONE));
+				enc = bmgr.and(enc, generalEqual(e2, newAddress, ctx));
                 e1 = e2;
             }
         }
         // Following SMACK, only address with constant values can have negative values.
         for(Address add : getAllAddresses()) {
         	if(!add.hasConstantValue()) {
-        		enc = ctx.mkAnd(enc, add.toZ3Int(ctx).isBV() ? ctx.mkGt(ctx.mkBV2Int((BitVecExpr) add.toZ3Int(ctx), false), ctx.mkInt(0)) : ctx.mkGt((IntExpr)add.toZ3Int(ctx), ctx.mkInt(0)));
+        		enc = bmgr.and(enc, imgr.greaterThan(
+        							convertToIntegerFormula(add.toIntFormula(ctx), ctx),
+        							imgr.makeNumber(BigInteger.ZERO)));
         	}
         }
         
-        return ctx.mkAnd(enc, ctx.mkDistinct(getAllAddresses().stream().map(a -> a.toZ3Int(ctx).isBV() ? ctx.mkBV2Int((BitVecExpr) a.toZ3Int(ctx), false) : a.toZ3Int(ctx)).toArray(Expr[]::new)));
+        BooleanFormula distinct = getAllAddresses().size() > 1 ?
+        		imgr.distinct(getAllAddresses().stream()
+                		.map(a -> convertToIntegerFormula(a.toIntFormula(ctx), ctx))
+                		.collect(Collectors.toList())) :
+                bmgr.makeTrue();
+
+        return bmgr.and(enc, distinct);
     }
 
     // Assigns each Address a fixed memory address.
-    public BoolExpr fixedMemoryEncoding(Context ctx) {
-        // TODO: This is buggy with statically allocated arrays
-        BoolExpr[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
-                .map(add -> {
-                    Expr e1 = add.toZ3Int(ctx);
-                    e1 = e1.isBV() ? ctx.mkBV2Int(e1, false) : e1;
-                    return ctx.mkEq(e1, ctx.mkInt(add.getValue().intValue()));
-                }).toArray(BoolExpr[]::new);
-        return ctx.mkAnd(addrExprs);
+    public BooleanFormula fixedMemoryEncoding(SolverContext ctx) {
+        FormulaManager fmgr = ctx.getFormulaManager();
+		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+
+    	BooleanFormula[] addrExprs = getAllAddresses().stream().filter(x -> !x.hasConstantValue())
+        		.map(add -> imgr.equal(convertToIntegerFormula(add.toIntFormula(ctx), ctx),
+        								imgr.makeNumber(add.getValue().intValue())))
+        		.toArray(BooleanFormula[]::new);
+        return fmgr.getBooleanFormulaManager().and(addrExprs);
     }
 
     public List<Address> malloc(String name, int size, int precision){

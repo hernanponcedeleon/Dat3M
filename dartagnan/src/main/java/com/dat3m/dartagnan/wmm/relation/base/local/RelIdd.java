@@ -6,10 +6,11 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 import java.util.*;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class RelIdd extends BasicRegRelation {
 
@@ -35,7 +36,7 @@ public class RelIdd extends BasicRegRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
         return doEncodeApprox(task.getProgram().getCache().getEvents(FilterBasic.get(EType.REG_READER)), ctx);
     }
 

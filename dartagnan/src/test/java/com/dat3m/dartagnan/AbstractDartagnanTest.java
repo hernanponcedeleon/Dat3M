@@ -7,13 +7,15 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 import org.junit.Test;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -103,7 +105,10 @@ public abstract class AbstractDartagnanTest {
 
     //@Test
     public void test() {
-    	try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 // program.setAss(program.getAss().removeLocAssertions(true)); // TEST CODE for comparing!
@@ -114,7 +119,7 @@ public abstract class AbstractDartagnanTest {
                 ctx.close();
             }
         } catch (Exception e){
-            fail("Missing resource file");
+            fail(e.getMessage());
         }
     }
 

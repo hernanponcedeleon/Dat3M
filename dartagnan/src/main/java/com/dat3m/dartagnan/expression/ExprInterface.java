@@ -2,13 +2,14 @@ package com.dat3m.dartagnan.expression;
 
 import java.math.BigInteger;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 
@@ -16,15 +17,15 @@ public interface ExprInterface {
 
 	IConst reduce();
 	
-    Expr toZ3Int(Event e, Context ctx);
+    Formula toIntFormula(Event e, SolverContext ctx);
 
-    BoolExpr toZ3Bool(Event e, Context ctx);
+    BooleanFormula toBoolFormula(Event e, SolverContext ctx);
 
-    Expr getLastValueExpr(Context ctx);
+    Formula getLastValueExpr(SolverContext ctx);
 
-    BigInteger getIntValue(Event e, Model model, Context ctx);
+    BigInteger getIntValue(Event e, Model model, SolverContext ctx);
 
-    boolean getBoolValue(Event e, Model model, Context ctx);
+    boolean getBoolValue(Event e, Model model, SolverContext ctx);
 
     ImmutableSet<Register> getRegs();
 

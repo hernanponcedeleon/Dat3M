@@ -1,5 +1,7 @@
 package com.dat3m.ui.utils;
 
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.options.utils.Method;
@@ -8,12 +10,14 @@ public class UiOptions {
 
 	private Arch target;
 	private final Method method;
+	private final Solvers solver;
 	private final Settings settings;
 
 
-	public UiOptions(Arch target, Method method, Settings settings) {
+	public UiOptions(Arch target, Method method, Solvers solver, Settings settings) {
 		this.target = target;
 		this.method = method;
+		this.solver = solver;
 		this.settings = settings;
 	}
 	
@@ -23,6 +27,10 @@ public class UiOptions {
 
 	public Method getMethod() {
 		return method;
+	}
+
+	public Solvers getSolver() {
+		return solver;
 	}
 
 	public Settings getSettings(){

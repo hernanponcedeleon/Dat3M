@@ -38,6 +38,7 @@ public class ProgramParser {
     public Program parse(String raw, String format) throws Exception {
         switch (format) {
         	case "c":
+        	case "i":
 				File CFile = File.createTempFile("dat3m", ".c");
 				CFile.deleteOnExit();
         		String name = CFile.getName().substring(0, CFile.getName().lastIndexOf('.'));

@@ -1,12 +1,14 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 
 import java.util.Collections;
 import java.util.List;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -45,7 +47,7 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         super.initialise(task, ctx);
         if(recursiveGroupId > 0){
             throw new RuntimeException("Recursion is not implemented for " + this.getClass().getName());
@@ -53,11 +55,12 @@ public abstract class UnaryRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         if(isEncoded){
-            return ctx.mkTrue();
+            return bmgr.makeTrue();
         }
         isEncoded = true;
-        return ctx.mkAnd(r1.encode(ctx), doEncode(ctx));
+        return bmgr.and(r1.encode(ctx), doEncode(ctx));
     }
 }

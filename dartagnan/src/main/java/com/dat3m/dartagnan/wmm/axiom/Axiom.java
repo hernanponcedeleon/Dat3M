@@ -2,14 +2,15 @@ package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -25,7 +26,7 @@ public abstract class Axiom implements Dependent<Relation> {
         this.rel = rel;
     }
 
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         this.task = task;
     }
 
@@ -38,8 +39,8 @@ public abstract class Axiom implements Dependent<Relation> {
         return rel;
     }
 
-    public BoolExpr encodeRelAndConsistency(Context ctx) {
-    	return ctx.mkAnd(rel.encode(ctx), consistent(ctx));
+    public BooleanFormula encodeRelAndConsistency(SolverContext ctx) {
+    	return ctx.getFormulaManager().getBooleanFormulaManager().and(rel.encode(ctx), consistent(ctx));
     }
     
     @Override
@@ -49,7 +50,7 @@ public abstract class Axiom implements Dependent<Relation> {
 
     public abstract TupleSet getEncodeTupleSet();
 
-    public abstract BoolExpr consistent(Context ctx);
+    public abstract BooleanFormula consistent(SolverContext ctx);
 
     protected abstract String _toString();
 
