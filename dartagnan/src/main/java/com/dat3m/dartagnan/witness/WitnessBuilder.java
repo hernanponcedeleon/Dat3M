@@ -34,19 +34,18 @@ import static java.lang.String.valueOf;
 
 public class WitnessBuilder {
 	
-	private WitnessGraph graph;
-	private Program program;
-	private SolverContext ctx;
-	private ProverEnvironment prover;
-	private Model model;
-	private String type ;
-	private String path;
+	private final WitnessGraph graph;
+	private final Program program;
+	private final SolverContext ctx;
+	private final ProverEnvironment prover;
+	private final String type ;
+	private final String path;
 	
-	private Map<Event, Integer> eventThreadMap = new HashMap<>();
+	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
 	public WitnessBuilder(Program program, SolverContext ctx, ProverEnvironment prover, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
-		this.graph.addAttribute(UNROLLBOUND.toString(), String.valueOf(options.getSettings().getBound()));
+		this.graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getSettings().getBound()));
 		this.program = program;
 		this.ctx = ctx;
 		this.prover = prover;
@@ -106,37 +105,36 @@ public class WitnessBuilder {
 			return;
 		}
 
-		try {
-			model = prover.getModel();
-		} catch (SolverException ignore) {
-			// The if above guarantees that if we reach this try, a Model exists
-		}		
-		List<Event> execution = getSCExecutionOrder();
-		for(int i = 0; i < execution.size(); i++) {
-			Event e = execution.get(i);
-			if(i+1 < execution.size() && e.getCLine() == execution.get(i+1).getCLine() && e.getThread().equals(execution.get(i+1).getThread())) {
-				continue;
-			}
-			
-			edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode+1)));
-			edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
-			edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
-			if(model.evaluate(intVar("hb", e, ctx)) != null) {
-				edge.addAttribute(EVENTID.toString(), valueOf(e.getCId()));
-				edge.addAttribute(HBPOS.toString(), valueOf(model.evaluate(intVar("hb", e, ctx))));				
-			}
-			
-			if(e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
-				edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
-				threads++;
-			}
+		try (Model model = prover.getModel()) {
+			List<Event> execution = getSCExecutionOrder(model);
+			for (int i = 0; i < execution.size(); i++) {
+				Event e = execution.get(i);
+				if (i + 1 < execution.size() && e.getCLine() == execution.get(i + 1).getCLine() && e.getThread().equals(execution.get(i + 1).getThread())) {
+					continue;
+				}
 
-			graph.addEdge(edge);
-			
-			nextNode++;
-			if(e.hasFilter(EType.ASSERTION)) {
-				break;
+				edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
+				edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
+				edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
+				if (model.evaluate(intVar("hb", e, ctx)) != null) {
+					edge.addAttribute(EVENTID.toString(), valueOf(e.getCId()));
+					edge.addAttribute(HBPOS.toString(), valueOf(model.evaluate(intVar("hb", e, ctx))));
+				}
+
+				if (e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
+					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
+					threads++;
+				}
+
+				graph.addEdge(edge);
+
+				nextNode++;
+				if (e.hasFilter(EType.ASSERTION)) {
+					break;
+				}
 			}
+		}  catch (SolverException ignore) {
+			// The if above guarantees that if we reach this try, a Model exists
 		}
 		graph.getNode("N" + nextNode).addAttribute("violation", "true");
 	}
@@ -149,7 +147,7 @@ public class WitnessBuilder {
 		}
 	}
 	
-	private List<Event> getSCExecutionOrder() {
+	private List<Event> getSCExecutionOrder(Model model) {
 		List<Event> execEvents = new ArrayList<>();
 		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.evaluate(e.exec()) && e.getCLine() > -1).collect(Collectors.toList()));
 		execEvents.addAll(program.getEvents().stream().filter(e -> model.evaluate(e.exec()) && e.getCLine() > -1).collect(Collectors.toList()));
