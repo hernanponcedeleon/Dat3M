@@ -143,7 +143,7 @@ public class SafeCTest {
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
-            fail("Missing resource file");
+            fail(e.getMessage());
         }
     }
 
@@ -156,7 +156,7 @@ public class SafeCTest {
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
             assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
         } catch (Exception e){
-            fail("Missing resource file");
+            fail(e.getMessage());
         }
     }
 }

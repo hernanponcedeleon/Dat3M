@@ -98,7 +98,7 @@ public abstract class AbstractSvCompTest {
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
             assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
         } catch (Exception e){
-            fail("Missing resource file");
+            fail(e.getMessage());
         }
     }
 

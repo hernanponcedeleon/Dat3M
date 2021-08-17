@@ -85,7 +85,7 @@ public abstract class AbstractDartagnanTest {
                 res = runAnalysisTwoSolvers(ctx, prover1, prover2, task);
             }
         } catch (Exception e) {
-            fail("Missing resource file");
+            fail(e.getMessage());
         }
 
         try (SolverContext ctx = TestHelper.createContext();
@@ -98,7 +98,7 @@ public abstract class AbstractDartagnanTest {
                 assertEquals(res, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
             }
         } catch (Exception e) {
-            fail("Missing resource file");
+            fail(e.getMessage());
         }
     }
 
@@ -137,7 +137,7 @@ public abstract class AbstractDartagnanTest {
                 assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
             }
         } catch (Exception e){
-            fail("Missing resource file");
+            fail(e.getMessage());
         }
     }
 }
