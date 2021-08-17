@@ -91,34 +91,34 @@ public abstract class BaseOptions extends Options {
             throw new UnsupportedOperationException("Unrecognized solver method: " + method);
         }
 
-        smtsolver = Z3;
-        if(cmd.hasOption(SMTSOLVER_OPTION)) {
-			
-        	if(!supported_smtsolvers.contains(cmd.getOptionValue(SMTSOLVER_OPTION))) {
-                throw new UnsupportedOperationException("Unrecognized SMT solver: " + cmd.getOptionValue(SMTSOLVER_OPTION));        		
-            }
-
-			switch(cmd.getOptionValue(SMTSOLVER_OPTION)) {
-				case "mathsat5":
-					smtsolver = MATHSAT5;
-					break;
-				case "smtinterpol":
-					smtsolver = SMTINTERPOL;
-					break;
-				case "princess":
-					smtsolver = PRINCESS;
-					break;
-				case "boolector":
-					smtsolver = BOOLECTOR;
-					break;
-				case "cvc4":
-					smtsolver = CVC4;
-					break;
-				case "yices2":
-					smtsolver = YICES2;
-					break;
-    		}        	
+        String solverString = cmd.getOptionValue(SMTSOLVER_OPTION, "unspecified");
+        switch (solverString) {
+            case "mathsat5":
+                smtsolver = MATHSAT5;
+                break;
+            case "smtinterpol":
+                smtsolver = SMTINTERPOL;
+                break;
+            case "princess":
+                smtsolver = PRINCESS;
+                break;
+            case "boolector":
+                smtsolver = BOOLECTOR;
+                break;
+            case "cvc4":
+                smtsolver = CVC4;
+                break;
+            case "yices2":
+                smtsolver = YICES2;
+                break;
+            case "z3":
+            case "unspecified":
+                smtsolver = Z3;
+            default:
+                throw new UnsupportedOperationException("Unrecognized SMT solver: " + solverString);
         }
+
+
     }
 
     public MethodTypes getMethod(){
