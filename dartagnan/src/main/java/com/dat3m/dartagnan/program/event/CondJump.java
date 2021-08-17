@@ -1,15 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
@@ -17,10 +7,15 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.Utils;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class CondJump extends Event implements RegReaderData {
 
@@ -28,10 +23,6 @@ public class CondJump extends Event implements RegReaderData {
     private Label label4Copy;
     private final BExpr expr;
     private final ImmutableSet<Register> dataRegs;
-    // This needs to be moved to the Program to have only once instance instead of one per CondJump.
-    // However right now results in the Z3 bug Z3Prover/z3#5107 
-    // Once JavaSMT releases bindings 4.8.11.0 we need to test that again
-    private static SolverContext defaultCtx;
 
     public CondJump(BExpr expr, Label label){
         if(label == null){
@@ -56,24 +47,9 @@ public class CondJump extends Event implements RegReaderData {
 		Event notifier = label != null ? label : other.label;
 		notifier.addListener(this);
     }
-
-    private void initCtx() {
-        try {
-            Configuration config = Configuration.defaultConfiguration();
-			defaultCtx = SolverContextFactory.createSolverContext(
-			        config, 
-			        BasicLogManager.create(config), 
-			        ShutdownManager.create().getNotifier(), 
-			        Solvers.Z3);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-    }
     
     public boolean isGoto() {
-    	if(defaultCtx == null) {
-    		initCtx();
-    	}
+    	SolverContext defaultCtx = Utils.getDefaultCtx();
         return defaultCtx.getFormulaManager().getBooleanFormulaManager().isTrue(expr.toBoolFormula(this, defaultCtx));
     }
     

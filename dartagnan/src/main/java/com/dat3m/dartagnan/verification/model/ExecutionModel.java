@@ -2,7 +2,9 @@ package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -11,13 +13,12 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-
-import java.math.BigInteger;
-import java.util.*;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.math.BigInteger;
+import java.util.*;
 
 /*
 The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
@@ -341,7 +342,8 @@ public class ExecutionModel {
                 coherenceMap.put(w1, new HashSet<>());
                 for (EventData w2 : addressWritesMap.get(address)) {
                 	BooleanFormula coExpr = co.getSMTVar(w1.getEvent(), w2.getEvent(), context);
-                    if (model.evaluate(coExpr) != null && model.evaluate(coExpr)) {
+                	Boolean coVal = model.evaluate(coExpr);
+                    if (coVal != null && coVal) {
                         coherenceMap.get(w1).add(w2);
                         break;
                     }
