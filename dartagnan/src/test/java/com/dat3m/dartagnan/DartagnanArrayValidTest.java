@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
+import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -18,12 +18,15 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class DartagnanArrayValidTest {
@@ -32,11 +35,13 @@ public class DartagnanArrayValidTest {
     public static Iterable<Object[]> data() throws IOException {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
         Settings settings = new Settings(Alias.CFIS, 1, 60);
-        return Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "arrays/ok/"))
-                .filter(Files::isRegularFile)
-                .filter(f -> (f.toString().endsWith("litmus")))
-                .map(f -> new Object[]{f.toString(), wmm, settings})
-                .collect(Collectors.toList());
+        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "arrays/ok/"))) {
+            return fileStream
+                    .filter(Files::isRegularFile)
+                    .filter(f -> (f.toString().endsWith("litmus")))
+                    .map(f -> new Object[]{f.toString(), wmm, settings})
+                    .collect(Collectors.toList());
+        }
     }
 
     private final String path;

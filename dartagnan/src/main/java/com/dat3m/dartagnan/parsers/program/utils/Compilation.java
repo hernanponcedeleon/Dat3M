@@ -1,16 +1,15 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import static java.util.Arrays.asList;
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
+import static java.util.Arrays.asList;
 
 public class Compilation {
 	
@@ -30,10 +29,12 @@ public class Compilation {
     	proc.waitFor();
     	int tries = 1 ;
     	while(proc.exitValue() != 0 && tries < 100) {
-    		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
-			if(errorString.contains("compile_to_bc")) {
-				throw new Exception(errorString);
-    		}
+    		try (InputStreamReader reader = new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8)) {
+				String errorString = CharStreams.toString(reader);
+				if(errorString.contains("compile_to_bc")) {
+					throw new Exception(errorString);
+				}
+			}
     		logger.info("Compiling with smack");
     		tries++;
         	proc = processBuilder.start();
@@ -54,6 +55,7 @@ public class Compilation {
     		String errorString = CharStreams.toString(new InputStreamReader(proc.getErrorStream(), Charsets.UTF_8));
 			throw new Exception(errorString);
     	}
+    	// TODO(HP): Can this be removed?
     	File testFile = new File(System.getenv().get("DAT3M_HOME") + "/output/test.s");
     	testFile.delete();
 	}	

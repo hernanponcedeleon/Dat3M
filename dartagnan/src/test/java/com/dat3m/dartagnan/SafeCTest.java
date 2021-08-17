@@ -2,6 +2,7 @@ package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.Base;
 import com.dat3m.dartagnan.analysis.Refinement;
+import com.dat3m.dartagnan.analysis.Base;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;

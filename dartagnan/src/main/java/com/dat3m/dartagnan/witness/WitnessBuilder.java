@@ -1,35 +1,5 @@
 package com.dat3m.dartagnan.witness;
 
-import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
-import static com.dat3m.dartagnan.program.utils.EType.WRITE;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.CREATETHREAD;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.ENTERFUNCTION;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.EVENTID;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.HBPOS;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.STARTLINE;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.THREADID;
-import static com.dat3m.dartagnan.witness.GraphAttributes.ARCHITECTURE;
-import static com.dat3m.dartagnan.witness.GraphAttributes.CREATIONTIME;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMHASH;
-import static com.dat3m.dartagnan.witness.GraphAttributes.SOURCECODELANG;
-import static com.dat3m.dartagnan.witness.GraphAttributes.SPECIFICATION;
-import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
-import static com.dat3m.dartagnan.witness.GraphAttributes.WITNESSTYPE;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-import static java.lang.String.valueOf;
-
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -44,6 +14,23 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Model;
 import com.microsoft.z3.Solver;
 
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
+import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static java.lang.String.valueOf;
+
 public class WitnessBuilder {
 	
 	private WitnessGraph graph;
@@ -57,7 +44,7 @@ public class WitnessBuilder {
 	
 	public WitnessBuilder(Program program, Context ctx, Solver solver, Result result, DartagnanOptions options) {
 		this.graph = new WitnessGraph();
-		this.graph.addAttribute(UNROLLBOUND.toString(), String.valueOf(options.getSettings().getBound()));
+		this.graph.addAttribute(UNROLLBOUND.toString(), valueOf(options.getSettings().getBound()));
 		this.program = program;
 		this.ctx = ctx;
 		this.solver = solver;
@@ -67,8 +54,7 @@ public class WitnessBuilder {
 	}
 	
 	public void write() {
-		try {
-			FileWriter fw = new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");
+		try (FileWriter fw = new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml")) {
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
 			for(GraphAttributes attr : GraphAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
@@ -76,9 +62,7 @@ public class WitnessBuilder {
 			for(EdgeAttributes attr : EdgeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");}
 			fw.write(graph.toXML());
 			fw.write("</graphml>\n");
-			fw.close();
-		}
-		catch (IOException e1) {
+		} catch (IOException e1) {
 			e1.printStackTrace();
 		}		
 	}
@@ -196,20 +180,22 @@ public class WitnessBuilder {
 		String output = null;
 		try {
 			Process proc = Runtime.getRuntime().exec("sha256sum " + path);
-			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-			try {
-				proc.waitFor();
-			} catch(InterruptedException e) {
-				System.out.println(e.getMessage());
-				System.exit(0);
-			}
-			while(read.ready()) {
-				output = read.readLine();
+			try (BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
+				try {
+					proc.waitFor();
+				} catch (InterruptedException e) {
+					System.out.println(e.getMessage());
+					System.exit(0);
+				}
+				while (read.ready()) {
+					output = read.readLine();
+				}
 			}
 			if(proc.exitValue() == 1) {
-				BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-				while(error.ready()) {
-					System.out.println(error.readLine());
+				try (BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+					while (error.ready()) {
+						System.out.println(error.readLine());
+					}
 				}
 				System.exit(0);
 			}
