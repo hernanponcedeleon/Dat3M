@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.coreReason;
 
 import com.dat3m.dartagnan.verification.model.EventData;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /*
 This encodes events as literals. A event literal is simply the events exec-variable.
@@ -41,7 +41,7 @@ public class EventLiteral implements CoreLiteral {
     }
 
     @Override
-    public BoolExpr getZ3BoolExpr(Context ctx) {
+    public BooleanFormula getBooleanFormula(SolverContext ctx) {
         return event.getEvent().exec();
     }
 

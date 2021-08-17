@@ -23,8 +23,8 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Model;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -106,7 +106,7 @@ public class GraphRefinement {
 
     // ----------------------------------------------
 
-    private void populateFromModel(Model model, Context ctx) {
+    private void populateFromModel(Model model, SolverContext ctx) {
         executionModel.initialize(model, ctx, false);
         execGraph.initializeFromModel(executionModel);
         // TODO: Remove testing code
@@ -176,7 +176,7 @@ public class GraphRefinement {
         It returns whether it was successful, what violations where found (if any) and statistics
         about the computation.
      */
-    public RefinementResult kSearch(Model model, Context ctx, int maxSaturationDepth) {
+    public RefinementResult kSearch(Model model, SolverContext ctx, int maxSaturationDepth) {
         RefinementResult result = new RefinementResult();
         stats = new RefinementStats();
         result.setStats(stats);

@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.coreReason;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Literal;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /* A core literal should be one of the following
     - An event
@@ -10,6 +10,6 @@ import com.microsoft.z3.Context;
     - An address equality/inequality
 */
 public interface CoreLiteral extends Literal<CoreLiteral> {
-    BoolExpr getZ3BoolExpr(Context ctx);
+    BooleanFormula getBooleanFormula(SolverContext ctx);
 }
 

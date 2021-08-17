@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.analysis.Base;
 import com.dat3m.dartagnan.analysis.Refinement;
-import com.dat3m.dartagnan.analysis.Base;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -151,12 +149,12 @@ public class SafeCTest {
 
     @Test(timeout = TIMEOUT)
     public void testRefinement() {
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx.mkSolver(), ctx, task));
-            ctx.close();
+            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
         } catch (Exception e){
             fail("Missing resource file");
         }

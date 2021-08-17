@@ -1,18 +1,17 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.program.Thread;
-
-import java.util.*;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.*;
 
 public abstract class Event implements Comparable<Event> {
 
@@ -374,11 +373,12 @@ public abstract class Event implements Comparable<Event> {
 		return cfEnc;
 	}
 
-	public BoolExpr encodePrefixCF(Context ctx, BoolExpr cond) {
+	public BooleanFormula encodePrefixCF(SolverContext ctx, BooleanFormula cond) {
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();;
 		if(cfEnc == null){
-			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-			cfEnc = ctx.mkImplies(cfVar, cfCond);
-			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
+			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
+			cfEnc = bmgr.implication(cfVar, cfCond);
+			cfEnc = bmgr.and(cfEnc, encodeExec(ctx));
 		}
 		return cfEnc;
 	}

@@ -89,21 +89,16 @@ public abstract class AbstractSvCompTest {
     }
     @Test(timeout = TIMEOUT)
     public void testRefinement() {
-        Context ctx = null;
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             String property = path.substring(0, path.lastIndexOf("-")) + ".yml";
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
-            ctx = new Context();
-            Solver solver = ctx.mkSolver();
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
+            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
         } catch (Exception e){
             fail("Missing resource file");
-        } finally {
-            if(ctx != null) {
-                ctx.close();
-            }
         }
     }
 

@@ -1,19 +1,17 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
-import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
-import com.google.common.collect.Sets;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -125,7 +123,7 @@ public class RelComposition extends BinaryRelation {
         TupleSet minSet = getMinTupleSet();
 
         for(Tuple tuple : encodeTupleSet) {
-            BoolFormula expr = bmgr.false();
+            BooleanFormula expr = bmgr.makeFalse();
             if (minSet.contains(tuple)) {
                 expr = getExecPair(tuple, ctx);
             } else {
@@ -137,7 +135,7 @@ public class RelComposition extends BinaryRelation {
                 }
             }
 
-            enc = bmgr.and(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), expr));
+            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), expr));
         }
         return enc;
     }

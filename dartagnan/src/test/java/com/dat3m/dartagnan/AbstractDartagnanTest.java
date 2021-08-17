@@ -74,29 +74,28 @@ public abstract class AbstractDartagnanTest {
         // ... to allow Refinement to work
 
         Result res = Result.UNKNOWN;
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
-                Context ctx = new Context();
-                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                res = runAnalysis(solver, ctx, task);
-                ctx.close();
+                res = runAnalysisTwoSolvers(ctx, prover1, prover2, task);
             }
         } catch (Exception e) {
             fail("Missing resource file");
         }
 
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
-                Context ctx = new Context();
-                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                assertEquals(res, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
-                ctx.close();
+                assertEquals(res, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
             }
         } catch (Exception e) {
             fail("Missing resource file");
@@ -112,11 +111,8 @@ public abstract class AbstractDartagnanTest {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 // program.setAss(program.getAss().removeLocAssertions(true)); // TEST CODE for comparing!
-                Context ctx = new Context();
-                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                assertEquals(expected, runAnalysis(solver, ctx, task));
-                ctx.close();
+                assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
             }
         } catch (Exception e){
             fail(e.getMessage());
@@ -125,7 +121,9 @@ public abstract class AbstractDartagnanTest {
 
     @Test
     public void testRefinement() {
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
                 //program.setAss(program.getAss().removeLocAssertions(true));
@@ -135,11 +133,8 @@ public abstract class AbstractDartagnanTest {
                     assertEquals(0 ,0);
                     return;
                 }
-                Context ctx = new Context();
-                Solver solver = ctx.mkSolver(ctx.mkTactic(Settings.TACTIC));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                assertEquals(expected, Refinement.runAnalysisGraphRefinement(solver, ctx, task));
-                ctx.close();
+                assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
             }
         } catch (Exception e){
             fail("Missing resource file");

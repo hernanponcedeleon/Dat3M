@@ -16,6 +16,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import static com.dat3m.dartagnan.analysis.Base.*;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 
 public class ReachabilityResult {
 
@@ -79,7 +80,7 @@ public class ReachabilityResult {
                             }
                             break;
                         case GRAPH:
-                            result = runAnalysisGraphRefinement(solver, ctx, task);
+                            result = runAnalysisGraphRefinement(ctx, prover, task);
                             break;
                     }
                     // Verification ended, we can interrupt the timeout Thread

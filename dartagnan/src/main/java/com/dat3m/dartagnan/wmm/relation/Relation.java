@@ -10,15 +10,12 @@ import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -152,7 +149,7 @@ public abstract class Relation implements Dependent<Relation> {
 
     protected abstract BooleanFormula encodeApprox(SolverContext ctx);
 
-    protected BoolExpr doEncode(Context ctx){
+    protected BooleanFormula doEncode(SolverContext ctx){
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
         	return encodeApprox(ctx);
         }

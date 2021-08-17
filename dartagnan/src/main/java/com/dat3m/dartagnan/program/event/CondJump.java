@@ -192,12 +192,13 @@ public class CondJump extends Event implements RegReaderData {
     }
 
     @Override
-    public BoolExpr encodePrefixCF(Context ctx, BoolExpr cond) {
+    public BooleanFormula encodePrefixCF(SolverContext ctx, BooleanFormula cond) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         if(cfEnc == null){
-            cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-            BoolExpr ifCond = expr.toZ3Bool(this, ctx);
-            label.addCfCond(ctx, ctx.mkAnd(ifCond, cfVar));
-            cfEnc = ctx.mkAnd(ctx.mkImplies(cfVar, cfCond), encodeExec(ctx));
+            cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
+            BooleanFormula ifCond = expr.toBoolFormula(this, ctx);
+            label.addCfCond(ctx, bmgr.and(ifCond, cfVar));
+            cfEnc = bmgr.and(bmgr.implication(cfVar, cfCond), encodeExec(ctx));
         }
         return cfEnc;
     }

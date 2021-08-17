@@ -1,23 +1,21 @@
 package com.dat3m.dartagnan.utils.symmetry;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.BoolSort;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 // A first rough implementation for symmetry breaking
@@ -38,16 +36,18 @@ public class SymmetryBreaking {
 
     }
 
-    public BoolExpr encode(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encode(SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
         for (EquivalenceClass<Thread> symmClass : symm.getNonTrivialClasses()) {
-            enc = ctx.mkAnd(enc, encode(symmClass, ctx));
+            enc = bmgr.and(enc, encode(symmClass, ctx));
         }
         return enc;
     }
 
-    public BoolExpr encode(EquivalenceClass<Thread> symmClass, Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encode(EquivalenceClass<Thread> symmClass, SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
         if (symmClass.getEquivalence() != symm) {
             return enc;
         }
@@ -82,7 +82,7 @@ public class SymmetryBreaking {
             }
 
 
-            enc = ctx.mkAnd(enc, encodeLexLeader(rep, i, r1, r2, ctx));
+            enc = bmgr.and(enc, encodeLexLeader(rep, i, r1, r2, ctx));
             t1 = t2;
             r1 = r2;
         }
@@ -92,25 +92,30 @@ public class SymmetryBreaking {
 
     // y0, ..., y(n-1)
     // x1, ..., xn
-    private BoolExpr encodeLexLeader(Thread rep, int index, List<Tuple> r1, List<Tuple> r2, Context ctx) {
+    private BooleanFormula encodeLexLeader(Thread rep, int index, List<Tuple> r1, List<Tuple> r2, SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         int size = Math.min(r1.size(), LEX_LEADER_SIZE);
         String suffix = "_" + rep.getId() + "_" + index;
-        BoolExpr ylast = ctx.mkBoolConst("y0" + suffix);
-        BoolExpr enc = ctx.mkEq(ylast, ctx.mkTrue());
+        BooleanFormula ylast = bmgr.makeVariable("y0" + suffix);
+        BooleanFormula enc = bmgr.equivalence(ylast, bmgr.makeTrue());
         // From x1 to x(n-1)
         for (int i = 1; i < size; i++) {
-            BoolExpr y = ctx.mkBoolConst("y" + i + suffix);
-            BoolExpr orig = rf.getSMTVar(r1.get(i-1), ctx);
-            BoolExpr perm = rf.getSMTVar(r2.get(i-1), ctx);
-            enc = ctx.mkAnd(enc, ctx.mkOr(y, ctx.mkNot(ylast), ctx.mkNot(orig)));
-            enc = ctx.mkAnd(enc, ctx.mkOr(y, ctx.mkNot(ylast), perm));
-            enc = ctx.mkAnd(enc, ctx.mkOr(ctx.mkNot(ylast), ctx.mkNot(orig), perm));
+            BooleanFormula y = bmgr.makeVariable("y" + i + suffix);
+            BooleanFormula orig = rf.getSMTVar(r1.get(i-1), ctx);
+            BooleanFormula perm = rf.getSMTVar(r2.get(i-1), ctx);
+            enc = bmgr.and(enc,
+                    bmgr.or(y, bmgr.not(ylast), bmgr.not(orig)),
+                    bmgr.or(y, bmgr.not(ylast), perm),
+                    enc, bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm));
+            /*enc = bmgr.and(enc, bmgr.or(y, bmgr.not(ylast), bmgr.not(orig)));
+            enc = bmgr.and(enc, bmgr.or(y, bmgr.not(ylast), perm));
+            enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm));*/
             ylast = y;
         }
         // Final iteration is handled differently
-        BoolExpr orig = rf.getSMTVar(r1.get(size-1), ctx);
-        BoolExpr perm = rf.getSMTVar(r2.get(size-1), ctx);
-        enc = ctx.mkAnd(enc, ctx.mkOr(ctx.mkNot(ylast), ctx.mkNot(orig), perm));
+        BooleanFormula orig = rf.getSMTVar(r1.get(size-1), ctx);
+        BooleanFormula perm = rf.getSMTVar(r2.get(size-1), ctx);
+        enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm));
 
 
         return enc;

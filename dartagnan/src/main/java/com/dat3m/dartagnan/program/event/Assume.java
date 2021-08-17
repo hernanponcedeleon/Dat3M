@@ -6,8 +6,9 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Assume extends Event implements RegReaderData {
 
@@ -28,7 +29,7 @@ public class Assume extends Event implements RegReaderData {
 	}
 
 	@Override
-	public void initialise(VerificationTask task, Context ctx) {
+	public void initialise(VerificationTask task, SolverContext ctx) {
 		super.initialise(task, ctx);
 	}
 
@@ -48,9 +49,10 @@ public class Assume extends Event implements RegReaderData {
 	}
 
 	@Override
-	protected BoolExpr encodeExec(Context ctx){
-		BoolExpr enc = super.encodeExec(ctx);
-		enc = ctx.mkAnd(enc, ctx.mkEq(exec(), expr.toZ3Bool(this, ctx)));
+	protected BooleanFormula encodeExec(SolverContext ctx){
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = super.encodeExec(ctx);
+		enc = bmgr.and(enc, bmgr.equivalence(exec(), expr.toBoolFormula(this, ctx)));
 		return enc;
 	}
 

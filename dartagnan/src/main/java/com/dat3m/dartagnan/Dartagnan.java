@@ -28,6 +28,7 @@ import java.io.File;
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.analysis.Base.*;
 import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
+import static com.dat3m.dartagnan.analysis.Refinement.runAnalysisGraphRefinement;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 
@@ -130,7 +131,8 @@ public class Dartagnan {
                                 result = runAnalysisAssumeSolver(ctx, prover, task);
                                 break;
                             case REFINEMENT:
-                                return runAnalysisGraphRefinement(s, ctx, task);
+                                result = runAnalysisGraphRefinement(ctx, prover, task);
+                                break;
                             default:
                                 throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
                         }

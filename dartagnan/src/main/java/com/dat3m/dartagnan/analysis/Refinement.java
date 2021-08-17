@@ -26,11 +26,9 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Utils;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,8 +37,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.microsoft.z3.Status.SATISFIABLE;
 
 public class Refinement {
 
@@ -51,30 +49,28 @@ public class Refinement {
     // we don't have a memory model and thus the bound check is imprecise.
     // We may even want to perform refinement to check the bounds (we envision a case where the
     // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
-
-
-    public static Result runAnalysisGraphRefinement(Solver solver, Context ctx, VerificationTask task) {
+    public static Result runAnalysisGraphRefinement(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         task.unrollAndCompile();
         if(task.getProgram().getAss() instanceof AssertTrue) {
             return PASS;
         }
 
         task.initialiseEncoding(ctx);
-        solver.add(task.encodeProgram(ctx));
+        prover.addConstraint(task.encodeProgram(ctx));
 
         if (REF_USE_OUTER_WMM) {
             Wmm outer = createOuterWmm(task);
             outer.initialise(task, ctx); // this is a little suspicious
-            solver.add(outer.encode(ctx));
-            solver.add(outer.consistent(ctx));
+            prover.addConstraint(outer.encode(ctx));
+            prover.addConstraint(outer.consistent(ctx));
         } else {
-            solver.add(task.encodeWmmCore(ctx));
+            prover.addConstraint(task.encodeWmmCore(ctx));
         }
 
-        return refinementCore(solver, ctx, task);
+        return refinementCore(ctx, prover, task);
     }
 
-    private static Result refinementCore(Solver solver, Context ctx, VerificationTask task) {
+    private static Result refinementCore(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
 
         // ======= Some preprocessing to use a visible representative for each branch ========
         for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
@@ -82,21 +78,21 @@ public class Refinement {
         }
         // =====================================================================================
 
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
         GraphRefinement refinement = new GraphRefinement(task);
         Result res = UNKNOWN;
-        int timeout = task.getSettings().hasSolverTimeout() ? 1000*task.getSettings().getSolverTimeout() : Integer.MAX_VALUE;
 
         // ====== Test code ======
         List<Function<Event, Event>> perms = computePerms(task);
         // ----------
         if (ENABLE_SYMMETRY_BREAKING) {
-            solver.add(task.encodeSymmetryBreaking(ctx));
+            prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
         // =======================
 
-        solver.push();
-        solver.add(task.encodeAssertions(ctx));
+        prover.push();
+        prover.addConstraint(task.encodeAssertions(ctx));
 
         // Just for statistics
         List<DNF<CoreLiteral>> foundViolations = new ArrayList<>();
@@ -106,19 +102,19 @@ public class Refinement {
         long curTime;
         long totalSolvingTime = 0;
 
-        while (solver.check() == SATISFIABLE) {
+        while (!prover.isUnsat()) {
             curTime = System.currentTimeMillis();
             totalSolvingTime += (curTime - lastTime);
-            if (totalSolvingTime > timeout) {
-                return TIMEOUT;
-            }
 
             if (REF_PRINT_STATISTICS) {
                 System.out.println(" ===== Iteration: " + ++vioCount + " =====");
                 System.out.println("Solving time( ms): " + (curTime - lastTime));
             }
 
-            RefinementResult gRes = refinement.kSearch(solver.getModel(), ctx, 2);
+            RefinementResult gRes;
+            try (Model model = prover.getModel()) {
+                gRes = refinement.kSearch(model, ctx, 2);
+            }
             RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
             if (REF_PRINT_STATISTICS) {
@@ -129,7 +125,7 @@ public class Refinement {
             if (res == FAIL) {
                 DNF<CoreLiteral> violations = gRes.getViolations();
                 foundViolations.add(violations);
-                refine(solver, ctx, violations, perms);
+                refine(prover, ctx, violations, perms);
                 // Some statistics
                 if (REF_PRINT_STATISTICS) {
                     for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
@@ -155,11 +151,11 @@ public class Refinement {
         //                    - check() == UNSAT -> Safe
 
 
-        if (solver.check() == SATISFIABLE && res == UNKNOWN) {
+        if (!prover.isUnsat() && res == UNKNOWN) {
             // We couldn't verify the found counterexample, nor exclude it.
             System.out.println("PROCEDURE was inconclusive");
             return res;
-        } else if (solver.check() == SATISFIABLE) {
+        } else if (!prover.isUnsat()) {
             // We found a violation
             System.out.println("Violation verified");
         } else {
@@ -168,21 +164,21 @@ public class Refinement {
         }
 
         long boundCheckTime = 0;
-        if(solver.check() == SATISFIABLE) {
+        if(!prover.isUnsat()) {
             res = FAIL;
         } else {
             // ------- CHECK BOUNDS -------
             lastTime = System.currentTimeMillis();
-            solver.pop();
-            solver.add(ctx.mkNot(program.encodeNoBoundEventExec(ctx)));
-            res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
+            prover.pop();
+            prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
+            res = !prover.isUnsat() ? UNKNOWN : PASS;
             if (res == UNKNOWN) {
                 //TODO: This is just a temporary fallback
                 // We probably have to perform a second refinement for the bound checks!
                 for (DNF<CoreLiteral> violation : foundViolations) {
-                    refine(solver, ctx, violation, perms);
+                    refine(prover, ctx, violation, perms);
                 }
-                res = solver.check() == SATISFIABLE ? UNKNOWN : PASS;
+                res = !prover.isUnsat() ? UNKNOWN : PASS;
             }
             boundCheckTime = System.currentTimeMillis() - lastTime;
         }
@@ -195,17 +191,18 @@ public class Refinement {
         return res;
     }
 
-    private static void refine(Solver solver, Context ctx, DNF<CoreLiteral> coreViolations, List<Function<Event, Event>> perms) {
+    private static void refine(ProverEnvironment prover, SolverContext ctx, DNF<CoreLiteral> coreViolations, List<Function<Event, Event>> perms) throws InterruptedException {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();;
         for (Function<Event, Event> p : perms) {
-            BoolExpr refinement = ctx.mkTrue();
+            BooleanFormula refinement = bmgr.makeTrue();
             for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
-                BoolExpr clause = ctx.mkFalse();
+                BooleanFormula clause = bmgr.makeFalse();
                 for (CoreLiteral literal : violation.getLiterals()) {
-                    clause = ctx.mkOr(clause, ctx.mkNot(permuteAndConvert(literal, p, ctx)));
+                    clause = bmgr.or(clause, bmgr.not(permuteAndConvert(literal, p, ctx)));
                 }
-                refinement = ctx.mkAnd(refinement, clause);
+                refinement = bmgr.and(refinement, clause);
             }
-            solver.add(refinement);
+            prover.addConstraint(refinement);
         }
     }
 
@@ -352,7 +349,7 @@ public class Refinement {
         return perms;
     }
 
-    private static BoolExpr permuteAndConvert(CoreLiteral literal, Function<Event, Event> p, Context ctx) {
+    private static BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> p, SolverContext ctx) {
         if (literal instanceof EventLiteral) {
             EventLiteral lit = (EventLiteral) literal;
             return p.apply(lit.getEvent().getEvent()).exec();
@@ -360,7 +357,7 @@ public class Refinement {
             AddressLiteral loc = (AddressLiteral) literal;
             MemEvent e1 = (MemEvent) p.apply(loc.getEdge().getFirst().getEvent());
             MemEvent e2 = (MemEvent) p.apply(loc.getEdge().getSecond().getEvent());
-            return ctx.mkEq(e1.getMemAddressExpr(), e2.getMemAddressExpr());
+            return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), ctx);
         } else if (literal instanceof AbstractEdgeLiteral) {
             AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
             return Utils.edge(lit.getName(), p.apply(lit.getEdge().getFirst().getEvent()), p.apply(lit.getEdge().getSecond().getEvent()), ctx);
