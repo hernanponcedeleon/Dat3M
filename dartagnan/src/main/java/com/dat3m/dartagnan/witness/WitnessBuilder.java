@@ -189,20 +189,11 @@ public class WitnessBuilder {
 				// next was added as part of a previous block
 				continue;
 			}
-			boolean insideAtomic = false;
-			for (List<Event> block : atomicBlocks) {
-				// Binary search for performance on larger blocks
-				if (Collections.binarySearch(block, next) >= 0) {
-					result.addAll(block);
-					processedEvents.addAll(block);
-					insideAtomic = true;
-					break;
-				}
-			}
-			if (!insideAtomic) {
-				result.add(next);
-				processedEvents.add(next);
-			}
+			List<Event> block = atomicBlocks.stream()
+					.filter(b -> Collections.binarySearch(b, next) >= 0).findFirst()
+					.orElseGet(() -> Collections.singletonList(next));
+			result.addAll(block);
+			processedEvents.addAll(block);
 		}
 		return result;
 	}
