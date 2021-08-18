@@ -160,7 +160,7 @@ public class WitnessBuilder {
 			}
         	BigInteger var = model.evaluate(intVar("hb", e, ctx));
         	if(var != null) {
-        		List<Event> list = map.computeIfAbsent(var.intValue(), ArrayList::new);
+        		List<Event> list = map.computeIfAbsent(var.intValue(), x -> new ArrayList<Event>());
 				Event next = e;
 				do {
 					list.add(next);
