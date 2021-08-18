@@ -73,7 +73,7 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public Formula toZ3Int(Event e, SolverContext ctx) {
+	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + ")";
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
@@ -81,7 +81,7 @@ public class Register extends IExpr implements ExprInterface {
 				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
-	public Formula toZ3IntResult(Event e, SolverContext ctx) {
+	public Formula toIntFormulaResult(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + "_result)";
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
@@ -97,14 +97,15 @@ public class Register extends IExpr implements ExprInterface {
 	@Override
 	public Formula getLastValueExpr(SolverContext ctx){
 		FormulaManager fmgr = ctx.getFormulaManager();
+		String name = getName() + "_" + threadId + "_final";
 		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, getName() + "_" + threadId + "_final") :
-				fmgr.getIntegerFormulaManager().makeVariable(getName() + "_" + threadId + "_final");
+				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
 	@Override
 	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
-		return new BigInteger(model.evaluate(toZ3Int(e, ctx)).toString());
+		return new BigInteger(model.evaluate(toIntFormula(e, ctx)).toString());
 	}
 
 	@Override

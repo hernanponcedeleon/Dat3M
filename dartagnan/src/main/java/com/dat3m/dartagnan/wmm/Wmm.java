@@ -167,9 +167,10 @@ public class Wmm {
     // Initalizes everything just like encodeBase but also encodes all
     // relations that are needed for the axioms (but does NOT encode the axioms themselves yet)
     public BooleanFormula encode(SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
     	BooleanFormula enc = encodeBase(ctx);
         for (Axiom ax : axioms) {
-            enc = ctx.getFormulaManager().getBooleanFormulaManager().and(enc, ax.getRelation().encode(ctx));
+			enc = bmgr.and(enc, ax.getRelation().encode(ctx));
         }
         relationsAreEncoded = true;
         return enc;

@@ -1,19 +1,17 @@
 package com.dat3m.dartagnan;
 
-import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
-import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
-import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-
-import java.io.File;
-
+import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
+import com.dat3m.dartagnan.parsers.witness.ParserWitness;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
-
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,15 +23,13 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.parsers.witness.ParserWitness;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.utils.options.DartagnanOptions;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Arch;
+import java.io.File;
+
+import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
+import static com.dat3m.dartagnan.analysis.Base.*;
+import static com.dat3m.dartagnan.analysis.DataRaces.checkForRaces;
+import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 
 public class Dartagnan {
 
@@ -58,19 +54,6 @@ public class Dartagnan {
         }
 
         WitnessGraph witness = new WitnessGraph();
-        
-        ShutdownManager sdm = ShutdownManager.create();
-    	Thread t = new Thread(() -> {
-			try {
-				if(options.getSettings().getSolverTimeout() > 0) {
-					// Converts timeout from secs to millisecs
-					Thread.sleep(1000 * options.getSettings().getSolverTimeout());
-					sdm.requestShutdown("Shutdown Request");
-					logger.warn("Shutdown Request");
-				}
-			} catch (InterruptedException e) {
-				// Verification ended, nothing to be done.
-			}});
         
         logger.info("Program path: " + options.getProgramFilePath());
         logger.info("CAT file path: " + options.getTargetModelFilePath());
@@ -103,61 +86,75 @@ public class Dartagnan {
         Settings settings = options.getSettings();
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 
-        try {
-        	t.start();
+        ShutdownManager sdm = ShutdownManager.create();
+    	Thread t = new Thread(() -> {
+			try {
+				if(options.getSettings().getSolverTimeout() > 0) {
+					// Converts timeout from secs to millisecs
+					Thread.sleep(1000L * options.getSettings().getSolverTimeout());
+					sdm.requestShutdown("Shutdown Request");
+					logger.warn("Shutdown Request");
+				}
+			} catch (InterruptedException e) {
+				// Verification ended, nothing to be done.
+			}});
+
+    	try {
+            t.start();
             Configuration config = Configuration.builder()
-            		.setOption("solver.z3.usePhantomReferences", "true")
-            		.build();
-			SolverContext ctx = SolverContextFactory.createSolverContext(
-                    config, 
-                    BasicLogManager.create(config), 
-                    sdm.getNotifier(), 
-                    options.getSMTSolver()); 
-			ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-
-            Result result;
-    		switch(options.getAnalysis()) {
-				case RACES:
-					result = checkForRaces(ctx, task);	
-				case REACHABILITY:
-					switch(options.getScope()) {
-						case TWO:
-							ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-							result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
-							break;
-						case INCREMENTAL:
-							result = runAnalysisIncrementalSolver(ctx, prover, task);
-							break;
-						case ASSUME:
-							result = runAnalysisAssumeSolver(ctx, prover, task);
-							break;
-						default:
-							throw new RuntimeException("Unrecognized method mode: " + options.getScope());
-					}
-					break;
-				default:
-					throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
-    		}
-            
-			// Verification ended, we can interrupt the timeout Thread
-			t.interrupt();
-
-            if(options.getProgramFilePath().endsWith(".litmus")) {
-                System.out.println("Settings: " + options.getSettings());
-                if(p.getAssFilter() != null){
-                    System.out.println("Filter " + (p.getAssFilter()));
+                    .setOption("solver.z3.usePhantomReferences", "true")
+                    .build();
+            try (SolverContext ctx = SolverContextFactory.createSolverContext(
+                    config,
+                    BasicLogManager.create(config),
+                    sdm.getNotifier(),
+                    options.getSMTSolver());
+                 ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+            {
+                Result result;
+                switch (options.getAnalysis()) {
+                    case RACES:
+                        result = checkForRaces(ctx, task);
+                        break;
+                    case REACHABILITY:
+                        switch (options.getMethod()) {
+                            case TWO:
+                                try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                                    result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                                }
+                                break;
+                            case INCREMENTAL:
+                                result = runAnalysisIncrementalSolver(ctx, prover, task);
+                                break;
+                            case ASSUME:
+                                result = runAnalysisAssumeSolver(ctx, prover, task);
+                                break;
+                            default:
+                                throw new RuntimeException("Unrecognized method mode: " + options.getMethod());
+                        }
+                        break;
+                    default:
+                        throw new RuntimeException("Unrecognized analysis: " + options.getAnalysis());
                 }
-                System.out.println("Condition " + p.getAss().toStringWithType());
-                System.out.println(result == FAIL ? "Ok" : "No");
-            } else {
-            	System.out.println(result);
-            }
 
-            if(options.createWitness() != null) {
-            	new WitnessBuilder(p, ctx, prover, result, options).write();
+                // Verification ended, we can interrupt the timeout Thread
+                t.interrupt();
+
+                if (options.getProgramFilePath().endsWith(".litmus")) {
+                    System.out.println("Settings: " + options.getSettings());
+                    if (p.getAssFilter() != null) {
+                        System.out.println("Filter " + (p.getAssFilter()));
+                    }
+                    System.out.println("Condition " + p.getAss().toStringWithType());
+                    System.out.println(result == FAIL ? "Ok" : "No");
+                } else {
+                    System.out.println(result);
+                }
+
+                if (options.createWitness() != null) {
+                    new WitnessBuilder(p, ctx, prover, result, options).write();
+                }
             }
-            
-            ctx.close();
         } catch (InterruptedException e){
         	logger.warn("Timeout elapsed. The SMT solver was stopped");
         	System.out.println("TIMEOUT");

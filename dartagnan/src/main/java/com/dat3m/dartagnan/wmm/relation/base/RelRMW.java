@@ -18,13 +18,13 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
 
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
@@ -129,7 +129,6 @@ public class RelRMW extends StaticRelation {
     protected BooleanFormula encodeApprox(SolverContext ctx) {
         FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
         
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
@@ -151,7 +150,7 @@ public class RelRMW extends StaticRelation {
                         enc = bmgr.and(enc, bmgr.equivalence(isPair, pairingCond(thread, load, store, ctx)));
 
                         // If load and store have the same address
-                        BooleanFormula sameAddress = imgr.equal((IntegerFormula)((MemEvent)load).getMemAddressExpr(), (IntegerFormula)(((MemEvent)store).getMemAddressExpr()));
+                        BooleanFormula sameAddress = generalEqual(((MemEvent)load).getMemAddressExpr(), ((MemEvent)store).getMemAddressExpr(), ctx);
                         unpredictable = bmgr.or(unpredictable, bmgr.and(isExecPair, bmgr.not(sameAddress)));
 
                         // Relation between exclusive load and store

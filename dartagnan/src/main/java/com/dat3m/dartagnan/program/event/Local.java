@@ -1,21 +1,17 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.ImmutableSet;
-
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.ImmutableSet;
+
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
+import org.sosy_lab.java_smt.api.*;
 
 public class Local extends Event implements RegWriter, RegReaderData {
 	
@@ -47,7 +43,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	@Override
 	public void initialise(VerificationTask task, SolverContext ctx) {
 		super.initialise(task, ctx);
-		regResultExpr = register.toZ3IntResult(this, ctx);
+		regResultExpr = register.toIntFormulaResult(this, ctx);
 	}
 
 	public ExprInterface getExpr(){
@@ -80,16 +76,10 @@ public class Local extends Event implements RegWriter, RegReaderData {
 		
 		BooleanFormula enc = super.encodeExec(ctx);
 		if(expr instanceof INonDet) {
-			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toZ3Int(this, ctx) instanceof BitvectorFormula, ctx));
+			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, ctx) instanceof BitvectorFormula, ctx));
 		}
-		BooleanFormula eq = regResultExpr instanceof BitvectorFormula ?
-				ctx.getFormulaManager().getBitvectorFormulaManager().equal(
-						(BitvectorFormula)regResultExpr, 
-						(BitvectorFormula)expr.toZ3Int(this, ctx)) :
-				ctx.getFormulaManager().getIntegerFormulaManager().equal(
-						(IntegerFormula)regResultExpr, 
-						(IntegerFormula)expr.toZ3Int(this, ctx));
-		return bmgr.and(enc, eq);
+
+		return bmgr.and(enc, generalEqual(regResultExpr, expr.toIntFormula(this, ctx), ctx));
 	}
 
 	// Unrolling

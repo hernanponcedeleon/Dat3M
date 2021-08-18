@@ -15,9 +15,8 @@ public class FilterMinus extends FilterAbstract {
     }
 
     private static String mkName(FilterAbstract filter1, FilterAbstract filter2){
-    	// '/' from FilterMinus causes problems. Thus we use text for consistency.
         return ((filter1 instanceof FilterBasic) ? filter1 : "( " + filter1 + " )")
-                + " *minus* " + ((filter2 instanceof FilterBasic) ? filter2 : "( " + filter2 + " )");
+                + " \\ " + ((filter2 instanceof FilterBasic) ? filter2 : "( " + filter2 + " )");
     }
 
     private final FilterAbstract filter1;

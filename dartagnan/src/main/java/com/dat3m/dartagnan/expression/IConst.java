@@ -37,7 +37,7 @@ public class IConst extends IExpr implements ExprInterface {
 	}
 
 	@Override
-    public Formula toZ3Int(Event e, SolverContext ctx){
+    public Formula toIntFormula(Event e, SolverContext ctx){
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ? 
 				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) : 
@@ -71,7 +71,7 @@ public class IConst extends IExpr implements ExprInterface {
 		return value;
 	}
 
-    public Formula toZ3Int(SolverContext ctx) {
+    public Formula toIntFormula(SolverContext ctx) {
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
 				fmgr.getBitvectorFormulaManager().makeBitvector(precision, value) :

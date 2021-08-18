@@ -33,8 +33,8 @@ public class IExprUn extends IExpr {
 	}
 
 	@Override
-	public Formula toZ3Int(Event e, SolverContext ctx) {
-		return op.encode(b.toZ3Int(e, ctx), ctx);
+	public Formula toIntFormula(Event e, SolverContext ctx) {
+		return op.encode(b.toIntFormula(e, ctx), ctx);
 	}
 
 	@Override

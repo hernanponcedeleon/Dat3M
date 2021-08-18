@@ -36,7 +36,7 @@ public class Store extends MemEvent implements RegReaderData {
     @Override
     public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        memValueExpr = value.toZ3Int(this, ctx);
+        memValueExpr = value.toIntFormula(this, ctx);
     }
 
     @Override

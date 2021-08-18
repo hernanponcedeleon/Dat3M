@@ -1,22 +1,17 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.parsers.program.ProgramParser;
-import com.dat3m.dartagnan.utils.Settings;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
+import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-
 import org.junit.Test;
-import org.sosy_lab.common.ShutdownManager;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.log.BasicLogManager;
-import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -61,7 +56,6 @@ public abstract class AbstractDartagnanTest {
     private final Arch target;
     private final Wmm wmm;
     private final Settings settings;
-    private SolverContext ctx;
 
     AbstractDartagnanTest(String path, Result expected, Arch target, Wmm wmm, Settings settings) {
         this.path = path;
@@ -70,28 +64,16 @@ public abstract class AbstractDartagnanTest {
         this.wmm = wmm;
         this.settings = settings;
     }
-
-    private void initSolverContext() throws Exception {
-        Configuration config = Configuration.builder()
-        		.setOption("solver.z3.usePhantomReferences", "true")
-        		.build();
-		ctx = SolverContextFactory.createSolverContext(
-                config, 
-                BasicLogManager.create(config), 
-                ShutdownManager.create().getNotifier(), 
-                Solvers.Z3);
-    }
     
     @Test()
     public void test() {
-        try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
+             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            initSolverContext();
-            ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-            ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
             assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
-            ctx.close();
         } catch (Exception e){
             fail(e.getMessage());
         }

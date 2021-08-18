@@ -1,14 +1,18 @@
 package com.dat3m.dartagnan.utils.options;
 
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import com.dat3m.dartagnan.analysis.AnalysisTypes;
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.ParseException;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.cli.*;
-import com.dat3m.dartagnan.analysis.AnalysisTypes;
-import com.google.common.collect.ImmutableSet;
+import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
 
 public class DartagnanOptions extends BaseOptions {
 
@@ -16,10 +20,11 @@ public class DartagnanOptions extends BaseOptions {
 	public static final String WITNESS_OPTION = "create_witness";
 	public static final String WITNESS_PATH_OPTION = "witness";
 
-    private Set<String> supportedFormats = ImmutableSet.copyOf(Arrays.asList("litmus", "bpl", "c"));
+    private final Set<String> supportedFormats = 
+    		ImmutableSet.copyOf(Arrays.asList("litmus", "bpl", "c", "i"));
 
-    private Set<AnalysisTypes> supportedAnalyses = 
-    		ImmutableSet.copyOf(Arrays.asList(AnalysisTypes.values()).stream()
+    private final Set<AnalysisTypes> supportedAnalyses =
+    		ImmutableSet.copyOf(Arrays.stream(AnalysisTypes.values())
             .sorted(Comparator.comparing(AnalysisTypes::toString))
     		.collect(Collectors.toList()));
 
@@ -42,23 +47,17 @@ public class DartagnanOptions extends BaseOptions {
         		"The analysis to be performed: " + supportedAnalyses));
         
         addOption(new Option(WITNESS_PATH_OPTION, true,
-        		"Path to the machine readable witness file"));
+        		"Path to the machine readable witness file."));
         }
     
     public void parse(String[] args) throws ParseException, RuntimeException {
     	super.parse(args);
-        if(supportedFormats.stream().map(f -> programFilePath.endsWith(f)). allMatch(b -> b.equals(false))) {
+        if(supportedFormats.stream().noneMatch(f -> programFilePath.endsWith(f))) {
             throw new RuntimeException("Unrecognized program format");
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
 
-        analysis = cmd.hasOption(ANALYSIS_OPTION) ? 
-        		AnalysisTypes.fromString(cmd.getOptionValue(ANALYSIS_OPTION)) : 
-        		REACHABILITY;
-        if(!supportedAnalyses.contains(analysis)) {
-        	throw new RuntimeException("Unrecognized analysis: " + analysis);
-        }
-
+        analysis = AnalysisTypes.fromString(cmd.getOptionValue(ANALYSIS_OPTION, REACHABILITY.toString()));
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
     }

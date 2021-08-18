@@ -20,12 +20,12 @@ import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.BitvectorFormula;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 
 import java.util.*;
 
@@ -261,13 +261,8 @@ public class Program {
                         lastModReg = bmgr.and(lastModReg, bmgr.not(w2.exec()));
                     }
                 }
-                BooleanFormula same = reg.getLastValueExpr(ctx) instanceof BitvectorFormula ?
-                		fmgr.getBitvectorFormulaManager().equal(
-                				(BitvectorFormula)reg.getLastValueExpr(ctx), 
-                				(BitvectorFormula)((RegWriter)w1).getResultRegisterExpr()) :
-                		fmgr.getIntegerFormulaManager().equal(
-                				(IntegerFormula)reg.getLastValueExpr(ctx), 
-                				(IntegerFormula)((RegWriter)w1).getResultRegisterExpr());
+                
+                BooleanFormula same =  generalEqual(reg.getLastValueExpr(ctx), ((RegWriter)w1).getResultRegisterExpr(), ctx);
                 enc = bmgr.and(enc, bmgr.implication(lastModReg, same));
             }
         }

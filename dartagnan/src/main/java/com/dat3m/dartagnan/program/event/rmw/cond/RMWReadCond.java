@@ -6,8 +6,9 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
 
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
@@ -21,7 +22,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
 
     protected ExprInterface cmp;
     private final ImmutableSet<Register> dataRegs;
-    protected BooleanFormula z3Cond;
+    protected BooleanFormula formulaCond;
 
     RMWReadCond(Register reg, ExprInterface cmp, IExpr address, String atomic) {
         super(reg, address, atomic);
@@ -33,16 +34,14 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
     @Override
     public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        z3Cond = ctx.getFormulaManager().getIntegerFormulaManager().equal(
-        		(IntegerFormula)memValueExpr, 
-        		(IntegerFormula)cmp.toZ3Int(this, ctx));
+        formulaCond = generalEqual(memValueExpr, cmp.toIntFormula(this, ctx), ctx);
     }
 
     public BooleanFormula getCond(){
-        if(z3Cond != null){
-            return z3Cond;
+        if(formulaCond != null){
+            return formulaCond;
         }
-        throw new RuntimeException("z3Cond is requested before it has been initialised in " + this.getClass().getName());
+        throw new RuntimeException("formulaCond is requested before it has been initialised in " + this.getClass().getName());
     }
 
     @Override

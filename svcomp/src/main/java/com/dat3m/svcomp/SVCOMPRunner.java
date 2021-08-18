@@ -83,7 +83,7 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().toString()));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
-	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getScope().toString()));
+	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getMethod().toString()));
 	    	cmd.addAll(asList("-" + SMTSOLVER_OPTION, options.getSMTSolver().toString().toLowerCase()));
 	    	if(options.getWitnessPath() != null) {
 	    		// In validation mode we do not create witnesses.

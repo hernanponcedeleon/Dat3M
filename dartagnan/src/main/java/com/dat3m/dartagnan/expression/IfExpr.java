@@ -26,15 +26,15 @@ public class IfExpr implements ExprInterface {
 	}
 
 	@Override
-	public Formula toZ3Int(Event e, SolverContext ctx) {
+	public Formula toIntFormula(Event e, SolverContext ctx) {
 		return ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
-				guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
+				guard.toBoolFormula(e, ctx), tbranch.toIntFormula(e, ctx), fbranch.toIntFormula(e, ctx));
 	}
 
 	@Override
-	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
-		return (BooleanFormula)ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
-				guard.toZ3Bool(e, ctx), tbranch.toZ3Int(e, ctx), fbranch.toZ3Int(e, ctx));
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
+		return ctx.getFormulaManager().getBooleanFormulaManager().ifThenElse(
+				guard.toBoolFormula(e, ctx), tbranch.toBoolFormula(e, ctx), fbranch.toBoolFormula(e, ctx));
 	}
 
 	@Override

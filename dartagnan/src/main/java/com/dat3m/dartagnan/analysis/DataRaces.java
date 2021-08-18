@@ -1,23 +1,5 @@
 package com.dat3m.dartagnan.analysis;
 
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-
-import java.math.BigInteger;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
-
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -28,6 +10,17 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
+import java.math.BigInteger;
+
+import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 
 public class DataRaces {
 	
@@ -38,13 +31,12 @@ public class DataRaces {
 
 	public static Result checkForRaces(SolverContext ctx, VerificationTask task) {
         Result res = Result.UNKNOWN;
-        ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
 
 		// TODO(HP): No program.simplify() ???
 		task.unrollAndCompile();
 		task.initialiseEncoding(ctx);
 		
-		try {
+		try (ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
 			prover.addConstraint(task.encodeProgram(ctx));
 			prover.addConstraint(task.encodeWmmRelations(ctx));
 	        prover.addConstraint(task.encodeWmmConsistency(ctx));

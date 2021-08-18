@@ -1,17 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
 
 public class BNonDet extends BExpr implements ExprInterface {
 
@@ -27,19 +22,23 @@ public class BNonDet extends BExpr implements ExprInterface {
 	}
 
     @Override
-    public Formula toZ3Int(Event e, SolverContext ctx) {
+    public Formula toIntFormula(Event e, SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
-		Formula e1 = precision > 0 ? 
-    			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ONE) : 
-    			fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE);
-    	Formula e2 = precision > 0 ?
-    			fmgr.getBitvectorFormulaManager().makeBitvector(precision, BigInteger.ZERO) : 
-    			fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
-        return fmgr.getBooleanFormulaManager().ifThenElse(toZ3Bool(e, ctx), e1, e2);
+    	Formula e1, e2;
+    	if( precision > 0) {
+    		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+			e1 = bvmgr.makeBitvector(precision, BigInteger.ONE);
+    		e2 = bvmgr.makeBitvector(precision, BigInteger.ZERO);
+    	} else {
+    		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+			e1 = imgr.makeNumber(BigInteger.ONE);
+    		e2 = imgr.makeNumber(BigInteger.ZERO);
+    	}
+        return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), e1, e2);
     }
 
 	@Override
-	public BooleanFormula toZ3Bool(Event e, SolverContext ctx) {
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
 		return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(Integer.toString(hashCode()));
 	}
 
@@ -50,7 +49,11 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
-		return model.evaluate((BooleanFormula)toZ3Int(e, ctx)).booleanValue();
+		Boolean value = model.evaluate(toBoolFormula(e, ctx));
+		if(value != null) {
+			return value;
+		}
+		throw new RuntimeException("No value in the model for " + this);
 	}
 
 	@Override

@@ -1,27 +1,20 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.analysis.ScopeTypes;
+import com.dat3m.dartagnan.analysis.MethodTypes;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.google.common.collect.ImmutableSet;
-
-import static com.dat3m.dartagnan.analysis.ScopeTypes.INCREMENTAL;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.BOOLECTOR;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.CVC4;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.MATHSAT5;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.PRINCESS;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.SMTINTERPOL;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.YICES2;
-import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.Z3;
+import org.apache.commons.cli.*;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.cli.*;
-import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
+import static com.dat3m.dartagnan.analysis.MethodTypes.INCREMENTAL;
+import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.*;
 
 public abstract class BaseOptions extends Options {
 
@@ -31,26 +24,19 @@ public abstract class BaseOptions extends Options {
 	
     protected String programFilePath;
     protected String targetModelFilePath;
-    protected Set<String> supportedFormats; 
     protected Settings settings;
     protected Arch target;
 
-    protected  ScopeTypes scope;
-    protected  Solvers smtsolver;
+    protected MethodTypes method;
+    protected Solvers smtsolver;
 
-    private Set<ScopeTypes> supported_scope = 
-    		ImmutableSet.copyOf(Arrays.asList(ScopeTypes.values()).stream()
-            .sorted(Comparator.comparing(ScopeTypes::toString))
+    private final Set<MethodTypes> supported_methods =
+    		ImmutableSet.copyOf(Arrays.stream(MethodTypes.values())
+            .sorted(Comparator.comparing(MethodTypes::toString))
     		.collect(Collectors.toList()));
 
-    private Set<String> supported_smtsolvers = 
-    		ImmutableSet.copyOf(Arrays.asList(Solvers.values()).stream()
-    		.map(a -> a.toString().toLowerCase())
-            .sorted(Comparator.comparing(String::toString))
-    		.collect(Collectors.toList()));
-
-    private Set<String> supportedTargets = 
-    		ImmutableSet.copyOf(Arrays.asList(Arch.values()).stream()
+    private final Set<String> supportedTargets =
+    		ImmutableSet.copyOf(Arrays.stream(Arch.values())
     		.map(a -> a.toString().toLowerCase())
             .sorted(Comparator.comparing(String::toString))
     		.collect(Collectors.toList()));
@@ -76,8 +62,13 @@ public abstract class BaseOptions extends Options {
                 "Timeout (in secs) for the SMT solver"));
         
         addOption(new Option(METHOD_OPTION, true,
-        		"The solver method to be used: " + supported_scope));
+        		"The solver method to be used: " + supported_methods));
         
+        Set<String> supported_smtsolvers =
+        		ImmutableSet.copyOf(Arrays.stream(Solvers.values())
+        		.map(a -> a.toString().toLowerCase())
+                .sorted(Comparator.comparing(String::toString))
+        		.collect(Collectors.toList()));
         addOption(new Option(SMTSOLVER_OPTION, true,
         		"The SMT solver to be used: " + supported_smtsolvers));
     }
@@ -92,44 +83,42 @@ public abstract class BaseOptions extends Options {
         if(cmd.hasOption("target")) {
             target = Arch.get(cmd.getOptionValue("target"));
         }
-        
-        scope = cmd.hasOption(METHOD_OPTION) ? ScopeTypes.fromString(cmd.getOptionValue(METHOD_OPTION)) : INCREMENTAL;
-        if(!supported_scope.contains(scope)) {
-            throw new UnsupportedOperationException("Unrecognized solver method: " + scope);        		
+
+        method = MethodTypes.fromString(cmd.getOptionValue(METHOD_OPTION, INCREMENTAL.toString()));
+
+        String solverString = cmd.getOptionValue(SMTSOLVER_OPTION, "unspecified");
+        switch (solverString) {
+            case "mathsat5":
+                smtsolver = MATHSAT5;
+                break;
+            case "smtinterpol":
+                smtsolver = SMTINTERPOL;
+                break;
+            case "princess":
+                smtsolver = PRINCESS;
+                break;
+            case "boolector":
+                smtsolver = BOOLECTOR;
+                break;
+            case "cvc4":
+                smtsolver = CVC4;
+                break;
+            case "yices2":
+                smtsolver = YICES2;
+                break;
+            case "z3":
+            case "unspecified":
+                smtsolver = Z3;
+                break;
+            default:
+                throw new UnsupportedOperationException("Unrecognized SMT solver: " + solverString);
         }
 
-        smtsolver = Z3;
-        if(cmd.hasOption(SMTSOLVER_OPTION)) {
-			
-        	if(!supported_smtsolvers.contains(cmd.getOptionValue(SMTSOLVER_OPTION))) {
-                throw new UnsupportedOperationException("Unrecognized SMT solver: " + cmd.getOptionValue(SMTSOLVER_OPTION));        		
-            }
 
-			switch(cmd.getOptionValue(SMTSOLVER_OPTION)) {
-				case "mathsat5":
-					smtsolver = MATHSAT5;
-					break;
-				case "smtinterpol":
-					smtsolver = SMTINTERPOL;
-					break;
-				case "princess":
-					smtsolver = PRINCESS;
-					break;
-				case "boolector":
-					smtsolver = BOOLECTOR;
-					break;
-				case "cvc4":
-					smtsolver = CVC4;
-					break;
-				case "yices2":
-					smtsolver = YICES2;
-					break;
-    		}        	
-        }
     }
 
-    public ScopeTypes getScope(){
-        return scope;
+    public MethodTypes getMethod(){
+        return method;
     }
 
     public Solvers getSMTSolver(){
