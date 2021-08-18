@@ -1,39 +1,5 @@
 package com.dat3m.dartagnan.witness;
 
-import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
-import static com.dat3m.dartagnan.program.utils.EType.WRITE;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.CREATETHREAD;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.ENTERFUNCTION;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.STARTLINE;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.THREADID;
-import static com.dat3m.dartagnan.witness.GraphAttributes.ARCHITECTURE;
-import static com.dat3m.dartagnan.witness.GraphAttributes.CREATIONTIME;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMHASH;
-import static com.dat3m.dartagnan.witness.GraphAttributes.SOURCECODELANG;
-import static com.dat3m.dartagnan.witness.GraphAttributes.SPECIFICATION;
-import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
-import static com.dat3m.dartagnan.witness.GraphAttributes.WITNESSTYPE;
-import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
-import static java.lang.String.valueOf;
-
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.math.BigInteger;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
-
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -44,14 +10,20 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
@@ -137,8 +109,11 @@ public class WitnessBuilder {
 
 			for (int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
-				if (i + 1 < execution.size() && e.getCLine() == execution.get(i + 1).getCLine() && e.getThread().equals(execution.get(i + 1).getThread())) {
-					continue;
+				if (i + 1 < execution.size()) {
+					Event next = execution.get(i + 1);
+					if (e.getCLine() == next.getCLine() && e.getThread() == next.getThread()) {
+						continue;
+					}
 				}
 
 				edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
@@ -173,8 +148,9 @@ public class WitnessBuilder {
 	
 	private List<Event> getSCExecutionOrder(Model model) {
 		List<Event> execEvents = new ArrayList<>();
-		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(e -> model.evaluate(e.exec()) && e.getCLine() > -1).collect(Collectors.toList()));
-		execEvents.addAll(program.getEvents().stream().filter(e -> model.evaluate(e.exec()) && e.getCLine() > -1).collect(Collectors.toList()));
+		Predicate<Event> executedCEvents = e -> e.wasExecuted(model) &&  e.getCLine() > - 1;
+		execEvents.addAll(program.getCache().getEvents(FilterBasic.get(EType.INIT)).stream().filter(executedCEvents).collect(Collectors.toList()));
+		execEvents.addAll(program.getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
@@ -184,87 +160,76 @@ public class WitnessBuilder {
 			}
         	BigInteger var = model.evaluate(intVar("hb", e, ctx));
         	if(var != null) {
-        		int key = var.intValue();
-				if(!map.containsKey(key)) {
-					map.put(key, new ArrayList<>());
-				}
-				List<Event> lst = new ArrayList<>(Collections.singletonList(e));
-				Event next = e.getSuccessor();
-				// This collects all the successors not accessing global variables
-				while(next != null && execEvents.contains(next) && model.evaluate(intVar("hb", next, ctx)) == null) {
-					lst.add(next);
+        		List<Event> list = map.computeIfAbsent(var.intValue(), ArrayList::new);
+				Event next = e;
+				do {
+					list.add(next);
 					next = next.getSuccessor();
-				}
-        		map.get(key).addAll(lst);
+				} while (next != null && execEvents.contains(next) && model.evaluate(intVar("hb", next, ctx)) == null);
         	}
         }
-        
-        List<Event> exec = new ArrayList<>();
-        SortedSet<Integer> keys = new TreeSet<>(map.keySet());
-        for (Integer key : keys) {
-        	exec.addAll(map.get(key));
-        }
-        
+
+        List<Event> exec = map.keySet().stream().sorted()
+				.flatMap(key -> map.get(key).stream()).collect(Collectors.toList());
         return exec.isEmpty() ? execEvents : exec;
 	}
 	
 	public List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
 		List<Event> result = new ArrayList<>();
-		Iterator<Event> it = order.iterator();
-		while(it.hasNext()) {
-			Event next = it.next();
-			if(result.contains(next)) {
+		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
+		// All the atomic blocks in the code that have to stay together in any execution
+		List<List<Event>> atomicBlocks = program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC))
+				.stream().map(e -> ((EndAtomic)e).getBlock().stream().
+						filter(order::contains).
+						collect(Collectors.toList()))
+				.collect(Collectors.toList());
+
+		for (Event next : order) {
+			if (processedEvents.contains(next)) {
 				// next was added as part of a previous block
 				continue;
 			}
-			List<Event> block = new ArrayList<>();
-			// Check if next in an atomic block
-			if(program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream().anyMatch(e -> ((EndAtomic)e).getBlock().contains(next))) {
-				// We add the whole atomic block
-				block = ((EndAtomic)program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream()
-						// Find the corresponding atomic block
-						.filter(e -> ((EndAtomic)e).getBlock().contains(next))
-						// Guaranteed to find some
-						.findAny().get()).getBlock().stream()
-						// Some elements returned by getBlock() might not be in the order, e.g. having cLine = -1 
-						.filter(e -> order.contains(e)).collect(Collectors.toList());
-			} else {
-				// We add the single element
-				block.add(next);
+			boolean insideAtomic = false;
+			for (List<Event> block : atomicBlocks) {
+				// Binary search for performance on larger blocks
+				if (Collections.binarySearch(block, next) >= 0) {
+					result.addAll(block);
+					processedEvents.addAll(block);
+					insideAtomic = true;
+					break;
+				}
 			}
-			// Remove the whole block from the order
-			result.addAll(block);
+			if (!insideAtomic) {
+				result.add(next);
+				processedEvents.add(next);
+			}
 		}
 		return result;
 	}
 	
 	private String checksum() {
-		String output = null;
+		String output = "";
 		try {
 			Process proc = Runtime.getRuntime().exec("sha256sum " + path);
 			try (BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
-				try {
-					proc.waitFor();
-				} catch (InterruptedException e) {
-					System.out.println(e.getMessage());
-					System.exit(0);
-				}
+				proc.waitFor();
 				while (read.ready()) {
 					output = read.readLine();
 				}
-			}
-			if(proc.exitValue() == 1) {
-				try (BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+				if (proc.exitValue() == 1) {
+					// No try-with-resources is needed as process will terminate anyways
+					BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 					while (error.ready()) {
 						System.out.println(error.readLine());
 					}
+					System.exit(0);
 				}
-				System.exit(0);
 			}
-		} catch(IOException e) {
+		} catch(IOException | InterruptedException e) {
 			System.out.println(e.getMessage());
 			System.exit(0);
 		}
+
 		output = output.substring(0, output.lastIndexOf(' '));
 		output = output.substring(0, output.lastIndexOf(' '));
 		return output;
