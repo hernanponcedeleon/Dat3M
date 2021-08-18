@@ -109,6 +109,7 @@ public abstract class BaseOptions extends Options {
             case "z3":
             case "unspecified":
                 smtsolver = Z3;
+                break;
             default:
                 throw new UnsupportedOperationException("Unrecognized SMT solver: " + solverString);
         }
