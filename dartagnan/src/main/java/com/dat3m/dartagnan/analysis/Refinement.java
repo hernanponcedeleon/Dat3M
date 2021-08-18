@@ -52,6 +52,7 @@ public class Refinement {
     public static Result runAnalysisGraphRefinement(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
         task.unrollAndCompile();
         if(task.getProgram().getAss() instanceof AssertTrue) {
+            logger.info("Verification finished: assertion trivially holds");
             return PASS;
         }
 
@@ -193,7 +194,7 @@ public class Refinement {
     }
 
     private static void refine(ProverEnvironment prover, SolverContext ctx, DNF<CoreLiteral> coreViolations, List<Function<Event, Event>> perms) throws InterruptedException {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();;
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         for (Function<Event, Event> p : perms) {
             BooleanFormula refinement = bmgr.makeTrue();
             for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
