@@ -119,7 +119,8 @@ public class WitnessBuilder {
 		}
 
 		try (Model model = prover.getModel()) {
-			List<Event> execution = getSCExecutionOrder(model);
+			List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(model));
+
 			for (int i = 0; i < execution.size(); i++) {
 				Event e = execution.get(i);
 				if (i + 1 < execution.size() && e.getCLine() == execution.get(i + 1).getCLine() && e.getThread().equals(execution.get(i + 1).getThread())) {
@@ -195,24 +196,30 @@ public class WitnessBuilder {
 	
 	public List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
 		List<Event> result = new ArrayList<>();
-		int id = 0;
-		while(id < order.size()) {
-			Event next = order.get(id);
+		Iterator<Event> it = order.iterator();
+		while(it.hasNext()) {
+			Event next = it.next();
 			if(result.contains(next)) {
-				id++;
+				// next was added as part of a previous block
 				continue;
 			}
-			List<Event> bucket = new ArrayList<>();
+			List<Event> block = new ArrayList<>();
+			// Check if next in an atomic block
 			if(program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream().anyMatch(e -> ((EndAtomic)e).getBlock().contains(next))) {
-				// We add the whole atomic block and remove the whole bucket from the order
-				bucket = ((EndAtomic)program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream()
-						.filter(e -> ((EndAtomic)e).getBlock().contains(next)).collect(Collectors.toList()).get(0)).getBlock().stream()
+				// We add the whole atomic block
+				block = ((EndAtomic)program.getCache().getEvents(FilterBasic.get(EType.SVCOMPATOMIC)).stream()
+						// Find the corresponding atomic block
+						.filter(e -> ((EndAtomic)e).getBlock().contains(next))
+						// Guaranteed to find some
+						.findAny().get()).getBlock().stream()
+						// Some elements returned by getBlock() might not be in the order, e.g. having cLine = -1 
 						.filter(e -> order.contains(e)).collect(Collectors.toList());
 			} else {
-				bucket.add(next);
+				// We add the single element
+				block.add(next);
 			}
-			result.addAll(bucket);
-			id++;
+			// Remove the whole block from the order
+			result.addAll(block);
 		}
 		return result;
 	}
