@@ -1,11 +1,14 @@
 package com.dat3m.dartagnan.parsers.cat;
 
-import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.CatLexer;
+import com.dat3m.dartagnan.parsers.CatParser;
 import com.dat3m.dartagnan.parsers.cat.visitors.VisitorBase;
 import com.dat3m.dartagnan.parsers.program.utils.ParserErrorListener;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,10 +17,9 @@ import java.io.IOException;
 public class ParserCat {
 
     public Wmm parse(File file) throws IOException {
-        FileInputStream stream = new FileInputStream(file);
-        Wmm wmm = parse(CharStreams.fromStream(stream));
-        stream.close();
-        return wmm;
+        try (FileInputStream stream = new FileInputStream(file)) {
+            return parse(CharStreams.fromStream(stream));
+        }
     }
 
     public Wmm parse(String raw) {

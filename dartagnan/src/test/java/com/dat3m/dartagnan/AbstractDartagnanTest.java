@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.analysis.Base.runAnalysisTwoSolvers;
 import static org.junit.Assert.assertEquals;
@@ -38,17 +39,16 @@ public abstract class AbstractDartagnanTest {
         Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + cat));
 
         Settings s1 = new Settings(Alias.CFIS, 1, SOLVER_TIMEOUT);
-
-        return Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))
-                .filter(Files::isRegularFile)
-                .map(Path::toString)
-                .filter(f -> f.endsWith("litmus"))
-                .filter(f -> expectationMap.containsKey(f.substring(n)))
-                .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
-                .collect(ArrayList::new,
-                        (l, f) -> {
-                            l.add(new Object[]{f[0], f[1], target, wmm, s1});
-                        }, ArrayList::addAll);
+        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
+            return fileStream
+                    .filter(Files::isRegularFile)
+                    .map(Path::toString)
+                    .filter(f -> f.endsWith("litmus"))
+                    .filter(f -> expectationMap.containsKey(f.substring(n)))
+                    .map(f -> new Object[]{f, expectationMap.get(f.substring(n))})
+                    .collect(ArrayList::new,
+                            (l, f) -> l.add(new Object[]{f[0], f[1], target, wmm, s1}), ArrayList::addAll);
+        }
     }
 
     private final String path;
