@@ -1,13 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
 
 public class BNonDet extends BExpr implements ExprInterface {
 
@@ -23,25 +22,38 @@ public class BNonDet extends BExpr implements ExprInterface {
 	}
 
     @Override
-    public Expr toZ3Int(Event e, Context ctx) {
-    	Expr e1 = precision > 0 ? ctx.mkBV(1, precision) : ctx.mkInt(1);
-    	Expr e2 = precision > 0 ? ctx.mkBV(0, precision) : ctx.mkInt(0);
-        return ctx.mkITE(toZ3Bool(e, ctx), e1, e2);
+    public Formula toIntFormula(Event e, SolverContext ctx) {
+    	FormulaManager fmgr = ctx.getFormulaManager();
+    	Formula e1, e2;
+    	if( precision > 0) {
+    		BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+			e1 = bvmgr.makeBitvector(precision, BigInteger.ONE);
+    		e2 = bvmgr.makeBitvector(precision, BigInteger.ZERO);
+    	} else {
+    		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+			e1 = imgr.makeNumber(BigInteger.ONE);
+    		e2 = imgr.makeNumber(BigInteger.ZERO);
+    	}
+        return fmgr.getBooleanFormulaManager().ifThenElse(toBoolFormula(e, ctx), e1, e2);
     }
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx) {
-		return ctx.mkBoolConst(Integer.toString(hashCode()));
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
+		return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(Integer.toString(hashCode()));
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
+	public Formula getLastValueExpr(SolverContext ctx) {
 		throw new UnsupportedOperationException("getLastValueExpr not supported for " + this);
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, Context ctx) {
-		return model.getConstInterp(toZ3Int(e, ctx)).isTrue();
+	public boolean getBoolValue(Event e, Model model, SolverContext ctx) {
+		Boolean value = model.evaluate(toBoolFormula(e, ctx));
+		if(value != null) {
+			return value;
+		}
+		throw new RuntimeException("No value in the model for " + this);
 	}
 
 	@Override

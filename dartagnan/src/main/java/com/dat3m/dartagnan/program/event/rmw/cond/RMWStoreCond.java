@@ -2,8 +2,11 @@ package com.dat3m.dartagnan.program.event.rmw.cond;
 
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
@@ -12,21 +15,21 @@ import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 
 public class RMWStoreCond extends RMWStore implements RegReaderData {
 
-    protected transient BoolExpr execVar;
+    protected transient BooleanFormula execVar;
 
     public RMWStoreCond(RMWReadCond loadEvent, IExpr address, ExprInterface value, String mo) {
         super(loadEvent, address, value, mo);
     }
 
     @Override
-    public BoolExpr exec() {
+    public BooleanFormula exec() {
         return execVar;
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        execVar = ctx.mkBoolConst("exec(" + repr() + ")");
+        execVar = ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("exec(" + repr() + ")");
     }
 
     @Override
@@ -35,8 +38,9 @@ public class RMWStoreCond extends RMWStore implements RegReaderData {
     }
 
     @Override
-    protected BoolExpr encodeExec(Context ctx){
-        return ctx.mkEq(execVar, ctx.mkAnd(cfVar, ((RMWReadCond)loadEvent).getCond()));
+    protected BooleanFormula encodeExec(SolverContext ctx){
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		return bmgr.equivalence(execVar, bmgr.and(cfVar, ((RMWReadCond)loadEvent).getCond()));
     }
 
     // Unrolling

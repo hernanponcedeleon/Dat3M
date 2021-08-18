@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -12,6 +10,10 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Map;
 import java.util.Set;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -37,7 +39,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         super.initialise(task, ctx);
         fullEncodeTupleSet = new TupleSet();
         transitiveReachabilityMap = null;
@@ -89,37 +91,38 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet minSet = getMinTupleSet();
         TupleSet r1Max = r1.getMaxTupleSet();
         for(Tuple tuple : fullEncodeTupleSet){
             if (minSet.contains(tuple)) {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
                 continue;
             }
 
-            BoolExpr orClause = ctx.mkFalse();
+            BooleanFormula orClause = bmgr.makeFalse();
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 
             if(r1Max.contains(tuple)){
-                orClause = ctx.mkOr(orClause, r1.getSMTVar(tuple, ctx));
+                orClause = bmgr.or(orClause, r1.getSMTVar(tuple, ctx));
             }
 
 
             for(Tuple t : r1Max.getByFirst(e1)){
                 Event e3 = t.getSecond();
                 if(e3.getCId() != e1.getCId() && e3.getCId() != e2.getCId() && transitiveReachabilityMap.get(e3).contains(e2)){
-                    orClause = ctx.mkOr(orClause, ctx.mkAnd(r1.getSMTVar(t, ctx), this.getSMTVar(e3, e2, ctx)));
+                    orClause = bmgr.or(orClause, bmgr.and(r1.getSMTVar(t, ctx), this.getSMTVar(e3, e2, ctx)));
                 }
             }
 
             if(Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(orClause, this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.implication(orClause, this.getSMTVar(tuple, ctx)));
             } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), orClause));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), orClause));
             }
         }
 

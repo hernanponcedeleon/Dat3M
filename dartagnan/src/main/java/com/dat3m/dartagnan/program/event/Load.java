@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
@@ -29,9 +31,9 @@ public class Load extends MemEvent implements RegWriter {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        memValueExpr = resultRegister.toZ3IntResult(this, ctx);
+        memValueExpr = resultRegister.toIntFormulaResult(this, ctx);
     }
 
     @Override
@@ -40,7 +42,7 @@ public class Load extends MemEvent implements RegWriter {
     }
 
     @Override
-    public Expr getResultRegisterExpr(){
+    public Formula getResultRegisterExpr(){
         return memValueExpr;
     }
 

@@ -7,13 +7,15 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.program.utils.Utils;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Model;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class CondJump extends Event implements RegReaderData {
 
@@ -21,7 +23,6 @@ public class CondJump extends Event implements RegReaderData {
     private Label label4Copy;
     private final BExpr expr;
     private final ImmutableSet<Register> dataRegs;
-    private static final Context defaultCtx = new Context();
 
     public CondJump(BExpr expr, Label label){
         if(label == null){
@@ -46,9 +47,10 @@ public class CondJump extends Event implements RegReaderData {
 		Event notifier = label != null ? label : other.label;
 		notifier.addListener(this);
     }
-
+    
     public boolean isGoto() {
-        return expr.toZ3Bool(this, defaultCtx).simplify().isTrue();
+    	SolverContext defaultCtx = Utils.getDefaultCtx();
+        return defaultCtx.getFormulaManager().getBooleanFormulaManager().isTrue(expr.toBoolFormula(this, defaultCtx));
     }
     
     public Label getLabel(){
@@ -121,7 +123,7 @@ public class CondJump extends Event implements RegReaderData {
         label.listeners.remove(this);
     }
 
-    public boolean didJump(Model model, Context ctx) {
+    public boolean didJump(Model model, SolverContext ctx) {
         return expr.getBoolValue(this, model, ctx);
     }
 
@@ -177,12 +179,14 @@ public class CondJump extends Event implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
-        if(cfEnc == null){
-            cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-            BoolExpr ifCond = expr.toZ3Bool(this, ctx);
-            label.addCfCond(ctx, ctx.mkAnd(ifCond, cfVar));
-            cfEnc = ctx.mkAnd(ctx.mkEq(cfVar, cfCond), encodeExec(ctx));
+    public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+
+    	if(cfEnc == null){
+			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
+            BooleanFormula ifCond = expr.toBoolFormula(this, ctx);
+            label.addCfCond(ctx, bmgr.and(ifCond, cfVar));
+            cfEnc = bmgr.and(bmgr.equivalence(cfVar, cfCond), encodeExec(ctx));
         }
         return cfEnc;
     }

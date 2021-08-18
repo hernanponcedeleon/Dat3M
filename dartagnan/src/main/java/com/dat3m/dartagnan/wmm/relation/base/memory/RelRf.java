@@ -10,10 +10,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
 import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.microsoft.z3.BitVecExpr;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.IntExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -26,12 +22,18 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.READ;
 import static com.dat3m.dartagnan.program.utils.EType.RMW;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 
 public class RelRf extends Relation {
 
@@ -88,10 +90,13 @@ public class RelRf extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
-        Map<MemEvent, List<BoolExpr>> edgeMap = new HashMap<>();
-        Map<MemEvent, BoolExpr> memInitMap = new HashMap<>();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+    	
+    	BooleanFormula enc = bmgr.makeTrue();
+        Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
+        Map<MemEvent, BooleanFormula> memInitMap = new HashMap<>();
 
         boolean canAccNonInitMem = task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY);
         boolean useSeqEncoding = task.getSettings().getFlag(Settings.FLAG_USE_SEQ_ENCODING_REL_RF);
@@ -99,75 +104,79 @@ public class RelRf extends Relation {
         for(Tuple tuple : maxTupleSet){
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();
-            BoolExpr edge = this.getSMTVar(tuple, ctx);
+            BooleanFormula edge = this.getSMTVar(tuple, ctx);
             
-            IntExpr a1 = w.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w.getMemAddressExpr(), false) : (IntExpr)w.getMemAddressExpr();
-            IntExpr a2 = r.getMemAddressExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)r.getMemAddressExpr(), false) : (IntExpr)r.getMemAddressExpr();
-            BoolExpr sameAddress = ctx.mkEq(a1, a2);
+            IntegerFormula a1 = convertToIntegerFormula(w.getMemAddressExpr(), ctx);
+            IntegerFormula a2 = convertToIntegerFormula(r.getMemAddressExpr(), ctx);
+            BooleanFormula sameAddress = fmgr.getIntegerFormulaManager().equal(a1, a2);
             
-            IntExpr v1 = w.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)w.getMemValueExpr(), false) : (IntExpr)w.getMemValueExpr();
-            IntExpr v2 = r.getMemValueExpr().isBV() ? ctx.mkBV2Int((BitVecExpr)r.getMemValueExpr(), false) : (IntExpr)r.getMemValueExpr();
-            BoolExpr sameValue = ctx.mkEq(v1, v2);
+            IntegerFormula v1 = convertToIntegerFormula(w.getMemValueExpr(), ctx);
+            IntegerFormula v2 = convertToIntegerFormula(r.getMemValueExpr(), ctx);
+            BooleanFormula sameValue = fmgr.getIntegerFormulaManager().equal(v1, v2);
 
             edgeMap.putIfAbsent(r, new ArrayList<>());
             edgeMap.get(r).add(edge);
             if(canAccNonInitMem && w.is(INIT)){
-                memInitMap.put(r, ctx.mkOr(memInitMap.getOrDefault(r, ctx.mkFalse()), sameAddress));
+                memInitMap.put(r, bmgr.or(memInitMap.getOrDefault(r, bmgr.makeFalse()), sameAddress));
             }
-            enc = ctx.mkAnd(enc, ctx.mkImplies(edge, ctx.mkAnd(w.exec(), r.exec(), sameAddress, sameValue)));
+            enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(w.exec(), r.exec(), sameAddress, sameValue)));
         }
 
         for(MemEvent r : edgeMap.keySet()){
-            enc = ctx.mkAnd(enc, useSeqEncoding
+            enc = bmgr.and(enc, useSeqEncoding
                     ? encodeEdgeSeq(r, memInitMap.get(r), edgeMap.get(r), ctx)
                     : encodeEdgeNaive(r, memInitMap.get(r), edgeMap.get(r), ctx));
         }
         return enc;
     }
 
-    private BoolExpr encodeEdgeNaive(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
-        BoolExpr atMostOne = ctx.mkTrue();
-        BoolExpr atLeastOne = ctx.mkFalse();
+    private BooleanFormula encodeEdgeNaive(Event read, BooleanFormula isMemInit, List<BooleanFormula> edges, SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	
+    	BooleanFormula atMostOne = bmgr.makeTrue();
+    	BooleanFormula atLeastOne = bmgr.makeFalse();
         for(int i = 0; i < edges.size(); i++){
-            atLeastOne = ctx.mkOr(atLeastOne, edges.get(i));
+            atLeastOne = bmgr.or(atLeastOne, edges.get(i));
             for(int j = i + 1; j < edges.size(); j++){
-                atMostOne = ctx.mkAnd(atMostOne, ctx.mkNot(ctx.mkAnd(edges.get(i), edges.get(j))));
+                atMostOne = bmgr.and(atMostOne, bmgr.not(bmgr.and(edges.get(i), edges.get(j))));
             }
         }
 
         if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
-            atLeastOne = ctx.mkImplies(ctx.mkAnd(read.exec(), isMemInit), atLeastOne);
+            atLeastOne = bmgr.implication(bmgr.and(read.exec(), isMemInit), atLeastOne);
         } else {
-            atLeastOne = ctx.mkImplies(read.exec(), atLeastOne);
+            atLeastOne = bmgr.implication(read.exec(), atLeastOne);
         }
-        return ctx.mkAnd(atMostOne, atLeastOne);
+        return bmgr.and(atMostOne, atLeastOne);
     }
 
-    private BoolExpr encodeEdgeSeq(Event read, BoolExpr isMemInit, List<BoolExpr> edges, Context ctx){
+    private BooleanFormula encodeEdgeSeq(Event read, BooleanFormula isMemInit, List<BooleanFormula> edges, SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+    	
         int num = edges.size();
         int readId = read.getCId();
-        BoolExpr lastSeqVar = mkSeqVar(readId, 0, ctx);
-        BoolExpr newSeqVar = lastSeqVar;
-        BoolExpr atMostOne = ctx.mkEq(lastSeqVar, edges.get(0));
+        BooleanFormula lastSeqVar = mkSeqVar(readId, 0, ctx);
+        BooleanFormula newSeqVar = lastSeqVar;
+        BooleanFormula atMostOne = bmgr.equivalence(lastSeqVar, edges.get(0));
 
         for(int i = 1; i < num; i++){
             newSeqVar = mkSeqVar(readId, i, ctx);
-            atMostOne = ctx.mkAnd(atMostOne, ctx.mkEq(newSeqVar, ctx.mkOr(lastSeqVar, edges.get(i))));
-            atMostOne = ctx.mkAnd(atMostOne, ctx.mkNot(ctx.mkAnd(edges.get(i), lastSeqVar)));
+            atMostOne = bmgr.and(atMostOne, bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, edges.get(i))));
+            atMostOne = bmgr.and(atMostOne, bmgr.not(bmgr.and(edges.get(i), lastSeqVar)));
             lastSeqVar = newSeqVar;
         }
-        BoolExpr atLeastOne = ctx.mkOr(newSeqVar, edges.get(edges.size() - 1));
+        BooleanFormula atLeastOne = bmgr.or(newSeqVar, edges.get(edges.size() - 1));
 
         if(task.getSettings().getFlag(Settings.FLAG_CAN_ACCESS_UNINITIALIZED_MEMORY)) {
-            atLeastOne = ctx.mkImplies(ctx.mkAnd(read.exec(), isMemInit), atLeastOne);
+            atLeastOne = bmgr.implication(bmgr.and(read.exec(), isMemInit), atLeastOne);
         } else {
-            atLeastOne = ctx.mkImplies(read.exec(), atLeastOne);
+            atLeastOne = bmgr.implication(read.exec(), atLeastOne);
         }
-        return ctx.mkAnd(atMostOne, atLeastOne);
+        return bmgr.and(atMostOne, atLeastOne);
     }
 
-    private BoolExpr mkSeqVar(int readId, int i, Context ctx) {
-        return (BoolExpr) ctx.mkConst("s(" + term + ",E" + readId + "," + i + ")", ctx.mkBoolSort());
+    private BooleanFormula mkSeqVar(int readId, int i, SolverContext ctx) {
+    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("s(" + term + ",E" + readId + "," + i + ")");
     }
 
     private void applyLocalConsistency() {

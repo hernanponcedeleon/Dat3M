@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.wmm.utils;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 public enum  Flag {
     ARM_UNPREDICTABLE_BEHAVIOUR,
@@ -11,8 +12,8 @@ public enum  Flag {
     // TODO: Add linux when implemented
     public static ImmutableSet<Flag> all = ImmutableSet.of(ARM_UNPREDICTABLE_BEHAVIOUR);
 
-    public BoolExpr repr(Context ctx){
-        return ctx.mkBoolConst(code());
+    public BooleanFormula repr(SolverContext ctx){
+    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(code());
     }
 
     @Override

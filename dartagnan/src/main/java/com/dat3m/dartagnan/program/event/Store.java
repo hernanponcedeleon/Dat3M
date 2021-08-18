@@ -2,7 +2,9 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.Context;
+
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
@@ -32,9 +34,9 @@ public class Store extends MemEvent implements RegReaderData {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        memValueExpr = value.toZ3Int(this, ctx);
+        memValueExpr = value.toIntFormula(this, ctx);
     }
 
     @Override

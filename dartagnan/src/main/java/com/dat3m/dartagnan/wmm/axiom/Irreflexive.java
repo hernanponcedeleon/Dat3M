@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
@@ -28,11 +30,12 @@ public class Irreflexive extends Axiom {
     }
 
     @Override
-    public BoolExpr consistent(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula consistent(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             if(tuple.getFirst().getCId() == tuple.getSecond().getCId()){
-                enc = ctx.mkAnd(enc, ctx.mkNot(rel.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.not(rel.getSMTVar(tuple, ctx)));
             }
         }
         return enc;

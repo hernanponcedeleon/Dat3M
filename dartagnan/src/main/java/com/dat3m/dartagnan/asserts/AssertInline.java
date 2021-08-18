@@ -1,8 +1,16 @@
 package com.dat3m.dartagnan.asserts;
 
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
+import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.program.event.Local;
 
 public class AssertInline extends AbstractAssert {
@@ -14,9 +22,19 @@ public class AssertInline extends AbstractAssert {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
-    	Expr expr = e.getResultRegisterExpr().isBV() ? ctx.mkBV(0, e.getResultRegister().getPrecision()) : ctx.mkInt(0); 
-		return ctx.mkAnd(e.exec(), ctx.mkEq(e.getResultRegisterExpr(), expr));
+    public BooleanFormula encode(SolverContext ctx) {
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+
+		BooleanFormula eq;
+		if(e.getResultRegisterExpr() instanceof BitvectorFormula) {
+			BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+			eq = bvmgr.equal((BitvectorFormula)e.getResultRegisterExpr(), bvmgr.makeBitvector(e.getResultRegister().getPrecision(), BigInteger.ZERO));
+    	} else {
+    		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+			eq = imgr.equal((IntegerFormula)e.getResultRegisterExpr(), imgr.makeNumber(BigInteger.ZERO));
+    	}
+		return bmgr.and(e.exec(), eq);
     }
 
     @Override

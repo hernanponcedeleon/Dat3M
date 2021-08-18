@@ -2,18 +2,19 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.Context;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -122,20 +123,21 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
         TupleSet minSet = getMinTupleSet();
 
         //TODO: Fix this abuse of hashCode
-        Map<Integer, BoolExpr> exprMap = new HashMap<>();
+        Map<Integer, BooleanFormula> exprMap = new HashMap<>();
         for(Tuple tuple : encodeTupleSet){
             if (minSet.contains(tuple)) {
                 exprMap.put(tuple.hashCode(), getExecPair(tuple, ctx));
             } else {
-                exprMap.put(tuple.hashCode(), ctx.mkFalse());
+                exprMap.put(tuple.hashCode(), bmgr.makeFalse());
             }
         }
 
@@ -150,22 +152,23 @@ public class RelComposition extends BinaryRelation {
 
                 int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                 if(exprMap.containsKey(id)){
-                    BoolExpr e = exprMap.get(id);
-                    e = ctx.mkOr(e, ctx.mkAnd(r1.getSMTVar(tuple1, ctx), r2.getSMTVar(tuple2, ctx)));
+                	BooleanFormula e = exprMap.get(id);
+                    e = bmgr.or(e, bmgr.and(r1.getSMTVar(tuple1, ctx), r2.getSMTVar(tuple2, ctx)));
                     exprMap.put(id, e);
                 }
             }
         }
 
         for(Tuple tuple : encodeTupleSet) {
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
+            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), exprMap.get(tuple.hashCode())));
         }
         return enc;
     }
 
     @Override
-    public BoolExpr encodeIteration(int groupId, int iteration, Context ctx){
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encodeIteration(int groupId, int iteration, SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration) {
             lastEncodedIteration = iteration;
@@ -173,7 +176,7 @@ public class RelComposition extends BinaryRelation {
 
             if(iteration == 0 && isRecursive){
                 for(Tuple tuple : encodeTupleSet){
-                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
+                    enc = bmgr.and(bmgr.not(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
                 }
             } else {
                 int childIteration = isRecursive ? iteration - 1 : iteration;
@@ -192,9 +195,9 @@ public class RelComposition extends BinaryRelation {
                 r2Set.addAll(r2.getEncodeTupleSet());
                 r2Set.retainAll(r2.getMaxTupleSet());
 
-                Map<Integer, BoolExpr> exprMap = new HashMap<>();
+                Map<Integer, BooleanFormula> exprMap = new HashMap<>();
                 for(Tuple tuple : encodeTupleSet){
-                    exprMap.put(tuple.hashCode(), ctx.mkFalse());
+                    exprMap.put(tuple.hashCode(), bmgr.makeFalse());
                 }
 
                 for(Tuple tuple1 : r1Set){
@@ -204,23 +207,23 @@ public class RelComposition extends BinaryRelation {
                         Event e2 = tuple2.getSecond();
                         int id = Tuple.toHashCode(e1.getCId(), e2.getCId());
                         if(exprMap.containsKey(id)){
-                            BoolExpr e = exprMap.get(id);
-                            e = ctx.mkOr(e, ctx.mkAnd(Utils.edge(r1Name, e1, e3, ctx), Utils.edge(r2Name, e3, e2, ctx)));
+                        	BooleanFormula e = exprMap.get(id);
+                            e = bmgr.or(e, bmgr.and(Utils.edge(r1Name, e1, e3, ctx), Utils.edge(r2Name, e3, e2, ctx)));
                             exprMap.put(id, e);
                         }
                     }
                 }
 
                 for(Tuple tuple : encodeTupleSet){
-                    enc = ctx.mkAnd(enc, ctx.mkEq(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
+                    enc = bmgr.and(enc, bmgr.equivalence(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx), exprMap.get(tuple.hashCode())));
                 }
 
                 if(recurseInR1){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration, ctx));
+                    enc = bmgr.and(enc, r1.encodeIteration(groupId, childIteration, ctx));
                 }
 
                 if(recurseInR2){
-                    enc = ctx.mkAnd(enc, r2.encodeIteration(groupId, childIteration, ctx));
+                    enc = bmgr.and(enc, r2.encodeIteration(groupId, childIteration, ctx));
                 }
             }
         }

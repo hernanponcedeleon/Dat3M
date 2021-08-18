@@ -10,12 +10,12 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.ImmutableList;
-import com.microsoft.z3.Context;
 
 public class EndAtomic extends Event {
 
@@ -50,7 +50,7 @@ public class EndAtomic extends Event {
     }
 
 	@Override
-	public void initialise(VerificationTask task, Context ctx) {
+	public void initialise(VerificationTask task, SolverContext ctx) {
 		super.initialise(task, ctx);
 		//===== Temporary fix to rematch atomic blocks correctly =====
 		BranchEquivalence eq = task.getBranchEquivalence();

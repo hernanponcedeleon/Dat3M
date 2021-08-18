@@ -1,14 +1,16 @@
 package com.dat3m.dartagnan.wmm.relation;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collections;
 import java.util.List;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -37,7 +39,7 @@ public class RecursiveRelation extends Relation {
         return name;
     }
 
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         if(doRecurse){
             doRecurse = false;
             super.initialise(task, ctx);
@@ -127,32 +129,34 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public BoolExpr encode(Context ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
         if(isEncoded){
-            return ctx.mkTrue();
+            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
         }
         isEncoded = true;
         return r1.encode(ctx);
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
         return r1.encodeApprox(ctx);
     }
 
     @Override
-    public BoolExpr encodeIteration(int recGroupId, int iteration, Context ctx){
+    public BooleanFormula encodeIteration(int recGroupId, int iteration, SolverContext ctx){
         if(doRecurse){
             doRecurse = false;
             return r1.encodeIteration(recGroupId, iteration, ctx);
         }
-        return ctx.mkTrue();
+        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
-    public BoolExpr encodeFinalIteration(int iteration, Context ctx){
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encodeFinalIteration(int iteration, SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
+
         for(Tuple tuple : encodeTupleSet){
-            enc = ctx.mkAnd(enc, ctx.mkEq(
+            enc = bmgr.and(enc, bmgr.equivalence(
                     this.getSMTVar(tuple, ctx),
                     Utils.edge(getName() + "_" + iteration, tuple.getFirst(), tuple.getSecond(), ctx)
             ));

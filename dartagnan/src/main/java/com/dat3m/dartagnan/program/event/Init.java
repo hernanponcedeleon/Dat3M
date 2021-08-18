@@ -1,10 +1,11 @@
 package com.dat3m.dartagnan.program.event;
 
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.Context;
 
 public class Init extends MemEvent {
 
@@ -26,9 +27,9 @@ public class Init extends MemEvent {
 	}
 
 	@Override
-	public void initialise(VerificationTask task, Context ctx) {
+	public void initialise(VerificationTask task, SolverContext ctx) {
 		super.initialise(task, ctx);
-		memValueExpr = value.toZ3Int(ctx);
+		memValueExpr = value.toIntFormula(ctx);
 	}
 
 	@Override

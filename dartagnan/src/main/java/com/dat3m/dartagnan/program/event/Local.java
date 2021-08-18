@@ -1,23 +1,24 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.ImmutableSet;
+
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
+import org.sosy_lab.java_smt.api.*;
 
 public class Local extends Event implements RegWriter, RegReaderData {
 	
 	protected final Register register;
 	protected final ExprInterface expr;
 	private final ImmutableSet<Register> dataRegs;
-	private Expr regResultExpr;
+	private Formula regResultExpr;
 	
 	public Local(Register register, ExprInterface expr, int cLine) {
 		super(cLine);
@@ -40,9 +41,9 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public void initialise(VerificationTask task, Context ctx) {
+	public void initialise(VerificationTask task, SolverContext ctx) {
 		super.initialise(task, ctx);
-		regResultExpr = register.toZ3IntResult(this, ctx);
+		regResultExpr = register.toIntFormulaResult(this, ctx);
 	}
 
 	public ExprInterface getExpr(){
@@ -55,7 +56,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	public Expr getResultRegisterExpr(){
+	public Formula getResultRegisterExpr(){
 		return regResultExpr;
 	}
 
@@ -70,12 +71,15 @@ public class Local extends Event implements RegWriter, RegReaderData {
 	}
 
 	@Override
-	protected BoolExpr encodeExec(Context ctx){
-		BoolExpr enc = super.encodeExec(ctx);
+	protected BooleanFormula encodeExec(SolverContext ctx){
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		
+		BooleanFormula enc = super.encodeExec(ctx);
 		if(expr instanceof INonDet) {
-			enc = ctx.mkAnd(enc, ((INonDet)expr).encodeBounds(expr.toZ3Int(this, ctx).isBV(), ctx));
+			enc = bmgr.and(enc, ((INonDet)expr).encodeBounds(expr.toIntFormula(this, ctx) instanceof BitvectorFormula, ctx));
 		}
-		return ctx.mkAnd(enc, ctx.mkEq(regResultExpr,  expr.toZ3Int(this, ctx)));
+
+		return bmgr.and(enc, generalEqual(regResultExpr, expr.toIntFormula(this, ctx), ctx));
 	}
 
 	// Unrolling
