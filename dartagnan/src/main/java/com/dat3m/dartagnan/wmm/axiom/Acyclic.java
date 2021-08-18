@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -16,6 +14,11 @@ import java.util.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 /**
  *
@@ -69,13 +72,19 @@ public class Acyclic extends Axiom {
     }
 
     @Override
-	public BoolExpr consistent(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+	public BooleanFormula consistent(SolverContext ctx) {
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+        IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
+        BooleanFormula enc = bmgr.makeTrue();
         for(Tuple tuple : rel.getEncodeTupleSet()){
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
-            enc = ctx.mkAnd(enc, ctx.mkImplies(rel.getSMTVar(tuple, ctx), ctx.mkLt(Utils.intVar(rel.getName(), e1, ctx), Utils.intVar(rel.getName(), e2, ctx))));
+			enc = bmgr.and(enc, bmgr.implication(rel.getSMTVar(tuple, ctx), 
+									imgr.lessThan(
+											Utils.intVar(rel.getName(), e1, ctx), 
+											Utils.intVar(rel.getName(), e2, ctx))));
         }
         return enc;
     }

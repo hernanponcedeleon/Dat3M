@@ -14,14 +14,15 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.google.common.collect.Lists;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 public class WitnessGraph extends ElemWithAttributes {
 
@@ -75,18 +76,21 @@ public class WitnessGraph extends ElemWithAttributes {
 		return str.toString();
 	}
 	
-	public BoolExpr encode(Program program, Context ctx) {
-		BoolExpr enc = ctx.mkTrue();
+	public BooleanFormula encode(Program program, SolverContext ctx) {
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+		
+		BooleanFormula enc = bmgr.makeTrue();
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
 			if(getAttributed(PRODUCER.toString()).equals("Dartagnan") 
 					&& edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(HBPOS.toString())) {
 				Event ev = program.getEvents().stream().filter(e -> e.getCId() == parseInt(edge.getAttributed(EVENTID.toString()))).findFirst().get();
-				enc = ctx.mkAnd(enc, ctx.mkEq(intVar("hb", ev, ctx), ctx.mkInt(parseInt(edge.getAttributed(HBPOS.toString())))));
+				enc = bmgr.and(enc, imgr.equal(intVar("hb", ev, ctx), imgr.makeNumber(edge.getAttributed(HBPOS.toString()))));
 			} 
 			List<Event> events = program.getCache().getEvents(FilterBasic.get(MEMORY)).stream().filter(e -> e.getCLine() == edge.getCline()).collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
-				enc = ctx.mkAnd(enc, ctx.mkOr(Lists.cartesianProduct(previous, events).stream().map(p -> ctx.mkLe(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx))).collect(Collectors.toList()).toArray(BoolExpr[]::new)));
+				enc = bmgr.and(enc, bmgr.or(Lists.cartesianProduct(previous, events).stream().map(p -> imgr.lessThan(intVar("hb", p.get(0), ctx), intVar("hb", p.get(1), ctx))).collect(Collectors.toList()).toArray(BooleanFormula[]::new)));
 			}
 			if(!events.isEmpty()) {
 				previous = events;				

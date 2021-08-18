@@ -2,11 +2,13 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -71,14 +73,20 @@ public class Register extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public Expr toZ3Int(Event e, Context ctx) {
+	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + ")";
-		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
+		FormulaManager fmgr = ctx.getFormulaManager();
+		return precision > 0 ?
+				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
-	public Expr toZ3IntResult(Event e, Context ctx) {
+	public Formula toIntFormulaResult(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + "_result)";
-		return precision > 0 ? ctx.mkBVConst(name, precision) : ctx.mkIntConst(name);
+		FormulaManager fmgr = ctx.getFormulaManager();
+		return precision > 0 ?
+				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
 	@Override
@@ -87,13 +95,17 @@ public class Register extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
-		return precision > 0 ? ctx.mkBVConst(getName() + "_" + threadId + "_final", precision) : ctx.mkIntConst(getName() + "_" + threadId + "_final");
+	public Formula getLastValueExpr(SolverContext ctx){
+		FormulaManager fmgr = ctx.getFormulaManager();
+		String name = getName() + "_" + threadId + "_final";
+		return precision > 0 ?
+				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, Context ctx){
-		return new BigInteger(model.getConstInterp(toZ3Int(e, ctx)).toString());
+	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
+		return new BigInteger(model.evaluate(toIntFormula(e, ctx)).toString());
 	}
 
 	@Override

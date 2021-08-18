@@ -1,9 +1,5 @@
 package com.dat3m.ui.result;
 
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisIncrementalSolver;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysis;
-import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
-
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -11,8 +7,15 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
+import static com.dat3m.dartagnan.analysis.Base.*;
 
 public class ReachabilityResult {
 
@@ -35,23 +38,56 @@ public class ReachabilityResult {
 
     private void run(){
         if(validate()){
-            VerificationTask task = new VerificationTask(program, wmm, program.getArch() != null ? program.getArch() : options.getTarget(), options.getSettings());
-            Context ctx = new Context();
-            Solver solver = ctx.mkSolver();
-            Result result = null;
-            switch(options.getMethod()) {
-            	case INCREMENTAL:
-            		result = runAnalysisIncrementalSolver(solver, ctx, task);
-            		break;
-            	case ASSUME:
-            		result = runAnalysisAssumeSolver(solver, ctx, task);
-            		break;
-            	case TWOSOLVERS:
-                    result = runAnalysis(solver, ctx, task);
-                    break;
+            Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
+            VerificationTask task = new VerificationTask(program, wmm, arch, options.getSettings());
+            Result result = Result.UNKNOWN;
+
+            ShutdownManager sdm = ShutdownManager.create();
+        	Thread t = new Thread(() -> {
+    			try {
+    				if(options.getSettings().getSolverTimeout() > 0) {
+    					// Converts timeout from secs to millisecs
+    					Thread.sleep(1000L * options.getSettings().getSolverTimeout());
+    					sdm.requestShutdown("Shutdown Request");
+    				}
+    			} catch (InterruptedException e) {
+    				// Verification ended, nothing to be done.
+    			}});
+
+            try {
+            	t.start();
+                Configuration config = Configuration.builder()
+                		.setOption("solver.z3.usePhantomReferences", "true")
+                		.build();
+				try (SolverContext ctx = SolverContextFactory.createSolverContext(
+                        config,
+                        BasicLogManager.create(config),
+                        sdm.getNotifier(),
+                        options.getSolver());
+                     ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+
+                    switch (options.getMethod()) {
+                        case INCREMENTAL:
+                            result = runAnalysisIncrementalSolver(ctx, prover, task);
+                            break;
+                        case ASSUME:
+                            result = runAnalysisAssumeSolver(ctx, prover, task);
+                            break;
+                        case TWOSOLVERS:
+                            try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                                result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
+                            }
+                            break;
+                    }
+                    // Verification ended, we can interrupt the timeout Thread
+                    t.interrupt();
+                    buildVerdict(result);
+                }
+            } catch (InterruptedException e){
+            	verdict = "TIMEOUT";
+            } catch (Exception e) {
+            	verdict = "ERROR: " + e.getMessage();
             }
-            buildVerdict(result);
-            ctx.close();
         }
     }
 

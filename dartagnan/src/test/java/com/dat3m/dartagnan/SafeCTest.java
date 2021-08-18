@@ -6,26 +6,28 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.Settings;
+import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
-import com.microsoft.z3.Context;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
-import static com.dat3m.dartagnan.wmm.utils.Arch.ARM8;
-import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
-import static com.dat3m.dartagnan.wmm.utils.Arch.TSO;
+import static com.dat3m.dartagnan.wmm.utils.Arch.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -103,15 +105,15 @@ public class SafeCTest {
         this.settings = settings;
         this.expected = expected;
     }
-    
+
     @Test(timeout = TIMEOUT)
     public void test() {
-    	try {
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
             Program program = new ProgramParser().parse(new File(path));
-            Context ctx = new Context();
             VerificationTask task = new VerificationTask(program, wmm, target, settings);
-            assertEquals(expected, com.dat3m.dartagnan.analysis.Base.runAnalysisAssumeSolver(ctx.mkSolver(), ctx, task));
-            ctx.close();
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
         } catch (Exception e){
             fail("Missing resource file");
         }

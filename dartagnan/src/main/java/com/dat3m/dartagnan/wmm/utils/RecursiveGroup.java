@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 
 import java.util.*;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class RecursiveGroup {
 
@@ -32,17 +34,19 @@ public class RecursiveGroup {
         }
     }
 
-    public BoolExpr encode(Context ctx){
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encode(SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
+
         for(int i = 0; i < encodeIterations; i++){
             for(RecursiveRelation relation : relations){
                 relation.setDoRecurse();
-                enc = ctx.mkAnd(enc, relation.encodeIteration(id, i, ctx));
+                enc = bmgr.and(enc, relation.encodeIteration(id, i, ctx));
             }
         }
 
         for(RecursiveRelation relation : relations){
-            enc = ctx.mkAnd(enc, relation.encodeFinalIteration(encodeIterations - 1, ctx));
+            enc = bmgr.and(enc, relation.encodeFinalIteration(encodeIterations - 1, ctx));
         }
 
         return enc;

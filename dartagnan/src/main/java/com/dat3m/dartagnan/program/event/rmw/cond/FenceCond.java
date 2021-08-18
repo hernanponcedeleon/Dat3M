@@ -2,15 +2,18 @@ package com.dat3m.dartagnan.program.event.rmw.cond;
 
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 
 public class FenceCond extends Fence {
 
     private final RMWReadCond loadEvent;
-    protected transient BoolExpr execVar;
+    protected transient BooleanFormula execVar;
 
     public FenceCond (RMWReadCond loadEvent, String name){
         super(name);
@@ -18,14 +21,14 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    public BoolExpr exec() {
+    public BooleanFormula exec() {
         return execVar;
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        execVar = ctx.mkBoolConst("exec(" + repr() + ")");
+        execVar = ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("exec(" + repr() + ")");
     }
 
     @Override
@@ -34,8 +37,9 @@ public class FenceCond extends Fence {
     }
 
     @Override
-    protected BoolExpr encodeExec(Context ctx){
-        return ctx.mkEq(execVar, ctx.mkAnd(cfVar, loadEvent.getCond()));
+    protected BooleanFormula encodeExec(SolverContext ctx){
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		return bmgr.equivalence(execVar, bmgr.and(cfVar, loadEvent.getCond()));
     }
 
     // Unrolling

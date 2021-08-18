@@ -3,11 +3,12 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.program.Register;
@@ -32,17 +33,17 @@ public class IExprUn extends IExpr {
 	}
 
 	@Override
-	public Expr toZ3Int(Event e, Context ctx) {
-		return op.encode(b.toZ3Int(e, ctx), ctx);
+	public Formula toIntFormula(Event e, SolverContext ctx) {
+		return op.encode(b.toIntFormula(e, ctx), ctx);
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx) {
+	public Formula getLastValueExpr(SolverContext ctx) {
         return op.encode(b.getLastValueExpr(ctx), ctx);
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, Context ctx) {
+	public BigInteger getIntValue(Event e, Model model, SolverContext ctx) {
         return b.getIntValue(e, model, ctx).negate();
 	}
 

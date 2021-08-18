@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.expression.op;
 
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public enum BOpUn {
     NOT;
@@ -11,8 +11,8 @@ public enum BOpUn {
        	return "!";
     }
 
-    public BoolExpr encode(BoolExpr e, Context ctx) {
-       	return ctx.mkNot(e);
+    public BooleanFormula encode(BooleanFormula e, SolverContext ctx) {
+       	return ctx.getFormulaManager().getBooleanFormulaManager().not(e);
     }
 
     public boolean combine(boolean a){

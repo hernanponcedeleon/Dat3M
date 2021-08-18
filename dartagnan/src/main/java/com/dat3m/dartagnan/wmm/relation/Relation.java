@@ -8,12 +8,13 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.*;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 
@@ -65,7 +66,7 @@ public abstract class Relation implements Dependent<Relation> {
         return recursiveGroupId;
     }
 
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         this.task = task;
         this.minTupleSet = null;
         this.maxTupleSet = null;
@@ -137,37 +138,38 @@ public abstract class Relation implements Dependent<Relation> {
         return getName().equals(((Relation)obj).getName());
     }
 
-    public BoolExpr encode(Context ctx) {
+    public BooleanFormula encode(SolverContext ctx) {
         if(isEncoded){
-            return ctx.mkTrue();
+            return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
         }
         isEncoded = true;
         return doEncode(ctx);
     }
 
-    protected abstract BoolExpr encodeApprox(Context ctx);
+    protected abstract BooleanFormula encodeApprox(SolverContext ctx);
 
-    public BoolExpr encodeIteration(int recGroupId, int iteration, Context ctx){
-        return ctx.mkTrue();
+    public BooleanFormula encodeIteration(int recGroupId, int iteration, SolverContext ctx){
+        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
-    protected BoolExpr doEncode(Context ctx){
+    protected BooleanFormula doEncode(SolverContext ctx){
         if(!encodeTupleSet.isEmpty() || forceDoEncode){
         	return encodeApprox(ctx);
         }
-        return ctx.mkTrue();
+        return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
     }
 
-    public BoolExpr getSMTVar(Tuple edge, Context ctx) {
-        return !getMaxTupleSet().contains(edge) ? ctx.mkFalse() :
+    public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
+        return !getMaxTupleSet().contains(edge) ? 
+        		ctx.getFormulaManager().getBooleanFormulaManager().makeFalse() :
                 edge(getName(), edge.getFirst(), edge.getSecond(), ctx);
     }
 
-    public final BoolExpr getSMTVar(Event e1, Event e2, Context ctx) {
+    public final BooleanFormula getSMTVar(Event e1, Event e2, SolverContext ctx) {
         return getSMTVar(new Tuple(e1, e2), ctx);
     }
 
-    protected BoolExpr getExecPair(Event e1, Event e2, Context ctx) {
+    protected BooleanFormula getExecPair(Event e1, Event e2, SolverContext ctx) {
         if (e1.getCId() > e2.getCId()) {
             Event temp = e1;
             e1 = e2;
@@ -179,10 +181,10 @@ public abstract class Relation implements Dependent<Relation> {
         } else if (eq.isImplied(e2 ,e1)) {
             return e2.exec();
         }
-        return ctx.mkAnd(e1.exec(), e2.exec());
+        return ctx.getFormulaManager().getBooleanFormulaManager().and(e1.exec(), e2.exec());
     }
 
-    protected final BoolExpr getExecPair(Tuple t, Context ctx) {
+    protected final BooleanFormula getExecPair(Tuple t, SolverContext ctx) {
         return getExecPair(t.getFirst(), t.getSecond(), ctx);
     }
 
