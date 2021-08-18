@@ -151,11 +151,12 @@ public class Refinement {
         //                    - check() == UNSAT -> Safe
 
 
-        if (!prover.isUnsat() && res == UNKNOWN) {
+        boolean isSat = !prover.isUnsat();
+        if (isSat && res == UNKNOWN) {
             // We couldn't verify the found counterexample, nor exclude it.
             System.out.println("PROCEDURE was inconclusive");
             return res;
-        } else if (!prover.isUnsat()) {
+        } else if (isSat) {
             // We found a violation
             System.out.println("Violation verified");
         } else {
@@ -164,9 +165,7 @@ public class Refinement {
         }
 
         long boundCheckTime = 0;
-        if(!prover.isUnsat()) {
-            res = FAIL;
-        } else {
+        if (prover.isUnsat()) {
             // ------- CHECK BOUNDS -------
             lastTime = System.currentTimeMillis();
             prover.pop();
@@ -181,6 +180,8 @@ public class Refinement {
                 res = !prover.isUnsat() ? UNKNOWN : PASS;
             }
             boundCheckTime = System.currentTimeMillis() - lastTime;
+        } else {
+            res = FAIL;
         }
         if (REF_PRINT_STATISTICS) {
             printSummary(statList, totalSolvingTime, boundCheckTime);
@@ -362,7 +363,7 @@ public class Refinement {
             AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
             return Utils.edge(lit.getName(), p.apply(lit.getEdge().getFirst().getEvent()), p.apply(lit.getEdge().getSecond().getEvent()), ctx);
         }
-        return null;
+        throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
     }
 
 }
