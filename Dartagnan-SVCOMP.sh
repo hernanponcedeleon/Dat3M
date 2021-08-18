@@ -20,5 +20,5 @@ else
         FLAGS+=" -cat cat/svcomp.cat"
     fi
     echo $FLAGS -property $1 -i $2
-    java -jar svcomp/target/svcomp-$VERSION-jar-with-dependencies.jar $FLAGS -property $1 -i $2
+    java -jar svcomp/target/svcomp-$VERSION.jar $FLAGS -property $1 -i $2
 fi
