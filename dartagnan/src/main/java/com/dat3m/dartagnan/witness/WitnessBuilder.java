@@ -45,6 +45,23 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.DartagnanOptions;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.program.utils.EType.PTHREAD;
+import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static java.lang.String.valueOf;
+
 public class WitnessBuilder {
 	
 	private final WitnessGraph graph;
@@ -68,8 +85,7 @@ public class WitnessBuilder {
 	}
 	
 	public void write() {
-		try {
-			FileWriter fw = new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml");
+		try (FileWriter fw = new FileWriter(System.getenv().get("DAT3M_HOME") + "/output/witness.graphml")) {
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
 			for(GraphAttributes attr : GraphAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"graph\" id=\"" + attr + "\"/>\n");}
@@ -77,9 +93,7 @@ public class WitnessBuilder {
 			for(EdgeAttributes attr : EdgeAttributes.values()) {fw.write("<key attr.name=\"" + attr.toString() + "\" attr.type=\"string\" for=\"edge\" id=\"" + attr + "\"/>\n");}
 			fw.write(graph.toXML());
 			fw.write("</graphml>\n");
-			fw.close();
-		}
-		catch (IOException e1) {
+		} catch (IOException e1) {
 			e1.printStackTrace();
 		}		
 	}
@@ -228,20 +242,22 @@ public class WitnessBuilder {
 		String output = null;
 		try {
 			Process proc = Runtime.getRuntime().exec("sha256sum " + path);
-			BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-			try {
-				proc.waitFor();
-			} catch(InterruptedException e) {
-				System.out.println(e.getMessage());
-				System.exit(0);
-			}
-			while(read.ready()) {
-				output = read.readLine();
+			try (BufferedReader read = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
+				try {
+					proc.waitFor();
+				} catch (InterruptedException e) {
+					System.out.println(e.getMessage());
+					System.exit(0);
+				}
+				while (read.ready()) {
+					output = read.readLine();
+				}
 			}
 			if(proc.exitValue() == 1) {
-				BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-				while(error.ready()) {
-					System.out.println(error.readLine());
+				try (BufferedReader error = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+					while (error.ready()) {
+						System.out.println(error.readLine());
+					}
 				}
 				System.exit(0);
 			}

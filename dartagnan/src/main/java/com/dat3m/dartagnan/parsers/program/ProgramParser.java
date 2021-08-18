@@ -2,14 +2,13 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.Program;
-
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
 
 public class ProgramParser {
 
@@ -25,11 +24,13 @@ public class ProgramParser {
             String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
             return new ProgramParser().parse(new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl"));    		
     	}
-        FileInputStream stream = new FileInputStream(file);
-        ParserInterface parser = getConcreteParser(file);
-        CharStream charStream = CharStreams.fromStream(stream);
-        Program program = parser.parse(charStream);
-        stream.close();
+
+        Program program;
+        try (FileInputStream stream = new FileInputStream(file)) {
+            ParserInterface parser = getConcreteParser(file);
+            CharStream charStream = CharStreams.fromStream(stream);
+            program = parser.parse(charStream);
+        }
         program.setName(file.getName());
         return program;
     }
@@ -39,13 +40,15 @@ public class ProgramParser {
         	case "c":
         	case "i":
 				File CFile = File.createTempFile("dat3m", ".c");
+				CFile.deleteOnExit();
         		String name = CFile.getName().substring(0, CFile.getName().lastIndexOf('.'));
-			    FileWriter writer = new FileWriter(CFile);
-			    writer.write(raw);
-			    writer.close();
-	            compileWithClang(CFile);
+                try (FileWriter writer = new FileWriter(CFile)) {
+                    writer.write(raw);
+                }
+                compileWithClang(CFile);
 	            compileWithSmack(CFile);
 	            File BplFile = new File(System.getenv().get("DAT3M_HOME") + "/output/" + name + ".bpl");
+	            BplFile.deleteOnExit();
 	            Program p = new ProgramParser().parse(BplFile);
 	            CFile.delete();
 	            BplFile.delete();
@@ -84,10 +87,10 @@ public class ProgramParser {
     }
 
     private String readFirstLine(File file) throws IOException{
-        FileReader fileReader = new FileReader(file);
-        BufferedReader bufferedReader = new BufferedReader(fileReader);
-        String line = bufferedReader.readLine();
-        fileReader.close();
+        String line;
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
+            line = bufferedReader.readLine();
+        }
         return line;
     }
 }

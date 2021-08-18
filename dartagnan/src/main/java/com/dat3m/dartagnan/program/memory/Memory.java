@@ -26,7 +26,7 @@ public class Memory {
     private final Map<String, Location> locationIndex;
     private final Map<String, List<Address>> arrays;
 
-    private int nextIndex = 0;
+    private int nextIndex = 1;
 
     public Memory(){
         map = HashBiMap.create();
