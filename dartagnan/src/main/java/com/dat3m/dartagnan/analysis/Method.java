@@ -19,14 +19,14 @@ public enum Method {
 	}
 
 	// Used for options in the console
-	public String toShortString() {
+	public String asStringOption() {
         switch(this) {
-        case TWO:
-            return "two";
-        case INCREMENTAL:
-            return "incremental";
-        case ASSUME:
-            return "assume";
+        	case TWO:
+        		return "two";
+        	case INCREMENTAL:
+        		return "incremental";
+        	case ASSUME:
+        		return "assume";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
 	}
@@ -43,5 +43,9 @@ public enum Method {
             return "Solver with Assumption";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
+	}
+
+	public static Method getDefault() {
+		return INCREMENTAL;
 	}
 }

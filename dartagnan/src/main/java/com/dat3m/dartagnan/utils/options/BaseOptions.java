@@ -13,7 +13,6 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.analysis.Method.INCREMENTAL;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.*;
 
 public abstract class BaseOptions extends Options {
@@ -80,8 +79,8 @@ public abstract class BaseOptions extends Options {
         programFilePath = cmd.getOptionValue("input");
         targetModelFilePath = cmd.getOptionValue("cat");
 
-        target = Arch.get(cmd.getOptionValue("target", Arch.NONE.toShortString()));
-        method = Method.get(cmd.getOptionValue(METHOD_OPTION, INCREMENTAL.toShortString()));
+        target = Arch.get(cmd.getOptionValue("target", Arch.getDefault().asStringOption()));
+        method = Method.get(cmd.getOptionValue(METHOD_OPTION, Method.getDefault().asStringOption()));
 
         String solverString = cmd.getOptionValue(SMTSOLVER_OPTION, "unspecified");
         switch (solverString) {
@@ -137,7 +136,7 @@ public abstract class BaseOptions extends Options {
     }
 
     protected void parseSettings(CommandLine cmd){
-        Alias alias = Alias.get(cmd.getOptionValue("alias", Alias.CFIS.toShortString()));
+        Alias alias = Alias.get(cmd.getOptionValue("alias", Alias.getDefault().asStringOption()));
 
         int bound = 1;
         int solver_timeout = 0;

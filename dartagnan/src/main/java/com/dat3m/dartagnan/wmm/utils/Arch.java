@@ -23,21 +23,21 @@ public enum Arch {
     }
 
 	// Used for options in the console
-    public String toShortString() {
+	public String asStringOption() {
         switch(this){
-            case NONE:
-                return "none";
-            case ARM:
-                return "arm";
-            case ARM8:
-                return "arm8";
-            case POWER:
-                return "power";
-            case TSO:
-                return "tso";
+        	case NONE:
+        		return "none";
+        	case ARM:
+        		return "arm";
+        	case ARM8:
+        		return "arm8";
+        	case POWER:
+        		return "power";
+        	case TSO:
+        		return "tso";
         }
-        return super.toString();
-    }
+        throw new UnsupportedOperationException("Unrecognized architecture " + this);
+	}
 
 	// Used to display in UI
     @Override
@@ -54,6 +54,10 @@ public enum Arch {
             case TSO:
                 return "TSO";
         }
-        return super.toString();
+        throw new UnsupportedOperationException("Unrecognized architecture " + this);
     }
+
+	public static Arch getDefault() {
+		return NONE;
+	}
 }

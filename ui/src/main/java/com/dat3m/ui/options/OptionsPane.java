@@ -21,7 +21,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Iterator;
 
 import static java.lang.Math.min;
@@ -56,16 +55,16 @@ public class OptionsPane extends JPanel implements ActionListener {
         iconPane = new JLabel(IconHelper.getIcon(IconCode.DARTAGNAN, height), JLabel.CENTER);
 
         aliasPane = new Selector<>(Alias.values(), ControlCode.ALIAS);
-        aliasPane.setSelectedItem(Alias.CFIS);
+        aliasPane.setSelectedItem(Alias.getDefault());
         
         methodPane = new Selector<>(Method.values(), ControlCode.METHOD);
-        methodPane.setSelectedItem(Method.INCREMENTAL);
+        methodPane.setSelectedItem(Method.getDefault());
         
         solverPane = new Selector<>(Solvers.values(), ControlCode.SOLVER);
         solverPane.setSelectedItem(Solvers.Z3);
 
         targetPane = new Selector<>(Arch.values(), ControlCode.TARGET);
-        targetPane.setSelectedItem(Arch.NONE);
+        targetPane.setSelectedItem(Arch.getDefault());
         
         boundField = new BoundField();
         timeoutField = new TimeoutField();

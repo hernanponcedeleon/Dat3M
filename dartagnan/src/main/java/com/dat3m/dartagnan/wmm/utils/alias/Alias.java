@@ -17,21 +17,21 @@ public enum Alias {
                     return CFS;
             }
         }
-        throw new UnsupportedOperationException("Illegal alias value");
+        throw new UnsupportedOperationException("Unrecognized alias " + alias);
     }
 
 	// Used for options in the console
-    public String toShortString() {
+	public String asStringOption() {
         switch(this){
-            case NONE:
-                return "none";
-            case CFIS:
-                return "andersen";
-            case CFS:
-                return "cfs";
+        	case NONE:
+        		return "none";
+        	case CFIS:
+        		return "andersen";
+        	case CFS:
+        		return "cfs";
         }
-        return super.toString();
-    }
+        throw new UnsupportedOperationException("Unrecognized alias " + this);
+	}
 
 	// Used to display in UI
     @Override
@@ -44,6 +44,10 @@ public enum Alias {
             case CFS:
                 return "CFS";
         }
-        return super.toString();
+        throw new UnsupportedOperationException("Unrecognized alias " + this);
     }
+
+	public static Alias getDefault() {
+		return CFIS;
+	}
 }
