@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.program.arch.aarch64.event;
 
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.microsoft.z3.Context;
+
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Event;
@@ -14,9 +16,9 @@ public class RMWStoreExclusiveNoFail extends RMWStoreExclusive implements RegRea
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx) {
+    public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        execVar = ctx.mkBool(true);
+        execVar = ctx.getFormulaManager().getBooleanFormulaManager().makeBoolean(true);
     }
 
     @Override
