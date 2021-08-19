@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils;
 
 public enum Arch {
-    NONE, ARM, ARM8, POWER, TSO;
+    ARM, ARM8, NONE, POWER, TSO;
 
     public static Arch get(String arch){
         if(arch != null){
@@ -22,8 +22,8 @@ public enum Arch {
         throw new UnsupportedOperationException("Unrecognized architecture " + arch);
     }
 
-    @Override
-    public String toString() {
+	// Used for options in the console
+    public String toShortString() {
         switch(this){
             case NONE:
                 return "none";
@@ -35,6 +35,24 @@ public enum Arch {
                 return "power";
             case TSO:
                 return "tso";
+        }
+        return super.toString();
+    }
+
+	// Used to display in UI
+    @Override
+    public String toString() {
+        switch(this){
+            case NONE:
+                return "None";
+            case ARM:
+                return "ARM";
+            case ARM8:
+                return "ARM8";
+            case POWER:
+                return "Power";
+            case TSO:
+                return "TSO";
         }
         return super.toString();
     }

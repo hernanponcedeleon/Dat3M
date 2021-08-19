@@ -30,5 +30,9 @@ public class Selector<T> extends JPanel {
     public Object getSelectedItem(){
         return selector.getSelectedItem();
     }
+
+    public void setSelectedItem(Object selected){
+        selector.setSelectedItem(selected);
+    }
 }
 

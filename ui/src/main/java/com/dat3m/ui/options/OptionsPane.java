@@ -1,5 +1,6 @@
 package com.dat3m.ui.options;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -8,7 +9,6 @@ import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.options.utils.ControlCode;
-import com.dat3m.ui.options.utils.Method;
 import com.dat3m.ui.utils.UiOptions;
 
 import javax.swing.*;
@@ -55,13 +55,18 @@ public class OptionsPane extends JPanel implements ActionListener {
         int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
         iconPane = new JLabel(IconHelper.getIcon(IconCode.DARTAGNAN, height), JLabel.CENTER);
 
-        aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
-        methodPane = new Selector<>(EnumSet.allOf(Method.class).toArray(new Method[0]), ControlCode.METHOD);
+        aliasPane = new Selector<>(Alias.values(), ControlCode.ALIAS);
+        aliasPane.setSelectedItem(Alias.CFIS);
+        
+        methodPane = new Selector<>(Method.values(), ControlCode.METHOD);
+        methodPane.setSelectedItem(Method.INCREMENTAL);
+        
         solverPane = new Selector<>(Solvers.values(), ControlCode.SOLVER);
+        solverPane.setSelectedItem(Solvers.Z3);
 
-        Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
-        targetPane = new Selector<>(architectures, ControlCode.TARGET);
-
+        targetPane = new Selector<>(Arch.values(), ControlCode.TARGET);
+        targetPane.setSelectedItem(Arch.NONE);
+        
         boundField = new BoundField();
         timeoutField = new TimeoutField();
 

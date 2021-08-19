@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.analysis.MethodTypes;
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
@@ -13,7 +13,7 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.analysis.MethodTypes.INCREMENTAL;
+import static com.dat3m.dartagnan.analysis.Method.INCREMENTAL;
 import static org.sosy_lab.java_smt.SolverContextFactory.Solvers.*;
 
 public abstract class BaseOptions extends Options {
@@ -27,12 +27,12 @@ public abstract class BaseOptions extends Options {
     protected Settings settings;
     protected Arch target;
 
-    protected MethodTypes method;
+    protected Method method;
     protected Solvers smtsolver;
 
-    private final Set<MethodTypes> supported_methods =
-    		ImmutableSet.copyOf(Arrays.stream(MethodTypes.values())
-            .sorted(Comparator.comparing(MethodTypes::toString))
+    private final Set<Method> supported_methods =
+    		ImmutableSet.copyOf(Arrays.stream(Method.values())
+            .sorted(Comparator.comparing(Method::toString))
     		.collect(Collectors.toList()));
 
     private final Set<String> supportedTargets =
@@ -80,11 +80,8 @@ public abstract class BaseOptions extends Options {
         programFilePath = cmd.getOptionValue("input");
         targetModelFilePath = cmd.getOptionValue("cat");
 
-        if(cmd.hasOption("target")) {
-            target = Arch.get(cmd.getOptionValue("target"));
-        }
-
-        method = MethodTypes.fromString(cmd.getOptionValue(METHOD_OPTION, INCREMENTAL.toString()));
+        target = Arch.get(cmd.getOptionValue("target", Arch.NONE.toShortString()));
+        method = Method.get(cmd.getOptionValue(METHOD_OPTION, INCREMENTAL.toShortString()));
 
         String solverString = cmd.getOptionValue(SMTSOLVER_OPTION, "unspecified");
         switch (solverString) {
@@ -117,7 +114,7 @@ public abstract class BaseOptions extends Options {
 
     }
 
-    public MethodTypes getMethod(){
+    public Method getMethod(){
         return method;
     }
 
@@ -142,7 +139,7 @@ public abstract class BaseOptions extends Options {
     }
 
     protected void parseSettings(CommandLine cmd){
-        Alias alias = cmd.hasOption("alias") ? Alias.get(cmd.getOptionValue("alias")) : null;
+        Alias alias = Alias.get(cmd.getOptionValue("alias", Alias.CFIS.toShortString()));
 
         int bound = 1;
         int solver_timeout = 0;

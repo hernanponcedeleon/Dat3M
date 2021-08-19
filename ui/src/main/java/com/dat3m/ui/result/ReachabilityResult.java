@@ -73,7 +73,7 @@ public class ReachabilityResult {
                         case ASSUME:
                             result = runAnalysisAssumeSolver(ctx, prover, task);
                             break;
-                        case TWOSOLVERS:
+                        case TWO:
                             try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
                                 result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
                             }
