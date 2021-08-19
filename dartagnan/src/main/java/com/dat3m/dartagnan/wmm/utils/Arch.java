@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils;
 
 public enum Arch {
-    ARM, ARM8, NONE, POWER, TSO;
+	NONE, ARM, ARM8, POWER, TSO;
 
     public static Arch get(String arch){
         if(arch != null){
