@@ -1,7 +1,8 @@
 package com.dat3m.svcomp;
 
+import static com.dat3m.dartagnan.utils.options.BaseOptions.SMTSOLVER_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.ANALYSIS_OPTION;
-import static com.dat3m.dartagnan.utils.options.DartagnanOptions.SOLVER_OPTION;
+import static com.dat3m.dartagnan.utils.options.DartagnanOptions.METHOD_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_OPTION;
 import static com.dat3m.dartagnan.utils.options.DartagnanOptions.WITNESS_PATH_OPTION;
 import static com.dat3m.dartagnan.witness.GraphAttributes.UNROLLBOUND;
@@ -51,11 +52,13 @@ public class SVCOMPRunner {
         
         File file = new File(options.getProgramFilePath());
         File tmp = new SVCOMPSanitizer(file).run(1);
+        // First time we compiler with standard atomic header to catch compilation problems
+        compile(tmp, options, false);
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ?  parseInt(witness.getAttributed(UNROLLBOUND.toString())) : options.getUMin();
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN") && bound <= options.getUMax()) {
-			compile(tmp, options);
+			compile(tmp, options, true);
 	        // If not removed here, file is not removed when we reach the timeout
 	        // File can be safely deleted since it was created by the SVCOMPSanitizer
 	        // (it not the original C file) and we already created the Boogie file
@@ -73,14 +76,15 @@ public class SVCOMPRunner {
 	    	cmd.add("java");
 	    	cmd.add("-Dlog4j.configurationFile=" + System.getenv().get("DAT3M_HOME") + "/dartagnan/src/main/resources/log4j2.xml");
 	    	cmd.add("-DLOGNAME=" + file.getName());
-	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7-jar-with-dependencies.jar"));
+	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7.jar"));
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
 	    	cmd.addAll(asList("-t", options.getTarget() != null ? options.getTarget().toString() : "none"));
 	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().toString()));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
 	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
-	    	cmd.addAll(asList("-" + SOLVER_OPTION, options.getSolver().toString()));
+	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getMethod().toString()));
+	    	cmd.addAll(asList("-" + SMTSOLVER_OPTION, options.getSMTSolver().toString().toLowerCase()));
 	    	if(options.getWitnessPath() != null) {
 	    		// In validation mode we do not create witnesses.
 	    		cmd.addAll(asList("-" + WITNESS_PATH_OPTION, options.getWitnessPath()));

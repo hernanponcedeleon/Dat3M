@@ -14,12 +14,12 @@
   </Appenders>
   
   <Loggers>
-    
+
     <Root level="info">
-<!--
+	  <!--
 	  <AppenderRef ref="Console"/>
+	  -->
       <AppenderRef ref="File"/>
--->
     </Root>
     
   </Loggers>

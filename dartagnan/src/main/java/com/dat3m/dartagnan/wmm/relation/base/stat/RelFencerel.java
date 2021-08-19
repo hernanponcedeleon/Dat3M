@@ -4,14 +4,15 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.Context;
-
 import java.util.List;
 import java.util.ListIterator;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class RelFencerel extends StaticRelation {
 
@@ -98,8 +99,9 @@ public class RelFencerel extends StaticRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         List<Event> fences = task.getProgram().getCache().getEvents(FilterBasic.get(fenceName));
 
@@ -107,19 +109,19 @@ public class RelFencerel extends StaticRelation {
             Event e1 = tuple.getFirst();
             Event e2 = tuple.getSecond();
 
-            BoolExpr orClause = ctx.mkFalse();
+            BooleanFormula orClause = bmgr.makeFalse();
             if(minTupleSet.contains(tuple)) {
-                orClause = ctx.mkTrue();
+                orClause = bmgr.makeTrue();
             } else {
                 for (Event fence : fences) {
                     if (fence.getCId() > e1.getCId() && fence.getCId() < e2.getCId()) {
-                        orClause = ctx.mkOr(orClause, fence.exec());
+                        orClause = bmgr.or(orClause, fence.exec());
                     }
                 }
             }
 
-            BoolExpr rel = this.getSMTVar(tuple, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(getExecPair(tuple, ctx), orClause)));
+            BooleanFormula rel = this.getSMTVar(tuple, ctx);
+            enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(getExecPair(tuple, ctx), orClause)));
         }
 
         return enc;

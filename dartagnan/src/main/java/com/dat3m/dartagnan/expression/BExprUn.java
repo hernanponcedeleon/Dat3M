@@ -3,11 +3,17 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
-import com.microsoft.z3.Model;
+
+import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BitvectorFormula;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -31,14 +37,21 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public BoolExpr toZ3Bool(Event e, Context ctx) {
-        return op.encode(b.toZ3Bool(e, ctx), ctx);
+    public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
+        return op.encode(b.toBoolFormula(e, ctx), ctx);
     }
 
     @Override
-    public Expr getLastValueExpr(Context ctx){
-        BoolExpr expr = ctx.mkGt((IntExpr)b.getLastValueExpr(ctx), ctx.mkInt(1));
-        return ctx.mkITE(op.encode(expr, ctx), ctx.mkInt(1), ctx.mkInt(0));
+    public Formula getLastValueExpr(SolverContext ctx){
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		
+		BooleanFormula expr = b.getLastValueExpr(ctx) instanceof BitvectorFormula ? 
+				fmgr.getBitvectorFormulaManager().greaterThan((BitvectorFormula)b.getLastValueExpr(ctx), fmgr.getBitvectorFormulaManager().makeBitvector(b.getPrecision(), (BigInteger.ONE)), false):
+				fmgr.getIntegerFormulaManager().greaterThan((IntegerFormula)b.getLastValueExpr(ctx), fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE));
+        
+		return fmgr.getBooleanFormulaManager().ifThenElse(op.encode(expr, ctx), 
+				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ONE), 
+				fmgr.getIntegerFormulaManager().makeNumber(BigInteger.ZERO));
     }
 
     @Override
@@ -57,7 +70,7 @@ public class BExprUn extends BExpr {
     }
 
     @Override
-    public boolean getBoolValue(Event e, Model model, Context ctx){
+    public boolean getBoolValue(Event e, Model model, SolverContext ctx){
         return op.combine(b.getBoolValue(e, model, ctx));
     }
 

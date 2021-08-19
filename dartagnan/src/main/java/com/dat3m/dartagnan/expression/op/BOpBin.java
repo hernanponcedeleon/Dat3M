@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.expression.op;
 
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public enum BOpBin {
     AND, OR;
@@ -17,12 +18,13 @@ public enum BOpBin {
         return super.toString();
     }
 
-    public BoolExpr encode(BoolExpr e1, BoolExpr e2, Context ctx) {
-        switch(this) {
+    public BooleanFormula encode(BooleanFormula e1, BooleanFormula e2, SolverContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		switch(this) {
             case AND:
-                return ctx.mkAnd(e1, e2);
+                return bmgr.and(e1, e2);
             case OR:
-                return ctx.mkOr(e1, e2);
+                return bmgr.or(e1, e2);
         }
         throw new UnsupportedOperationException("Encoding of not supported for BOpBin " + this);
     }

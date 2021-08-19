@@ -2,17 +2,18 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.If;
 import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
 import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 import java.util.*;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Thread {
 
@@ -154,34 +155,18 @@ public class Thread {
     // Encoding
     // -----------------------------------------------------------------------------------------------------------------
 
-    public BoolExpr encodeCF(Context ctx){
-    	BoolExpr enc = ctx.mkTrue();
-    	Stack<If> ifStack = new Stack<>();
-    	BoolExpr guard = ctx.mkTrue();
+    public BooleanFormula encodeCF(SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
+    	BooleanFormula guard = bmgr.makeTrue();
     	for(Event e : entry.getSuccessors()) {
-    		if(!ifStack.isEmpty()) {
-        		If lastIf = ifStack.peek();
-        		if(e.equals(lastIf.getMainBranchEvents().get(0))) {
-        			guard = ctx.mkAnd(lastIf.cf(), lastIf.getGuard().toZ3Bool(lastIf, ctx));
-        		}
-        		if(e.equals(lastIf.getElseBranchEvents().get(0))) {
-        			guard = ctx.mkAnd(lastIf.cf(), ctx.mkNot(lastIf.getGuard().toZ3Bool(lastIf, ctx)));
-        		}
-        		if(e.equals(lastIf.getSuccessor())) {
-        			guard = ctx.mkOr(lastIf.getExitMainBranch().getCfCond(), lastIf.getExitElseBranch().getCfCond());
-        			ifStack.pop();
-        		}    			
-    		}
-    		enc = ctx.mkAnd(enc, e.encodeCF(ctx, guard));
+    		enc = bmgr.and(enc, e.encodeCF(ctx, guard));
     		guard = e.cf();
     		if(e instanceof CondJump) {
-    			guard = ctx.mkAnd(guard, ctx.mkNot(((CondJump)e).getGuard().toZ3Bool(e, ctx)));
-    		}
-    		if(e instanceof If) {
-    			ifStack.add((If)e);
+    			guard = bmgr.and(guard, bmgr.not(((CondJump)e).getGuard().toBoolFormula(e, ctx)));
     		}
     	}
-        return enc;
+    	return enc;
     }
 
 

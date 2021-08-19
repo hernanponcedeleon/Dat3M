@@ -5,12 +5,14 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Model;
 import com.dat3m.dartagnan.program.Thread;
 
 import java.util.*;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public abstract class Event implements Comparable<Event> {
 
@@ -28,9 +30,9 @@ public abstract class Event implements Comparable<Event> {
 
 	protected transient Event successor;
 
-    protected transient BoolExpr cfEnc;
-    protected transient BoolExpr cfCond;
-	protected transient BoolExpr cfVar;
+    protected transient BooleanFormula cfEnc;
+    protected transient BooleanFormula cfCond;
+	protected transient BooleanFormula cfVar;
 
 	protected VerificationTask task;
 
@@ -235,15 +237,7 @@ public abstract class Event implements Comparable<Event> {
 		while(from != null && !from.equals(until)){
 			Event copy = from.getCopy();
 			appendTo.setSuccessor(copy);
-			if(from instanceof If){
-				from = ((If)from).getExitElseBranch();
-				appendTo = ((If)copy).getExitElseBranch();
-			} else if(from instanceof While){
-				from = ((While)from).getExitEvent();
-				appendTo = ((While)copy).getExitEvent();
-			} else {
-				appendTo = copy;
-			}
+			appendTo = copy;
 			from = from.successor;
 		}
 		return appendTo;
@@ -301,15 +295,16 @@ public abstract class Event implements Comparable<Event> {
 	// Encoding
 	// -----------------------------------------------------------------------------------------------------------------
 
-	public void initialise(VerificationTask task, Context ctx){
+	public void initialise(VerificationTask task, SolverContext ctx){
 		if(cId < 0){
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
 		this.task = task;
+		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		if (GlobalSettings.MERGE_CF_VARS) {
-			cfVar = ctx.mkBoolConst("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
+			cfVar = bmgr.makeVariable("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
 		} else {
-			cfVar = ctx.mkBoolConst("cf(" + repr() + ")");
+			cfVar = bmgr.makeVariable("cf(" + repr() + ")");
 		}
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}
@@ -327,44 +322,45 @@ public abstract class Event implements Comparable<Event> {
 		return repr;
 	}
 
-	public BoolExpr exec(){
+	public BooleanFormula exec(){
 		return cf();
 	}
 
-	public BoolExpr cf(){
+	public BooleanFormula cf(){
 		return cfVar;
 	}
 
-	public BoolExpr getCfCond(){
+	public BooleanFormula getCfCond(){
 		return cfCond;
 	}
 
-	public void addCfCond(Context ctx, BoolExpr cond){
-		cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
+	public void addCfCond(SolverContext ctx, BooleanFormula cond){
+		cfCond = (cfCond == null) ? cond : ctx.getFormulaManager().getBooleanFormulaManager().or(cfCond, cond);
 	}
 
-	public BoolExpr encodeCF(Context ctx, BoolExpr cond) {
+	public BooleanFormula encodeCF(SolverContext ctx, BooleanFormula cond) {
 		if(cfEnc == null){
-			cfCond = (cfCond == null) ? cond : ctx.mkOr(cfCond, cond);
-			cfEnc = ctx.mkEq(cfVar, cfCond);
-			cfEnc = ctx.mkAnd(cfEnc, encodeExec(ctx));
+			BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
+			cfEnc = bmgr.equivalence(cfVar, cfCond);
+			cfEnc = bmgr.and(cfEnc, encodeExec(ctx));
 		}
 		return cfEnc;
 	}
 
-	protected BoolExpr encodeExec(Context ctx){
-		return ctx.mkTrue();
+	protected BooleanFormula encodeExec(SolverContext ctx){
+		return ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
 	}
 
 
 	// =============== Utility methods ==================
 
 	public boolean wasExecuted(Model model) {
-		return model.getConstInterp(exec()).isTrue();
+		return model.evaluate(exec()).booleanValue();
 	}
 
 	public boolean wasInControlFlow(Model model) {
-		return model.getConstInterp(cf()).isTrue();
+		return model.evaluate(cf()).booleanValue();
 	}
 
 	public boolean cfImpliesExec() {

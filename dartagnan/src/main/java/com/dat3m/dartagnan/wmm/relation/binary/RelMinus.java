@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -30,7 +32,7 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    public void initialise(VerificationTask task, Context ctx){
+    public void initialise(VerificationTask task, SolverContext ctx){
         super.initialise(task, ctx);
         if(r2.getRecursiveGroupId() > 0){
             throw new RuntimeException("Relation " + r2.getName() + " cannot be recursive since it occurs in a set minus.");
@@ -73,30 +75,32 @@ public class RelMinus extends BinaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet min = getMinTupleSet();
         for(Tuple tuple : encodeTupleSet){
             if (min.contains(tuple)) {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), getExecPair(tuple, ctx)));
                 continue;
             }
 
-            BoolExpr opt1 = r1.getSMTVar(tuple, ctx);
-            BoolExpr opt2 = ctx.mkNot(r2.getSMTVar(tuple, ctx));
+            BooleanFormula opt1 = r1.getSMTVar(tuple, ctx);
+            BooleanFormula opt2 = bmgr.not(r2.getSMTVar(tuple, ctx));
             if (Relation.PostFixApprox) {
-                enc = ctx.mkAnd(enc, ctx.mkImplies(ctx.mkAnd(opt1, opt2), this.getSMTVar(tuple, ctx)));
+                enc = bmgr.and(enc, bmgr.implication(bmgr.and(opt1, opt2), this.getSMTVar(tuple, ctx)));
             } else {
-                enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(tuple, ctx), ctx.mkAnd(opt1, opt2)));
+                enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(tuple, ctx), bmgr.and(opt1, opt2)));
             }
         }
         return enc;
     }
 
     @Override
-    public BoolExpr encodeIteration(int groupId, int iteration, Context ctx){
-        BoolExpr enc = ctx.mkTrue();
+    public BooleanFormula encodeIteration(int groupId, int iteration, SolverContext ctx){
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
 
         if((groupId & recursiveGroupId) > 0 && iteration > lastEncodedIteration){
             lastEncodedIteration = iteration;
@@ -105,7 +109,7 @@ public class RelMinus extends BinaryRelation {
 
             if(iteration == 0 && isRecursive){
                 for(Tuple tuple : encodeTupleSet){
-                    enc = ctx.mkAnd(ctx.mkNot(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
+                    enc = bmgr.and(bmgr.not(Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx)));
                 }
             } else {
                 int childIteration = isRecursive ? iteration - 1 : iteration;
@@ -115,14 +119,14 @@ public class RelMinus extends BinaryRelation {
                 String r2Name = r2.getName();
 
                 for(Tuple tuple : encodeTupleSet){
-                    BoolExpr edge = Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx);
-                    BoolExpr opt1 = Utils.edge(r1Name, tuple.getFirst(), tuple.getSecond(), ctx);
-                    BoolExpr opt2 = ctx.mkNot(Utils.edge(r2Name, tuple.getFirst(), tuple.getSecond(), ctx));
-                    enc = ctx.mkAnd(enc, ctx.mkEq(edge, ctx.mkAnd(opt1, opt2)));
+                	BooleanFormula edge = Utils.edge(name, tuple.getFirst(), tuple.getSecond(), ctx);
+                	BooleanFormula opt1 = Utils.edge(r1Name, tuple.getFirst(), tuple.getSecond(), ctx);
+                	BooleanFormula opt2 = bmgr.not(Utils.edge(r2Name, tuple.getFirst(), tuple.getSecond(), ctx));
+                    enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(opt1, opt2)));
                 }
 
                 if(recurse){
-                    enc = ctx.mkAnd(enc, r1.encodeIteration(groupId, childIteration, ctx));
+                    enc = bmgr.and(enc, r1.encodeIteration(groupId, childIteration, ctx));
                 }
             }
         }

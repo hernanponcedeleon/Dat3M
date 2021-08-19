@@ -2,13 +2,15 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
-import com.microsoft.z3.Model;
 
 import java.math.BigInteger;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
@@ -72,12 +74,12 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public Expr getLastValueExpr(Context ctx){
+	public Formula getLastValueExpr(SolverContext ctx){
 		return address.getLastMemValueExpr(ctx);
 	}
 
 	@Override
-	public Expr toZ3Int(Event e, Context ctx){
+	public Formula toIntFormula(Event e, SolverContext ctx){
 		if(e instanceof MemEvent){
 			return ((MemEvent) e).getMemValueExpr();
 		}
@@ -85,15 +87,16 @@ public class Location implements ExprInterface {
 	}
 
 	@Override
-	public BoolExpr toZ3Bool(Event e, Context ctx){
+	public BooleanFormula toBoolFormula(Event e, SolverContext ctx){
 		if(e instanceof MemEvent){
-			return ctx.mkGt((IntExpr)((MemEvent) e).getMemValueExpr(), ctx.mkInt(0));
+			IntegerFormulaManager imgr = ctx.getFormulaManager().getIntegerFormulaManager();
+			return imgr.greaterThan((IntegerFormula)((MemEvent) e).getMemValueExpr(), imgr.makeNumber(BigInteger.ZERO));
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}
 
 	@Override
-	public BigInteger getIntValue(Event e, Model model, Context ctx){
+	public BigInteger getIntValue(Event e, Model model, SolverContext ctx){
 		if(e instanceof Store){
 			return ((Store) e).getMemValue().getIntValue(e, model, ctx);
 		}
@@ -102,14 +105,14 @@ public class Location implements ExprInterface {
 		}
 		if(e instanceof Load){
 			Register reg = ((Load) e).getResultRegister();
-			return new BigInteger(model.getConstInterp(reg.toZ3IntResult(e, ctx)).toString());
+			return new BigInteger(model.evaluate(reg.toIntFormulaResult(e, ctx)).toString());
 
 		}
 		throw new RuntimeException("Attempt to encode memory value for illegal event");
 	}
 
 	@Override
-	public boolean getBoolValue(Event e, Model model, Context ctx){
+	public boolean getBoolValue(Event e, Model model, SolverContext ctx){
 		if(e instanceof MemEvent){
 			return ((MemEvent) e).getMemValue().getBoolValue(e, model, ctx);
 		}

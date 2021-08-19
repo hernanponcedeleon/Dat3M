@@ -1,27 +1,17 @@
 package com.dat3m.dartagnan.program.llvm.utils;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.AND;
-import static com.dat3m.dartagnan.expression.op.IOpBin.AR_SHIFT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.DIV;
-import static com.dat3m.dartagnan.expression.op.IOpBin.UDIV;
-import static com.dat3m.dartagnan.expression.op.IOpBin.L_SHIFT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MINUS;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
-import static com.dat3m.dartagnan.expression.op.IOpBin.UREM;
-import static com.dat3m.dartagnan.expression.op.IOpBin.SREM;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.OR;
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
-import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.XOR;
+import com.dat3m.dartagnan.expression.BExprUn;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.op.BOpUn;
+import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 
 import java.util.Arrays;
 import java.util.List;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import static com.dat3m.dartagnan.expression.op.IOpBin.*;
 
 public class LlvmFunctions {
 
@@ -78,6 +68,16 @@ public class LlvmFunctions {
 			op = AR_SHIFT;
 		}
 		if(name.startsWith("$xor.")) {
+			//TODO: This is a temporary fix to parse xor.x1 as boolean negation.
+			// Once we have proper preprocessing code, we should remove this here!
+			if (name.startsWith("$xor.i1") && callParams.get(1) instanceof IConst) {
+				IConst c = (IConst) callParams.get(1);
+				if (c.getIntValue().intValue() == 0) {
+					return callParams.get(0);
+				} else if (c.getIntValue().intValue() == 1) {
+					return new BExprUn(BOpUn.NOT, (ExprInterface) callParams.get(0));
+				}
+			}
 			op = XOR;
 		}
 		if(name.startsWith("$or.")) {

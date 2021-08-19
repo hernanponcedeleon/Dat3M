@@ -377,24 +377,6 @@ public class AliasAnalysis {
                 ssaMap.get(register).put(e, index);
                 indexMap.put(register, ++index);
             }
-
-            if(e instanceof If){
-                Map<Register, Integer> indexMapClone = new HashMap<>(indexMap);
-                List<Event> t1Events = ((If)e).getMainBranchEvents();
-                List<Event> t2Events = ((If)e).getElseBranchEvents();
-                mkSsaIndices(t1Events, ssaMap, indexMap);
-                mkSsaIndices(t2Events, ssaMap, indexMapClone);
-
-                for(Register r : indexMapClone.keySet()){
-                    indexMap.put(r, Integer.max(indexMap.getOrDefault(r, 0), indexMapClone.get(r)));
-                    if(indexMap.get(r) < indexMapClone.get(r)){
-                        graph.addEdge(graph.getSSAReg(r, indexMap.get(r)), graph.getSSAReg(r, indexMapClone.get(r)));
-                    } else if(indexMap.get(r) > indexMapClone.get(r)){
-                        graph.addEdge(graph.getSSAReg(r, indexMapClone.get(r)), graph.getSSAReg(r, indexMap.get(r)));
-                    }
-                }
-                i += t1Events.size() + t2Events.size();
-            }
         }
     }
 }

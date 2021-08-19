@@ -1,12 +1,14 @@
 package com.dat3m.dartagnan.wmm.relation.unary;
 
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
+
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
 
 public class RelRangeIdentity extends UnaryRelation {
 
@@ -56,16 +58,18 @@ public class RelRangeIdentity extends UnaryRelation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+		BooleanFormula enc = bmgr.makeTrue();
+		
         //TODO: Optimize using minSets (but no CAT uses this anyway)
         for(Tuple tuple1 : encodeTupleSet){
             Event e = tuple1.getFirst();
-            BoolExpr opt = ctx.mkFalse();
+            BooleanFormula opt = bmgr.makeFalse();
             for(Tuple tuple2 : r1.getMaxTupleSet().getBySecond(e)){
-                opt = ctx.mkOr(r1.getSMTVar(tuple2.getFirst(), e, ctx));
+                opt = bmgr.or(r1.getSMTVar(tuple2.getFirst(), e, ctx));
             }
-            enc = ctx.mkAnd(enc, ctx.mkEq(this.getSMTVar(e, e, ctx), opt));
+            enc = bmgr.and(enc, bmgr.equivalence(this.getSMTVar(e, e, ctx), opt));
         }
         return enc;
     }

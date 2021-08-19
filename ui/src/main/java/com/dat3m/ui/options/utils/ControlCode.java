@@ -2,7 +2,7 @@ package com.dat3m.ui.options.utils;
 
 public enum ControlCode {
 
-    TASK, TARGET, ALIAS, BOUND, TIMEOUT, TEST, CLEAR, METHOD;
+    TASK, TARGET, ALIAS, BOUND, TIMEOUT, TEST, CLEAR, METHOD, SOLVER;
 
     @Override
     public String toString(){
@@ -23,6 +23,8 @@ public enum ControlCode {
                 return "Clear";
             case METHOD:
                 return "Method";
+            case SOLVER:
+                return "Solver";
         }
         return super.toString();
     }
@@ -45,6 +47,8 @@ public enum ControlCode {
                 return "control_command_clear";
             case METHOD:
                 return "control_command_method";
+            case SOLVER:
+                return "control_command_solver";
         }
         throw new RuntimeException("Illegal EditorCode");
     }

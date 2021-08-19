@@ -2,14 +2,19 @@ package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.microsoft.z3.BoolExpr;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.microsoft.z3.Context;
 
 import java.util.Collection;
+
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
 
@@ -54,13 +59,18 @@ public class RelLoc extends Relation {
     }
 
     @Override
-    protected BoolExpr encodeApprox(Context ctx) {
-        BoolExpr enc = ctx.mkTrue();
+    protected BooleanFormula encodeApprox(SolverContext ctx) {
+    	FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+    	IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+    	
+    	BooleanFormula enc = bmgr.makeTrue();
         for(Tuple tuple : encodeTupleSet) {
-            BoolExpr rel = this.getSMTVar(tuple, ctx);
-            enc = ctx.mkAnd(enc, ctx.mkEq(rel, ctx.mkAnd(
-                    ctx.mkAnd(tuple.getFirst().exec(), tuple.getSecond().exec()),
-                    ctx.mkEq(((MemEvent)tuple.getFirst()).getMemAddressExpr(), ((MemEvent)tuple.getSecond()).getMemAddressExpr())
+        	BooleanFormula rel = this.getSMTVar(tuple, ctx);
+            enc = bmgr.and(enc, bmgr.equivalence(rel, bmgr.and(
+                    bmgr.and(tuple.getFirst().exec(), tuple.getSecond().exec()),
+                    imgr.equal((IntegerFormula)((MemEvent)tuple.getFirst()).getMemAddressExpr(), 
+                    			(IntegerFormula)((MemEvent)tuple.getSecond()).getMemAddressExpr())
             )));
         }
         return enc;

@@ -14,6 +14,8 @@ import com.dat3m.dartagnan.program.arch.linux.event.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.utils.EType;
+
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
@@ -26,6 +28,7 @@ public class VisitorLitmusC
     private final ProgramBuilder programBuilder;
     private int currentThread;
     private int scope;
+    private int ifId = 0;
     private Register returnRegister;
 
     public VisitorLitmusC(ProgramBuilder pb){
@@ -180,34 +183,27 @@ public class VisitorLitmusC
     }
 
     @Override
-    public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
-        ExprInterface expr = (ExprInterface) ctx.re().accept(this);
-        Skip exitEvent = new Skip();
-        While whileEvent = new While(expr, exitEvent);
-        programBuilder.addChild(currentThread, whileEvent);
-
-        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
-            expressionContext.accept(this);
-
-        return programBuilder.addChild(currentThread, exitEvent);
-    }
-
-    @Override
     public Object visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
-        ExprInterface expr = (ExprInterface) ctx.re().accept(this);
-        Skip exitMainBranch = new Skip();
-        Skip exitElseBranch = new Skip();
-        If ifEvent = new If(expr, exitMainBranch, exitElseBranch);
+    	ExprInterface expr = (ExprInterface) ctx.re().accept(this);
+
+    	ifId++;
+        Label elseL = programBuilder.getOrCreateLabel("else_" + ifId);
+        Label endL = programBuilder.getOrCreateLabel("end_" + ifId);
+
+        IfAsJump ifEvent = new IfAsJump(new BExprUn(BOpUn.NOT, expr), elseL, endL);
         programBuilder.addChild(currentThread, ifEvent);
 
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
-        programBuilder.addChild(currentThread, exitMainBranch);
-
+        CondJump jumpToEnd = new CondJump(BConst.TRUE, endL);
+        jumpToEnd.addFilters(EType.IFI);
+		programBuilder.addChild(currentThread, jumpToEnd);
+        
+        programBuilder.addChild(currentThread, elseL);
         if(ctx.elseExpression() != null){
             ctx.elseExpression().accept(this);
         }
-        programBuilder.addChild(currentThread, exitElseBranch);
+        programBuilder.addChild(currentThread, endL);
         return null;
     }
 
