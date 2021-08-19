@@ -110,8 +110,6 @@ public abstract class BaseOptions extends Options {
             default:
                 throw new UnsupportedOperationException("Unrecognized SMT solver: " + solverString);
         }
-
-
     }
 
     public Method getMethod(){
