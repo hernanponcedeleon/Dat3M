@@ -1,7 +1,6 @@
 package com.dat3m.ui.options;
 
 import com.dat3m.ui.options.utils.ControlCode;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -29,6 +28,10 @@ public class Selector<T> extends JPanel {
 
     public Object getSelectedItem(){
         return selector.getSelectedItem();
+    }
+
+    public void setSelectedItem(Object selected){
+        selector.setSelectedItem(selected);
     }
 }
 

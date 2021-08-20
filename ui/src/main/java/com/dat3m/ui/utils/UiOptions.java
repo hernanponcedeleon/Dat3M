@@ -2,9 +2,9 @@ package com.dat3m.ui.utils;
 
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.ui.options.utils.Method;
 
 public class UiOptions {
 

@@ -1,7 +1,7 @@
 package com.dat3m.svcomp.options;
 
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.RACES;
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.Analysis.RACES;
+import static com.dat3m.dartagnan.analysis.Analysis.REACHABILITY;
 import java.util.Arrays;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
@@ -9,7 +9,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 
-import com.dat3m.dartagnan.analysis.AnalysisTypes;
+import com.dat3m.dartagnan.analysis.Analysis;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
@@ -32,7 +32,7 @@ public class SVCOMPOptions extends BaseOptions {
 
     private String encoding;
     private String optimization;
-    private AnalysisTypes analysis;
+    private Analysis analysis;
     private String witnessFilePath;
     private boolean boogiesan;
     private Integer umin;
@@ -116,7 +116,7 @@ public class SVCOMPOptions extends BaseOptions {
         return witnessFilePath;
     }
 
-    public AnalysisTypes getAnalysis(){
+    public Analysis getAnalysis(){
 		return analysis;
     }
 

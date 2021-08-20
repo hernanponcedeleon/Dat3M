@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.utils.options;
 
-import com.dat3m.dartagnan.analysis.AnalysisTypes;
+import com.dat3m.dartagnan.analysis.Analysis;
+import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -12,7 +13,7 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.analysis.AnalysisTypes.REACHABILITY;
+import static com.dat3m.dartagnan.analysis.Analysis.REACHABILITY;
 
 public class DartagnanOptions extends BaseOptions {
 
@@ -23,12 +24,12 @@ public class DartagnanOptions extends BaseOptions {
     private final Set<String> supportedFormats = 
     		ImmutableSet.copyOf(Arrays.asList("litmus", "bpl", "c", "i"));
 
-    private final Set<AnalysisTypes> supportedAnalyses =
-    		ImmutableSet.copyOf(Arrays.stream(AnalysisTypes.values())
-            .sorted(Comparator.comparing(AnalysisTypes::toString))
+    private final Set<Analysis> supportedAnalyses =
+    		ImmutableSet.copyOf(Arrays.stream(Analysis.values())
+            .sorted(Comparator.comparing(Analysis::toString))
     		.collect(Collectors.toList()));
 
-    private AnalysisTypes analysis;
+    private Analysis analysis;
     private String witness;
     private String witnessFilePath;
 
@@ -57,12 +58,12 @@ public class DartagnanOptions extends BaseOptions {
         }
         CommandLine cmd = new DefaultParser().parse(this, args);
 
-        analysis = AnalysisTypes.fromString(cmd.getOptionValue(ANALYSIS_OPTION, REACHABILITY.toString()));
+        analysis = Analysis.get(cmd.getOptionValue(ANALYSIS_OPTION, Analysis.getDefault().asStringOption()));
         witness = cmd.hasOption(WITNESS_OPTION) ? cmd.getOptionValue(WITNESS_OPTION) : null;
         witnessFilePath = cmd.hasOption(WITNESS_PATH_OPTION) ? cmd.getOptionValue(WITNESS_PATH_OPTION) : null;
     }
     
-    public AnalysisTypes getAnalysis(){
+    public Analysis getAnalysis(){
 		return analysis;
     }
 
