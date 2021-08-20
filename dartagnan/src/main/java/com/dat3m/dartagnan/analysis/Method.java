@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.analysis;
 
+import java.util.Arrays;
+
 public enum Method {
 	ASSUME, INCREMENTAL, TWO;
 	
@@ -47,5 +49,13 @@ public enum Method {
 
 	public static Method getDefault() {
 		return INCREMENTAL;
+	}
+	
+	// Used to decide the order shown by the selector in the UI
+	public static Method[] orderedValues() {
+		Method[] order = { INCREMENTAL, ASSUME, TWO };
+		// Be sure no element is missing
+		assert(Arrays.asList(order).containsAll(Arrays.asList(Method.values())));
+		return order;
 	}
 }

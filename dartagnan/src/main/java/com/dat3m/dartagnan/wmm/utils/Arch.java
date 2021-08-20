@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils;
 
+import java.util.Arrays;
+
 public enum Arch {
 	NONE, ARM, ARM8, POWER, TSO;
 
@@ -59,5 +61,13 @@ public enum Arch {
 
 	public static Arch getDefault() {
 		return NONE;
+	}
+	
+	// Used to decide the order shown by the selector in the UI
+	public static Arch[] orderedValues() {
+		Arch[] order = { NONE, ARM, ARM8, POWER, TSO };
+		// Be sure no element is missing
+		assert(Arrays.asList(order).containsAll(Arrays.asList(Arch.values())));
+		return order;
 	}
 }

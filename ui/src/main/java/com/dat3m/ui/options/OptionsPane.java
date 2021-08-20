@@ -23,6 +23,7 @@ import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import static com.dat3m.ui.options.utils.Helper.solversOrderedValues;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -54,16 +55,16 @@ public class OptionsPane extends JPanel implements ActionListener {
         int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
         iconPane = new JLabel(IconHelper.getIcon(IconCode.DARTAGNAN, height), JLabel.CENTER);
 
-        aliasPane = new Selector<>(Alias.values(), ControlCode.ALIAS);
+        aliasPane = new Selector<>(Alias.orderedValues(), ControlCode.ALIAS);
         aliasPane.setSelectedItem(Alias.getDefault());
         
-        methodPane = new Selector<>(Method.values(), ControlCode.METHOD);
+        methodPane = new Selector<>(Method.orderedValues(), ControlCode.METHOD);
         methodPane.setSelectedItem(Method.getDefault());
         
-        solverPane = new Selector<>(Solvers.values(), ControlCode.SOLVER);
+        solverPane = new Selector<>(solversOrderedValues(), ControlCode.SOLVER);
         solverPane.setSelectedItem(Solvers.Z3);
 
-        targetPane = new Selector<>(Arch.values(), ControlCode.TARGET);
+        targetPane = new Selector<>(Arch.orderedValues(), ControlCode.TARGET);
         targetPane.setSelectedItem(Arch.getDefault());
         
         boundField = new BoundField();
