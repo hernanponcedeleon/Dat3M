@@ -7,10 +7,13 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.dat3m.dartagnan.program.Thread;
 
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+
 import java.util.*;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -300,12 +303,9 @@ public abstract class Event implements Comparable<Event> {
 			throw new RuntimeException("Event ID is not set in " + this);
 		}
 		this.task = task;
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		if (GlobalSettings.MERGE_CF_VARS) {
-			cfVar = bmgr.makeVariable("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
-		} else {
-			cfVar = bmgr.makeVariable("cf(" + repr() + ")");
-		}
+		FormulaManager fmgr = ctx.getFormulaManager();
+		String repr = GlobalSettings.MERGE_CF_VARS ? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
+		cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr + ")");
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}
 

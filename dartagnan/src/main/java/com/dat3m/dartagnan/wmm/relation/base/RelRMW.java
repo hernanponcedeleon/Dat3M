@@ -19,6 +19,7 @@ import com.google.common.collect.Sets;
 
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -186,6 +187,6 @@ public class RelRMW extends StaticRelation {
     }
 
     private BooleanFormula exclPair(Event load, Event store, SolverContext ctx){
-    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("excl(" + load.getCId() + "," + store.getCId() + ")");
+    	return ctx.getFormulaManager().makeVariable(BooleanType, "excl(" + load.getCId() + "," + store.getCId() + ")");
     }
 }

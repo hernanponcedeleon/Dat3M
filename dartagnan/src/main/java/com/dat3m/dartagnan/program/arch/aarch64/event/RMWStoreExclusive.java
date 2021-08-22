@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -41,7 +43,7 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     @Override
     public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        execVar = is(EType.STRONG) ? cfVar : ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("exec(" + repr() + ")");
+        execVar = is(EType.STRONG) ? cfVar : ctx.getFormulaManager().makeVariable(BooleanType, "exec(" + repr() + ")");
     }
 
     @Override
