@@ -6,6 +6,7 @@ import static com.dat3m.dartagnan.expression.INonDetTypes.UCHAR;
 import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
 import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
 import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 import java.math.BigInteger;
 
@@ -50,7 +51,7 @@ public class INonDet extends IExpr implements ExprInterface {
 		String name = Integer.toString(hashCode());
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) : 
+				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) : 
 				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 

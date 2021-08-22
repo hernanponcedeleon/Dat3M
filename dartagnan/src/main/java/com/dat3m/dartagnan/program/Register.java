@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
 
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
+
 import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.Formula;
@@ -77,7 +79,7 @@ public class Register extends IExpr implements ExprInterface {
 		String name = getName() + "(" + e.repr() + ")";
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
 				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
@@ -85,7 +87,7 @@ public class Register extends IExpr implements ExprInterface {
 		String name = getName() + "(" + e.repr() + "_result)";
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
 				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
@@ -99,7 +101,7 @@ public class Register extends IExpr implements ExprInterface {
 		FormulaManager fmgr = ctx.getFormulaManager();
 		String name = getName() + "_" + threadId + "_final";
 		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
+				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
 				fmgr.getIntegerFormulaManager().makeVariable(name);
 	}
 
