@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 import java.math.BigInteger;
@@ -54,7 +55,7 @@ public class Address extends IConst implements ExprInterface {
 		String name = "last_val_at_memory_" + index;
 		return precision > 0 ? 
 				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) : 
-        		fmgr.getIntegerFormulaManager().makeVariable(name);
+				fmgr.makeVariable(IntegerType, name);
     }
 
     @Override
@@ -94,7 +95,7 @@ public class Address extends IConst implements ExprInterface {
 		String name = "memory_" + index;
 		return precision > 0 ? 
 				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+				fmgr.makeVariable(IntegerType, name);
     }
 
     @Override

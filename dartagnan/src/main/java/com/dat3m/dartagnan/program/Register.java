@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
 
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 import java.math.BigInteger;
@@ -80,7 +81,7 @@ public class Register extends IExpr implements ExprInterface {
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
 				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+				fmgr.makeVariable(IntegerType, name);
 	}
 
 	public Formula toIntFormulaResult(Event e, SolverContext ctx) {
@@ -88,7 +89,7 @@ public class Register extends IExpr implements ExprInterface {
 		FormulaManager fmgr = ctx.getFormulaManager();
 		return precision > 0 ?
 				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+				fmgr.makeVariable(IntegerType, name);
 	}
 
 	@Override
@@ -102,7 +103,7 @@ public class Register extends IExpr implements ExprInterface {
 		String name = getName() + "_" + threadId + "_final";
 		return precision > 0 ?
 				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+				fmgr.makeVariable(IntegerType, name);
 	}
 
 	@Override

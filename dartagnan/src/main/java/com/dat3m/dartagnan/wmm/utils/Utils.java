@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.utils;
 import com.dat3m.dartagnan.program.event.Event;
 
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -18,7 +19,7 @@ public class Utils {
 
 	public static IntegerFormula intVar(String relName, Event e, SolverContext ctx) {
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return fmgr.getIntegerFormulaManager().makeVariable(fmgr.escape(relName) + "(" + e.repr() + ")");
+		return fmgr.makeVariable(IntegerType, fmgr.escape(relName) + "(" + e.repr() + ")");
 	}
 
 }
