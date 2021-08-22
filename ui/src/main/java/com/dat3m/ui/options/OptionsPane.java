@@ -1,5 +1,6 @@
 package com.dat3m.ui.options;
 
+import com.dat3m.dartagnan.analysis.Method;
 import com.dat3m.dartagnan.utils.Settings;
 import com.dat3m.dartagnan.wmm.utils.alias.Alias;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -8,7 +9,6 @@ import com.dat3m.ui.button.TestButton;
 import com.dat3m.ui.icon.IconCode;
 import com.dat3m.ui.icon.IconHelper;
 import com.dat3m.ui.options.utils.ControlCode;
-import com.dat3m.ui.options.utils.Method;
 import com.dat3m.ui.utils.UiOptions;
 
 import javax.swing.*;
@@ -21,9 +21,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Iterator;
 
+import static com.dat3m.ui.options.utils.Helper.solversOrderedValues;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static javax.swing.BorderFactory.createTitledBorder;
@@ -55,13 +55,18 @@ public class OptionsPane extends JPanel implements ActionListener {
         int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
         iconPane = new JLabel(IconHelper.getIcon(IconCode.DARTAGNAN, height), JLabel.CENTER);
 
-        aliasPane = new Selector<>(EnumSet.allOf(Alias.class).toArray(new Alias[0]), ControlCode.ALIAS);
-        methodPane = new Selector<>(EnumSet.allOf(Method.class).toArray(new Method[0]), ControlCode.METHOD);
-        solverPane = new Selector<>(Solvers.values(), ControlCode.SOLVER);
+        aliasPane = new Selector<>(Alias.orderedValues(), ControlCode.ALIAS);
+        aliasPane.setSelectedItem(Alias.getDefault());
+        
+        methodPane = new Selector<>(Method.orderedValues(), ControlCode.METHOD);
+        methodPane.setSelectedItem(Method.getDefault());
+        
+        solverPane = new Selector<>(solversOrderedValues(), ControlCode.SOLVER);
+        solverPane.setSelectedItem(Solvers.Z3);
 
-        Arch[] architectures = EnumSet.allOf(Arch.class).toArray(new Arch[0]);
-        targetPane = new Selector<>(architectures, ControlCode.TARGET);
-
+        targetPane = new Selector<>(Arch.orderedValues(), ControlCode.TARGET);
+        targetPane.setSelectedItem(Arch.getDefault());
+        
         boundField = new BoundField();
         timeoutField = new TimeoutField();
 
