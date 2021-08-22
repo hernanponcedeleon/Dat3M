@@ -17,9 +17,16 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
 
     protected transient BooleanFormula execVar;
 
-    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo){
+    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong){
         super(address, value, mo);
         addFilters(EType.EXCL);
+        if(strong) {
+        	addFilters(EType.STRONG);
+        }
+    }
+
+    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo){
+        this(address, value, mo, false);
     }
 
     String toStringBase(){
@@ -34,12 +41,13 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
     @Override
     public void initialise(VerificationTask task, SolverContext ctx) {
         super.initialise(task, ctx);
-        execVar = ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("exec(" + repr() + ")");
+        execVar = is(EType.STRONG) ? cfVar : ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("exec(" + repr() + ")");
     }
 
     @Override
     public String toString(){
-        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt";
+    	String tag = is(EType.STRONG) ? " strong" : "";
+        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
     }
 
     @Override

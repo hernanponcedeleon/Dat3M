@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveNoFail;
 import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.Store;
@@ -111,7 +110,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                         throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
                 }
             	load = new RMWLoadExclusive(resultRegister, address, loadMo);
-                store = new RMWStoreExclusiveNoFail(address, dummyReg, storeMo);
+                store = new RMWStoreExclusive(address, dummyReg, storeMo, true);
             	Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
                 RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
                 Label end = (Label)getThread().getExit();
