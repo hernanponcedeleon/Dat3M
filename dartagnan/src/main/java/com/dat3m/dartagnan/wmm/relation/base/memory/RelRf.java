@@ -34,6 +34,7 @@ import static com.dat3m.dartagnan.program.utils.EType.RMW;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public class RelRf extends Relation {
 
@@ -176,7 +177,7 @@ public class RelRf extends Relation {
     }
 
     private BooleanFormula mkSeqVar(int readId, int i, SolverContext ctx) {
-    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("s(" + term + ",E" + readId + "," + i + ")");
+    	return ctx.getFormulaManager().makeVariable(BooleanType, "s(" + term + ",E" + readId + "," + i + ")");
     }
 
     private void applyLocalConsistency() {
