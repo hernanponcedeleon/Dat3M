@@ -304,12 +304,8 @@ public abstract class Event implements Comparable<Event> {
 		}
 		this.task = task;
 		FormulaManager fmgr = ctx.getFormulaManager();
-		if (GlobalSettings.MERGE_CF_VARS) {
-			cfVar = fmgr.makeVariable(BooleanType, "cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
-		} else {
-			
-			cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr() + ")");
-		}
+		String repr = GlobalSettings.MERGE_CF_VARS ? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
+		cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr + ")");
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}
 

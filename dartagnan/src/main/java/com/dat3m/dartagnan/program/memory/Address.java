@@ -53,9 +53,8 @@ public class Address extends IConst implements ExprInterface {
     public Formula getLastMemValueExpr(SolverContext ctx){
         FormulaManager fmgr = ctx.getFormulaManager();
 		String name = "last_val_at_memory_" + index;
-		return precision > 0 ? 
-				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) : 
-				fmgr.makeVariable(IntegerType, name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
     }
 
     @Override
@@ -93,9 +92,8 @@ public class Address extends IConst implements ExprInterface {
 					fmgr.getIntegerFormulaManager().makeNumber(constantValue);
     	}
 		String name = "memory_" + index;
-		return precision > 0 ? 
-				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) :
-				fmgr.makeVariable(IntegerType, name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
     }
 
     @Override

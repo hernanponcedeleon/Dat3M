@@ -17,6 +17,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.FormulaType;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
@@ -51,9 +52,8 @@ public class INonDet extends IExpr implements ExprInterface {
 	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = Integer.toString(hashCode());
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ? 
-				fmgr.makeVariable(getBitvectorTypeWithSize(precision), name) : 
-				fmgr.makeVariable(IntegerType, name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
 	}
 
 	@Override
