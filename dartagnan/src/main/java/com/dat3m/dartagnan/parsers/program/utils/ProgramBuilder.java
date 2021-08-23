@@ -49,6 +49,7 @@ public class ProgramBuilder {
 
     public void initThread(String name, int id){
         if(!threads.containsKey(id)){
+        	// TODO(TH): use factory
             Skip threadEntry = new Skip();
             threadEntry.setOId(lastOrigId++);
             threads.putIfAbsent(id, new Thread(name, id, threadEntry));
@@ -186,6 +187,7 @@ public class ProgramBuilder {
     }
     
     public Label getOrCreateLabel(String name){
+    	// TODO(TH): use factory
         labels.putIfAbsent(name, new Label(name));
         return labels.get(name);
     }

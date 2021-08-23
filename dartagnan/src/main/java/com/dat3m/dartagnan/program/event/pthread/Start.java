@@ -76,6 +76,7 @@ public class Start extends Event {
             case NONE: case TSO:
                 break;
             case POWER:
+            	// TODO(TH): use factory
                 Label label = new Label("Jump_" + oId);
                 CondJump fakeCtrlDep = Events.newFakeCtrlDep(reg, label);
                 events.addLast(fakeCtrlDep);

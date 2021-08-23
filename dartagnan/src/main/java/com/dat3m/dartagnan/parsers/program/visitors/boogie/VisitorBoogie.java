@@ -236,6 +236,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
         		Register reg = programBuilder.getOrCreateRegister(threadCount, null, -1);
                	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+             // TODO(TH): use factory
                	programBuilder.addChild(threadCount, new Start(reg, loc.getAddress(), label));
             }
     	}
@@ -328,6 +329,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		}
 		if(name.equals("abort")) {
 	       	Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+	       	// TODO(TH): use factory
 			programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
 	       	return null;
 		}
