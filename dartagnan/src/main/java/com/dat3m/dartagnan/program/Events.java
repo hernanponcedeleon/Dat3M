@@ -36,7 +36,9 @@ public class Events {
         return new CondJump(cond, target);
     }
 
-    public static CondJump newJumpUnless(ExprInterface cond, Label target) { return newJump(new BExprUn(BOpUn.NOT, cond), target); }
+    public static CondJump newJumpUnless(ExprInterface cond, Label target) {
+    	return newJump(new BExprUn(BOpUn.NOT, cond), target);
+    }
 
     public static IfAsJump newIfJump(BExpr expr, Label label, Label end) {
         return new IfAsJump(expr, label, end);
@@ -50,7 +52,9 @@ public class Events {
         return newJump(BConst.TRUE, target);
     }
 
-    public static CondJump newFakeCtrlDep(Register reg, Label target) { return newJump(new Atom(reg, COpBin.EQ, reg), target); }
+    public static CondJump newFakeCtrlDep(Register reg, Label target) {
+    	return newJump(new Atom(reg, COpBin.EQ, reg), target);
+    }
 
     public static Fence newFence(String name) {
         return new Fence(name);
