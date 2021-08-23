@@ -1,5 +1,35 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
+import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.boogie.Function;
+import com.dat3m.dartagnan.boogie.FunctionCall;
+import com.dat3m.dartagnan.boogie.PthreadPool;
+import com.dat3m.dartagnan.boogie.Scope;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
+import com.dat3m.dartagnan.parsers.BoogieParser;
+import com.dat3m.dartagnan.parsers.BoogieParser.*;
+import com.dat3m.dartagnan.parsers.BoogieVisitor;
+import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.pthread.Start;
+import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
+import com.dat3m.dartagnan.program.utils.EType;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.math.BigInteger;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.AtomicProcedures.ATOMICPROCEDURES;
@@ -19,92 +49,6 @@ import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.LLVMUNARY;
 import static com.dat3m.dartagnan.program.llvm.utils.LlvmUnary.llvmUnary;
 import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.SMACKPREDICATES;
 import static com.dat3m.dartagnan.program.llvm.utils.SmackPredicates.smackPredicate;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import com.dat3m.dartagnan.GlobalSettings;
-
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.expression.BExprBin;
-import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IExprUn;
-import com.dat3m.dartagnan.expression.IfExpr;
-import com.dat3m.dartagnan.expression.op.COpBin;
-import com.dat3m.dartagnan.expression.op.IOpUn;
-import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
-import com.dat3m.dartagnan.parsers.BoogieParser;
-import com.dat3m.dartagnan.parsers.BoogieParser.And_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Assert_cmdContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Assign_cmdContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Assume_cmdContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Attr_typed_idents_whereContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Axiom_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Bool_litContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Bv_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Const_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.DecContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.FactorContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Fun_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Func_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Goto_cmdContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.If_then_else_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Impl_bodyContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Int_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.LabelContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Local_varsContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Logical_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.MainContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Minus_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Neg_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Or_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Paren_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Proc_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Rel_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Return_cmdContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.TermContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Var_declContext;
-import com.dat3m.dartagnan.parsers.BoogieParser.Var_exprContext;
-import com.dat3m.dartagnan.parsers.BoogieVisitor;
-import com.dat3m.dartagnan.boogie.Function;
-import com.dat3m.dartagnan.boogie.FunctionCall;
-import com.dat3m.dartagnan.boogie.PthreadPool;
-import com.dat3m.dartagnan.boogie.Scope;
-import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.FunCall;
-import com.dat3m.dartagnan.program.event.FunRet;
-import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Load;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.event.pthread.End;
-import com.dat3m.dartagnan.program.event.pthread.Start;
-import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.program.utils.EType;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVisitor<Object> {
 
@@ -224,7 +168,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			String name = ident.getText();
 			String type = ctx.typed_idents().type().getText();
 			int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
-			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && !ATOMICPROCEDURES.stream().anyMatch(name::startsWith)) {
+			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !smackDummyVariables.contains(name) && ATOMICPROCEDURES.stream().noneMatch(name::startsWith)) {
 				programBuilder.getOrCreateLocation(name, precision);
 			} else {
 				constantsTypeMap.put(name, precision);
@@ -314,7 +258,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     					int precision = type.contains("bv") ? Integer.parseInt(type.split("bv")[1]) : -1;
         				Register register = programBuilder.getOrCreateRegister(threadCount, currentScope.getID() + ":" + ident.getText(), precision);
         				ExprInterface value = callingValues.get(index);
-        				Local child = new Local(register, value, currentLine);
+        				Local child = Events.newLocal(register, value, currentLine);
 						programBuilder.addChild(threadCount, child);
         				index++;    					
     				}
@@ -337,7 +281,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
          	if(threadCount != 1) {
          		// Used to mark the end of the execution of a thread (used by pthread_join)
         		Location loc = programBuilder.getOrCreateLocation(pool.getPtrFromInt(threadCount) + "_active", -1);
-        		programBuilder.addChild(threadCount, new End(loc.getAddress()));
+        		programBuilder.addChild(threadCount, Events.Pthread.newEnd(loc.getAddress()));
          	}
         	label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
          	programBuilder.addChild(threadCount, label);
@@ -354,11 +298,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	ExprInterface expr = (ExprInterface)ctx.proposition().expr().accept(this);
     	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, expr.getPrecision());
     	assertionIndex++;
-    	Local event = new Local(ass, expr, currentLine);
+    	Local event = Events.newLocal(ass, expr, currentLine);
 		event.addFilters(EType.ASSERTION);
 		programBuilder.addChild(threadCount, event);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		programBuilder.addChild(threadCount, new CondJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
+		programBuilder.addChild(threadCount, Events.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
     	return null;
     }
     
@@ -390,11 +334,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(name.equals("reach_error")) {
 	    	Register ass = programBuilder.getOrCreateRegister(threadCount, "assert_" + assertionIndex, -1);
 	    	assertionIndex++;
-	    	Local event = new Local(ass, new BConst(false), currentLine);
+	    	Local event = Events.newLocal(ass, new BConst(false), currentLine);
 			event.addFilters(EType.ASSERTION);
 			programBuilder.addChild(threadCount, event);
 	       	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-			programBuilder.addChild(threadCount, new CondJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
+			programBuilder.addChild(threadCount, Events.newJump(new Atom(ass, COpBin.NEQ, new IConst(BigInteger.ONE, -1)), end));
 			return null;
 		}
 
@@ -422,7 +366,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			if(GlobalSettings.ATOMIC_AS_LOCK) {
 				SvcompProcedures.__VERIFIER_atomic(this, true);	
 			} else {
-				currentBeginAtomic = new BeginAtomic();
+				currentBeginAtomic = Events.Svcomp.newBeginAtomic();
 				programBuilder.addChild(threadCount, currentBeginAtomic);
 			}
 		}
@@ -442,7 +386,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(!procedures.containsKey(name)) {
 			throw new ParsingException("Procedure " + name + " is not defined");
 		}
-		Event call = new FunCall(name, currentLine);
+		Event call = Events.newFunctionCall(name, currentLine);
 		programBuilder.addChild(threadCount, call);	
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
@@ -453,12 +397,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(currentBeginAtomic == null) {
 		            throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
 				}
-				programBuilder.addChild(threadCount, new EndAtomic(currentBeginAtomic));	
+				programBuilder.addChild(threadCount, Events.Svcomp.newEndAtomic(currentBeginAtomic));
 				currentBeginAtomic = null;				
 			}
 			
 		}
-		Event ret = new FunRet(name, call.getCLine());
+		Event ret = Events.newFunctionReturn(name, call.getCLine());
 		programBuilder.addChild(threadCount, ret);
 		if(name.equals("$initialize")) {
 			initMode = false;
@@ -503,9 +447,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        			// Nothing to be done
 	        		}
 	        		if(!allocationRegs.contains(value)) {
-	        			programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null, currentLine));
+	        			programBuilder.addChild(threadCount, Events.newLoad(register, (IExpr)value, null, currentLine));
 	        		} else {
-	        			programBuilder.addChild(threadCount, new Load(register, (IExpr)value, null));
+	        			programBuilder.addChild(threadCount, Events.newLoad(register, (IExpr)value, null));
 	        		}						        			
 		            continue;
 	        	}
@@ -513,20 +457,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	        	if(value instanceof IExpr) {
 	        		try {value = ((IExpr)value).simplify();} catch (Exception ignore) {}
 	        	}
-	            Local child = new Local(register, value, currentLine);
+	            Local child = Events.newLocal(register, value, currentLine);
 				programBuilder.addChild(threadCount, child);	        		
 	            continue;
 	        }
 	        Location location = programBuilder.getLocation(name);
 	        if(location != null){
-	            Store child = new Store(location.getAddress(), value, null, currentLine);
+	            Store child = Events.newStore(location.getAddress(), value, null, currentLine);
 				programBuilder.addChild(threadCount, child);
 	            continue;
 	        }
 	        if(currentReturnName.equals(name)) {
 	        	if(!returnRegister.isEmpty()) {
 	        		Register ret = returnRegister.remove(returnRegister.size() - 1);
-					Local child = new Local(ret, value, currentLine);
+					Local child = Events.newLocal(ret, value, currentLine);
 					programBuilder.addChild(threadCount, child);
 	        	}
 	        	continue;
@@ -539,7 +483,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 	@Override
 	public Object visitReturn_cmd(Return_cmdContext ctx) {
 		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));
+		programBuilder.addChild(threadCount, Events.newGoto(label));
 		return null;
 	}
 
@@ -560,7 +504,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 			}
 			BExpr c = (BExpr)ctx.proposition().expr().accept(this);
 			if(c != null) {
-				programBuilder.addChild(threadCount, new CondJump(new BExprUn(NOT, c), pairingLabel));	
+				programBuilder.addChild(threadCount, Events.newJumpUnless(c, pairingLabel));
 			}
 		}
         return null;
@@ -582,12 +526,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
     	String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
     	boolean loop = programBuilder.hasLabel(labelName);
     	Label l1 = programBuilder.getOrCreateLabel(labelName);
-		programBuilder.addChild(threadCount, new CondJump(new BConst(true), l1));
+		programBuilder.addChild(threadCount, Events.newGoto(l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.
         if(loop) {
             Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-			programBuilder.addChild(threadCount, new CondJump(new BConst(true), label));        	
+			programBuilder.addChild(threadCount, Events.newGoto(label));
         }
 		if(ctx.idents().children.size() > 1) {
 			for(int index = 2; index < ctx.idents().children.size(); index = index + 2) {
@@ -751,7 +695,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				programBuilder.initLocEqConst(text, value.reduce());
 				return null;
 			}
-			Store child = new Store(address, value, null, currentLine);
+			Store child = Events.newStore(address, value, null, currentLine);
 			programBuilder.addChild(threadCount, child);	
 			return null;
 		}

@@ -1,13 +1,15 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.Events;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
-import com.dat3m.dartagnan.program.event.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -15,6 +17,7 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -62,11 +65,11 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
         switch(target) {
             case NONE: case TSO: {
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = new RMWLoad(dummy, address, mo);
-                Local casResult = new Local(resultRegister, new Atom(dummy, EQ, expected));
-                Label endCas = new Label("CAS_end");
-                CondJump branch = new CondJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
-                store = new RMWStore((RMWLoad)load, address, value, mo);
+                load = Events.newRMWLoad(dummy, address, mo);
+                Local casResult = Events.newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                Label endCas = Events.newLabel("CAS_end");
+                CondJump branch = Events.newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
+                store = Events.newRMWStore((RMWLoad)load, address, value, mo);
                 events.addAll(Arrays.asList(load, casResult, branch, store, endCas));
                 break;
             }
@@ -97,34 +100,34 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 }
 
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = new RMWLoadExclusive(dummy, address, loadMo);
-                Local casResult = new Local(resultRegister, new Atom(dummy, EQ, expected));
-                Label endCas = new Label("CAS_end");
-                CondJump branch = new CondJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
+                load = Events.newRMWLoadExclusive(dummy, address, loadMo);
+                Local casResult = Events.newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                Label endCas = Events.newLabel("CAS_end");
+                CondJump branch = Events.newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
                 // ---- CAS success ----
-                store = new RMWStoreExclusive(address, value, storeMo);
+                store = Events.newRMWStoreExclusive(address, value, storeMo);
                 Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
-                Event jumpStoreFail = new CondJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
+                RMWStoreExclusiveStatus status = Events.newRMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
+                Event jumpStoreFail = Events.newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
                 jumpStoreFail.addFilters(EType.BOUND);
                 // ---------------------
 
                 // --- Add Fence before under POWER ---
                 if(target.equals(POWER)) {
                     if (mo.equals(SC)) {
-                        events.addFirst(new Fence("Sync"));
+                        events.addFirst(Events.Power.newSyncBarrier());
                     } else if (storeMo.equals(REL)) {
-                        events.addFirst(new Fence("Lwsync"));
+                        events.addFirst(Events.Power.newLwSyncBarrier());
                     }                	
                 }
                 // --- Add success events ---
                 events.addAll(Arrays.asList(load, casResult, branch, store, status, jumpStoreFail));
                 // --- Add Fence after success under POWER ---
                 if (target.equals(POWER) && loadMo.equals(ACQ)) {
-                    events.addLast(new Fence("Isync"));
+                    events.addLast(Events.Power.newISyncBarrier());
                 }
                 // --- Add exit ---
-                events.addAll(Arrays.asList(endCas));
+                events.addAll(Collections.singletonList(endCas));
                 break;
             }
             default:

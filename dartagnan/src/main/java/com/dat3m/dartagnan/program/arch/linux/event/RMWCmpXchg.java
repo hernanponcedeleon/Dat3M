@@ -2,13 +2,12 @@ package com.dat3m.dartagnan.program.arch.linux.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.Events;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.arch.linux.event.cond.FenceCond;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWReadCondCmp;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWStoreCond;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
@@ -58,16 +57,16 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
-            RMWStoreCond store = new RMWStoreCond(load, address, value, Mo.storeMO(mo));
+            RMWReadCondCmp load = Events.Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
+            RMWStoreCond store = Events.Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
             if (dummy != resultRegister) {
-                events.addLast(new Local(resultRegister, dummy));
+                events.addLast(Events.newLocal(resultRegister, dummy));
             }
             if (Mo.MB.equals(mo)) {
-                events.addFirst(new FenceCond(load, "Mb"));
-                events.addLast(new FenceCond(load, "Mb"));
+                events.addFirst(Events.Linux.newMemoryBarrier());
+                events.addLast(Events.Linux.newMemoryBarrier());
             }
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

@@ -1,22 +1,20 @@
-package com.dat3m.dartagnan.program.arch.aarch64.event;
-
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.verification.VerificationTask;
-
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.SolverContext;
+package com.dat3m.dartagnan.program.event.rmw;
 
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.math.BigInteger;
+
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 
 public class RMWStoreExclusiveStatus extends Event implements RegWriter {
 

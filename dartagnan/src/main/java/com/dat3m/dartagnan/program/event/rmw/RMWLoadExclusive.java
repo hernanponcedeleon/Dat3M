@@ -1,10 +1,10 @@
-package com.dat3m.dartagnan.program.arch.aarch64.event;
+package com.dat3m.dartagnan.program.event.rmw;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 
 public class RMWLoadExclusive extends Load implements RegWriter {
 

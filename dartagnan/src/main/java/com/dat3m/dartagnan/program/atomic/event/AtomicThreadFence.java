@@ -1,16 +1,14 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
+import com.dat3m.dartagnan.program.Events;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQUIRE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQ_REL;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
-
 import java.util.LinkedList;
+
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 
 public class AtomicThreadFence extends Fence {
 
@@ -52,25 +50,25 @@ public class AtomicThreadFence extends Fence {
                 break;
             case TSO:
                 if(SC.equals(mo)){
-                    events.add(new Fence("Mfence"));
+                    events.add(Events.X86.newMFence());
                 }
                 break;
             case POWER:
                 if(ACQUIRE.equals(mo) || RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                    events.add(new Fence("Lwsync"));
+                    events.add(Events.Power.newLwSyncBarrier());
                 }
                 break;
             case ARM:
                 if(ACQUIRE.equals(mo) || RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                    events.addLast(new Fence("Ish"));
+                    events.addLast(Events.Arm.newISHBarrier());
                 }
                 break;
             case ARM8:
                 if(RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                	events.addLast(new Fence("DMB.ISH"));
+                	events.addLast(Events.Arm8.DMB.newISHBarrier());
                 }
                 if(ACQUIRE.equals(mo)){
-                	events.addLast(new Fence("DSB.ISHLD"));
+                	events.addLast(Events.Arm8.DSB.newISHLDBarrier());
                 }                
                 break;
             default:

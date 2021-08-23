@@ -1,16 +1,20 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.Events;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.CondJump;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Label;
+import com.dat3m.dartagnan.program.event.Skip;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 
@@ -94,17 +98,17 @@ public class ProgramBuilder {
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
         Location loc = getOrCreateLocation(locName, precision);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, new Local(reg, loc.getAddress()));
+        addChild(regThread, Events.newLocal(reg, loc.getAddress()));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
         Location loc = getOrCreateLocation(locName, precision);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, new Local(reg, iValueMap.get(loc.getAddress())));
+        addChild(regThread, Events.newLocal(reg, iValueMap.get(loc.getAddress())));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, new Local(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
+        addChild(regThread, Events.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
     }
 
     public void addDeclarationArray(String name, List<IConst> values, int precision){
@@ -208,7 +212,7 @@ public class ProgramBuilder {
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
         for (Map.Entry<IExpr, IConst> entry : iValueMap.entrySet()) {
-            Event e = new Init(entry.getKey(), entry.getValue());
+            Event e = Events.newInit(entry.getKey(), entry.getValue());
             Thread thread = new Thread(nextThreadId, e);
             threads.put(nextThreadId, thread);
             nextThreadId++;

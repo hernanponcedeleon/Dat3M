@@ -4,11 +4,10 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.program.Events;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -59,16 +58,16 @@ public class RMWFetchOp extends RMWAbstract implements RegWriter, RegReaderData 
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            RMWLoad load = new RMWLoad(dummy, address, Mo.loadMO(mo));
-            RMWStore store = new RMWStore(load, address, new IExprBin(dummy, op, value), Mo.storeMO(mo));
+            RMWLoad load = Events.newRMWLoad(dummy, address, Mo.loadMO(mo));
+            RMWStore store = Events.newRMWStore(load, address, new IExprBin(dummy, op, value), Mo.storeMO(mo));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
             if (dummy != resultRegister) {
-                events.addLast(new Local(resultRegister, dummy));
+                events.addLast(Events.newLocal(resultRegister, dummy));
             }
             if (Mo.MB.equals(mo)) {
-                events.addFirst(new Fence("Mb"));
-                events.addLast(new Fence("Mb"));
+                events.addFirst(Events.Linux.newMemoryBarrier());
+                events.addLast(Events.Linux.newMemoryBarrier());
             }
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

@@ -1,24 +1,22 @@
 package com.dat3m.dartagnan.program.event.pthread;
 
-import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
-
-import java.math.BigInteger;
-import java.util.LinkedList;
-
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.program.Events;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+
+import java.math.BigInteger;
+import java.util.LinkedList;
+
+import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
 public class Start extends Event {
 
@@ -79,22 +77,22 @@ public class Start extends Event {
                 break;
             case POWER:
                 Label label = new Label("Jump_" + oId);
-                CondJump jump = new CondJump(new Atom(reg, EQ, reg), label);
-                events.addLast(jump);
+                CondJump fakeCtrlDep = Events.newFakeCtrlDep(reg, label);
+                events.addLast(fakeCtrlDep);
                 events.addLast(label);
-                events.addLast(new Fence("Isync"));
+                events.addLast(Events.Power.newISyncBarrier());
                 break;
             case ARM:
-                events.addLast(new Fence("Ish"));
+                events.addLast(Events.Arm.newISHBarrier());
                 break;
             case ARM8:
-                events.addLast(new Fence("DMB.ISH"));
+                events.addLast(Events.Arm8.DMB.newISHBarrier());
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        events.add(new CondJump(new BExprUn(NOT, new Atom(reg, EQ, new IConst(BigInteger.ONE, -1))), label));
+        events.add(Events.newJumpUnless(new Atom(reg, EQ, new IConst(BigInteger.ONE, -1)), label));
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 
