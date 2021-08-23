@@ -3,10 +3,14 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.google.common.collect.ImmutableSet;
 
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
+
 import java.math.BigInteger;
 
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.FormulaType;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -76,17 +80,15 @@ public class Register extends IExpr implements ExprInterface {
 	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + ")";
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
 	}
 
 	public Formula toIntFormulaResult(Event e, SolverContext ctx) {
 		String name = getName() + "(" + e.repr() + "_result)";
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
 	}
 
 	@Override
@@ -98,9 +100,8 @@ public class Register extends IExpr implements ExprInterface {
 	public Formula getLastValueExpr(SolverContext ctx){
 		FormulaManager fmgr = ctx.getFormulaManager();
 		String name = getName() + "_" + threadId + "_final";
-		return precision > 0 ?
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
 	}
 
 	@Override

@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+
 import java.math.BigInteger;
 
 public class BNonDet extends BExpr implements ExprInterface {
@@ -39,7 +41,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 
 	@Override
 	public BooleanFormula toBoolFormula(Event e, SolverContext ctx) {
-		return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(Integer.toString(hashCode()));
+		return ctx.getFormulaManager().makeVariable(BooleanType, Integer.toString(hashCode()));
 	}
 
 	@Override

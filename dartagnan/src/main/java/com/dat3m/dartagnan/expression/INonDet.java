@@ -6,6 +6,8 @@ import static com.dat3m.dartagnan.expression.INonDetTypes.UCHAR;
 import static com.dat3m.dartagnan.expression.INonDetTypes.UINT;
 import static com.dat3m.dartagnan.expression.INonDetTypes.ULONG;
 import static com.dat3m.dartagnan.expression.INonDetTypes.USHORT;
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 import java.math.BigInteger;
 
@@ -15,6 +17,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.FormulaType;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
@@ -49,9 +52,8 @@ public class INonDet extends IExpr implements ExprInterface {
 	public Formula toIntFormula(Event e, SolverContext ctx) {
 		String name = Integer.toString(hashCode());
 		FormulaManager fmgr = ctx.getFormulaManager();
-		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) : 
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
 	}
 
 	@Override

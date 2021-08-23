@@ -19,6 +19,7 @@ import java.util.LinkedList;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.EType.STRONG;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
@@ -27,9 +28,16 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
     private final Register expected;
 
-    public AtomicCmpXchg(Register register, IExpr address, Register expected, ExprInterface value, String mo) {
+    public AtomicCmpXchg(Register register, IExpr address, Register expected, ExprInterface value, String mo, boolean strong) {
         super(address, register, value, mo);
         this.expected = expected;
+        if(strong) {
+        	addFilters(STRONG);
+        }
+    }
+
+    public AtomicCmpXchg(Register register, IExpr address, Register expected, ExprInterface value, String mo) {
+        this(register, address, expected, value, mo, false);
     }
 
     private AtomicCmpXchg(AtomicCmpXchg other){
@@ -41,7 +49,8 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
     @Override
     public String toString() {
-    	String tag = mo != null ? "_explicit" : "";
+    	String tag = is(STRONG) ? "_strong" : "_weak";
+    	tag += mo != null ? "_explicit" : "";
         return resultRegister + " = atomic_compare_exchange" + tag + "(*" + address + ", " + expected + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
@@ -110,7 +119,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Label endCas = new Label("CAS_end");
                 CondJump branch = new CondJump(new Atom(resultRegister, NEQ, IConst.ONE), fail);
                 // ---- CAS success ----
-                store = new RMWStoreExclusive(address, value, storeMo);
+                store = new RMWStoreExclusive(address, value, storeMo, is(STRONG));
                 Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
                 RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
                 Event jumpStoreFail = new CondJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
