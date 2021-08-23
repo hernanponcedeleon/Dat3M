@@ -1,8 +1,7 @@
-package com.dat3m.dartagnan.program.event.rmw;
+package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
@@ -16,15 +15,15 @@ import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 
-public class RMWStoreExclusiveStatus extends Event implements RegWriter {
+public class ExecutionStatus extends Event implements RegWriter {
 
     private final Register register;
-    private final RMWStoreExclusive storeEvent;
+    private final Event event;
     private Formula regResultExpr;
 
-    public RMWStoreExclusiveStatus(Register register, RMWStoreExclusive storeEvent){
+    public ExecutionStatus(Register register, Event event){
         this.register = register;
-        this.storeEvent = storeEvent;
+        this.event = event;
         addFilters(EType.ANY, EType.LOCAL, EType.REG_WRITER);
     }
 
@@ -46,7 +45,7 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
 
     @Override
     public String toString() {
-        return register + " <- status(" + storeEvent.toStringBase() + ")";
+        return register + " <- status(" + event.toString() + ")";
     }
 
     @Override
@@ -55,9 +54,9 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
 
         int precision = register.getPrecision();
 		BooleanFormula enc = bmgr.and(
-				bmgr.implication(storeEvent.exec(), 
+				bmgr.implication(event.exec(),
 						generalEqual(regResultExpr, new IConst(BigInteger.ZERO, precision).toIntFormula(this, ctx), ctx)),
-				bmgr.implication(bmgr.not(storeEvent.exec()), 
+				bmgr.implication(bmgr.not(event.exec()),
 						generalEqual(regResultExpr, new IConst(BigInteger.ONE, precision).toIntFormula(this, ctx), ctx))
         );
         return bmgr.and(super.encodeExec(ctx), enc);
@@ -68,6 +67,6 @@ public class RMWStoreExclusiveStatus extends Event implements RegWriter {
 
     @Override
     public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
-        throw new RuntimeException("RMWStoreExclusiveStatus cannot be unrolled: event must be generated during compilation");
+        throw new RuntimeException("ExecutionStatus cannot be unrolled: event must be generated during compilation");
     }
 }

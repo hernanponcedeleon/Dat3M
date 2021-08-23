@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.program.arch.aarch64.event.StoreExclusive;
 import com.dat3m.dartagnan.program.event.Cmp;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoadExclusive;
+import com.dat3m.dartagnan.program.event.Load;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
@@ -149,7 +149,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object>
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        RMWLoadExclusive load = EventFactory.newRMWLoadExclusive(register, address, ctx.loadExclusiveInstruction().mo);
+        Load load = EventFactory.newRMWLoadExclusive(register, address, ctx.loadExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, load);
     }
 

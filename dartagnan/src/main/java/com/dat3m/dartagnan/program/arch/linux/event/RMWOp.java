@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -54,7 +54,7 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {
-            RMWLoad load = EventFactory.newRMWLoad(resultRegister, address, Mo.RELAXED);
+            Load load = EventFactory.newRMWLoad(resultRegister, address, Mo.RELAXED);
             RMWStore store = EventFactory.newRMWStore(load, address, new IExprBin(resultRegister, op, value), Mo.RELAXED);
             load.addFilters(EType.NORETURN);
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));

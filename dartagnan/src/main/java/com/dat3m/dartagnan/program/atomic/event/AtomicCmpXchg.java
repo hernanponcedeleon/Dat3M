@@ -7,9 +7,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
-import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -21,9 +18,9 @@ import java.util.LinkedList;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.EType.STRONG;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
+import static com.dat3m.dartagnan.program.utils.EType.STRONG;
 import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
 public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReaderData {
@@ -82,7 +79,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Label fail = EventFactory.newLabel("CAS_fail");
                 Label endCas = EventFactory.newLabel("CAS_end");
                 CondJump branch = EventFactory.newJump(new Atom(resultRegister, NEQ, IConst.ONE), fail);
-                store = EventFactory.newRMWStore((RMWLoad)load, address, value, mo);
+                store = EventFactory.newRMWStore(load, address, value, mo);
                 CondJump jumpToEnd = EventFactory.newGoto(endCas);
                 Local updateReg = EventFactory.newLocal(expected, dummy);
                 events.addAll(Arrays.asList(load, casResult, branch, store, jumpToEnd, fail, updateReg, endCas));
@@ -123,7 +120,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 // ---- CAS success ----
                 store = EventFactory.newRMWStoreExclusive(address, value, storeMo, is(STRONG));
                 Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                RMWStoreExclusiveStatus status = EventFactory.newRMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
+                ExecutionStatus status = EventFactory.newExecutionStatus(statusReg, store);
                 Event jumpStoreFail = EventFactory.newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
                 jumpStoreFail.addFilters(EType.BOUND);
                 CondJump jumpToEndCas = EventFactory.newGoto(endCas);

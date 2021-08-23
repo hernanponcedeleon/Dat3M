@@ -4,9 +4,9 @@ import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.tso.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.MemEvent;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -67,7 +67,7 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.TSO) {
             Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            RMWLoad load = EventFactory.newRMWLoad(dummyReg, address, null);
+            Load load = EventFactory.newRMWLoad(dummyReg, address, null);
             load.addFilters(EType.ATOM);
 
             RMWStore store = EventFactory.newRMWStore(load, address, resultRegister, null);

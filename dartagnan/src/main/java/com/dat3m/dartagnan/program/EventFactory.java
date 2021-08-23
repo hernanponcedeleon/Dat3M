@@ -11,10 +11,12 @@ import com.dat3m.dartagnan.program.arch.tso.event.Xchg;
 import com.dat3m.dartagnan.program.atomic.event.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.pthread.*;
-import com.dat3m.dartagnan.program.event.rmw.*;
+import com.dat3m.dartagnan.program.event.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
+import com.dat3m.dartagnan.program.utils.EType;
 
 import java.math.BigInteger;
 
@@ -49,8 +51,8 @@ public class EventFactory {
         return new Fence(name);
     }
 
-    public static FenceOpt newFenceOpt(String name, String opt) {
-        return new FenceOpt(name, opt);
+    public static Fence newFenceOpt(String name, String opt) {
+        return newFence(name + "." + opt);
     }
 
     public static Init newInit(IExpr address, IConst value) {
@@ -113,16 +115,20 @@ public class EventFactory {
 
     // ------------------------------------------ RMW events ------------------------------------------
 
-    public static RMWLoad newRMWLoad(Register reg, IExpr address, String mo) {
-        return new RMWLoad(reg, address, mo);
+    public static Load newRMWLoad(Register reg, IExpr address, String mo) {
+        Load load = new Load(reg, address, mo);
+        load.addFilters(EType.RMW);
+        return load;
     }
 
-    public static RMWStore newRMWStore(RMWLoad loadEvent, IExpr address, ExprInterface value, String mo) {
+    public static RMWStore newRMWStore(Load loadEvent, IExpr address, ExprInterface value, String mo) {
         return new RMWStore(loadEvent, address, value, mo);
     }
 
-    public static RMWLoadExclusive newRMWLoadExclusive(Register reg, IExpr address, String mo) {
-        return new RMWLoadExclusive(reg, address, mo);
+    public static Load newRMWLoadExclusive(Register reg, IExpr address, String mo) {
+        Load load = new Load(reg, address, mo);
+        load.addFilters(EType.RMW, EType.EXCL);
+        return load;
     }
 
     public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
@@ -133,8 +139,8 @@ public class EventFactory {
         return newRMWStoreExclusive(address, value, mo, false);
     }
 
-    public static RMWStoreExclusiveStatus newRMWStoreExclusiveStatus(Register register, RMWStoreExclusive storeEvent) {
-        return new RMWStoreExclusiveStatus(register, storeEvent);
+    public static ExecutionStatus newExecutionStatus(Register register, Event event) {
+        return new ExecutionStatus(register, event);
     }
 
 

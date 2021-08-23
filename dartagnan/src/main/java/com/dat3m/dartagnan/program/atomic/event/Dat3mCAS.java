@@ -7,9 +7,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.utils.EType;
@@ -69,7 +67,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 Local casResult = EventFactory.newLocal(resultRegister, new Atom(dummy, EQ, expected));
                 Label endCas = EventFactory.newLabel("CAS_end");
                 CondJump branch = EventFactory.newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
-                store = EventFactory.newRMWStore((RMWLoad)load, address, value, mo);
+                store = EventFactory.newRMWStore(load, address, value, mo);
                 events.addAll(Arrays.asList(load, casResult, branch, store, endCas));
                 break;
             }
@@ -107,7 +105,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 // ---- CAS success ----
                 store = EventFactory.newRMWStoreExclusive(address, value, storeMo);
                 Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                RMWStoreExclusiveStatus status = EventFactory.newRMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
+                ExecutionStatus status = EventFactory.newExecutionStatus(statusReg, (RMWStoreExclusive)store);
                 Event jumpStoreFail = EventFactory.newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
                 jumpStoreFail.addFilters(EType.BOUND);
                 // ---------------------

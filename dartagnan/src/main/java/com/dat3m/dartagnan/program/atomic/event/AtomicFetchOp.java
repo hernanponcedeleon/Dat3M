@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
@@ -62,7 +61,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
         switch(target) {
             case NONE: case TSO:
                 load = EventFactory.newRMWLoad(resultRegister, address, mo);
-                store = EventFactory.newRMWStore((RMWLoad)load, address, dummyReg, mo);
+                store = EventFactory.newRMWStore(load, address, dummyReg, mo);
                 events = new LinkedList<>(Arrays.asList(load, add, store));
                 break;
             case POWER:

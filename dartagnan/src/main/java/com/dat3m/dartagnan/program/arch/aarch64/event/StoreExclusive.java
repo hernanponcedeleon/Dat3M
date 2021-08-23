@@ -4,13 +4,13 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusiveStatus;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -60,7 +60,7 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.ARM || target == Arch.ARM8) {
             RMWStoreExclusive store = EventFactory.newRMWStoreExclusive(address, value, mo);
-            RMWStoreExclusiveStatus status = EventFactory.newRMWStoreExclusiveStatus(register, store);
+            ExecutionStatus status = EventFactory.newExecutionStatus(register, store);
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(store, status));
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

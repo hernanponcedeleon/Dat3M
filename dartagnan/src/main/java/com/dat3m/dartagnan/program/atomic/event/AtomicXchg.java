@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
@@ -58,7 +57,7 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
             case NONE: 
             case TSO:
                 load = EventFactory.newRMWLoad(resultRegister, address, mo);
-                store = EventFactory.newRMWStore((RMWLoad)load, address, value, mo);
+                store = EventFactory.newRMWStore(load, address, value, mo);
                 events = new LinkedList<>(Arrays.asList(load, store));
                 break;
             case POWER:

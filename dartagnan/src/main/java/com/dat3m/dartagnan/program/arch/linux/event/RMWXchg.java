@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -51,7 +51,7 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            RMWLoad load = EventFactory.newRMWLoad(dummy, address, Mo.loadMO(mo));
+            Load load = EventFactory.newRMWLoad(dummy, address, Mo.loadMO(mo));
             RMWStore store = EventFactory.newRMWStore(load, address, value, Mo.storeMO(mo));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));

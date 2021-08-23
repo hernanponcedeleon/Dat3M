@@ -1,13 +1,12 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.program.event.*;
-
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.EType.EXCL;
-import static com.dat3m.dartagnan.program.utils.EType.*;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemEvent;
 
 import java.math.BigInteger;
 
-import com.dat3m.dartagnan.program.Thread;
+import static com.dat3m.dartagnan.program.utils.EType.*;
 
 
 //EventData represents all data associated with an event in a concrete model.
