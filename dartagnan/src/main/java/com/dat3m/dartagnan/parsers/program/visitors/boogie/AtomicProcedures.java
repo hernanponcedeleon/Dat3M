@@ -48,7 +48,7 @@ public class AtomicProcedures {
 			atomicFetchOp(visitor, ctx);
 			return;
 		}
-		if(name.startsWith("atomic_exchange") /*|| name.startsWith("atomic_compare_exchange")*/) {
+		if(name.startsWith("atomic_exchange")) {
 			atomicXchg(visitor, ctx);
 			return;
 		}
@@ -156,11 +156,12 @@ public class AtomicProcedures {
 		Register expected = new Register(null, reg.getThreadId(), reg.getPrecision());
 		ExprInterface desired = (ExprInterface) params.get(2).accept(visitor);
 		String mo = null;
+		boolean strong = ctx.getText().contains("strong");
 		if(params.size() > 3) {
 			mo = intToMo(((IConst) params.get(3).accept(visitor)).getIntValue().intValue());
 			// NOTE: We forget about the 5th parameter (MO on fail) for now!
 		}
 		visitor.programBuilder.addChild(visitor.threadCount, new Load(expected, expectedAdd, mo));
-		visitor.programBuilder.addChild(visitor.threadCount, new AtomicCmpXchg(reg, add, expected, desired, mo));
+		visitor.programBuilder.addChild(visitor.threadCount, new AtomicCmpXchg(reg, add, expected, desired, mo, strong));
 	}
 }
