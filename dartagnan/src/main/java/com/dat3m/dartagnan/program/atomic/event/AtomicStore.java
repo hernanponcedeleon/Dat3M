@@ -73,7 +73,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 break;
             case TSO:
                 if(SC.equals(mo)){
-                    events.addLast(EventFactory.X86.newMFence());
+                    events.addLast(EventFactory.X86.newMemoryFence());
                 }
                 break;
             case POWER:

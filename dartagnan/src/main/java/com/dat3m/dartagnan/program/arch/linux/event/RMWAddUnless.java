@@ -63,8 +63,8 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
             Local local = EventFactory.newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
-            events.addFirst(EventFactory.Linux.newMemoryBarrier());
-            events.addLast(EventFactory.Linux.newMemoryBarrier());
+            events.addFirst(EventFactory.Linux.newConditionalMemoryBarrier(load));
+            events.addLast(EventFactory.Linux.newConditionalMemoryBarrier(load));
 
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

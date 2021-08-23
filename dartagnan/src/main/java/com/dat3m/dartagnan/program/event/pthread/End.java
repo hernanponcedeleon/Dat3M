@@ -52,7 +52,7 @@ public class End extends Event {
             case NONE:
                 break;
             case TSO:
-                events.addLast(EventFactory.X86.newMFence());
+                events.addLast(EventFactory.X86.newMemoryFence());
                 break;
             case POWER:
                 events.addFirst(EventFactory.Power.newSyncBarrier());

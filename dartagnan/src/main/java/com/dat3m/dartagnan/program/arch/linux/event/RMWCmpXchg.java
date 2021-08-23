@@ -65,8 +65,8 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
                 events.addLast(EventFactory.newLocal(resultRegister, dummy));
             }
             if (Mo.MB.equals(mo)) {
-                events.addFirst(EventFactory.Linux.newMemoryBarrier());
-                events.addLast(EventFactory.Linux.newMemoryBarrier());
+                events.addFirst(EventFactory.Linux.newConditionalMemoryBarrier(load));
+                events.addLast(EventFactory.Linux.newConditionalMemoryBarrier(load));
             }
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

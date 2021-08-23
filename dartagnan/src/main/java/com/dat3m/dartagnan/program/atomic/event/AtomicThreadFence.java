@@ -50,7 +50,7 @@ public class AtomicThreadFence extends Fence {
                 break;
             case TSO:
                 if(SC.equals(mo)){
-                    events.add(EventFactory.X86.newMFence());
+                    events.add(EventFactory.X86.newMemoryFence());
                 }
                 break;
             case POWER:

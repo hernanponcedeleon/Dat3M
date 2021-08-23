@@ -305,10 +305,6 @@ public class EventFactory {
     public static class Linux {
         private Linux() {}
 
-        public static FenceCond newConditionalFence(RMWReadCond loadEvent, String name) {
-            return new FenceCond(loadEvent, name);
-        }
-
         public static RMWReadCondCmp newRMWReadCondCmp(Register reg, ExprInterface cmp, IExpr address, String atomic) {
             return new RMWReadCondCmp(reg, cmp, address, atomic);
         }
@@ -349,8 +345,16 @@ public class EventFactory {
             return new RMWXchg(address, register, value, mo);
         }
 
+        public static FenceCond newConditionalBarrier(RMWReadCond loadEvent, String name) {
+            return new FenceCond(loadEvent, name);
+        }
+
         public static Fence newMemoryBarrier() {
             return newFence("Mb");
+        }
+
+        public static Fence newConditionalMemoryBarrier(RMWReadCond loadEvent) {
+            return newConditionalBarrier(loadEvent, "Mb");
         }
 
     }
@@ -366,7 +370,7 @@ public class EventFactory {
             return new Xchg(address, register);
         }
 
-        public static Fence newMFence() {
+        public static Fence newMemoryFence() {
             return newFence("Mfence");
         }
     }
