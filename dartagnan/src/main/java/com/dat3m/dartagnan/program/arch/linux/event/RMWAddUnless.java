@@ -1,11 +1,5 @@
 package com.dat3m.dartagnan.program.arch.linux.event;
 
-import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.rmw.cond.FenceCond;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -13,11 +7,17 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.arch.linux.event.cond.FenceCond;
+import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWReadCondUnless;
+import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWStoreCond;
+import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.rmw.cond.RMWReadCondUnless;
-import com.dat3m.dartagnan.program.event.rmw.cond.RMWStoreCond;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.LinkedList;

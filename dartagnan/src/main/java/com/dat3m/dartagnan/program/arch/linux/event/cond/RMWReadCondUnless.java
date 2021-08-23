@@ -1,6 +1,4 @@
-package com.dat3m.dartagnan.program.event.rmw.cond;
-
-import org.sosy_lab.java_smt.api.SolverContext;
+package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -8,6 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class RMWReadCondUnless extends RMWReadCond implements RegWriter, RegReaderData {
 
