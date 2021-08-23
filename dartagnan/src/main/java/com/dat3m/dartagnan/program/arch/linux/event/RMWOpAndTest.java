@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.arch.linux.event;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
@@ -54,14 +54,14 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {
             Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            RMWLoad load = Events.newRMWLoad(dummy, address, Mo.RELAXED);
-            Local local1 = Events.newLocal(dummy, new IExprBin(dummy, op, value));
-            RMWStore store = Events.newRMWStore(load, address, dummy, Mo.RELAXED);
-            Local local2 = Events.newLocal(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(BigInteger.ZERO, resultRegister.getPrecision())));
+            RMWLoad load = EventFactory.newRMWLoad(dummy, address, Mo.RELAXED);
+            Local local1 = EventFactory.newLocal(dummy, new IExprBin(dummy, op, value));
+            RMWStore store = EventFactory.newRMWStore(load, address, dummy, Mo.RELAXED);
+            Local local2 = EventFactory.newLocal(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(BigInteger.ZERO, resultRegister.getPrecision())));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, local1, store, local2));
-            events.addFirst(Events.Linux.newMemoryBarrier());
-            events.addLast(Events.Linux.newMemoryBarrier());
+            events.addFirst(EventFactory.Linux.newMemoryBarrier());
+            events.addLast(EventFactory.Linux.newMemoryBarrier());
 
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

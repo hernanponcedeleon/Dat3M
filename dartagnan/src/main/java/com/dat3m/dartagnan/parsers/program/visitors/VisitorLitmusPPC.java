@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.parsers.LitmusPPCVisitor;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Cmp;
 import com.dat3m.dartagnan.program.event.Event;
@@ -115,14 +115,14 @@ public class VisitorLitmusPPC
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), -1);
         IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
-        return programBuilder.addChild(mainThread, Events.newLocal(register, constant));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, Events.newLoad(r1, ra, "_rx"));
+        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, "_rx"));
     }
 
     @Override
@@ -135,7 +135,7 @@ public class VisitorLitmusPPC
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, Events.newStore(ra, r1, "_rx"));
+        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, "_rx"));
     }
 
     @Override
@@ -148,7 +148,7 @@ public class VisitorLitmusPPC
     public Object visitMr(LitmusPPCParser.MrContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, Events.newLocal(r1, r2));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, r2));
     }
 
     @Override
@@ -156,7 +156,7 @@ public class VisitorLitmusPPC
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         IConst constant = new IConst(new BigInteger(ctx.constant().getText()), -1);
-        return programBuilder.addChild(mainThread, Events.newLocal(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.PLUS, constant)));
     }
 
     @Override
@@ -164,14 +164,14 @@ public class VisitorLitmusPPC
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), -1);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, Events.newLocal(r1, new IExprBin(r2, IOpBin.XOR, r3)));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, new IExprBin(r2, IOpBin.XOR, r3)));
     }
 
     @Override
     public Object visitCmpw(LitmusPPCParser.CmpwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, Events.newCompare(r1, r2));
+        return programBuilder.addChild(mainThread, EventFactory.newCompare(r1, r2));
     }
 
     @Override
@@ -183,7 +183,7 @@ public class VisitorLitmusPPC
         }
         Cmp cmp = (Cmp)lastEvent;
         Atom expr = new Atom(cmp.getLeft(), ctx.cond().op, cmp.getRight());
-        return programBuilder.addChild(mainThread, Events.newJump(expr, label));
+        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
     @Override
@@ -196,7 +196,7 @@ public class VisitorLitmusPPC
         String name = ctx.getText().toLowerCase();
         name = name.substring(0, 1).toUpperCase() + name.substring(1);
         if(fences.contains(name)){
-            return programBuilder.addChild(mainThread, Events.newFence(name));
+            return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);
     }

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.pthread;
 
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -48,7 +48,7 @@ public class InitLock extends Event {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
-        events.add(Events.newStore(address, value, SC));
+        events.add(EventFactory.newStore(address, value, SC));
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }

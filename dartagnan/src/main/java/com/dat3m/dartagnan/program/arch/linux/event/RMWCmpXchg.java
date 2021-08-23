@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.arch.linux.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWReadCondCmp;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWStoreCond;
@@ -57,16 +57,16 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            RMWReadCondCmp load = Events.Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
-            RMWStoreCond store = Events.Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
+            RMWReadCondCmp load = EventFactory.Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
+            RMWStoreCond store = EventFactory.Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
             if (dummy != resultRegister) {
-                events.addLast(Events.newLocal(resultRegister, dummy));
+                events.addLast(EventFactory.newLocal(resultRegister, dummy));
             }
             if (Mo.MB.equals(mo)) {
-                events.addFirst(Events.Linux.newMemoryBarrier());
-                events.addLast(Events.Linux.newMemoryBarrier());
+                events.addFirst(EventFactory.Linux.newMemoryBarrier());
+                events.addLast(EventFactory.Linux.newMemoryBarrier());
             }
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

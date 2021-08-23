@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
@@ -50,25 +50,25 @@ public class AtomicThreadFence extends Fence {
                 break;
             case TSO:
                 if(SC.equals(mo)){
-                    events.add(Events.X86.newMFence());
+                    events.add(EventFactory.X86.newMFence());
                 }
                 break;
             case POWER:
                 if(ACQUIRE.equals(mo) || RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                    events.add(Events.Power.newLwSyncBarrier());
+                    events.add(EventFactory.Power.newLwSyncBarrier());
                 }
                 break;
             case ARM:
                 if(ACQUIRE.equals(mo) || RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                    events.addLast(Events.Arm.newISHBarrier());
+                    events.addLast(EventFactory.Arm.newISHBarrier());
                 }
                 break;
             case ARM8:
                 if(RELEASE.equals(mo) || ACQ_REL.equals(mo) || SC.equals(mo)){
-                	events.addLast(Events.Arm8.DMB.newISHBarrier());
+                	events.addLast(EventFactory.Arm8.DMB.newISHBarrier());
                 }
                 if(ACQUIRE.equals(mo)){
-                	events.addLast(Events.Arm8.DSB.newISHLDBarrier());
+                	events.addLast(EventFactory.Arm8.DSB.newISHLDBarrier());
                 }                
                 break;
             default:

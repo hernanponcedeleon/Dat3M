@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -141,7 +141,7 @@ public class CondJump extends Event implements RegReaderData {
             Event next = predecessor;
             if(bound == 1) {
                 Label target = (Label)getThread().getExit();
-                next = Events.newGoto(target);
+                next = EventFactory.newGoto(target);
                 next.addFilters(EType.BOUND);
                 predecessor.setSuccessor(next);
             }

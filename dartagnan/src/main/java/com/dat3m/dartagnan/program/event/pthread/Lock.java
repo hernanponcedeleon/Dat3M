@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.pthread;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
@@ -70,9 +70,9 @@ public class Lock extends Event {
 
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
-        events.add(Events.newLoad(reg, address, SC));
-        events.add(Events.newJump(new Atom(reg, NEQ, new IConst(BigInteger.ZERO, -1)),label));
-        events.add(Events.newStore(address, new IConst(BigInteger.ONE, -1), SC));
+        events.add(EventFactory.newLoad(reg, address, SC));
+        events.add(EventFactory.newJump(new Atom(reg, NEQ, new IConst(BigInteger.ZERO, -1)),label));
+        events.add(EventFactory.newStore(address, new IConst(BigInteger.ONE, -1), SC));
         for(Event e : events) {
             e.addFilters(LOCK, RMW);
         }

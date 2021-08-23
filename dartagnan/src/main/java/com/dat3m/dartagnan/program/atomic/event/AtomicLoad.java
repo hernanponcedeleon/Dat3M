@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -57,7 +57,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
-        Load load = Events.newLoad(resultRegister, address, mo);
+        Load load = EventFactory.newLoad(resultRegister, address, mo);
         events.add(load);
 
         switch (target) {
@@ -66,19 +66,19 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 break;
             case POWER:
                 if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)){
-                    Label label = Events.newLabel("Jump_" + oId);
-                    CondJump fakeDep = Events.newFakeCtrlDep(resultRegister, label);
+                    Label label = EventFactory.newLabel("Jump_" + oId);
+                    CondJump fakeDep = EventFactory.newFakeCtrlDep(resultRegister, label);
                     events.addLast(fakeDep);
                     events.addLast(label);
-                    events.addLast(Events.Power.newISyncBarrier());
+                    events.addLast(EventFactory.Power.newISyncBarrier());
                     if(SC.equals(mo)){
-                        events.addFirst(Events.Power.newSyncBarrier());
+                        events.addFirst(EventFactory.Power.newSyncBarrier());
                     }
                 }
                 break;
             case ARM:
                 if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)) {
-                    events.addLast(Events.Arm.newISHBarrier());
+                    events.addLast(EventFactory.Arm.newISHBarrier());
                 }
                 break;
             case ARM8:
@@ -95,7 +95,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 		                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
 					}
 		        events = new LinkedList<>();
-		        load = Events.newLoad(resultRegister, address, loadMo);
+		        load = EventFactory.newLoad(resultRegister, address, loadMo);
 		        events.add(load);
                 break;
             default:

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.arch.aarch64.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
@@ -59,8 +59,8 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.ARM || target == Arch.ARM8) {
-            RMWStoreExclusive store = Events.newRMWStoreExclusive(address, value, mo);
-            RMWStoreExclusiveStatus status = Events.newRMWStoreExclusiveStatus(register, store);
+            RMWStoreExclusive store = EventFactory.newRMWStoreExclusive(address, value, mo);
+            RMWStoreExclusiveStatus status = EventFactory.newRMWStoreExclusiveStatus(register, store);
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(store, status));
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

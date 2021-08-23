@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
@@ -65,11 +65,11 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
         switch(target) {
             case NONE: case TSO: {
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = Events.newRMWLoad(dummy, address, mo);
-                Local casResult = Events.newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                Label endCas = Events.newLabel("CAS_end");
-                CondJump branch = Events.newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
-                store = Events.newRMWStore((RMWLoad)load, address, value, mo);
+                load = EventFactory.newRMWLoad(dummy, address, mo);
+                Local casResult = EventFactory.newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                Label endCas = EventFactory.newLabel("CAS_end");
+                CondJump branch = EventFactory.newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
+                store = EventFactory.newRMWStore((RMWLoad)load, address, value, mo);
                 events.addAll(Arrays.asList(load, casResult, branch, store, endCas));
                 break;
             }
@@ -100,31 +100,31 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 }
 
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = Events.newRMWLoadExclusive(dummy, address, loadMo);
-                Local casResult = Events.newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                Label endCas = Events.newLabel("CAS_end");
-                CondJump branch = Events.newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
+                load = EventFactory.newRMWLoadExclusive(dummy, address, loadMo);
+                Local casResult = EventFactory.newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                Label endCas = EventFactory.newLabel("CAS_end");
+                CondJump branch = EventFactory.newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
                 // ---- CAS success ----
-                store = Events.newRMWStoreExclusive(address, value, storeMo);
+                store = EventFactory.newRMWStoreExclusive(address, value, storeMo);
                 Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                RMWStoreExclusiveStatus status = Events.newRMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
-                Event jumpStoreFail = Events.newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
+                RMWStoreExclusiveStatus status = EventFactory.newRMWStoreExclusiveStatus(statusReg, (RMWStoreExclusive)store);
+                Event jumpStoreFail = EventFactory.newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
                 jumpStoreFail.addFilters(EType.BOUND);
                 // ---------------------
 
                 // --- Add Fence before under POWER ---
                 if(target.equals(POWER)) {
                     if (mo.equals(SC)) {
-                        events.addFirst(Events.Power.newSyncBarrier());
+                        events.addFirst(EventFactory.Power.newSyncBarrier());
                     } else if (storeMo.equals(REL)) {
-                        events.addFirst(Events.Power.newLwSyncBarrier());
+                        events.addFirst(EventFactory.Power.newLwSyncBarrier());
                     }                	
                 }
                 // --- Add success events ---
                 events.addAll(Arrays.asList(load, casResult, branch, store, status, jumpStoreFail));
                 // --- Add Fence after success under POWER ---
                 if (target.equals(POWER) && loadMo.equals(ACQ)) {
-                    events.addLast(Events.Power.newISyncBarrier());
+                    events.addLast(EventFactory.Power.newISyncBarrier());
                 }
                 // --- Add exit ---
                 events.addAll(Collections.singletonList(endCas));

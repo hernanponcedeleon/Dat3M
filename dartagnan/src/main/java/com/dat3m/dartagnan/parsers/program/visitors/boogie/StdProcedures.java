@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.memory.Address;
@@ -48,7 +48,7 @@ public class StdProcedures {
 		if(name.startsWith("WRITE_ONCE")) {
 			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
 			ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr(1).accept(visitor);
-			visitor.programBuilder.addChild(visitor.threadCount, Events.newStore(address, value, "NA"));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, "NA"));
 			return;
 		}
 //		if(name.startsWith("READ_ONCE")) {
@@ -130,7 +130,7 @@ public class StdProcedures {
 		// the name should be unique, thus we add the process identifier.
 		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values, start.getPrecision());
 		Address adds = visitor.programBuilder.getPointer(visitor.currentScope.getID() + ":" + ptr);
-		visitor.programBuilder.addChild(visitor.threadCount, Events.newLocal(start, adds));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
 		visitor.allocationRegs.add(start);
 	}
 	
@@ -141,7 +141,7 @@ public class StdProcedures {
     	if(expr instanceof IConst && ((IConst)expr).getIntValue().compareTo(BigInteger.ONE) == 0) {
     		return;
     	}
-    	Local event = Events.newLocal(ass, expr);
+    	Local event = EventFactory.newLocal(ass, expr);
 		event.addFilters(EType.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}

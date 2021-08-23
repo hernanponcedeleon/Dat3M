@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
@@ -89,7 +89,7 @@ public class SvcompProcedures {
     	if(index >= FENCES.size()) {
     		throw new UnsupportedOperationException(ctx.getText() + " cannot be handled");
     	}
-    	visitor.programBuilder.addChild(visitor.threadCount, Events.newFence(FENCES.get(index)));
+    	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newFence(FENCES.get(index)));
 	}
 
 	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -99,11 +99,11 @@ public class SvcompProcedures {
     	if(expr instanceof IConst && ((IConst)expr).getIntValue().equals(BigInteger.ONE)) {
     		return;
     	}
-    	Local event = Events.newLocal(ass, expr);
+    	Local event = EventFactory.newLocal(ass, expr);
 		event.addFilters(EType.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
        	Label end = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, Events.newJump(new Atom(ass, NEQ, new IConst(BigInteger.ONE, -1)), end));
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newJump(new Atom(ass, NEQ, new IConst(BigInteger.ONE, -1)), end));
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
@@ -111,9 +111,9 @@ public class SvcompProcedures {
         Address lockAddress = visitor.programBuilder.getOrCreateLocation("__VERIFIER_atomic", -1).getAddress();
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		LinkedList<Event> events = new LinkedList<>();
-        events.add(Events.newLoad(register, lockAddress, null));
-        events.add(Events.newJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
-        events.add(Events.newStore(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
+        events.add(EventFactory.newLoad(register, lockAddress, null));
+        events.add(EventFactory.newJump(new Atom(register, NEQ, new IConst(begin ? BigInteger.ZERO : BigInteger.ONE, -1)), label));
+        events.add(EventFactory.newStore(lockAddress, new IConst(begin ? BigInteger.ONE : BigInteger.ZERO, -1), null));
         for(Event e : events) {
         	e.addFilters(EType.LOCK, EType.RMW);
         	visitor.programBuilder.addChild(visitor.threadCount, e);
@@ -121,7 +121,7 @@ public class SvcompProcedures {
 	}
 	
 	private static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
-		visitor.currentBeginAtomic = Events.Svcomp.newBeginAtomic();
+		visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
 		visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);	
 	}
 	
@@ -129,7 +129,7 @@ public class SvcompProcedures {
 		if(visitor.currentBeginAtomic == null) {
             throw new ParsingException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
 		}
-		visitor.programBuilder.addChild(visitor.threadCount, Events.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
 		visitor.currentBeginAtomic = null;
 	}
 	
@@ -168,7 +168,7 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-			visitor.programBuilder.addChild(visitor.threadCount, Events.newLocal(register, new INonDet(type, register.getPrecision()), visitor.currentLine));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new INonDet(type, register.getPrecision()), visitor.currentLine));
 	    }
 	}
 
@@ -176,7 +176,7 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 	    if(register != null){
-			visitor.programBuilder.addChild(visitor.threadCount, Events.newLocal(register, new BNonDet(register.getPrecision()), visitor.currentLine));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new BNonDet(register.getPrecision()), visitor.currentLine));
 	    }
 	}
 }

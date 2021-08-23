@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWReadCondUnless;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWStoreCond;
@@ -58,13 +58,13 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {
             Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            RMWReadCondUnless load = Events.Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);
-            RMWStoreCond store = Events.Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Mo.RELAXED);
-            Local local = Events.newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
+            RMWReadCondUnless load = EventFactory.Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);
+            RMWStoreCond store = EventFactory.Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Mo.RELAXED);
+            Local local = EventFactory.newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
 
             LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
-            events.addFirst(Events.Linux.newMemoryBarrier());
-            events.addLast(Events.Linux.newMemoryBarrier());
+            events.addFirst(EventFactory.Linux.newMemoryBarrier());
+            events.addLast(EventFactory.Linux.newMemoryBarrier());
 
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

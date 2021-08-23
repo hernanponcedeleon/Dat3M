@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.utils;
 import com.dat3m.dartagnan.asserts.AbstractAssert;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -49,8 +49,7 @@ public class ProgramBuilder {
 
     public void initThread(String name, int id){
         if(!threads.containsKey(id)){
-        	// TODO(TH): use factory
-            Skip threadEntry = new Skip();
+            Skip threadEntry = EventFactory.newSkip();
             threadEntry.setOId(lastOrigId++);
             threads.putIfAbsent(id, new Thread(name, id, threadEntry));
         }
@@ -99,17 +98,17 @@ public class ProgramBuilder {
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
         Location loc = getOrCreateLocation(locName, precision);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, Events.newLocal(reg, loc.getAddress()));
+        addChild(regThread, EventFactory.newLocal(reg, loc.getAddress()));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
         Location loc = getOrCreateLocation(locName, precision);
         Register reg = getOrCreateRegister(regThread, regName, precision);
-        addChild(regThread, Events.newLocal(reg, iValueMap.get(loc.getAddress())));
+        addChild(regThread, EventFactory.newLocal(reg, iValueMap.get(loc.getAddress())));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, Events.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
+        addChild(regThread, EventFactory.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
     }
 
     public void addDeclarationArray(String name, List<IConst> values, int precision){
@@ -187,8 +186,7 @@ public class ProgramBuilder {
     }
     
     public Label getOrCreateLabel(String name){
-    	// TODO(TH): use factory
-        labels.putIfAbsent(name, new Label(name));
+        labels.putIfAbsent(name, EventFactory.newLabel(name));
         return labels.get(name);
     }
 
@@ -214,7 +212,7 @@ public class ProgramBuilder {
     private void buildInitThreads(){
         int nextThreadId = nextThreadId();
         for (Map.Entry<IExpr, IConst> entry : iValueMap.entrySet()) {
-            Event e = Events.newInit(entry.getKey(), entry.getValue());
+            Event e = EventFactory.newInit(entry.getKey(), entry.getValue());
             Thread thread = new Thread(nextThreadId, e);
             threads.put(nextThreadId, thread);
             nextThreadId++;

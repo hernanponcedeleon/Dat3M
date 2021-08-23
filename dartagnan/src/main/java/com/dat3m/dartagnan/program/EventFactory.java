@@ -18,59 +18,16 @@ import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 
 import java.math.BigInteger;
 
-public class Events {
+public class EventFactory {
 
     // Static class
-    private Events() {}
+    private EventFactory() {}
 
+    // =============================================================================================
+    // ======================================= DAT3m events ========================================
+    // =============================================================================================
 
-    public static Local newLocal(Register register, ExprInterface expr, int cLine) {
-        return new Local(register, expr, cLine);
-    }
-
-    public static Local newLocal(Register register, ExprInterface expr) {
-        return newLocal(register, expr, -1);
-    }
-
-    public static CondJump newJump(BExpr cond, Label target) {
-        return new CondJump(cond, target);
-    }
-
-    public static CondJump newJumpUnless(ExprInterface cond, Label target) {
-    	return newJump(new BExprUn(BOpUn.NOT, cond), target);
-    }
-
-    public static IfAsJump newIfJump(BExpr expr, Label label, Label end) {
-        return new IfAsJump(expr, label, end);
-    }
-
-    public static IfAsJump newIfJumpUnless(ExprInterface expr, Label label, Label end) {
-        return newIfJump(new BExprUn(BOpUn.NOT, expr), label, end);
-    }
-
-    public static CondJump newGoto(Label target) {
-        return newJump(BConst.TRUE, target);
-    }
-
-    public static CondJump newFakeCtrlDep(Register reg, Label target) {
-    	return newJump(new Atom(reg, COpBin.EQ, reg), target);
-    }
-
-    public static Fence newFence(String name) {
-        return new Fence(name);
-    }
-
-    public static FenceOpt newFenceOpt(String name, String opt) {
-        return new FenceOpt(name, opt);
-    }
-
-    public static Init newInit(IExpr address, IConst value) {
-        return new Init(address, value);
-    }
-
-    public static Label newLabel(String name) {
-        return new Label(name);
-    }
+    // ------------------------------------------ Memory events ------------------------------------------
 
     public static Load newLoad(Register register, IExpr address, String mo, int cLine) {
         return new Load(register, address, mo, cLine);
@@ -88,6 +45,20 @@ public class Events {
         return newStore(address, value, mo, -1);
     }
 
+    public static Fence newFence(String name) {
+        return new Fence(name);
+    }
+
+    public static FenceOpt newFenceOpt(String name, String opt) {
+        return new FenceOpt(name, opt);
+    }
+
+    public static Init newInit(IExpr address, IConst value) {
+        return new Init(address, value);
+    }
+
+    // ------------------------------------------ Local events ------------------------------------------
+
     public static Cmp newCompare(IExpr left, IExpr right) {
         return new Cmp(left, right);
     }
@@ -104,6 +75,44 @@ public class Events {
         return new FunRet(funName, cLine);
     }
 
+    public static Local newLocal(Register register, ExprInterface expr, int cLine) {
+        return new Local(register, expr, cLine);
+    }
+
+    public static Local newLocal(Register register, ExprInterface expr) {
+        return newLocal(register, expr, -1);
+    }
+
+    public static Label newLabel(String name) {
+        return new Label(name);
+    }
+
+    public static CondJump newJump(BExpr cond, Label target) {
+        return new CondJump(cond, target);
+    }
+
+    public static CondJump newJumpUnless(ExprInterface cond, Label target) {
+        return newJump(new BExprUn(BOpUn.NOT, cond), target);
+    }
+
+    public static IfAsJump newIfJump(BExpr expr, Label label, Label end) {
+        return new IfAsJump(expr, label, end);
+    }
+
+    public static IfAsJump newIfJumpUnless(ExprInterface expr, Label label, Label end) {
+        return newIfJump(new BExprUn(BOpUn.NOT, expr), label, end);
+    }
+
+    public static CondJump newGoto(Label target) {
+        return newJump(BConst.TRUE, target);
+    }
+
+    public static CondJump newFakeCtrlDep(Register reg, Label target) {
+        return newJump(new Atom(reg, COpBin.EQ, reg), target);
+    }
+
+    // ------------------------------------------ RMW events ------------------------------------------
+
     public static RMWLoad newRMWLoad(Register reg, IExpr address, String mo) {
         return new RMWLoad(reg, address, mo);
     }
@@ -116,18 +125,22 @@ public class Events {
         return new RMWLoadExclusive(reg, address, mo);
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
-        return new RMWStoreExclusive(address, value, mo);
-    }
-
     public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
         return new RMWStoreExclusive(address, value, mo, isStrong);
+    }
+
+    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
+        return newRMWStoreExclusive(address, value, mo, false);
     }
 
     public static RMWStoreExclusiveStatus newRMWStoreExclusiveStatus(Register register, RMWStoreExclusive storeEvent) {
         return new RMWStoreExclusiveStatus(register, storeEvent);
     }
 
+
+    // =============================================================================================
+    // ========================================== Pthread ==========================================
+    // =============================================================================================
 
     public static class Pthread {
         private Pthread() {}
@@ -160,6 +173,10 @@ public class Events {
             return new Unlock(name, address, reg, label);
         }
     }
+
+    // =============================================================================================
+    // ========================================== Atomics ==========================================
+    // =============================================================================================
 
     public static class Atomic {
         private Atomic() {}
@@ -205,6 +222,10 @@ public class Events {
         }
     }
 
+    // =============================================================================================
+    // ========================================== Svcomp ===========================================
+    // =============================================================================================
+
     public static class Svcomp {
         private Svcomp() {}
 
@@ -218,6 +239,9 @@ public class Events {
     }
 
 
+    // =============================================================================================
+    // ============================================ ARM ============================================
+    // =============================================================================================
     private static class ArmCommon {
         private ArmCommon() {}
 
@@ -275,6 +299,9 @@ public class Events {
 
     }
 
+    // =============================================================================================
+    // =========================================== Linux ===========================================
+    // =============================================================================================
     public static class Linux {
         private Linux() {}
 
@@ -328,6 +355,10 @@ public class Events {
 
     }
 
+
+    // =============================================================================================
+    // ============================================ X86 ============================================
+    // =============================================================================================
     public static class X86 {
         private X86() {}
 
@@ -340,6 +371,10 @@ public class Events {
         }
     }
 
+
+    // =============================================================================================
+    // =========================================== Power ===========================================
+    // =============================================================================================
     public static class Power {
         private Power() {}
 

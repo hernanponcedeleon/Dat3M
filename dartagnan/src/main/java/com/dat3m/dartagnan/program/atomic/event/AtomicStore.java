@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemEvent;
@@ -65,7 +65,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         LinkedList<Event> events = new LinkedList<>();
-        Store store = Events.newStore(address, value, mo);
+        Store store = EventFactory.newStore(address, value, mo);
         events.add(store);
 
         switch (target){
@@ -73,21 +73,21 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 break;
             case TSO:
                 if(SC.equals(mo)){
-                    events.addLast(Events.X86.newMFence());
+                    events.addLast(EventFactory.X86.newMFence());
                 }
                 break;
             case POWER:
                 if(RELEASE.equals(mo)){
-                    events.addFirst(Events.Power.newLwSyncBarrier());
+                    events.addFirst(EventFactory.Power.newLwSyncBarrier());
                 } else if(SC.equals(mo)){
-                    events.addFirst(Events.Power.newSyncBarrier());
+                    events.addFirst(EventFactory.Power.newSyncBarrier());
                 }
                 break;
             case ARM:
                 if(RELEASE.equals(mo) || SC.equals(mo)){
-                    events.addFirst(Events.Arm.newISHBarrier());
+                    events.addFirst(EventFactory.Arm.newISHBarrier());
                     if(SC.equals(mo)){
-                        events.addLast(Events.Arm.newISHBarrier());
+                        events.addLast(EventFactory.Arm.newISHBarrier());
                     }
                 }
                 break;
@@ -105,7 +105,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 	                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
 					}
                 events = new LinkedList<>();
-                store = Events.newStore(address, value, storeMo);
+                store = EventFactory.newStore(address, value, storeMo);
                 events.add(store);
                 break;
             default:

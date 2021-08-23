@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event.pthread;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.program.Events;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
@@ -76,24 +76,23 @@ public class Start extends Event {
             case NONE: case TSO:
                 break;
             case POWER:
-            	// TODO(TH): use factory
-                Label label = new Label("Jump_" + oId);
-                CondJump fakeCtrlDep = Events.newFakeCtrlDep(reg, label);
+                Label label = EventFactory.newLabel("Jump_" + oId);
+                CondJump fakeCtrlDep = EventFactory.newFakeCtrlDep(reg, label);
                 events.addLast(fakeCtrlDep);
                 events.addLast(label);
-                events.addLast(Events.Power.newISyncBarrier());
+                events.addLast(EventFactory.Power.newISyncBarrier());
                 break;
             case ARM:
-                events.addLast(Events.Arm.newISHBarrier());
+                events.addLast(EventFactory.Arm.newISHBarrier());
                 break;
             case ARM8:
-                events.addLast(Events.Arm8.DMB.newISHBarrier());
+                events.addLast(EventFactory.Arm8.DMB.newISHBarrier());
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        events.add(Events.newJumpUnless(new Atom(reg, EQ, new IConst(BigInteger.ONE, -1)), label));
+        events.add(EventFactory.newJumpUnless(new Atom(reg, EQ, new IConst(BigInteger.ONE, -1)), label));
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 
