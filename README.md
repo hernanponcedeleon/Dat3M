@@ -40,7 +40,7 @@ export PATH=$DAT3M_HOME/:$PATH
 
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
 
-To build the tool run
+To build the tool run (if you are a MacOS user, you need to replace all `so` occurrences in `dartagnan.pom` to `dylib`)
 ```
 mvn clean install -DskipTests
 ```
