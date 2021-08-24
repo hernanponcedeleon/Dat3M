@@ -8,8 +8,7 @@ public class FunCall extends Event {
 
 	String funName;
 	
-	public FunCall(String funName, int cLine) {
-		super(cLine);
+	public FunCall(String funName) {
 		this.funName = funName;
         addFilters(EType.ANY);
 	}

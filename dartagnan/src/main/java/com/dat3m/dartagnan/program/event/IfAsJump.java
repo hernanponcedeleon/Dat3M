@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.program.event;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.utils.EType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class IfAsJump extends CondJump {
 
@@ -39,4 +39,9 @@ public class IfAsJump extends CondJump {
         }
         throw new RuntimeException("Not implemented");
     }
+
+	@Override
+	public IfAsJump getCopy() {
+		return new IfAsJump(this);
+	}
 }

@@ -32,7 +32,9 @@ public class EventFactory {
     // ------------------------------------------ Memory events ------------------------------------------
 
     public static Load newLoad(Register register, IExpr address, String mo, int cLine) {
-        return new Load(register, address, mo, cLine);
+        Load load = new Load(register, address, mo);
+        load.setCLine(cLine);
+        return load;
     }
 
     public static Load newLoad(Register register, IExpr address, String mo) {
@@ -40,7 +42,9 @@ public class EventFactory {
     }
 
     public static Store newStore(IExpr address, ExprInterface value, String mo, int cLine) {
-        return new Store(address, value, mo, cLine);
+        Store store = new Store(address, value, mo);
+        store.setCLine(cLine);
+        return store;
     }
 
     public static Store newStore(IExpr address, ExprInterface value, String mo) {
@@ -70,15 +74,21 @@ public class EventFactory {
     }
 
     public static FunCall newFunctionCall(String funName, int cLine) {
-        return new FunCall(funName, cLine);
+        FunCall funCall = new FunCall(funName);
+        funCall.setCLine(cLine);
+        return funCall;
     }
 
     public static FunRet newFunctionReturn(String funName, int cLine) {
-        return new FunRet(funName, cLine);
+        FunRet funRet = new FunRet(funName);
+        funRet.setCLine(cLine);
+        return funRet;
     }
 
     public static Local newLocal(Register register, ExprInterface expr, int cLine) {
-        return new Local(register, expr, cLine);
+        Local local = new Local(register, expr);
+        local.setCLine(cLine);
+        return local;
     }
 
     public static Local newLocal(Register register, ExprInterface expr) {
@@ -116,7 +126,7 @@ public class EventFactory {
     // ------------------------------------------ RMW events ------------------------------------------
 
     public static Load newRMWLoad(Register reg, IExpr address, String mo) {
-        Load load = new Load(reg, address, mo);
+        Load load = newLoad(reg, address, mo);
         load.addFilters(EType.RMW);
         return load;
     }
@@ -152,7 +162,9 @@ public class EventFactory {
         private Pthread() {}
 
         public static Create newCreate(Register pthread_t, String routine, Address address, int cLine) {
-            return new Create(pthread_t, routine, address, cLine);
+            Create create = new Create(pthread_t, routine, address);
+            create.setCLine(cLine);
+            return create;
         }
 
         public static End newEnd(Address address){

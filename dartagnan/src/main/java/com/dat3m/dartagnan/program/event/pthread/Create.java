@@ -21,8 +21,7 @@ public class Create extends Event {
 	private final String routine;
 	private final Address address;
 	
-    public Create(Register pthread_t, String routine, Address address, int cLine){
-    	super(cLine);
+    public Create(Register pthread_t, String routine, Address address){
         this.pthread_t = pthread_t;
         this.routine = routine;
         this.address = address;

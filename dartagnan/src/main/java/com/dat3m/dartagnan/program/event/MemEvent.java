@@ -1,15 +1,13 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.memory.Address;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public abstract class MemEvent extends Event {
 
@@ -20,17 +18,12 @@ public abstract class MemEvent extends Event {
     protected Formula memValueExpr;
     private ImmutableSet<Address> maxAddressSet;
 
-    public MemEvent(IExpr address, String mo, int cLine){
-    	super(cLine);
+    public MemEvent(IExpr address, String mo){
         this.address = address;
         this.mo = mo;
         if(mo != null){
             addFilters(mo);
         }
-    }
-
-    public MemEvent(IExpr address, String mo){
-    	this(address, mo, -1);
     }
     
     protected MemEvent(MemEvent other){
