@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
@@ -9,8 +8,10 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
+import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
@@ -56,30 +57,35 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        LinkedList<Event> events = new LinkedList<>();
-        Load load = EventFactory.newLoad(resultRegister, address, mo);
+        List<Event> events = new ArrayList<>();
+        Load load = newLoad(resultRegister, address, mo);
         events.add(load);
 
         switch (target) {
             case NONE: 
             case TSO:
                 break;
-            case POWER:
-                if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)){
-                    Label label = EventFactory.newLabel("Jump_" + oId);
-                    CondJump fakeDep = EventFactory.newFakeCtrlDep(resultRegister, label);
-                    events.addLast(fakeDep);
-                    events.addLast(label);
-                    events.addLast(EventFactory.Power.newISyncBarrier());
-                    if(SC.equals(mo)){
-                        events.addFirst(EventFactory.Power.newSyncBarrier());
-                    }
+            case POWER: {
+                if (SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)) {
+                    Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier() : null;
+                    Label label = newLabel("Jump_" + oId);
+                    events = eventSequence(
+                            optionalMemoryBarrier,
+                            load,
+                            newFakeCtrlDep(resultRegister, label),
+                            label,
+                            Power.newISyncBarrier()
+                    );
                 }
                 break;
+            }
             case ARM:
-                if(SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)) {
-                    events.addLast(EventFactory.Arm.newISHBarrier());
-                }
+                Fence optionalISHBarrier =
+                        mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(CONSUME) ? Arm.newISHBarrier() : null;
+                events = eventSequence(
+                        load,
+                        optionalISHBarrier
+                );
                 break;
             case ARM8:
             	String loadMo;
@@ -92,11 +98,12 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 						loadMo = RX;
 						break;
 					default:
+					    //TODO: Fix this error message?
 		                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
 					}
-		        events = new LinkedList<>();
-		        load = EventFactory.newLoad(resultRegister, address, loadMo);
-		        events.add(load);
+		        events = eventSequence(
+                        newLoad(resultRegister, address, loadMo)
+                );
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

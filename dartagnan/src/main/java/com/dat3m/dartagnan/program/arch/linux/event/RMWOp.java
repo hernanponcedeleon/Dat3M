@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.EType;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
@@ -16,8 +15,9 @@ import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -54,10 +54,13 @@ public class RMWOp extends RMWAbstract implements RegWriter, RegReaderData {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {
-            Load load = EventFactory.newRMWLoad(resultRegister, address, Mo.RELAXED);
-            RMWStore store = EventFactory.newRMWStore(load, address, new IExprBin(resultRegister, op, value), Mo.RELAXED);
+            Load load = newRMWLoad(resultRegister, address, Mo.RELAXED);
+            RMWStore store = newRMWStore(load, address, new IExprBin(resultRegister, op, value), Mo.RELAXED);
             load.addFilters(EType.NORETURN);
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
+            List<Event> events = eventSequence(
+                    load,
+                    store
+            );
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         return super.compileRecursive(target, nextId, predecessor, depth + 1);

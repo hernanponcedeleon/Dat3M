@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -13,11 +12,11 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
+import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 import static com.dat3m.dartagnan.program.utils.EType.STRONG;
@@ -67,22 +66,30 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Load load;
-    	Store store;
-    	LinkedList<Event> events = new LinkedList<>();
+    	List<Event> events;
         switch(target) {
             case NONE:
             case TSO: {
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = EventFactory.newRMWLoad(dummy, address, mo);
-                Local casResult = EventFactory.newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                Label fail = EventFactory.newLabel("CAS_fail");
-                Label endCas = EventFactory.newLabel("CAS_end");
-                CondJump branch = EventFactory.newJump(new Atom(resultRegister, NEQ, IConst.ONE), fail);
-                store = EventFactory.newRMWStore(load, address, value, mo);
-                CondJump jumpToEnd = EventFactory.newGoto(endCas);
-                Local updateReg = EventFactory.newLocal(expected, dummy);
-                events.addAll(Arrays.asList(load, casResult, branch, store, jumpToEnd, fail, updateReg, endCas));
+                Label casFail = newLabel("CAS_fail");
+                Label casEnd = newLabel("CAS_end");
+                Load load = newRMWLoad(dummy, address, mo);
+                Local casResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                CondJump branchOnCasResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+                Store store = newRMWStore(load, address, value, mo);
+                CondJump gotoCasEnd = newGoto(casEnd);
+                Local updateReg = newLocal(expected, dummy);
+
+                events = eventSequence(
+                        load,
+                        casResult,
+                        branchOnCasResult,
+                            store,
+                            gotoCasEnd,
+                        casFail,
+                            updateReg,
+                        casEnd
+                );
                 break;
             }
             case POWER:
@@ -112,38 +119,53 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 }
 
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-                load = EventFactory.newRMWLoadExclusive(dummy, address, loadMo);
-                Local casResult = EventFactory.newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                Label fail = EventFactory.newLabel("CAS_fail");
-                Label endCas = EventFactory.newLabel("CAS_end");
-                CondJump branch = EventFactory.newJump(new Atom(resultRegister, NEQ, IConst.ONE), fail);
+                Label casFail = newLabel("CAS_fail");
+                Label casEnd = newLabel("CAS_end");
+                Load load = newRMWLoadExclusive(dummy, address, loadMo);
+                Local casResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                CondJump branchOnCasResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
                 // ---- CAS success ----
-                store = EventFactory.newRMWStoreExclusive(address, value, storeMo, is(STRONG));
+                Store store = newRMWStoreExclusive(address, value, storeMo, is(STRONG));
                 Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                ExecutionStatus status = EventFactory.newExecutionStatus(statusReg, store);
-                Event jumpStoreFail = EventFactory.newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
-                jumpStoreFail.addFilters(EType.BOUND);
-                CondJump jumpToEndCas = EventFactory.newGoto(endCas);
+                ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
+                // TODO: We should not terminate anymore but instead update the CAS result
+                CondJump terminateOnStoreFail = newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
+                terminateOnStoreFail.addFilters(EType.BOUND);
+                CondJump gotoCasEnd = newGoto(casEnd);
                 // ---------------------
                 // ---- CAS Fail ----
-                Local updateReg = EventFactory.newLocal(expected, dummy);
+                Local updateReg = newLocal(expected, dummy);
                
                 // --- Add Fence before under POWER ---
+                Fence optionalMemoryBarrier = null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
                     if (mo.equals(SC)) {
-                        events.addFirst(EventFactory.Power.newSyncBarrier());
+                        //events.addFirst(Power.newSyncBarrier());
+                        optionalMemoryBarrier = Power.newSyncBarrier();
                     } else if (storeMo.equals(REL)) {
-                        events.addFirst(EventFactory.Power.newLwSyncBarrier());
+                        //events.addFirst(Power.newLwSyncBarrier());
+                        optionalMemoryBarrier = Power.newLwSyncBarrier();
                     }                	
                 }
-                // --- Add success events ---
-                events.addAll(Arrays.asList(load, casResult, branch, store, status, jumpStoreFail));
-                // --- Add Fence after success under POWER ---
-                if (target.equals(POWER) && loadMo.equals(ACQ)) {
-                    events.addLast(EventFactory.Power.newISyncBarrier());
-                }
-                // --- Add fail events + exit ---
-                events.addAll(Arrays.asList(jumpToEndCas, fail, updateReg, endCas));
+
+                events = eventSequence(
+                        optionalMemoryBarrier,
+                        load,
+                        casResult,
+                        branchOnCasResult,
+                            // Cas Success
+                            store,
+                            execStatus,
+                            terminateOnStoreFail,
+                            optionalISyncBarrier,
+                            gotoCasEnd,
+                        casFail,
+                            // Cas Fail
+                            updateReg,
+                        casEnd
+                );
+
                 break;
             }
             default:

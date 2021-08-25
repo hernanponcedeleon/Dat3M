@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.arch.tso.event;
 
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.tso.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
@@ -15,8 +14,9 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class Xchg extends MemEvent implements RegWriter, RegReaderData {
 
@@ -67,15 +67,19 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.TSO) {
             Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            Load load = EventFactory.newRMWLoad(dummyReg, address, null);
+            Load load = newRMWLoad(dummyReg, address, null);
             load.addFilters(EType.ATOM);
 
-            RMWStore store = EventFactory.newRMWStore(load, address, resultRegister, null);
+            RMWStore store = newRMWStore(load, address, resultRegister, null);
             store.addFilters(EType.ATOM);
 
-            Local local = EventFactory.newLocal(resultRegister, dummyReg);
+            Local updateReg = newLocal(resultRegister, dummyReg);
 
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
+            List<Event> events = eventSequence(
+                    load,
+                    store,
+                    updateReg
+            );
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         throw new RuntimeException("Compilation of xchg is not implemented for " + target);

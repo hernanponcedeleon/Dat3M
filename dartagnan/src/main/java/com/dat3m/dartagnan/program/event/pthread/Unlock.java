@@ -3,17 +3,16 @@ package com.dat3m.dartagnan.program.event.pthread;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.math.BigInteger;
-import java.util.LinkedList;
+import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
+import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.utils.EType.LOCK;
 import static com.dat3m.dartagnan.program.utils.EType.RMW;
@@ -70,10 +69,11 @@ public class Unlock extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        LinkedList<Event> events = new LinkedList<>();
-        events.add(EventFactory.newLoad(reg, address, SC));
-        events.add(EventFactory.newJump(new Atom(reg, NEQ, new IConst(BigInteger.ONE, -1)), label));
-        events.add(EventFactory.newStore(address, new IConst(BigInteger.ZERO, -1), SC));
+        List<Event> events = eventSequence(
+                newLoad(reg, address, SC),
+                newJump(new Atom(reg, NEQ, IConst.ONE), label),
+                newStore(address, IConst.ZERO, SC)
+        );
         for(Event e : events) {
             e.addFilters(LOCK, RMW);
         }

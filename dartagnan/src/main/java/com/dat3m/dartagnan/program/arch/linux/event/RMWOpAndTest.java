@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.arch.linux.event;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
@@ -16,8 +15,9 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -54,14 +54,20 @@ public class RMWOpAndTest extends RMWAbstract implements RegWriter, RegReaderDat
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {
             Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            Load load = EventFactory.newRMWLoad(dummy, address, Mo.RELAXED);
-            Local local1 = EventFactory.newLocal(dummy, new IExprBin(dummy, op, value));
-            RMWStore store = EventFactory.newRMWStore(load, address, dummy, Mo.RELAXED);
-            Local local2 = EventFactory.newLocal(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(BigInteger.ZERO, resultRegister.getPrecision())));
+            Load load = newRMWLoad(dummy, address, Mo.RELAXED);
+            Local localOp = newLocal(dummy, new IExprBin(dummy, op, value));
+            RMWStore store = newRMWStore(load, address, dummy, Mo.RELAXED);
+            Local test = newLocal(resultRegister, new Atom(dummy, COpBin.EQ, new IConst(BigInteger.ZERO, resultRegister.getPrecision())));
 
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, local1, store, local2));
-            events.addFirst(EventFactory.Linux.newMemoryBarrier());
-            events.addLast(EventFactory.Linux.newMemoryBarrier());
+            //TODO: Are the memory barriers really unconditional?
+            List<Event> events = eventSequence(
+                    Linux.newMemoryBarrier(),
+                    load,
+                    localOp,
+                    store,
+                    test,
+                    Linux.newMemoryBarrier()
+            );
 
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }

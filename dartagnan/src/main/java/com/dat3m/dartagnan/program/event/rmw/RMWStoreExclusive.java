@@ -25,14 +25,6 @@ public class RMWStoreExclusive extends Store implements RegReaderData {
         }
     }
 
-    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo){
-        this(address, value, mo, false);
-    }
-
-    String toStringBase(){
-        return super.toString();
-    }
-
     @Override
     public BooleanFormula exec() {
         return execVar;

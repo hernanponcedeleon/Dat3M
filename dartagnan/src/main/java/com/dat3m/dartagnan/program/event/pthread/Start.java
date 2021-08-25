@@ -2,9 +2,7 @@ package com.dat3m.dartagnan.program.event.pthread;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Label;
 import com.dat3m.dartagnan.program.event.Load;
@@ -12,10 +10,11 @@ import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.math.BigInteger;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
+import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 
 public class Start extends Event {
@@ -68,31 +67,32 @@ public class Start extends Event {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        LinkedList<Event> events = new LinkedList<>();
-        Load load = new Load(reg, address, SC);
+        List<Event> events = new ArrayList<>();
+        Load load = newLoad(reg, address, SC);
         events.add(load);
 
         switch (target) {
             case NONE: case TSO:
                 break;
             case POWER:
-                Label label = EventFactory.newLabel("Jump_" + oId);
-                CondJump fakeCtrlDep = EventFactory.newFakeCtrlDep(reg, label);
-                events.addLast(fakeCtrlDep);
-                events.addLast(label);
-                events.addLast(EventFactory.Power.newISyncBarrier());
+                Label label = newLabel("Jump_" + oId);
+                events.addAll(eventSequence(
+                        newFakeCtrlDep(reg, label),
+                        label,
+                        Power.newISyncBarrier()
+                ));
                 break;
             case ARM:
-                events.addLast(EventFactory.Arm.newISHBarrier());
+                events.add(Arm.newISHBarrier());
                 break;
             case ARM8:
-                events.addLast(EventFactory.Arm8.DMB.newISHBarrier());
+                events.add(Arm8.DMB.newISHBarrier());
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
 
-        events.add(EventFactory.newJumpUnless(new Atom(reg, EQ, new IConst(BigInteger.ONE, -1)), label));
+        events.add(newJumpUnless(new Atom(reg, EQ, IConst.ONE), label));
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 

@@ -32,11 +32,11 @@ public abstract class Event implements Comparable<Event> {
     protected transient BooleanFormula cfCond;
 	protected transient BooleanFormula cfVar;
 
-	protected VerificationTask task;
+	protected transient VerificationTask task;
 
 	protected Set<Event> listeners = new HashSet<>();
 
-	private String repr;
+	private transient String repr;
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -257,7 +257,7 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveFunction.done(nextId);
 	}
 
-	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence, int depth){
+	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, List<Event> sequence, int depth){
 		for(Event e : sequence){
 			e.oId = oId;
 			e.uId = uId;

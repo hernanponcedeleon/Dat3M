@@ -2,20 +2,22 @@ package com.dat3m.dartagnan.program.arch.linux.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWReadCondCmp;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWStoreCond;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Fence;
+import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -57,17 +59,20 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            RMWReadCondCmp load = EventFactory.Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
-            RMWStoreCond store = EventFactory.Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
+            Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
+            RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
+            RMWStoreCond store = Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
+            Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
+            Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
 
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
-            if (dummy != resultRegister) {
-                events.addLast(EventFactory.newLocal(resultRegister, dummy));
-            }
-            if (Mo.MB.equals(mo)) {
-                events.addFirst(EventFactory.Linux.newConditionalMemoryBarrier(load));
-                events.addLast(EventFactory.Linux.newConditionalMemoryBarrier(load));
-            }
+            List<Event> events = eventSequence(
+                    optionalMbBefore,
+                    load,
+                    store,
+                    optionalUpdateReg,
+                    optionalMbAfter
+            );
+
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         return super.compileRecursive(target, nextId, predecessor, depth);

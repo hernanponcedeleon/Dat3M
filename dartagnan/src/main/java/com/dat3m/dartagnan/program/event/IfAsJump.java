@@ -8,7 +8,7 @@ import java.util.List;
 
 public class IfAsJump extends CondJump {
 
-	private Label end;
+	private final Label end;
 	
 	public IfAsJump(BExpr expr, Label label, Label end) {
 		super(expr, label);
@@ -20,7 +20,7 @@ public class IfAsJump extends CondJump {
 		super(other);
 		this.end = other.end;
 	}
-	
+
     public List<Event> getBranchesEvents(){
         if(cId > -1){
     		List<Event> events = new ArrayList<>();

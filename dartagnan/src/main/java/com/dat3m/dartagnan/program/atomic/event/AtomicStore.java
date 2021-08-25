@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.program.atomic.event;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
@@ -13,8 +13,9 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.LinkedList;
+import java.util.List;
 
+import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
@@ -64,32 +65,37 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        LinkedList<Event> events = new LinkedList<>();
-        Store store = EventFactory.newStore(address, value, mo);
-        events.add(store);
-
+        List<Event> events;
+        Store store = newStore(address, value, mo);
         switch (target){
             case NONE:
+                events = eventSequence(
+                        store
+                );
                 break;
             case TSO:
-                if(SC.equals(mo)){
-                    events.addLast(EventFactory.X86.newMemoryFence());
-                }
+                Fence optionalMFence = mo.equals(SC) ? X86.newMemoryFence() : null;
+                events = eventSequence(
+                        store,
+                        optionalMFence
+                );
                 break;
             case POWER:
-                if(RELEASE.equals(mo)){
-                    events.addFirst(EventFactory.Power.newLwSyncBarrier());
-                } else if(SC.equals(mo)){
-                    events.addFirst(EventFactory.Power.newSyncBarrier());
-                }
+                Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                        : mo.equals(RELEASE) ? Power.newLwSyncBarrier() : null;
+                events = eventSequence(
+                        optionalMemoryBarrier,
+                        store
+                );
                 break;
             case ARM:
-                if(RELEASE.equals(mo) || SC.equals(mo)){
-                    events.addFirst(EventFactory.Arm.newISHBarrier());
-                    if(SC.equals(mo)){
-                        events.addLast(EventFactory.Arm.newISHBarrier());
-                    }
-                }
+                Fence optionalBarrierBefore = mo.equals(RELEASE) || mo.equals(SC) ? Arm.newISHBarrier() : null;
+                Fence optionalBarrierAfter = mo.equals(SC) ? Arm.newISHBarrier() : null;
+                events = eventSequence(
+                        optionalBarrierBefore,
+                        store,
+                        optionalBarrierAfter
+                );
                 break;
             case ARM8:
             	String storeMo;
@@ -103,10 +109,10 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 						break;
 					default:
 	                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-					}
-                events = new LinkedList<>();
-                store = EventFactory.newStore(address, value, storeMo);
-                events.add(store);
+            	}
+            	events = eventSequence(
+                        newStore(address, value, storeMo)
+                );
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

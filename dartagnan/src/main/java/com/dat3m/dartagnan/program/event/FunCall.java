@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 
 public class FunCall extends Event {
 
-	String funName;
+	private final String funName;
 	
 	public FunCall(String funName) {
 		this.funName = funName;

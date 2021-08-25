@@ -19,11 +19,24 @@ import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class EventFactory {
 
     // Static class
     private EventFactory() {}
+
+    // =============================================================================================
+    // ========================================= Utility ===========================================
+    // =============================================================================================
+
+    public static List<Event> eventSequence(Event... events) {
+        return Arrays.stream(events).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
 
     // =============================================================================================
     // ======================================= DAT3m events ========================================

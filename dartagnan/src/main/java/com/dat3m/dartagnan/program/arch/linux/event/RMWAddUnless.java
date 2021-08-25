@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWReadCondUnless;
 import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWStoreCond;
@@ -19,8 +18,9 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -58,13 +58,17 @@ public class RMWAddUnless extends RMWAbstract implements RegWriter, RegReaderDat
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.NONE) {
             Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-            RMWReadCondUnless load = EventFactory.Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);
-            RMWStoreCond store = EventFactory.Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Mo.RELAXED);
-            Local local = EventFactory.newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
+            RMWReadCondUnless load = Linux.newRMWReadCondUnless(dummy, cmp, address, Mo.RELAXED);
+            RMWStoreCond store = Linux.newRMWStoreCond(load, address, new IExprBin(dummy, IOpBin.PLUS, value), Mo.RELAXED);
+            Local local = newLocal(resultRegister, new Atom(dummy, COpBin.NEQ, cmp));
 
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store, local));
-            events.addFirst(EventFactory.Linux.newConditionalMemoryBarrier(load));
-            events.addLast(EventFactory.Linux.newConditionalMemoryBarrier(load));
+            List<Event> events = eventSequence(
+                    Linux.newConditionalMemoryBarrier(load),
+                    load,
+                    store,
+                    local,
+                    Linux.newConditionalMemoryBarrier(load)
+            );
 
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
