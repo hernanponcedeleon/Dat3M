@@ -139,13 +139,9 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Fence optionalMemoryBarrier = null;
                 Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
-                    if (mo.equals(SC)) {
-                        //events.addFirst(Power.newSyncBarrier());
-                        optionalMemoryBarrier = Power.newSyncBarrier();
-                    } else if (storeMo.equals(REL)) {
-                        //events.addFirst(Power.newLwSyncBarrier());
-                        optionalMemoryBarrier = Power.newLwSyncBarrier();
-                    }                	
+                    optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            : null;
                 }
 
                 events = eventSequence(

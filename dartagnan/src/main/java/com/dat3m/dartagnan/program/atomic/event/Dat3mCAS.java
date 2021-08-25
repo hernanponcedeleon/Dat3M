@@ -111,11 +111,9 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 Fence optionalMemoryBarrier = null;
                 Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
-                    if (mo.equals(SC)) {
-                        optionalMemoryBarrier = Power.newSyncBarrier();
-                    } else if (storeMo.equals(REL)) {
-                        optionalMemoryBarrier = Power.newLwSyncBarrier();
-                    }
+                    optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            : null;
                 }
                 // --- Add success events ---
                 events = eventSequence(

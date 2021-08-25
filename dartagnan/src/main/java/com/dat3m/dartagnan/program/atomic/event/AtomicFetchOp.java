@@ -101,11 +101,9 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                 Fence optionalMemoryBarrier = null;
                 Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
-                    if (mo.equals(SC)) {
-                        optionalMemoryBarrier = Power.newSyncBarrier();
-                    } else if (storeMo.equals(REL)) {
-                        optionalMemoryBarrier = Power.newLwSyncBarrier();
-                    }
+                    optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            : null;
                 }
                 
                 // All events for POWER and ARM8
