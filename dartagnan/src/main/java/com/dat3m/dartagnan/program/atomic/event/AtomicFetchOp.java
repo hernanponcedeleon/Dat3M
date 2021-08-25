@@ -53,7 +53,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
     	Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-    	Local add = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+    	Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
     	List<Event> events;
         switch(target) {
             case NONE: case TSO: {
@@ -62,7 +62,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                 Store store = newRMWStore(load, address, dummyReg, mo);
                 events = eventSequence(
                         load,
-                        add,
+                        localOp,
                         store
                 );
                 break;
@@ -114,7 +114,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
                         load,
                         fakeCtrlDep,
                         label,
-                        add,
+                        localOp,
                         store,
                         optionalISyncBarrier
                 );

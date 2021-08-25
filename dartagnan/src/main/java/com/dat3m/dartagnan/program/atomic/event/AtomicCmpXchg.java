@@ -1,14 +1,11 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
@@ -122,19 +119,21 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Label casFail = newLabel("CAS_fail");
                 Label casEnd = newLabel("CAS_end");
                 Load load = newRMWLoadExclusive(dummy, address, loadMo);
-                Local casResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                CondJump branchOnCasResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
                 // ---- CAS success ----
                 Store store = newRMWStoreExclusive(address, value, storeMo, is(STRONG));
-                Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                ExecutionStatus execStatus = newExecutionStatus(statusReg, store);
-                // TODO: We should not terminate anymore but instead update the CAS result
-                CondJump terminateOnStoreFail = newJump(new Atom(statusReg, EQ, IConst.ONE), (Label) getThread().getExit());
-                terminateOnStoreFail.addFilters(EType.BOUND);
+                ExecutionStatus optionalExecStatus = null;
+                Local optionalUpdateCasCmpResult = null;
+                if (!is(STRONG)) {
+                    Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
+                    optionalExecStatus = new ExecutionStatus(statusReg, store);
+                    optionalUpdateCasCmpResult = new Local(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
+                }
                 CondJump gotoCasEnd = newGoto(casEnd);
                 // ---------------------
                 // ---- CAS Fail ----
-                Local updateReg = newLocal(expected, dummy);
+                Local updateExpected = newLocal(expected, dummy);
                
                 // --- Add Fence before under POWER ---
                 Fence optionalMemoryBarrier = null;
@@ -152,17 +151,15 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 events = eventSequence(
                         optionalMemoryBarrier,
                         load,
-                        casResult,
-                        branchOnCasResult,
-                            // Cas Success
+                        casCmpResult,
+                        branchOnCasCmpResult,
                             store,
-                            execStatus,
-                            terminateOnStoreFail,
+                            optionalExecStatus,
+                            optionalUpdateCasCmpResult,
                             optionalISyncBarrier,
                             gotoCasEnd,
                         casFail,
-                            // Cas Fail
-                            updateReg,
+                            updateExpected,
                         casEnd
                 );
 

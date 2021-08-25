@@ -67,7 +67,9 @@ public class AtomicThreadFence extends Fence {
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
         }
-        events = eventSequence(fence);
+        events = eventSequence(
+                fence
+        );
         return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
     }
 }
