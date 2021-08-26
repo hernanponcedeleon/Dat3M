@@ -38,12 +38,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <forkMode>once</forkMode>
-          <argLine>-Djava.library.path=${project.parent.basedir}/lib</argLine>
-          <environmentVariables>
-            <LD_LIBRARY_PATH>${project.parent.basedir}/lib/</LD_LIBRARY_PATH>
-            <DYLD_LIBRARY_PATH>${project.parent.basedir}/lib/</DYLD_LIBRARY_PATH>
-          </environmentVariables>
+		  <failIfNoTests>false</failIfNoTests>
         </configuration>
       </plugin>
     </plugins>
