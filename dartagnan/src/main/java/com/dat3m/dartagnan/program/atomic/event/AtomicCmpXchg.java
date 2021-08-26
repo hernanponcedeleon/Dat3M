@@ -82,10 +82,10 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                            store,
-                            gotoCasEnd,
+                        store,
+                        gotoCasEnd,
                         casFail,
-                            updateReg,
+                        updateReg,
                         casEnd
                 );
                 break;
@@ -129,13 +129,13 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                            store,
-                            optionalExecStatus,
-                            optionalUpdateCasCmpResult,
-                            optionalISyncBarrier,
-                            gotoCasEnd,
+                        store,
+                        optionalExecStatus,
+                        optionalUpdateCasCmpResult,
+                        optionalISyncBarrier,
+                        gotoCasEnd,
                         casFail,
-                            updateExpected,
+                        updateExpected,
                         casEnd
                 );
 

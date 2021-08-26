@@ -67,7 +67,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                            store,
+                        store,
                         casEnd
                 );
                 break;
@@ -100,8 +100,8 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                            store,
-                            optionalISyncBarrier,
+                        store,
+                        optionalISyncBarrier,
                         endCas
                 );
                 break;

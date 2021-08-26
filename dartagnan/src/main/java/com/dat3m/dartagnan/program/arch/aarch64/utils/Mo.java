@@ -8,8 +8,6 @@ public final class Mo {
     public static final String ACQ      = "A";
     public static final String ACQ_PC   = "Q";
 
-
-
     public static String extractStoreMo(String cMo) {
         return cMo.equals(SC) || cMo.equals(RELEASE) || cMo.equals(ACQ_REL) ? REL : RX;
     }

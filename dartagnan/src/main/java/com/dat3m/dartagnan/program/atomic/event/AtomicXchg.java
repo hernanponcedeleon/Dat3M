@@ -68,7 +68,6 @@ public class AtomicXchg extends AtomicAbstract implements RegWriter, RegReaderDa
                 Label label = newLabel("FakeDep");
                 Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-
                 Fence optionalMemoryBarrier = null;
                 Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
