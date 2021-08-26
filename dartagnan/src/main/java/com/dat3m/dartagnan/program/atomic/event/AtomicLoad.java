@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.EventFactory.*;
@@ -56,16 +55,18 @@ public class AtomicLoad extends MemEvent implements RegWriter {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        List<Event> events = new ArrayList<>();
+        List<Event> events;
         Load load = newLoad(resultRegister, address, mo);
-        events.add(load);
 
         switch (target) {
             case NONE: 
             case TSO:
+                events = eventSequence(
+                        load
+                );
                 break;
             case POWER: {
-                if (SC.equals(mo) || ACQUIRE.equals(mo) || CONSUME.equals(mo)) {
+                if (mo.equals(SC) || mo.equals(ACQUIRE) || mo.equals(CONSUME)) {
                     Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier() : null;
                     Label label = newLabel("Jump_" + oId);
                     events = eventSequence(
@@ -74,6 +75,10 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                             newFakeCtrlDep(resultRegister, label),
                             label,
                             Power.newISyncBarrier()
+                    );
+                } else {
+                    events = eventSequence(
+                            load
                     );
                 }
                 break;

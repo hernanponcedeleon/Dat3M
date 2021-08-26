@@ -107,8 +107,8 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Local optionalUpdateCasCmpResult = null;
                 if (!is(STRONG)) {
                     Register statusReg = new Register("status(" + getOId() + ")", resultRegister.getThreadId(), resultRegister.getPrecision());
-                    optionalExecStatus = new ExecutionStatus(statusReg, store);
-                    optionalUpdateCasCmpResult = new Local(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
+                    optionalExecStatus = newExecutionStatus(statusReg, store);
+                    optionalUpdateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
                 }
                 CondJump gotoCasEnd = newGoto(casEnd);
                 // ---------------------

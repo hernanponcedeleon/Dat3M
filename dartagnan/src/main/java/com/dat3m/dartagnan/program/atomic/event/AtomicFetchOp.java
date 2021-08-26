@@ -55,6 +55,7 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     	Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
     	Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
     	List<Event> events;
+
         switch(target) {
             case NONE: case TSO: {
                 Load load = newRMWLoad(resultRegister, address, mo);
