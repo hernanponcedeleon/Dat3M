@@ -64,10 +64,11 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 Store store = newRMWStore(load, address, value, mo);
 
                 events = eventSequence(
+                		// Indentation shows the branching structure
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        store,
+                        	store,
                         casEnd
                 );
                 break;
@@ -96,12 +97,13 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
                 }
                 // --- Add success events ---
                 events = eventSequence(
+                		// Indentation shows the branching structure
                         optionalMemoryBarrier,
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        store,
-                        optionalISyncBarrier,
+                        	store,
+                        	optionalISyncBarrier,
                         endCas
                 );
                 break;

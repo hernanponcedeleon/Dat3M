@@ -79,13 +79,14 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Local updateReg = newLocal(expected, dummy);
 
                 events = eventSequence(
+                		// Indentation shows the branching structure
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        store,
-                        gotoCasEnd,
+                        	store,
+                        	gotoCasEnd,
                         casFail,
-                        updateReg,
+                        	updateReg,
                         casEnd
                 );
                 break;
@@ -125,17 +126,18 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 }
 
                 events = eventSequence(
+                		// Indentation shows the branching structure
                         optionalMemoryBarrier,
                         load,
                         casCmpResult,
                         branchOnCasCmpResult,
-                        store,
-                        optionalExecStatus,
-                        optionalUpdateCasCmpResult,
-                        optionalISyncBarrier,
-                        gotoCasEnd,
+                        	store,
+                        	optionalExecStatus,
+                        	optionalUpdateCasCmpResult,
+                        	optionalISyncBarrier,
+                        	gotoCasEnd,
                         casFail,
-                        updateExpected,
+                        	updateExpected,
                         casEnd
                 );
 
