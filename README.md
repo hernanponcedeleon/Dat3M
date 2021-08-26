@@ -42,8 +42,9 @@ If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`
 
 To build the tool run (if you are a MacOS user, you need to replace all `so` occurrences in `dartagnan.pom` to `dylib`)
 ```
-mvn clean install -DskipTests
+mvn clean install -DskipTests -P os
 ```
+where `os` is either `linux` or `macos` depending on your OS.
 
 **Unit Tests**
 
