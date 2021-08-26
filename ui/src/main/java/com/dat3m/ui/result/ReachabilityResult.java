@@ -67,6 +67,7 @@ public class ReachabilityResult {
                         options.getSolver());
                      ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
 
+
                     switch (options.getMethod()) {
                         case INCREMENTAL:
                             result = runAnalysisIncrementalSolver(ctx, prover, task);
@@ -79,7 +80,7 @@ public class ReachabilityResult {
                                 result = runAnalysisTwoSolvers(ctx, prover, prover2, task);
                             }
                             break;
-                        case GRAPH:
+                        case REFINEMENT:
                             result = runAnalysisGraphRefinement(ctx, prover, task);
                             break;
                     }

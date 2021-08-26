@@ -4,18 +4,12 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Assume;
-import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
-import com.dat3m.dartagnan.program.svcomp.event.BeginAtomic;
-import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 
 import java.math.BigInteger;
@@ -120,7 +114,7 @@ public class SvcompProcedures {
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
     	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
-       	visitor.programBuilder.addChild(visitor.threadCount, new Assume(expr)); //TODO: Add to factory
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newAssume(expr));
 	}
 
 	public static void __VERIFIER_atomic(VisitorBoogie visitor, boolean begin) {
