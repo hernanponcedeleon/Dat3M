@@ -15,7 +15,7 @@ import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.EventFactory.*;
 import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.*;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.program.utils.EType.STRONG;
 import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
@@ -92,29 +92,8 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
             }
             case POWER:
             case ARM8: {
-                String loadMo;
-                String storeMo;
-                switch (mo) {
-                    case SC:
-                    case ACQ_REL:
-                        loadMo = ACQ;
-                        storeMo = REL;
-                        break;
-                    case ACQUIRE:
-                        loadMo = ACQ;
-                        storeMo = RX;
-                        break;
-                    case RELEASE:
-                        loadMo = RX;
-                        storeMo = REL;
-                        break;
-                    case RELAXED:
-                        loadMo = RX;
-                        storeMo = RX;
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-                }
+                String loadMo = extractLoadMo(mo);
+                String storeMo = extractStoreMo(mo);
 
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
                 Label casFail = newLabel("CAS_fail");

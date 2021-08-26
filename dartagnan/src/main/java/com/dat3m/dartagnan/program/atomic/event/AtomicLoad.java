@@ -12,8 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.EventFactory.*;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.extractLoadMo;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 
 public class AtomicLoad extends MemEvent implements RegWriter {
@@ -88,19 +87,10 @@ public class AtomicLoad extends MemEvent implements RegWriter {
                 );
                 break;
             case ARM8:
-            	String loadMo;
-            	switch (mo) {
-					case SC:
-					case ACQUIRE:
-						loadMo = ACQ;
-						break;
-					case RELAXED:
-						loadMo = RX;
-						break;
-					default:
-					    //TODO: Fix this error message?
-		                throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-					}
+                if (mo.equals(RELEASE) || mo.equals(ACQ_REL)) {
+                    throw new UnsupportedOperationException("AtomicLoad can not have memory order: " + mo);
+                }
+            	String loadMo = extractLoadMo(mo);
 		        events = eventSequence(
                         newLoad(resultRegister, address, loadMo)
                 );

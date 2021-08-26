@@ -16,8 +16,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.EventFactory.*;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.extractStoreMo;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 
 public class AtomicStore extends MemEvent implements RegReaderData {
@@ -98,18 +97,10 @@ public class AtomicStore extends MemEvent implements RegReaderData {
                 );
                 break;
             case ARM8:
-            	String storeMo;
-            	switch (mo) {
-					case SC:
-					case RELEASE:
-						storeMo = REL;
-						break;
-					case RELAXED:
-						storeMo = RX;
-						break;
-					default:
-	                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-            	}
+                if (mo.equals(ACQUIRE) || mo.equals(ACQ_REL)) {
+                    throw new UnsupportedOperationException("AtomicStore can not have memory order: " + mo);
+                }
+            	String storeMo = extractStoreMo(mo);
             	events = eventSequence(
                         newStore(address, value, storeMo)
                 );
