@@ -77,11 +77,6 @@ public class Dartagnan {
         if(target == null){
             target = options.getTarget();
         }
-        if(target == null) {
-            System.out.println("Compilation target cannot be inferred");
-            System.exit(0);
-            return;
-        }
         logger.info("Target: " + target);
         
         Settings settings = options.getSettings();

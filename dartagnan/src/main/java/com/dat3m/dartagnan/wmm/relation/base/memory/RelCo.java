@@ -23,6 +23,7 @@ import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public class RelCo extends Relation {
 
@@ -139,7 +140,7 @@ public class RelCo extends Relation {
                 }
             }
 
-            BooleanFormula lastCoExpr = bmgr.makeVariable("co_last(" + w1.repr() + ")");
+            BooleanFormula lastCoExpr = fmgr.makeVariable(BooleanType, "co_last(" + w1.repr() + ")");
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){

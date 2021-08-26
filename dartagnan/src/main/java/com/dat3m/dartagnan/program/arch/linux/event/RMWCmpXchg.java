@@ -1,22 +1,23 @@
 package com.dat3m.dartagnan.program.arch.linux.event;
 
-import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.rmw.cond.FenceCond;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.rmw.cond.RMWReadCondCmp;
-import com.dat3m.dartagnan.program.event.rmw.cond.RMWStoreCond;
+import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWReadCondCmp;
+import com.dat3m.dartagnan.program.arch.linux.event.cond.RMWStoreCond;
+import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Fence;
+import com.dat3m.dartagnan.program.event.Local;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -58,17 +59,20 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            RMWReadCondCmp load = new RMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
-            RMWStoreCond store = new RMWStoreCond(load, address, value, Mo.storeMO(mo));
+            RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
+            RMWStoreCond store = Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
+            Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
+            Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
+            Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
 
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
-            if (dummy != resultRegister) {
-                events.addLast(new Local(resultRegister, dummy));
-            }
-            if (Mo.MB.equals(mo)) {
-                events.addFirst(new FenceCond(load, "Mb"));
-                events.addLast(new FenceCond(load, "Mb"));
-            }
+            List<Event> events = eventSequence(
+                    optionalMbBefore,
+                    load,
+                    store,
+                    optionalUpdateReg,
+                    optionalMbAfter
+            );
+
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         return super.compileRecursive(target, nextId, predecessor, depth);

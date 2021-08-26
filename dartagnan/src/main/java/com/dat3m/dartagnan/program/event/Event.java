@@ -6,6 +6,11 @@ import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
+import org.sosy_lab.java_smt.api.*;
+
+import java.util.*;
+
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
@@ -36,16 +41,11 @@ public abstract class Event implements Comparable<Event> {
     protected transient BooleanFormula cfCond;
 	protected transient BooleanFormula cfVar;
 
-	protected VerificationTask task;
+	protected transient VerificationTask task;
 
 	protected Set<Event> listeners = new HashSet<>();
 
-	private String repr;
-
-	protected Event(int cLine) {
-		filter = new HashSet<>();
-		this.cLine = cLine;
-	}
+	private transient String repr;
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -288,7 +288,7 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveFunction.done(nextId);
 	}
 
-	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence, int depth){
+	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, List<Event> sequence, int depth){
 		for(Event e : sequence){
 			e.oId = oId;
 			e.uId = uId;
@@ -325,12 +325,10 @@ public abstract class Event implements Comparable<Event> {
 		}
 		this.symmId = getThread().getName() + "-" + fId;
 		this.task = task;
-		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		if (GlobalSettings.MERGE_CF_VARS && !GlobalSettings.ALLOW_PARTIAL_MODELS) {
-			cfVar = bmgr.makeVariable("cf(" + task.getBranchEquivalence().getRepresentative(this).repr() + ")");
-		} else {
-			cfVar = bmgr.makeVariable("cf(" + repr() + ")");
-		}
+		FormulaManager fmgr = ctx.getFormulaManager();
+		String repr = GlobalSettings.MERGE_CF_VARS && !GlobalSettings.ALLOW_PARTIAL_MODELS
+				? task.getBranchEquivalence().getRepresentative(this).repr() : repr();
+		cfVar = fmgr.makeVariable(BooleanType, "cf(" + repr + ")");
 		//listeners.removeIf(x -> x.getCId() < 0);
 	}
 

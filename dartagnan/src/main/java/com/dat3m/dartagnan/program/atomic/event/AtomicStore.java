@@ -1,25 +1,23 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+import com.google.common.collect.ImmutableSet;
 
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELAXED;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
+import java.util.List;
 
-import java.util.LinkedList;
+import static com.dat3m.dartagnan.program.EventFactory.*;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.extractStoreMo;
+import static com.dat3m.dartagnan.program.atomic.utils.Mo.*;
 
 public class AtomicStore extends MemEvent implements RegReaderData {
 
@@ -66,49 +64,46 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-        LinkedList<Event> events = new LinkedList<>();
-        Store store = new Store(address, value, mo);
-        events.add(store);
-
+        List<Event> events;
+        Store store = newStore(address, value, mo);
         switch (target){
             case NONE:
+                events = eventSequence(
+                        store
+                );
                 break;
             case TSO:
-                if(SC.equals(mo)){
-                    events.addLast(new Fence("Mfence"));
-                }
+                Fence optionalMFence = mo.equals(SC) ? X86.newMemoryFence() : null;
+                events = eventSequence(
+                        store,
+                        optionalMFence
+                );
                 break;
             case POWER:
-                if(RELEASE.equals(mo)){
-                    events.addFirst(new Fence("Lwsync"));
-                } else if(SC.equals(mo)){
-                    events.addFirst(new Fence("Sync"));
-                }
+                Fence optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                        : mo.equals(RELEASE) ? Power.newLwSyncBarrier() : null;
+                events = eventSequence(
+                        optionalMemoryBarrier,
+                        store
+                );
                 break;
             case ARM:
-                if(RELEASE.equals(mo) || SC.equals(mo)){
-                    events.addFirst(new Fence("Ish"));
-                    if(SC.equals(mo)){
-                        events.addLast(new Fence("Ish"));
-                    }
-                }
+                Fence optionalBarrierBefore = mo.equals(RELEASE) || mo.equals(SC) ? Arm.newISHBarrier() : null;
+                Fence optionalBarrierAfter = mo.equals(SC) ? Arm.newISHBarrier() : null;
+                events = eventSequence(
+                        optionalBarrierBefore,
+                        store,
+                        optionalBarrierAfter
+                );
                 break;
             case ARM8:
-            	String storeMo;
-            	switch (mo) {
-					case SC:
-					case RELEASE:
-						storeMo = REL;
-						break;
-					case RELAXED:
-						storeMo = RX;
-						break;
-					default:
-	                    throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-					}
-                events = new LinkedList<>();
-                store = new Store(address, value, storeMo);
-                events.add(store);
+                if (mo.equals(ACQUIRE) || mo.equals(ACQ_REL)) {
+                    throw new UnsupportedOperationException("AtomicStore can not have memory order: " + mo);
+                }
+            	String storeMo = extractStoreMo(mo);
+            	events = eventSequence(
+                        newStore(address, value, storeMo)
+                );
                 break;
             default:
                 throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);

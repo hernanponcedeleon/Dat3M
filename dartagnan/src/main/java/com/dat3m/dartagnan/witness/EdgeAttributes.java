@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.witness;
 
 public enum EdgeAttributes {
 
-	CREATETHREAD, THREADID, ENTERFUNCTION, STARTLINE, EVENTID, HBPOS;
+	CREATETHREAD, THREADID, ENTERFUNCTION, STARTLINE;
 
 	@Override
 	public String toString() {
@@ -15,10 +15,6 @@ public enum EdgeAttributes {
 			return "enterFunction";
 		case STARTLINE:
 			return "startline";
-		case EVENTID:
-			return "eventId";
-		case HBPOS:
-			return "hbPos";
 		default:
 			throw new RuntimeException(this + " cannot be converted to String");
 		}

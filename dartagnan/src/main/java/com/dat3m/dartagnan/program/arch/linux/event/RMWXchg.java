@@ -6,16 +6,17 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.arch.linux.utils.Mo;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Fence;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
 
@@ -52,17 +53,20 @@ public class RMWXchg extends RMWAbstract implements RegWriter, RegReaderData {
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            RMWLoad load = new RMWLoad(dummy, address, Mo.loadMO(mo));
-            RMWStore store = new RMWStore(load, address, value, Mo.storeMO(mo));
+            Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
+            Load load = newRMWLoad(dummy, address, Mo.loadMO(mo));
+            RMWStore store = newRMWStore(load, address, value, Mo.storeMO(mo));
+            Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
+            Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
 
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(load, store));
-            if (dummy != resultRegister) {
-                events.addLast(new Local(resultRegister, dummy));
-            }
-            if (Mo.MB.equals(mo)) {
-                events.addFirst(new Fence("Mb"));
-                events.addLast(new Fence("Mb"));
-            }
+            List<Event> events = eventSequence(
+                    optionalMbBefore,
+                    load,
+                    store,
+                    optionalUpdateReg,
+                    optionalMbAfter
+            );
+
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         return super.compileRecursive(target, nextId, predecessor, depth + 1);

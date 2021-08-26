@@ -83,11 +83,11 @@ public class SVCOMPRunner {
 	    	cmd.addAll(asList("-jar", "dartagnan/target/dartagnan-2.0.7.jar"));
 	    	cmd.addAll(asList("-i", boogieName));
 	    	cmd.addAll(asList("-cat", options.getTargetModelFilePath()));
-	    	cmd.addAll(asList("-t", options.getTarget() != null ? options.getTarget().toString() : "none"));
-	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().toString()));
+	    	cmd.addAll(asList("-t", options.getTarget().asStringOption()));
+	    	cmd.addAll(asList("-alias", options.getSettings().getAlias().asStringOption()));
 	    	cmd.addAll(asList("-unroll", String.valueOf(bound)));
-	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().toString()));
-	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getMethod().toString()));
+	    	cmd.addAll(asList("-" + ANALYSIS_OPTION, options.getAnalysis().asStringOption()));
+	    	cmd.addAll(asList("-" + METHOD_OPTION, options.getMethod().asStringOption()));
 	    	cmd.addAll(asList("-" + SMTSOLVER_OPTION, options.getSMTSolver().toString().toLowerCase()));
 	    	if(options.getWitnessPath() != null) {
 	    		// In validation mode we do not create witnesses.

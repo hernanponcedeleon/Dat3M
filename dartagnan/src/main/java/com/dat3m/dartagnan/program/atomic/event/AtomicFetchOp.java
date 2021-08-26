@@ -1,39 +1,22 @@
 package com.dat3m.dartagnan.program.atomic.event;
 
-import com.dat3m.dartagnan.program.event.CondJump;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Fence;
-import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Load;
-import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
-import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWLoadExclusive;
-import com.dat3m.dartagnan.program.arch.aarch64.event.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
-import com.dat3m.dartagnan.program.event.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.ACQ;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.REL;
-import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.RX;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQUIRE;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.ACQ_REL;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELAXED;
-import static com.dat3m.dartagnan.program.atomic.utils.Mo.RELEASE;
+import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
+import com.dat3m.dartagnan.wmm.utils.Arch;
+
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
+import static com.dat3m.dartagnan.program.arch.aarch64.utils.Mo.*;
 import static com.dat3m.dartagnan.program.atomic.utils.Mo.SC;
 import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
-
-import java.util.Arrays;
-import java.util.LinkedList;
 
 public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReaderData {
 
@@ -69,63 +52,50 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
-    	Load load;
     	Register dummyReg = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
-    	Local add = new Local(dummyReg, new IExprBin(resultRegister, op, value));
-    	Store store;
-    	LinkedList<Event> events = new LinkedList<>();
+    	Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+    	List<Event> events;
+
         switch(target) {
-            case NONE: case TSO:
-                load = new RMWLoad(resultRegister, address, mo);
-                store = new RMWStore((RMWLoad)load, address, dummyReg, mo);
-                events = new LinkedList<>(Arrays.asList(load, add, store));
+            case NONE: case TSO: {
+                Load load = newRMWLoad(resultRegister, address, mo);
+                Store store = newRMWStore(load, address, dummyReg, mo);
+                events = eventSequence(
+                        load,
+                        localOp,
+                        store
+                );
                 break;
+            }
             case POWER:
             case ARM8:
-                String loadMo;
-                String storeMo;
-                switch (mo) {
-                    case SC:
-                    case ACQ_REL:
-                        loadMo = ACQ;
-                        storeMo = REL;
-                        break;
-                    case ACQUIRE:
-                        loadMo = ACQ;
-                        storeMo = RX;
-                        break;
-                    case RELEASE:
-                        loadMo = RX;
-                        storeMo = REL;
-                        break;
-                    case RELAXED:
-                        loadMo = RX;
-                        storeMo = RX;
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Compilation to " + target + " is not supported for " + this);
-                }
-            	load = new RMWLoadExclusive(resultRegister, address, loadMo);
-                store = new RMWStoreExclusive(address, dummyReg, storeMo, true);
-                Label label = new Label("FakeDep");
-                Event ctrl = new CondJump(new Atom(resultRegister, COpBin.EQ, resultRegister), label);
+                String loadMo = extractLoadMo(mo);
+                String storeMo = extractStoreMo(mo);
+
+            	Load load = newRMWLoadExclusive(resultRegister, address, loadMo);
+                Store store = newRMWStoreExclusive(address, dummyReg, storeMo, true);
+                Label label = newLabel("FakeDep");
+                Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
                 // Extra fences for POWER
+                Fence optionalMemoryBarrier = null;
+                Fence optionalISyncBarrier = (target.equals(POWER) && loadMo.equals(ACQ)) ? Power.newISyncBarrier() : null;
                 if(target.equals(POWER)) {
-                    if (mo.equals(SC)) {
-                        events.addFirst(new Fence("Sync"));
-                    } else if (storeMo.equals(REL)) {
-                        events.addFirst(new Fence("Lwsync"));
-                    }
+                    optionalMemoryBarrier = mo.equals(SC) ? Power.newSyncBarrier()
+                            : storeMo.equals(REL) ? Power.newLwSyncBarrier()
+                            : null;
                 }
                 
                 // All events for POWER and ARM8
-                events.addAll(Arrays.asList(load, ctrl, label, add, store));
-                
-                // Extra fences for POWER
-                if (target.equals(POWER) && loadMo.equals(ACQ)) {
-                    events.addLast(new Fence("Isync"));
-                }
+                events = eventSequence(
+                        optionalMemoryBarrier,
+                        load,
+                        fakeCtrlDep,
+                        label,
+                        localOp,
+                        store,
+                        optionalISyncBarrier
+                );
                 break;
             default:
                 String tag = mo != null ? "_explicit" : "";

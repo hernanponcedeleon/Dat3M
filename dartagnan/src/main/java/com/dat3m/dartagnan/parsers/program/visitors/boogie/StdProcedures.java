@@ -1,20 +1,20 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.utils.EType;
+
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class StdProcedures {
 	
@@ -49,7 +49,7 @@ public class StdProcedures {
 		if(name.startsWith("WRITE_ONCE")) {
 			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
 			ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr(1).accept(visitor);
-			visitor.programBuilder.addChild(visitor.threadCount, new Store(address, value, "NA"));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, "NA"));
 			return;
 		}
 //		if(name.startsWith("READ_ONCE")) {
@@ -131,7 +131,7 @@ public class StdProcedures {
 		// the name should be unique, thus we add the process identifier.
 		visitor.programBuilder.addDeclarationArray(visitor.currentScope.getID() + ":" + ptr, values, start.getPrecision());
 		Address adds = visitor.programBuilder.getPointer(visitor.currentScope.getID() + ":" + ptr);
-		visitor.programBuilder.addChild(visitor.threadCount, new Local(start, adds));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(start, adds));
 		visitor.allocationRegs.add(start);
 	}
 	
@@ -142,7 +142,7 @@ public class StdProcedures {
     	if(expr instanceof IConst && ((IConst)expr).getIntValue().compareTo(BigInteger.ONE) == 0) {
     		return;
     	}
-    	Local event = new Local(ass, expr);
+    	Local event = EventFactory.newLocal(ass, expr);
 		event.addFilters(EType.ASSERTION);
 		visitor.programBuilder.addChild(visitor.threadCount, event);
 	}

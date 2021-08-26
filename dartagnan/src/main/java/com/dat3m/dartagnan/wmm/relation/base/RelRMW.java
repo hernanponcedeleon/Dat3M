@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -16,10 +16,6 @@ import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.Sets;
-
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -29,6 +25,10 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public class RelRMW extends StaticRelation {
 
@@ -186,6 +186,6 @@ public class RelRMW extends StaticRelation {
     }
 
     private BooleanFormula exclPair(Event load, Event store, SolverContext ctx){
-    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable("excl(" + load.getCId() + "," + store.getCId() + ")");
+    	return ctx.getFormulaManager().makeVariable(BooleanType, "excl(" + load.getCId() + "," + store.getCId() + ")");
     }
 }

@@ -13,5 +13,12 @@ else
     export PATH=$PATH:$HOME/bin:$JAVA_HOME/bin
     export LD_LIBRARY_PATH=$(pwd)/lib/
 
-    java -jar svcomp/target/svcomp-$VERSION-jar-with-dependencies.jar -umax 1 -solver $1 -t $2 -cat $3 -property $4 -i $5
+    FLAGS="-method incremental"
+    if ! grep -q "pthread" $2; then
+        FLAGS+=" -o O3 -e bit-vector -cat cat/sc.cat"
+    else
+        FLAGS+=" -cat cat/svcomp.cat"
+    fi
+    echo $FLAGS -property $1 -i $2
+    java -jar svcomp/target/svcomp-$VERSION.jar $FLAGS -property $1 -i $2
 fi

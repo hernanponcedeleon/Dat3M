@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
+
 import java.math.BigInteger;
 
 public class Address extends IConst implements ExprInterface {
@@ -50,9 +53,8 @@ public class Address extends IConst implements ExprInterface {
     public Formula getLastMemValueExpr(SolverContext ctx){
         FormulaManager fmgr = ctx.getFormulaManager();
 		String name = "last_val_at_memory_" + index;
-		return precision > 0 ? 
-        		fmgr.getBitvectorFormulaManager().makeVariable(precision, name) : 
-        		fmgr.getIntegerFormulaManager().makeVariable(name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
     }
 
     @Override
@@ -90,9 +92,8 @@ public class Address extends IConst implements ExprInterface {
 					fmgr.getIntegerFormulaManager().makeNumber(constantValue);
     	}
 		String name = "memory_" + index;
-		return precision > 0 ? 
-				fmgr.getBitvectorFormulaManager().makeVariable(precision, name) :
-				fmgr.getIntegerFormulaManager().makeVariable(name);
+		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
+		return fmgr.makeVariable(type, name);
     }
 
     @Override

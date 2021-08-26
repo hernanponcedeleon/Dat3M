@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.wmm.utils;
 
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -13,7 +15,7 @@ public enum  Flag {
     public static ImmutableSet<Flag> all = ImmutableSet.of(ARM_UNPREDICTABLE_BEHAVIOUR);
 
     public BooleanFormula repr(SolverContext ctx){
-    	return ctx.getFormulaManager().getBooleanFormulaManager().makeVariable(code());
+    	return ctx.getFormulaManager().makeVariable(BooleanType, code());
     }
 
     @Override
