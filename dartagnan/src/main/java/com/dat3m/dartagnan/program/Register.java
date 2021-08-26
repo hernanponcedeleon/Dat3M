@@ -1,23 +1,17 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.google.common.collect.ImmutableSet;
-
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
-
-import java.math.BigInteger;
-
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.FormulaType;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.event.Event;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+
+import java.math.BigInteger;
+
+import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
+import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
 public class Register extends IExpr implements ExprInterface {
 
@@ -98,8 +92,8 @@ public class Register extends IExpr implements ExprInterface {
 
 	@Override
 	public Formula getLastValueExpr(SolverContext ctx){
-		FormulaManager fmgr = ctx.getFormulaManager();
 		String name = getName() + "_" + threadId + "_final";
+		FormulaManager fmgr = ctx.getFormulaManager();
 		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
 		return fmgr.makeVariable(type, name);
 	}

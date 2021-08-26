@@ -3,19 +3,21 @@ package com.dat3m.dartagnan.program.arch.aarch64.event;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Store;
-import com.dat3m.dartagnan.program.arch.aarch64.utils.EType;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.ExecutionStatus;
+import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.event.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-
-import java.util.Arrays;
-import java.util.LinkedList;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.EventFactory.*;
 
 public class StoreExclusive extends Store implements RegWriter, RegReaderData {
 
@@ -57,9 +59,12 @@ public class StoreExclusive extends Store implements RegWriter, RegReaderData {
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
         if(target == Arch.ARM || target == Arch.ARM8) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo);
-            RMWStoreExclusiveStatus status = new RMWStoreExclusiveStatus(register, store);
-            LinkedList<Event> events = new LinkedList<>(Arrays.asList(store, status));
+            RMWStoreExclusive store = newRMWStoreExclusive(address, value, mo);
+            ExecutionStatus status = newExecutionStatus(register, store);
+            List<Event> events = eventSequence(
+                    store,
+                    status
+            );
             return compileSequenceRecursive(target, nextId, predecessor, events, depth + 1);
         }
         throw new RuntimeException("Compilation of StoreExclusive is not implemented for " + target);

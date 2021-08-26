@@ -1,24 +1,22 @@
-package com.dat3m.dartagnan.program.event.rmw.cond;
-
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.google.common.collect.ImmutableSet;
-
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
+package com.dat3m.dartagnan.program.arch.linux.event.cond;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.rmw.RMWLoad;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.SolverContext;
 
-public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReaderData {
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+
+public abstract class RMWReadCond extends Load implements RegWriter, RegReaderData {
 
     protected ExprInterface cmp;
     private final ImmutableSet<Register> dataRegs;
@@ -28,7 +26,7 @@ public abstract class RMWReadCond extends RMWLoad implements RegWriter, RegReade
         super(reg, address, atomic);
         this.cmp = cmp;
         this.dataRegs = cmp.getRegs();
-        addFilters(EType.REG_READER);
+        addFilters(EType.RMW, EType.REG_READER);
     }
 
     @Override

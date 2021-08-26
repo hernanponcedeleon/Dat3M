@@ -1,10 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
@@ -12,15 +7,15 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
+import com.dat3m.dartagnan.program.EventFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Label;
-import com.dat3m.dartagnan.program.event.Local;
-import com.dat3m.dartagnan.program.event.pthread.Create;
-import com.dat3m.dartagnan.program.event.pthread.Join;
-import com.dat3m.dartagnan.program.event.pthread.Lock;
-import com.dat3m.dartagnan.program.event.pthread.InitLock;
-import com.dat3m.dartagnan.program.event.pthread.Unlock;
 import com.dat3m.dartagnan.program.memory.Location;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class PthreadsProcedures {
 	
@@ -82,9 +77,9 @@ public class PthreadsProcedures {
 		visitor.pool.add(threadPtr, threadName);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), -1);
 		// We assume pthread_create always succeeds
-		visitor.programBuilder.addChild(visitor.threadCount, new Local(reg, new IConst(BigInteger.ZERO, -1)));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, new IConst(BigInteger.ZERO, -1)));
 		Location loc = visitor.programBuilder.getOrCreateLocation(threadPtr + "_active", -1);
-		visitor.programBuilder.addChild(visitor.threadCount, new Create(threadPtr, threadName, loc.getAddress(), visitor.currentLine));
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(threadPtr, threadName, loc.getAddress(), visitor.currentLine));
 	}
 	
 	private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -97,7 +92,7 @@ public class PthreadsProcedures {
 		Location loc = visitor.programBuilder.getOrCreateLocation(visitor.pool.getPtrFromReg(callReg) + "_active", -1);
 		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, -1);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
-       	visitor.programBuilder.addChild(visitor.threadCount, new Join(visitor.pool.getPtrFromReg(callReg), reg, loc.getAddress(), label));
+       	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newJoin(visitor.pool.getPtrFromReg(callReg), reg, loc.getAddress(), label));
 	}
 
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -105,7 +100,7 @@ public class PthreadsProcedures {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		IExpr value = (IExpr)ctx.call_params().exprs().expr(1).accept(visitor);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, new InitLock(lock.getText(), lockAddress, value));	
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newInitLock(lock.getText(), lockAddress, value));
 		}
 	}
 	
@@ -115,7 +110,7 @@ public class PthreadsProcedures {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, new Lock(lock.getText(), lockAddress, register, label));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register, label));
 		}
 	}
 	
@@ -125,7 +120,7 @@ public class PthreadsProcedures {
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
        	Label label = visitor.programBuilder.getOrCreateLabel("END_OF_T" + visitor.threadCount);
 		if(lockAddress != null) {
-			visitor.programBuilder.addChild(visitor.threadCount, new Unlock(lock.getText(), lockAddress, register, label));
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register, label));
 		}
 	}
 }

@@ -1,21 +1,16 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-import com.dat3m.dartagnan.program.Thread;
-
-import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
+import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public abstract class Event implements Comparable<Event> {
 
@@ -37,16 +32,11 @@ public abstract class Event implements Comparable<Event> {
     protected transient BooleanFormula cfCond;
 	protected transient BooleanFormula cfVar;
 
-	protected VerificationTask task;
+	protected transient VerificationTask task;
 
 	protected Set<Event> listeners = new HashSet<>();
 
-	private String repr;
-
-	protected Event(int cLine) {
-		filter = new HashSet<>();
-		this.cLine = cLine;
-	}
+	private transient String repr;
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -267,7 +257,7 @@ public abstract class Event implements Comparable<Event> {
 		return RecursiveFunction.done(nextId);
 	}
 
-	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, LinkedList<Event> sequence, int depth){
+	protected RecursiveFunction<Integer> compileSequenceRecursive(Arch target, int nextId, Event predecessor, List<Event> sequence, int depth){
 		for(Event e : sequence){
 			e.oId = oId;
 			e.uId = uId;

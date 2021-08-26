@@ -9,6 +9,8 @@ public class EType {
     public static final String MEMORY       = "M";
     public static final String FENCE        = "F";
     public static final String RMW          = "RMW";
+    public static final String EXCL         = "EXCL";
+    public static final String STRONG       = "STRONG";
     public static final String LOCAL        = "T";
     public static final String LABEL        = "LB";
     public static final String CMP          = "C";
