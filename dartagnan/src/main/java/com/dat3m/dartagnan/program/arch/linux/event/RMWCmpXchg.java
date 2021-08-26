@@ -59,11 +59,11 @@ public class RMWCmpXchg extends RMWAbstract implements RegWriter, RegReaderData 
                 dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
             }
 
-            Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
             RMWReadCondCmp load = Linux.newRMWReadCondCmp(dummy, cmp, address, Mo.loadMO(mo));
             RMWStoreCond store = Linux.newRMWStoreCond(load, address, value, Mo.storeMO(mo));
             Local optionalUpdateReg = dummy != resultRegister ? newLocal(resultRegister, dummy) : null;
-            Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newMemoryBarrier() : null;
+            Fence optionalMbBefore = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
+            Fence optionalMbAfter = mo.equals(Mo.MB) ? Linux.newConditionalMemoryBarrier(load) : null;
 
             List<Event> events = eventSequence(
                     optionalMbBefore,

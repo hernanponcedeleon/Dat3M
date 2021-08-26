@@ -22,21 +22,21 @@ import static com.dat3m.dartagnan.wmm.utils.Arch.POWER;
 
 public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData {
 
-    private final IExpr expected;
+    private final ExprInterface expectedValue;
 
-    public Dat3mCAS(Register register, IExpr address, IExpr expected, ExprInterface value, String mo) {
+    public Dat3mCAS(Register register, IExpr address, ExprInterface expectedVal, ExprInterface value, String mo) {
         super(address, register, value, mo);
-        this.expected = expected;
+        this.expectedValue = expectedVal;
     }
 
     private Dat3mCAS(Dat3mCAS other){
         super(other);
-        this.expected = other.expected;
+        this.expectedValue = other.expectedValue;
     }
 
     @Override
     public String toString() {
-        return resultRegister + " = __DAT3M_CAS(*" + address + ", " + expected + ", " + value + (mo != null ? ", " + mo : "") + ")";
+        return resultRegister + " = __DAT3M_CAS(*" + address + ", " + expectedValue + ", " + value + (mo != null ? ", " + mo : "") + ")";
     }
 
     // Unrolling
@@ -58,15 +58,15 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
             case NONE: case TSO: {
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
                 Load load = newRMWLoad(dummy, address, mo);
-                Local casResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expectedValue));
                 Label casEnd = newLabel("CAS_end");
-                CondJump branchOnCasResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
+                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casEnd);
                 Store store = newRMWStore(load, address, value, mo);
 
                 events = eventSequence(
                         load,
-                        casResult,
-                        branchOnCasResult,
+                        casCmpResult,
+                        branchOnCasCmpResult,
                             store,
                         casEnd
                 );
@@ -100,7 +100,7 @@ public class Dat3mCAS extends AtomicAbstract implements RegWriter, RegReaderData
 
                 Register dummy = new Register(null, resultRegister.getThreadId(), resultRegister.getPrecision());
                 Load load = newRMWLoadExclusive(dummy, address, loadMo);
-                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expectedValue));
                 Label endCas = newLabel("CAS_end");
                 CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), endCas);
                 // ---- CAS success ----

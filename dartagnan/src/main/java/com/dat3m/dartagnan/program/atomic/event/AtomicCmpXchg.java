@@ -63,6 +63,7 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
 
     @Override
     protected RecursiveFunction<Integer> compileRecursive(Arch target, int nextId, Event predecessor, int depth) {
+        //TODO: Perform Store on <expected> (in general, <expected> should be an address and not a register)
     	List<Event> events;
         switch(target) {
             case NONE:
@@ -71,16 +72,16 @@ public class AtomicCmpXchg extends AtomicAbstract implements RegWriter, RegReade
                 Label casFail = newLabel("CAS_fail");
                 Label casEnd = newLabel("CAS_end");
                 Load load = newRMWLoad(dummy, address, mo);
-                Local casResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
-                CondJump branchOnCasResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
+                Local casCmpResult = newLocal(resultRegister, new Atom(dummy, EQ, expected));
+                CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IConst.ONE), casFail);
                 Store store = newRMWStore(load, address, value, mo);
                 CondJump gotoCasEnd = newGoto(casEnd);
                 Local updateReg = newLocal(expected, dummy);
 
                 events = eventSequence(
                         load,
-                        casResult,
-                        branchOnCasResult,
+                        casCmpResult,
+                        branchOnCasCmpResult,
                             store,
                             gotoCasEnd,
                         casFail,

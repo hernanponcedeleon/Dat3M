@@ -57,7 +57,6 @@ public class AtomicFetchOp extends AtomicAbstract implements RegWriter, RegReade
     	List<Event> events;
         switch(target) {
             case NONE: case TSO: {
-
                 Load load = newRMWLoad(resultRegister, address, mo);
                 Store store = newRMWStore(load, address, dummyReg, mo);
                 events = eventSequence(
