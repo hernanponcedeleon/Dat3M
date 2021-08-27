@@ -148,8 +148,6 @@ public class SvCompTestLoops extends AbstractSvCompTest {
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/even-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/linear-inequality-inv-b-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/mod4-O3.bpl", wmm, s1});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd2-O3.bpl", wmm, s2});
-        data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/egcd3-O3.bpl", wmm, s2});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/hard-O3.bpl", wmm, s3});        
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/ps2-O3.bpl", wmm, s1});
         data.add(new Object[]{TEST_RESOURCE_PATH + "boogie/loops/ps3-O3.bpl", wmm, s1});
