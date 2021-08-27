@@ -42,9 +42,8 @@ If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`
 
 To build the tool run
 ```
-mvn clean install -DskipTests -P os
+mvn clean install -DskipTests
 ```
-where `os` is either `linux` or `macos` depending on your OS.
 
 **Unit Tests**
 
