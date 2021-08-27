@@ -112,7 +112,7 @@ Authors and Contact
 * Florian Furbach
 * Natalia Gavrilenko
 
-Please feel free to contact us in case of questions or to send feedback.
+Please feel free to contact us in case of questions or to send feedback. 
 
 References
 ======
