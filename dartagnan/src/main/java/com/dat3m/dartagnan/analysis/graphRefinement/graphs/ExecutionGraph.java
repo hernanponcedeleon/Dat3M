@@ -144,6 +144,7 @@ public class ExecutionGraph {
 
     // The length of a shortest path from <graph> to some base graph
     // along the dependency graph
+    // TODO: This is not really used anymore. We can probably remove it
     public int getShortestDerivationComplexity(EventGraph graph) {
         return derivationComplexityMap.getOrDefault(graph, -1);
     }

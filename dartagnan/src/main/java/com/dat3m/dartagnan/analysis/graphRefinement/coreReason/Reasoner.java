@@ -195,6 +195,8 @@ public class Reasoner {
 
             // We try to compute a shortest reason based on the distance to the base graphs
             List<EventGraph> deps = new ArrayList<>(graph.getDependencies());
+            //TODO: Why is this sorting still here? We check each graph anyway, cause
+            // we now store the derivation length per edge instead of per graph.
             deps.sort(Comparator.comparingInt(execGraph::getShortestDerivationComplexity));
 
             Edge min = edge;
@@ -254,7 +256,7 @@ public class Reasoner {
                     }
                     Edge e2 = second.get(new Edge(e1.getSecond(), edge.getSecond()));
                     if (e2 != null && e2.getDerivationLength() < edge.getDerivationLength()) {
-                        reason = first.accept(this, e1, null).and(second.accept(this, e2, null));
+                        reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
                         assert !reason.isFalse();
                         return reason;
                     }
@@ -266,7 +268,7 @@ public class Reasoner {
                     }
                     Edge e1 = first.get(new Edge(edge.getFirst(), e2.getFirst()));
                     if (e1 != null && e1.getDerivationLength() < edge.getDerivationLength()) {
-                        reason = first.accept(this, e1, null).and(second.accept(this, e2, null));
+                        reason = first.accept(this, e1, unused).and(second.accept(this, e2, unused));
                         assert !reason.isFalse();
                         return reason;
                     }

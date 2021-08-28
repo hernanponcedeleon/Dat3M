@@ -31,9 +31,9 @@ import java.util.*;
 
 /*
     Graph-based Refinement works as follows (with some simplifications):
-    (1) We extract an ExecutionModel (~abstract execution) from the model produced by Z3
+    (1) We extract an ExecutionModel (~abstract execution) from the model produced by the solver
     (2) We initialize an ExecutionGraph with all data from the model (rf, po, dependencies, min-set coherences etc.)
-        - The ExecutionGraph in turn maintains a GraphHierarchy, which consists of graphs for each relation in the WMM
+        - The ExecutionGraph in turn maintains a GraphHierarchy, which consists of a graph for each relation in the WMM
     (3) We perform an initial check of all axioms (if there is any violation, we compute reasons for it and are done)
     (4) We start the 'Saturation' algorithm:
         -- Maintained Data --
@@ -60,6 +60,7 @@ import java.util.*;
 
      NOTES:
         - The above algorithm is 1-Saturation.
+        - The propagation is handled by GraphHierarchy which is maintained by ExecutionGraph
         - The reason computation is handled by Reasoner.
         - The resolution is handled by TreeResolution.
  */
@@ -109,9 +110,11 @@ public class GraphRefinement {
     private void populateFromModel(Model model, SolverContext ctx) {
         executionModel.initialize(model, ctx, false);
         execGraph.initializeFromModel(executionModel);
-        // TODO: Remove testing code
-        testIteration();
-        testStaticGraphs();
+        if (DEBUG) {
+            // TODO: Remove testing code
+            testIteration();
+            testStaticGraphs();
+        }
     }
 
     private List<Edge> createCoSearchList() {
@@ -129,18 +132,20 @@ public class GraphRefinement {
                     Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
 
                     if (co.getMinTupleSet().contains(t)) {
-                        //execGraph.addCoherenceEdges(new Edge(e1, e2));
+                        // Min-Set coherences have to be contained in all executions
                         initCoherences.add(new Edge(e1, e2));
                         continue;
                     }
 
-                    // We only add edges in one direction
+                    // We only add edges in one direction since the search procedure will test
+                    // each coherence in both directions anyways!
                     if (e2.getId() >= e1.getId())
                         continue;
 
                     if (e1.isInit() && !e2.isInit()) {
+                        // This is fallback code in case minTupleSet computations are disabled
+                        // But we expect the minTupleSet check to cover this case
                         initCoherences.add(new Edge(e1, e2));
-                        //execGraph.addCoherenceEdges(new Edge(e1, e2));
                     } else if (!e1.isInit() && !e2.isInit()) {
                         coEdges.add(new Edge(e1, e2));
                     }
@@ -159,8 +164,8 @@ public class GraphRefinement {
     }
 
     /*
-        A simple heuristic which moves all coherences to the front, which involve
-        some write that was read from.
+        A simple heuristic which moves all coherences to the front, which connect writes
+        that have many reads (more rf-edges ~ higher likelihood that a coherence will cause violations)
     */
     private void sortCoSearchList(List<Edge> list) {
         list.sort(Comparator.comparingInt(x -> -(x.getFirst().getImportance() + x.getSecond().getImportance())));

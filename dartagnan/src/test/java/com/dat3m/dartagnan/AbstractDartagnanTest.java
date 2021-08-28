@@ -65,8 +65,6 @@ public abstract class AbstractDartagnanTest {
         this.wmm = wmm;
         this.settings = settings;
     }
-    
-    @Test()
 
     //@Test
     public void testCombined() {
@@ -104,7 +102,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    //@Test
+    @Test
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
@@ -121,7 +119,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    @Test
+    //@Test
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))

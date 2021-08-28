@@ -73,7 +73,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    //@Test(timeout = TIMEOUT)
+    @Test(timeout = TIMEOUT)
     public void testAssume() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
@@ -87,6 +87,7 @@ public abstract class AbstractSvCompTest {
             fail(e.getMessage());
         }
     }
+
     @Test(timeout = TIMEOUT)
     public void testRefinement() {
         try (SolverContext ctx = TestHelper.createContext();

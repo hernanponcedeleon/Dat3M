@@ -33,8 +33,8 @@ public class GlobalSettings {
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
 
     // ==== Refinement ====
-    public static final boolean REF_PRINT_STATISTICS = true;
-    public static final boolean REF_USE_OUTER_WMM = false;
+    public static final boolean REF_PRINT_STATISTICS = false;
+    public static final boolean REF_BASELINE_WMM = false;
     public static final boolean REF_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if REF_USE_OUTER_WMM is set to TRUE
 
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
@@ -53,6 +53,7 @@ public class GlobalSettings {
     	logger.info("ASSUME_LOCAL_CONSISTENCY: " + ASSUME_LOCAL_CONSISTENCY);
     	logger.info("PERFORM_ATOMIC_BLOCK_OPTIMIZATION: " + PERFORM_ATOMIC_BLOCK_OPTIMIZATION);
     	logger.info("MERGE_CF_VARS: " + MERGE_CF_VARS);
+    	logger.info("ALLOW_PARTIAL_MODELS: " + ALLOW_PARTIAL_MODELS);
     	logger.info("ANTISYMM_CO: " + ANTISYMM_CO);
     	logger.info("MERGE_BRANCHES: " + MERGE_BRANCHES);
     	logger.info("ALWAYS_SPLIT_ON_JUMP: " + ALWAYS_SPLIT_ON_JUMP);
@@ -62,5 +63,11 @@ public class GlobalSettings {
         logger.info("ENABLE_SYMMETRY_REDUCTION: " + ENABLE_SYMMETRY_REDUCTION);
     	logger.info("MAX_RECURSION_DEPTH: " + MAX_RECURSION_DEPTH);
     	logger.info("ENABLE_DEBUG_OUTPUT: " + ENABLE_DEBUG_OUTPUT);
+
+    	// Refinement data
+    	logger.info("REFINEMENT_PRINT_STATISTICS: " + REF_PRINT_STATISTICS);
+    	logger.info("REFINEMENT_USE_BASELINE_WMM: " + REF_BASELINE_WMM);
+    	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REF_ADD_ACYCLIC_DEP_RF);
+    	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REF_SYMMETRY_LEARNING.name());
     }
 }

@@ -49,7 +49,8 @@ public class Refinement {
     // we don't have a memory model and thus the bound check is imprecise.
     // We may even want to perform refinement to check the bounds (we envision a case where the
     // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
-    public static Result runAnalysisGraphRefinement(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
+    public static Result runAnalysisGraphRefinement(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+            throws InterruptedException, SolverException {
         task.unrollAndCompile();
         if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
@@ -59,11 +60,11 @@ public class Refinement {
         task.initialiseEncoding(ctx);
         prover.addConstraint(task.encodeProgram(ctx));
 
-        if (REF_USE_OUTER_WMM) {
-            Wmm outer = createOuterWmm(task);
-            outer.initialise(task, ctx); // this is a little suspicious
-            prover.addConstraint(outer.encode(ctx));
-            prover.addConstraint(outer.consistent(ctx));
+        if (REF_BASELINE_WMM) {
+            Wmm baseline = createBaselineWmm(task);
+            baseline.initialise(task, ctx); // this is a little suspicious
+            prover.addConstraint(baseline.encode(ctx));
+            prover.addConstraint(baseline.consistent(ctx));
         } else {
             prover.addConstraint(task.encodeWmmCore(ctx));
         }
@@ -71,7 +72,8 @@ public class Refinement {
         return refinementCore(ctx, prover, task);
     }
 
-    private static Result refinementCore(SolverContext ctx, ProverEnvironment prover, VerificationTask task) throws InterruptedException, SolverException {
+    private static Result refinementCore(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+            throws InterruptedException, SolverException {
 
         // ======= Some preprocessing to use a visible representative for each branch ========
         for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
@@ -85,7 +87,7 @@ public class Refinement {
         Result res = UNKNOWN;
 
         // ====== Test code ======
-        List<Function<Event, Event>> perms = computePerms(task);
+        List<Function<Event, Event>> perms = computePerms(task); // Used for symmetry learning
         // ----------
         if (ENABLE_SYMMETRY_BREAKING) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
@@ -119,7 +121,7 @@ public class Refinement {
             RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
             if (REF_PRINT_STATISTICS) {
-                System.out.println(stats.toString());
+                System.out.println(stats);
             }
 
             res = gRes.getResult();
@@ -155,14 +157,14 @@ public class Refinement {
         boolean isSat = !prover.isUnsat();
         if (isSat && res == UNKNOWN) {
             // We couldn't verify the found counterexample, nor exclude it.
-            System.out.println("PROCEDURE was inconclusive");
+            System.out.println("PROCEDURE was inconclusive.");
             return res;
         } else if (isSat) {
-            // We found a violation
-            System.out.println("Violation verified");
+            // We found a true violation
+            System.out.println("Violation verified.");
         } else {
             // We showed safety but still need to verify bounds
-            System.out.println("Safety proven");
+            System.out.println("Bounded safety proven.");
         }
 
         long boundCheckTime = 0;
@@ -171,7 +173,7 @@ public class Refinement {
             lastTime = System.currentTimeMillis();
             prover.pop();
             prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
-            res = !prover.isUnsat() ? UNKNOWN : PASS;
+            res = !prover.isUnsat() ? UNKNOWN : PASS; // Initial bound check without any WMM constraints
             if (res == UNKNOWN) {
                 //TODO: This is just a temporary fallback
                 // We probably have to perform a second refinement for the bound checks!
@@ -193,7 +195,11 @@ public class Refinement {
         return res;
     }
 
-    private static void refine(ProverEnvironment prover, SolverContext ctx, DNF<CoreLiteral> coreViolations, List<Function<Event, Event>> perms) throws InterruptedException {
+
+    // This method adds new constraints to the prover based on the found violations.
+    // Furthermore, it computes symmetric violations if symmetry learning is enabled.
+    private static void refine(ProverEnvironment prover, SolverContext ctx, DNF<CoreLiteral> coreViolations,
+                               List<Function<Event, Event>> perms) throws InterruptedException {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         for (Function<Event, Event> p : perms) {
             BooleanFormula refinement = bmgr.makeTrue();
@@ -258,12 +264,12 @@ public class Refinement {
 
     // ---------------------------- Outer WMM -----------------------------
 
-    private static Wmm createOuterWmm(VerificationTask task) {
+    private static Wmm createBaselineWmm(VerificationTask task) {
         Wmm original = task.getMemoryModel();
-        Wmm outerWmm = new Wmm();
-        outerWmm.setEncodeCo(false);
+        Wmm baseline = new Wmm();
+        baseline.setEncodeCo(false);
         RelationRepository origRepo = original.getRelationRepository();
-        RelationRepository repo = outerWmm.getRelationRepository();
+        RelationRepository repo = baseline.getRelationRepository();
         // We copy relations from the original WMM to avoid recomputations of max-/minSets
         // This causes active set computations to be reflected in the original WMM (which shouldn't be problematic)
         repo.addRelation(origRepo.getRelation("rf"));
@@ -283,7 +289,7 @@ public class Refinement {
         Relation rf = repo.getRelation("rf");
         Relation porf = new RelUnion(poloc, rf);
         repo.addRelation(porf);
-        outerWmm.addAxiom(new Acyclic(porf));
+        baseline.addAxiom(new Acyclic(porf));
 
         // ---- acyclic (dep | rf) ----
         if (REF_ADD_ACYCLIC_DEP_RF) {
@@ -305,15 +311,16 @@ public class Refinement {
             repo.addRelation(dep);
             Relation hb = new RelUnion(dep, rf);
             repo.addRelation(hb);
-            outerWmm.addAxiom(new Acyclic(hb));
+            baseline.addAxiom(new Acyclic(hb));
         }
 
-        return outerWmm;
+        return baseline;
     }
 
 
     // ---------------------- Symmetry computations -----------------------
 
+    // Computes a list of all permutations allowed by the program
     private static List<Function<Event, Event>> computePerms(VerificationTask task) {
 
         ThreadSymmetry symm = task.getThreadSymmetry();
@@ -351,6 +358,8 @@ public class Refinement {
         return perms;
     }
 
+    // Changes a reasoning <literal> based on a given permutation <p> and translates the result into a BooleanFormula
+    // for Refinement
     private static BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> p, SolverContext ctx) {
         if (literal instanceof EventLiteral) {
             EventLiteral lit = (EventLiteral) literal;
@@ -362,7 +371,9 @@ public class Refinement {
             return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), ctx);
         } else if (literal instanceof AbstractEdgeLiteral) {
             AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
-            return Utils.edge(lit.getName(), p.apply(lit.getEdge().getFirst().getEvent()), p.apply(lit.getEdge().getSecond().getEvent()), ctx);
+            return Utils.edge(lit.getName(),
+                    p.apply(lit.getEdge().getFirst().getEvent()),
+                    p.apply(lit.getEdge().getSecond().getEvent()), ctx);
         }
         throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
     }

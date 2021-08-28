@@ -15,11 +15,11 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -431,7 +431,7 @@ public class ExecutionModel {
             }
             if (e instanceof CondJump) {
                 if (e instanceof IfAsJump) {
-                    // Remember what dependencies were added when entering the If so we an remove them when exiting
+                    // Remember what dependencies were added when entering the If so we can remove them when exiting
                     HashSet<EventData> addedDeps = new HashSet<>(Sets.difference(deps, curCtrlDeps));
                     ifCtrlDeps.push(addedDeps);
                     endIfs.push(((IfAsJump)e).getEndIf());

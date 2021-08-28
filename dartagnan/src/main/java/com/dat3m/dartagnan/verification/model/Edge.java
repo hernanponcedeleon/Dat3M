@@ -10,8 +10,7 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 //TODO: Create a version without the refinement-specific extra data.
 // We then differentiate between (Simple)Edge and (Complex)Edge
-//TODO 2: Make equality comparison based on EventData identity (faster for hashmaps!)
-// Maybe even avoid class checks
+// NOTE(!): This change could cause bimorphic callsites, which might hurt performance for Refinement.
 public class Edge implements Comparable<Edge>, Timeable {
 
     private final EventData first;

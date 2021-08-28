@@ -9,10 +9,6 @@ import static com.dat3m.dartagnan.program.utils.EType.*;
 
 
 //EventData represents all data associated with an event in a concrete model.
-
-//TODO: We should assume that each EventData instance is unique
-// This can be easily used to optimize equals (also for edges)
-// which in turn may increase performance
 public class EventData implements Comparable<EventData> {
     private final Event event;
     private EventData readFrom;
@@ -122,6 +118,7 @@ public class EventData implements Comparable<EventData> {
 
     @Override
     public boolean equals(Object obj) {
+        // EventData instances are unique per event.
         return obj == this;
     }
 

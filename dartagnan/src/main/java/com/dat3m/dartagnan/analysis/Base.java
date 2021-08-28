@@ -14,6 +14,8 @@ import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.util.Collections.singletonList;
 
+
+//TODO: Add symmetry breaking
 public class Base {
 
     private static final Logger logger = LogManager.getLogger(Base.class);
