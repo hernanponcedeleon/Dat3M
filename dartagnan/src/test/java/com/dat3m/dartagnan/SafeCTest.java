@@ -108,15 +108,14 @@ public class SafeCTest {
 
     @Test(timeout = TIMEOUT)
     public void test() {
-    	assert(true);
-//        try (SolverContext ctx = TestHelper.createContext();
-//             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
-//        {
-//            Program program = new ProgramParser().parse(new File(path));
-//            VerificationTask task = new VerificationTask(program, wmm, target, settings);
-//            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
-//        } catch (Exception e){
-//            fail("Missing resource file");
-//        }
+        try (SolverContext ctx = TestHelper.createContext();
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
+        {
+            Program program = new ProgramParser().parse(new File(path));
+            VerificationTask task = new VerificationTask(program, wmm, target, settings);
+            assertEquals(expected, runAnalysisAssumeSolver(ctx, prover, task));
+        } catch (Exception e){
+            fail("Missing resource file");
+        }
     }
 }
