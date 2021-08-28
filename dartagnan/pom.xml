@@ -21,6 +21,7 @@
     <maven.compiler.release>11</maven.compiler.release>
     <project.dependency.relativepath>dependency</project.dependency.relativepath>
     <project.dependency.path>${project.build.directory}/${project.dependency.relativepath}</project.dependency.path>
+    <argLine>-Djava.library.path=${project.dependency.path}</argLine>
   </properties>
 
   <profiles>
@@ -250,12 +251,6 @@
           		<goals>
             	  <goal>prepare-agent</goal>
           		</goals>
-          		<configuration>
-				  <append>true</append>
-				  <destFile>${sonar.jacoco.reportPath}</destFile>
-				  <!-- Sets the VM argument line used when unit tests are run. -->
-				  <propertyName>surefireArgLine</propertyName>
-                </configuration>
         	  </execution>
         	  <execution>
           		<id>generate-code-coverage-report</id>
@@ -352,13 +347,6 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.22.1</version>
-          <configuration>
-            <printSummary>false</printSummary>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <forkCount>3</forkCount>
-            <reuseForks>true</reuseForks>
-            <argLine>${surefireArgLine} -Djava.library.path=${project.dependency.path}</argLine>
-          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
