@@ -293,7 +293,7 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>java-smt</artifactId>
-      <version>3.9.0-1-g304079c2</version>
+      <version>3.10.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
