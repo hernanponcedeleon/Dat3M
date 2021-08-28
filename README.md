@@ -1,3 +1,5 @@
+![build](https://github.com/hernanponcedeleon/Dat3M/actions/workflows/maven.yml/badge.svg?branch=development)
+
 # Dat3M: Memory Model Aware Verification
 
 <p align="center"> 
