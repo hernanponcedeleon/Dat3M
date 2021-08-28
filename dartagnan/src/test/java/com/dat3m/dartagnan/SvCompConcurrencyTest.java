@@ -16,7 +16,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
 
 @RunWith(Parameterized.class)
-public class SvCompTestConcurrency extends AbstractSvCompTest {
+public class SvCompConcurrencyTest extends AbstractSvCompTest {
 
 	@Parameterized.Parameters(name = "{index}: {0} bound={2}")
     public static Iterable<Object[]> data() throws IOException {
@@ -71,7 +71,7 @@ public class SvCompTestConcurrency extends AbstractSvCompTest {
         return data;
     }
 
-	public SvCompTestConcurrency(String path, Wmm wmm, Settings settings) {
+	public SvCompConcurrencyTest(String path, Wmm wmm, Settings settings) {
 		super(path, wmm, settings);
 	}
 }
