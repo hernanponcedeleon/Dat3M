@@ -1,5 +1,6 @@
 ![build](https://github.com/hernanponcedeleon/Dat3M/actions/workflows/maven.yml/badge.svg?branch=development)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Coverage](.github/badges/jacoco.svg)
 
 # Dat3M: Memory Model Aware Verification
 
