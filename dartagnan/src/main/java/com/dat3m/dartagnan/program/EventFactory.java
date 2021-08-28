@@ -69,7 +69,9 @@ public class EventFactory {
     }
 
     public static Fence newFenceOpt(String name, String opt) {
-        return newFence(name + "." + opt);
+        Fence fence = new Fence(name + "." + opt);
+        fence.addFilters(name);
+    	return fence;
     }
 
     public static Init newInit(IExpr address, IConst value) {

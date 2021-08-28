@@ -395,7 +395,7 @@
       <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
-        <version>2.1.13</version>
+        <version>4.9.10</version>
         <executions>
           <execution>
             <id>populate-git-commit-information</id>

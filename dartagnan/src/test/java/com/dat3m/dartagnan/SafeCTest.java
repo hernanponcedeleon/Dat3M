@@ -35,7 +35,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class SafeCTest {
 
-	static final int TIMEOUT = 300000;
+	static final int TIMEOUT = 180000;
 
     private final String path;
     private final Wmm wmm;
@@ -133,7 +133,7 @@ public class SafeCTest {
         this.settings = settings;
         this.expected = expected;
     }
-    
+
 //    @Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
