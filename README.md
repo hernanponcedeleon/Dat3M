@@ -120,12 +120,12 @@ Please feel free to contact us in case of questions or to send feedback.
 
 References
 ======
-[1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**. SAS 2017.
+[1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: [**Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**](https://hernanponcedeleon.github.io/pdfs/sas2017.pdf). SAS 2017.
 
-[2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC with Memory Models as Modules**. FMCAD 2018.
+[2] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: [**BMC with Memory Models as Modules**](https://hernanponcedeleon.github.io/pdfs/fmcad2018.pdf). FMCAD 2018.
 
-[3] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**. CAV 2019.
+[3] Natalia Gavrilenko, Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: [**BMC for Weak Memory Models: Relation Analysis for Compact SMT Encodings**](https://hernanponcedeleon.github.io/pdfs/cav2019.pdf). CAV 2019.
 
-[4] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: **Dartagnan: Bounded Model Checking for Weak Memory Models (Competition Contribution)**. TACAS 2020.
+[4] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: [**Dartagnan: Bounded Model Checking for Weak Memory Models (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp20.pdf). TACAS 2020.
 
-[5] Hernán Ponce de León, Thomas Haas, Roland Meyer: **Dartagnan: Leveraging Compiler Optimizations and the Price of Precision (Competition Contribution)**. TACAS 2021.
+[5] Hernán Ponce de León, Thomas Haas, Roland Meyer: [**Dartagnan: Leveraging Compiler Optimizations and the Price of Precision (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp2021.pdf). TACAS 2021.
