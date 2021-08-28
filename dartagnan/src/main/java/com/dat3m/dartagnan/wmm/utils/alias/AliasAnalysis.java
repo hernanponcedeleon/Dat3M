@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.utils.alias;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Thread;
@@ -44,11 +43,7 @@ public class AliasAnalysis {
         } else {
             maxAddressSet = program.getMemory().getAllAddresses();
             processLocs(program);
-            //TODO this is broken because it assumes that if e1:r1 <- &mem1 and e3:r2 <- r1, then r2 points to mem1.
-            // But we can have later r2 <- &mem2 with a back jump to e2 (between e1 and e3) and thus r2 points to mem1 or mem2
-            if(GlobalSettings.USE_BUGGY_ALIAS_ANALYSIS) {
-                processRegs(program);            	
-            }
+            processRegs(program);            	
             algorithm(program);
             processResults(program);
         }
@@ -145,7 +140,9 @@ public class AliasAnalysis {
                 if (expr instanceof Register) {
                     // r1 = r2 -> add edge r2 --> r1
                     graph.addEdge(expr, register);
-
+                } else if (expr instanceof IExprBin && expr.getBase() instanceof Register) {
+                	graph.addAllAddresses(register, maxAddressSet);
+                    variables.add(register);
                 } else if (expr instanceof Address) {
                     // r = &a
                     graph.addAddress(register, (Address) expr);
@@ -304,13 +301,7 @@ public class AliasAnalysis {
                 		addresses = new HashSet<>(program.getMemory().getArrayfromPointer(bases.get(address)));
             		}
             	} else {
-            	    addresses = maxAddressSet;
-            	    //TODO: This line of code is buggy. It causes many WMM benchmarks to fail
-            	    if(GlobalSettings.USE_BUGGY_ALIAS_ANALYSIS) {
-            	    	addresses = graph.getAddresses(((Register) address));	
-            	    } else {
-            	    	addresses = maxAddressSet;
-            	    }
+            	    addresses = graph.getAddresses(((Register) address));	
             	}
             } else if (address instanceof Address) {
                     addresses = ImmutableSet.of(((Address) address));
