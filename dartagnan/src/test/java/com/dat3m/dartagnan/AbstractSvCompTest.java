@@ -29,7 +29,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public abstract class AbstractSvCompTest {
 
-	public static final int TIMEOUT = 6000000;
+	public static final int TIMEOUT = 180000;
 
     private final String path;
     private final Wmm wmm;
