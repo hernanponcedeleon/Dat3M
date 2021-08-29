@@ -30,7 +30,7 @@ public class RMWStore extends Store implements RegReaderData {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
+    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         throw new RuntimeException("RMWStore cannot be unrolled: event must be generated during compilation");
     }
 }

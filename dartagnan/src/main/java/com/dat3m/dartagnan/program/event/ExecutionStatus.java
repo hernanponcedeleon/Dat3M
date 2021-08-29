@@ -66,7 +66,7 @@ public class ExecutionStatus extends Event implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
+    protected RecursiveAction unrollRecursive(int bound, Event predecessor, int depth) {
         throw new RuntimeException("ExecutionStatus cannot be unrolled: event must be generated during compilation");
     }
 }
