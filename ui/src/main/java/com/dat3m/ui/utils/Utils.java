@@ -12,8 +12,8 @@ public class Utils {
                 null,
                 msg,
                 title,
-                JOptionPane.ERROR_MESSAGE,
-                IconHelper.getIcon(IconCode.DAT3M, 60));
+                JOptionPane.ERROR_MESSAGE);
+//                IconHelper.getIcon(IconCode.DAT3M, 60));
     }
 
 	public static void showError(String msg){
