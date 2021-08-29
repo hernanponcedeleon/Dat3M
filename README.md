@@ -3,10 +3,6 @@
 
 # Dat3M: Memory Model Aware Verification
 
-<p align="center"> 
-<img src="ui/src/main/resources/dat3m.png">
-</p>
-
 **Dartagnan** is a tool to check state reachability under weak memory models.
 
 Requirements
