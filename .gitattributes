@@ -1,1 +1,3 @@
-dartagnan/src/test/resources/** linguist-vendored
+dartagnan/src/test/resources/** linguist-vendored=true
+benchmarks/** linguist-vendored=true
+
