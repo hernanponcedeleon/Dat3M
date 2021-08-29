@@ -41,7 +41,7 @@ public class Dat3M extends JFrame implements ActionListener {
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLayout(new BorderLayout());
-		setIconImage(IconHelper.getIcon(IconCode.DAT3M).getImage());
+//		setIconImage(IconHelper.getIcon(IconCode.DAT3M).getImage());
 
 		JMenuBar menuBar = new JMenuBar();
 		JMenu fileMenu = new JMenu("File");

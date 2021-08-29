@@ -53,7 +53,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         super(new GridLayout(1,0));
 
         int height = Math.min(getIconHeight(), (int) Math.round(Toolkit.getDefaultToolkit().getScreenSize().getHeight()) * 7 / 18);
-        iconPane = new JLabel(IconHelper.getIcon(IconCode.DARTAGNAN, height), JLabel.CENTER);
+        iconPane = new JLabel();
 
         aliasPane = new Selector<>(Alias.orderedValues(), ControlCode.ALIAS);
         aliasPane.setSelectedItem(Alias.getDefault());
