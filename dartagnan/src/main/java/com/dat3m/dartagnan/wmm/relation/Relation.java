@@ -176,9 +176,9 @@ public abstract class Relation implements Dependent<Relation> {
             e2 = temp;
         }
         BranchEquivalence eq = task.getBranchEquivalence();
-        if (eq.isImplied(e1, e2)) {
+        if (eq.isImplied(e1, e2) && e2.cfImpliesExec()) {
             return e1.exec();
-        } else if (eq.isImplied(e2 ,e1)) {
+        } else if (eq.isImplied(e2 ,e1) && e1.cfImpliesExec()) {
             return e2.exec();
         }
         return ctx.getFormulaManager().getBooleanFormulaManager().and(e1.exec(), e2.exec());
