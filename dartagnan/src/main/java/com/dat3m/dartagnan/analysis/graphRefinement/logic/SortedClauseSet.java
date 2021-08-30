@@ -306,7 +306,7 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
 
         @Override
         public int compare(Conjunction<Y> o1, Conjunction<Y> o2) {
-            if (o1 == o2)
+            if (o1.equals(o2))
                 return 0;
             int cmp = o1.getSize() - o2.getSize();
             return cmp != 0 ? cmp : (System.identityHashCode(o1) - System.identityHashCode(o2));
@@ -320,7 +320,7 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
 
         @Override
         public int compare(Conjunction<Y> o1, Conjunction<Y> o2) {
-            if (o1 == o2)
+            if (o1.equals(o2))
                 return 0;
             int cmp = o1.getResolutionComplexity() - o2.getResolutionComplexity();
             if (cmp == 0) {

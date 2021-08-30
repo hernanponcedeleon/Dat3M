@@ -155,16 +155,22 @@ public class Refinement {
 
 
         boolean isSat = !prover.isUnsat();
-        if (isSat && res == UNKNOWN) {
-            // We couldn't verify the found counterexample, nor exclude it.
-            System.out.println("PROCEDURE was inconclusive.");
-            return res;
-        } else if (isSat) {
-            // We found a true violation
-            System.out.println("Violation verified.");
+        if (REF_PRINT_STATISTICS) {
+            if (isSat && res == UNKNOWN) {
+                // We couldn't verify the found counterexample, nor exclude it.
+                System.out.println("PROCEDURE was inconclusive.");
+                return UNKNOWN;
+            } else if (isSat) {
+                // We found a true violation
+                System.out.println("Violation verified.");
+            } else {
+                // We showed safety but still need to verify bounds
+                System.out.println("Bounded safety proven.");
+            }
         } else {
-            // We showed safety but still need to verify bounds
-            System.out.println("Bounded safety proven.");
+            if (isSat && res == UNKNOWN) {
+                return UNKNOWN;
+            }
         }
 
         long boundCheckTime = 0;
