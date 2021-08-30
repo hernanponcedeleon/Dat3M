@@ -151,6 +151,7 @@ public class SafeCTest {
     @Test(timeout = TIMEOUT)
     public void testRefinement() {
     	assert(true);
+    	
 //        try (SolverContext ctx = TestHelper.createContext();
 //             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
 //        {
