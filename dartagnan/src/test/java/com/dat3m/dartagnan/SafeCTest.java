@@ -35,7 +35,7 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class SafeCTest {
 
-	static final int TIMEOUT = 300000;
+	static final int TIMEOUT = 600000;
 
     private final String path;
     private final Wmm wmm;
