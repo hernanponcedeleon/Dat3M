@@ -158,7 +158,7 @@ public class Refinement {
         if (REF_PRINT_STATISTICS) {
             if (isSat && res == UNKNOWN) {
                 // We couldn't verify the found counterexample, nor exclude it.
-                System.out.println("PROCEDURE was inconclusive.");
+                System.out.println("Procedure was inconclusive.");
                 return UNKNOWN;
             } else if (isSat) {
                 // We found a true violation

@@ -24,7 +24,7 @@ import com.google.common.collect.Maps;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm.findShortestPathBiDir;
+import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm.findShortestPath;
 
 
 //TODO: Check the usage of derivation length
@@ -352,7 +352,7 @@ public class Reasoner {
             EventGraph inner = graph.getDependencies().get(0);
             reason = Conjunction.TRUE;
             //TODO: Here might be a problem with the derivation length (will fix this later!)
-            List<Edge> path = findShortestPathBiDir(inner, edge.getFirst(), edge.getSecond(),  edge.getDerivationLength());
+            List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(),  edge.getDerivationLength());
             for (Edge e : path) {
                 reason = reason.and(inner.accept(this, e, unused));
             }

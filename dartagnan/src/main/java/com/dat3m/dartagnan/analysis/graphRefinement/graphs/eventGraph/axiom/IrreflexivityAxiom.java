@@ -11,12 +11,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//TODO: Track actual violating edges
-// To support further search after finding some violations
-// we might want to store violations only until
-// they are processed and remove them again (even if they still exist in the underlying graph)
-// Alternatively, we should store both: past violations (processed but still present)
-// and new violations (unprocessed)
 public class IrreflexivityAxiom extends GraphAxiom {
 
     private final List<Edge> violatingEdges = new ArrayList<>();

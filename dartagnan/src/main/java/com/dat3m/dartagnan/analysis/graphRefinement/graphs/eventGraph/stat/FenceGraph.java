@@ -76,7 +76,8 @@ public class FenceGraph extends StaticEventGraph {
         if (dir == EdgeDirection.Outgoing) {
             EventData fence = getNextFence(e);
             return fence == null ? Stream.empty() :
-                    threadEvents.subList(fence.getLocalId() + 1, threadEvents.size()).stream().map(x -> new Edge(e, x));
+                    threadEvents.subList(fence.getLocalId() + 1, threadEvents.size())
+                            .stream().map(x -> new Edge(e, x));
         } else {
             EventData fence = getPreviousFence(e);
             return fence == null ? Stream.empty() :

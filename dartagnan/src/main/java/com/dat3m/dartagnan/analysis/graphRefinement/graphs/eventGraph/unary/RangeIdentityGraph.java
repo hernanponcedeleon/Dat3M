@@ -36,8 +36,10 @@ public class RangeIdentityGraph extends MaterializedGraph {
     @Override
     public Collection<Edge> forwardPropagate(EventGraph changedGraph, Collection<Edge> addedEdges) {
         if (changedGraph == inner) {
-            addedEdges = addedEdges.stream().map(this::derive)
-                    .filter(simpleGraph::add).collect(Collectors.toList());
+            addedEdges = addedEdges.stream()
+                    .map(this::derive)
+                    .filter(simpleGraph::add)
+                    .collect(Collectors.toList());
         } else {
             addedEdges.clear();
         }

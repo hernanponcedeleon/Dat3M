@@ -66,6 +66,10 @@ public class ExecutionGraph {
     private EventGraph rfGraph;
     private EventGraph coGraph;
     private EventGraph locGraph;
+
+    /*
+        A non-transitive version of <coGraph> that is maintained by the Saturation procedure.
+     */
     private EventGraph woGraph;
 
     // =================================================
@@ -196,8 +200,9 @@ public class ExecutionGraph {
     }
 
     private EventGraph getGraphFromRelation(Relation rel) {
-        if (relationGraphMap.containsKey(rel))
+        if (relationGraphMap.containsKey(rel)) {
             return relationGraphMap.get(rel);
+        }
 
         EventGraph graph = null;
         Class<?> relClass = rel.getClass();
@@ -217,6 +222,8 @@ public class ExecutionGraph {
                 case "crit":
                     graph = new RcuGraph();
                     break;
+                default:
+                    throw new UnsupportedOperationException(rel.getName() + " is marked as special relation but has associated graph.");
             }
         } else if (relClass == RelRf.class) {
             graph = rfGraph = new ReadFromGraph();
@@ -234,41 +241,46 @@ public class ExecutionGraph {
             recGraph.setConcreteGraph(getGraphFromRelation(rel.getInner()));
             return recGraph;
         } else if (rel.isUnaryRelation()) {
-            EventGraph inner = getGraphFromRelation(rel.getInner());
+            Relation innerRelation = rel.getInner();
+            EventGraph innerGraph = getGraphFromRelation(innerRelation);
             // A safety check because recursion might compute this edge set
-            if (relationGraphMap.containsKey(rel))
+            if (relationGraphMap.containsKey(rel)) {
                 return relationGraphMap.get(rel);
+            }
 
             if (relClass == RelInverse.class) {
-                graph = new InverseGraph(inner);
+                graph = new InverseGraph(innerGraph);
             } else if (relClass == RelTrans.class) {
-                graph = new TransitiveGraph(inner);
+                graph = new TransitiveGraph(innerGraph);
             } else if (relClass == RelRangeIdentity.class) {
-                graph = new RangeIdentityGraph(inner);
+                graph = new RangeIdentityGraph(innerGraph);
             } else if (relClass == RelTransRef.class) {
-                RelTrans relTrans = new RelTrans(rel.getInner());
+                RelTrans relTrans = new RelTrans(innerRelation);
                 relTrans.initialise(verificationTask, null); // A little sketchy
                 EventGraph transGraph = getGraphFromRelation(relTrans);
                 graph = new ReflexiveClosureGraph(transGraph);
+            } else {
+                throw new UnsupportedOperationException(relClass.toString() + " has not associated graph yet.");
             }
         } else if (rel.isBinaryRelation()) {
             EventGraph first = getGraphFromRelation(rel.getFirst());
             EventGraph second = getGraphFromRelation(rel.getSecond());
 
             // Might be the case when recursion is in play
-            if (relationGraphMap.containsKey(rel))
+            if (relationGraphMap.containsKey(rel)) {
                 return relationGraphMap.get(rel);
+            }
 
             if (relClass == RelUnion.class) {
-                //graph = new UnionGraph(first, second);
                 graph = new MatUnionGraph(first, second);
             } else if (relClass == RelIntersection.class) {
-                //graph = new IntersectionGraph(first, second);
                 graph = new MatIntersectionGraph(first, second);
             } else if (relClass == RelComposition.class) {
                 graph = new CompositionGraph(first, second);
             } else if (relClass == RelMinus.class) {
                 graph = new DifferenceGraph(first, second);
+            } else {
+                throw new UnsupportedOperationException(relClass.toString() + " has not associated graph yet.");
             }
         } else if (rel.isStaticRelation()) {
             if (relClass == RelCartesian.class) {
@@ -293,7 +305,8 @@ public class ExecutionGraph {
                 graph = new StaticDefaultEventGraph(rel);
             }
         } else {
-            throw new RuntimeException(new ClassNotFoundException(relClass.toString() + " is no supported relation class"));
+            throw new UnsupportedOperationException(relClass.toString() + " has not associated graph yet.");
+            //throw new RuntimeException(new ClassNotFoundException(relClass.toString() + " is no supported relation class"));
         }
 
         graph.setName(rel.getName());

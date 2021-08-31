@@ -32,12 +32,10 @@ public class SetIdentityGraph extends StaticEventGraph {
     @Override
     public void constructFromModel(ExecutionModel model) {
         super.constructFromModel(model);
-        events.clear();;
-
-        for (EventData e : model.getEventList()) {
-            if (filter.filter(e.getEvent()))
-                events.add(e);
-        }
+        events.clear();
+        model.getEventList().stream()
+                .filter(e -> filter.filter(e.getEvent()))
+                .forEach(events::add);
         this.size = events.size();
     }
 

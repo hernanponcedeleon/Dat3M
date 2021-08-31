@@ -3,14 +3,12 @@ package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MaterializedGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
-import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
-import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 // Used for static relations that are not yet implemented explicitly
 public class StaticDefaultEventGraph extends MaterializedGraph {
@@ -33,12 +31,9 @@ public class StaticDefaultEventGraph extends MaterializedGraph {
     @Override
     public void constructFromModel(ExecutionModel model) {
         super.constructFromModel(model);
-        TupleSet maxTupleSet = relation.getMaxTupleSet();
-        for (Tuple tuple : maxTupleSet) {
-            Edge e = model.getEdge(tuple);
-            if (e != null) {
-                simpleGraph.add(e);
-            }
-        }
+        relation.getMaxTupleSet().stream()
+                .map(model::getEdge)
+                .filter(Objects::nonNull)
+                .forEach(simpleGraph::add);
     }
 }

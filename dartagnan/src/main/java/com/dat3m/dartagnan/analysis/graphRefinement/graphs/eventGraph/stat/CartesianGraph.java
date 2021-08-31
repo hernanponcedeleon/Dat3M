@@ -43,10 +43,12 @@ public class CartesianGraph extends StaticEventGraph {
         secondEvents.clear();
 
         for (EventData e : model.getEventList()) {
-            if (first.filter(e.getEvent()))
+            if (first.filter(e.getEvent())) {
                 firstEvents.add(e);
-            if (second.filter(e.getEvent()))
+            }
+            if (second.filter(e.getEvent())) {
                 secondEvents.add(e);
+            }
         }
         size = firstEvents.size() * secondEvents.size();
     }

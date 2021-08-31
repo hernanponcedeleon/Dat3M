@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 
-// NOT used right now!
+// NOT used right now! The materialized version seems to perform better
 public class Subgraph extends AbstractEventGraph {
 
 

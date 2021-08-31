@@ -28,6 +28,7 @@ public abstract class GraphAxiom implements GraphListener, Dependent<EventGraph>
     }
 
     public abstract boolean checkForViolations();
+
     public abstract List<List<Edge>> getViolations();
 
 }

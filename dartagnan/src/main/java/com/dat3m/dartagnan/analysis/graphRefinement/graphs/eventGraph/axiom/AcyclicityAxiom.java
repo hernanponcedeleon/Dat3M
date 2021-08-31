@@ -1,18 +1,15 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.MatSubgraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
 import java.util.*;
 import java.util.stream.Stream;
-
-import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm.findShortestPathBiDir;
 
 public class AcyclicityAxiom extends GraphAxiom {
 
@@ -54,7 +51,7 @@ public class AcyclicityAxiom extends GraphAxiom {
             Set<EventData> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
                 EventData e = nodes.stream().findAny().get();
-                List<Edge> cycle = findShortestPathBiDir(subgraph, e, e);
+                List<Edge> cycle = PathAlgorithm.findShortestPath(subgraph, e, e);
                 cycle.forEach(edge -> nodes.remove(edge.getFirst()));
                 cycles.add(cycle);
             }
@@ -160,10 +157,6 @@ public class AcyclicityAxiom extends GraphAxiom {
         public Stream<EventNode> successorStream() {
             final EventNode[] nodeMap = AcyclicityAxiom.this.nodeMap;
             return inner.outEdgeStream(event).map(e -> nodeMap[e.getSecond().getId()]);
-        }
-
-        public Iterable<EventNode> getSuccessors() {
-            return OneTimeIterable.create(Iterators.transform(inner.outEdgeIterator(event), x -> nodeMap[x.getSecond().getId()]));
         }
 
         public void reset() {

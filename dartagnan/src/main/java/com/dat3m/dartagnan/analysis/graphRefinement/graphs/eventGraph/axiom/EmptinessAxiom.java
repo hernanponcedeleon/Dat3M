@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,6 @@ public class EmptinessAxiom extends GraphAxiom {
 
     @Override
     public List<List<Edge>> getViolations() {
-        return violatingEdges.stream().map(List::of).collect(Collectors.toList());
+        return violatingEdges.stream().map(Collections::singletonList).collect(Collectors.toList());
     }
 }

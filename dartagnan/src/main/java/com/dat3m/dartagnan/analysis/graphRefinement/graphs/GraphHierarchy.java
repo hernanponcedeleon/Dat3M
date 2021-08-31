@@ -26,7 +26,8 @@ public class GraphHierarchy {
 
     public GraphHierarchy(Set<EventGraph> eventGraphs) {
         dependencyGraph = DependencyGraph.from(eventGraphs);
-        graphListenersMap = new HashMap<>(dependencyGraph.getNodeContents().size() * 4 / 3);
+        // The hashmap is created with a special load factor and capacity to avoid resizing.
+        graphListenersMap = new HashMap<>(dependencyGraph.getNodeContents().size() * 4 / 3, 0.75f);
         dependencyGraph.getNodeContents().forEach(x -> graphListenersMap.put(x, new HashSet<>()));
     }
 
