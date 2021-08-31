@@ -48,7 +48,7 @@ public enum Method {
 			case ASSUME:
             	return "Solver with Assumption";
             case REFINEMENT:
-            	return "Graph-based refinement";
+            	return "Graph-based Refinement";
         }
         throw new UnsupportedOperationException("Unrecognized analysis " + this);
 	}
