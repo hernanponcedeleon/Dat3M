@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base.stat;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
+
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
@@ -9,7 +11,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 public class RelId extends StaticRelation {
 
     public RelId(){
-        term = "id";
+        term = ID;
     }
 
     @Override

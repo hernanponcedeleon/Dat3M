@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.wmm.relation.base;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CRIT;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -16,7 +18,7 @@ public class RelCrit extends StaticRelation {
     //TODO: We can optimize this a lot by using branching analysis
 
     public RelCrit(){
-        term = "crit";
+        term = CRIT;
     }
 
     @Override

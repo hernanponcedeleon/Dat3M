@@ -7,13 +7,15 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.INT;
+
 import java.util.List;
 import java.util.ListIterator;
 
 public class RelInt extends StaticRelation {
 
     public RelInt(){
-        term = "int";
+        term = INT;
     }
 
     @Override

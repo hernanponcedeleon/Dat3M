@@ -12,6 +12,11 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ADDRDIRECT;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+
 import java.util.*;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -24,7 +29,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
  */
 public class Wmm {
 
-    private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
+    private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();
@@ -115,8 +120,9 @@ public class Wmm {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for(String relName : baseRelations){
-            if (relName.equals("co"))
+            if (relName.equals(CO)) {
                 continue;
+            }
             relationRepository.getRelation(relName).getMaxTupleSet();
             enc = bmgr.and(enc, relationRepository.getRelation(relName).encode(ctx));
         }

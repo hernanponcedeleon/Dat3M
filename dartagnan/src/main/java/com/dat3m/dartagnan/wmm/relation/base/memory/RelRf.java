@@ -34,6 +34,7 @@ import static com.dat3m.dartagnan.program.utils.EType.RMW;
 import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
 public class RelRf extends Relation {
@@ -41,7 +42,7 @@ public class RelRf extends Relation {
 	private static final Logger logger = LogManager.getLogger(RelRf.class);
 
     public RelRf(){
-        term = "rf";
+        term = RF;
         forceDoEncode = true;
     }
 
