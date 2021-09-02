@@ -75,8 +75,8 @@ public class BExprUn extends BExpr {
     }
 
 	@Override
-	public IConst reduce() {
-		return new IConst(b.reduce().getIntValue(), -1);
+	public ExprInterface reduce() {
+		return new BConst(!((BConst)b.reduce()).getValue());
 	}
 
     @Override

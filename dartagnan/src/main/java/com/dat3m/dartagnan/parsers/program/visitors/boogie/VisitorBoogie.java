@@ -159,7 +159,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Address && ((Atom)exp).getOp().equals(EQ)) {
  			Address add = (Address)((Atom)exp).getLHS();
  			ExprInterface def = ((Atom)exp).getRHS();
- 			add.setConstantValue(def.reduce().getValue());
+ 			add.setConstantValue(((IConst)def.reduce()).getValue());
  		}
 		return null;
 	}
@@ -431,7 +431,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
 			if(initMode) {
-				programBuilder.initLocEqConst(name, value.reduce());
+				programBuilder.initLocEqConst(name, (IConst)value.reduce());
 				continue;
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
@@ -682,7 +682,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				ExprInterface lhs = address;
 				BigInteger rhs = BigInteger.ZERO;
 				while(lhs instanceof IExprBin) {
-					rhs = rhs.add(((IExprBin)lhs).getRHS().reduce().getIntValue());
+					rhs = rhs.add(((IConst)((IExprBin)lhs).getRHS().reduce()).getIntValue());
 					lhs = ((IExprBin)lhs).getLHS();
 				}
 				String text = ctx.expr(1).getText();				
@@ -694,7 +694,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> implements BoogieVi
 				if(!rhs.equals(BigInteger.ZERO)) {
 					text += "(" + rhs + ")";
 				}
-				programBuilder.initLocEqConst(text, value.reduce());
+				programBuilder.initLocEqConst(text, (IConst)value.reduce());
 				return null;
 			}
 			Store child = EventFactory.newStore(address, value, null, currentLine);

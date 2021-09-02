@@ -79,7 +79,7 @@ public class IConst extends IExpr implements ExprInterface {
     }
 
 	@Override
-	public IConst reduce() {
+	public ExprInterface reduce() {
 		return this;
 	}
 	

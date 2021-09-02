@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.program.utils.ParsingException;
 import com.dat3m.dartagnan.program.EventFactory;
@@ -19,8 +18,6 @@ import java.util.List;
 public class StdProcedures {
 	
 	public static List<String> STDPROCEDURES = Arrays.asList(
-			"WRITE_ONCE",
-			"READ_ONCE",
 			"external_alloc",
 			"$alloc",
 			"__assert_rtn",
@@ -45,19 +42,6 @@ public class StdProcedures {
 	
 	public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
 		String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-		if(name.startsWith("WRITE_ONCE")) {
-			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
-			ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr(1).accept(visitor);
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newStore(address, value, "NA"));
-			return;
-		}
-//		if(name.startsWith("READ_ONCE")) {
-//			System.out.println(ctx.getText());
-//			IExpr address = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
-//			ExprInterface value = (ExprInterface)ctx.call_params().exprs().expr(1).accept(visitor);
-//			visitor.programBuilder.addChild(visitor.threadCount, new Store(address, value, "NA"));
-//			return;
-//		}
 		if(name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc") || name.equals("external_alloc") ) {
 			alloc(visitor, ctx);
 			return;
@@ -116,7 +100,7 @@ public class StdProcedures {
 	private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
 		int size;
 		try {
-			size = ((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getIntValue().intValue();
+			size = ((IConst)((ExprInterface)ctx.call_params().exprs().expr(0).accept(visitor)).reduce()).getIntValue().intValue();
 		} catch (Exception e) {
 			String tmp = ctx.call_params().getText();
 			tmp = tmp.contains(",") ? tmp.substring(0, tmp.indexOf(',')) : tmp.substring(0, tmp.indexOf(')')); 

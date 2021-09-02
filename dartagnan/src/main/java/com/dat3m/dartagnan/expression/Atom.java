@@ -84,27 +84,47 @@ public class Atom extends BExpr implements ExprInterface {
     }
 
     @Override
-	public IConst reduce() {
-    	BigInteger v1 = lhs.reduce().getIntValue();
-    	BigInteger v2 = rhs.reduce().getIntValue();
-        switch(op) {
-        case EQ:
-            return new IConst(v1.compareTo(v2) == 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case NEQ:
-            return new IConst(v1.compareTo(v2) != 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case LT:
-        case ULT:
-            return new IConst(v1.compareTo(v2) < 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case LTE:
-        case ULTE:
-            return new IConst(v1.compareTo(v2) <= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case GT:
-        case UGT:
-            return new IConst(v1.compareTo(v2) > 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        case GTE:
-        case UGTE:
-            return new IConst(v1.compareTo(v2) >= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
-        }
+	public ExprInterface reduce() {
+    	ExprInterface e1 = lhs.reduce();
+    	ExprInterface e2 = rhs.reduce();
+    	// Reduction for IExpr
+    	if(e1 instanceof IConst && e2 instanceof IConst) {
+        	BigInteger v1 = ((IConst)e1).getIntValue();
+        	BigInteger v2 = ((IConst)e2).getIntValue();
+            switch(op) {
+            	case EQ:
+            		return new IConst(v1.compareTo(v2) == 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+            	case NEQ:
+            		return new IConst(v1.compareTo(v2) != 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	            case LT:
+	            case ULT:
+	                return new IConst(v1.compareTo(v2) < 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	            case LTE:
+	            case ULTE:
+	                return new IConst(v1.compareTo(v2) <= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	            case GT:
+	            case UGT:
+	                return new IConst(v1.compareTo(v2) > 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	            case GTE:
+	            case UGTE:
+	                return new IConst(v1.compareTo(v2) >= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	            default:
+	                throw new UnsupportedOperationException("Reduce not supported for " + this);
+            }            
+    	}
+    	// Reduction for BExpr
+    	if(e1 instanceof BConst && e2 instanceof BConst) {
+        	boolean v1 = ((BConst)e1).getValue();
+        	boolean v2 = ((BConst)e2).getValue();
+            switch(op) {
+	            case EQ:
+	            	return new BConst(v1 == v2);
+	            case NEQ:
+	            	return new BConst(v1 != v2);
+	            default:
+	                throw new UnsupportedOperationException("Reduce not supported for " + this);
+            }
+    	}
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 

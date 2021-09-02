@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.event.Event;
 
 public interface ExprInterface {
 
-	IConst reduce();
+	ExprInterface reduce();
 	
     Formula toIntFormula(Event e, SolverContext ctx);
 

@@ -19,7 +19,7 @@ public class BNonDet extends BExpr implements ExprInterface {
 	}
 	
 	@Override
-	public IConst reduce() {
+	public ExprInterface reduce() {
         throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 

@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.program.utils.Utils;
 import com.dat3m.dartagnan.utils.recursion.RecursiveAction;
 import com.dat3m.dartagnan.utils.recursion.RecursiveFunction;
 import com.dat3m.dartagnan.wmm.utils.Arch;
@@ -50,8 +49,15 @@ public class CondJump extends Event implements RegReaderData {
     }
     
     public boolean isGoto() {
-    	SolverContext defaultCtx = Utils.getDefaultCtx();
-        return defaultCtx.getFormulaManager().getBooleanFormulaManager().isTrue(expr.toBoolFormula(this, defaultCtx));
+    	// This is an under-approximation
+    	// We do not detect cases like CondJump(2*x==x+x,label) as jumps
+    	// However treating those (unusual) as jumps should not break anything
+    	try {
+    		return ((BConst)expr.reduce()).getValue();	
+    	} catch (Exception e) {
+    		// "Complex" expressions cannot be reduced and thus they are trivially not true.
+    		return false;
+		}
     }
     
     public Label getLabel(){

@@ -62,10 +62,10 @@ public class IExprUn extends IExpr {
     }
 
     @Override
-	public IConst reduce() {
+	public ExprInterface reduce() {
         switch(op){
 			case MINUS:
-				return new IConst(b.reduce().getIntValue().negate(), b.getPrecision());
+				return new IConst(((IConst)b.reduce()).getIntValue().negate(), b.getPrecision());
 			case BV2UINT:
 			case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
 			case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:
