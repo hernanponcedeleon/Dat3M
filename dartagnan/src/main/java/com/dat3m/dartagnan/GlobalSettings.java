@@ -34,7 +34,7 @@ public class GlobalSettings {
 
     // ==== Refinement ====
     public static final int REFINEMENT_MAX_SATURATION_DEPTH = 2;
-    public static final boolean REFINEMENT_PRINT_STATISTICS = false;
+    //public static final boolean REFINEMENT_PRINT_STATISTICS = true;
     public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
     public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
 
@@ -67,7 +67,6 @@ public class GlobalSettings {
 
     	// Refinement data
         logger.info("REFINEMENT_MAX_SATURATION_DEPTH: " + REFINEMENT_MAX_SATURATION_DEPTH);
-    	logger.info("REFINEMENT_PRINT_STATISTICS: " + REFINEMENT_PRINT_STATISTICS);
     	logger.info("REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM: " + REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM);
     	logger.info("REFINEMENT_ADD_ACYCLIC_DEP_RF: " + REFINEMENT_ADD_ACYCLIC_DEP_RF);
     	logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
