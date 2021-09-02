@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.verification.model.EventData;
 /*
 This encodes events as literals. An event literal is simply the events exec-variable.
  */
-public class EventLiteral implements CoreLiteral {
+public class EventLiteral extends AbstractLiteral {
 
     private final EventData eventData;
 
@@ -38,13 +38,4 @@ public class EventLiteral implements CoreLiteral {
         return eventData.toString();
     }
 
-    @Override
-    public boolean hasOpposite() {
-        return false;
-    }
-
-    @Override
-    public CoreLiteral getOpposite() {
-        return null;
-    }
 }

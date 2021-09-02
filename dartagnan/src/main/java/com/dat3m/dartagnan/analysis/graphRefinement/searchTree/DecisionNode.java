@@ -20,16 +20,6 @@ public class DecisionNode extends SearchNode {
         negative.setParent(this);
     }
 
-    public void appendPositive(SearchNode node) {
-        positive = node;
-        node.parent = this;
-    }
-
-    public void appendNegative(SearchNode node) {
-        negative = node;
-        node.parent = this;
-    }
-
     @Override
     protected SearchNode copy() {
         DecisionNode copy = new DecisionNode(edge);

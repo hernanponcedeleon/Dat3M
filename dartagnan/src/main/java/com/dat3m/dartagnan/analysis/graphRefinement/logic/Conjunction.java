@@ -9,14 +9,17 @@ import java.util.stream.Collectors;
 // The ordering is based on set inclusion. TRUE is least element, FALSE is largest element
 public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjunction<T>>
 {
-    public static final Conjunction TRUE;
-    public static final Conjunction FALSE;
+    private static final Conjunction TRUE;
+    private static final Conjunction FALSE;
 
     static {
         TRUE = new Conjunction(new HashSet());
         FALSE = new Conjunction(new HashSet());
         FALSE.unsat = true;
     }
+
+    public static <V extends Literal<V>> Conjunction<V> TRUE() { return TRUE; }
+    public static <V extends Literal<V>> Conjunction<V> FALSE() { return FALSE; }
 
     // Using an ordered list for the literals is better!
     private final Set<T> literals;
@@ -58,36 +61,33 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
 
     protected Conjunction(HashSet<T> literals, boolean reduce) {
         this.literals = literals;
-        if (reduce)
+        if (reduce) {
             reduce();
+        }
         computeHash();
     }
 
     protected void reduce() {
-        for (T literal : literals)
-            if (literal.hasOpposite() && literals.contains(literal.getOpposite())) {
-                unsat = true;
-                literals.clear();
-                break;
-            }
+        if (literals.stream().anyMatch(lit -> lit.hasOpposite() && literals.contains(lit.getOpposite()))) {
+            unsat = true;
+            literals.clear();
+        }
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null || !(obj.getClass() == this.getClass()))
+        } else if (obj == null || !(obj.getClass() == this.getClass())) {
             return false;
+        }
 
         Conjunction<T> other = (Conjunction<T>)obj;
-        if (this.hashCode != other.hashCode)
+        if (this.hashCode != other.hashCode || this.literals.size() != other.literals.size()) {
             return false;
+        }
 
-        if (this.literals.size() != other.literals.size())
-            return false;
-        if (literals.isEmpty())
-            return unsat == other.unsat;
-        return literals.containsAll(other.literals);
+        return literals.isEmpty() ? (unsat == other.unsat) : literals.containsAll(other.literals);
     }
 
     @Override
@@ -117,42 +117,46 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     }
 
     public boolean isProperSubclauseOf(Conjunction<T> other) {
-        if (this.literals.size() >= other.literals.size())
+        if (this.literals.size() >= other.literals.size()) {
             return false;
+        }
         return other.literals.containsAll(this.literals);
     }
 
     @Override
     public OrderResult compareToPartial(Conjunction<T> other) {
-        if (equals(other))
+        if (equals(other)) {
             return OrderResult.EQ;
-        if (this.isFalse())
+        } else if (this.isFalse()) {
             return OrderResult.GT;
-        if (other.isFalse())
+        } else if (other.isFalse()) {
             return OrderResult.LT;
-        if (this.getSize() == other.getSize())
+        } else if (this.getSize() == other.getSize()) {
             return OrderResult.INCOMP;
-        if (this.getSize() < other.getSize())
+        } else if (this.getSize() < other.getSize()) {
             return other.getLiterals().containsAll(this.getLiterals()) ? OrderResult.LT : OrderResult.INCOMP;
+        }
 
         return this.getLiterals().containsAll(other.getLiterals()) ? OrderResult.GT : OrderResult.INCOMP;
     }
 
     public Conjunction<T> and(Conjunction<T> other) {
-        if (this.isFalse() || other.isFalse())
-            return FALSE;
-        if (this.isTrue())
-            return other.isTrue() ? TRUE : other;
-        if (other.isTrue())
+        if (this.isFalse() || other.isFalse()) {
+            return FALSE();
+        } else if (this.isTrue()) {
+            return other.isTrue() ? TRUE() : other;
+        } else if (other.isTrue()) {
             return this;
-        if (this.canResolve(other))
-            return FALSE;
+        } else if (this.canResolve(other)) {
+            return FALSE();
+        }
 
         OrderResult cmp = this.compareToPartial(other);
-        if (cmp == OrderResult.EQ || cmp == OrderResult.GT)
+        if (cmp == OrderResult.EQ || cmp == OrderResult.GT) {
             return this;
-        if (cmp == OrderResult.LT)
+        } else if (cmp == OrderResult.LT) {
             return other;
+        }
 
         HashSet<T> result = new HashSet<>(this.getSize() + other.getSize());
         result.addAll(this.getLiterals());
@@ -163,10 +167,11 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
 
     // Note: returns null, if there is no resolvent
     public Conjunction<T> resolveOn(Conjunction<T> other, T literal) {
-        if (!literal.hasOpposite())
-            return FALSE; // Maybe throw argument exception?
-        if (this.isFalse() || other.isFalse())
-            return FALSE;
+        if (!literal.hasOpposite()) {
+            return FALSE(); // Maybe throw argument exception?
+        } else if (this.isFalse() || other.isFalse()) {
+            return FALSE();
+        }
 
         T opposite = literal.getOpposite();
         if (literals.contains(literal) && other.literals.contains(opposite)
@@ -177,25 +182,23 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
             result.remove(opposite);
             return new Conjunction<T>(result, true);
         }
-        return FALSE;
+        return FALSE();
     }
 
     public Conjunction<T> removeIf(Predicate<T> pred) {
         HashSet<T> result = new HashSet<>(this.getSize());
-        for (T literal : literals) {
-            if (!pred.test(literal))
-                result.add(literal);
-        }
+        literals.stream().filter(Predicate.not(pred)).forEach(result::add);
         return new Conjunction<>(result, false);
     }
 
     public Conjunction<T> resolve(Conjunction<T> other) {
-        if (this.isFalse() || other.isFalse())
-            return FALSE;
-        if (this.isTrue() || other.isTrue())
-            return TRUE;
-        if (this.equals(other))
+        if (this.isFalse() || other.isFalse()) {
+            return FALSE();
+        } else if (this.isTrue() || other.isTrue()) {
+            return TRUE();
+        } else if (this.equals(other)) {
             return this;
+        }
 
         Conjunction<T> a = this;
         Conjunction<T> b = other;
@@ -204,11 +207,12 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
             b = this;
         }
 
-        for (T literal : a.getLiterals()) {
-            if (literal.hasOpposite() && b.getLiterals().contains(literal.getOpposite()))
-                return resolveOn(other, literal);
-        }
-        return FALSE;
+        Set<T> bLits = b.getLiterals();
+        return a.getLiterals().stream()
+                .filter(lit -> lit.hasOpposite() && bLits.contains(lit.getOpposite()))
+                .findFirst()
+                .map(lit -> resolveOn(other, lit))
+                .orElse(FALSE());
     }
 
     public boolean canResolve(Conjunction<T> other) {
@@ -219,15 +223,11 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
             b = this;
         }
 
-        for (T literal : a.getLiterals()) {
-            if (literal.hasOpposite() && b.getLiterals().contains(literal.getOpposite()))
-                return true;
-        }
-        return false;
+        Set<T> bLits = b.getLiterals();
+        return a.getLiterals().stream().anyMatch(lit -> lit.hasOpposite() && bLits.contains(lit.getOpposite()));
     }
 
     public List<T> toList() {
-       // return Arrays.asList((T[])literals.toArray());
         return new ArrayList<>(literals);
     }
 

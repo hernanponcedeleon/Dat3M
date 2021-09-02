@@ -60,7 +60,7 @@ public class GraphHierarchy {
                 initRecursively(recGrp.stream().findAny().get(), executionModel, recGrp, new HashSet<>());
 
                 // For all recursive relations, initialize the propagation
-                //TODO: Maybe copy all graphs into a new set and reuse that set
+                //TODO: Maybe copy all recursive graphs into a new set and reuse that set
                 recGrp.stream().filter(x -> x instanceof RecursiveGraph).forEach(x -> {
                     for(EventGraph dep : x.getDependencies()) {
                         createPropagationTask(dep, x, new ArrayList<>(dep.setView()), 0);

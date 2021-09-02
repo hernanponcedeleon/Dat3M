@@ -18,7 +18,7 @@ public class RefinementResult {
 
     public RefinementResult() {
         status = RefinementStatus.INCONCLUSIVE;
-        violations = DNF.FALSE;
+        violations = DNF.FALSE();
     }
 
 }

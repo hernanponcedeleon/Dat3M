@@ -12,6 +12,6 @@ public abstract class AbstractLiteral implements CoreLiteral {
 
     @Override
     public CoreLiteral getOpposite() {
-        return null;
+        throw new UnsupportedOperationException(this + " has no opposing literals.");
     }
 }

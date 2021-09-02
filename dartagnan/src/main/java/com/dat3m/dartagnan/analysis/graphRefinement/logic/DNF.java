@@ -7,13 +7,17 @@ import java.util.*;
 // The ordering is based on set inclusion. FALSE is least element. No largest element is defined
 public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
-    public static final DNF FALSE;
-    public static final DNF TRUE;
+    private static final DNF FALSE;
+    private static final DNF TRUE;
 
     static {
         FALSE = new DNF(Collections.EMPTY_SET);
-        TRUE = new DNF(Conjunction.TRUE);
+        TRUE = new DNF(Conjunction.TRUE());
     }
+
+
+    public static <V extends Literal<V>> DNF<V> TRUE() { return TRUE; }
+    public static <V extends Literal<V>> DNF<V> FALSE() { return FALSE; }
 
     // Using a sorted list is better (e.g. sorted by size)
     private final Set<Conjunction<T>> cubes;
@@ -30,8 +34,9 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
     public int getSize() {
         int size = 0;
-        for (Conjunction<T> cube : cubes)
+        for (Conjunction<T> cube : cubes) {
             size += cube.getSize();
+        }
         return size;
     }
 
@@ -40,8 +45,9 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
     }
 
     // Note: This class does not reduce disjunctions of the form "p or not p" to true.
-    public boolean isTriviallyTrue() { return this.equals(TRUE);}
-
+    public boolean isTriviallyTrue() {
+        return this.equals(TRUE);
+    }
 
     public DNF(T literal) {
         this(new Conjunction<>(literal));
@@ -72,14 +78,15 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
     protected DNF(Set<Conjunction<T>> cubes, boolean reduce) {
         this.cubes = cubes;
-        if (reduce)
+        if (reduce) {
             reduce();
+        }
         computeHash();
     }
 
     // Keeps the DNF minimal (without self-subsumption or any other advanced techniques)
     private void reduce() {
-        for (Iterator<Conjunction<T>> it = cubes.iterator(); it.hasNext();) {
+        for (Iterator<Conjunction<T>> it = cubes.iterator(); it.hasNext(); ) {
             Conjunction<T> cube = it.next();
             if (cube.isFalse()) {
                 it.remove();
@@ -88,13 +95,14 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
             boolean isDominated = false;
             for (Conjunction<T> cube2 : cubes) {
-                if (cube.compareToPartial(cube2) == OrderResult.GT){
+                if (cube.compareToPartial(cube2) == OrderResult.GT) {
                     isDominated = true;
                     break;
                 }
             }
-            if (isDominated)
+            if (isDominated) {
                 it.remove();
+            }
         }
     }
 
@@ -104,40 +112,43 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
     }
 
     private void computeHash() {
-        // We do not use the default implementation
         hashCode = 1;
-        for (Conjunction<T> cube : cubes)
-            hashCode *= cube.hashCode(); // Use * instead of + (important!)
-        // We assume for now that cube.hashCode() never returns 0
+        for (Conjunction<T> cube : cubes) {
+            int cubeHash = cube.hashCode();
+            assert (cube.isTrue() || cubeHash != 0);
+            hashCode *= cubeHash; // Use * instead of + (important!)
+            // We assume for now that cube.hashCode() never returns 0
+        }
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null || obj.getClass() != DNF.class)
+        } else if (obj == null || obj.getClass() != DNF.class) {
             return false;
+        }
 
-        DNF<T> other = (DNF<T>)obj;
+        DNF<T> other = (DNF<T>) obj;
 
-        if (this.hashCode != other.hashCode)
+        if (this.hashCode != other.hashCode
+                || this.getNumberOfClauses() != other.getNumberOfClauses()
+                || this.getSize() != other.getSize()) {
             return false;
-        if (this.getNumberOfClauses() != other.getNumberOfClauses())
-            return false;
-        if (this.getSize() != other.getSize())
-            return false;
+        }
 
         return this.cubes.containsAll(other.cubes);
     }
 
     @Override
     public OrderResult compareToPartial(DNF<T> other) {
-        if (equals(other))
+        if (equals(other)) {
             return OrderResult.EQ;
-        if (this.isFalse() || other.isTriviallyTrue())
+        } else if (this.isFalse() || other.isTriviallyTrue()) {
             return OrderResult.LT;
-        if (other.isFalse() || this.isTriviallyTrue())
+        } else if (other.isFalse() || this.isTriviallyTrue()) {
             return OrderResult.GT;
+        }
 
         boolean isLessThan = true;
         for (Conjunction<T> cube1 : this.cubes) {
@@ -159,8 +170,9 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
         }
 
         // We are returning here with the assumption that equality is not possible
-        if (isLessThan)
+        if (isLessThan) {
             return OrderResult.LT;
+        }
 
 
         // Same code as above but with roles swapped
@@ -183,8 +195,9 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
             }
         }
 
-        if (isGreaterThan)
+        if (isGreaterThan) {
             return OrderResult.GT;
+        }
 
         return OrderResult.INCOMP;
     }
@@ -202,15 +215,10 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
     }
 
     public DNF<T> remove(Collection<Conjunction<T>> cubes) {
-        if (this.isTriviallyTrue() || this.isFalse())
+        if (this.isTriviallyTrue() || this.isFalse()
+                || this.cubes.stream().noneMatch(cubes::contains)) {
             return this;
-        boolean recompute = false;
-        for (Conjunction<T> cube : cubes) {
-            if (recompute = this.cubes.contains(cube))
-                break;
         }
-        if (!recompute)
-            return this;
 
         Set<Conjunction<T>> result = new HashSet<>(this.cubes);
         result.removeAll(cubes);
@@ -229,18 +237,19 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
                 }
             }
         } while (!result.equals(old));
-        return  result;
+        return result;
 
     }
 
 
     public DNF<T> or(DNF<T> other) {
-        if (this.isTriviallyTrue() || other.isTriviallyTrue())
-            return TRUE;
-        if (this.isFalse())
-            return other.isFalse() ? FALSE : other;
-        if (other.isFalse())
+        if (this.isTriviallyTrue() || other.isTriviallyTrue()) {
+            return TRUE();
+        } else if (this.isFalse()) {
+            return other.isFalse() ? FALSE() : other;
+        } else if (other.isFalse()) {
             return this;
+        }
 
         HashSet<Conjunction<T>> result = new HashSet<>(this.cubes);
         result.addAll(other.cubes);
@@ -248,12 +257,13 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
     }
 
     public DNF<T> and(DNF<T> other) {
-        if (this.isFalse() || other.isFalse())
-            return FALSE;
-        if (this.isTriviallyTrue())
+        if (this.isFalse() || other.isFalse()) {
+            return FALSE();
+        } else if (this.isTriviallyTrue()) {
             return other;
-        if (other.isTriviallyTrue())
+        } else if (other.isTriviallyTrue()) {
             return this;
+        }
 
         HashSet<Conjunction<T>> result = new HashSet<>(this.getNumberOfClauses() * other.getNumberOfClauses());
         for (Conjunction<T> cube1 : this.cubes) {

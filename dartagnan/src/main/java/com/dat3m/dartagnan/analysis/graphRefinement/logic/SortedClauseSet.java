@@ -15,11 +15,11 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
 
     private static final int INITIALCAPACITY = 10;
 
-    public static final SortedClauseSet FALSE = new SortedClauseSet(0);
-    public static final SortedClauseSet TRUE = new SortedClauseSet(1);
+    private static final SortedClauseSet FALSE = new SortedClauseSet(0);
+    private static final SortedClauseSet TRUE = new SortedClauseSet(1);
 
     static {
-        TRUE.clauses.append(Conjunction.TRUE);
+        TRUE.clauses.append(Conjunction.TRUE());
     }
 
     
@@ -39,15 +39,13 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
     }
 
     public int getLiteralSize() {
-        int size = 0;
-        for (Conjunction<T> cube : clauses)
-            size += cube.getSize();
-        return size;
+        return clauses.stream().mapToInt(Conjunction::getSize).sum();
     }
 
     public Conjunction<T> get(int index) {
-        if ( index < 0 || index >= clauses.size())
-            return Conjunction.FALSE;
+        if ( index < 0 || index >= clauses.size()) {
+            return Conjunction.FALSE();
+        }
         return clauses.getUnsafe(index);
     }
 
@@ -75,11 +73,6 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
         this.comparator = comparator;
     }
 
-
-    private SortedClauseSet(boolean init) {
-
-    }
-
     private void checkTriviality() {
         if (clauses.isEmpty())
             return;
@@ -89,10 +82,9 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
             i++;
         }
         clauses.removeBulkUnsafe(0, i);
-        if (!clauses.isEmpty() && clauses.getFirst().isTrue())
-        {
+        if (!clauses.isEmpty() && clauses.getFirst().isTrue()) {
             clauses.clear();
-            clauses.appendUnsafe(Conjunction.TRUE);
+            clauses.appendUnsafe(Conjunction.TRUE());
         }
     }
 
@@ -102,7 +94,7 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
             return false;
         else if (clause.isTrue()) {
             clauses.clear();
-            clauses.appendUnsafe(Conjunction.TRUE);
+            clauses.appendUnsafe(Conjunction.TRUE());
             return true;
         }
         clauses.ensureCapacity(1, 3);
@@ -136,7 +128,6 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
 
     public boolean contains(Conjunction<T> clause) {
         return clauses.binarySearch(clause, comparator) > -1;
-        //return clauses.contains(clause);
     }
 
     public boolean remove(Conjunction<T> clause) {
@@ -168,13 +159,13 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
     }
 
     public SortedClauseSet<T> and(SortedClauseSet<T> other) {
-        if (this.isFalse() || other.isTrue())
+        if (this.isFalse() || other.isTrue()) {
             return this;
-        else if (this.isTrue())
+        } else if (this.isTrue()) {
             clauses = other.clauses.clone();
-        else if (other.isFalse())
+        } else if (other.isFalse()) {
             clauses.clear();
-        else {
+        } else {
             Vect<Conjunction<T>> result = new Vect<>(this.clauses.size() * other.clauses.size());
             for (int i = 0; i < this.clauses.size(); i++) {
                 for (int j = 0; j < other.clauses.size(); j++) {
@@ -187,113 +178,9 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
         return this;
     }
 
-    public SortedClauseSet<T> computeAllResolvents() {
-        Vect<Conjunction<T>> result = clauses.clone();
-        result.ensureTotalCapacity(2 * clauses.size());
-        HashSet<Conjunction<T>> foundClauses = new HashSet<>(result.getTotalCapacity());
-        //HashSet<CompareAdapter<Conjunction<T>>> foundClauses = new HashSet<>(result.getTotalCapacity());
-        /*for (int i = 0; i < result.size(); i++) {
-            //foundClauses.add(new CompareAdapter<>(result.get(i), comparator));
-            foundClauses.add(result.get(i));
-        }*/
-        foundClauses.addAll(result);
-
-        int to = result.size();
-        int start = 0;
-        do {
-            for (int i = 0; i < to; i++) {
-                for (int j = Math.max(start, i + 1); j < to; j++) {
-                    Conjunction<T> resolvent = result.get(i).resolve(result.get(j));
-                    if (!resolvent.isFalse() && foundClauses.add(resolvent)) {
-                        result.ensureCapacity(1, result.size());
-                        result.appendUnsafe(resolvent);
-                    }
-                }
-            }
-            start = to;
-            to = result.size();
-        } while (start != to);
-        result.sort(comparator);
-        SortedClauseSet<T> retVal = new SortedClauseSet<>(false);
-        retVal.clauses = result;
-        retVal.comparator = comparator;
-        return retVal;
-    }
-
-    // A fast version of the above algorithm
-    // It aims to compute only resolvents that cannot be further resolved (have no resolvable literal)
-    //TODO: Rework this to make it work in all cases.
-    public SortedClauseSet<T> computeProductiveResolvents() {
-        Vect<Conjunction<T>> result = clauses.clone();
-        // Delete unnecessary clauses
-        deleteUnproductiveClauses(result);
-
-        Comparator<Conjunction<T>> resComp = new ResolventClauseComparator<>();
-        result.sortUnique(resComp);
-
-        result.ensureTotalCapacity(2 * result.size());
-        HashSet<Conjunction<T>> foundClauses = new HashSet<>(result.getTotalCapacity());
-        foundClauses.addAll(result);
-
-        // A custom (test) implementation that only resolves clauses where one clause
-        // has a single resolvable literal (may break, if k-SAT with k>1 was used to find clauses)
-        int to;
-        int start = 0;
-        int co1Index = 0;
-        do {
-            start = start + co1Index;
-            to = result.size();
-            result.sort(start, to, resComp);
-            co1Index = 0;
-            for (int i = start; i < to; i++) {
-                if(result.get(i).getResolutionComplexity() < 2) {
-                    co1Index++;
-                } else {
-                    break;
-                }
-            }
-
-            for (int i = start; i < start + co1Index; i++) {
-                for (int j = i + 1; j < to; j++) {
-                    Conjunction<T> resolvent = result.get(i).resolve(result.get(j));
-                    if (!resolvent.isFalse() && foundClauses.add(resolvent)) {
-                        result.ensureCapacity(1, result.size());
-                        result.appendUnsafe(resolvent);
-                    }
-                }
-                to = result.size();
-            }
-        } while (co1Index != 0);
-
-        result.sort(comparator);
-        SortedClauseSet<T> retVal = new SortedClauseSet<>(false);
-        retVal.clauses = result;
-        retVal.comparator = comparator;
-        return retVal;
-    }
-
-    // Removes all clauses that contain some resolvable literal which can not be resolved
-    // with any other clause.
-    private void deleteUnproductiveClauses(Vect<Conjunction<T>> vect) {
-        boolean progress;
-        do {
-            HashSet<T> resolvableLiterals = new HashSet<>();
-            for (Conjunction<T> cube : vect) {
-                cube.getLiterals().stream().filter(Literal::hasOpposite).forEach(resolvableLiterals::add);
-            }
-
-            progress = vect.removeIf(x -> x.getLiterals().stream()
-                    .filter(Literal::hasOpposite)
-                    .anyMatch(y -> !resolvableLiterals.contains(y.getOpposite())));
-        } while (progress);
-    }
-
     public DNF<T> toDNF() {
         return new DNF<T>(clauses);
     }
-
-
-
 
     @Override
     public Iterator<Conjunction<T>> iterator() {
@@ -306,26 +193,10 @@ public class SortedClauseSet<T extends Literal<T>> implements Iterable<Conjuncti
 
         @Override
         public int compare(Conjunction<Y> o1, Conjunction<Y> o2) {
-            if (o1.equals(o2))
+            if (o1.equals(o2)) {
                 return 0;
-            int cmp = o1.getSize() - o2.getSize();
-            return cmp != 0 ? cmp : (System.identityHashCode(o1) - System.identityHashCode(o2));
-            // The second case it needed to satisfy the contract of Comparable (it gives a total ordering)
-            // Violating the contract can cause exceptions!
-
-        }
-    }
-
-    private static class ResolventClauseComparator<Y extends Literal<Y>> implements Comparator<Conjunction<Y>> {
-
-        @Override
-        public int compare(Conjunction<Y> o1, Conjunction<Y> o2) {
-            if (o1.equals(o2))
-                return 0;
-            int cmp = o1.getResolutionComplexity() - o2.getResolutionComplexity();
-            if (cmp == 0) {
-                cmp = o1.getSize() - o2.getSize();
             }
+            int cmp = o1.getSize() - o2.getSize();
             return cmp != 0 ? cmp : (System.identityHashCode(o1) - System.identityHashCode(o2));
             // The second case it needed to satisfy the contract of Comparable (it gives a total ordering)
             // Violating the contract can cause exceptions!

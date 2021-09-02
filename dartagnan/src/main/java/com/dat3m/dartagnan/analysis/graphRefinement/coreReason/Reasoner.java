@@ -65,13 +65,13 @@ public class Reasoner {
 
     public DNF<CoreLiteral> computeViolationReasons(Constraint axiom) {
         if (!axiom.checkForViolations()) {
-            return DNF.FALSE;
+            return DNF.FALSE();
         }
 
         SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>();
         List<List<Edge>> violations = axiom.getViolations();
         for (List<Edge> violation : violations) {
-            Conjunction<CoreLiteral> reason = Conjunction.TRUE;
+            Conjunction<CoreLiteral> reason = Conjunction.TRUE();
             for (Edge e : violation) {
                 reason = reason.and(computeReason(axiom.getDependencies().get(0), e));
             }
@@ -84,7 +84,7 @@ public class Reasoner {
 
     public Conjunction<CoreLiteral> computeReason(EventGraph graph, Edge edge) {
         if (!graph.contains(edge)) {
-            return Conjunction.FALSE;
+            return Conjunction.FALSE();
         }
         Conjunction<CoreLiteral> reason = graph.accept(visitor, edge, null);
         assert !reason.isFalse();
@@ -120,7 +120,7 @@ public class Reasoner {
 
     private Conjunction<CoreLiteral> getRfReason(Edge e) {
         if (!e.getFirst().isWrite() || !e.getSecond().isRead()) {
-            return Conjunction.FALSE;
+            return Conjunction.FALSE();
         } else {
             return new Conjunction<>(new RfLiteral(e));
         }
@@ -131,14 +131,14 @@ public class Reasoner {
             return getAddressReason(e);
         }
         if (!e.getFirst().isWrite() || !e.getSecond().isWrite()) {
-            return Conjunction.FALSE;
+            return Conjunction.FALSE();
         }
         return new Conjunction<>(new CoLiteral(e)).and(getAddressReason(e));
     }
 
     private Conjunction<CoreLiteral> getAddressReason(Edge e) {
         if (!e.getFirst().isMemoryEvent() || !e.getSecond().isMemoryEvent()) {
-            return Conjunction.FALSE;
+            return Conjunction.FALSE();
         }
         MemEvent e1 = (MemEvent) e.getFirst().getEvent();
         MemEvent e2 = (MemEvent) e.getSecond().getEvent();
@@ -238,7 +238,7 @@ public class Reasoner {
             }
 
 
-            reason = Conjunction.TRUE;
+            reason = Conjunction.TRUE();
             for (EventGraph g : graph.getDependencies()) {
                 Edge e = g.get(edge);
                 if (e != null) {
@@ -367,7 +367,7 @@ public class Reasoner {
             }
 
             EventGraph inner = graph.getDependencies().get(0);
-            reason = Conjunction.TRUE;
+            reason = Conjunction.TRUE();
             //TODO: Here might be a problem with the derivation length (will fix this later!)
             List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(),  edge.getDerivationLength());
             for (Edge e : path) {

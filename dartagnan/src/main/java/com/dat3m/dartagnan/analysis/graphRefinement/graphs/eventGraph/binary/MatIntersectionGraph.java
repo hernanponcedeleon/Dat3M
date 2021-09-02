@@ -47,7 +47,6 @@ public class MatIntersectionGraph extends MaterializedGraph {
                     simpleGraph.add(derive(e1, e2));
                 }
             }
-            //simpleGraph.addAll(Sets.intersection(first.setView(), second.setView()));
         } else {
             for (Edge e2 : second.edges()) {
                 Edge e1 = first.get(e2);
@@ -55,7 +54,6 @@ public class MatIntersectionGraph extends MaterializedGraph {
                     simpleGraph.add(derive(e2, e1));
                 }
             }
-            //simpleGraph.addAll(Sets.intersection(second.setView(), first.setView()));
         }
     }
 
@@ -74,8 +72,6 @@ public class MatIntersectionGraph extends MaterializedGraph {
                     newlyAdded.add(e);
                 }
             }
-            /*addedEdges.removeIf(x -> !other.contains(x));
-            simpleGraph.addAll(addedEdges);*/
             addedEdges = newlyAdded;
         } else {
             addedEdges.clear();

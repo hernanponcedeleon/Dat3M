@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.searchTree;
 
+// A FakeRoot is a root decision node with no decision literal and only
+// one positive child. It is used as a convenience to avoid empty trees.
 class FakeRoot extends DecisionNode {
 
     public FakeRoot() {
@@ -11,7 +13,4 @@ class FakeRoot extends DecisionNode {
         return positive;
     }
 
-    public void setTrueRoot(SearchNode node) {
-        this.positive = node;
-    }
 }

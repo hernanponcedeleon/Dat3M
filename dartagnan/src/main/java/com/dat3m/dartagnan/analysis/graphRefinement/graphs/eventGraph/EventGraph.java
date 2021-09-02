@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.GraphDerivable;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration.OneTimeIterable;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.GraphSetView;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.OneTimeIterable;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;

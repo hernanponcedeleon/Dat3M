@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.iteration;
+package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils;
 
 import java.util.Iterator;
 
