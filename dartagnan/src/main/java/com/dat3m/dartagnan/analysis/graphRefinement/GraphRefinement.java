@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.LeafNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.SearchNode;
 import com.dat3m.dartagnan.analysis.graphRefinement.searchTree.SearchTree;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
@@ -28,6 +27,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.math.BigInteger;
 import java.util.*;
+
+import static com.dat3m.dartagnan.analysis.graphRefinement.RefinementStatus.*;
 
 /*
     Graph-based Refinement works as follows (with some simplifications):
@@ -121,6 +122,9 @@ public class GraphRefinement {
         Relation co = task.getMemoryModel().getRelationRepository().getRelation("co");
         Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
         List<Edge> initCoherences = new ArrayList<>();
+        TupleSet minSet = co.getMinTupleSet();
+        TupleSet maxSet = co.getMaxTupleSet();
+
         for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : executionModel.getAddressWritesMap().entrySet()) {
             Set<EventData> writes = addressedWrites.getValue();
             BigInteger address = addressedWrites.getKey();
@@ -129,9 +133,18 @@ public class GraphRefinement {
 
             for (EventData e1 : writes) {
                 for (EventData e2: writes) {
+                    if (e1 == e2) {
+                        continue;
+                    }
+
                     Tuple t = new Tuple(e1.getEvent(), e2.getEvent());
 
-                    if (co.getMinTupleSet().contains(t)) {
+                    if (!maxSet.contains(t)) {
+                        // The co(e1, e2) edge can never be contained in any execution
+                        // so co(e2, e1) must be present instead.
+                        initCoherences.add(new Edge(e2, e1));
+                        continue;
+                    } else if (minSet.contains(t)) {
                         // Min-Set coherences have to be contained in all executions
                         initCoherences.add(new Edge(e1, e2));
                         continue;
@@ -139,12 +152,12 @@ public class GraphRefinement {
 
                     // We only add edges in one direction since the search procedure will test
                     // each coherence in both directions anyways!
-                    if (e2.getId() >= e1.getId())
+                    if (e2.getId() >= e1.getId()) {
                         continue;
+                    }
 
                     if (e1.isInit() && !e2.isInit()) {
-                        // This is fallback code in case minTupleSet computations are disabled
-                        // But we expect the minTupleSet check to cover this case
+                        // This is a fallback. The maxSet check should cover this.
                         initCoherences.add(new Edge(e1, e2));
                     } else if (!e1.isInit() && !e2.isInit()) {
                         coEdges.add(new Edge(e1, e2));
@@ -205,10 +218,10 @@ public class GraphRefinement {
             stats.saturationDepth = k;
             // There should always exist a single empty node unless we found a violation
             SearchNode start = sTree.findNodes(SearchNode::isEmptyNode).get(0);
-            Result r = kSaturation(start, Timestamp.ZERO, k, coSearchList, 0);
-            if (r != Result.UNKNOWN) {
-                result.setResult(r);
-                if (r == Result.FAIL) {
+            RefinementStatus r = kSaturation(start, Timestamp.ZERO, k, coSearchList, 0);
+            if (r != INCONCLUSIVE) {
+                result.setStatus(r);
+                if (r == REFUTED) {
                     long temp = System.currentTimeMillis();
                     result.setViolations(computeResolventsFromTree(sTree));
                     stats.resolutionTime = System.currentTimeMillis() - temp;
@@ -227,7 +240,7 @@ public class GraphRefinement {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-        if (result.getResult() == Result.PASS) {
+        if (result.getStatus() == VERIFIED) {
             testCoherence();
         }
         return result;
@@ -240,7 +253,7 @@ public class GraphRefinement {
         that for each write-pair (w1,w2) there is exactly one edge in the list, either co(w1, w2) or
         co(w2, w1).
      */
-    private Result kSaturation(SearchNode node, Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
+    private RefinementStatus kSaturation(SearchNode node, Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
         searchList = searchList.subList(searchStart, searchList.size());
         if (k == 0) {
             // 0-SAT amounts to a simple violation check
@@ -248,12 +261,12 @@ public class GraphRefinement {
                 long time = System.currentTimeMillis();
                 node.replaceBy(new LeafNode(computeViolationList()));
                 stats.violationComputationTime += (System.currentTimeMillis() - time);
-                return Result.FAIL;
+                return REFUTED;
             } else if (searchList.stream().allMatch(this::coExists)) {
                 // All remaining edges in the search list are already in the graph (due to transitivity and totality of co)
-                return Result.PASS;
+                return VERIFIED;
             } else {
-                return Result.UNKNOWN;
+                return INCONCLUSIVE;
             }
         }
 
@@ -273,21 +286,21 @@ public class GraphRefinement {
 
                 execGraph.addCoherenceEdges(coEdge);
                 stats.numGuessedCoherences++;
-                Result r = kSaturation(decNode.getPositive(), nextTime, k - 1, searchList, i + 1);
-                if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
-                    return Result.PASS;
+                RefinementStatus status = kSaturation(decNode.getPositive(), nextTime, k - 1, searchList, i + 1);
+                if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
+                    return VERIFIED;
                 }
                 backtrackOn(nextTime);
 
-                if (r == Result.FAIL) {
+                if (status == REFUTED) {
                     node.replaceBy(decNode);
                     node = decNode.getNegative();
                     execGraph.addCoherenceEdges(coEdge.inverse().with(curTime));
-                    r = kSaturation(decNode.getNegative(), curTime, k - 1, searchList, i + 1);
-                    if (r == Result.FAIL) {
-                        return r;
-                    } else if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
-                        return r;
+                    status = kSaturation(decNode.getNegative(), curTime, k - 1, searchList, i + 1);
+                    if (status == REFUTED) {
+                        return REFUTED;
+                    } else if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
+                        return VERIFIED;
                     }
                     // We made progress
                     //TODO: We might want to restart the search or do some other heuristic
@@ -298,13 +311,13 @@ public class GraphRefinement {
                     Edge coEdgeInv = coEdge.inverse().with(nextTime);
                     execGraph.addCoherenceEdges(coEdgeInv);
                     stats.numGuessedCoherences++;
-                    r = kSaturation(decNode.getNegative(), nextTime, k - 1, searchList, i + 1);
-                    if (r == Result.PASS && searchList.stream().allMatch(this::coExists)) {
-                        return Result.PASS;
+                    status = kSaturation(decNode.getNegative(), nextTime, k - 1, searchList, i + 1);
+                    if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
+                        return VERIFIED;
                     }
                     backtrackOn(nextTime);
 
-                    if(r == Result.FAIL) {
+                    if(status == REFUTED) {
                         node.replaceBy(decNode);
                         node = decNode.getPositive();
                         execGraph.addCoherenceEdges(coEdge.with(curTime));
@@ -314,7 +327,7 @@ public class GraphRefinement {
             }
             searchList.removeIf(this::coExists);
         }
-        return Result.UNKNOWN;
+        return INCONCLUSIVE;
     }
 
     private void backtrackOn(Timestamp time) {

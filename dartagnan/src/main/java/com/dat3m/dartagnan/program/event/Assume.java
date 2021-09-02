@@ -52,7 +52,7 @@ public class Assume extends Event implements RegReaderData {
 	protected BooleanFormula encodeExec(SolverContext ctx){
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = super.encodeExec(ctx);
-		enc = bmgr.and(enc, bmgr.equivalence(exec(), expr.toBoolFormula(this, ctx)));
+		enc = bmgr.and(enc, bmgr.implication(exec(), expr.toBoolFormula(this, ctx)));
 		return enc;
 	}
 

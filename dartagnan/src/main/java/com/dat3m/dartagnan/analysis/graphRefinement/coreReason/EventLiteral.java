@@ -5,23 +5,23 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 /*
-This encodes events as literals. A event literal is simply the events exec-variable.
+This encodes events as literals. An event literal is simply the events exec-variable.
  */
 public class EventLiteral implements CoreLiteral {
 
-    private final EventData event;
+    private final EventData eventData;
 
-    public EventData getEvent() {
-        return event;
+    public EventData getEventData() {
+        return eventData;
     }
 
     public EventLiteral(EventData e) {
-        this.event = e;
+        this.eventData = e;
     }
 
     @Override
     public int hashCode() {
-        return event.hashCode();
+        return eventData.hashCode();
     }
 
     @Override
@@ -32,17 +32,17 @@ public class EventLiteral implements CoreLiteral {
             return false;
 
         EventLiteral other = (EventLiteral) obj;
-        return this.event.equals(other.event);
+        return this.eventData.equals(other.eventData);
     }
 
     @Override
     public String toString() {
-        return event.toString();
+        return eventData.toString();
     }
 
     @Override
     public BooleanFormula getBooleanFormula(SolverContext ctx) {
-        return event.getEvent().exec();
+        return eventData.getEvent().exec();
     }
 
     @Override

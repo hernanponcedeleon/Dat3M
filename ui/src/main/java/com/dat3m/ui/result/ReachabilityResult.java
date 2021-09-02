@@ -1,5 +1,6 @@
 package com.dat3m.ui.result;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -81,7 +82,7 @@ public class ReachabilityResult {
                             }
                             break;
                         case REFINEMENT:
-                            result = runAnalysisGraphRefinement(ctx, prover, task);
+                            result = runAnalysisGraphRefinement(ctx, prover, RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                             break;
                     }
                     // Verification ended, we can interrupt the timeout Thread

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.Refinement;
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -95,7 +96,8 @@ public abstract class AbstractDartagnanTest {
             if (program.getAss() != null) {
                 program.setAss(program.getAss().removeLocAssertions(REPLACE_BY_TRUE));
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                assertEquals(res, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
+                assertEquals(res, Refinement.runAnalysisGraphRefinement(ctx, prover,
+                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             }
         } catch (Exception e) {
             fail(e.getMessage());
@@ -134,7 +136,8 @@ public abstract class AbstractDartagnanTest {
                     return;
                 }
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
-                assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
+                assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
+                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
             }
         } catch (Exception e){
             fail(e.getMessage());

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan;
 
 import com.dat3m.dartagnan.analysis.Refinement;
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -58,7 +59,7 @@ public abstract class AbstractSvCompTest {
         }
     }
 
-    @Test(timeout = TIMEOUT)
+    //@Test(timeout = TIMEOUT)
     public void testIncremental() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
@@ -97,7 +98,8 @@ public abstract class AbstractSvCompTest {
             expected = readExpected(property);
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = new VerificationTask(program, wmm, Arch.NONE, settings);
-            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover, task));
+            assertEquals(expected, Refinement.runAnalysisGraphRefinement(ctx, prover,
+                    RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task)));
         } catch (Exception e){
             fail(e.getMessage());
         }

@@ -204,7 +204,7 @@ public class ExecutionGraph {
             return relationGraphMap.get(rel);
         }
 
-        EventGraph graph = null;
+        EventGraph graph;
         Class<?> relClass = rel.getClass();
 
         // ===== Filter special relations ======

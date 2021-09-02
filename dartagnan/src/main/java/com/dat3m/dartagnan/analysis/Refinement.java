@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.analysis;
 
-import com.dat3m.dartagnan.analysis.graphRefinement.GraphRefinement;
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementResult;
-import com.dat3m.dartagnan.analysis.graphRefinement.RefinementStats;
+import com.dat3m.dartagnan.analysis.graphRefinement.*;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AbstractEdgeLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.AddressLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
@@ -19,12 +17,6 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.symmetry.ThreadSymmetry;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.axiom.Acyclic;
-import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.relation.binary.RelUnion;
-import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +29,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.*;
+import static com.dat3m.dartagnan.analysis.graphRefinement.RefinementStatus.INCONCLUSIVE;
+import static com.dat3m.dartagnan.analysis.graphRefinement.RefinementStatus.REFUTED;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.utils.Result.*;
 
@@ -49,8 +43,9 @@ public class Refinement {
     // we don't have a memory model and thus the bound check is imprecise.
     // We may even want to perform refinement to check the bounds (we envision a case where the
     // refinement is accurate enough to verify the assertions but not accurate enough to check the bounds)
-    public static Result runAnalysisGraphRefinement(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    public static Result runAnalysisGraphRefinement(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException {
+
         task.unrollAndCompile();
         if(task.getProgram().getAss() instanceof AssertTrue) {
             logger.info("Verification finished: assertion trivially holds");
@@ -58,79 +53,70 @@ public class Refinement {
         }
 
         task.initialiseEncoding(ctx);
-        prover.addConstraint(task.encodeProgram(ctx));
-
-        if (REF_BASELINE_WMM) {
-            Wmm baseline = createBaselineWmm(task);
-            baseline.initialise(task, ctx); // this is a little suspicious
-            prover.addConstraint(baseline.encode(ctx));
-            prover.addConstraint(baseline.consistent(ctx));
-        } else {
-            prover.addConstraint(task.encodeWmmCore(ctx));
-        }
-
-        return refinementCore(ctx, prover, task);
-    }
-
-    private static Result refinementCore(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
-            throws InterruptedException, SolverException {
 
         // ======= Some preprocessing to use a visible representative for each branch ========
         for (BranchEquivalence.Class c : task.getBranchEquivalence().getAllEquivalenceClasses()) {
-            c.stream().sorted().filter(e -> e.is(EType.VISIBLE)).findFirst().ifPresent(c::setRepresentative);
+            c.stream().sorted().filter(e -> e.is(EType.VISIBLE) && e.cfImpliesExec())
+                    .findFirst().ifPresent(c::setRepresentative);
+            // NOTE: If the branch has no visible events, Refinement will never care about it.
+            // If all visible branch events have cf != exec, then Refinement should never try
+            // to make use of any representative.
         }
         // =====================================================================================
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Program program = task.getProgram();
         GraphRefinement refinement = new GraphRefinement(task);
-        Result res = UNKNOWN;
+        RefinementStatus status = REFUTED;
+        Refiner refiner = new Refiner(task, ctx);
 
-        // ====== Test code ======
-        List<Function<Event, Event>> perms = computePerms(task); // Used for symmetry learning
-        // ----------
+        prover.addConstraint(task.encodeProgram(ctx));
+        prover.addConstraint(task.encodeBaselineWmmRelations(ctx));
+        prover.addConstraint(task.encodeBaselineWmmConsistency(ctx));
         if (ENABLE_SYMMETRY_BREAKING) {
             prover.addConstraint(task.encodeSymmetryBreaking(ctx));
         }
-        // =======================
 
         prover.push();
         prover.addConstraint(task.encodeAssertions(ctx));
 
-        // Just for statistics
+        //  ------ Just for statistics ------
         List<DNF<CoreLiteral>> foundViolations = new ArrayList<>();
         List<RefinementStats> statList = new ArrayList<>();
         int vioCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
         long totalSolvingTime = 0;
+        //  ---------------------------------
 
         while (!prover.isUnsat()) {
-            curTime = System.currentTimeMillis();
-            totalSolvingTime += (curTime - lastTime);
 
-            if (REF_PRINT_STATISTICS) {
+            if (REFINEMENT_PRINT_STATISTICS) {
+                curTime = System.currentTimeMillis();
+                totalSolvingTime += (curTime - lastTime);
                 System.out.println(" ===== Iteration: " + ++vioCount + " =====");
                 System.out.println("Solving time( ms): " + (curTime - lastTime));
             }
 
             RefinementResult gRes;
             try (Model model = prover.getModel()) {
-                gRes = refinement.kSearch(model, ctx, 2);
+                gRes = refinement.kSearch(model, ctx, task.getMaxSaturationDepth());
             }
-            RefinementStats stats = gRes.getStatistics();
-            statList.add(stats);
-            if (REF_PRINT_STATISTICS) {
+
+            if (REFINEMENT_PRINT_STATISTICS) {
+                RefinementStats stats = gRes.getStatistics();
+                statList.add(stats);
                 System.out.println(stats);
             }
 
-            res = gRes.getResult();
-            if (res == FAIL) {
+            status = gRes.getStatus();
+            if (status == REFUTED) {
                 DNF<CoreLiteral> violations = gRes.getViolations();
                 foundViolations.add(violations);
-                refine(prover, ctx, violations, perms);
-                // Some statistics
-                if (REF_PRINT_STATISTICS) {
+                prover.addConstraint(refiner.refine(violations));
+
+                if (REFINEMENT_PRINT_STATISTICS) {
+                    // Some statistics
                     for (Conjunction<CoreLiteral> cube : violations.getCubes()) {
                         System.out.println("Violation size: " + cube.getSize());
                         System.out.println(cube);
@@ -142,37 +128,34 @@ public class Refinement {
             }
             lastTime = System.currentTimeMillis();
         }
-        curTime = System.currentTimeMillis();
-        totalSolvingTime += (curTime - lastTime);
-        if (REF_PRINT_STATISTICS) {
+
+        if (REFINEMENT_PRINT_STATISTICS) {
+            curTime = System.currentTimeMillis();
+            totalSolvingTime += (curTime - lastTime);
             System.out.println(" ===== Final Iteration: " + (vioCount + 1) + " =====");
             System.out.println("Solving/Proof time(ms): " + (curTime - lastTime));
-        }
-
-        // Possible outcomes: - check() == SAT && res == UNKNOWN -> Inconclusive
-        //                    - check() == SAT && res == PASS -> Unsafe
-        //                    - check() == UNSAT -> Safe
-
-
-        boolean isSat = !prover.isUnsat();
-        if (REF_PRINT_STATISTICS) {
-            if (isSat && res == UNKNOWN) {
-                // We couldn't verify the found counterexample, nor exclude it.
-                System.out.println("Procedure was inconclusive.");
-                return UNKNOWN;
-            } else if (isSat) {
-                // We found a true violation
-                System.out.println("Violation verified.");
-            } else {
-                // We showed safety but still need to verify bounds
-                System.out.println("Bounded safety proven.");
-            }
-        } else {
-            if (isSat && res == UNKNOWN) {
-                return UNKNOWN;
+            switch (status) {
+                case INCONCLUSIVE:
+                    System.out.println("Refinement procedure was inconclusive.");
+                    break;
+                case VERIFIED:
+                    System.out.println("Violation verified.");
+                    break;
+                case REFUTED:
+                    System.out.println("Bounded safety proven.");
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown result type returned by GraphRefinement.");
             }
         }
 
+        if (status == INCONCLUSIVE) {
+            // Refinement got no result, so we cannot proceed further.
+            return UNKNOWN;
+        }
+
+
+        Result res;
         long boundCheckTime = 0;
         if (prover.isUnsat()) {
             // ------- CHECK BOUNDS -------
@@ -184,7 +167,7 @@ public class Refinement {
                 //TODO: This is just a temporary fallback
                 // We probably have to perform a second refinement for the bound checks!
                 for (DNF<CoreLiteral> violation : foundViolations) {
-                    refine(prover, ctx, violation, perms);
+                    prover.addConstraint(refiner.refine(violation));
                 }
                 res = !prover.isUnsat() ? UNKNOWN : PASS;
             }
@@ -192,32 +175,14 @@ public class Refinement {
         } else {
             res = FAIL;
         }
-        if (REF_PRINT_STATISTICS) {
+
+        if (REFINEMENT_PRINT_STATISTICS) {
             printSummary(statList, totalSolvingTime, boundCheckTime);
         }
 
         res = program.getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
         return res;
-    }
-
-
-    // This method adds new constraints to the prover based on the found violations.
-    // Furthermore, it computes symmetric violations if symmetry learning is enabled.
-    private static void refine(ProverEnvironment prover, SolverContext ctx, DNF<CoreLiteral> coreViolations,
-                               List<Function<Event, Event>> perms) throws InterruptedException {
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        for (Function<Event, Event> p : perms) {
-            BooleanFormula refinement = bmgr.makeTrue();
-            for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
-                BooleanFormula clause = bmgr.makeFalse();
-                for (CoreLiteral literal : violation.getLiterals()) {
-                    clause = bmgr.or(clause, bmgr.not(permuteAndConvert(literal, p, ctx)));
-                }
-                refinement = bmgr.and(refinement, clause);
-            }
-            prover.addConstraint(refinement);
-        }
     }
 
 
@@ -268,120 +233,108 @@ public class Refinement {
         System.out.println("Bound check time( ms): " + boundCheckTime);
     }
 
-    // ---------------------------- Outer WMM -----------------------------
 
-    private static Wmm createBaselineWmm(VerificationTask task) {
-        Wmm original = task.getMemoryModel();
-        Wmm baseline = new Wmm();
-        baseline.setEncodeCo(false);
-        RelationRepository origRepo = original.getRelationRepository();
-        RelationRepository repo = baseline.getRelationRepository();
-        // We copy relations from the original WMM to avoid recomputations of max-/minSets
-        // This causes active set computations to be reflected in the original WMM (which shouldn't be problematic)
-        repo.addRelation(origRepo.getRelation("rf"));
-        repo.addRelation(origRepo.getRelation("po"));
-        repo.addRelation(origRepo.getRelation("co"));
-        repo.addRelation(origRepo.getRelation("idd"));
-        repo.addRelation(origRepo.getRelation("addrDirect"));
-        if (origRepo.containsRelation("loc")) {
-            repo.addRelation(origRepo.getRelation("loc"));
-        }
-        if (origRepo.containsRelation("po-loc")) {
-            repo.addRelation(origRepo.getRelation("po-loc"));
+
+    /*
+        This class handles the computation of refinement clauses from violations found by the saturation procedure.
+        Furthermore, it incorporates symmetry reasoning if possible.
+     */
+    private static class Refiner {
+        private final RefinementTask task;
+        private final SolverContext context;
+        private final List<Function<Event, Event>> symmPermutations;
+
+        public Refiner(RefinementTask task, SolverContext ctx) {
+            this.task = task;
+            this.context = ctx;
+            symmPermutations = computeSymmetryPermutations(REFINEMENT_SYMMETRY_LEARNING);
         }
 
-        // ---- acyclic(po-loc | rf) ----
-        Relation poloc = repo.getRelation("po-loc");
-        Relation rf = repo.getRelation("rf");
-        Relation porf = new RelUnion(poloc, rf);
-        repo.addRelation(porf);
-        baseline.addAxiom(new Acyclic(porf));
 
-        // ---- acyclic (dep | rf) ----
-        if (REF_ADD_ACYCLIC_DEP_RF) {
-            if (origRepo.containsRelation("data")) {
-                repo.addRelation(origRepo.getRelation("data"));
+        // This method computes a refinement clause from a set of violations.
+        // Furthermore, it computes symmetric violations if symmetry learning is enabled.
+        public BooleanFormula refine(DNF<CoreLiteral> coreViolations) {
+            BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+            BooleanFormula refinement = bmgr.makeTrue();
+            // For each symmetry permutation, we will create refinement clauses
+            for (Function<Event, Event> perm : symmPermutations) {
+                for (Conjunction<CoreLiteral> violation : coreViolations.getCubes()) {
+                    BooleanFormula permutedClause = bmgr.makeFalse();
+                    for (CoreLiteral literal : violation.getLiterals()) {
+                        permutedClause = bmgr.or(permutedClause, bmgr.not(permuteAndConvert(literal, perm)));
+                    }
+                    refinement = bmgr.and(refinement, permutedClause);
+                }
             }
-            if (origRepo.containsRelation("ctrl")) {
-                repo.addRelation(origRepo.getRelation("ctrl"));
-            }
-            if (origRepo.containsRelation("addr")) {
-                repo.addRelation(origRepo.getRelation("addr"));
-            }
-            Relation data = repo.getRelation("data");
-            Relation ctrl = repo.getRelation("ctrl");
-            Relation addr = repo.getRelation("addr");
-            Relation dep = new RelUnion(data, addr);
-            repo.addRelation(dep);
-            dep = new RelUnion(ctrl, dep);
-            repo.addRelation(dep);
-            Relation hb = new RelUnion(dep, rf);
-            repo.addRelation(hb);
-            baseline.addAxiom(new Acyclic(hb));
+            return refinement;
         }
 
-        return baseline;
-    }
 
 
-    // ---------------------- Symmetry computations -----------------------
-
-    // Computes a list of all permutations allowed by the program
-    private static List<Function<Event, Event>> computePerms(VerificationTask task) {
-
-        ThreadSymmetry symm = task.getThreadSymmetry();
-        Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
-        List<Function<Event, Event>> perms = new ArrayList<>();
-        if (symmClasses.isEmpty() || REF_SYMMETRY_LEARNING == SymmetryLearning.NONE) {
+        // Computes a list of permutations allowed by the program.
+        // Depending on the <learningOption>, the set of computed permutations differs.
+        // In particular, for the option NONE, only the identity permutation will be returned.
+        private List<Function<Event, Event>> computeSymmetryPermutations(SymmetryLearning learningOption) {
+            ThreadSymmetry symm = task.getThreadSymmetry();
+            Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
+            List<Function<Event, Event>> perms = new ArrayList<>();
             perms.add(Function.identity());
+
+            for (EquivalenceClass<Thread> c : symmClasses) {
+                List<Thread> threads = new ArrayList<>(c);
+                threads.sort(Comparator.comparingInt(Thread::getId));
+
+                switch (learningOption) {
+                    case NONE:
+                        break;
+                    case LINEAR:
+                        for (int i = 0; i < threads.size(); i++) {
+                            int j = (i + 1) % threads.size();
+                            perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
+                        }
+                        break;
+                    case QUADRATIC:
+                        for (int i = 0; i < threads.size(); i++) {
+                            for (int j = i + 1; j < threads.size(); j++) {
+                                perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
+                            }
+                        }
+                        break;
+                    case FULL:
+                        List<Function<Event, Event>> allPerms = symm.createAllPermutations(c);
+                        allPerms.remove(Function.identity()); // We avoid adding multiple identities
+                        perms.addAll(allPerms);
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Symmetry learning option: "
+                                + learningOption.name() + " is not recognized.");
+                }
+            }
+
             return perms;
         }
 
-        for (EquivalenceClass<Thread> c : symmClasses) {
-            List<Thread> threads = new ArrayList<>(c);
-            threads.sort(Comparator.comparingInt(Thread::getId));
-            if (REF_SYMMETRY_LEARNING == SymmetryLearning.LINEAR) {
-                // ==== Linear ====
-                perms.add(Function.identity());
-                for (int i = 0; i < threads.size(); i++) {
-                    int j = (i + 1) % threads.size();
-                    perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
-                }
-            } else if (REF_SYMMETRY_LEARNING == SymmetryLearning.QUADRATIC) {
-                // ==== Quadratic ====
-                perms.add(Function.identity());
-                for (int i = 0; i < threads.size(); i++) {
-                    for (int j = i + 1; j < threads.size(); j++) {
-                        perms.add(symm.createTransposition(threads.get(i), threads.get(j)));
-                    }
-                }
-            } else if (REF_SYMMETRY_LEARNING == SymmetryLearning.FULL) {
-                // ==== Full ====
-                perms.addAll(symm.createAllPermutations(c));
+
+        // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
+        // into a BooleanFormula for Refinement.
+        private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm) {
+            if (literal instanceof EventLiteral) {
+                EventLiteral lit = (EventLiteral) literal;
+                return perm.apply(lit.getEventData().getEvent()).exec();
+            } else if (literal instanceof AddressLiteral) {
+                AddressLiteral loc = (AddressLiteral) literal;
+                MemEvent e1 = (MemEvent) perm.apply(loc.getEdge().getFirst().getEvent());
+                MemEvent e2 = (MemEvent) perm.apply(loc.getEdge().getSecond().getEvent());
+                return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), context);
+            } else if (literal instanceof AbstractEdgeLiteral) {
+                AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
+                return Utils.edge(lit.getName(),
+                        perm.apply(lit.getEdge().getFirst().getEvent()),
+                        perm.apply(lit.getEdge().getSecond().getEvent()), context);
             }
+            throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
         }
 
-        return perms;
-    }
-
-    // Changes a reasoning <literal> based on a given permutation <p> and translates the result into a BooleanFormula
-    // for Refinement
-    private static BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> p, SolverContext ctx) {
-        if (literal instanceof EventLiteral) {
-            EventLiteral lit = (EventLiteral) literal;
-            return p.apply(lit.getEvent().getEvent()).exec();
-        } else if (literal instanceof AddressLiteral) {
-            AddressLiteral loc = (AddressLiteral) literal;
-            MemEvent e1 = (MemEvent) p.apply(loc.getEdge().getFirst().getEvent());
-            MemEvent e2 = (MemEvent) p.apply(loc.getEdge().getSecond().getEvent());
-            return generalEqual(e1.getMemAddressExpr(), e2.getMemAddressExpr(), ctx);
-        } else if (literal instanceof AbstractEdgeLiteral) {
-            AbstractEdgeLiteral lit = (AbstractEdgeLiteral) literal;
-            return Utils.edge(lit.getName(),
-                    p.apply(lit.getEdge().getFirst().getEvent()),
-                    p.apply(lit.getEdge().getSecond().getEvent()), ctx);
-        }
-        throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
     }
 
 }

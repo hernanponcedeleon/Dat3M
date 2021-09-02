@@ -140,21 +140,29 @@ public class Reasoner {
         }
     }
 
-    private Conjunction<CoreLiteral> getExecReason(Edge e) {
-        Event e1 = e.getFirst().getEvent();
-        Event e2 = e.getSecond().getEvent();
+    private Conjunction<CoreLiteral> getExecReason(Edge edge) {
+        Event e1 = edge.getFirst().getEvent();
+        Event e2 = edge.getSecond().getEvent();
+
         if (e1.getCId() > e2.getCId()) {
+            // Normalize edge direction
             Event temp = e1;
             e1 = e2;
             e2 = temp;
-            e = e.inverse();
+            edge = edge.inverse();
         }
-        if (eq.isImplied(e1, e2)) {
-            return new Conjunction<>(new EventLiteral(e.getFirst()));
+
+        EventData eData1 = edge.getFirst();
+        EventData eData2 = edge.getSecond();
+
+        if (!e1.cfImpliesExec() || !e2.cfImpliesExec()) {
+            return new Conjunction<>(new EventLiteral(eData1), new EventLiteral(eData2));
+        } else if (eq.isImplied(e1, e2)) {
+            return new Conjunction<>(new EventLiteral(eData1));
         } else if (eq.isImplied(e2, e1)) {
-            return new Conjunction<>(new EventLiteral(e.getSecond()));
+            return new Conjunction<>(new EventLiteral(eData2));
         } else {
-            return new Conjunction<>(new EventLiteral(e.getFirst()), new EventLiteral(e.getSecond()));
+            return new Conjunction<>(new EventLiteral(eData1), new EventLiteral(eData2));
         }
     }
 
@@ -163,8 +171,8 @@ public class Reasoner {
         if (literal instanceof EventLiteral) {
             final BranchEquivalence eq = this.eq;
             EventLiteral eventLit = (EventLiteral) literal;
-            Event e = eventLit.getEvent().getEvent();
-            return clause.getLiterals().stream().anyMatch(x -> {
+            Event e = eventLit.getEventData().getEvent();
+            return e.cfImpliesExec() && clause.getLiterals().stream().anyMatch(x -> {
                 if (!(x instanceof RfLiteral))
                     return false;
                 Edge edge = ((AbstractEdgeLiteral) x).getEdge();
@@ -285,7 +293,7 @@ public class Reasoner {
                 return reason;
             }
 
-            // TOOD: Fix this for non-static relations?
+            // TODO: Fix this for non-static relations?
             reason = graph.getDependencies().get(0).accept(this, edge, unused);
             assert !reason.isFalse();
             return reason;
@@ -334,7 +342,7 @@ public class Reasoner {
             if (edge.isLoop()) {
                 return new Conjunction<>(new EventLiteral(edge.getFirst()));
             } else {
-                //TODO: Make sure that we can simply delegate the edge through
+                //TODO: Make sure that we can simply delegate the edge through.
                 // The reflexive closure right now does NOT change the derivation length
                 reason = graph.getDependencies().get(0).accept(this, edge, unused);
                 assert !reason.isFalse();
@@ -417,6 +425,9 @@ public class Reasoner {
                 if (co.getMinTupleSet().contains(edge.toTuple())) {
                     return getExecReason(edge);
                 }
+            }
+            if (!co.getMaxTupleSet().contains(edge.toTuple().getInverse())) {
+                return getAddressReason(edge);
             }
             return getCoherenceReason(edge);
         }

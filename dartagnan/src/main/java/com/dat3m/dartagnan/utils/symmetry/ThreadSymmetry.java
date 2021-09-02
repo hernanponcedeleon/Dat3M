@@ -48,7 +48,7 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     public Event map(Event source, Thread target) {
         if (!areEquivalent(source.getThread(), target)) {
-            throw new IllegalArgumentException("Target thread is not symmetric");
+            throw new IllegalArgumentException("Target thread is not symmetric with source thread.");
         }
 
         return symmMap.get(target).get(source.getSymmId());
@@ -57,6 +57,8 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     public Function<Event, Event> createPermutation(List<Thread> orig, List<Thread> target) {
         if (orig.size() != target.size()) {
             throw new IllegalArgumentException("Target permutation has different size");
+        } else if (orig.equals(target)) {
+            return Function.identity();
         }
 
         return e -> {
@@ -85,7 +87,7 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         List<Thread> symmThreads = new ArrayList<>(eqClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));
         return Collections2.permutations(symmThreads).stream()
-                .map(x -> createPermutation(symmThreads, x))
+                .map(perm -> createPermutation(symmThreads, perm))
                 .collect(Collectors.toList());
     }
 

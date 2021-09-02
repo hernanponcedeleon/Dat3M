@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.RefinementTask;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -126,7 +127,8 @@ public class Dartagnan {
                                 result = runAnalysisAssumeSolver(ctx, prover, task);
                                 break;
                             case REFINEMENT:
-                                result = runAnalysisGraphRefinement(ctx, prover, task);
+                                result = runAnalysisGraphRefinement(ctx, prover,
+                                        RefinementTask.fromVerificationTaskWithDefaultBaselineWMM(task));
                                 break;
                             default:
                                 throw new RuntimeException("Unrecognized method mode: " + options.getMethod());

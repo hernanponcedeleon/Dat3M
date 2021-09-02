@@ -2,19 +2,19 @@ package com.dat3m.dartagnan.wmm.utils.alias;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.utils.RegReaderData;
-import com.dat3m.dartagnan.program.utils.EType;
-import com.dat3m.dartagnan.wmm.filter.FilterBasic;
-import com.google.common.collect.ImmutableSet;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.utils.EType;
+import com.dat3m.dartagnan.wmm.filter.FilterBasic;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 
@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class AliasAnalysis {
 
-    private List<Object> variables = new LinkedList<>();
+    private List<Object> variables = new LinkedList<>(); // TODO: Use a queue
     private ImmutableSet<Address> maxAddressSet;
     private Map<Register, Map<Event, Integer>> ssaMap;
 
