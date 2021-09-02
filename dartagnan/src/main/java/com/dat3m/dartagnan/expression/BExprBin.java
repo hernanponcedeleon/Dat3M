@@ -85,7 +85,7 @@ public class BExprBin extends BExpr {
     }
 
     @Override
-	public ExprInterface reduce() {
+	public BConst reduce() {
     	boolean v1 = ((BConst)b1.reduce()).getValue();
     	boolean v2 = ((BConst)b2.reduce()).getValue();
 		switch(op) {

@@ -31,6 +31,11 @@ public abstract class IExpr implements ExprInterface {
 		return this;
 	}
 	
+	@Override
+	public IConst reduce() {
+		throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
 	public IExpr simplify() {
 		return this;
 	}

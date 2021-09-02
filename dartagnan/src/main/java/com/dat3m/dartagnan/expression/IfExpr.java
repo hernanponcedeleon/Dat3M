@@ -71,7 +71,7 @@ public class IfExpr implements ExprInterface {
 
 	@Override
 	public ExprInterface reduce() {
-		return ((BConst)guard.reduce()).getValue() ? tbranch.reduce() : fbranch.reduce();
+		return guard.reduce().getValue() ? tbranch.reduce() : fbranch.reduce();
 	}
 	
 	public BExpr getGuard() {

@@ -84,38 +84,36 @@ public class Atom extends BExpr implements ExprInterface {
     }
 
     @Override
-	public ExprInterface reduce() {
-    	ExprInterface e1 = lhs.reduce();
-    	ExprInterface e2 = rhs.reduce();
+	public BConst reduce() {
     	// Reduction for IExpr
-    	if(e1 instanceof IConst && e2 instanceof IConst) {
-        	BigInteger v1 = ((IConst)e1).getIntValue();
-        	BigInteger v2 = ((IConst)e2).getIntValue();
+    	if(lhs instanceof IExpr && rhs instanceof IExpr) {
+        	BigInteger v1 = ((IExpr)lhs).reduce().getIntValue();
+        	BigInteger v2 = ((IExpr)lhs).reduce().getIntValue();
             switch(op) {
             	case EQ:
-            		return new IConst(v1.compareTo(v2) == 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+            		return new BConst(v1.compareTo(v2) == 0);
             	case NEQ:
-            		return new IConst(v1.compareTo(v2) != 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+            		return new BConst(v1.compareTo(v2) != 0);
 	            case LT:
 	            case ULT:
-	                return new IConst(v1.compareTo(v2) < 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	                return new BConst(v1.compareTo(v2) < 0);
 	            case LTE:
 	            case ULTE:
-	                return new IConst(v1.compareTo(v2) <= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	                return new BConst(v1.compareTo(v2) <= 0);
 	            case GT:
 	            case UGT:
-	                return new IConst(v1.compareTo(v2) > 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	                return new BConst(v1.compareTo(v2) > 0);
 	            case GTE:
 	            case UGTE:
-	                return new IConst(v1.compareTo(v2) >= 0 ? BigInteger.ONE : BigInteger.ZERO, lhs.getPrecision());
+	                return new BConst(v1.compareTo(v2) >= 0);
 	            default:
 	                throw new UnsupportedOperationException("Reduce not supported for " + this);
             }            
     	}
     	// Reduction for BExpr
-    	if(e1 instanceof BConst && e2 instanceof BConst) {
-        	boolean v1 = ((BConst)e1).getValue();
-        	boolean v2 = ((BConst)e2).getValue();
+    	if(lhs instanceof BConst && rhs instanceof BConst) {
+    		boolean v1 = ((BConst)lhs).reduce().getValue();
+    		boolean v2 = ((BConst)lhs).reduce().getValue();
             switch(op) {
 	            case EQ:
 	            	return new BConst(v1 == v2);

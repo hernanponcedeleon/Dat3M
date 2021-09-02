@@ -108,11 +108,6 @@ public class Register extends IExpr implements ExprInterface {
 	}
 
 	@Override
-	public ExprInterface reduce() {
-		throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
-
-	@Override
 	public int getPrecision() {
     	return precision;
     }
