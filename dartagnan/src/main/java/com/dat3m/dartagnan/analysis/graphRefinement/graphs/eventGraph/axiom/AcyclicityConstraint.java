@@ -11,14 +11,14 @@ import com.google.common.collect.Sets;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class AcyclicityAxiom extends GraphAxiom {
+public class AcyclicityConstraint extends Constraint {
 
     private final List<Set<EventData>> violatingSccs = new ArrayList<>();
     private final Set<EventData> markedNodes = new HashSet<>();
     private EventNode[] nodeMap;
 
-    public AcyclicityAxiom(EventGraph inner) {
-        super(inner);
+    public AcyclicityConstraint(EventGraph constrainedGraph) {
+        super(constrainedGraph);
     }
 
 
@@ -47,7 +47,7 @@ public class AcyclicityAxiom extends GraphAxiom {
         // (1) find a shortest path C from <e> to <e> (=cycle)
         // (2) remove all nodes in C from the search space (those nodes are likely to give the same cycle)
         for (Set<EventData> scc : violatingSccs) {
-            MatSubgraph subgraph = new MatSubgraph(inner, scc);
+            MatSubgraph subgraph = new MatSubgraph(constrainedGraph, scc);
             Set<EventData> nodes = new HashSet<>(Sets.intersection(scc, markedNodes));
             while (!nodes.isEmpty()) {
                 EventData e = nodes.stream().findAny().get();
@@ -79,7 +79,7 @@ public class AcyclicityAxiom extends GraphAxiom {
         for (EventData e : context.getEventList()) {
             nodeMap[e.getId()] = new EventNode(e);
         }
-        onGraphChanged(inner, inner.setView());
+        onGraphChanged(constrainedGraph, constrainedGraph.setView());
     }
 
 
@@ -155,8 +155,8 @@ public class AcyclicityAxiom extends GraphAxiom {
         }
 
         public Stream<EventNode> successorStream() {
-            final EventNode[] nodeMap = AcyclicityAxiom.this.nodeMap;
-            return inner.outEdgeStream(event).map(e -> nodeMap[e.getSecond().getId()]);
+            final EventNode[] nodeMap = AcyclicityConstraint.this.nodeMap;
+            return constrainedGraph.outEdgeStream(event).map(e -> nodeMap[e.getSecond().getId()]);
         }
 
         public void reset() {

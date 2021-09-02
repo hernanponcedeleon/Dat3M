@@ -79,7 +79,7 @@ public class ReflexiveClosureGraph extends AbstractEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return model.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
+        return model.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.OUTGOING));
     }
 
     @Override

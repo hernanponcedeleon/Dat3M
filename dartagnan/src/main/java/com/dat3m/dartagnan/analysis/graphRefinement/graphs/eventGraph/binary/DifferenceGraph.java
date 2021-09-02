@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary;
 
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.AbstractEventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.EdgeDirection;
 import com.dat3m.dartagnan.analysis.graphRefinement.util.GraphVisitor;
@@ -7,14 +8,29 @@ import com.dat3m.dartagnan.utils.timeable.Timestamp;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
-// TODO: This class is not up-to-date with the new derivation length
-public class DifferenceGraph extends BinaryEventGraph {
+//TODO: This class is not up-to-date with the new derivation length.
+// However, this doesn't cause any issues as we do not support differences in recursion.
+public class DifferenceGraph extends AbstractEventGraph {
+
+    private final EventGraph first;
+    private final EventGraph second;
+
+    @Override
+    public List<? extends EventGraph> getDependencies() {
+        return Arrays.asList(first, second);
+    }
+
+    public EventGraph getFirst() { return first; }
+    public EventGraph getSecond() { return second; }
 
     public DifferenceGraph(EventGraph first, EventGraph second) {
-        super(first, second);
+        this.first = first;
+        this.second = second;
     }
 
     @Override

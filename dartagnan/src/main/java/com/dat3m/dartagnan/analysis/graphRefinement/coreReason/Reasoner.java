@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.analysis.graphRefinement.coreReason;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Constraint;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.FenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.LocationGraph;
@@ -22,9 +22,13 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.Maps;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.utils.PathAlgorithm.findShortestPath;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 
 
 //TODO: Check the usage of derivation length
@@ -38,16 +42,18 @@ public class Reasoner {
     private final Relation co;
     private final Visitor visitor = new Visitor();
 
-    // We track for each recursive graph the edges we visit recursively
-    // If we recursively visit some edge twice, we end up in a cyclic reasoning (causing an exception right now)
+    // For debugging purposes, we track for each recursive graph the edges we visit recursively.
+    // If we recursively visit some edge twice, we end up in a cyclic reasoning which causes an exception right now.
+    // Due to the new derivation length reasoning, this should never happen!
+    private final Map<EventGraph, Set<Edge>> visitedMap = Maps.newIdentityHashMap();
+
     //TODO: For edges that do not depend on co, we may want to store the computed violations
     // to reuse them if possible.
-    private final Map<EventGraph, Set<Edge>> visitedMap = Maps.newIdentityHashMap();
 
     public Reasoner(ExecutionGraph execGraph, boolean useMinTupleReasoning) {
         this.execGraph = execGraph;
         this.eq = execGraph.getVerificationTask().getBranchEquivalence();
-        this.co = execGraph.getVerificationTask().getMemoryModel().getRelationRepository().getRelation("co");
+        this.co = execGraph.getVerificationTask().getMemoryModel().getRelationRepository().getRelation(CO);
         this.graphRelMap = execGraph.getRelationGraphMap().inverse();
         this.useMinTupleReasoning = useMinTupleReasoning;
 
@@ -57,7 +63,7 @@ public class Reasoner {
     }
 
 
-    public DNF<CoreLiteral> computeViolationReasons(GraphAxiom axiom) {
+    public DNF<CoreLiteral> computeViolationReasons(Constraint axiom) {
         if (!axiom.checkForViolations()) {
             return DNF.FALSE;
         }
@@ -93,14 +99,17 @@ public class Reasoner {
 
     // ================= Private Methods ==================
 
-
-
     private Conjunction<CoreLiteral> tryGetStaticReason(EventGraph graph, Edge e) {
         if (!useMinTupleReasoning) {
+            // We will probably always use minTupleReasoning, but this
+            // is for testing purposes here.
+            // Refinement should ideally work even without having min tuples
             return null;
         }
 
         if (graph == execGraph.getWoGraph()) {
+            // The WoGraph has no corresponding Relation in the WMM.
+            // Instead we use the CoGraph to look up a static reason.
             graph = execGraph.getCoGraph();
         }
         if (graphRelMap.get(graph).getMinTupleSet().contains(e.toTuple())) {
@@ -166,7 +175,8 @@ public class Reasoner {
         }
     }
 
-
+    // This method decides whether <literal> can be removed from <clause> cause it
+    // is already implied by the other literals in <clause>
     private boolean canBeRemoved(CoreLiteral literal, Conjunction<CoreLiteral> clause) {
         if (literal instanceof EventLiteral) {
             final BranchEquivalence eq = this.eq;
@@ -202,14 +212,9 @@ public class Reasoner {
             }
 
             // We try to compute a shortest reason based on the distance to the base graphs
-            List<EventGraph> deps = new ArrayList<>(graph.getDependencies());
-            //TODO: Why is this sorting still here? We check each graph anyway, cause
-            // we now store the derivation length per edge instead of per graph.
-            deps.sort(Comparator.comparingInt(execGraph::getShortestDerivationComplexity));
-
             Edge min = edge;
             EventGraph next = graph;
-            for (EventGraph g : deps) {
+            for (EventGraph g : graph.getDependencies()) {
                 Edge e = g.get(edge);
                 if (e != null && e.getDerivationLength() < min.getDerivationLength()) {
                     next = g;
@@ -256,8 +261,11 @@ public class Reasoner {
             EventGraph first = graph.getDependencies().get(0);
             EventGraph second = graph.getDependencies().get(1);
 
-            if (first.getEstimatedSize(edge.getFirst(), EdgeDirection.Outgoing)
-                    <= second.getEstimatedSize(edge.getSecond(), EdgeDirection.Ingoing)) {
+            //TODO: We could try to look for the edge composition that leads to the smallest
+            // derivation length, or generally, use some other composition than the first
+            // we find.
+            if (first.getEstimatedSize(edge.getFirst(), EdgeDirection.OUTGOING)
+                    <= second.getEstimatedSize(edge.getSecond(), EdgeDirection.INGOING)) {
                 for (Edge e1 : first.outEdges(edge.getFirst())) {
                     if (e1.getDerivationLength() >= edge.getDerivationLength()) {
                         continue;
@@ -293,7 +301,8 @@ public class Reasoner {
                 return reason;
             }
 
-            // TODO: Fix this for non-static relations?
+            //TODO: This is only correct as long as the second operand of the difference
+            // is a static relation. For now we work with this assumpion
             reason = graph.getDependencies().get(0).accept(this, edge, unused);
             assert !reason.isFalse();
             return reason;
@@ -420,13 +429,10 @@ public class Reasoner {
         }
 
         private Conjunction<CoreLiteral> visitWo(EventGraph graph, Edge edge, Void unused) {
-            if (!useMinTupleReasoning) {
-                // We still use minTupleSets for Co for now
-                if (co.getMinTupleSet().contains(edge.toTuple())) {
-                    return getExecReason(edge);
-                }
-            }
-            if (!co.getMaxTupleSet().contains(edge.toTuple().getInverse())) {
+            // We still use minTupleSets for Co for now, even if minTupleReasoning is disabled
+            if (co.getMinTupleSet().contains(edge.toTuple())) {
+                return getExecReason(edge);
+            } else if (!co.getMaxTupleSet().contains(edge.toTuple().getInverse())) {
                 return getAddressReason(edge);
             }
             return getCoherenceReason(edge);

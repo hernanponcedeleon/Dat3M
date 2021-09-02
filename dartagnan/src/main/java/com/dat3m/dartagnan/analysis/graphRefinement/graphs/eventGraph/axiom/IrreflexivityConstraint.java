@@ -11,12 +11,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class IrreflexivityAxiom extends GraphAxiom {
+public class IrreflexivityConstraint extends Constraint {
 
     private final List<Edge> violatingEdges = new ArrayList<>();
 
-    public IrreflexivityAxiom(EventGraph inner) {
-        super(inner);
+    public IrreflexivityConstraint(EventGraph constrainedGraph) {
+        super(constrainedGraph);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class IrreflexivityAxiom extends GraphAxiom {
     public void initialize(ExecutionModel context) {
         super.initialize(context);
         violatingEdges.clear();
-        inner.edgeStream().filter(Edge::isLoop).forEach(violatingEdges::add);
+        constrainedGraph.edgeStream().filter(Edge::isLoop).forEach(violatingEdges::add);
     }
 
     @Override

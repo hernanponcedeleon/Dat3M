@@ -21,7 +21,7 @@ public class ReadFromGraph extends StaticEventGraph {
 
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
-        if (dir == EdgeDirection.Ingoing) {
+        if (dir == EdgeDirection.INGOING) {
             return  e.getReadFrom() == null ? 0 : 1;
         } else  {
             return e.isWrite() ? model.getWriteReadsMap().get(e).size() : 0;
@@ -51,10 +51,10 @@ public class ReadFromGraph extends StaticEventGraph {
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         if (e.isWrite()) {
-            return dir == EdgeDirection.Ingoing ? Stream.empty() :
+            return dir == EdgeDirection.INGOING ? Stream.empty() :
                     model.getWriteReadsMap().get(e).stream().map(read -> makeEdge(e, read));
         } else if (e.isRead()) {
-            return dir == EdgeDirection.Ingoing ?
+            return dir == EdgeDirection.INGOING ?
                     Stream.of(new Edge(e.getReadFrom(), e)) : Stream.empty();
         }
         return Stream.empty();

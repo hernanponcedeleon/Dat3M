@@ -11,7 +11,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-// A materialized Union Graph. This seems to be more efficient than the virtualized UnionGraph
+// A materialized Intersection Graph.
+// This seems to be more efficient than the virtualized IntersectionGraph we used before.
 public class MatIntersectionGraph extends MaterializedGraph {
 
     private final EventGraph first;
@@ -21,6 +22,9 @@ public class MatIntersectionGraph extends MaterializedGraph {
     public List<? extends EventGraph> getDependencies() {
         return Arrays.asList(first, second);
     }
+
+    public EventGraph getFirst() { return first; }
+    public EventGraph getSecond() { return second; }
 
     public MatIntersectionGraph(EventGraph first, EventGraph second) {
         this.first = first;

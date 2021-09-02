@@ -66,10 +66,10 @@ public interface EventGraph extends GraphDerivable, Iterable<Edge> {
     }
 
     default Stream<Edge> outEdgeStream(EventData e) {
-        return edgeStream(e, EdgeDirection.Outgoing);
+        return edgeStream(e, EdgeDirection.OUTGOING);
     }
     default Stream<Edge> inEdgeStream(EventData e) {
-        return edgeStream(e, EdgeDirection.Ingoing);
+        return edgeStream(e, EdgeDirection.INGOING);
     }
 
     default Iterator<Edge> edgeIterator() {
@@ -83,8 +83,8 @@ public interface EventGraph extends GraphDerivable, Iterable<Edge> {
     default Iterable<Edge> edges(EventData e, EdgeDirection dir)
     { return OneTimeIterable.create(edgeIterator(e, dir)); }
 
-    default Iterator<Edge> inEdgeIterator(EventData e) { return edgeIterator(e, EdgeDirection.Ingoing); }
-    default Iterator<Edge> outEdgeIterator(EventData e) { return edgeIterator(e, EdgeDirection.Outgoing); }
+    default Iterator<Edge> inEdgeIterator(EventData e) { return edgeIterator(e, EdgeDirection.INGOING); }
+    default Iterator<Edge> outEdgeIterator(EventData e) { return edgeIterator(e, EdgeDirection.OUTGOING); }
 
     default Iterable<Edge> inEdges(EventData e) { return OneTimeIterable.create(inEdgeIterator(e)); }
     default Iterable<Edge> outEdges(EventData e) {  return OneTimeIterable.create(outEdgeIterator(e)); }

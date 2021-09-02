@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-// NOTE: Unlike LocRel, this graph is reflexive!
+// NOTE: Unlike RelLoc, this graph is reflexive!
 public class LocationGraph extends StaticEventGraph {
 
     private Map<BigInteger, Set<EventData>> addrEventsMap;
@@ -47,7 +47,7 @@ public class LocationGraph extends StaticEventGraph {
     @Override
     public Stream<Edge> edgeStream() {
         return addrEventsMap.values().stream().flatMap(Collection::stream)
-                .flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
+                .flatMap(x -> edgeStream(x, EdgeDirection.OUTGOING));
     }
 
     @Override
@@ -55,7 +55,7 @@ public class LocationGraph extends StaticEventGraph {
         if (!e.isMemoryEvent()) {
             return Stream.empty();
         }
-        Function<EventData, Edge> edgeMapping = dir == EdgeDirection.Outgoing ?
+        Function<EventData, Edge> edgeMapping = dir == EdgeDirection.OUTGOING ?
                 (x -> new Edge(e, x)) : (x -> new Edge(x, e));
         return addrEventsMap.get(e.getAccessedAddress()).stream().map(edgeMapping);
     }

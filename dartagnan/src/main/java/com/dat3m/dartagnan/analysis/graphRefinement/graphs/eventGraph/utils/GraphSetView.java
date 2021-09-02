@@ -55,14 +55,14 @@ public class GraphSetView implements Set<Edge> {
     @Override
     public Object[] toArray() {
         ArrayList<Edge> edgeList = new ArrayList<>(graph.getEstimatedSize());
-        stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
+        this.stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
         return edgeList.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
         ArrayList<Edge> edgeList = new ArrayList<>(graph.getEstimatedSize());
-        stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
+        this.stream().forEach(edgeList::add); // It is important that we do NOT perform edgeList.addAll(this)
         return edgeList.toArray(a);
     }
 
@@ -78,11 +78,7 @@ public class GraphSetView implements Set<Edge> {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        for (Object e : c) {
-            if (!contains(e))
-                return false;
-        }
-        return true;
+        return c.stream().allMatch(this::contains);
     }
 
     @Override

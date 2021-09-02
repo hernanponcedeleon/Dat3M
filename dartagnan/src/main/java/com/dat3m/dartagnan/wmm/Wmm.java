@@ -8,14 +8,6 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ADDRDIRECT;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-
-import java.util.*;
-
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
@@ -25,6 +17,8 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 /**
  *
@@ -145,7 +139,7 @@ public class Wmm {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
 		BooleanFormula enc = bmgr.makeTrue();
         for(String relName : baseRelations){
-            if (!encodeCo && relName.equals("co")) {
+            if (!encodeCo && relName.equals(CO)) {
                 continue;
             }
             enc = bmgr.and(enc, relationRepository.getRelation(relName).encode(ctx));

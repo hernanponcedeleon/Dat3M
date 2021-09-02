@@ -82,7 +82,7 @@ public abstract class StaticEventGraph extends AbstractEventGraph {
     protected final void autoComputeSize() {
         size = 0;
         for (EventData e : model.getEventList())
-            size += getMinSize(e, EdgeDirection.Outgoing);
+            size += getMinSize(e, EdgeDirection.OUTGOING);
     }
 
 }

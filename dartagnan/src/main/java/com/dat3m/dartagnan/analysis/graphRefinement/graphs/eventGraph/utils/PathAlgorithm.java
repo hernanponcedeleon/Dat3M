@@ -18,17 +18,12 @@ public class PathAlgorithm {
     private final static Map<EventData, Edge> parentMap2 = new HashMap<>();
 
 
+    /*
+        This uses a bidirectional BFS to find a shortest path.
+        A <filter> can be provided to skip certain edges during the search.
+     */
     private static List<Edge> findShortestPathBiDirInternal(EventGraph graph, EventData start, EventData end,
                                                            Predicate<Edge> filter) {
-        // A Bidirectional BFS search for a shortest path.
-        /*Queue<EventData> queue1 = new ArrayDeque<>();
-        HashSet<EventData> visited1 = new HashSet<>();
-        Map<EventData, Edge> parentMap1 = new HashMap<>();
-
-        Queue<EventData> queue2 = new ArrayDeque<>();
-        HashSet<EventData> visited2 = new HashSet<>();
-        Map<EventData, Edge> parentMap2 = new HashMap<>();*/
-
         queue1.clear();
         queue2.clear();
         visited1.clear();;
@@ -58,9 +53,7 @@ public class PathAlgorithm {
                             found = true;
                             parentMap1.put(cur, next);
                             break;
-                        }
-
-                        if (visited1.add(cur)) {
+                        } else if (visited1.add(cur)) {
                             parentMap1.put(cur, next);
                             queue1.add(cur);
                         }
@@ -84,8 +77,7 @@ public class PathAlgorithm {
                             found = true;
                             parentMap2.put(cur, next);
                             break;
-                        }
-                        if (visited2.add(cur)) {
+                        } else if (visited2.add(cur)) {
                             parentMap2.put(cur, next);
                             queue2.add(cur);
                         }
@@ -102,6 +94,8 @@ public class PathAlgorithm {
             return Collections.emptyList();
         }
 
+        //TODO: Find a way to efficiently get rid of the linked list
+        // Maybe convert to an ArrayList when returning?
         LinkedList<Edge> path = new LinkedList<>();
         EventData e = cur;
         do {
@@ -125,7 +119,6 @@ public class PathAlgorithm {
 
     // =============================== Public Methods ===============================
 
-    // Bidirectional ShortestPath
     public static List<Edge> findShortestPath(EventGraph graph, EventData start, EventData end) {
         Predicate<Edge> alwaysTrueFilter = (edge -> true);
         return findShortestPathBiDirInternal(graph, start, end, alwaysTrueFilter);

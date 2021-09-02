@@ -10,6 +10,10 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+/*
+    A meterialized graph simply encapsulates a SimpleGraph and delegates all its methods
+    to the underlying SimpleGraph.
+ */
 public abstract class MaterializedGraph extends AbstractEventGraph {
 
     protected final SimpleGraph simpleGraph;

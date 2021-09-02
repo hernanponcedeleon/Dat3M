@@ -11,13 +11,14 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import java.util.*;
 
 public class CompositionGraph extends MaterializedGraph {
+
+    private final EventGraph first;
+    private final EventGraph second;
+
     @Override
-    public List<EventGraph> getDependencies() {
+    public List<? extends EventGraph> getDependencies() {
         return Arrays.asList(first, second);
     }
-
-    protected EventGraph first;
-    protected EventGraph second;
 
     public EventGraph getFirst() { return first; }
     public EventGraph getSecond() { return second; }

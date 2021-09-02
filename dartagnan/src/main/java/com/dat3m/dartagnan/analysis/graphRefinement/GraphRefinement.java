@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.CoreLiteral;
 import com.dat3m.dartagnan.analysis.graphRefinement.coreReason.Reasoner;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Constraint;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.Conjunction;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.DNF;
 import com.dat3m.dartagnan.analysis.graphRefinement.logic.SortedClauseSet;
@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.util.*;
 
 import static com.dat3m.dartagnan.analysis.graphRefinement.RefinementStatus.*;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 
 /*
     Graph-based Refinement works as follows (with some simplifications):
@@ -119,7 +120,7 @@ public class GraphRefinement {
     }
 
     private List<Edge> createCoSearchList() {
-        Relation co = task.getMemoryModel().getRelationRepository().getRelation("co");
+        Relation co = task.getMemoryModel().getRelationRepository().getRelation(CO);
         Map<BigInteger, Set<Edge>> possibleCoEdges = new HashMap<>();
         List<Edge> initCoherences = new ArrayList<>();
         TupleSet minSet = co.getMinTupleSet();
@@ -343,8 +344,8 @@ public class GraphRefinement {
 
     private boolean checkViolations() {
         boolean hasViolation = false;
-        for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
-            hasViolation |= axiom.checkForViolations();
+        for (Constraint constraint : execGraph.getConstraints()) {
+            hasViolation |= constraint.checkForViolations();
         }
 
         return hasViolation;
@@ -352,9 +353,10 @@ public class GraphRefinement {
 
     private List<Conjunction<CoreLiteral>> computeViolationList() {
         List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
-        for (GraphAxiom axiom : execGraph.getGraphAxioms()) {
-            violations.addAll(reasoner.computeViolationReasons(axiom).getCubes());
+        for (Constraint constraint : execGraph.getConstraints()) {
+            violations.addAll(reasoner.computeViolationReasons(constraint).getCubes());
         }
+
         // Important code: We only retain those violations with the least number of co-literals
         // this heavily boosts the performance of the resolution!!!
         int minComplex = violations.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
@@ -407,7 +409,7 @@ public class GraphRefinement {
             return;
 
         for (Relation relData : task.getRelationDependencyGraph().getNodeContents()) {
-            if (relData.getName().equals("co")) {
+            if (relData.getName().equals(CO)) {
                 continue;
             }
             if (relData.isStaticRelation() || relData.isRecursiveRelation()) {

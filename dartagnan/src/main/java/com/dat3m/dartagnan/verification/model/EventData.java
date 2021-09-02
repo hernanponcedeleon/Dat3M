@@ -119,7 +119,7 @@ public class EventData implements Comparable<EventData> {
     @Override
     public boolean equals(Object obj) {
         // EventData instances are unique per event.
-        return obj == this;
+        return this == obj;
     }
 
     @Override

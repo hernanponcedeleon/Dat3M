@@ -9,18 +9,18 @@ import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class GraphAxiom implements GraphListener, Dependent<EventGraph> {
+public abstract class Constraint implements GraphListener, Dependent<EventGraph> {
     protected ExecutionModel context;
-    protected final EventGraph inner;
+    protected final EventGraph constrainedGraph;
 
-    public EventGraph getConstrainedGraph() { return inner; }
+    public EventGraph getConstrainedGraph() { return constrainedGraph; }
 
     public List<EventGraph> getDependencies() {
-        return Collections.singletonList(inner);
+        return Collections.singletonList(constrainedGraph);
     }
 
-    public GraphAxiom(EventGraph inner) {
-        this.inner = inner;
+    public Constraint(EventGraph constrainedGraph) {
+        this.constrainedGraph = constrainedGraph;
     }
 
     public void initialize(ExecutionModel context) {

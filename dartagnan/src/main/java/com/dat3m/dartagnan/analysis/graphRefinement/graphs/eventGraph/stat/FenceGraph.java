@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -15,20 +14,16 @@ public class FenceGraph extends StaticEventGraph {
     private final String fenceName;
     private Map<Thread, List<EventData>> threadFencesMap;
 
-    public FenceGraph(RelFencerel fencerel) {
-        this(fencerel.getFenceName());
-    }
-
     public FenceGraph(String fenceName) {
         this.fenceName = fenceName;
     }
 
-    //TODO: We might want to employ binary search instead of linear search
     @Override
     public boolean contains(EventData a, EventData b) {
         if (a.getThread() != b.getThread() || a.getLocalId() >= b.getLocalId())
             return false;
 
+        //TODO: We might want to employ binary search instead of linear search
         return threadFencesMap.get(a.getThread()).stream()
                 .anyMatch(fence -> a.getLocalId() < fence.getLocalId() && fence.getLocalId() < b.getLocalId());
     }
@@ -67,13 +62,13 @@ public class FenceGraph extends StaticEventGraph {
                     return x.getValue().subList(0, lastId);
                 })
                 .flatMap(Collection::stream)
-                .flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
+                .flatMap(x -> edgeStream(x, EdgeDirection.OUTGOING));
     }
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         List<EventData> threadEvents = model.getThreadEventsMap().get(e.getThread());
-        if (dir == EdgeDirection.Outgoing) {
+        if (dir == EdgeDirection.OUTGOING) {
             EventData fence = getNextFence(e);
             return fence == null ? Stream.empty() :
                     threadEvents.subList(fence.getLocalId() + 1, threadEvents.size())
@@ -87,11 +82,11 @@ public class FenceGraph extends StaticEventGraph {
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
         int size = 0;
-        if (dir == EdgeDirection.Outgoing) {
+        if (dir == EdgeDirection.OUTGOING) {
             EventData closestFence = getNextFence(e);
             size = closestFence == null ? 0 :
                     model.getThreadEventsMap().get(e.getThread()).size() - (closestFence.getLocalId() + 1);
-        } else if (dir == EdgeDirection.Ingoing) {
+        } else if (dir == EdgeDirection.INGOING) {
             EventData closestFence = getPreviousFence(e);
             size = closestFence == null ? 0 : closestFence.getLocalId();
         }

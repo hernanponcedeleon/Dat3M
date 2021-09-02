@@ -1,20 +1,20 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.util;
 
 public enum EdgeDirection {
-    Outgoing,
-    Ingoing;
+    OUTGOING,
+    INGOING;
 
     public EdgeDirection flip() {
         EdgeDirection dir;
         switch (this) {
-            case Ingoing:
-                dir = Outgoing;
+            case INGOING:
+                dir = OUTGOING;
                 break;
-            case Outgoing:
-                dir = Ingoing;
+            case OUTGOING:
+                dir = INGOING;
                 break;
             default:
-                throw new IllegalStateException();
+                throw new IllegalStateException(this + " is an unknown enum member.");
         }
         return dir;
     }

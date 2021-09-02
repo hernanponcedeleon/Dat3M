@@ -19,6 +19,11 @@ import java.util.stream.Stream;
 // Also it might be reasonable to always create all DataItems to avoid checks during runtime
 //TODO 2: Check if it is worth to maintain an extra array per DataItem for iteration.
 // This might be relevant in particular with the first idea
+
+/*
+    This is a simple graph that allows adding edges directly.
+    It is mostly used as an internal implementation for many event graphs.
+ */
 public final class SimpleGraph extends AbstractEventGraph {
     private int size;
     private DataItem[] outgoing;
@@ -49,10 +54,10 @@ public final class SimpleGraph extends AbstractEventGraph {
     private DataItem getItem(EventData e, EdgeDirection dir) {
         DataItem item;
         switch (dir) {
-            case Outgoing:
+            case OUTGOING:
                 item = outgoing[e.getId()];
                 break;
-            case Ingoing:
+            case INGOING:
                 item = ingoing[e.getId()];
                 break;
             default:
@@ -198,13 +203,11 @@ public final class SimpleGraph extends AbstractEventGraph {
 
 
     private static final class DataItem implements Iterable<Edge> {
-        //final ArrayList<Edge> edgeArray;
         final Map<Edge, Edge> edgeMap;
         final Set<Edge> edgeSet;
         Timestamp maxStamp;
 
         public DataItem() {
-            //edgeArray = new ArrayList<>();
             edgeMap = new HashMap<>();
             edgeSet = edgeMap.keySet();
             maxStamp = Timestamp.ZERO;
@@ -223,7 +226,6 @@ public final class SimpleGraph extends AbstractEventGraph {
                 maxStamp = Timestamp.max(maxStamp, e.getTime());
                 return true;
             }
-            //edgeArray.add(e);
             return false;
         }
 
@@ -246,14 +248,12 @@ public final class SimpleGraph extends AbstractEventGraph {
         }
 
         public void clear() {
-           // edgeArray.clear();
             edgeMap.clear();
             maxStamp = Timestamp.ZERO;
         }
 
         public void backtrack() {
             if (maxStamp.isInvalid()) {
-                //edgeArray.removeIf(Timeable::isInvalid);
                 edgeSet.removeIf(Timeable::isInvalid);
                 maxStamp = edgeSet.stream().map(Edge::getTime).reduce(Timestamp.ZERO, Timestamp::max);
             }

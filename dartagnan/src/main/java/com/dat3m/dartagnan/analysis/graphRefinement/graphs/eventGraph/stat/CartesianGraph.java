@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
-import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +17,6 @@ public class CartesianGraph extends StaticEventGraph {
 
     private final FilterAbstract first;
     private final FilterAbstract second;
-
-    public CartesianGraph(RelCartesian rel) {
-        this(rel.getFirstFilter(), rel.getSecondFilter());
-    }
 
     public CartesianGraph(FilterAbstract first, FilterAbstract second) {
         this.first = first;
@@ -60,7 +55,7 @@ public class CartesianGraph extends StaticEventGraph {
 
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
-        if (dir == EdgeDirection.Outgoing) {
+        if (dir == EdgeDirection.OUTGOING) {
             return first.filter(e.getEvent()) ? secondEvents.size() : 0;
         } else {
             return second.filter(e.getEvent()) ? firstEvents.size() : 0;
@@ -74,7 +69,7 @@ public class CartesianGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        if (dir == EdgeDirection.Outgoing) {
+        if (dir == EdgeDirection.OUTGOING) {
             return first.filter(e.getEvent()) ? secondEvents.stream().map(b -> new Edge(e, b)) : Stream.empty();
         } else {
             return second.filter(e.getEvent()) ? firstEvents.stream().map(a -> new Edge(a, e)) : Stream.empty();

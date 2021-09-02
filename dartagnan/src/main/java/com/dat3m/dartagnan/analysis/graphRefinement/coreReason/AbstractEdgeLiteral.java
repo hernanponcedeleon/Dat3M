@@ -1,9 +1,6 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.coreReason;
 
 import com.dat3m.dartagnan.verification.model.Edge;
-import com.dat3m.dartagnan.wmm.utils.Utils;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public abstract class AbstractEdgeLiteral extends AbstractLiteral {
     protected Edge edge;
@@ -41,10 +38,5 @@ public abstract class AbstractEdgeLiteral extends AbstractLiteral {
     @Override
     public String toString() {
         return name + "(" + edge.getFirst() + "," + edge.getSecond() + ")";
-    }
-
-    @Override
-    public BooleanFormula getBooleanFormula(SolverContext ctx) {
-        return Utils.edge(name, edge.getFirst().getEvent(), edge.getSecond().getEvent(), ctx);
     }
 }

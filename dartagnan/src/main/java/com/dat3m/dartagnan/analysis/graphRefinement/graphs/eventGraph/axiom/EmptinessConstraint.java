@@ -11,12 +11,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class EmptinessAxiom extends GraphAxiom {
+public class EmptinessConstraint extends Constraint {
 
     private final List<Edge> violatingEdges = new ArrayList<>();
 
-    public EmptinessAxiom(EventGraph inner) {
-        super(inner);
+    public EmptinessConstraint(EventGraph constrainedGraph) {
+        super(constrainedGraph);
     }
 
     @Override
@@ -28,7 +28,7 @@ public class EmptinessAxiom extends GraphAxiom {
     public void initialize(ExecutionModel context) {
         super.initialize(context);
         violatingEdges.clear();
-        onGraphChanged(inner, inner.setView());
+        onGraphChanged(constrainedGraph, constrainedGraph.setView());
     }
 
     @Override

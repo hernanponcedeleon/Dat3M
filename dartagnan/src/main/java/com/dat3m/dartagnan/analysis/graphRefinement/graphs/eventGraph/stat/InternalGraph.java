@@ -31,12 +31,12 @@ public class InternalGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return model.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.Outgoing));
+        return model.getEventList().stream().flatMap(e -> edgeStream(e, EdgeDirection.OUTGOING));
     }
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        Function<EventData, Edge> edgeMapping = dir == EdgeDirection.Outgoing ?
+        Function<EventData, Edge> edgeMapping = dir == EdgeDirection.OUTGOING ?
                 (x -> new Edge(e, x)) : (x -> new Edge(x, e));
 
         return threadEventsMap.get(e.getThread()).stream().map(edgeMapping);

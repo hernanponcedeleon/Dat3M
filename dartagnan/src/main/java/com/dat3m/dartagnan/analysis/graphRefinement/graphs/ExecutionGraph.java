@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.graphs;
 
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.AcyclicityAxiom;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.EmptinessAxiom;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.GraphAxiom;
-import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.IrreflexivityAxiom;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.AcyclicityConstraint;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Constraint;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.EmptinessConstraint;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.IrreflexivityConstraint;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.CompositionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.Mat
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.MatUnionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.*;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.unary.*;
-import com.dat3m.dartagnan.analysis.graphRefinement.util.ShortestDerivationComplexity;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.Edge;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -35,19 +34,22 @@ import com.google.common.collect.*;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class ExecutionGraph {
 
     // These graphs are only relevant for data, ctrl and addr, all of which have a special event graph (see below)
+    //TODO: We cannot use the RelationNameRepository here, because some of the relations are unnamed.
+    // We need a better way to handle this.
     private static final Set<String> EXCLUDED_RELS = ImmutableSet.of(
             "idd", "idd^+", "ctrlDirect", "addrDirect", "(idd^+;addrDirect)", "(addrDirect+(idd^+;addrDirect))",
             "(idd^+;ctrlDirect)"
     );
 
     // These relations have special event graphs associated with them
-    private static final Set<String> SPECIAL_RELS = ImmutableSet.of("addr", "data", "ctrl", "crit");
+    private static final Set<String> SPECIAL_RELS = ImmutableSet.of(ADDR, DATA, CTRL, CRIT);
 
 
     // ================== Fields =====================
@@ -58,9 +60,8 @@ public class ExecutionGraph {
 
     private final VerificationTask verificationTask;
     private final BiMap<Relation, EventGraph> relationGraphMap;
-    private final BiMap<Axiom, GraphAxiom> axiomMap;
+    private final BiMap<Axiom, Constraint> constraintMap;
     private GraphHierarchy graphHierarchy;
-    private Map<EventGraph, Integer> derivationComplexityMap;
 
     private EventGraph poGraph;
     private EventGraph rfGraph;
@@ -69,6 +70,8 @@ public class ExecutionGraph {
 
     /*
         A non-transitive version of <coGraph> that is maintained by the Saturation procedure.
+        We use it to distinguish between directly added coherences and coherences that were transitively derived.
+        We maintain the invariant co = wo^+ at all times.
      */
     private EventGraph woGraph;
 
@@ -79,13 +82,13 @@ public class ExecutionGraph {
     public ExecutionGraph(VerificationTask verificationTask) {
         this.verificationTask = verificationTask;
         relationGraphMap = HashBiMap.create();
-        axiomMap = HashBiMap.create();
+        constraintMap = HashBiMap.create();
         constructMappings();
     }
 
     public void initializeFromModel(ExecutionModel executionModel) {
         graphHierarchy.constructFromModel(executionModel);
-        axiomMap.values().forEach(x -> x.initialize(executionModel));
+        constraintMap.values().forEach(x -> x.initialize(executionModel));
     }
 
     // --------------------------------------------------
@@ -101,12 +104,11 @@ public class ExecutionGraph {
             }
         }
         graphHierarchy = new GraphHierarchy(graphs);
-        derivationComplexityMap = ImmutableMap.copyOf(new ShortestDerivationComplexity(graphHierarchy).getComplexityMap());
 
         for (Axiom axiom : verificationTask.getAxioms()) {
-            GraphAxiom ax = getGraphAxiomFromAxiom(axiom);
             EventGraph graph = getGraphFromRelation(axiom.getRelation());
-            graphHierarchy.addGraphListener(graph, ax);
+            Constraint constraint = getConstraintFromAxiom(axiom);
+            graphHierarchy.addGraphListener(graph, constraint);
         }
     }
 
@@ -120,8 +122,8 @@ public class ExecutionGraph {
         return Maps.unmodifiableBiMap(relationGraphMap);
     }
 
-    public BiMap<Axiom, GraphAxiom> getAxiomMap() {
-        return Maps.unmodifiableBiMap(axiomMap);
+    public BiMap<Axiom, Constraint> getConstraintMap() {
+        return Maps.unmodifiableBiMap(constraintMap);
     }
 
     public EventGraph getPoGraph() { return poGraph; }
@@ -138,19 +140,12 @@ public class ExecutionGraph {
         return graphHierarchy.getGraphList();
     }
 
-    public GraphAxiom getGraphAxiom(Axiom axiom) {
-        return axiomMap.get(axiom);
+    public Constraint getConstraint(Axiom axiom) {
+        return constraintMap.get(axiom);
     }
 
-    public Collection<GraphAxiom> getGraphAxioms() {
-        return axiomMap.values();
-    }
-
-    // The length of a shortest path from <graph> to some base graph
-    // along the dependency graph
-    // TODO: This is not really used anymore. We can probably remove it
-    public int getShortestDerivationComplexity(EventGraph graph) {
-        return derivationComplexityMap.getOrDefault(graph, -1);
+    public Collection<Constraint> getConstraints() {
+        return constraintMap.values();
     }
 
     // ====================================================
@@ -181,22 +176,25 @@ public class ExecutionGraph {
 
     //=================== Reading the WMM ====================
 
-    private GraphAxiom getGraphAxiomFromAxiom(Axiom axiom) {
-        if (axiomMap.containsKey(axiom))
-            return axiomMap.get(axiom);
-
-        GraphAxiom graphAxiom = null;
-        EventGraph innerGraph = getGraphFromRelation(axiom.getRelation());
-        if (axiom.isAcyclicity()) {
-            graphAxiom = new AcyclicityAxiom(innerGraph);
-        } else if (axiom.isEmptiness()) {
-            graphAxiom = new EmptinessAxiom(innerGraph);
-        } else if (axiom.isIrreflexivity()) {
-            graphAxiom = new IrreflexivityAxiom(innerGraph);
+    private Constraint getConstraintFromAxiom(Axiom axiom) {
+        if (constraintMap.containsKey(axiom)) {
+            return constraintMap.get(axiom);
         }
 
-        axiomMap.put(axiom, graphAxiom);
-        return graphAxiom;
+        Constraint constraint;
+        EventGraph innerGraph = getGraphFromRelation(axiom.getRelation());
+        if (axiom.isAcyclicity()) {
+            constraint = new AcyclicityConstraint(innerGraph);
+        } else if (axiom.isEmptiness()) {
+            constraint = new EmptinessConstraint(innerGraph);
+        } else if (axiom.isIrreflexivity()) {
+            constraint = new IrreflexivityConstraint(innerGraph);
+        } else {
+            throw new UnsupportedOperationException("The axiom " + axiom + " is not recognized.");
+        }
+
+        constraintMap.put(axiom, constraint);
+        return constraint;
     }
 
     private EventGraph getGraphFromRelation(Relation rel) {
@@ -210,16 +208,16 @@ public class ExecutionGraph {
         // ===== Filter special relations ======
         if (SPECIAL_RELS.contains(rel.getName())) {
             switch (rel.getName()) {
-                case "ctrl":
+                case CTRL:
                     graph = new CtrlDepGraph();
                     break;
-                case "data":
+                case DATA:
                     graph = new DataDepGraph();
                     break;
-                case "addr":
+                case ADDR:
                     graph = new AddrDepGraph();
                     break;
-                case "crit":
+                case CRIT:
                     graph = new RcuGraph();
                     break;
                 default:
@@ -260,7 +258,7 @@ public class ExecutionGraph {
                 EventGraph transGraph = getGraphFromRelation(relTrans);
                 graph = new ReflexiveClosureGraph(transGraph);
             } else {
-                throw new UnsupportedOperationException(relClass.toString() + " has not associated graph yet.");
+                throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
             }
         } else if (rel.isBinaryRelation()) {
             EventGraph first = getGraphFromRelation(rel.getFirst());
@@ -280,11 +278,12 @@ public class ExecutionGraph {
             } else if (relClass == RelMinus.class) {
                 graph = new DifferenceGraph(first, second);
             } else {
-                throw new UnsupportedOperationException(relClass.toString() + " has not associated graph yet.");
+                throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
             }
         } else if (rel.isStaticRelation()) {
             if (relClass == RelCartesian.class) {
-                graph = new CartesianGraph((RelCartesian) rel);
+                RelCartesian cartRel = (RelCartesian)rel;
+                graph = new CartesianGraph(cartRel.getFirstFilter(), cartRel.getSecondFilter());
             } else if (relClass == RelRMW.class) {
                 graph = new RMWGraph();
             } else if (relClass == RelExt.class) {
@@ -292,10 +291,9 @@ public class ExecutionGraph {
             } else if (relClass == RelInt.class) {
                 graph = new InternalGraph();
             } else if (relClass == RelFencerel.class) {
-                graph = new FenceGraph((RelFencerel) rel);
+                graph = new FenceGraph(((RelFencerel) rel).getFenceName());
             } else if (relClass == RelSetIdentity.class) {
-                RelSetIdentity relSet = (RelSetIdentity) rel;
-                graph = new SetIdentityGraph(relSet.getFilter());
+                graph = new SetIdentityGraph(((RelSetIdentity) rel).getFilter());
             } else if (relClass == RelId.class) {
                 graph = new IdentityGraph();
             } else if (relClass == RelEmpty.class) {
@@ -305,8 +303,7 @@ public class ExecutionGraph {
                 graph = new StaticDefaultEventGraph(rel);
             }
         } else {
-            throw new UnsupportedOperationException(relClass.toString() + " has not associated graph yet.");
-            //throw new RuntimeException(new ClassNotFoundException(relClass.toString() + " is no supported relation class"));
+            throw new UnsupportedOperationException(relClass.toString() + " has no associated graph yet.");
         }
 
         graph.setName(rel.getName());

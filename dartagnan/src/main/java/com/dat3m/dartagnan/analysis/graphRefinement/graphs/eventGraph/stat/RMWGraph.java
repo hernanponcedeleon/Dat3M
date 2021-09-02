@@ -33,11 +33,13 @@ public class RMWGraph extends MaterializedGraph {
     }
 
 
-    /* There are four cases where the RMW-Relation is established:
+    /* Right now there are four cases where the RMW-Relation is established:
      (1) LOCK : Load -> CondJump -> Store
      (2) RMW : RMWLoad -> RMWStore (completely static)
      (3) ExclAccess : ExclLoad -> ExclStore (dependent on control flow)
      (4) Atomic blocks: BeginAtomic -> Events* -> EndAtomic
+
+     We need to keep this in line with the implementation of RelRMW!
     */
     private void populate() {
         // Atomic blocks
@@ -51,7 +53,6 @@ public class RMWGraph extends MaterializedGraph {
                 }
         );
 
-        //TODO: We still need to encode parts of RMW to give correct semantics to exclusive Load/Store on AARCH64 (do we?)
         for (List<EventData> events : model.getThreadEventsMap().values()) {
             EventData lastExclLoad = null;
             for (int i = 0; i < events.size(); i++) {
@@ -59,7 +60,8 @@ public class RMWGraph extends MaterializedGraph {
                 if (e.isRead()) {
                     if (e.isLock()) {   // Locks ~ (Load -> CondJump -> Store)
                         if (i + 1 < events.size()) {
-                            // The condition fails, if the lock was not obtained
+                            // The condition fails, if the lock was not obtained cause then
+                            // it will be the last event of the thread (we terminate on failed locks)
                             EventData next = events.get(i + 1);
                             simpleGraph.add(new Edge(e, next));
                         }
@@ -69,7 +71,7 @@ public class RMWGraph extends MaterializedGraph {
                 } else if (e.isWrite()) {
                     if (e.isExclusive()) { // StoreExcl
                         if (lastExclLoad == null) {
-                            throw new IllegalStateException("Exclusive store was executed without exclusive load.");
+                            throw new IllegalStateException("Exclusive store was executed without preceding exclusive load.");
                         }
                         simpleGraph.add(new Edge(lastExclLoad, e));
                         lastExclLoad = null;

@@ -26,7 +26,7 @@ public class RcuGraph extends StaticEventGraph {
 
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
-        BiMap<EventData, EventData> map = dir == EdgeDirection.Outgoing ? lockUnlockMap : unlockLockMap;
+        BiMap<EventData, EventData> map = dir == EdgeDirection.OUTGOING ? lockUnlockMap : unlockLockMap;
         return map.containsKey(e) ? 1 : 0;
     }
 
@@ -68,8 +68,8 @@ public class RcuGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
-        BiMap<EventData, EventData> map = dir == EdgeDirection.Outgoing ? lockUnlockMap : unlockLockMap;
-        EventData a = dir == EdgeDirection.Outgoing ? e : map.get(e);
+        BiMap<EventData, EventData> map = dir == EdgeDirection.OUTGOING ? lockUnlockMap : unlockLockMap;
+        EventData a = dir == EdgeDirection.OUTGOING ? e : map.get(e);
         EventData b = (a == e) ? map.get(e) : e;
         if (a == null || b == null) {
             return Stream.empty();

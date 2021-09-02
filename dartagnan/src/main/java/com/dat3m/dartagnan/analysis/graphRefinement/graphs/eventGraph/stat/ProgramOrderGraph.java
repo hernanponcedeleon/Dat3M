@@ -21,7 +21,7 @@ public class ProgramOrderGraph extends StaticEventGraph {
 
     @Override
     public int getMinSize(EventData e, EdgeDirection dir) {
-        if (dir == EdgeDirection.Outgoing) {
+        if (dir == EdgeDirection.OUTGOING) {
             return (threadEventsMap.get(e.getThread()).size() - e.getLocalId()) - 1;
         } else {
             return e.getLocalId() - 1;
@@ -45,13 +45,13 @@ public class ProgramOrderGraph extends StaticEventGraph {
 
     @Override
     public Stream<Edge> edgeStream() {
-        return model.getEventList().stream().flatMap(x -> edgeStream(x, EdgeDirection.Outgoing));
+        return model.getEventList().stream().flatMap(x -> edgeStream(x, EdgeDirection.OUTGOING));
     }
 
     @Override
     public Stream<Edge> edgeStream(EventData e, EdgeDirection dir) {
         List<EventData> threadEvents = model.getThreadEventsMap().get(e.getThread());
-        if (dir == EdgeDirection.Outgoing) {
+        if (dir == EdgeDirection.OUTGOING) {
             return threadEvents.subList(e.getLocalId() + 1, threadEvents.size()).stream().map(x -> new Edge(e, x));
         } else {
             return threadEvents.subList(0, e.getLocalId()).stream().map(x -> new Edge(x, e));
