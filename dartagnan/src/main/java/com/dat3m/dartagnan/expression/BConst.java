@@ -55,7 +55,7 @@ public class BConst extends BExpr implements ExprInterface {
 
 	@Override
 	public ExprInterface reduce() {
-		return new BConst(value);
+		return this;
 	}
 	
 	public boolean getValue() {
