@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -57,15 +58,8 @@ public class AliasAnalysis {
             // Collect for each v events of form: p = *v, *v = q
             if (address instanceof Register) {
                 graph.addEvent((Register) address, e);
-
             } else if (address instanceof Address) {
-                // Rule register = &loc -> lo(register) = {loc}
-                if (e instanceof RegWriter) {
-                    Register register = ((RegWriter) e).getResultRegister();
-                    graph.addAddress(register, (Address) address);
-                    variables.add(register);
-
-                } else if (e instanceof Init) {
+                if (e instanceof Init) {
                     // Rule loc = &loc2 -> lo(loc) = {loc2} (only possible in init events)
                     Location loc = program.getMemory().getLocationForAddress((Address) address);
                     IExpr value = ((Init) e).getValue();
@@ -74,7 +68,6 @@ public class AliasAnalysis {
                         variables.add(loc);
                     }
                 }
-
             } else {
                 // r = *(CompExpr) -> loc(r) = max
                 if (e instanceof RegWriter) {
@@ -313,6 +306,10 @@ public class AliasAnalysis {
             }
             ImmutableSet<Address> addr = ImmutableSet.copyOf(addresses);
             ((MemEvent) e).setMaxAddressSet(addr);
+            if(e instanceof RMWStore) {
+            	System.out.println(e);
+            	System.out.println(addr);
+            }
         }
     }
 
