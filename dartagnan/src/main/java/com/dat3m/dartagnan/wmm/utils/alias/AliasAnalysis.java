@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Address;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -306,10 +305,6 @@ public class AliasAnalysis {
             }
             ImmutableSet<Address> addr = ImmutableSet.copyOf(addresses);
             ((MemEvent) e).setMaxAddressSet(addr);
-            if(e instanceof RMWStore) {
-            	System.out.println(e);
-            	System.out.println(addr);
-            }
         }
     }
 
