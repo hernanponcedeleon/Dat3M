@@ -21,6 +21,8 @@ import com.dat3m.dartagnan.wmm.relation.unary.RelInverse;
 import com.dat3m.dartagnan.wmm.relation.unary.RelTrans;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -110,89 +112,89 @@ public class RelationRepository {
 
     private Relation getBasicRelation(String name){
         switch (name){
-            case "_po":
+            case POWITHLOCALEVENTS:
                 return new RelPo(true);
-            case "po":
+            case PO:
                 return new RelPo();
-            case "loc":
+            case LOC:
                 return new RelLoc();
-            case "id":
+            case ID:
                 return new RelId();
-            case "int":
+            case INT:
                 return new RelInt();
-            case "ext":
+            case EXT:
                 return new RelExt();
-            case "co":
+            case CO:
                 return new RelCo();
-            case "rf":
+            case RF:
                 return new RelRf();
-            case "rmw":
+            case RMW:
                 return new RelRMW();
-            case "crit":
+            case CRIT:
                 return new RelCrit();
-            case "idd":
+            case IDD:
                 return new RelIdd();
-            case "addrDirect":
+            case ADDRDIRECT:
                 return new RelAddrDirect();
-            case "ctrlDirect":
+            case CTRLDIRECT:
                 return new RelCtrlDirect();
-            case "0":
-                return new RelEmpty("0");
-            case "rf^-1":
-                return getRelation(RelInverse.class, getRelation("rf"));
-            case "fr":
-                return getRelation(RelComposition.class, getRelation("rf^-1"), getRelation("co")).setName("fr");
-            case "(R*W)":
+            case EMPTY:
+                return new RelEmpty(EMPTY);
+            case RFINV:
+                return getRelation(RelInverse.class, getRelation(RF));
+            case FR:
+                return getRelation(RelComposition.class, getRelation(RFINV), getRelation(CO)).setName(FR);
+            case RW:
                 return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.WRITE));
-            case "(R*M)":
+            case RM:
                 return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.MEMORY));
-            case "(R*V)":
+            case RV:
                 return getRelation(RelCartesian.class, FilterBasic.get(EType.READ), FilterBasic.get(EType.VISIBLE));
-            case "idd^+":
-                return getRelation(RelTrans.class, getRelation("idd"));
-            case "data":
-                return getRelation(RelIntersection.class, getRelation("idd^+"), getRelation("(R*W)")).setName("data");
-            case "addr":
+            case IDDTRANS:
+                return getRelation(RelTrans.class, getRelation(IDD));
+            case DATA:
+                return getRelation(RelIntersection.class, getRelation(IDDTRANS), getRelation(RW)).setName(DATA);
+            case ADDR:
                 return getRelation(RelIntersection.class,
                         getRelation(
                                 RelUnion.class,
-                                getRelation("addrDirect"),
-                                getRelation(RelComposition.class, getRelation("idd^+"), getRelation("addrDirect"))
-                        ), getRelation("(R*M)")).setName("addr");
-            case "ctrl":
+                                getRelation(ADDRDIRECT),
+                                getRelation(RelComposition.class, getRelation(IDDTRANS), getRelation(ADDRDIRECT))
+                        ), getRelation(RM)).setName(ADDR);
+            case CTRL:
                 return getRelation(RelIntersection.class,
-                        getRelation(RelComposition.class, getRelation("idd^+"), getRelation("ctrlDirect")),
-                        getRelation("(R*V)")).setName("ctrl");
-            case "po-loc":
-                return getRelation(RelIntersection.class, getRelation("po"), getRelation("loc")).setName("po-loc");
-            case "rfe":
-                return getRelation(RelIntersection.class, getRelation("rf"), getRelation("ext")).setName("rfe");
-            case "rfi":
-                return getRelation(RelIntersection.class, getRelation("rf"), getRelation("int")).setName("rfi");
-            case "coe":
-                return getRelation(RelIntersection.class, getRelation("co"), getRelation("ext")).setName("coe");
-            case "coi":
-                return getRelation(RelIntersection.class, getRelation("co"), getRelation("int")).setName("coi");
-            case "fre":
-                return getRelation(RelIntersection.class, getRelation("fr"), getRelation("ext")).setName("fre");
-            case "fri":
-                return getRelation(RelIntersection.class, getRelation("fr"), getRelation("int")).setName("fri");
-            case "mfence":
+                        getRelation(RelComposition.class, getRelation(IDDTRANS), getRelation(CTRLDIRECT)),
+                        getRelation(RV)).setName(CTRL);
+            case POLOC:
+                return getRelation(RelIntersection.class, getRelation(PO), getRelation(LOC)).setName(POLOC);
+            case RFE:
+                return getRelation(RelIntersection.class, getRelation(RF), getRelation(EXT)).setName(RFE);
+            case RFI:
+                return getRelation(RelIntersection.class, getRelation(RF), getRelation(INT)).setName(RFI);
+            case COE:
+                return getRelation(RelIntersection.class, getRelation(CO), getRelation(EXT)).setName(COE);
+            case COI:
+                return getRelation(RelIntersection.class, getRelation(CO), getRelation(INT)).setName(COI);
+            case FRE:
+                return getRelation(RelIntersection.class, getRelation(FR), getRelation(EXT)).setName(FRE);
+            case FRI:
+                return getRelation(RelIntersection.class, getRelation(FR), getRelation(INT)).setName(FRI);
+            case MFENCE:
                 return getRelation(RelFencerel.class,"Mfence");
-            case "ish":
+            case ISH:
                 return getRelation(RelFencerel.class,"Ish");
-            case "isb":
+            case ISB:
                 return getRelation(RelFencerel.class,"Isb");
-            case "sync":
+            case SYNC:
                 return getRelation(RelFencerel.class,"Sync");
-            case "isync":
+            case ISYNC:
                 return getRelation(RelFencerel.class,"Isync");
-            case "lwsync":
+            case LWSYNC:
                 return getRelation(RelFencerel.class,"Lwsync");
-            case "ctrlisync":
-                return getRelation(RelIntersection.class, getRelation("ctrl"), getRelation("isync")).setName("ctrlisync");
-            case "ctrlisb":
-                return getRelation(RelIntersection.class, getRelation("ctrl"), getRelation("isb")).setName("ctrlisb");
+            case CTRLISYNC:
+                return getRelation(RelIntersection.class, getRelation(CTRL), getRelation(ISYNC)).setName(CTRLISYNC);
+            case CTRLISB:
+                return getRelation(RelIntersection.class, getRelation(CTRL), getRelation(ISB)).setName(CTRLISB);
             default:
                 return null;
         }

@@ -8,6 +8,14 @@ import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ADDRDIRECT;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.IDD;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+
+import java.util.*;
+
 import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.alias.AliasAnalysis;
@@ -24,7 +32,7 @@ import java.util.*;
  */
 public class Wmm {
 
-    private final static ImmutableSet<String> baseRelations = ImmutableSet.of("co", "rf", "idd", "addrDirect");
+    private final static ImmutableSet<String> baseRelations = ImmutableSet.of(CO, RF, IDD, ADDRDIRECT);
 
     private final List<Axiom> axioms = new ArrayList<>();
     private final Map<String, FilterAbstract> filters = new HashMap<>();

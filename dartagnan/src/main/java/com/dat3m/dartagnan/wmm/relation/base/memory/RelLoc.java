@@ -15,11 +15,12 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.Collection;
 
 import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.LOC;
 
 public class RelLoc extends Relation {
 
     public RelLoc(){
-        term = "loc";
+        term = LOC;
     }
 
     @Override

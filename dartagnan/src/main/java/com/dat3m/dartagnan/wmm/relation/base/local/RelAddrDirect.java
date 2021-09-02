@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ADDRDIRECT;
+
 import java.util.*;
 
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -15,7 +17,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 public class RelAddrDirect extends BasicRegRelation {
 
     public RelAddrDirect(){
-        term = "addrDirect";
+        term = ADDRDIRECT;
         forceDoEncode = true;
     }
 

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.event.Event;
@@ -106,11 +105,6 @@ public class Register extends IExpr implements ExprInterface {
 	@Override
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
-	}
-
-	@Override
-	public IConst reduce() {
-		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 
 	@Override

@@ -21,6 +21,9 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+
 import java.math.BigInteger;
 import java.util.*;
 
@@ -455,7 +458,7 @@ public class ExecutionModel {
         readWriteMap.clear();
 
         if (rf == null) {
-            rf = getMemoryModel().getRelationRepository().getRelation("rf");
+            rf = getMemoryModel().getRelationRepository().getRelation(RF);
         }
 
         for (Map.Entry<BigInteger, Set<EventData>> addressedReads : addressReadsMap.entrySet()) {
@@ -487,7 +490,7 @@ public class ExecutionModel {
         }
 
         if (co == null) {
-            co = getMemoryModel().getRelationRepository().getRelation("co");
+            co = getMemoryModel().getRelationRepository().getRelation(CO);
         }
 
         for (Map.Entry<BigInteger, Set<EventData>> addressedWrites : addressWritesMap.entrySet()) {

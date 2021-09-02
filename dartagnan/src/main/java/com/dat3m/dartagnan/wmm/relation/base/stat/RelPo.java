@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.PO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.POWITHLOCALEVENTS;
+
 import java.util.List;
 import java.util.ListIterator;
 
@@ -21,10 +24,10 @@ public class RelPo extends StaticRelation {
 
     public RelPo(boolean includeLocalEvents){
         if(includeLocalEvents){
-            term = "_po";
+            term = POWITHLOCALEVENTS;
             filter = FilterBasic.get(EType.ANY);
         } else {
-            term = "po";
+            term = PO;
             filter = FilterBasic.get(EType.VISIBLE);
         }
     }

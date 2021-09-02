@@ -21,6 +21,7 @@ import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
 import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
@@ -30,7 +31,7 @@ public class RelCo extends Relation {
 	private static final Logger logger = LogManager.getLogger(RelCo.class);
 
     public RelCo(){
-        term = "co";
+        term = CO;
         forceDoEncode = true;
     }
 
@@ -94,12 +95,12 @@ public class RelCo extends Relation {
         ));
 
 		for(Event e : eventsInit) {
-            enc = bmgr.and(enc, imgr.equal(intVar("co", e, ctx), imgr.makeNumber(BigInteger.ZERO)));
+            enc = bmgr.and(enc, imgr.equal(intVar(term, e, ctx), imgr.makeNumber(BigInteger.ZERO)));
         }
 
         List<IntegerFormula> intVars = new ArrayList<>();
         for(Event w : eventsStore) {
-        	IntegerFormula coVar = intVar("co", w, ctx);
+        	IntegerFormula coVar = intVar(term, w, ctx);
             enc = bmgr.and(enc, imgr.greaterThan(coVar, imgr.makeNumber(BigInteger.ZERO)));
             intVars.add(coVar);
         }
@@ -124,7 +125,7 @@ public class RelCo extends Relation {
                 IntegerFormula a2 = convertToIntegerFormula(w2.getMemAddressExpr(), ctx);
                 enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.and(
                 		bmgr.and(bmgr.and(execPair), imgr.equal(a1, a2)),
-                		imgr.lessThan(intVar("co", w1, ctx), intVar("co", w2, ctx))
+                		imgr.lessThan(intVar(term, w1, ctx), intVar(term, w2, ctx))
                 )));
 
                 // ============ Local consistency optimizations ============
