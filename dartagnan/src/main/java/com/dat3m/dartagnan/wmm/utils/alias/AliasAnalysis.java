@@ -57,15 +57,8 @@ public class AliasAnalysis {
             // Collect for each v events of form: p = *v, *v = q
             if (address instanceof Register) {
                 graph.addEvent((Register) address, e);
-
             } else if (address instanceof Address) {
-                // Rule register = &loc -> lo(register) = {loc}
-                if (e instanceof RegWriter) {
-                    Register register = ((RegWriter) e).getResultRegister();
-                    graph.addAddress(register, (Address) address);
-                    variables.add(register);
-
-                } else if (e instanceof Init) {
+                if (e instanceof Init) {
                     // Rule loc = &loc2 -> lo(loc) = {loc2} (only possible in init events)
                     Location loc = program.getMemory().getLocationForAddress((Address) address);
                     IExpr value = ((Init) e).getValue();
@@ -74,7 +67,6 @@ public class AliasAnalysis {
                         variables.add(loc);
                     }
                 }
-
             } else {
                 // r = *(CompExpr) -> loc(r) = max
                 if (e instanceof RegWriter) {
