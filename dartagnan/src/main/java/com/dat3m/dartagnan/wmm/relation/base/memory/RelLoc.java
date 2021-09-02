@@ -17,11 +17,12 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.LOC;
 
 public class RelLoc extends Relation {
 
     public RelLoc(){
-        term = "loc";
+        term = LOC;
     }
 
     @Override

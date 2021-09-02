@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.wmm.filter.FilterUnion;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CTRLDIRECT;
+
 import java.util.List;
 
 //TODO(TH/HP): Can we restrict to visible events?
@@ -17,7 +19,7 @@ import java.util.List;
 public class RelCtrlDirect extends StaticRelation {
 
     public RelCtrlDirect(){
-        term = "ctrlDirect";
+        term = CTRLDIRECT;
     }
 
     @Override

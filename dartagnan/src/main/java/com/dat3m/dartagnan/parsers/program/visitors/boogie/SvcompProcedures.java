@@ -21,12 +21,8 @@ import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 
 public class SvcompProcedures {
 
-	static List<String> FENCES = Arrays.asList("After_atomic", "Before_atomic", "Isync" ,"Lwsync" ," Mb", "Mfence", 
-										"Rcu_lock" , "Rcu_unlock", "Rmb", "Sync", "Sync_rcu","Wmb", "Ish");
-
 	public static List<String> SVCOMPPROCEDURES = Arrays.asList(
 			"__VERIFIER_assert",
-			"__VERIFIER_fence",
 			"__VERIFIER_atomic_begin",
 			"__VERIFIER_atomic_end",
 			"__VERIFIER_nondet_bool",
@@ -46,9 +42,6 @@ public class SvcompProcedures {
 		switch(name) {
 		case "__VERIFIER_assert":
 			__VERIFIER_assert(visitor, ctx);
-			break;
-		case "__VERIFIER_fence":
-			__VERIFIER_fence(visitor, ctx);
 			break;
 		case "__VERIFIER_atomic_begin":
 			if(GlobalSettings.ATOMIC_AS_LOCK) {
@@ -82,14 +75,6 @@ public class SvcompProcedures {
 		default:
 			throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
 		}
-	}
-
-	private static void __VERIFIER_fence(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	int index = ((IConst)ctx.call_params().exprs().accept(visitor)).getIntValue().intValue();
-    	if(index >= FENCES.size()) {
-    		throw new UnsupportedOperationException(ctx.getText() + " cannot be handled");
-    	}
-    	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newFence(FENCES.get(index)));
 	}
 
 	private static void __VERIFIER_assert(VisitorBoogie visitor, Call_cmdContext ctx) {
