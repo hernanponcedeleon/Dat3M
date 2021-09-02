@@ -36,6 +36,11 @@ public abstract class BExpr implements ExprInterface {
 		return null;
 	}
 
+	@Override
+	public BConst reduce() {
+        throw new UnsupportedOperationException("Reduce not supported for " + this);
+	}
+
 	public boolean isTrue() {
 		return this.equals(BConst.TRUE);
 	}
