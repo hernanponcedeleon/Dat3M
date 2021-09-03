@@ -95,11 +95,9 @@ public class Refinement {
             curTime = System.currentTimeMillis();
             totalSolvingTime += (curTime - lastTime);
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("Solver iteration: \n" +
-                        " ===== Iteration: " + iterationCount + " =====\n" +
-                        "Solving time( ms): " + (curTime - lastTime));
-            }
+            logger.debug("Solver iteration: \n" +
+                            " ===== Iteration: {} =====\n" +
+                            "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
             RefinementResult gRes;
             try (Model model = prover.getModel()) {
@@ -108,9 +106,7 @@ public class Refinement {
 
             RefinementStats stats = gRes.getStatistics();
             statList.add(stats);
-            if (logger.isDebugEnabled()) {
-                logger.debug("Refinement iteration:\n" + stats);
-            }
+            logger.debug("Refinement iteration:\n{}", stats);
 
             status = gRes.getStatus();
             if (status == REFUTED) {
@@ -126,7 +122,7 @@ public class Refinement {
                                 .append("Violation size: ").append(cube.getSize()).append("\n")
                                 .append(cube);
                     }
-                    logger.trace(message.toString());
+                    logger.trace(message);
                 }
             } else {
                 // No violations found, we can't refine
@@ -138,24 +134,21 @@ public class Refinement {
         curTime = System.currentTimeMillis();
         totalSolvingTime += (curTime - lastTime);
 
-        if (logger.isDebugEnabled()) {
-            StringBuilder message = new StringBuilder().append("Final solver iteration:").append("\n")
-                    .append(" ===== Final Iteration: ").append(iterationCount).append(" =====\n")
-                    .append("Solving/Proof time(ms): ").append(curTime - lastTime);
-            logger.debug(message);
-        }
+        logger.debug("Final solver iteration:\n" +
+                        " ===== Final Iteration: {} =====\n" +
+                        "Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
 
         if (logger.isInfoEnabled()) {
-            StringBuilder message = new StringBuilder();
+            String message;
             switch (status) {
                 case INCONCLUSIVE:
-                    message.append("Refinement procedure was inconclusive.");
+                    message = "Refinement procedure was inconclusive.";
                     break;
                 case VERIFIED:
-                    message.append("Violation verified.");
+                    message = "Violation verified.";
                     break;
                 case REFUTED:
-                    message.append("Bounded safety proven.");
+                    message = "Bounded safety proven.";
                     break;
                 default:
                     throw new IllegalStateException("Unknown result type returned by GraphRefinement.");
@@ -190,9 +183,7 @@ public class Refinement {
             res = FAIL;
         }
 
-        if (logger.isInfoEnabled()) {
-            logSummary(statList, iterationCount, totalSolvingTime, boundCheckTime);
-        }
+        logSummary(statList, iterationCount, totalSolvingTime, boundCheckTime);
 
         res = program.getAss().getInvert() ? res.invert() : res;
         logger.info("Verification finished with result " + res);
@@ -205,6 +196,10 @@ public class Refinement {
     // -------------------- Printing -----------------------------
 
     private static void logSummary(List<RefinementStats> statList, int iterationCount, long totalSolvingTime, long boundCheckTime) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
+
         long totalModelTime = 0;
         long totalSearchTime = 0;
         long totalViolationComputationTime = 0;
@@ -233,20 +228,20 @@ public class Refinement {
         StringBuilder message = new StringBuilder().append("Summary").append("\n")
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(iterationCount).append("\n")
-                .append("Total solving time( ms): ").append(totalSolvingTime).append("\n")
-                .append("Total model construction time( ms): ").append(totalModelTime).append("\n");
+                .append("Total solving time(ms): ").append(totalSolvingTime).append("\n")
+                .append("Total model construction time(ms): ").append(totalModelTime).append("\n");
         if (statList.size() > 0) {
             message.append("Min model size (#events): ").append(minModelSize).append("\n")
                     .append("Average model size (#events): ").append(totalModelSize / statList.size()).append("\n")
                     .append("Max model size (#events): ").append(maxModelSize).append("\n");
         }
-        message.append("Total violation computation time( ms): ").append(totalViolationComputationTime).append("\n")
-                .append("Total resolution time( ms): ").append(totalResolutionTime).append("\n")
-                .append("Total search time( ms): ").append(totalSearchTime).append("\n")
+        message.append("Total violation computation time(ms): ").append(totalViolationComputationTime).append("\n")
+                .append("Total resolution time(ms): ").append(totalResolutionTime).append("\n")
+                .append("Total search time(ms): ").append(totalSearchTime).append("\n")
                 .append("Total guessings: ").append(totalNumGuesses).append("\n")
                 .append("Total violations: ").append(totalNumViolations).append("\n")
                 .append("Max Saturation Depth: ").append(satDepth).append("\n")
-                .append("Bound check time( ms): ").append(boundCheckTime);
+                .append("Bound check time(ms): ").append(boundCheckTime);
 
         logger.info(message);
     }
