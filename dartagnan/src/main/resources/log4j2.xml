@@ -12,11 +12,11 @@
     </File>
 
     <Console name="Refinement_Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss} [%level] %C{1} - %msg%n"/>
+      <PatternLayout pattern="%d{HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
     </Console>
 
     <File name="Refinement_File" fileName="output/logs/refinement.log">
-      <PatternLayout pattern="%d{HH:mm:ss} [%level] %C{1} - %msg%n"/>
+      <PatternLayout pattern="%d{HH:mm:ss} [%level] %C{1}.%M - %msg%n"/>
     </File>
     
   </Appenders>
@@ -26,11 +26,9 @@
       <AppenderRef ref="Refinement_Console"/>
       <AppenderRef ref="Refinement_File"/>
     </Logger>
-    <Root level="info">
-      <!--
+    <Root level="OFF">
       <AppenderRef ref="Console"/>
       <AppenderRef ref="File"/>
-      -->
     </Root>
     
   </Loggers>

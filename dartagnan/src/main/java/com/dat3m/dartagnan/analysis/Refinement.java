@@ -106,9 +106,9 @@ public class Refinement {
                 gRes = refinement.kSearch(model, ctx, task.getMaxSaturationDepth());
             }
 
+            RefinementStats stats = gRes.getStatistics();
+            statList.add(stats);
             if (logger.isDebugEnabled()) {
-                RefinementStats stats = gRes.getStatistics();
-                statList.add(stats);
                 logger.debug("Refinement iteration:\n" + stats);
             }
 
