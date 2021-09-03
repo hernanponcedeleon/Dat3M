@@ -51,33 +51,28 @@ public class Dartagnan {
             new HelpFormatter().printHelp("DARTAGNAN", options);
             System.exit(1);
             return;
-        }
-
-        WitnessGraph witness = new WitnessGraph();
-        
-        logger.info("Program path: " + options.getProgramFilePath());
-        logger.info("CAT file path: " + options.getTargetModelFilePath());
-        if(options.getWitnessPath() != null) {
-        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
-        	logger.info("Witness path: " + options.getWitnessPath());
-    		if(witness.hasAttributed("producer")) {
-    			logger.info("Witness graph produced by " + witness.getAttributed("producer"));
-    		}
-    		logger.info("Witness graph stats: #nodes " + witness.getNodes().size());
-    		logger.info("Witness graph stats: #edges " + witness.getEdges().size());
         }        
-        logger.info("Bound: " + options.getSettings().getBound());
-        logger.info("Alias Analysis: " + options.getSettings().getAlias());
         
         Wmm mcm = new ParserCat().parse(new File(options.getTargetModelFilePath()));
         Program p = new ProgramParser().parse(new File(options.getProgramFilePath()));        	
-		
+
         Arch target = p.getArch();
         if(target == null){
             target = options.getTarget();
         }
+
+        logger.info("Program path: " + options.getProgramFilePath());
+        logger.info("CAT file path: " + options.getTargetModelFilePath());
+        logger.info("Bound: " + options.getSettings().getBound());
+        logger.info("Alias Analysis: " + options.getSettings().getAlias());
         logger.info("Target: " + target);
-        
+
+        WitnessGraph witness = new WitnessGraph();
+        if(options.getWitnessPath() != null) {
+        	logger.info("Witness path: " + options.getWitnessPath());
+        	witness = new ParserWitness().parse(new File(options.getWitnessPath()));
+        }        
+
         Settings settings = options.getSettings();
         VerificationTask task = new VerificationTask(p, mcm, witness, target, settings);
 

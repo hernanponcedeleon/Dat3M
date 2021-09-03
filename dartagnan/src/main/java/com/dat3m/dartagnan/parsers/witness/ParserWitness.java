@@ -9,12 +9,16 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
 public class ParserWitness {
+
+	private static final Logger logger = LogManager.getLogger(ParserWitness.class);  
 
     public WitnessGraph parse(CharStream charStream) {
     	XMLLexer lexer = new XMLLexer(charStream);
@@ -26,6 +30,12 @@ public class ParserWitness {
         VisitorXML visitor = new VisitorXML();
 
         WitnessGraph graph = (WitnessGraph) parserEntryPoint.accept(visitor);
+		if(graph.hasAttributed("producer")) {
+			logger.info("Witness graph produced by " + graph.getAttributed("producer"));
+		}
+		logger.info("Witness graph stats: #nodes " + graph.getNodes().size());
+		logger.info("Witness graph stats: #edges " + graph.getEdges().size());
+
         return graph;
     }
     
