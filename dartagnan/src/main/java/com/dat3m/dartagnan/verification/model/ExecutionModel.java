@@ -21,18 +21,18 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-
 import java.math.BigInteger;
 import java.util.*;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 
 /*
 The ExecutionModel wraps a Model and extracts data from it in a more workable manner.
  */
 
 //TODO: Add the capability to remove unnecessary init events from a model
-// i.e. those that init some address which no read nor write access.
+// i.e. those that init some address which no read nor write accesses.
 public class ExecutionModel {
 
     private final VerificationTask task;
@@ -223,9 +223,6 @@ public class ExecutionModel {
         extractEventsFromModel();
         extractReadsFrom();
         extractCoherences();
-
-        // Test code
-        //printUnusedInitEvents();
     }
 
     //========================== Internal methods  =========================
@@ -316,15 +313,6 @@ public class ExecutionModel {
         }
     }
 
-    private void printUnusedInitEvents() {
-        List<BigInteger> unnecessaryAddresses = new ArrayList<>();
-        for (BigInteger address : addressInitMap.keySet()) {
-            if (addressWritesMap.get(address).size() == 1 && addressReadsMap.get(address).size() == 0) {
-                unnecessaryAddresses.add(address);
-            }
-        }
-        System.out.println("Unnecessary init writes: " + unnecessaryAddresses.size());
-    }
 
     private void addEvent(Event e, int globalId, int localId) {
         EventData data = eventMap.get(e);

@@ -34,7 +34,6 @@ public class GlobalSettings {
 
     // ==== Refinement ====
     public static final int REFINEMENT_MAX_SATURATION_DEPTH = 2;
-    //public static final boolean REFINEMENT_PRINT_STATISTICS = true;
     public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
     public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
 

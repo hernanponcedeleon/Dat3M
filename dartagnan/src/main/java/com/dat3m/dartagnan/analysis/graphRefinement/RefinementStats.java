@@ -39,7 +39,7 @@ public class RefinementStats {
         str.append("Total search time( ms): ").append(getSearchTime()).append("\n");
         str.append("Guessings: ").append(numGuessedCoherences).append("\n");
         str.append("Computed violations: ").append(numComputedViolations).append("\n");
-        str.append("Saturation depth: ").append(saturationDepth).append("\n");
+        str.append("Saturation depth: ").append(saturationDepth);
 
         return str.toString();
     }
