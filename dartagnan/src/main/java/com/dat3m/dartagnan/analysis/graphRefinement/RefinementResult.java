@@ -21,4 +21,10 @@ public class RefinementResult {
         violations = DNF.FALSE();
     }
 
+    @Override
+    public String toString() {
+        return status + "\n" +
+                violations + "\n" +
+                stats;
+    }
 }

@@ -67,8 +67,9 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
         - The resolution is handled by TreeResolution.
  */
 public class GraphRefinement {
-
     // ================== Fields ==================
+
+    private final static boolean DEBUG = false;
 
     // --------------- Static data ----------------
     private final VerificationTask task;
@@ -219,10 +220,10 @@ public class GraphRefinement {
             stats.saturationDepth = k;
             // There should always exist a single empty node unless we found a violation
             SearchNode start = sTree.findNodes(SearchNode::isEmptyNode).get(0);
-            RefinementStatus r = kSaturation(start, Timestamp.ZERO, k, coSearchList, 0);
-            if (r != INCONCLUSIVE) {
-                result.setStatus(r);
-                if (r == REFUTED) {
+            RefinementStatus status = kSaturation(start, Timestamp.ZERO, k, coSearchList, 0);
+            if (status != INCONCLUSIVE) {
+                result.setStatus(status);
+                if (status == REFUTED) {
                     long temp = System.currentTimeMillis();
                     result.setViolations(computeResolventsFromTree(sTree));
                     stats.resolutionTime = System.currentTimeMillis() - temp;
@@ -241,7 +242,7 @@ public class GraphRefinement {
         // ==============================
 
         stats.searchTime = System.currentTimeMillis() - curTime;
-        if (result.getStatus() == VERIFIED) {
+        if (DEBUG && result.getStatus() == VERIFIED) {
             testCoherence();
         }
         return result;
@@ -254,13 +255,13 @@ public class GraphRefinement {
         that for each write-pair (w1,w2) there is exactly one edge in the list, either co(w1, w2) or
         co(w2, w1).
      */
-    private RefinementStatus kSaturation(SearchNode node, Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
+    private RefinementStatus kSaturation(SearchNode curSearchNode, Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
         searchList = searchList.subList(searchStart, searchList.size());
         if (k == 0) {
             // 0-SAT amounts to a simple violation check
             if (checkViolations()) {
                 long time = System.currentTimeMillis();
-                node.replaceBy(new LeafNode(computeViolationList()));
+                curSearchNode.replaceBy(new LeafNode(computeViolationList()));
                 stats.violationComputationTime += (System.currentTimeMillis() - time);
                 return REFUTED;
             } else if (searchList.stream().allMatch(this::coExists)) {
@@ -272,45 +273,54 @@ public class GraphRefinement {
         }
 
         searchList = new ArrayList<>(searchList);
-        boolean progress = true;
-        while (progress) {
+        boolean progress;
+        do {
             progress = false;
 
             for (int i = 0; i < searchList.size(); i++) {
                 Edge coEdge = searchList.get(i);
-                if (coExists(coEdge))
+                if (coExists(coEdge)) {
                     continue;
+                }
 
-                Timestamp nextTime = curTime.next();
-                coEdge = coEdge.with(nextTime);
                 DecisionNode decNode = new DecisionNode(coEdge);
-
-                execGraph.addCoherenceEdges(coEdge);
+                // Add coEdge with new time stamp
+                Timestamp nextTime = curTime.next();
+                execGraph.addCoherenceEdges(coEdge.with(nextTime));
                 stats.numGuessedCoherences++;
                 RefinementStatus status = kSaturation(decNode.getPositive(), nextTime, k - 1, searchList, i + 1);
                 if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
                     return VERIFIED;
                 }
+                // Always backtrack the added edge, because either it caused a violation and needs to be removed
+                // or it did not cause a violation so we want to test another co-edge.
                 backtrackOn(nextTime);
 
                 if (status == REFUTED) {
-                    node.replaceBy(decNode);
-                    node = decNode.getNegative();
+                    // ...the last added edge caused a violation
+                    curSearchNode.replaceBy(decNode);
+                    curSearchNode = decNode.getNegative();
+                    // We now add the opposite edge but with the old time stamp, since this
+                    // edge is now permanent with respect to our current search depth.
                     execGraph.addCoherenceEdges(coEdge.inverse().with(curTime));
                     status = kSaturation(decNode.getNegative(), curTime, k - 1, searchList, i + 1);
                     if (status == REFUTED) {
+                        // ... both direction of the co edge caused a violation, so we have an inconsistency/refutation
                         return REFUTED;
                     } else if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
+                        // ... the inner kSaturation verified the violation to be true, and the current kSaturation
+                        // has no more coherences to test, so it agrees and also returns VERIFIED.
                         return VERIFIED;
                     }
-                    // We made progress
+                    // We made progress since we permanently added a new edge for this saturation depth.
                     //TODO: We might want to restart the search or do some other heuristic
                     // to guide our search.
                     progress = true;
                 } else {
+                    // ... the last added edge did NOT cause a violation.
+                    // We still need to test the opposite edge but with a new timestamp again.
                     nextTime = curTime.next();
-                    Edge coEdgeInv = coEdge.inverse().with(nextTime);
-                    execGraph.addCoherenceEdges(coEdgeInv);
+                    execGraph.addCoherenceEdges(coEdge.inverse().with(nextTime));
                     stats.numGuessedCoherences++;
                     status = kSaturation(decNode.getNegative(), nextTime, k - 1, searchList, i + 1);
                     if (status == VERIFIED && searchList.stream().allMatch(this::coExists)) {
@@ -318,16 +328,21 @@ public class GraphRefinement {
                     }
                     backtrackOn(nextTime);
 
-                    if(status == REFUTED) {
-                        node.replaceBy(decNode);
-                        node = decNode.getPositive();
+                    if (status == REFUTED) {
+                        // ... the inverse co-edge caused a violation but the original did not
+                        // so we fix the original one as permanent now (using the old timestamp)
+                        // and proceed
+                        curSearchNode.replaceBy(decNode);
+                        curSearchNode = decNode.getPositive();
                         execGraph.addCoherenceEdges(coEdge.with(curTime));
                         progress = true;
                     }
                 }
             }
+            // Each full iteration, we can remove all coherences we already found
+            // from the search list.
             searchList.removeIf(this::coExists);
-        }
+        } while (progress);
         return INCONCLUSIVE;
     }
 
@@ -343,14 +358,10 @@ public class GraphRefinement {
     // ============= Violations + Resolution ================
 
     private boolean checkViolations() {
-        boolean hasViolation = false;
-        for (Constraint constraint : execGraph.getConstraints()) {
-            hasViolation |= constraint.checkForViolations();
-        }
-
-        return hasViolation;
+        return execGraph.getConstraints().stream().anyMatch(Constraint::checkForViolations);
     }
 
+    // Precondition: This code is only called if <checkViolations> returns true.
     private List<Conjunction<CoreLiteral>> computeViolationList() {
         List<Conjunction<CoreLiteral>> violations = new ArrayList<>();
         for (Constraint constraint : execGraph.getConstraints()) {
@@ -359,8 +370,8 @@ public class GraphRefinement {
 
         // Important code: We only retain those violations with the least number of co-literals
         // this heavily boosts the performance of the resolution!!!
-        int minComplex = violations.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
-        violations.removeIf(x -> x.getResolutionComplexity() > minComplex);
+        int minComplexity = violations.stream().mapToInt(Conjunction::getResolutionComplexity).min().getAsInt();
+        violations.removeIf(x -> x.getResolutionComplexity() > minComplexity);
         // TODO: The following is ugly, but we convert to DNF again to remove dominated clauses and duplicates
         violations = new ArrayList<>(new DNF<>(violations).getCubes());
 
@@ -381,8 +392,6 @@ public class GraphRefinement {
     // ====================================================
 
     // ===================== TESTING ======================
-
-    private final static boolean DEBUG = false;
     private void testIteration() {
         if (!DEBUG)
             return;

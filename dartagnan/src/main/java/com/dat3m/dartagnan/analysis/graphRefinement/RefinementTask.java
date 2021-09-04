@@ -22,7 +22,8 @@ public class RefinementTask extends VerificationTask {
 
     private final Wmm baselineModel;
 
-    public RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Arch target, Settings settings) {
+    public RefinementTask(Program program, Wmm targetMemoryModel, Wmm baselineModel, WitnessGraph witness, Arch target,
+                          Settings settings) {
         super(program, targetMemoryModel, witness, target, settings);
         this.baselineModel = baselineModel;
     }
