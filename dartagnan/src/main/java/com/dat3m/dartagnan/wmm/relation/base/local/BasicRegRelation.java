@@ -1,27 +1,27 @@
 package com.dat3m.dartagnan.wmm.relation.base.local;
 
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.relation.base.stat.StaticRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.microsoft.z3.BoolExpr;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.utils.RegWriter;
-
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
-
-import java.math.BigInteger;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.math.BigInteger;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 
 abstract class BasicRegRelation extends StaticRelation {
 
@@ -41,26 +41,33 @@ abstract class BasicRegRelation extends StaticRelation {
                 // This may fail for RMWReadCond?! It seems to work fine for the litmus tests though.
 
                 // =========================
-                List<Event> possibleWriters = writers.stream().filter(x -> x.getCId() < regReader.getCId() && !eq.areMutuallyExclusive(x, regReader)).collect(Collectors.toList());
+                List<Event> possibleWriters = writers.stream()
+                        .filter(x -> x.getCId() < regReader.getCId() && !eq.areMutuallyExclusive(x, regReader))
+                        .collect(Collectors.toList());
 
-                List<Event> impliedWriters = possibleWriters.stream().filter(x -> eq.isImplied(regReader, x) && x.cfImpliesExec()).collect(Collectors.toList());
+                List<Event> impliedWriters = possibleWriters
+                        .stream().filter(x -> eq.isImplied(regReader, x) && x.cfImpliesExec())
+                        .collect(Collectors.toList());
                 if (!impliedWriters.isEmpty()) {
                     Event lastImplied = impliedWriters.get(impliedWriters.size() - 1);
                     possibleWriters.removeIf(x -> x.getCId() < lastImplied.getCId());
                 }
-                possibleWriters.removeIf(x -> possibleWriters.stream().anyMatch(y -> (x.getCId() < y.getCId()) && y.cfImpliesExec() && eq.isImplied(x ,y)));
+                possibleWriters.removeIf(x -> possibleWriters.stream()
+                        .anyMatch(y -> (x.getCId() < y.getCId()) && y.cfImpliesExec() && eq.isImplied(x ,y)));
 
+                // --- Min sets ---
                 if (possibleWriters.size() == 1) {
                     // there is only a single regWriter
                     minTupleSet.add(new Tuple(possibleWriters.stream().findAny().get(), regReader));
                 } else {
                     // there are multiple regWriters, but some are exclusive to all others
                     for (Event writer : possibleWriters) {
-                        if (possibleWriters.stream().allMatch(x -> x==writer || eq.areMutuallyExclusive(x, writer))) {
+                        if (possibleWriters.stream().allMatch(x -> x == writer || eq.areMutuallyExclusive(x, writer))) {
                             minTupleSet.add(new Tuple(writer, regReader));
                         }
                     }
                 }
+                // --- Max sets ---
                 for(Event regWriter : possibleWriters){
                     maxTupleSet.add(new Tuple(regWriter, regReader));
                 }
@@ -80,7 +87,9 @@ abstract class BasicRegRelation extends StaticRelation {
             Set<Tuple> writerReaders = maxTupleSet.getBySecond(regReader);
             for (Register register : getRegisters(regReader)) {
                 List<Event> writers = regWriterMap.getOrDefault(register, ImmutableList.of());
-                List<Event> possibleWriters = writers.stream().filter(x -> writerReaders.contains(new Tuple(x, regReader))).collect(Collectors.toList());
+                List<Event> possibleWriters = writers.stream()
+                        .filter(x -> writerReaders.contains(new Tuple(x, regReader)))
+                        .collect(Collectors.toList());
 
                 if(writers.isEmpty() || writers.get(0).getCId() >= regReader.getCId()){
                 	BooleanFormula equal = generalEqual(register.toIntFormula(regReader, ctx),

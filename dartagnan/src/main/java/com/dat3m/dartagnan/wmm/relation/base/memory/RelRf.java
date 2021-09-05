@@ -1,7 +1,9 @@
 package com.dat3m.dartagnan.wmm.relation.base.memory;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.utils.Settings;
@@ -9,31 +11,22 @@ import com.dat3m.dartagnan.utils.equivalence.BranchEquivalence;
 import com.dat3m.dartagnan.wmm.filter.FilterAbstract;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.filter.FilterIntersection;
-import com.dat3m.dartagnan.wmm.filter.FilterMinus;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import static com.dat3m.dartagnan.program.utils.EType.INIT;
-import static com.dat3m.dartagnan.program.utils.EType.READ;
-import static com.dat3m.dartagnan.program.utils.EType.RMW;
-import static com.dat3m.dartagnan.program.utils.EType.SVCOMPATOMIC;
-import static com.dat3m.dartagnan.program.utils.EType.WRITE;
-import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.program.utils.EType.*;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -60,23 +53,11 @@ public class RelRf extends Relation {
         	logger.info("Computing maxTupleSet for " + getName());
             maxTupleSet = new TupleSet();
 
-            List<Event> eventsLoad = task.getProgram().getCache().getEvents(FilterBasic.get(READ));
-            List<Event> eventsInit = task.getProgram().getCache().getEvents(FilterBasic.get(INIT));
-            List<Event> eventsStore = task.getProgram().getCache().getEvents(FilterMinus.get(
-                    FilterBasic.get(WRITE),
-                    FilterBasic.get(INIT)
-            ));
+            List<Event> loadEvents = task.getProgram().getCache().getEvents(FilterBasic.get(READ));
+            List<Event> storeEvents = task.getProgram().getCache().getEvents(FilterBasic.get(WRITE));
 
-            for(Event e1 : eventsInit){
-                for(Event e2 : eventsLoad){
-                    if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2)){
-                        maxTupleSet.add(new Tuple(e1, e2));
-                    }
-                }
-            }
-
-            for(Event e1 : eventsStore){
-                for(Event e2 : eventsLoad){
+            for(Event e1 : storeEvents){
+                for(Event e2 : loadEvents){
                     if(MemEvent.canAddressTheSameLocation((MemEvent) e1, (MemEvent) e2)){
                     	maxTupleSet.add(new Tuple(e1, e2));
                     }
@@ -107,21 +88,15 @@ public class RelRf extends Relation {
             MemEvent w = (MemEvent) tuple.getFirst();
             MemEvent r = (MemEvent) tuple.getSecond();
             BooleanFormula edge = this.getSMTVar(tuple, ctx);
-            
-            IntegerFormula a1 = convertToIntegerFormula(w.getMemAddressExpr(), ctx);
-            IntegerFormula a2 = convertToIntegerFormula(r.getMemAddressExpr(), ctx);
-            BooleanFormula sameAddress = fmgr.getIntegerFormulaManager().equal(a1, a2);
-            
-            IntegerFormula v1 = convertToIntegerFormula(w.getMemValueExpr(), ctx);
-            IntegerFormula v2 = convertToIntegerFormula(r.getMemValueExpr(), ctx);
-            BooleanFormula sameValue = fmgr.getIntegerFormulaManager().equal(v1, v2);
 
-            edgeMap.putIfAbsent(r, new ArrayList<>());
-            edgeMap.get(r).add(edge);
+            BooleanFormula sameAddress = generalEqual(w.getMemAddressExpr(), r.getMemAddressExpr(), ctx);
+            BooleanFormula sameValue = generalEqual(w.getMemValueExpr(), r.getMemValueExpr(), ctx);
+
+            edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
             if(canAccNonInitMem && w.is(INIT)){
                 memInitMap.put(r, bmgr.or(memInitMap.getOrDefault(r, bmgr.makeFalse()), sameAddress));
             }
-            enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(w.exec(), r.exec(), sameAddress, sameValue)));
+            enc = bmgr.and(enc, bmgr.implication(edge, bmgr.and(getExecPair(w, r, ctx), sameAddress, sameValue)));
         }
 
         for(MemEvent r : edgeMap.keySet()){

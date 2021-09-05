@@ -20,7 +20,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
-import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
@@ -121,11 +121,9 @@ public class RelCo extends Relation {
                 BooleanFormula execPair = getExecPair(t, ctx);
                 lastCo = bmgr.and(lastCo, bmgr.not(relation));
 
-                IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
-                IntegerFormula a2 = convertToIntegerFormula(w2.getMemAddressExpr(), ctx);
-                enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.and(
-                		bmgr.and(bmgr.and(execPair), imgr.equal(a1, a2)),
-                		imgr.lessThan(intVar(term, w1, ctx), intVar(term, w2, ctx))
+                BooleanFormula sameAddress = generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
+                enc = bmgr.and(enc, bmgr.equivalence(relation,
+                        bmgr.and(execPair, sameAddress, imgr.lessThan(intVar(term, w1, ctx), intVar(term, w2, ctx))
                 )));
 
                 // ============ Local consistency optimizations ============
@@ -136,7 +134,7 @@ public class RelCo extends Relation {
                         enc = bmgr.and(enc, bmgr.equivalence(relation, bmgr.makeFalse()));
                     }
                     if (w1.is(INIT) || t.isForward()) {
-                        enc = bmgr.and(enc, bmgr.implication(bmgr.and(execPair, imgr.equal(a1, a2)), relation));
+                        enc = bmgr.and(enc, bmgr.implication(bmgr.and(execPair, sameAddress), relation));
                     }
                 }
             }
@@ -145,11 +143,9 @@ public class RelCo extends Relation {
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
-            	IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
-            	IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
-            	IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
-            	IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
-				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, imgr.equal(a1, a2)), imgr.equal(v1, v2)));
+                BooleanFormula sameAddress = generalEqual(w1.getMemAddressExpr(), address.toIntFormula(ctx), ctx);
+                BooleanFormula sameValue = generalEqual(w1.getMemValueExpr(), address.getLastMemValueExpr(ctx), ctx);
+				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
             }
         }
         return enc;
@@ -161,13 +157,15 @@ public class RelCo extends Relation {
                 MemEvent w1 = (MemEvent) t.getFirst();
                 MemEvent w2 = (MemEvent) t.getSecond();
 
-                if (w2.is(INIT))
+                if (w2.is(INIT)) {
                     continue;
-                if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1)
+                } else if (w1.getMaxAddressSet().size() != 1 || w2.getMaxAddressSet().size() != 1) {
                     continue;
+                }
 
-                if (w1.is(INIT) || t.isForward())
+                if (w1.is(INIT) || t.isForward()) {
                     minTupleSet.add(t);
+                }
             }
         }
     }
@@ -181,19 +179,20 @@ public class RelCo extends Relation {
     
     @Override
     public BooleanFormula getSMTVar(Tuple edge, SolverContext ctx) {
+        if(!ANTISYMM_CO) {
+            return super.getSMTVar(edge, ctx);
+        }
+
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-    	IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
-    	if(!ANTISYMM_CO) {
-    		return super.getSMTVar(edge, ctx);
-    	}
         MemEvent first = (MemEvent) edge.getFirst();
         MemEvent second = (MemEvent) edge.getSecond();
         // Doing the check at the java level seems to slightly improve  performance
-        BooleanFormula eqAdd = first.getAddress().equals(second.getAddress()) ? bmgr.makeTrue() : imgr.equal((IntegerFormula)first.getMemAddressExpr(), (IntegerFormula)second.getMemAddressExpr());
+        BooleanFormula eqAdd = first.getAddress().equals(second.getAddress()) ? bmgr.makeTrue() :
+                generalEqual(first.getMemAddressExpr(), second.getMemAddressExpr(), ctx);
         return !getMaxTupleSet().contains(edge) ? bmgr.makeFalse() :
-    		first.getUId() <= second.getUId() ?
+    		first.getCId() <= second.getCId() ?
     				edge(getName(), first, second, ctx) :
     					bmgr.ifThenElse(bmgr.and(getExecPair(edge, ctx), eqAdd),
     							bmgr.not(getSMTVar(edge.getInverse(), ctx)),

@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.wmm.axiom;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 
 public class Empty extends Axiom {
 
@@ -30,7 +29,7 @@ public class Empty extends Axiom {
     }
 
     @Override
-    protected String _toString() {
+    public String toString() {
         return "empty " + rel.getName();
     }
 }

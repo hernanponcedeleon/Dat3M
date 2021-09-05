@@ -76,17 +76,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return start.getThread() == target.getThread() && start.getCId() <= target.getCId() && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
     }
 
-    public boolean isAfter(Event a, Event b) {
-        if (a.is(EType.INIT)) {
-            return !b.is(EType.INIT);
-        }
-        return a.getThread() == b.getThread() && a.getCId() > b.getCId() && isImplied(b, a);
-    }
-
-    public boolean isBefore(Event a, Event b) {
-        return isAfter(b, a);
-    }
-
     public Set<Event> getExclusiveEvents(Event e) {
         return new ExclusiveSet(e);
     }
