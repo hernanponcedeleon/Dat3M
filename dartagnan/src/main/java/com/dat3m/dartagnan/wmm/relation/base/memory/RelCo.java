@@ -20,6 +20,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.GlobalSettings.ANTISYMM_CO;
 import static com.dat3m.dartagnan.program.utils.EType.INIT;
 import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.utils.Utils.edge;
@@ -121,7 +122,9 @@ public class RelCo extends Relation {
                 BooleanFormula execPair = getExecPair(t, ctx);
                 lastCo = bmgr.and(lastCo, bmgr.not(relation));
 
-                BooleanFormula sameAddress = generalEqual(w1.getMemAddressExpr(), w2.getMemAddressExpr(), ctx);
+                IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
+                IntegerFormula a2 = convertToIntegerFormula(w2.getMemAddressExpr(), ctx);
+                BooleanFormula sameAddress = imgr.equal(a1, a2);
                 enc = bmgr.and(enc, bmgr.equivalence(relation,
                         bmgr.and(execPair, sameAddress, imgr.lessThan(intVar(term, w1, ctx), intVar(term, w2, ctx))
                 )));
@@ -143,8 +146,12 @@ public class RelCo extends Relation {
             enc = bmgr.and(enc, bmgr.equivalence(lastCoExpr, lastCo));
 
             for(Address address : w1.getMaxAddressSet()){
-                BooleanFormula sameAddress = generalEqual(w1.getMemAddressExpr(), address.toIntFormula(ctx), ctx);
-                BooleanFormula sameValue = generalEqual(w1.getMemValueExpr(), address.getLastMemValueExpr(ctx), ctx);
+                IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
+                IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
+                IntegerFormula v1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
+                IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
+                BooleanFormula sameAddress = imgr.equal(a1, a2);
+                BooleanFormula sameValue = imgr.equal(v1, v2);
 				enc = bmgr.and(enc, bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
             }
         }

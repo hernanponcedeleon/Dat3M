@@ -16,17 +16,15 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.utils.EType.*;
-import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
@@ -76,6 +74,7 @@ public class RelRf extends Relation {
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	FormulaManager fmgr = ctx.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
     	
     	BooleanFormula enc = bmgr.makeTrue();
         Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
@@ -89,8 +88,13 @@ public class RelRf extends Relation {
             MemEvent r = (MemEvent) tuple.getSecond();
             BooleanFormula edge = this.getSMTVar(tuple, ctx);
 
-            BooleanFormula sameAddress = generalEqual(w.getMemAddressExpr(), r.getMemAddressExpr(), ctx);
-            BooleanFormula sameValue = generalEqual(w.getMemValueExpr(), r.getMemValueExpr(), ctx);
+            IntegerFormula a1 = convertToIntegerFormula(w.getMemAddressExpr(), ctx);
+            IntegerFormula a2 = convertToIntegerFormula(r.getMemAddressExpr(), ctx);
+            BooleanFormula sameAddress = imgr.equal(a1, a2);
+
+            IntegerFormula v1 = convertToIntegerFormula(w.getMemValueExpr(), ctx);
+            IntegerFormula v2 = convertToIntegerFormula(r.getMemValueExpr(), ctx);
+            BooleanFormula sameValue = imgr.equal(v1, v2);
 
             edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(edge);
             if(canAccNonInitMem && w.is(INIT)){
