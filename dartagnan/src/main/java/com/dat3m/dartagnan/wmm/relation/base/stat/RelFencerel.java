@@ -53,7 +53,7 @@ public class RelFencerel extends StaticRelation {
                         boolean isImpliedByE1 = eq.isImplied(e1, fence);
                         for (Event e2 : eventsAfter) {
                             if (isImpliedByE1 || eq.isImplied(e2, fence)) {
-                                maxTupleSet.add(new Tuple(e1, e2));
+                                minTupleSet.add(new Tuple(e1, e2));
                             }
                         }
                     }
