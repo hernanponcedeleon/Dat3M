@@ -43,6 +43,9 @@ public class RelFencerel extends StaticRelation {
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
                 List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
                 for (Event fence : fences) {
+                    if (!fence.cfImpliesExec()) {
+                        continue;
+                    }
                     int numEventsBeforeFence = (int) memEvents.stream()
                             .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
                             .count();
