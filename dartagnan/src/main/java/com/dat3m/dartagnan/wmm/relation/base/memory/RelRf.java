@@ -190,7 +190,9 @@ public class RelRf extends Relation {
                 }
                 //TODO: If a read can read from multiple addresses, we have to make sure that
                 // we don't let writes of different addresses override each other
-                List<MemEvent> canOverride = possibleWrites.stream().filter(x -> !x.is(INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1).collect(Collectors.toList());
+                List<MemEvent> canOverride = possibleWrites.stream()
+                        .filter(x -> !x.is(INIT) && x.cfImpliesExec() && x.getMaxAddressSet().size() == 1)
+                        .collect(Collectors.toList());
                 possibleWrites.stream().filter(x ->
                         (x.is(INIT) && canOverride.stream().anyMatch(y -> eq.isImplied(x ,y)))
                                 || (!x.is(INIT) && canOverride.stream().anyMatch(y ->  x.getCId() < y.getCId() && eq.isImplied(x ,y))))

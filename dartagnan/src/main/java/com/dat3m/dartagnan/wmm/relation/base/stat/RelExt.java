@@ -7,10 +7,9 @@ import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.EXT;
-
 import java.util.List;
-import java.util.ListIterator;
+
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.EXT;
 
 public class RelExt extends StaticRelation {
 
@@ -23,12 +22,11 @@ public class RelExt extends StaticRelation {
         if(maxTupleSet == null){
             maxTupleSet = new TupleSet();
             List<Thread> threads = task.getProgram().getThreads();
-            ListIterator<Thread> it1 = threads.listIterator();
-            while(it1.hasNext()){
-                Thread t1 = it1.next();
-                ListIterator<Thread> it2 = threads.listIterator(it1.nextIndex());
-                while(it2.hasNext()){
-                    Thread t2 = it2.next();
+
+            for (int i = 0; i < threads.size(); i++) {
+                Thread t1 = threads.get(i);
+                for (int j = i + 1; j < threads.size(); j++) {
+                    Thread t2 = threads.get(j);
                     for(Event e1 : t1.getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
                         for(Event e2 : t2.getCache().getEvents(FilterBasic.get(EType.VISIBLE))){
                             maxTupleSet.add(new Tuple(e1, e2));
