@@ -12,7 +12,6 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.List;
-import java.util.ListIterator;
 
 public class RelFencerel extends StaticRelation {
 
@@ -42,22 +41,19 @@ public class RelFencerel extends StaticRelation {
             minTupleSet = new TupleSet();
             for(Thread t : task.getProgram().getThreads()){
                 List<Event> fences = t.getCache().getEvents(FilterBasic.get(fenceName));
-                if(!fences.isEmpty()){
-                    List<Event> events = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
-                    ListIterator<Event> it1 = events.listIterator();
+                List<Event> memEvents = t.getCache().getEvents(FilterBasic.get(EType.MEMORY));
+                for (Event fence : fences) {
+                    int numEventsBeforeFence = (int) memEvents.stream()
+                            .mapToInt(Event::getCId).filter(id -> id < fence.getCId())
+                            .count();
+                    List<Event> eventsBefore = memEvents.subList(0, numEventsBeforeFence);
+                    List<Event> eventsAfter = memEvents.subList(numEventsBeforeFence, memEvents.size());
 
-                    while(it1.hasNext()){
-                        Event e1 = it1.next();
-                        ListIterator<Event> it2 = events.listIterator(it1.nextIndex());
-                        while(it2.hasNext()){
-                            Event e2 = it2.next();
-                            for(Event f : fences) {
-                            	if(f.cfImpliesExec() && e1.getCId() < f.getCId() && f.getCId() < e2.getCId()){
-                                    if (eq.isImplied(e1, f) || eq.isImplied(e2, f)) {
-                                        minTupleSet.add(new Tuple(e1, e2));
-                                        break;
-                                    }
-                                }
+                    for (Event e1 : eventsBefore) {
+                        boolean isImpliedByE1 = eq.isImplied(e1, fence);
+                        for (Event e2 : eventsAfter) {
+                            if (isImpliedByE1 || eq.isImplied(e2, fence)) {
+                                maxTupleSet.add(new Tuple(e1, e2));
                             }
                         }
                     }

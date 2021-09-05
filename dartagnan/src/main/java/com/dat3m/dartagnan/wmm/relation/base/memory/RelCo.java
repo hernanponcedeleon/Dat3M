@@ -148,7 +148,7 @@ public class RelCo extends Relation {
             for(Address address : w1.getMaxAddressSet()){
                 IntegerFormula a1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
                 IntegerFormula a2 = convertToIntegerFormula(address.toIntFormula(ctx), ctx);
-                IntegerFormula v1 = convertToIntegerFormula(w1.getMemAddressExpr(), ctx);
+                IntegerFormula v1 = convertToIntegerFormula(w1.getMemValueExpr(), ctx);
                 IntegerFormula v2 = convertToIntegerFormula(address.getLastMemValueExpr(ctx), ctx);
                 BooleanFormula sameAddress = imgr.equal(a1, a2);
                 BooleanFormula sameValue = imgr.equal(v1, v2);
