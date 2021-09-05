@@ -229,9 +229,7 @@ public class TupleSet implements Set<Tuple>{
 
     public TupleSet mapped(Function<Tuple, Tuple> mapping) {
         TupleSet result = new TupleSet();
-        for (Tuple t : tuples) {
-            result.add(mapping.apply(t));
-        }
+        tuples.stream().map(mapping).forEach(result::add);
         return result;
     }
 }

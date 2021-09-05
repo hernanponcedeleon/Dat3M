@@ -38,7 +38,8 @@ public class RelComposition extends BinaryRelation {
         if(minTupleSet == null){
             BranchEquivalence eq = task.getBranchEquivalence();
             minTupleSet = r1.getMinTupleSet().postComposition(r2.getMinTupleSet(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
+                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
             removeMutuallyExclusiveTuples(minTupleSet);
         }
         return minTupleSet;
@@ -58,7 +59,8 @@ public class RelComposition extends BinaryRelation {
         if(recursiveGroupId > 0 && maxTupleSet != null){
             BranchEquivalence eq = task.getBranchEquivalence();
             minTupleSet = r1.getMinTupleSetRecursive().postComposition(r2.getMinTupleSetRecursive(),
-                    (t1, t2) -> t1.getSecond().cfImpliesExec() && eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond()));
+                    (t1, t2) -> t1.getSecond().cfImpliesExec() &&
+                            (eq.isImplied(t1.getFirst(), t1.getSecond()) || eq.isImplied(t2.getSecond(), t1.getSecond())));
             removeMutuallyExclusiveTuples(minTupleSet);
             return minTupleSet;
         }
@@ -69,15 +71,8 @@ public class RelComposition extends BinaryRelation {
     public TupleSet getMaxTupleSetRecursive(){
         if(recursiveGroupId > 0 && maxTupleSet != null){
             BranchEquivalence eq = task.getBranchEquivalence();
-            TupleSet set1 = r1.getMaxTupleSetRecursive();
-            TupleSet set2 = r2.getMaxTupleSetRecursive();
-            for(Tuple rel1 : set1){
-                for(Tuple rel2 : set2.getByFirst(rel1.getSecond())){
-                    if (!eq.areMutuallyExclusive(rel1.getFirst(), rel2.getSecond())) {
-                        maxTupleSet.add(new Tuple(rel1.getFirst(), rel2.getSecond()));
-                    }
-                }
-            }
+            maxTupleSet = r1.getMaxTupleSetRecursive().postComposition(r2.getMaxTupleSetRecursive(),
+                    (t1, t2) -> !eq.areMutuallyExclusive(t1.getFirst(), t2.getSecond()));
             return maxTupleSet;
         }
         return getMaxTupleSet();
