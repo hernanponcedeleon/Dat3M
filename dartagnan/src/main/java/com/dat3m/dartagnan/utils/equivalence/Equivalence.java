@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.utils.equivalence;
 
-import com.dat3m.dartagnan.program.Thread;
 import com.google.common.collect.Sets;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;

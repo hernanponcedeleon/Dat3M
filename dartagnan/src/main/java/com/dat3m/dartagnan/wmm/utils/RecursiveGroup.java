@@ -5,10 +5,6 @@ import com.dat3m.dartagnan.wmm.relation.Relation;
 
 import java.util.*;
 
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.SolverContext;
-
 public class RecursiveGroup {
 
     private final int id;

@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.relation.base.stat;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 
 public class RelEmpty extends StaticRelation {

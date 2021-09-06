@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 

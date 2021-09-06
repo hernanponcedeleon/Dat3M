@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.google.common.collect.Sets;
-import com.dat3m.dartagnan.wmm.utils.Utils;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;

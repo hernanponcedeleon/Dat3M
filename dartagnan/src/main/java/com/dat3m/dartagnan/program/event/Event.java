@@ -16,8 +16,6 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.*;
-
 public abstract class Event implements Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
