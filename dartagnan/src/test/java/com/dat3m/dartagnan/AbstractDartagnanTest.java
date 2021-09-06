@@ -33,7 +33,8 @@ import static org.junit.Assert.fail;
 
 public abstract class AbstractDartagnanTest {
 
-	static int SOLVER_TIMEOUT = 60;
+	static final int SOLVER_TIMEOUT = 60;
+    static final int TIMEOUT = 10000;
 	
     static Iterable<Object[]> buildParameters(String litmusPath, String cat, Arch target) throws IOException {
         int n = ResourceHelper.LITMUS_RESOURCE_PATH.length();
@@ -67,7 +68,7 @@ public abstract class AbstractDartagnanTest {
         this.settings = settings;
     }
 
-    @Test
+    @Test(timeout = TIMEOUT)
     public void testCombined() {
         // Compares Refinement and TwoSolvers on litmus tests
         // Replaces location-based assertions by ...
@@ -106,7 +107,7 @@ public abstract class AbstractDartagnanTest {
         }
     }
 
-    @Test
+    @Test(timeout = TIMEOUT)
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);

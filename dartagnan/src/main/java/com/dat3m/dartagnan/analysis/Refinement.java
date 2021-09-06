@@ -168,16 +168,13 @@ public class Refinement {
             // ------- CHECK BOUNDS -------
             lastTime = System.currentTimeMillis();
             prover.pop();
+            // Add bound check
             prover.addConstraint(bmgr.not(program.encodeNoBoundEventExec(ctx)));
-            res = !prover.isUnsat() ? UNKNOWN : PASS; // Initial bound check without any WMM constraints
-            if (res == UNKNOWN) {
-                //TODO: This is just a temporary fallback
-                // We probably have to perform a second refinement for the bound checks!
-                for (DNF<CoreLiteral> violation : foundViolations) {
-                    prover.addConstraint(refiner.refine(violation));
-                }
-                res = !prover.isUnsat() ? UNKNOWN : PASS;
+            // Add back the constraints found by Refinement (TODO: We might need to perform a second refinement)
+            for (DNF<CoreLiteral> violation : foundViolations) {
+                prover.addConstraint(refiner.refine(violation));
             }
+            res = !prover.isUnsat() ? UNKNOWN : PASS; // Initial bound check without any WMM constraints
             boundCheckTime = System.currentTimeMillis() - lastTime;
         } else {
             res = FAIL;
