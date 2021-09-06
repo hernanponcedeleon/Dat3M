@@ -124,7 +124,7 @@ public class EventData implements Comparable<EventData> {
 
     @Override
     public String toString() {
-        return "T" + event.getThread().getId() + ":" + localId /*+ "; " + event.toString()*/;
+        return String.format("T%d:%d", event.getThread().getId(), localId);
     }
 
     @Override

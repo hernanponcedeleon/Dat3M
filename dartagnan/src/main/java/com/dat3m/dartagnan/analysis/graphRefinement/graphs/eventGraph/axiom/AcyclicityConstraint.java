@@ -91,12 +91,14 @@ public class AcyclicityConstraint extends Constraint {
         index = 0;
         stack.clear();
 
-        for (EventNode node : nodeMap)
+        for (EventNode node : nodeMap) {
             node.reset();
+        }
 
         for (EventNode node : nodeMap) {
-            if (!node.wasVisited())
+            if (!node.wasVisited()) {
                 strongConnect(node);
+            }
         }
     }
 

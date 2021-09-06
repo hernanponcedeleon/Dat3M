@@ -15,6 +15,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_ADD_ACYCLIC_DEP_RF;
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 // NOTE: A RefinementTask can be treated as a VerificationTask in which case
 // the baseline model is mostly ignored.
@@ -74,17 +75,17 @@ public class RefinementTask extends VerificationTask {
 
         // ====== Locally consistent baseline WMM ======
         // ---- acyclic(po-loc | rf) ----
-        Relation poloc = repo.getRelation("po-loc");
-        Relation rf = repo.getRelation("rf");
+        Relation poloc = repo.getRelation(POLOC);
+        Relation rf = repo.getRelation(RF);
         Relation porf = new RelUnion(poloc, rf);
         repo.addRelation(porf);
         baseline.addAxiom(new Acyclic(porf));
 
         // ---- acyclic (dep | rf) ----
         if (REFINEMENT_ADD_ACYCLIC_DEP_RF) {
-            Relation data = repo.getRelation("data");
-            Relation ctrl = repo.getRelation("ctrl");
-            Relation addr = repo.getRelation("addr");
+            Relation data = repo.getRelation(DATA);
+            Relation ctrl = repo.getRelation(CTRL);
+            Relation addr = repo.getRelation(ADDR);
             Relation dep = new RelUnion(data, addr);
             repo.addRelation(dep);
             dep = new RelUnion(ctrl, dep);

@@ -41,12 +41,13 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 public class ExecutionGraph {
 
     // These graphs are only relevant for data, ctrl and addr, all of which have a special event graph (see below)
-    //TODO: We cannot use the RelationNameRepository here, because some of the relations are unnamed.
-    // We need a better way to handle this.
+    //TODO: We need a better way to handle the composed relations (in case we rename them as well?)
     private static final Set<String> EXCLUDED_RELS = ImmutableSet.of(
-            "idd", "idd^+", "ctrlDirect", "addrDirect", "(idd^+;addrDirect)", "(addrDirect+(idd^+;addrDirect))",
-            "(idd^+;ctrlDirect)"
+            IDD, IDDTRANS, CTRLDIRECT, ADDRDIRECT, String.format("(%s;%s)", IDDTRANS, ADDRDIRECT),
+            String.format("(%s+(%s;%s))", ADDRDIRECT, IDDTRANS, ADDRDIRECT),
+            String.format("(%s;%s)", IDDTRANS, CTRLDIRECT)
     );
+
 
     // These relations have special event graphs associated with them
     private static final Set<String> SPECIAL_RELS = ImmutableSet.of(ADDR, DATA, CTRL, CRIT);

@@ -2,18 +2,19 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.event.CondJump;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.program.utils.ThreadCache;
+import com.dat3m.dartagnan.program.utils.preprocessing.BranchReordering;
 import com.dat3m.dartagnan.program.utils.preprocessing.DeadCodeElimination;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.utils.Arch;
-
-import java.util.*;
-
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Thread {
 

@@ -257,7 +257,7 @@ public class GraphRefinement {
      */
     private RefinementStatus kSaturation(SearchNode curSearchNode, Timestamp curTime, int k, List<Edge> searchList, int searchStart) {
         searchList = searchList.subList(searchStart, searchList.size());
-        if (k == 0) {
+        if (k == 0 || searchList.isEmpty()) {
             // 0-SAT amounts to a simple violation check
             if (checkViolations()) {
                 long time = System.currentTimeMillis();

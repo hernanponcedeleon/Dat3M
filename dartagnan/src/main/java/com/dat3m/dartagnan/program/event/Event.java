@@ -11,10 +11,6 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.SolverContext;
 
 public abstract class Event implements Comparable<Event> {
 
@@ -373,8 +369,7 @@ public abstract class Event implements Comparable<Event> {
 		BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();;
 		if(cfEnc == null){
 			cfCond = (cfCond == null) ? cond : bmgr.or(cfCond, cond);
-			cfEnc = bmgr.implication(cfVar, cfCond);
-			cfEnc = bmgr.and(cfEnc, encodeExec(ctx));
+			cfEnc = bmgr.and(bmgr.implication(cfVar, cfCond), encodeExec(ctx));
 		}
 		return cfEnc;
 	}

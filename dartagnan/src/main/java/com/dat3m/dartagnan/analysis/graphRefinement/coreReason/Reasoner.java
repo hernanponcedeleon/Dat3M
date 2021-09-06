@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.analysis.graphRefinement.graphs.ExecutionGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.EventGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.axiom.Constraint;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.basic.CoherenceGraph;
+import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.binary.DifferenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.FenceGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.LocationGraph;
 import com.dat3m.dartagnan.analysis.graphRefinement.graphs.eventGraph.stat.ReadFromGraph;
@@ -63,17 +64,18 @@ public class Reasoner {
     }
 
 
-    public DNF<CoreLiteral> computeViolationReasons(Constraint axiom) {
-        if (!axiom.checkForViolations()) {
+    public DNF<CoreLiteral> computeViolationReasons(Constraint constraint) {
+        if (!constraint.checkForViolations()) {
             return DNF.FALSE();
         }
 
         SortedClauseSet<CoreLiteral> clauseSet = new SortedClauseSet<>();
-        List<List<Edge>> violations = axiom.getViolations();
+        List<List<Edge>> violations = constraint.getViolations();
+        EventGraph constrainedGraph = constraint.getConstrainedGraph();;
         for (List<Edge> violation : violations) {
             Conjunction<CoreLiteral> reason = Conjunction.TRUE();
             for (Edge e : violation) {
-                reason = reason.and(computeReason(axiom.getDependencies().get(0), e));
+                reason = reason.and(computeReason(constrainedGraph, e));
             }
             clauseSet.add(simplifyReason(reason));
         }
@@ -301,9 +303,13 @@ public class Reasoner {
                 return reason;
             }
 
+            DifferenceGraph difGraph = (DifferenceGraph)graph;
             //TODO: This is only correct as long as the second operand of the difference
-            // is a static relation. For now we work with this assumpion
-            reason = graph.getDependencies().get(0).accept(this, edge, unused);
+            // is a static relation. For now we work with this assumption and check it here.
+            if (!graphRelMap.get(difGraph.getSecond()).isStaticRelation()) {
+                throw new IllegalStateException("The difference graph" + difGraph + " has a non-static second operand");
+            }
+            reason = difGraph.getFirst().accept(this, edge, unused);
             assert !reason.isFalse();
             return reason;
         }
@@ -368,8 +374,10 @@ public class Reasoner {
 
             EventGraph inner = graph.getDependencies().get(0);
             reason = Conjunction.TRUE();
-            //TODO: Here might be a problem with the derivation length (will fix this later!)
-            List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(),  edge.getDerivationLength());
+            //TODO: Here might be a problem with the derivation length.
+            // Depending on the implementation of findShortestPath, there might be an off-by-one error
+            // The path we look for should have strictly smaller derivation length on each edge
+            List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength());
             for (Edge e : path) {
                 reason = reason.and(inner.accept(this, e, unused));
             }

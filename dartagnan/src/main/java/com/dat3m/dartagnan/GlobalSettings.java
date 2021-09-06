@@ -17,6 +17,8 @@ public class GlobalSettings {
     // === Encoding ===
     public static final boolean FIXED_MEMORY_ENCODING = false;
     // NOTE: ALLOW_PARTIAL_MODELS does NOT work on Litmus tests due to their different assertion condition
+    //TODO: This is not used right now. Some previous merge with the JavaSMT branch removed its usage
+    // We will fix this later or remove this option completely.
     public static final boolean ALLOW_PARTIAL_MODELS = false;
     public static final boolean MERGE_CF_VARS = true; // ONLY has effect if ALLOW_PARTIAL_MODELS is 'false'
     public static final boolean ANTISYMM_CO = false;
@@ -33,7 +35,7 @@ public class GlobalSettings {
     public static final boolean ENABLE_SYMMETRY_REDUCTION = true;
 
     // ==== Refinement ====
-    public static final int REFINEMENT_MAX_SATURATION_DEPTH = 2;
+    public static final int REFINEMENT_MAX_SATURATION_DEPTH = 3;
     public static final boolean REFINEMENT_USE_LOCALLY_CONSISTENT_BASELINE_WMM = true; // Uses acyclic(po-loc + rf) as baseline
     public static final boolean REFINEMENT_ADD_ACYCLIC_DEP_RF = false; // Only takes effect if USE_BASELINE_WMM is set to TRUE
 

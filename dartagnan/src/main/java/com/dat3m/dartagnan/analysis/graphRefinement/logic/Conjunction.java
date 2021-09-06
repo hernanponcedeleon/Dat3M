@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.logic;
 
+import com.google.common.collect.Iterables;
+
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -97,23 +99,14 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
 
     // This is performed once on construction
     private void computeHash() {
-        hashCode = literals.hashCode(); // the default implementation amounts to the below code
-        /*
-        for (T literal : literals)
-            hashCode += literal.hashCode();
-         */
+        // We increase the hashCode by 1 to avoid a 0 hashcode for non-empty conjunctions
+        hashCode = literals.hashCode() + (literals.isEmpty() ? 0 : 1);
+        assert (isTrue() || isFalse() || hashCode != 0);
     }
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder().append('(');
-        String separator = "";
-        for (T literal : literals) {
-            builder.append(separator);
-            builder.append(literal.toString());
-            separator = " & ";
-        }
-        return builder.append(')').toString();
+        return String.join(" & ", Iterables.transform(literals, Objects::toString));
     }
 
     public boolean isProperSubclauseOf(Conjunction<T> other) {
@@ -194,9 +187,9 @@ public class Conjunction<T extends Literal<T>> implements PartialOrder<Conjuncti
     public Conjunction<T> resolve(Conjunction<T> other) {
         if (this.isFalse() || other.isFalse()) {
             return FALSE();
-        } else if (this.isTrue() || other.isTrue()) {
-            return TRUE();
-        } else if (this.equals(other)) {
+        } else if (this.isTrue()) {
+            return other;
+        } else if (other.isTrue() || this.equals(other)) {
             return this;
         }
 

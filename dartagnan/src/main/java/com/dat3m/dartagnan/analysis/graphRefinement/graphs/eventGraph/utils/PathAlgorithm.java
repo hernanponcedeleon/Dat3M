@@ -34,12 +34,12 @@ public class PathAlgorithm {
         queue1.add(start);
         queue2.add(end);
         boolean found = false;
-        boolean doBFS1 = true;
+        boolean doForwardBFS = true;
         EventData cur = null;
 
-        while (!queue1.isEmpty() || !queue2.isEmpty()) {
-            // Forwards BFS
-            if (doBFS1) {
+        while (!found && (!queue1.isEmpty() || !queue2.isEmpty())) {
+            if (doForwardBFS) {
+                // Forwards BFS
                 int curSize = queue1.size();
                 while (curSize-- > 0 && !found) {
                     for (Edge next : graph.outEdges(queue1.poll())) {
@@ -59,10 +59,7 @@ public class PathAlgorithm {
                         }
                     }
                 }
-                if (found) {
-                    break;
-                }
-                doBFS1 = false;
+                doForwardBFS = false;
             } else {
                 // Backward BFS
                 int curSize = queue2.size();
@@ -83,10 +80,7 @@ public class PathAlgorithm {
                         }
                     }
                 }
-                if (found) {
-                    break;
-                }
-                doBFS1 = true;
+                doForwardBFS = true;
             }
         }
 

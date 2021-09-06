@@ -67,14 +67,15 @@ public abstract class AbstractDartagnanTest {
         this.settings = settings;
     }
 
-    //@Test
+    @Test
     public void testCombined() {
-        // Compares Refinement and Assume solver on litmus tests
+        // Compares Refinement and TwoSolvers on litmus tests
         // Replaces location-based assertions by ...
         final boolean REPLACE_BY_TRUE = true;
         // ... to allow Refinement to work
 
         Result res = Result.UNKNOWN;
+        // Get initial result by TwoSolvers
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
              ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
@@ -89,6 +90,7 @@ public abstract class AbstractDartagnanTest {
             fail(e.getMessage());
         }
 
+        // Now compare TwoSolvers result with Refinement result.
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS))
         {
@@ -112,7 +114,6 @@ public abstract class AbstractDartagnanTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                // program.setAss(program.getAss().removeLocAssertions(true)); // TEST CODE for comparing!
                 VerificationTask task = new VerificationTask(program, wmm, target, settings);
                 assertEquals(expected, runAnalysisTwoSolvers(ctx, prover1, prover2, task));
             }
@@ -128,7 +129,6 @@ public abstract class AbstractDartagnanTest {
         {
             Program program = new ProgramParser().parse(new File(path));
             if (program.getAss() != null) {
-                //program.setAss(program.getAss().removeLocAssertions(true));
                 if (!program.getAss().getLocs().isEmpty()) {
                     // We assert true, because Refinement can't handle these assertions
                     // They need coherence, which Refinement avoids to encode!

@@ -5,18 +5,14 @@ public enum EdgeDirection {
     INGOING;
 
     public EdgeDirection flip() {
-        EdgeDirection dir;
         switch (this) {
             case INGOING:
-                dir = OUTGOING;
-                break;
+                return OUTGOING;
             case OUTGOING:
-                dir = INGOING;
-                break;
+                return INGOING;
             default:
                 throw new IllegalStateException(this + " is an unknown enum member.");
         }
-        return dir;
     }
 
 }

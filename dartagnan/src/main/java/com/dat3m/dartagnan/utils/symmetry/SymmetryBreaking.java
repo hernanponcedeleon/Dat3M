@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -17,22 +16,20 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
+import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+
 
 // A first rough implementation for symmetry breaking
 public class SymmetryBreaking {
 
     private static final int LEX_LEADER_SIZE = 1000;
 
-    private final VerificationTask task;
     private final ThreadSymmetry symm;
-    private final Wmm wmm;
     private final Relation rf;
 
     public SymmetryBreaking(VerificationTask task) {
-        this.task = task;
         this.symm = task.getThreadSymmetry();
-        this.wmm = task.getMemoryModel();
-        this.rf = wmm.getRelationRepository().getRelation("rf");
+        this.rf = task.getMemoryModel().getRelationRepository().getRelation(RF);
 
     }
 
@@ -71,7 +68,7 @@ public class SymmetryBreaking {
         }
         r1.sort(Comparator.naturalOrder());
 
-        // Construct
+        // Construct symmetric rows
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
             Function<Event, Event> p = symm.createTransposition(t1, t2);
@@ -90,8 +87,12 @@ public class SymmetryBreaking {
         return enc;
     }
 
-    // y0, ..., y(n-1)
-    // x1, ..., xn
+    /*
+    Used variables:
+    - y0, ..., y(n-1)
+    - x1, ..., xn
+    with a suffix for the involved symmetry class.
+     */
     private BooleanFormula encodeLexLeader(Thread rep, int index, List<Tuple> r1, List<Tuple> r2, SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         int size = Math.min(r1.size(), LEX_LEADER_SIZE);
@@ -103,13 +104,12 @@ public class SymmetryBreaking {
             BooleanFormula y = bmgr.makeVariable("y" + i + suffix);
             BooleanFormula orig = rf.getSMTVar(r1.get(i-1), ctx);
             BooleanFormula perm = rf.getSMTVar(r2.get(i-1), ctx);
-            enc = bmgr.and(enc,
+            enc = bmgr.and(
+                    enc,
                     bmgr.or(y, bmgr.not(ylast), bmgr.not(orig)),
                     bmgr.or(y, bmgr.not(ylast), perm),
-                    enc, bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm));
-            /*enc = bmgr.and(enc, bmgr.or(y, bmgr.not(ylast), bmgr.not(orig)));
-            enc = bmgr.and(enc, bmgr.or(y, bmgr.not(ylast), perm));
-            enc = bmgr.and(enc, bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm));*/
+                    bmgr.or(bmgr.not(ylast), bmgr.not(orig), perm)
+            );
             ylast = y;
         }
         // Final iteration is handled differently

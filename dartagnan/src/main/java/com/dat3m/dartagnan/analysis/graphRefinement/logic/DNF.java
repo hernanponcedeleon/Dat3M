@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.analysis.graphRefinement.logic;
 
+import com.google.common.collect.Iterables;
+
 import java.util.*;
 
 // A formal minimal(*) disjunction of conjunctions of type T
@@ -115,9 +117,8 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
         hashCode = 1;
         for (Conjunction<T> cube : cubes) {
             int cubeHash = cube.hashCode();
-            assert (cube.isTrue() || cubeHash != 0);
+            assert (!cube.isFalse());
             hashCode *= cubeHash; // Use * instead of + (important!)
-            // We assume for now that cube.hashCode() never returns 0
         }
     }
 
@@ -204,14 +205,7 @@ public class DNF<T extends Literal<T>> implements PartialOrder<DNF<T>> {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder().append('{');
-        String separator = "";
-        for (Conjunction<T> cube : cubes) {
-            builder.append(separator);
-            builder.append(cube.toString());
-            separator = " | ";
-        }
-        return builder.append('}').toString();
+        return "{ " + String.join(" | ", Iterables.transform(cubes, Conjunction::toString)) + " }";
     }
 
     public DNF<T> remove(Collection<Conjunction<T>> cubes) {
