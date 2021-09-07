@@ -17,7 +17,7 @@ public interface RegWriter {
         throw new UnsupportedOperationException("RegResultExpr is available only for basic events");
     }
 
-    default BigInteger getReadValue(Event e, Model model, SolverContext ctx){
+    default BigInteger getWrittenValue(Event e, Model model, SolverContext ctx){
         return new BigInteger(model.evaluate(getResultRegister().toIntFormulaResult(e, ctx)).toString());
     }
 }
