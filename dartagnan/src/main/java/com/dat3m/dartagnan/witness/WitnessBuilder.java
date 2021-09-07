@@ -130,21 +130,13 @@ public class WitnessBuilder {
 				if(e instanceof Load) {
 					Load l = (Load)e;
 					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
-					// JavaSMT toString() method returns negative numbers as (- X)
-					// We convert this to -X
-					String value = valueOf(model.eval(l.getResultRegisterExpr()));
-					value = value.startsWith("(") && value.endsWith(")") ? value.substring(1, value.length()-1).replace(" ", "") : value;
-					edge.addAttribute(LOADEDVALUE.toString(), value);
+					edge.addAttribute(LOADEDVALUE.toString(), model.eval(l.getResultRegisterExpr()).toString());
 				}
 
 				if(e instanceof Store) {
 					Store s = (Store)e;
 					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
-					// JavaSMT toString() method returns negative numbers as (- X)
-					// We convert this to -X
-					String value = valueOf(model.eval(s.getMemValueExpr()));
-					value = value.startsWith("(") && value.endsWith(")") ? value.substring(1, value.length()-1).replace(" ", "") : value;
-					edge.addAttribute(STOREDVALUE.toString(), value);
+					edge.addAttribute(STOREDVALUE.toString(), s.getMemValue().getIntValue(s, model, ctx).toString());
 				}
 
 				graph.addEdge(edge);
@@ -182,12 +174,7 @@ public class WitnessBuilder {
 			}
         	BigInteger var = model.evaluate(intVar("hb", e, ctx));
         	if(var != null) {
-        		List<Event> list = map.computeIfAbsent(var.intValue(), x -> new ArrayList<Event>());
-        		Event next = e;
-        		do {
-        			list.add(next);
-        			next = next.getSuccessor();
-        		} while (next != null && execEvents.contains(next) && model.evaluate(intVar("hb", e, ctx)) == null);
+        		map.computeIfAbsent(var.intValue(), x -> new ArrayList<Event>()).add(e);
         	}
         }
 
