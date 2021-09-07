@@ -1,7 +1,13 @@
 package com.dat3m.dartagnan.witness;
 
 import static com.dat3m.dartagnan.program.utils.EType.MEMORY;
+import static com.dat3m.dartagnan.program.utils.EType.READ;
+import static com.dat3m.dartagnan.program.utils.EType.WRITE;
+import static com.dat3m.dartagnan.program.utils.Utils.convertToIntegerFormula;
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 import static com.dat3m.dartagnan.wmm.utils.Utils.intVar;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +22,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
+import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.wmm.filter.FilterBasic;
 import com.google.common.collect.Lists;
 
@@ -84,7 +92,19 @@ public class WitnessGraph extends ElemWithAttributes {
 			}
 			if(!events.isEmpty()) {
 				previous = events;				
-			}				
+			}
+			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(LOADEDVALUE.toString())) {
+				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
+				Load load = (Load)program.getCache().getEvents(FilterBasic.get(READ)).stream().filter(e -> e.getUId() == id).findFirst().get();
+				BigInteger value = new BigInteger(edge.getAttributed(LOADEDVALUE.toString()));
+				enc = bmgr.and(enc, imgr.equal(convertToIntegerFormula(load.getResultRegisterExpr(), ctx), imgr.makeNumber(value)));
+			}
+			if(edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
+				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
+				Store store = (Store)program.getCache().getEvents(FilterBasic.get(WRITE)).stream().filter(e -> e.getUId() == id).findFirst().get();
+				BigInteger value = new BigInteger(edge.getAttributed(STOREDVALUE.toString()));
+				enc = bmgr.and(enc, imgr.equal(convertToIntegerFormula(store.getMemValueExpr(), ctx), imgr.makeNumber(value)));
+			}
 		}
 		return enc;
 	}
