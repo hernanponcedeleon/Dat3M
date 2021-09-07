@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
 import com.dat3m.dartagnan.program.event.Store;
+import com.dat3m.dartagnan.program.event.utils.RegWriter;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
@@ -128,9 +129,9 @@ public class WitnessBuilder {
 				}
 				
 				if(e instanceof Load) {
-					Load l = (Load)e;
+					RegWriter l = (RegWriter)e;
 					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
-					edge.addAttribute(LOADEDVALUE.toString(), model.eval(l.getResultRegisterExpr()).toString());
+					edge.addAttribute(LOADEDVALUE.toString(), l.getReadValue(e, model, ctx).toString());
 				}
 
 				if(e instanceof Store) {
