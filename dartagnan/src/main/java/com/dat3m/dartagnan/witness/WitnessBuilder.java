@@ -4,7 +4,9 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.Load;
 import com.dat3m.dartagnan.program.event.MemEvent;
+import com.dat3m.dartagnan.program.event.Store;
 import com.dat3m.dartagnan.program.svcomp.event.EndAtomic;
 import com.dat3m.dartagnan.program.utils.EType;
 import com.dat3m.dartagnan.utils.Result;
@@ -124,6 +126,26 @@ public class WitnessBuilder {
 					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 					threads++;
 				}
+				
+				if(e instanceof Load) {
+					Load l = (Load)e;
+					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
+					// JavaSMT toString() method returns negative numbers as (- X)
+					// We convert this to -X
+					String value = valueOf(model.eval(l.getResultRegisterExpr()));
+					value = value.startsWith("(") && value.endsWith(")") ? value.substring(1, value.length()-1).replace(" ", "") : value;
+					edge.addAttribute(LOADEDVALUE.toString(), value);
+				}
+
+				if(e instanceof Store) {
+					Store s = (Store)e;
+					edge.addAttribute(EVENTID.toString(), valueOf(e.getUId()));
+					// JavaSMT toString() method returns negative numbers as (- X)
+					// We convert this to -X
+					String value = valueOf(model.eval(s.getMemValueExpr()));
+					value = value.startsWith("(") && value.endsWith(")") ? value.substring(1, value.length()-1).replace(" ", "") : value;
+					edge.addAttribute(STOREDVALUE.toString(), value);
+				}
 
 				graph.addEdge(edge);
 
@@ -161,11 +183,11 @@ public class WitnessBuilder {
         	BigInteger var = model.evaluate(intVar("hb", e, ctx));
         	if(var != null) {
         		List<Event> list = map.computeIfAbsent(var.intValue(), x -> new ArrayList<Event>());
-				Event next = e;
-				do {
-					list.add(next);
-					next = next.getSuccessor();
-				} while (next != null && execEvents.contains(next) && model.evaluate(intVar("hb", next, ctx)) == null);
+        		Event next = e;
+        		do {
+        			list.add(next);
+        			next = next.getSuccessor();
+        		} while (next != null && execEvents.contains(next) && model.evaluate(intVar("hb", e, ctx)) == null);
         	}
         }
 
