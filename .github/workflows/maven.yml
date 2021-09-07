@@ -29,6 +29,7 @@ jobs:
       id: jacoco
       uses: cicirello/jacoco-badge-generator@v2
       with:
+         generate-branches-badge: true
          jacoco-csv-file: dartagnan/target/site/jacoco/jacoco.csv
          
     - name: Log coverage percentage
