@@ -31,6 +31,10 @@ import static com.dat3m.dartagnan.program.utils.Utils.generalEqual;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RMW;
 import static org.sosy_lab.java_smt.api.FormulaType.BooleanType;
 
+/*
+    NOTE: Changes to the semantics of this class may need to be reflected
+    in RMWGraph for Refinement!
+ */
 public class RelRMW extends StaticRelation {
 
 	private static final Logger logger = LogManager.getLogger(RelRMW.class);

@@ -29,9 +29,6 @@ public class InverseGraph extends AbstractEventGraph {
     @Override
     public Optional<Edge> get(Edge edge) {
         return inner.get(edge.inverse()).map(this::derive);
-
-        /*Edge e = inner.get(edge.inverse());
-        return e != null ? derive(e) : null;*/
     }
 
     @Override
